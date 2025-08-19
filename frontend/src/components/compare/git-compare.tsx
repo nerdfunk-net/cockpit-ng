@@ -271,37 +271,37 @@ export default function GitCompare() {
   }
 
   return (
-    <div key="unique-id-1" className="space-y-6">
-      <div key="unique-id-2" className="flex items-center justify-between">
-        <div key="unique-id-3">
-          <h2 key="unique-id-4" className="text-2xl font-bold tracking-tight">Git Commit Comparison</h2>
-          <p key="unique-id-5" className="text-gray-600">Compare files between different Git commits</p>
+    <div key="unique-id-gc-1" className="space-y-6">
+      <div key="unique-id-gc-2" className="flex items-center justify-between">
+        <div key="unique-id-gc-3">
+          <h2 key="unique-id-gc-4" className="text-2xl font-bold tracking-tight">Git Commit Comparison</h2>
+          <p key="unique-id-gc-5" className="text-gray-600">Compare files between different Git commits</p>
         </div>
       </div>
 
       {/* Git Selection */}
-      <Card key="unique-id-7">
-        <CardHeader key="unique-id-8">
-          <CardTitle key="unique-id-9">Select Commits and File</CardTitle>
+      <Card key="unique-id-gc-7">
+        <CardHeader key="unique-id-gc-8">
+          <CardTitle key="unique-id-gc-9">Select Commits and File</CardTitle>
         </CardHeader>
-        <CardContent key="unique-id-10">
-          <div key="unique-id-11" className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div key="unique-id-12" className="space-y-2">
-                <Label key="unique-id-13">Branch</Label>
-              <Select key="unique-id-14" value={selectedBranch || '__none__'} onValueChange={(value) => {
+        <CardContent key="unique-id-gc-10">
+          <div key="unique-id-gc-11" className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div key="unique-id-gc-12" className="space-y-2">
+                <Label key="unique-id-gc-13">Branch</Label>
+              <Select key="unique-id-gc-14" value={selectedBranch || '__none__'} onValueChange={(value) => {
                 const newValue = value === '__none__' ? '' : value
                 setSelectedBranch(newValue)
                 if (newValue) {
                   loadCommitsForBranch(newValue)
                 }
               }}>
-                <SelectTrigger key="unique-id-15">
+                <SelectTrigger key="unique-id-gc-15">
                   <SelectValue placeholder="Select branch" />
                 </SelectTrigger>
-                <SelectContent key="unique-id-16">
-                  <SelectItem key="unique-id-17" value="__none__">Select branch...</SelectItem>
+                <SelectContent key="unique-id-gc-16">
+                  <SelectItem key="unique-id-gc-17" value="__none__">Select branch...</SelectItem>
                   {branches.map((branch, index) => (
-                    <SelectItem key={`unique-id-18-${index}`} value={branch.name}>
+                    <SelectItem key={`unique-id-gc-18-${index}`} value={branch.name}>
                       {branch.name}{branch.current ? ' (current)' : ''}
                     </SelectItem>
                   ))}
@@ -309,18 +309,18 @@ export default function GitCompare() {
               </Select>
             </div>
 
-            <div key="unique-id-19" className="space-y-2">
-              <Label key="unique-id-20">Source Commit</Label>
-              <Select key="unique-id-21" value={leftCommit || '__none__'} onValueChange={(value) => {
+            <div key="unique-id-gc-19" className="space-y-2">
+              <Label key="unique-id-gc-20">Source Commit</Label>
+              <Select key="unique-id-gc-21" value={leftCommit || '__none__'} onValueChange={(value) => {
                 setLeftCommit(value === '__none__' ? '' : value)
               }}>
-                <SelectTrigger key="unique-id-22">
+                <SelectTrigger key="unique-id-gc-22">
                   <SelectValue placeholder="Select source commit" />
                 </SelectTrigger>
-                <SelectContent key="unique-id-23">
-                  <SelectItem key="unique-id-24" value="__none__">Select source commit...</SelectItem>
+                <SelectContent key="unique-id-gc-23">
+                  <SelectItem key="unique-id-gc-24" value="__none__">Select source commit...</SelectItem>
                   {commits.map((commit, index) => (
-                    <SelectItem key={`unique-id-25-${index}`} value={commit.hash}>
+                    <SelectItem key={`unique-id-gc-25-${index}`} value={commit.hash}>
                       {commit.short_hash} - {commit.message.substring(0, 50)}
                     </SelectItem>
                   ))}
@@ -328,18 +328,18 @@ export default function GitCompare() {
               </Select>
             </div>
 
-            <div key="unique-id-26" className="space-y-2">
-              <Label key="unique-id-27">Target Commit</Label>
-              <Select key="unique-id-28" value={rightCommit || '__none__'} onValueChange={(value) => {
+            <div key="unique-id-gc-26" className="space-y-2">
+              <Label key="unique-id-gc-27">Target Commit</Label>
+              <Select key="unique-id-gc-28" value={rightCommit || '__none__'} onValueChange={(value) => {
                 setRightCommit(value === '__none__' ? '' : value)
               }}>
-                <SelectTrigger key="unique-id-29">
+                <SelectTrigger key="unique-id-gc-29">
                   <SelectValue placeholder="Select target commit" />
                 </SelectTrigger>
-                <SelectContent key="unique-id-30">
-                  <SelectItem key="unique-id-31" value="__none__">Select target commit...</SelectItem>
+                <SelectContent key="unique-id-gc-30">
+                  <SelectItem key="unique-id-gc-31" value="__none__">Select target commit...</SelectItem>
                   {commits.map((commit, index) => (
-                    <SelectItem key={`unique-id-32-${index}`} value={commit.hash}>
+                    <SelectItem key={`unique-id-gc-32-${index}`} value={commit.hash}>
                       {commit.short_hash} - {commit.message.substring(0, 50)}
                     </SelectItem>
                   ))}
@@ -348,11 +348,11 @@ export default function GitCompare() {
             </div>
           </div>
 
-          <div key="unique-id-33" className="space-y-2" ref={gitSearchRef}>
-            <Label key="unique-id-34">File to Compare</Label>
-            <div key="unique-id-35" className="relative">
+          <div key="unique-id-gc-33" className="space-y-2" ref={gitSearchRef}>
+            <Label key="unique-id-gc-34">File to Compare</Label>
+            <div key="unique-id-gc-35" className="relative">
               <Input
-                key="unique-id-36"
+                key="unique-id-gc-36"
                 placeholder="Search for file..."
                 value={gitFileSearch}
                 onChange={(e) => {
@@ -362,25 +362,25 @@ export default function GitCompare() {
                 onFocus={() => setShowGitResults(gitFileSearch.length > 0)}
               />
               {showGitResults && (
-                <div key="unique-id-37" className="absolute top-full left-0 right-0 z-10 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                <div key="unique-id-gc-37" className="absolute top-full left-0 right-0 z-10 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
                   {searchFiles(gitFileSearch, gitFiles || []).map((file, index) => (
                     <div
-                      key={`unique-id-38-${index}`}
+                      key={`unique-id-gc-38-${index}`}
                       className="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                       onClick={() => handleGitFileSelect(file)}
                     >
-                      <div key={`unique-id-39-${index}`} className="font-medium text-sm">{file.name}</div>
-                      <div key={`unique-id-40-${index}`} className="text-xs text-gray-500">{file.path}</div>
+                      <div key={`unique-id-gc-39-${index}`} className="font-medium text-sm">{file.name}</div>
+                      <div key={`unique-id-gc-40-${index}`} className="text-xs text-gray-500">{file.path}</div>
                     </div>
                   ))}
                   {searchFiles(gitFileSearch, gitFiles || []).length === 0 && (
-                    <div key="unique-id-41" className="p-2 text-sm text-gray-500">No files found</div>
+                    <div key="unique-id-gc-41" className="p-2 text-sm text-gray-500">No files found</div>
                   )}
                 </div>
               )}
             </div>
             {selectedGitFile && (
-              <div key="unique-id-42" className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
+              <div key="unique-id-gc-42" className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
                 Selected: {selectedGitFile.path}
               </div>
             )}
@@ -389,38 +389,38 @@ export default function GitCompare() {
       </Card>
 
       {/* Compare Actions */}
-      <Card key="unique-id-43">
-        <CardContent key="unique-id-44" className="pt-6">
-          <div key="unique-id-45" className="flex items-center justify-between">
-            <div key="unique-id-46" className="flex items-center gap-2">
+      <Card key="unique-id-gc-43">
+        <CardContent key="unique-id-gc-44" className="pt-6">
+          <div key="unique-id-gc-45" className="flex items-center justify-between">
+            <div key="unique-id-gc-46" className="flex items-center gap-2">
             <Button 
-              key="unique-id-47"
+              key="unique-id-gc-47"
               onClick={handleCompare} 
               disabled={!canCompare() || loading}
               className="flex items-center gap-2"
             >
               {loading ? (
-                <RefreshCw key="unique-id-48" className="h-4 w-4 animate-spin" />
+                <RefreshCw key="unique-id-gc-48" className="h-4 w-4 animate-spin" />
               ) : (
-                <GitCompareIcon key="unique-id-49" className="h-4 w-4" />
+                <GitCompareIcon key="unique-id-gc-49" className="h-4 w-4" />
               )}
-              <span key="unique-id-50">Compare Commits</span>
+              <span key="unique-id-gc-50">Compare Commits</span>
             </Button>
               
               {comparisonResult && (
                 <Button 
-                  key="unique-id-51"
+                  key="unique-id-gc-51"
                   variant="outline" 
                   onClick={exportDiff}
                   className="flex items-center gap-2"
                 >
-                  <Download key="unique-id-52" className="h-4 w-4" />
-                  <span key="unique-id-53">Export Diff</span>
+                  <Download key="unique-id-gc-52" className="h-4 w-4" />
+                  <span key="unique-id-gc-53">Export Diff</span>
                 </Button>
               )}
             </div>
 
-            <div key="unique-id-54" className="flex items-center gap-2">
+            <div key="unique-id-gc-54" className="flex items-center gap-2">
               {comparisonResult && (
                 <div key="unique-id-font-selector" className="flex items-center gap-2">
                   <Label key="unique-id-font-label" className="text-sm">Font Size:</Label>
@@ -437,7 +437,7 @@ export default function GitCompare() {
                 </div>
               )}
               <Button
-                key="unique-id-55"
+                key="unique-id-gc-55"
                 variant="outline"
                 size="sm"
                 onClick={() => setHideUnchanged(!hideUnchanged)}
@@ -445,13 +445,13 @@ export default function GitCompare() {
               >
                 {hideUnchanged ? (
                   <>
-                    <Eye key="unique-id-56" className="h-4 w-4" />
-                    <span key="unique-id-57">Show Unchanged</span>
+                    <Eye key="unique-id-gc-56" className="h-4 w-4" />
+                    <span key="unique-id-gc-57">Show Unchanged</span>
                   </>
                 ) : (
                   <>
-                    <EyeOff key="unique-id-58" className="h-4 w-4" />
-                    <span key="unique-id-59">Hide Unchanged</span>
+                    <EyeOff key="unique-id-gc-58" className="h-4 w-4" />
+                    <span key="unique-id-gc-59">Hide Unchanged</span>
                   </>
                 )}
               </Button>
@@ -462,38 +462,38 @@ export default function GitCompare() {
 
       {/* Comparison Results */}
       {showComparison && comparisonResult && (
-        <Card key="unique-id-60">
-          <CardHeader key="unique-id-61">
-            <div key="unique-id-62" className="flex items-center justify-between">
-              <div key="unique-id-63">
-                <CardTitle key="unique-id-64" className="flex items-center gap-2">
-                  <GitCompareIcon key="unique-id-65" className="h-5 w-5" />
-                  <span key="unique-id-66">Git Commit Comparison</span>
+        <Card key="unique-id-gc-60">
+          <CardHeader key="unique-id-gc-61">
+            <div key="unique-id-gc-62" className="flex items-center justify-between">
+              <div key="unique-id-gc-63">
+                <CardTitle key="unique-id-gc-64" className="flex items-center gap-2">
+                  <GitCompareIcon key="unique-id-gc-65" className="h-5 w-5" />
+                  <span key="unique-id-gc-66">Git Commit Comparison</span>
                 </CardTitle>
-                <CardDescription key="unique-id-67">
+                <CardDescription key="unique-id-gc-67">
                   {comparisonResult.left_file} ↔ {comparisonResult.right_file}
                 </CardDescription>
               </div>
-              <div key="unique-id-68" className="flex items-center gap-2">
-                <div key="unique-id-69" className="text-sm text-gray-600">
-                  <span key="unique-id-70" className="text-green-600">+{comparisonResult.stats.additions}</span>
-                  <span key="unique-id-71"> </span>
-                  <span key="unique-id-72" className="text-red-600">-{comparisonResult.stats.deletions}</span>
-                  <span key="unique-id-73"> </span>
-                  <span key="unique-id-74" className="text-blue-600">{comparisonResult.stats.changes} changes</span>
+              <div key="unique-id-gc-68" className="flex items-center gap-2">
+                <div key="unique-id-gc-69" className="text-sm text-gray-600">
+                  <span key="unique-id-gc-70" className="text-green-600">+{comparisonResult.stats.additions}</span>
+                  <span key="unique-id-gc-71"> </span>
+                  <span key="unique-id-gc-72" className="text-red-600">-{comparisonResult.stats.deletions}</span>
+                  <span key="unique-id-gc-73"> </span>
+                  <span key="unique-id-gc-74" className="text-blue-600">{comparisonResult.stats.changes} changes</span>
                 </div>
-                <div key="unique-id-75" className="flex items-center gap-1">
+                <div key="unique-id-gc-75" className="flex items-center gap-1">
                   <Button
-                    key="unique-id-76"
+                    key="unique-id-gc-76"
                     size="sm"
                     variant="outline"
                     onClick={() => navigateDiff('prev')}
                     disabled={currentDiffIndex === 0}
                   >
-                    <ChevronUp key="unique-id-77" className="h-4 w-4" />
+                    <ChevronUp key="unique-id-gc-77" className="h-4 w-4" />
                   </Button>
                   <Button
-                    key="unique-id-78"
+                    key="unique-id-gc-78"
                     size="sm"
                     variant="outline"
                     onClick={() => navigateDiff('next')}
@@ -502,32 +502,32 @@ export default function GitCompare() {
                       return currentDiffIndex >= visibleDiffs.length - 1
                     })()}
                   >
-                    <ChevronDown key="unique-id-79" className="h-4 w-4" />
+                    <ChevronDown key="unique-id-gc-79" className="h-4 w-4" />
                   </Button>
                 </div>
                 <Button
-                  key="unique-id-80"
+                  key="unique-id-gc-80"
                   size="sm"
                   variant="outline"
                   onClick={() => setShowComparison(false)}
                 >
-                  <span key="unique-id-81">Close</span>
+                  <span key="unique-id-gc-81">Close</span>
                 </Button>
               </div>
             </div>
           </CardHeader>
-          <CardContent key="unique-id-82">
+          <CardContent key="unique-id-gc-82">
             <div 
-              key="unique-id-83"
+              key="unique-id-gc-83"
               className="border rounded-lg overflow-auto font-mono"
               style={{ fontSize: `${fontSize}px`, maxHeight: '600px' }}
             >
               {/* Side-by-side comparison header */}
-              <div key="unique-id-header" className="grid grid-cols-2 bg-gray-100 border-b sticky top-0" style={{ fontSize: `${Math.max(fontSize - 2, 8)}px` }}>
-                <div key="unique-id-left-header" className="p-2 border-r font-semibold text-gray-700">
+              <div key="unique-id-gc-header" className="grid grid-cols-2 bg-gray-100 border-b sticky top-0" style={{ fontSize: `${Math.max(fontSize - 2, 8)}px` }}>
+                <div key="unique-id-gc-left-header" className="p-2 border-r font-semibold text-gray-700">
                   {comparisonResult.commit1}: {comparisonResult.left_file}
                 </div>
-                <div key="unique-id-right-header" className="p-2 font-semibold text-gray-700">
+                <div key="unique-id-gc-right-header" className="p-2 font-semibold text-gray-700">
                   {comparisonResult.commit2}: {comparisonResult.right_file}
                 </div>
               </div>
@@ -548,23 +548,23 @@ export default function GitCompare() {
                   }
                   
                   rows.push(
-                    <div key={`unique-id-row-${i}`} className="grid grid-cols-2 border-b border-gray-200 hover:bg-gray-50">
+                    <div key={`unique-id-gc-row-${i}`} className="grid grid-cols-2 border-b border-gray-200 hover:bg-gray-50">
                       {/* Left side (commit1) */}
-                      <div key={`unique-id-left-${i}`} className={`flex items-start border-r ${getLeftLineClass(leftLine?.type || 'empty')}`}>
-                        <div key={`unique-id-left-num-${i}`} className="flex-shrink-0 w-12 text-gray-500 text-right text-xs p-1 bg-gray-50 border-r">
+                      <div key={`unique-id-gc-left-${i}`} className={`flex items-start border-r ${getLeftLineClass(leftLine?.type || 'empty')}`}>
+                        <div key={`unique-id-gc-left-num-${i}`} className="flex-shrink-0 w-12 text-gray-500 text-right text-xs p-1 bg-gray-50 border-r">
                           {leftLine?.line_number || ''}
                         </div>
-                        <div key={`unique-id-left-content-${i}`} className="flex-1 p-2 whitespace-pre-wrap break-all min-h-[1.4em]">
+                        <div key={`unique-id-gc-left-content-${i}`} className="flex-1 p-2 whitespace-pre-wrap break-all min-h-[1.4em]">
                           {leftLine?.content || ' '}
                         </div>
                       </div>
 
                       {/* Right side (commit2) */}
-                      <div key={`unique-id-right-${i}`} className={`flex items-start ${getRightLineClass(rightLine?.type || 'empty')}`}>
-                        <div key={`unique-id-right-num-${i}`} className="flex-shrink-0 w-12 text-gray-500 text-right text-xs p-1 bg-gray-50 border-r">
+                      <div key={`unique-id-gc-right-${i}`} className={`flex items-start ${getRightLineClass(rightLine?.type || 'empty')}`}>
+                        <div key={`unique-id-gc-right-num-${i}`} className="flex-shrink-0 w-12 text-gray-500 text-right text-xs p-1 bg-gray-50 border-r">
                           {rightLine?.line_number || ''}
                         </div>
-                        <div key={`unique-id-right-content-${i}`} className="flex-1 p-2 whitespace-pre-wrap break-all min-h-[1.4em]">
+                        <div key={`unique-id-gc-right-content-${i}`} className="flex-1 p-2 whitespace-pre-wrap break-all min-h-[1.4em]">
                           {rightLine?.content || ' '}
                         </div>
                       </div>
