@@ -1,0 +1,1904 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <!-- Meta, title, CSS, favicons, etc. -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="images/favicon.ico" type="image/ico" />
+
+    <title>Onboard Device - Cockpit</title>
+
+    <!-- Vite Entry Point - will bundle all styles -->
+    <script type="module" src="/src/main-minimal.js"></script>
+
+    <!-- Configuration -->
+    <script src="js/config.js"></script>
+    <!-- Container configuration (if in container mode) -->
+    <script>
+      // Load container config if in container environment
+      // But NOT if we're running on Vite dev server ports (development mode)
+      const currentPort = window.location.port;
+      const isDevelopment = currentPort === "3000" || currentPort === "3001";
+      const isNonLocalhost =
+        window.location.hostname !== "localhost" &&
+        window.location.hostname !== "127.0.0.1";
+
+      if (isNonLocalhost && !isDevelopment) {
+        const script = document.createElement("script");
+        script.src = "js/config-container.js";
+        document.head.appendChild(script);
+      }
+    </script>
+    <!-- API Manager -->
+    <script src="js/api-manager.js"></script>
+    <script>
+      // Wait for all scripts and DOM to be ready before initializing
+      document.addEventListener("DOMContentLoaded", function () {
+        // Ensure all required objects are available
+        console.log("DOM ready, checking dependencies...");
+        console.log("CockpitConfig available:", !!window.CockpitConfig);
+        console.log("authManager available:", !!window.authManager);
+
+        // Wait a bit more if dependencies aren't ready
+        if (!window.CockpitConfig || !window.authManager) {
+          console.log("Dependencies not ready, waiting...");
+          setTimeout(() => {
+            console.log("After delay - CockpitConfig:", !!window.CockpitConfig);
+            console.log("After delay - authManager:", !!window.authManager);
+
+            // Initialize the onboard manager
+            if (window.CockpitConfig && window.authManager) {
+              initializeOnboarding();
+            }
+          }, 500);
+        } else {
+          initializeOnboarding();
+        }
+
+        function initializeOnboarding() {
+          if (window.onboardDevice) {
+            console.log("OnboardDevice already initialized");
+            return;
+          }
+
+          window.onboardDevice = new OnboardDevice();
+          console.log("OnboardDevice initialized");
+        }
+      });
+
+      // Robust authentication check
+      (function () {
+        console.log("Checking authentication...");
+
+        // Check if we have a valid token
+        const token = localStorage.getItem("auth_token");
+        console.log("Token found:", !!token);
+
+        if (!token) {
+          console.log("No token found, redirecting to login");
+          // Use absolute path to ensure proper redirect
+          window.location.href = "/login.html";
+          return;
+        }
+
+        console.log("Token found, user authenticated");
+      })();
+    </script>
+    <script src="js/auth.js"></script>
+    <script>
+      // Initialize auth manager when DOM is ready
+      document.addEventListener("DOMContentLoaded", function () {
+        window.authManager = new AuthManager();
+        console.log("AuthManager initialized");
+      });
+    </script>
+  </head>
+
+  <body class="nav-md">
+    <div class="container body">
+      <div class="main_container">
+        <div class="col-md-3 left_col">
+          <div class="left_col scroll-view">
+            <div class="navbar nav_title" style="border: 0">
+              <a href="index.html" class="site_title"
+                ><i class="fas fa-paw"></i> <span>Cockpit!</span></a
+              >
+            </div>
+
+            <div class="clearfix"></div>
+
+            <!-- menu profile quick info -->
+            <div class="profile clearfix">
+              <div class="profile_pic"></div>
+              <div class="profile_info">
+                <span id="welcome-message">Welcome,</span>
+                <h2 id="sidebar-username">Loading...</h2>
+              </div>
+            </div>
+            <!-- /menu profile quick info -->
+
+            <br />
+
+            <!-- sidebar menu -->
+            <div
+              id="sidebar-menu"
+              class="main_menu_side hidden-print main_menu"
+            >
+              <div class="menu_section">
+                <h3>General</h3>
+                <ul class="nav side-menu">
+                  <li>
+                    <a href="index.html"><i class="fas fa-home"></i> Home</a>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-rocket"></i> Onboarding
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="onboard-device.html" class="current-page"
+                          ><i class="fas fa-plus-circle"></i> Onboard Device</a
+                        >
+                      </li>
+                      <li>
+                        <a href="sync_devices.html"
+                          ><i class="fas fa-sync"></i> Sync Devices</a
+                        >
+                      </li>
+                      <li>
+                        <a href="scan-and-add.html"
+                          ><i class="fas fa-search-plus"></i> Scan & Add</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-cogs"></i> Configs
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="backup.html"
+                          ><i class="fas fa-save"></i> Backup</a
+                        >
+                      </li>
+                      <li>
+                        <a href="compare.html"
+                          ><i class="fas fa-exchange-alt"></i> Compare</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-cogs"></i> Ansible
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="ansible-inventory.html"
+                          ><i class="fas fa-list"></i> Inventory</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-wrench"></i> Settings
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="settings-nautobot.html"
+                          ><i class="fas fa-server"></i> Nautobot</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-templates.html"
+                          ><i class="fas fa-file-code"></i> Templates</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-git.html"
+                          ><i class="fab fa-git-alt"></i> Git Management</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-cache.html"
+                          ><i class="fas fa-bolt"></i> Cache</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-credentials.html"
+                          ><i class="fas fa-key"></i> Credentials</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+              <div class="menu_section">
+                <!-- Live On section removed as requested -->
+              </div>
+            </div>
+            <!-- /sidebar menu -->
+
+            <!-- /menu footer buttons -->
+            <div class="sidebar-footer hidden-small">
+              <a
+                href="settings-nautobot.html"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="Settings"
+              >
+                <span class="fas fa-cog" aria-hidden="true"></span>
+              </a>
+              <a
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="FullScreen"
+              >
+                <span class="fas fa-expand" aria-hidden="true"></span>
+              </a>
+              <a data-bs-toggle="tooltip" data-bs-placement="top" title="Lock">
+                <span class="fas fa-eye-slash" aria-hidden="true"></span>
+              </a>
+              <a
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="Logout"
+                href="login.html"
+              >
+                <span class="fas fa-power-off" aria-hidden="true"></span>
+              </a>
+            </div>
+            <!-- /menu footer buttons -->
+          </div>
+        </div>
+
+        <!-- top navigation -->
+        <div class="top_nav">
+          <div class="nav_menu">
+            <div class="nav toggle">
+              <a id="menu_toggle"><i class="fas fa-bars"></i></a>
+            </div>
+            <nav class="nav navbar-nav">
+              <ul class="navbar-right">
+                <li class="nav-item dropdown open" style="padding-left: 15px">
+                  <a
+                    href="javascript:;"
+                    class="user-profile dropdown-toggle"
+                    aria-haspopup="true"
+                    id="navbarDropdown"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <span id="navbar-username">Loading...</span>
+                  </a>
+                  <script>
+                    // Immediate username update if user info is available
+                    (function () {
+                      const userInfo = localStorage.getItem("user_info");
+                      if (userInfo) {
+                        try {
+                          const user = JSON.parse(userInfo);
+                          const element =
+                            document.getElementById("navbar-username");
+                          if (element && user) {
+                            element.textContent =
+                              user.full_name || user.username || "User";
+                          }
+                        } catch (e) {
+                          console.log("Error parsing user info:", e);
+                        }
+                      }
+                    })();
+                  </script>
+                  <div
+                    class="dropdown-menu dropdown-usermenu float-end"
+                    aria-labelledby="navbarDropdown"
+                  >
+                    <a class="dropdown-item" href="javascript:;"> Profile</a>
+                    <a class="dropdown-item" href="settings-nautobot.html">
+                      <span class="badge bg-red float-end">50%</span>
+                      <span>Settings</span>
+                    </a>
+                    <a class="dropdown-item" href="javascript:;">Help</a>
+                    <a class="dropdown-item" href="login.html"
+                      ><i class="fas fa-sign-out-alt float-end"></i> Log Out</a
+                    >
+                  </div>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+        <!-- /top navigation -->
+
+        <!-- page content -->
+        <div
+          class="right_col"
+          role="main"
+          style="height: 100vh; overflow-y: auto"
+        >
+          <!-- page title -->
+          <div class="">
+            <div class="page-title">
+              <div class="title_left">
+                <h3>Onboard Device</h3>
+              </div>
+
+              <div class="title_right">
+                <div class="col-md-5 col-sm-5 form-group float-end top_search">
+                  <div class="input-group">
+                    <input
+                      type="text"
+                      id="device_search_input"
+                      class="form-control"
+                      placeholder="Search for devices..."
+                    />
+                    <span class="input-group-btn">
+                      <button
+                        class="btn btn-secondary"
+                        type="button"
+                        id="device_search_btn"
+                      >
+                        Go!
+                      </button>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="clearfix"></div>
+
+          <!-- Main content area -->
+          <div class="row">
+            <div class="col-md-12 col-sm-12">
+              <div class="x_panel">
+                <div class="x_title">
+                  <h2>
+                    Device Onboarding
+                    <small>Add new devices to your network inventory</small>
+                  </h2>
+                  <ul class="nav navbar-right panel_toolbox">
+                    <li>
+                      <a class="collapse-link"
+                        ><i class="fas fa-chevron-up"></i
+                      ></a>
+                    </li>
+                  </ul>
+                  <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+                  <!-- IP Address Input Section -->
+                  <div class="row mb-4">
+                    <div class="col-md-6">
+                      <div class="form-group mb-0">
+                        <label for="ip_address" class="control-label"
+                          >IP Address(es) <span class="required">*</span></label
+                        >
+                        <input
+                          type="text"
+                          id="ip_address"
+                          name="ip_address"
+                          class="form-control"
+                          placeholder="Enter device IP address(es) (e.g., 192.168.1.1 or 192.168.1.1,192.168.1.2)"
+                          required
+                          style="height: 48px"
+                        />
+                        <div
+                          class="invalid-feedback"
+                          id="ip_error"
+                          style="display: none"
+                        >
+                          Please enter a valid IP address.
+                        </div>
+                        <div
+                          class="valid-feedback"
+                          id="ip_success"
+                          style="display: none"
+                        >
+                          Valid IP address format.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-3">
+                      <div class="form-group mb-0">
+                        <label class="control-label" style="visibility: hidden"
+                          >Spacer</label
+                        >
+                        <button
+                          type="button"
+                          class="btn btn-info w-100"
+                          id="validate_ip_btn"
+                          style="height: 48px"
+                        >
+                          <i class="fas fa-search"></i> Check IP in Nautobot
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Status Messages - Moved to top for better visibility -->
+                  <div class="row mt-3">
+                    <div class="col-md-12">
+                      <div id="status_messages" style="display: none">
+                        <!-- Status messages will be displayed here -->
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Device Properties Section -->
+                  <div class="row">
+                    <div class="col-md-12">
+                      <div
+                        class="card"
+                        style="
+                          border: 2px solid #e3e6f0;
+                          border-radius: 8px;
+                          background: #f8f9fc;
+                        "
+                      >
+                        <div
+                          class="card-header"
+                          style="
+                            background: #4e73df;
+                            color: white;
+                            border-radius: 6px 6px 0 0;
+                          "
+                        >
+                          <h5 class="mb-0">
+                            <i class="fas fa-cogs"></i> Device Configuration
+                            Properties
+                          </h5>
+                        </div>
+                        <div class="card-body" style="padding: 25px">
+                          <form id="onboard_form">
+                            <div class="row">
+                              <!-- Left Column -->
+                              <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                  <label for="location" class="control-label"
+                                    >Location
+                                    <span class="required">*</span></label
+                                  >
+                                  <div class="location-selector-wrapper">
+                                    <input
+                                      type="text"
+                                      id="location_search"
+                                      class="form-control"
+                                      placeholder="Search locations..."
+                                      autocomplete="off"
+                                    />
+                                    <input
+                                      type="hidden"
+                                      id="location"
+                                      name="location"
+                                      required
+                                    />
+                                    <div
+                                      id="location_dropdown"
+                                      class="location-dropdown"
+                                      style="display: none"
+                                    >
+                                      <div class="dropdown-content">
+                                        <!-- Filtered options will be populated here -->
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                  <label for="namespace" class="control-label"
+                                    >Namespace
+                                    <span class="required">*</span></label
+                                  >
+                                  <select
+                                    id="namespace"
+                                    name="namespace"
+                                    class="form-control"
+                                    required
+                                  >
+                                    <option value="">
+                                      Select Namespace...
+                                    </option>
+                                    <!-- Options will be populated dynamically -->
+                                  </select>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                  <label for="device_role" class="control-label"
+                                    >Device Role
+                                    <span class="required">*</span></label
+                                  >
+                                  <select
+                                    id="device_role"
+                                    name="device_role"
+                                    class="form-control"
+                                    required
+                                  >
+                                    <option value="">
+                                      Select Device Role...
+                                    </option>
+                                    <!-- Options will be populated dynamically -->
+                                  </select>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                  <label
+                                    for="device_status"
+                                    class="control-label"
+                                    >Device Status
+                                    <span class="required">*</span></label
+                                  >
+                                  <select
+                                    id="device_status"
+                                    name="device_status"
+                                    class="form-control"
+                                    required
+                                  >
+                                    <option value="">
+                                      Select Device Status...
+                                    </option>
+                                    <!-- Options will be populated dynamically -->
+                                  </select>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                  <label for="port" class="control-label"
+                                    >Management Port
+                                    <span class="required">*</span></label
+                                  >
+                                  <input
+                                    type="number"
+                                    id="port"
+                                    name="port"
+                                    class="form-control"
+                                    placeholder="22"
+                                    value="22"
+                                    min="1"
+                                    max="65535"
+                                    required
+                                  />
+                                  <small class="form-text text-muted"
+                                    >SSH port for device management</small
+                                  >
+                                </div>
+                              </div>
+
+                              <!-- Right Column -->
+                              <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                  <label
+                                    for="interface_status"
+                                    class="control-label"
+                                    >Interface Status
+                                    <span class="required">*</span></label
+                                  >
+                                  <select
+                                    id="interface_status"
+                                    name="interface_status"
+                                    class="form-control"
+                                    required
+                                  >
+                                    <option value="">
+                                      Select Interface Status...
+                                    </option>
+                                    <!-- Options will be populated dynamically -->
+                                  </select>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                  <label
+                                    for="ip_address_status"
+                                    class="control-label"
+                                    >IP Address Status
+                                    <span class="required">*</span></label
+                                  >
+                                  <select
+                                    id="ip_address_status"
+                                    name="ip_address_status"
+                                    class="form-control"
+                                    required
+                                  >
+                                    <option value="">
+                                      Select IP Address Status...
+                                    </option>
+                                    <!-- Options will be populated dynamically -->
+                                  </select>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                  <label
+                                    for="secret_group"
+                                    class="control-label"
+                                    >Secret Group
+                                    <span class="required">*</span></label
+                                  >
+                                  <select
+                                    id="secret_group"
+                                    name="secret_group"
+                                    class="form-control"
+                                    required
+                                  >
+                                    <option value="">
+                                      Select Secret Group...
+                                    </option>
+                                    <!-- Options will be populated dynamically -->
+                                  </select>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                  <label for="platform" class="control-label"
+                                    >Platform
+                                    <span class="required">*</span></label
+                                  >
+                                  <select
+                                    id="platform"
+                                    name="platform"
+                                    class="form-control"
+                                    required
+                                  >
+                                    <option value="detect" selected>
+                                      Auto-Detect Platform
+                                    </option>
+                                    <!-- Options will be populated dynamically -->
+                                  </select>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                  <label for="timeout" class="control-label"
+                                    >Timeout (seconds)</label
+                                  >
+                                  <input
+                                    type="number"
+                                    id="timeout"
+                                    name="timeout"
+                                    class="form-control"
+                                    placeholder="30"
+                                    value="30"
+                                    min="5"
+                                    max="300"
+                                  />
+                                  <small class="form-text text-muted"
+                                    >Connection timeout for device
+                                    communication</small
+                                  >
+                                </div>
+                              </div>
+                            </div>
+
+                            <!-- Form Actions -->
+                            <div class="row mt-4">
+                              <div class="col-md-12">
+                                <div class="text-center">
+                                  <button
+                                    type="submit"
+                                    class="btn btn-primary me-2"
+                                    id="onboard_btn"
+                                    disabled
+                                  >
+                                    <i class="fas fa-plus-circle"></i> Onboard
+                                    Device
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- /page content -->
+      </div>
+    </div>
+
+    <!-- Custom styles for current page indication -->
+    <style>
+      .current-page {
+        background-color: #2a3f54 !important;
+        color: #fff !important;
+        border-radius: 3px;
+      }
+
+      .current-page:hover {
+        background-color: #1e2b3a !important;
+      }
+
+      .required {
+        color: #e74c3c;
+      }
+
+      .form-control:focus {
+        border-color: #4e73df;
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+      }
+
+      .btn-primary {
+        background-color: #4e73df;
+        border-color: #4e73df;
+      }
+
+      .btn-primary:hover {
+        background-color: #2e59d9;
+        border-color: #2653d4;
+      }
+
+      .alert {
+        border-radius: 6px;
+        margin-bottom: 1rem;
+        position: relative;
+        padding-right: 35px;
+      }
+
+      .alert ul {
+        margin-bottom: 0;
+      }
+
+      .alert li {
+        margin-bottom: 5px;
+      }
+
+      .alert-close {
+        position: absolute;
+        top: 8px;
+        right: 12px;
+        background: none;
+        border: none;
+        font-size: 20px;
+        font-weight: bold;
+        color: inherit;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.15s ease-in-out;
+        padding: 0;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .alert-close:hover {
+        opacity: 1;
+      }
+
+      .alert-close:focus {
+        outline: none;
+        opacity: 1;
+      }
+
+      .form-group label {
+        font-weight: 600;
+        color: #5a5c69;
+      }
+
+      .card {
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+      }
+
+      #onboard_btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      /* Location selector styles */
+      .location-selector-wrapper {
+        position: relative;
+      }
+
+      .location-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1050;
+        background: #fff;
+        border: 1px solid #d1d3e2;
+        border-top: none;
+        border-radius: 0 0 6px 6px;
+        max-height: 300px;
+        overflow-y: auto;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+      }
+
+      .dropdown-content {
+        padding: 0;
+      }
+
+      .location-dropdown-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #f3f3f4;
+        transition: background-color 0.15s ease-in-out;
+        line-height: 1.4;
+        word-wrap: break-word;
+      }
+
+      .location-dropdown-item:hover {
+        background-color: #f8f9fc;
+      }
+
+      .location-dropdown-item:last-child {
+        border-bottom: none;
+        border-radius: 0 0 6px 6px;
+      }
+
+      .location-dropdown-item.selected {
+        background-color: #4e73df;
+        color: white;
+      }
+
+      .location-dropdown-item.no-results {
+        color: #858796;
+        font-style: italic;
+        cursor: default;
+      }
+
+      .location-dropdown-item.no-results:hover {
+        background-color: transparent;
+      }
+
+      #location_search.has-selection {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+      }
+    </style>
+
+    <!-- JavaScript for Onboard Device functionality -->
+    <script>
+      class OnboardDevice {
+        constructor() {
+          this.init();
+        }
+
+        init() {
+          // Check if required dependencies are available
+          if (!window.CockpitConfig) {
+            console.error("CockpitConfig not available - cannot initialize");
+            this.showError(
+              "Configuration not loaded. Please refresh the page.",
+            );
+            return;
+          }
+
+          if (!window.authManager) {
+            console.error("authManager not available - cannot initialize");
+            this.showError(
+              "Authentication manager not loaded. Please refresh the page.",
+            );
+            return;
+          }
+
+          console.log("Dependencies available, initializing OnboardDevice...");
+
+          // Initialize event listeners
+          document
+            .getElementById("ip_address")
+            .addEventListener("input", () => {
+              this.validateIPAddress();
+              this.updateOnboardButton();
+            });
+          document.getElementById("ip_address").addEventListener("blur", () => {
+            this.validateIPAddress();
+            this.updateOnboardButton();
+          });
+          document
+            .getElementById("onboard_form")
+            .addEventListener("change", () => this.updateOnboardButton());
+          document
+            .getElementById("onboard_btn")
+            .addEventListener("click", () => this.handleOnboard());
+          document
+            .getElementById("validate_ip_btn")
+            .addEventListener("click", () => this.checkIPInNautobot());
+
+          // Device search functionality
+          document
+            .getElementById("device_search_btn")
+            .addEventListener("click", () => this.searchDeviceInNautobot());
+          document
+            .getElementById("device_search_input")
+            .addEventListener("keypress", (e) => {
+              if (e.key === "Enter") {
+                this.searchDeviceInNautobot();
+              }
+            });
+
+          // DEBUG: Set auth token for testing if not present
+          if (!localStorage.getItem("auth_token")) {
+            console.log("Getting fresh debug auth token...");
+
+            fetch("/auth/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ username: "admin", password: "admin" }),
+            })
+              .then((response) => {
+                if (response.ok) {
+                  return response.json();
+                } else {
+                  throw new Error("Failed to get debug auth token");
+                }
+              })
+              .then((authData) => {
+                localStorage.setItem("auth_token", authData.access_token);
+                localStorage.setItem(
+                  "user_info",
+                  JSON.stringify(authData.user),
+                );
+                localStorage.setItem(
+                  "token_expiry",
+                  Date.now() + authData.expires_in * 1000,
+                );
+                console.log("Debug auth token set successfully");
+                // Load dropdown data after setting token
+                this.loadDropdownData();
+              })
+              .catch((error) => {
+                console.error("Error getting debug auth token:", error);
+                this.showError(
+                  "Authentication failed. Please log in properly.",
+                );
+                return;
+              });
+          } else {
+            // Load dropdown data if token already exists
+            this.loadDropdownData();
+          }
+
+          // Initial validation
+          this.validateIPAddress();
+          this.updateOnboardButton();
+        }
+
+        validateIPAddress() {
+          const ipInput = document.getElementById("ip_address");
+          const ipError = document.getElementById("ip_error");
+          const ipSuccess = document.getElementById("ip_success");
+
+          const ipValue = ipInput.value.trim();
+          const ipRegex =
+            /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+
+          console.log("Validating IP:", ipValue);
+
+          if (!ipValue) {
+            console.log("No IP value provided");
+            ipInput.classList.remove("is-valid", "is-invalid");
+            ipError.style.display = "none";
+            ipSuccess.style.display = "none";
+            return false;
+          }
+
+          // Split by comma and validate each IP address
+          const ipAddresses = ipValue
+            .split(",")
+            .map((ip) => ip.trim())
+            .filter((ip) => ip.length > 0);
+
+          if (ipAddresses.length === 0) {
+            console.log("No valid IP addresses found");
+            ipInput.classList.remove("is-valid");
+            ipInput.classList.add("is-invalid");
+            ipError.style.display = "block";
+            ipSuccess.style.display = "none";
+            return false;
+          }
+
+          // Validate each IP address
+          const allValid = ipAddresses.every((ip) => ipRegex.test(ip));
+
+          if (allValid) {
+            console.log("All IP addresses validation passed");
+            ipInput.classList.remove("is-invalid");
+            ipInput.classList.add("is-valid");
+            ipError.style.display = "none";
+            ipSuccess.style.display = "block";
+            return true;
+          } else {
+            console.log("IP validation failed for one or more addresses");
+            ipInput.classList.remove("is-valid");
+            ipInput.classList.add("is-invalid");
+            ipError.style.display = "block";
+            ipSuccess.style.display = "none";
+            return false;
+          }
+        }
+
+        updateOnboardButton() {
+          // Prevent recursion with a simple flag
+          if (this._updatingButton) return;
+          this._updatingButton = true;
+
+          const form = document.getElementById("onboard_form");
+          const onboardBtn = document.getElementById("onboard_btn");
+          const ipValid = this.validateIPAddress();
+
+          console.log("Updating onboard button, IP valid:", ipValid);
+
+          if (!ipValid) {
+            onboardBtn.disabled = true;
+            this._updatingButton = false;
+            return;
+          }
+
+          // Check if all required fields are filled
+          const requiredFields = form.querySelectorAll("[required]");
+          let allFilled = true;
+          const emptyFields = [];
+          const fieldDetails = [];
+
+          requiredFields.forEach((field) => {
+            const fieldValue = field.value ? field.value.trim() : "";
+            fieldDetails.push({
+              id: field.id,
+              name: field.name,
+              value: fieldValue,
+              filled: !!fieldValue,
+            });
+
+            if (!fieldValue) {
+              allFilled = false;
+              emptyFields.push(field.id || field.name);
+            }
+          });
+
+          console.log("Required fields check:", {
+            allFilled,
+            emptyFields,
+            totalRequired: requiredFields.length,
+            fieldDetails,
+          });
+
+          onboardBtn.disabled = !allFilled;
+          this._updatingButton = false;
+        }
+
+        async loadDropdownData() {
+          try {
+            const token = localStorage.getItem("auth_token");
+            console.log("Loading dropdown data, token exists:", !!token);
+            console.log("CockpitConfig available:", !!window.CockpitConfig);
+            console.log("authManager available:", !!window.authManager);
+
+            if (!token) {
+              this.showError("Authentication required. Please log in.");
+              return;
+            }
+
+            // Show loading state
+            this.showInfo("Loading configuration options...");
+
+            // Debug: log the endpoints we're trying to call
+            console.log("API endpoints:", {
+              locations: window.CockpitConfig.api.endpoints.nautobot.locations,
+              namespaces:
+                window.CockpitConfig.api.endpoints.nautobot.namespaces,
+              deviceRoles:
+                window.CockpitConfig.api.endpoints.nautobot.deviceRoles,
+              platforms: window.CockpitConfig.api.endpoints.nautobot.platforms,
+              deviceStatuses:
+                window.CockpitConfig.api.endpoints.nautobot.deviceStatuses,
+              interfaceStatuses:
+                window.CockpitConfig.api.endpoints.nautobot.interfaceStatuses,
+              ipAddressStatuses:
+                window.CockpitConfig.api.endpoints.nautobot.ipAddressStatuses,
+              secretGroups:
+                window.CockpitConfig.api.endpoints.nautobot.secretGroups,
+            });
+
+            // Load all dropdown data in parallel - using specific status endpoints
+            console.log("Fetching dropdown data from backend...");
+            const [
+              locations,
+              namespaces,
+              roles,
+              platforms,
+              deviceStatuses,
+              interfaceStatuses,
+              ipAddressStatuses,
+              secretGroups,
+            ] = await Promise.all([
+              this.fetchData(
+                window.CockpitConfig.api.endpoints.nautobot.locations,
+              ),
+              this.fetchData(
+                window.CockpitConfig.api.endpoints.nautobot.namespaces,
+              ),
+              this.fetchData(
+                window.CockpitConfig.api.endpoints.nautobot.deviceRoles,
+              ),
+              this.fetchData(
+                window.CockpitConfig.api.endpoints.nautobot.platforms,
+              ),
+              this.fetchData(
+                window.CockpitConfig.api.endpoints.nautobot.deviceStatuses,
+              ),
+              this.fetchData(
+                window.CockpitConfig.api.endpoints.nautobot.interfaceStatuses,
+              ),
+              this.fetchData(
+                window.CockpitConfig.api.endpoints.nautobot.ipAddressStatuses,
+              ),
+              this.fetchData(
+                window.CockpitConfig.api.endpoints.nautobot.secretGroups,
+              ),
+            ]);
+
+            console.log("Received data:", {
+              locations: locations.length,
+              namespaces: namespaces.length,
+              roles: roles.length,
+              platforms: platforms.length,
+              deviceStatuses: deviceStatuses.length,
+              interfaceStatuses: interfaceStatuses.length,
+              ipAddressStatuses: ipAddressStatuses.length,
+              secretGroups: secretGroups.length,
+            });
+
+            // Populate dropdowns with specific status types
+            this.populateSelect("location", locations);
+            this.populateSelect("namespace", namespaces);
+            this.populateSelect("device_role", roles);
+            this.populateSelect("platform", platforms);
+            this.populateSelect("device_status", deviceStatuses);
+            this.populateSelect("interface_status", interfaceStatuses);
+            this.populateSelect("ip_address_status", ipAddressStatuses);
+            this.populateSelect("secret_group", secretGroups);
+
+            this.hideStatusMessages();
+            console.log("Dropdown data loaded successfully");
+
+            // Update form validation after setting defaults (with small delay to ensure DOM updates)
+            setTimeout(() => {
+              this.updateOnboardButton();
+            }, 100);
+          } catch (error) {
+            console.error("Error loading dropdown data:", error);
+            this.showError(
+              "Failed to load configuration options. Please refresh the page and try again.",
+            );
+          }
+        }
+
+        async fetchData(endpoint) {
+          // Convert full URL to relative path for Vite proxy
+          const relativePath = endpoint.replace(
+            window.CockpitConfig.api.baseUrl,
+            "",
+          );
+          console.log(`Fetching data from: ${relativePath}`);
+
+          try {
+            const data = await window.authManager.apiRequest(relativePath);
+            console.log(
+              `Data received from ${relativePath}:`,
+              data ? `${data.length} items` : "null",
+            );
+            return data;
+          } catch (error) {
+            console.error(`Failed to fetch ${relativePath}:`, error);
+            throw error;
+          }
+        }
+
+        populateSelect(selectId, data) {
+          console.log(
+            `Populating select '${selectId}' with`,
+            data.length,
+            "items",
+          );
+
+          // Special handling for location selector
+          if (selectId === "location") {
+            this.initializeLocationSelector(data);
+            return;
+          }
+
+          const select = document.getElementById(selectId);
+          if (!select) {
+            console.error(`Select element with id '${selectId}' not found`);
+            return;
+          }
+
+          // Special handling for platform select to preserve "detect" option
+          if (selectId === "platform") {
+            const detectOption = select.querySelector('option[value="detect"]');
+
+            // Clear existing options except the detect option
+            select.innerHTML = "";
+            if (detectOption) {
+              select.appendChild(detectOption.cloneNode(true));
+            } else {
+              // Add detect option if it doesn't exist
+              const detectOpt = document.createElement("option");
+              detectOpt.value = "detect";
+              detectOpt.textContent = "Auto-Detect Platform";
+              detectOpt.selected = true;
+              select.appendChild(detectOpt);
+            }
+          } else {
+            const defaultOption = select.querySelector('option[value=""]');
+
+            // Clear existing options except the default
+            select.innerHTML = "";
+            if (defaultOption) {
+              select.appendChild(defaultOption.cloneNode(true));
+            } else {
+              // Add default option if it doesn't exist
+              const defaultOpt = document.createElement("option");
+              defaultOpt.value = "";
+              defaultOpt.textContent = `Select ${selectId.replace("_", " ")}...`;
+              select.appendChild(defaultOpt);
+            }
+          }
+
+          // Define default values for specific selects
+          const defaultValues = {
+            namespace: "Global",
+            device_role: "network",
+            device_status: "Active",
+            interface_status: "Active",
+            ip_address_status: "Active",
+          };
+
+          let defaultFound = false;
+
+          // Add new options
+          if (Array.isArray(data)) {
+            data.forEach((item) => {
+              const option = document.createElement("option");
+              // Handle Nautobot GraphQL response format - use UUID as value
+              const optionValue = item.id || item.value || item;
+              const optionText =
+                item.name || item.display || item.label || item;
+
+              option.value = optionValue;
+              option.textContent = optionText;
+
+              // Set as selected if it matches the default value (compare by name)
+              if (
+                defaultValues[selectId] &&
+                optionText === defaultValues[selectId]
+              ) {
+                option.selected = true;
+                defaultFound = true;
+                console.log(
+                  `Set default value for '${selectId}': ${optionText} (UUID: ${optionValue})`,
+                );
+              }
+
+              select.appendChild(option);
+            });
+
+            // If we found a default, trigger the select to update its value
+            if (defaultFound) {
+              select.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+
+            console.log(`Added ${data.length} options to select '${selectId}'`);
+
+            // If default value wasn't found, log a warning
+            if (defaultValues[selectId] && !defaultFound) {
+              console.warn(
+                `Default value '${defaultValues[selectId]}' not found for select '${selectId}'`,
+              );
+            }
+          } else {
+            console.error(
+              `Data for select '${selectId}' is not an array:`,
+              data,
+            );
+          }
+        }
+
+        async checkIPInNautobot() {
+          console.log("=== CHECK IP BUTTON CLICKED ===");
+          console.log("checkIPInNautobot called");
+
+          if (!this.validateIPAddress()) {
+            console.log("IP validation failed");
+            this.showError("Please enter valid IP address(es) first.");
+            return;
+          }
+
+          const ipInput = document.getElementById("ip_address").value.trim();
+          const ipAddresses = ipInput
+            .split(",")
+            .map((ip) => ip.trim())
+            .filter((ip) => ip.length > 0);
+          const firstIP = ipAddresses[0];
+          const validateBtn = document.getElementById("validate_ip_btn");
+
+          console.log("Checking first IP:", firstIP);
+          if (ipAddresses.length > 1) {
+            console.log(
+              "Multiple IPs detected, checking only the first one:",
+              firstIP,
+            );
+          }
+          console.log("Button element:", validateBtn);
+
+          validateBtn.disabled = true;
+          validateBtn.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Checking...';
+
+          try {
+            const token = localStorage.getItem("auth_token");
+            console.log("Validating IP address:", firstIP);
+
+            const requestBody = { ip_address: firstIP };
+            console.log("Request body:", requestBody);
+
+            // Convert full URL to relative path for Vite proxy
+            const relativePath =
+              window.CockpitConfig.api.endpoints.nautobot.checkIp.replace(
+                window.CockpitConfig.api.baseUrl,
+                "",
+              );
+            console.log("Check IP path:", relativePath);
+
+            const data = await window.authManager.apiRequest(relativePath, {
+              method: "POST",
+              body: JSON.stringify(requestBody),
+            });
+
+            console.log("Response data:", data);
+
+            let message = "";
+            if (ipAddresses.length > 1) {
+              message += `Note: Checking only first IP (${firstIP}) of ${ipAddresses.length} addresses. `;
+            }
+
+            if (data.exists) {
+              if (
+                data.is_assigned_to_device &&
+                data.assigned_devices &&
+                data.assigned_devices.length > 0
+              ) {
+                const deviceNames = data.assigned_devices
+                  .map((device) => device.name)
+                  .join(", ");
+                this.showSuccess(
+                  `✅ ${message}IP address '${firstIP}' found in Nautobot and assigned to device(s): ${deviceNames}`,
+                );
+              } else {
+                this.showWarning(
+                  `⚠️ ${message}IP address '${firstIP}' found in Nautobot but not assigned to any device.`,
+                );
+              }
+            } else {
+              this.showInfo(
+                `ℹ️ ${message}IP address '${firstIP}' not found in Nautobot. Ready for onboarding.`,
+              );
+            }
+          } catch (error) {
+            console.error("Network/fetch error:", error);
+            this.showError(
+              `❌ Network error checking IP address: ${error.message}`,
+            );
+          } finally {
+            validateBtn.disabled = false;
+            validateBtn.innerHTML =
+              '<i class="fas fa-search"></i> Check IP in Nautobot';
+            console.log("=== CHECK IP COMPLETED ===");
+          }
+        }
+
+        async searchDeviceInNautobot() {
+          console.log("=== DEVICE SEARCH INITIATED ===");
+
+          const searchInput = document.getElementById("device_search_input");
+          const searchBtn = document.getElementById("device_search_btn");
+          const deviceName = searchInput.value.trim();
+
+          if (!deviceName) {
+            this.showError("Please enter a device name to search.");
+            return;
+          }
+
+          console.log("Searching for device:", deviceName);
+
+          // Show loading state
+          searchBtn.disabled = true;
+          searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+          try {
+            // Use the devices endpoint with name filter
+            const relativePath = "/api/nautobot/devices";
+            const queryParams = new URLSearchParams({
+              filter_type: "name",
+              filter_value: deviceName,
+              limit: 10,
+            });
+
+            const requestUrl = `${relativePath}?${queryParams.toString()}`;
+            console.log("Device search request URL:", requestUrl);
+
+            const data = await window.authManager.apiRequest(requestUrl);
+            console.log("Device search response:", data);
+
+            if (data.devices && data.devices.length > 0) {
+              // Found devices
+              const deviceList = data.devices.map((device) => {
+                const location = device.location
+                  ? ` (${device.location.name})`
+                  : "";
+                const role = device.role ? ` [${device.role.name}]` : "";
+                const ip = device.primary_ip4
+                  ? ` - ${device.primary_ip4.address}`
+                  : "";
+                const status = device.status ? ` (${device.status.name})` : "";
+                return `<strong>${device.name}</strong>${role}${location}${ip}${status}`;
+              });
+
+              if (data.devices.length === 1) {
+                this.showSuccess(
+                  `✅ Device found in Nautobot: ${deviceList[0]}`,
+                );
+              } else {
+                const deviceListHtml = deviceList
+                  .map(
+                    (device) =>
+                      `<li style="margin-bottom: 8px;">${device}</li>`,
+                  )
+                  .join("");
+                this.showSuccess(
+                  `✅ Found ${data.devices.length} device(s) matching "${deviceName}":<ul style="margin: 10px 0; padding-left: 20px; list-style-type: disc;">${deviceListHtml}</ul>`,
+                );
+              }
+            } else {
+              // No devices found
+              this.showInfo(
+                `ℹ️ No devices found in Nautobot with name containing "${deviceName}". This name is available for onboarding.`,
+              );
+            }
+          } catch (error) {
+            console.error("Error searching for device:", error);
+            this.showError(`❌ Error searching for device: ${error.message}`);
+          } finally {
+            searchBtn.disabled = false;
+            searchBtn.innerHTML = "Go!";
+            console.log("=== DEVICE SEARCH COMPLETED ===");
+          }
+        }
+
+        async handleOnboard() {
+          if (!this.validateForm()) return;
+
+          const onboardBtn = document.getElementById("onboard_btn");
+          onboardBtn.disabled = true;
+          onboardBtn.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Onboarding...';
+
+          try {
+            const formData = this.getFormData();
+
+            // Convert full URL to relative path for Vite proxy
+            const relativePath =
+              window.CockpitConfig.api.endpoints.nautobot.onboardDevice.replace(
+                window.CockpitConfig.api.baseUrl,
+                "",
+              );
+            console.log("Onboard path:", relativePath);
+
+            const data = await window.authManager.apiRequest(relativePath, {
+              method: "POST",
+              body: JSON.stringify(formData),
+            });
+
+            this.showSuccess(
+              `✅ Device onboarding initiated successfully! Job ID: ${data.job_id} - ${data.message}`,
+            );
+            this.resetForm();
+          } catch (error) {
+            console.error("Error during onboarding:", error);
+            this.showError(`Error during device onboarding: ${error.message}`);
+          } finally {
+            onboardBtn.disabled = false;
+            onboardBtn.innerHTML =
+              '<i class="fas fa-plus-circle"></i> Onboard Device';
+          }
+        }
+
+        validateForm() {
+          const form = document.getElementById("onboard_form");
+          const requiredFields = form.querySelectorAll("[required]");
+          let isValid = true;
+
+          // Validate IP address
+          if (!this.validateIPAddress()) {
+            isValid = false;
+          }
+
+          // Validate required fields
+          requiredFields.forEach((field) => {
+            if (!field.value.trim()) {
+              field.classList.add("is-invalid");
+              isValid = false;
+
+              // Special handling for location selector
+              if (field.id === "location") {
+                const searchInput = document.getElementById("location_search");
+                searchInput.classList.add("is-invalid");
+                searchInput.classList.remove("is-valid");
+              }
+            } else {
+              field.classList.remove("is-invalid");
+
+              // Special handling for location selector
+              if (field.id === "location") {
+                const searchInput = document.getElementById("location_search");
+                searchInput.classList.remove("is-invalid");
+                searchInput.classList.add("is-valid");
+              }
+            }
+          });
+
+          if (!isValid) {
+            this.showError(
+              "Please fill in all required fields with valid values.",
+            );
+          }
+
+          return isValid;
+        }
+
+        getFormData() {
+          const formData = {
+            ip_address: document.getElementById("ip_address").value.trim(),
+            location_id: document.getElementById("location").value,
+            namespace_id: document.getElementById("namespace").value,
+            role_id: document.getElementById("device_role").value,
+            status_id: document.getElementById("device_status").value,
+            platform_id: document.getElementById("platform").value,
+            secret_groups_id: document.getElementById("secret_group").value,
+            interface_status_id:
+              document.getElementById("interface_status").value,
+            ip_address_status_id:
+              document.getElementById("ip_address_status").value,
+            port: parseInt(document.getElementById("port").value) || 22,
+            timeout: parseInt(document.getElementById("timeout").value) || 30,
+          };
+
+          console.log("Form data with UUIDs:", formData);
+          return formData;
+        }
+
+        resetForm() {
+          const form = document.getElementById("onboard_form");
+          const ipInput = document.getElementById("ip_address");
+
+          form.reset();
+          ipInput.value = "";
+
+          // Reset location selector
+          const locationSearch = document.getElementById("location_search");
+          const locationHidden = document.getElementById("location");
+          if (locationSearch) {
+            locationSearch.value = "";
+            locationSearch.classList.remove(
+              "has-selection",
+              "is-valid",
+              "is-invalid",
+            );
+          }
+          if (locationHidden) {
+            locationHidden.value = "";
+          }
+          this.hideLocationDropdown();
+
+          // Reset validation states
+          document.querySelectorAll(".is-valid, .is-invalid").forEach((el) => {
+            el.classList.remove("is-valid", "is-invalid");
+          });
+
+          document.getElementById("ip_error").style.display = "none";
+          document.getElementById("ip_success").style.display = "none";
+          document.getElementById("onboard_btn").disabled = true;
+
+          // Reset default values
+          document.getElementById("port").value = "22";
+          document.getElementById("timeout").value = "30";
+
+          // Restore default selections for dropdowns
+          this.restoreDefaultSelections();
+
+          this.hideStatusMessages();
+        }
+
+        restoreDefaultSelections() {
+          // Define default values for specific selects
+          const defaultValues = {
+            namespace: "Global",
+            device_role: "network",
+            device_status: "Active",
+            interface_status: "Active",
+            ip_address_status: "Active",
+            platform: "detect",
+          };
+
+          // Restore default selections
+          Object.keys(defaultValues).forEach((selectId) => {
+            const select = document.getElementById(selectId);
+            if (select) {
+              const defaultValue = defaultValues[selectId];
+
+              // For platform, select by value
+              if (selectId === "platform") {
+                select.value = defaultValue;
+              } else {
+                // For other selects, find option by text content
+                const options = Array.from(select.options);
+                const defaultOption = options.find(
+                  (option) => option.textContent === defaultValue,
+                );
+                if (defaultOption) {
+                  select.value = defaultOption.value;
+                  console.log(
+                    `Restored default value for '${selectId}': ${defaultValue}`,
+                  );
+                } else {
+                  console.warn(
+                    `Default value '${defaultValue}' not found for select '${selectId}'`,
+                  );
+                }
+              }
+            }
+          });
+        }
+
+        showError(message) {
+          this.showMessage(message, "danger");
+        }
+
+        showSuccess(message) {
+          this.showMessage(message, "success");
+        }
+
+        showWarning(message) {
+          this.showMessage(message, "warning");
+        }
+
+        showInfo(message) {
+          this.showMessage(message, "info");
+        }
+
+        showMessage(message, type) {
+          const statusDiv = document.getElementById("status_messages");
+
+          // Clear any existing timeout to prevent auto-hiding new messages
+          if (this.messageTimeout) {
+            clearTimeout(this.messageTimeout);
+            this.messageTimeout = null;
+          }
+
+          // Add close button for success messages
+          const closeButton =
+            type === "success"
+              ? '<button type="button" class="btn-close alert-close" aria-label="Close" onclick="window.onboardDevice.hideStatusMessages()">×</button>'
+              : "";
+
+          statusDiv.innerHTML = `
+            <div class="alert alert-${type}" role="alert">
+              ${message}
+              ${closeButton}
+            </div>
+          `;
+          statusDiv.style.display = "block";
+
+          // Only auto-hide info messages after 5 seconds, keep success messages until manually closed
+          if (type === "info") {
+            this.messageTimeout = setTimeout(
+              () => this.hideStatusMessages(),
+              5000,
+            );
+          }
+        }
+
+        hideStatusMessages() {
+          // Clear any existing timeout
+          if (this.messageTimeout) {
+            clearTimeout(this.messageTimeout);
+            this.messageTimeout = null;
+          }
+
+          const statusDiv = document.getElementById("status_messages");
+          statusDiv.style.display = "none";
+          statusDiv.innerHTML = "";
+        }
+
+        buildLocationHierarchy() {
+          console.log("Building location hierarchy...");
+
+          // Create a map for quick location lookup by ID
+          const locationMap = new Map();
+          this.locationsData.forEach((location) => {
+            locationMap.set(location.id, location);
+          });
+
+          // Build hierarchical path for each location
+          this.locationsData.forEach((location) => {
+            location.hierarchicalPath = this.buildLocationPath(
+              location,
+              locationMap,
+            );
+            location.displayName = location.hierarchicalPath;
+          });
+
+          // Sort locations by their hierarchical path
+          this.locationsData.sort((a, b) => {
+            return a.hierarchicalPath.localeCompare(b.hierarchicalPath);
+          });
+
+          console.log(
+            "Location hierarchy built and sorted:",
+            this.locationsData.map((l) => l.hierarchicalPath),
+          );
+        }
+
+        buildLocationPath(location, locationMap) {
+          const path = [];
+          let current = location;
+
+          // Traverse up the hierarchy to build the full path
+          while (current) {
+            path.unshift(current.name); // Add to beginning of array
+
+            // Move to parent if it exists
+            if (current.parent && current.parent.id) {
+              current = locationMap.get(current.parent.id);
+
+              // Prevent infinite loops in case of circular references
+              if (path.includes(current?.name)) {
+                console.warn(
+                  "Circular reference detected in location hierarchy for:",
+                  location.name,
+                );
+                break;
+              }
+            } else {
+              current = null; // No parent, we've reached the root
+            }
+          }
+
+          // Join path with arrows, or return just the name if it's a root location
+          return path.length > 1 ? path.join(" → ") : path[0];
+        }
+
+        initializeLocationSelector(locations) {
+          console.log(
+            "Initializing location selector with",
+            locations.length,
+            "locations",
+          );
+
+          // Store locations data and build hierarchical paths
+          this.locationsData = locations;
+          this.buildLocationHierarchy();
+
+          const searchInput = document.getElementById("location_search");
+          const hiddenInput = document.getElementById("location");
+          const dropdown = document.getElementById("location_dropdown");
+
+          // Initialize event listeners
+          searchInput.addEventListener("input", (e) => {
+            this.filterLocations(e.target.value);
+          });
+
+          searchInput.addEventListener("focus", () => {
+            this.showLocationDropdown();
+          });
+
+          // Hide dropdown when clicking outside
+          document.addEventListener("click", (e) => {
+            if (
+              !searchInput.contains(e.target) &&
+              !dropdown.contains(e.target)
+            ) {
+              this.hideLocationDropdown();
+            }
+          });
+
+          // Show all locations initially
+          this.filterLocations("");
+        }
+
+        filterLocations(searchTerm) {
+          const dropdown = document.getElementById("location_dropdown");
+          const dropdownContent = dropdown.querySelector(".dropdown-content");
+
+          if (!this.locationsData) {
+            console.error("No locations data available");
+            return;
+          }
+
+          const searchLower = searchTerm.toLowerCase();
+          const filteredLocations = this.locationsData.filter((location) => {
+            // Search on the full hierarchical path
+            const hierarchicalPath = location.hierarchicalPath.toLowerCase();
+            return hierarchicalPath.includes(searchLower);
+          });
+
+          // Clear existing content
+          dropdownContent.innerHTML = "";
+
+          if (filteredLocations.length === 0) {
+            const noResults = document.createElement("div");
+            noResults.className = "location-dropdown-item no-results";
+            noResults.textContent = "No locations found";
+            dropdownContent.appendChild(noResults);
+          } else {
+            filteredLocations.forEach((location) => {
+              const item = document.createElement("div");
+              item.className = "location-dropdown-item";
+              // Display the hierarchical path
+              item.textContent = location.hierarchicalPath;
+              item.dataset.value = location.id || location.value || location;
+
+              item.addEventListener("click", () => {
+                this.selectLocation(location);
+              });
+
+              dropdownContent.appendChild(item);
+            });
+          }
+
+          // Show dropdown if we have search term or focus
+          if (
+            searchTerm ||
+            document.activeElement ===
+              document.getElementById("location_search")
+          ) {
+            this.showLocationDropdown();
+          }
+        }
+
+        selectLocation(location) {
+          const searchInput = document.getElementById("location_search");
+          const hiddenInput = document.getElementById("location");
+
+          // Use the hierarchical path for display, but store the actual location ID
+          const locationDisplayName = location.hierarchicalPath;
+          const locationValue = location.id || location.value || location;
+
+          searchInput.value = locationDisplayName;
+          searchInput.classList.add("has-selection");
+          hiddenInput.value = locationValue;
+
+          this.hideLocationDropdown();
+
+          // Trigger validation update
+          this.updateOnboardButton();
+
+          console.log(
+            `Selected location: ${locationDisplayName} (${locationValue})`,
+          );
+        }
+
+        showLocationDropdown() {
+          const dropdown = document.getElementById("location_dropdown");
+          dropdown.style.display = "block";
+        }
+
+        hideLocationDropdown() {
+          const dropdown = document.getElementById("location_dropdown");
+          dropdown.style.display = "none";
+        }
+      }
+    </script>
+  </body>
+</html>

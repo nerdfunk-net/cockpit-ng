@@ -1,0 +1,12 @@
+node_modules
+package.json
+package-lock.json
+npm-debug.log
+.git
+.gitignore
+README.md
+.env
+src/
+production/
+vite.config.js
+dist/

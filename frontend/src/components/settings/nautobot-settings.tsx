@@ -1,0 +1,328 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { useApi } from '@/hooks/use-api'
+import { cn } from '@/lib/utils'
+import { Loader2, CheckCircle, XCircle, Server, Settings, RotateCcw } from 'lucide-react'
+
+interface NautobotSettings {
+  url: string
+  token: string
+  timeout: number
+  verify_ssl: boolean
+}
+
+interface ApiResponse {
+  success: boolean
+  data?: NautobotSettings
+  message?: string
+}
+
+type StatusType = 'idle' | 'testing' | 'success' | 'error' | 'saving'
+
+export default function NautobotSettingsForm() {
+  const { apiCall } = useApi()
+  const [settings, setSettings] = useState<NautobotSettings>({
+    url: '',
+    token: '',
+    timeout: 30,
+    verify_ssl: true
+  })
+  
+  const [status, setStatus] = useState<StatusType>('idle')
+  const [message, setMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Load settings on component mount
+  useEffect(() => {
+    loadSettings()
+  }, [])
+
+  const loadSettings = async () => {
+    try {
+      setIsLoading(true)
+      const data: ApiResponse = await apiCall('settings/nautobot')
+      if (data.success && data.data) {
+        setSettings(data.data)
+      }
+    } catch (error) {
+      console.error('Error loading Nautobot settings:', error)
+      showMessage('Failed to load settings', 'error')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const testConnection = async () => {
+    setStatus('testing')
+    setMessage('')
+    
+    try {
+      const data: ApiResponse = await apiCall('settings/test/nautobot', {
+        method: 'POST',
+        body: settings
+      })
+      
+      if (data.success) {
+        setStatus('success')
+        setMessage('Connection successful!')
+      } else {
+        setStatus('error')
+        setMessage(data.message || 'Connection failed')
+      }
+    } catch (error) {
+      setStatus('error')
+      setMessage('Connection failed')
+      console.error('Error testing connection:', error)
+    }
+    
+    // Reset status after 5 seconds
+    setTimeout(() => {
+      setStatus('idle')
+      setMessage('')
+    }, 5000)
+  }
+
+  const saveSettings = async () => {
+    setStatus('saving')
+    setMessage('')
+    
+    try {
+      const data: ApiResponse = await apiCall('settings/nautobot', {
+        method: 'POST',
+        body: settings
+      })
+      
+      if (data.success) {
+        showMessage('Nautobot settings saved successfully!', 'success')
+      } else {
+        showMessage(data.message || 'Failed to save settings', 'error')
+      }
+    } catch (error) {
+      showMessage('Error saving settings', 'error')
+      console.error('Error saving settings:', error)
+    } finally {
+      setStatus('idle')
+    }
+  }
+
+  const resetSettings = () => {
+    setSettings({
+      url: '',
+      token: '',
+      timeout: 30,
+      verify_ssl: true
+    })
+    showMessage('Settings reset to defaults', 'success')
+  }
+
+  const showMessage = (msg: string, type: 'success' | 'error') => {
+    setMessage(msg)
+    setStatus(type === 'success' ? 'success' : 'error')
+    
+    setTimeout(() => {
+      setMessage('')
+      setStatus('idle')
+    }, 5000)
+  }
+
+  const updateSetting = (key: keyof NautobotSettings, value: string | number | boolean) => {
+    setSettings(prev => ({ ...prev, [key]: value }))
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <span className="ml-2 text-gray-600">Loading settings...</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="border-b border-gray-200 pb-4">
+        <div className="flex items-center space-x-3">
+          <div className="bg-blue-100 p-2 rounded-lg">
+            <Server className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Nautobot Settings</h1>
+            <p className="text-gray-600">Configure your Nautobot server connection</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Status Message */}
+      {message && (
+        <div className={cn(
+          "p-4 rounded-lg border flex items-center space-x-2",
+          status === 'success' && "bg-green-50 border-green-200 text-green-800",
+          status === 'error' && "bg-red-50 border-red-200 text-red-800"
+        )}>
+          {status === 'success' && <CheckCircle className="h-5 w-5 text-green-500" />}
+          {status === 'error' && <XCircle className="h-5 w-5 text-red-500" />}
+          <span className="font-medium">{message}</span>
+        </div>
+      )}
+
+      {/* Settings Form */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Settings className="h-5 w-5" />
+            <span>Nautobot Connection Settings</span>
+          </CardTitle>
+          <CardDescription>
+            Configure the connection to your Nautobot instance
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Nautobot URL */}
+            <div className="space-y-2">
+              <Label htmlFor="nautobot-url" className="text-sm font-medium">
+                Nautobot Server URL <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="nautobot-url"
+                type="url"
+                placeholder="https://nautobot.example.com"
+                value={settings.url}
+                onChange={(e) => updateSetting('url', e.target.value)}
+                required
+                className="w-full"
+              />
+              <p className="text-xs text-gray-500">
+                The base URL of your Nautobot instance
+              </p>
+            </div>
+
+            {/* API Token */}
+            <div className="space-y-2">
+              <Label htmlFor="nautobot-token" className="text-sm font-medium">
+                API Token <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="nautobot-token"
+                type="password"
+                placeholder="Enter your Nautobot API token"
+                value={settings.token}
+                onChange={(e) => updateSetting('token', e.target.value)}
+                required
+                className="w-full"
+              />
+              <p className="text-xs text-gray-500">
+                Get your API token from Nautobot: Admin → Users → [Your User] → API Tokens.{' '}
+                <strong>Required permissions:</strong> At minimum 'read' access to dcim models (devices, sites, etc.)
+              </p>
+            </div>
+
+            {/* Connection Timeout */}
+            <div className="space-y-2">
+              <Label htmlFor="nautobot-timeout" className="text-sm font-medium">
+                Connection Timeout (seconds)
+              </Label>
+              <Input
+                id="nautobot-timeout"
+                type="number"
+                min="5"
+                max="300"
+                value={settings.timeout}
+                onChange={(e) => updateSetting('timeout', parseInt(e.target.value) || 30)}
+                className="w-full"
+              />
+              <p className="text-xs text-gray-500">
+                Request timeout in seconds (default: 30)
+              </p>
+            </div>
+
+            {/* SSL Verification */}
+            <div className="space-y-2">
+              <Label htmlFor="nautobot-ssl" className="text-sm font-medium">
+                SSL Verification
+              </Label>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="nautobot-ssl"
+                  checked={settings.verify_ssl}
+                  onCheckedChange={(checked) => updateSetting('verify_ssl', !!checked)}
+                />
+                <Label htmlFor="nautobot-ssl" className="text-sm text-gray-700">
+                  Verify SSL certificates
+                </Label>
+              </div>
+              <p className="text-xs text-gray-500">
+                Uncheck only for development environments
+              </p>
+            </div>
+          </div>
+
+          {/* Test Connection Button */}
+          <div className="pt-4 border-t border-gray-200">
+            <div className="flex items-center space-x-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={testConnection}
+                disabled={status === 'testing' || !settings.url || !settings.token}
+                className="flex items-center space-x-2"
+              >
+                {status === 'testing' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Server className="h-4 w-4" />
+                )}
+                <span>{status === 'testing' ? 'Testing...' : 'Test Connection'}</span>
+              </Button>
+              
+              {/* Connection Status */}
+              {status === 'success' && (
+                <div className="flex items-center space-x-2 text-green-600">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="text-sm font-medium">Connection successful!</span>
+                </div>
+              )}
+              
+              {status === 'error' && message && (
+                <div className="flex items-center space-x-2 text-red-600">
+                  <XCircle className="h-4 w-4" />
+                  <span className="text-sm font-medium">{message}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Action Buttons */}
+      <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={resetSettings}
+          className="flex items-center space-x-2"
+        >
+          <RotateCcw className="h-4 w-4" />
+          <span>Reset to Defaults</span>
+        </Button>
+        
+        <Button
+          type="button"
+          onClick={saveSettings}
+          disabled={status === 'saving' || !settings.url || !settings.token}
+          className="flex items-center space-x-2"
+        >
+          {status === 'saving' && <Loader2 className="h-4 w-4 animate-spin" />}
+          <span>{status === 'saving' ? 'Saving...' : 'Save Nautobot Settings'}</span>
+        </Button>
+      </div>
+    </div>
+  )
+}

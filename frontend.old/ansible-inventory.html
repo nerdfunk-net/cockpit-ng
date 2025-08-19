@@ -1,0 +1,2183 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <!-- Meta, title, CSS, favicons, etc. -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="images/favicon.ico" type="image/ico" />
+
+    <title>Ansible Inventory - Cockpit</title>
+
+    <!-- Vite Entry Point - will bundle all styles -->
+    <script type="module" src="/src/main-minimal.js"></script>
+    <script>
+      // Robust authentication check
+      (function () {
+        console.log("Checking authentication...");
+
+        // Check if we have a valid token
+        const token = localStorage.getItem("auth_token");
+        console.log("Token found:", !!token);
+
+        if (!token) {
+          console.log("No token found, redirecting to login");
+          window.location.href = "/production/login.html";
+          return;
+        }
+
+        console.log("Token found, user authenticated");
+      })();
+    </script>
+    <script src="js/auth.js"></script>
+    <script>
+      // Initialize auth manager when DOM is ready
+      document.addEventListener("DOMContentLoaded", function () {
+        window.authManager = new AuthManager();
+        console.log("AuthManager initialized");
+
+        // Force update display after a short delay to ensure DOM is ready
+        setTimeout(function () {
+          if (window.authManager && window.authManager.user) {
+            window.authManager.updateUserDisplay();
+            console.log("Force updated user display");
+          }
+        }, 500);
+      });
+    </script>
+
+    <!-- Custom styles - EXACT SAME AS SYNC_DEVICES -->
+    <style>
+      /* Add bottom spacing to prevent scrollbar overlap with pagination */
+      .right_col {
+        padding-bottom: 1000px !important; /* Increased from 500px to 1000px for much more space */
+        min-height: 100vh; /* Ensure minimum height */
+      }
+
+      .pagination-container {
+        margin-bottom: 40px; /* Extra margin below pagination */
+      }
+
+      .table-responsive {
+        margin-bottom: 20px; /* Space between table and pagination */
+      }
+
+      /* Ensure panels have proper spacing */
+      .x_panel {
+        margin-bottom: 30px;
+      }
+
+      /* Extra spacing for inventory section to prevent footer overlap */
+      #inventory-section {
+        margin-bottom: 400px !important; /* Increased from 200px to 400px */
+      }
+
+      #inventory-section .x_panel {
+        margin-bottom: 300px !important; /* Increased from 150px to 300px */
+      }
+
+      #inventory-content {
+        margin-bottom: 150px !important; /* Increased from 50px to 150px for much more space */
+        font-family: "Courier New", monospace;
+        font-size: 13px;
+        line-height: 1.4;
+        scrollbar-width: thin; /* For Firefox */
+        scrollbar-color: #888 #f1f1f1; /* For Firefox */
+      }
+
+      /* Ensure the well container has extra spacing too */
+      #inventory-section .well {
+        margin-bottom: 200px !important; /* Add substantial margin to the well container */
+        padding: 20px; /* More padding inside the well */
+      }
+
+      /* Custom scrollbar for webkit browsers */
+      #inventory-content::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+
+      #inventory-content::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+
+      #inventory-content::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+      }
+
+      #inventory-content::-webkit-scrollbar-thumb:hover {
+        background: #555;
+      }
+
+      /* Footer spacing */
+      footer {
+        margin-top: 50px;
+      }
+
+      /* Pagination styling */
+      .pagination {
+        margin-bottom: 0;
+      }
+
+      .pagination .page-link {
+        color: #337ab7;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        padding: 6px 12px;
+      }
+
+      .pagination .page-item.active .page-link {
+        background-color: #337ab7;
+        border-color: #337ab7;
+        color: white;
+      }
+
+      .pagination .page-item.disabled .page-link {
+        color: #999;
+        cursor: not-allowed;
+        background-color: #fff;
+        border-color: #ddd;
+      }
+
+      .pagination .page-link:hover {
+        color: #23527c;
+        background-color: #eee;
+        border-color: #ddd;
+      }
+
+      .dataTables_info {
+        padding-top: 8px;
+        color: #666;
+      }
+
+      /* Location selector styles */
+      .location-selector-wrapper {
+        position: relative;
+      }
+
+      .location-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1050;
+        background: #fff;
+        border: 1px solid #d1d3e2;
+        border-top: none;
+        border-radius: 0 0 6px 6px;
+        max-height: 300px;
+        overflow-y: auto;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+      }
+
+      .location-dropdown .dropdown-content {
+        padding: 0;
+      }
+
+      .location-dropdown-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #f3f3f4;
+        transition: background-color 0.15s ease-in-out;
+        line-height: 1.4;
+        word-wrap: break-word;
+      }
+
+      .location-dropdown-item:hover {
+        background-color: #f8f9fc;
+      }
+
+      .location-dropdown-item:last-child {
+        border-bottom: none;
+        border-radius: 0 0 6px 6px;
+      }
+
+      .location-dropdown-item.selected {
+        background-color: #4e73df;
+        color: white;
+      }
+
+      .location-dropdown-item.no-results {
+        color: #858796;
+        font-style: italic;
+        cursor: default;
+      }
+
+      .location-dropdown-item.no-results:hover {
+        background-color: transparent;
+      }
+
+      #condition-value-location-search.has-selection {
+        background-color: #e8f5e8;
+        border-color: #4e73df;
+      }
+
+      /* Custom Fields Hover Menu Styles */
+      .custom-fields-container {
+        position: relative;
+        display: inline-block;
+      }
+
+      .custom-fields-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        min-width: 250px;
+        max-width: 400px;
+        max-height: 300px;
+        overflow-y: auto;
+        display: none;
+      }
+
+      .custom-fields-menu.show {
+        display: block;
+      }
+
+      .custom-field-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .custom-field-item:last-child {
+        border-bottom: none;
+      }
+
+      .custom-field-item:hover {
+        background-color: #4e73df;
+        color: white;
+      }
+
+      .custom-field-item.no-results {
+        color: #858796;
+        font-style: italic;
+        cursor: default;
+      }
+
+      .custom-field-item.no-results:hover {
+        background-color: transparent;
+        color: #858796;
+      }
+    </style>
+  </head>
+
+  <body class="nav-md">
+    <div class="container body">
+      <div class="main_container">
+        <div class="col-md-3 left_col">
+          <div class="left_col scroll-view">
+            <div class="navbar nav_title" style="border: 0">
+              <a href="index.html" class="site_title"
+                ><i class="fas fa-paw"></i> <span>Cockpit!</span></a
+              >
+            </div>
+
+            <div class="clearfix"></div>
+
+            <!-- menu profile quick info -->
+            <div class="profile clearfix">
+              <div class="profile_pic"></div>
+              <div class="profile_info">
+                <span id="welcome-message">Welcome,</span>
+                <h2 id="sidebar-username">Loading...</h2>
+              </div>
+            </div>
+            <!-- /menu profile quick info -->
+
+            <br />
+
+            <!-- sidebar menu -->
+            <div
+              id="sidebar-menu"
+              class="main_menu_side hidden-print main_menu"
+            >
+              <div class="menu_section">
+                <h3>General</h3>
+                <ul class="nav side-menu">
+                  <li>
+                    <a href="index.html"><i class="fas fa-home"></i> Home</a>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-rocket"></i> Onboarding
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="onboard-device.html"
+                          ><i class="fas fa-plus-circle"></i> Onboard Device</a
+                        >
+                      </li>
+                      <li>
+                        <a href="sync_devices.html"
+                          ><i class="fas fa-sync"></i> Sync Devices</a
+                        >
+                      </li>
+                      <li>
+                        <a href="scan-and-add.html"
+                          ><i class="fas fa-search-plus"></i> Scan & Add</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-cogs"></i> Configs
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="backup.html"
+                          ><i class="fas fa-save"></i> Backup</a
+                        >
+                      </li>
+                      <li>
+                        <a href="compare.html"
+                          ><i class="fas fa-exchange-alt"></i> Compare</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-cogs"></i> Ansible
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="ansible-inventory.html" class="current-page"
+                          ><i class="fas fa-list"></i> Inventory</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-wrench"></i> Settings
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="settings-nautobot.html"
+                          ><i class="fas fa-server"></i> Nautobot</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-templates.html"
+                          ><i class="fas fa-file-code"></i> Templates</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-git.html"
+                          ><i class="fab fa-git-alt"></i> Git Management</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-cache.html"
+                          ><i class="fas fa-bolt"></i> Cache</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-credentials.html"
+                          ><i class="fas fa-key"></i> Credentials</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <!-- /sidebar menu -->
+
+            <!-- /menu footer buttons -->
+            <div class="sidebar-footer hidden-small">
+              <a
+                href="settings-nautobot.html"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="Settings"
+              >
+                <span class="fas fa-cog" aria-hidden="true"></span>
+              </a>
+              <a
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="FullScreen"
+              >
+                <span class="fas fa-expand" aria-hidden="true"></span>
+              </a>
+              <a data-bs-toggle="tooltip" data-bs-placement="top" title="Lock">
+                <span class="fas fa-eye-slash" aria-hidden="true"></span>
+              </a>
+              <a
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="Logout"
+                href="login.html"
+              >
+                <span class="fas fa-power-off" aria-hidden="true"></span>
+              </a>
+            </div>
+            <!-- /menu footer buttons -->
+          </div>
+        </div>
+
+        <!-- top navigation -->
+        <div class="top_nav">
+          <div class="nav_menu">
+            <div class="nav toggle">
+              <a id="menu_toggle"><i class="fas fa-bars"></i></a>
+            </div>
+            <nav class="nav navbar-nav">
+              <ul class="navbar-right">
+                <li class="nav-item dropdown open" style="padding-left: 15px">
+                  <a
+                    href="javascript:;"
+                    class="user-profile dropdown-toggle"
+                    aria-haspopup="true"
+                    id="navbarDropdown"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <span id="navbar-username">Loading...</span>
+                  </a>
+                  <div
+                    class="dropdown-menu dropdown-usermenu float-end"
+                    aria-labelledby="navbarDropdown"
+                  >
+                    <a class="dropdown-item" href="javascript:;"> Profile</a>
+                    <a class="dropdown-item" href="settings-nautobot.html">
+                      <span class="badge bg-red float-end">50%</span>
+                      <span>Settings</span>
+                    </a>
+                    <a class="dropdown-item" href="javascript:;">Help</a>
+                    <a class="dropdown-item" href="login.html"
+                      ><i class="fas fa-sign-out-alt float-end"></i> Log Out</a
+                    >
+                  </div>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+        <!-- /top navigation -->
+
+        <!-- page content -->
+        <div class="right_col" role="main">
+          <div class="">
+            <div class="page-title">
+              <div class="title_left">
+                <h3>Ansible Inventory Builder</h3>
+              </div>
+              <div class="title_right">
+                <div class="col-md-5 col-sm-5 col-xs-12 form-group pull-right">
+                  <button id="clear-all" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-eraser"></i> Clear All
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="clearfix"></div>
+
+            <!-- Logical Operations Panel -->
+            <div class="row">
+              <div class="col-md-12 col-sm-12">
+                <div class="x_panel">
+                  <div class="x_title">
+                    <h2><i class="fas fa-filter"></i> Logical Operations</h2>
+                    <div class="clearfix"></div>
+                  </div>
+                  <div class="x_content">
+                    <!-- Add New Condition Section -->
+                    <div class="row" style="margin-bottom: 20px">
+                      <div class="col-md-3">
+                        <label>Field:</label>
+                        <select id="condition-field" class="form-control">
+                          <option value="">Select Field...</option>
+                          <option value="name">Device Name</option>
+                          <option value="location">Location</option>
+                          <option value="role">Role</option>
+                          <option value="tag">Tag</option>
+                          <option value="device_type">Device Type</option>
+                          <option value="manufacturer">Manufacturer</option>
+                          <option value="platform">Platform</option>
+                          <option
+                            value="custom_fields"
+                            class="custom-fields-trigger"
+                          >
+                            Custom fields...
+                          </option>
+                        </select>
+                        <!-- Custom Fields Hover Menu -->
+                        <div
+                          class="custom-fields-container"
+                          id="custom-fields-container"
+                          style="display: none"
+                        >
+                          <div
+                            class="custom-fields-menu"
+                            id="custom-fields-menu"
+                          >
+                            <div class="custom-field-item no-results">
+                              Loading custom fields...
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-2">
+                        <label>Operator:</label>
+                        <select id="condition-operator" class="form-control">
+                          <option value="equals">Equals</option>
+                          <option value="contains">Contains</option>
+                        </select>
+                      </div>
+                      <div class="col-md-4">
+                        <label>Value:</label>
+                        <input
+                          type="text"
+                          id="condition-value"
+                          class="form-control"
+                          placeholder="Enter value..."
+                          style="display: none"
+                        />
+                        <select
+                          id="condition-value-select"
+                          class="form-control"
+                          style="display: none"
+                        >
+                          <option value="">Loading...</option>
+                        </select>
+                        <div
+                          class="location-selector-wrapper"
+                          id="condition-value-location"
+                          style="display: none"
+                        >
+                          <input
+                            type="text"
+                            id="condition-value-location-search"
+                            class="form-control"
+                            placeholder="Search locations..."
+                            autocomplete="off"
+                          />
+                          <input
+                            type="hidden"
+                            id="condition-value-location-hidden"
+                          />
+                          <div
+                            id="condition-value-location-dropdown"
+                            class="location-dropdown"
+                            style="display: none"
+                          >
+                            <div class="dropdown-content">
+                              <!-- Filtered options will be populated here -->
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          id="condition-value-loading"
+                          class="form-control text-muted"
+                          style="display: block"
+                        >
+                          <i class="fas fa-info-circle"></i> Select a field
+                          first
+                        </div>
+                      </div>
+                      <div class="col-md-1">
+                        <label>Logic:</label>
+                        <select id="condition-logic" class="form-control">
+                          <option value="AND">AND</option>
+                          <option value="OR">OR</option>
+                          <option value="AND NOT">& NOT</option>
+                        </select>
+                      </div>
+                      <div class="col-md-2">
+                        <label>&nbsp;</label>
+                        <div>
+                          <button
+                            id="add-condition"
+                            class="btn btn-primary btn-sm"
+                          >
+                            <i class="fas fa-plus"></i> Add Condition
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Current Conditions Display -->
+                    <div id="conditions-display" style="margin-bottom: 20px">
+                      <h4>Current Conditions:</h4>
+                      <div id="conditions-list" class="alert alert-info">
+                        <em
+                          >No conditions added yet. Add conditions above to
+                          build your inventory filter.</em
+                        >
+                      </div>
+                    </div>
+
+                    <!-- Preview Button -->
+                    <div class="row" style="margin-bottom: 20px">
+                      <div class="col-md-12 text-center">
+                        <button
+                          id="preview-btn"
+                          class="btn btn-success btn-lg"
+                          disabled
+                        >
+                          <i class="fas fa-eye"></i> Preview Results
+                        </button>
+                        <span
+                          id="preview-loading"
+                          class="ml-2"
+                          style="display: none"
+                        >
+                          <i class="fas fa-spinner fa-spin"></i> Loading...
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- Status Display Only -->
+                    <div class="row mb-3">
+                      <div class="col-md-12">
+                        <div class="alert alert-info">
+                          <strong id="device-count">0</strong> devices found
+                          <span id="operations-count" class="text-muted"></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Device List Table - EXACT SAME STRUCTURE AS SYNC_DEVICES -->
+                    <div class="table-responsive">
+                      <table class="table bulk_action">
+                        <thead>
+                          <tr class="headings">
+                            <th class="column-title">Name</th>
+                            <th class="column-title">Location</th>
+                            <th class="column-title">Role</th>
+                            <th class="column-title">Device Type</th>
+                            <th class="column-title">Platform</th>
+                            <th class="column-title">IP Address</th>
+                            <th class="column-title">Status</th>
+                            <th class="column-title no-link last">Tags</th>
+                          </tr>
+                        </thead>
+                        <tbody id="device-table-body">
+                          <!-- Loading state -->
+                          <tr>
+                            <td colspan="8" class="text-center">
+                              <i class="fas fa-info-circle"></i> Add conditions
+                              and click "Preview Results" to load devices.
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <!-- Pagination Container - OUTSIDE table-responsive like sync_devices.html -->
+                    <div
+                      id="ansible-pagination"
+                      class="pagination-container"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Template Selection and Final Generation -->
+            <div class="row" id="template-section" style="display: none">
+              <div class="col-md-12 col-sm-12">
+                <div class="x_panel">
+                  <div class="x_title">
+                    <h2><i class="fas fa-file-code"></i> Generate Inventory</h2>
+                    <div class="clearfix"></div>
+                  </div>
+                  <div class="x_content">
+                    <div class="row" style="margin-bottom: 20px">
+                      <div class="col-md-4">
+                        <label>Template Category:</label>
+                        <select id="template-category" class="form-control">
+                          <option value="">Select Category...</option>
+                        </select>
+                      </div>
+                      <div class="col-md-4">
+                        <label>Template Name:</label>
+                        <select
+                          id="template-name"
+                          class="form-control"
+                          disabled
+                        >
+                          <option value="">Select Template...</option>
+                        </select>
+                      </div>
+                      <div class="col-md-4">
+                        <label>&nbsp;</label>
+                        <div>
+                          <button
+                            id="generate-btn"
+                            class="btn btn-primary btn-lg"
+                            disabled
+                          >
+                            <i class="fas fa-cog"></i> Generate Inventory
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Generated Inventory Display -->
+            <div class="row" id="inventory-section" style="display: none">
+              <div class="col-md-12 col-sm-12">
+                <div class="x_panel">
+                  <div class="x_title">
+                    <h2><i class="fas fa-file-alt"></i> Generated Inventory</h2>
+                    <div class="clearfix"></div>
+                  </div>
+                  <div class="x_content">
+                    <div class="row" style="margin-bottom: 15px">
+                      <div class="col-md-6">
+                        <div class="alert alert-success">
+                          <strong id="final-device-count">0</strong> devices in
+                          inventory
+                        </div>
+                      </div>
+                      <div class="col-md-6 text-right">
+                        <button id="download-btn" class="btn btn-success">
+                          <i class="fas fa-download"></i> Download
+                          inventory.yaml
+                        </button>
+                        <button id="copy-btn" class="btn btn-info ml-2">
+                          <i class="fas fa-copy"></i> Copy to Clipboard
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="well">
+                      <pre
+                        id="inventory-content"
+                        style="
+                          min-height: 200px;
+                          max-height: 500px;
+                          overflow-y: auto;
+                          overflow-x: auto;
+                          background: #f8f9fa;
+                          padding: 15px;
+                          border-radius: 5px;
+                          margin-bottom: 50px;
+                          white-space: pre-wrap;
+                          word-wrap: break-word;
+                          border: 1px solid #ddd;
+                        "
+                      ></pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- /page content -->
+      </div>
+    </div>
+
+    <!-- JavaScript for Ansible Inventory App -->
+    <script>
+      class AnsibleInventoryApp {
+        constructor() {
+          this.conditions = [];
+          this.currentResults = [];
+          this.templates = [];
+          this.templateCategories = [];
+          this.currentPage = 1;
+          this.pageSize = 20;
+          this.totalPages = 0;
+          this.init();
+        }
+
+        init() {
+          console.log("Initializing Ansible Inventory App...");
+          this.bindEvents();
+          this.loadTemplateCategories();
+        }
+
+        bindEvents() {
+          // Add condition button
+          document
+            .getElementById("add-condition")
+            .addEventListener("click", () => {
+              this.addCondition();
+            });
+
+          // Preview button
+          document
+            .getElementById("preview-btn")
+            .addEventListener("click", () => {
+              this.previewResults();
+            });
+
+          // Clear all button
+          document.getElementById("clear-all").addEventListener("click", () => {
+            this.clearAll();
+          });
+
+          // Template category change
+          document
+            .getElementById("template-category")
+            .addEventListener("change", (e) => {
+              this.loadTemplatesForCategory(e.target.value);
+            });
+
+          // Generate inventory button
+          document
+            .getElementById("generate-btn")
+            .addEventListener("click", () => {
+              this.generateInventory();
+            });
+
+          // Download button
+          document
+            .getElementById("download-btn")
+            .addEventListener("click", () => {
+              this.downloadInventory();
+            });
+
+          // Copy button
+          document.getElementById("copy-btn").addEventListener("click", () => {
+            this.copyToClipboard();
+          });
+
+          // Template name change - enable generate button
+          document
+            .getElementById("template-name")
+            .addEventListener("change", (e) => {
+              document.getElementById("generate-btn").disabled =
+                !e.target.value;
+            });
+
+          // Field change - update value input type
+          // Field change handler
+          document
+            .getElementById("condition-field")
+            .addEventListener("change", (e) => {
+              this.handleFieldChange(e.target.value);
+            });
+
+          // Operator change handler for location field
+          document
+            .getElementById("condition-operator")
+            .addEventListener("change", (e) => {
+              const field = document.getElementById("condition-field").value;
+              if (field === "location") {
+                this.handleLocationOperatorChange(e.target.value);
+              }
+            });
+
+          // Enter key in value field
+          document
+            .getElementById("condition-value")
+            .addEventListener("keypress", (e) => {
+              if (e.key === "Enter") {
+                this.addCondition();
+              }
+            });
+
+          // Enter key in value select field
+          document
+            .getElementById("condition-value-select")
+            .addEventListener("keypress", (e) => {
+              if (e.key === "Enter") {
+                this.addCondition();
+              }
+            });
+
+          // Enter key in location search field
+          document
+            .getElementById("condition-value-location-search")
+            .addEventListener("keypress", (e) => {
+              if (e.key === "Enter") {
+                this.addCondition();
+              }
+            });
+        }
+
+        updateOperatorOptions(fieldName) {
+          const operatorSelect = document.getElementById("condition-operator");
+          const restrictedFields = [
+            "role",
+            "tag",
+            "device_type",
+            "manufacturer",
+            "platform",
+          ];
+
+          // Check if this is a custom field (starts with cf_)
+          const isCustomField = fieldName && fieldName.startsWith("cf_");
+
+          if (restrictedFields.includes(fieldName)) {
+            // Only allow "equals" for dropdown fields
+            operatorSelect.innerHTML = '<option value="equals">Equals</option>';
+            operatorSelect.disabled = true;
+          } else if (fieldName === "location") {
+            // Location supports both equals and contains
+            operatorSelect.innerHTML = `
+              <option value="equals">Equals</option>
+              <option value="contains">Contains</option>
+            `;
+            operatorSelect.disabled = false;
+          } else if (isCustomField || fieldName === "name") {
+            // Custom fields and name support both equals and contains
+            operatorSelect.innerHTML = `
+              <option value="equals">Equals</option>
+              <option value="contains">Contains</option>
+            `;
+            operatorSelect.disabled = false;
+          } else {
+            // Default: all operators available
+            operatorSelect.innerHTML = `
+              <option value="equals">Equals</option>
+              <option value="contains">Contains</option>
+            `;
+            operatorSelect.disabled = false;
+          }
+        }
+
+        async handleLocationOperatorChange(operator) {
+          const textInput = document.getElementById("condition-value");
+          const selectInput = document.getElementById("condition-value-select");
+          const loadingDiv = document.getElementById("condition-value-loading");
+
+          if (operator === "equals") {
+            // Use hierarchical selector for equals
+            await this.loadFieldValues("location", "select");
+          } else if (operator === "contains") {
+            // Use text input for contains
+            await this.loadFieldValues("location", "text");
+          }
+        }
+
+        async loadFieldValues(fieldName, forceInputType = null) {
+          const textInput = document.getElementById("condition-value");
+          const selectInput = document.getElementById("condition-value-select");
+          const locationSelector = document.getElementById(
+            "condition-value-location",
+          );
+          const loadingDiv = document.getElementById("condition-value-loading");
+
+          // Hide all input types
+          textInput.style.display = "none";
+          selectInput.style.display = "none";
+          locationSelector.style.display = "none";
+          loadingDiv.style.display = "block";
+          loadingDiv.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Loading values...';
+
+          try {
+            console.log("Making API request for field:", fieldName); // Debug log
+
+            // Special handling for location field
+            if (fieldName === "location") {
+              if (forceInputType === "text") {
+                // Use text input for contains operator
+                textInput.placeholder = "Enter location name...";
+                loadingDiv.style.display = "none";
+                textInput.style.display = "block";
+                textInput.focus();
+                return;
+              } else {
+                // Use hierarchical selector for equals operator (default)
+                const response = await window.authManager.apiRequest(
+                  "/api/nautobot/locations",
+                );
+                console.log("Location API response:", response); // Debug log
+
+                // Initialize the hierarchical location selector
+                this.initializeLocationSelector(response);
+
+                loadingDiv.style.display = "none";
+                locationSelector.style.display = "block";
+                document
+                  .getElementById("condition-value-location-search")
+                  .focus();
+                return;
+              }
+            }
+
+            const response = await window.authManager.apiRequest(
+              `/api/ansible-inventory/field-values/${fieldName}`,
+            );
+            console.log("API response:", response); // Debug log
+
+            const shouldUseSelect =
+              forceInputType === "select" ||
+              (forceInputType !== "text" &&
+                response.input_type === "select" &&
+                response.values &&
+                response.values.length > 0);
+
+            if (shouldUseSelect) {
+              // Use select dropdown
+              console.log(
+                "Using select dropdown with",
+                response.values.length,
+                "options",
+              ); // Debug log
+              selectInput.innerHTML =
+                '<option value="">Choose value...</option>';
+              response.values.forEach((item) => {
+                const option = document.createElement("option");
+                option.value = item.value;
+                option.textContent = item.label;
+                selectInput.appendChild(option);
+              });
+
+              loadingDiv.style.display = "none";
+              selectInput.style.display = "block";
+              selectInput.focus();
+            } else {
+              // Use text input
+              console.log("Using text input for field:", fieldName); // Debug log
+              textInput.placeholder = `Enter ${fieldName}...`;
+              loadingDiv.style.display = "none";
+              textInput.style.display = "block";
+              textInput.focus();
+            }
+          } catch (error) {
+            console.error("Error loading field values:", error);
+            // Fallback to text input on error
+            textInput.placeholder = `Enter ${fieldName}...`;
+            loadingDiv.style.display = "none";
+            textInput.style.display = "block";
+          }
+        }
+
+        async handleFieldChange(fieldName) {
+          console.log("handleFieldChange called with:", fieldName); // Debug log
+
+          // Handle custom fields trigger
+          if (fieldName === "custom_fields") {
+            await this.showCustomFieldsMenu();
+            // Reset the select to empty state after showing menu
+            document.getElementById("condition-field").value = "";
+            return;
+          }
+
+          // Update operator options based on field
+          this.updateOperatorOptions(fieldName);
+
+          if (!fieldName) {
+            // No field selected - show default message
+            const loadingDiv = document.getElementById(
+              "condition-value-loading",
+            );
+            const textInput = document.getElementById("condition-value");
+            const selectInput = document.getElementById(
+              "condition-value-select",
+            );
+            const locationSelector = document.getElementById(
+              "condition-value-location",
+            );
+
+            textInput.style.display = "none";
+            selectInput.style.display = "none";
+            locationSelector.style.display = "none";
+            loadingDiv.style.display = "block";
+            loadingDiv.innerHTML =
+              '<i class="fas fa-info-circle"></i> Select a field first';
+            console.log("No field selected"); // Debug log
+            return;
+          }
+
+          // Special handling for location field - always use hierarchical selector for equals
+          if (fieldName === "location") {
+            const operator =
+              document.getElementById("condition-operator").value;
+            if (operator === "equals") {
+              await this.loadFieldValues(fieldName, "select");
+            } else {
+              // For contains operator, use text input
+              await this.loadFieldValues(fieldName, "text");
+            }
+          } else {
+            // Load field values using the new method
+            await this.loadFieldValues(fieldName);
+          }
+        }
+
+        addCondition() {
+          const field = document.getElementById("condition-field").value;
+          const operator = document.getElementById("condition-operator").value;
+
+          // Get value from the active input (text, select, or location selector)
+          const textInput = document.getElementById("condition-value");
+          const selectInput = document.getElementById("condition-value-select");
+          const locationSelector = document.getElementById(
+            "condition-value-location",
+          );
+
+          let value = "";
+
+          if (locationSelector.style.display !== "none") {
+            // Location selector is active
+            value = this.getLocationSelectorValue();
+          } else if (selectInput.style.display !== "none") {
+            // Regular select dropdown is active
+            value = selectInput.value;
+          } else {
+            // Text input is active
+            value = textInput.value.trim();
+          }
+
+          const logic = document.getElementById("condition-logic").value;
+
+          if (!field || !value) {
+            alert("Please select a field and enter a value.");
+            return;
+          }
+
+          const condition = {
+            field: field,
+            operator: operator,
+            value: value,
+            logic: logic,
+          };
+
+          this.conditions.push(condition);
+          this.updateConditionsDisplay();
+          this.clearConditionInputs();
+
+          // Enable preview button
+          document.getElementById("preview-btn").disabled = false;
+        }
+
+        updateConditionsDisplay() {
+          const listElement = document.getElementById("conditions-list");
+
+          if (this.conditions.length === 0) {
+            listElement.innerHTML =
+              "<em>No conditions added yet. Add conditions above to build your inventory filter.</em>";
+            listElement.className = "alert alert-info";
+            return;
+          }
+
+          let html = '<div class="conditions-list">';
+          this.conditions.forEach((condition, index) => {
+            const fieldLabel = this.getFieldLabel(condition.field);
+            const badge = this.getLogicBadge(condition.logic);
+
+            html += `
+              <div class="condition-item" style="display: inline-block; margin: 5px; padding: 8px 12px; background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 20px;">
+                ${index > 0 ? badge + " " : ""}
+                <strong>${fieldLabel}</strong> ${condition.operator} "<span style="color: #0066cc;">${condition.value}</span>"
+                <button class="btn btn-xs btn-outline-danger ml-1" onclick="ansibleApp.removeCondition(${index})" style="border: none; background: none; color: #dc3545;">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            `;
+          });
+          html += "</div>";
+
+          listElement.innerHTML = html;
+          listElement.className = "alert alert-light";
+        }
+
+        getFieldLabel(field) {
+          const labels = {
+            name: "Device Name",
+            location: "Location",
+            role: "Role",
+            tag: "Tag",
+            device_type: "Device Type",
+            manufacturer: "Manufacturer",
+            platform: "Platform",
+          };
+          return labels[field] || field;
+        }
+
+        getLogicBadge(logic) {
+          const colors = {
+            AND: "success",
+            OR: "warning",
+            "AND NOT": "danger",
+          };
+          return `<span class="badge bg-${colors[logic] || "primary"}">${logic}</span>`;
+        }
+
+        removeCondition(index) {
+          this.conditions.splice(index, 1);
+          this.updateConditionsDisplay();
+
+          if (this.conditions.length === 0) {
+            document.getElementById("preview-btn").disabled = true;
+            this.resetTable();
+            document.getElementById("template-section").style.display = "none";
+            document.getElementById("inventory-section").style.display = "none";
+          }
+        }
+
+        clearConditionInputs() {
+          document.getElementById("condition-field").value = "";
+          document.getElementById("condition-value").value = "";
+          document.getElementById("condition-value-select").value = "";
+          document.getElementById("condition-logic").value = "AND";
+
+          // Clear location selector
+          this.clearLocationSelector();
+
+          // Reset operators to default
+          const operatorSelect = document.getElementById("condition-operator");
+          operatorSelect.innerHTML = `
+            <option value="equals">Equals</option>
+            <option value="contains">Contains</option>
+          `;
+          operatorSelect.value = "equals";
+          operatorSelect.disabled = false;
+
+          // Reset to loading display
+          const textInput = document.getElementById("condition-value");
+          const selectInput = document.getElementById("condition-value-select");
+          const locationSelector = document.getElementById(
+            "condition-value-location",
+          );
+          const loadingDiv = document.getElementById("condition-value-loading");
+          textInput.style.display = "none";
+          selectInput.style.display = "none";
+          locationSelector.style.display = "none";
+          loadingDiv.style.display = "block";
+          loadingDiv.innerHTML =
+            '<i class="fas fa-info-circle"></i> Select a field first';
+        }
+
+        clearAll() {
+          this.conditions = [];
+          this.currentResults = [];
+          this.currentPage = 1;
+          this.updateConditionsDisplay();
+          this.clearConditionInputs();
+          this.resetTable();
+
+          document.getElementById("preview-btn").disabled = true;
+          document.getElementById("template-section").style.display = "none";
+          document.getElementById("inventory-section").style.display = "none";
+        }
+
+        resetTable() {
+          const tbody = document.getElementById("device-table-body");
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8" class="text-center">
+                <i class="fas fa-info-circle"></i> Add conditions and click "Preview Results" to load devices.
+              </td>
+            </tr>
+          `;
+          document.getElementById("device-count").textContent = "0";
+          document.getElementById("operations-count").textContent = "";
+          document.getElementById("ansible-pagination").innerHTML = "";
+        }
+
+        async previewResults() {
+          if (this.conditions.length === 0) {
+            alert("Please add at least one condition.");
+            return;
+          }
+
+          const loadingElement = document.getElementById("preview-loading");
+          const previewBtn = document.getElementById("preview-btn");
+
+          try {
+            loadingElement.style.display = "inline";
+            previewBtn.disabled = true;
+
+            // Convert conditions to API format
+            const operations = this.buildOperationsFromConditions();
+            console.log(
+              "Sending operations to API:",
+              JSON.stringify(operations, null, 2),
+            );
+
+            const response = await window.authManager.apiRequest(
+              "/api/ansible-inventory/preview",
+              {
+                method: "POST",
+                body: JSON.stringify({ operations: operations }),
+              },
+            );
+
+            console.log("Received API response:", response);
+
+            if (response && response.devices) {
+              this.currentResults = response.devices;
+              this.currentPage = 1; // Reset to first page
+              console.log(
+                "Setting currentResults to:",
+                this.currentResults.length,
+                "devices",
+              );
+              this.displayResults(response);
+
+              // Show template section
+              document.getElementById("template-section").style.display =
+                "block";
+              console.log("Results loaded successfully");
+            } else {
+              console.error("Invalid response format. Response:", response);
+              throw new Error("Invalid response format");
+            }
+          } catch (error) {
+            console.error("Preview error:", error);
+            alert("Error previewing results: " + error.message);
+          } finally {
+            loadingElement.style.display = "none";
+            previewBtn.disabled = false;
+          }
+        }
+
+        buildOperationsFromConditions() {
+          // Enhanced implementation to support OR, AND, and AND NOT operations
+          if (this.conditions.length === 0) return [];
+
+          if (this.conditions.length === 1) {
+            // Single condition - simple case
+            return [
+              {
+                operation_type: "AND",
+                conditions: [
+                  {
+                    field: this.conditions[0].field,
+                    operator: this.conditions[0].operator,
+                    value: this.conditions[0].value,
+                  },
+                ],
+                nested_operations: [],
+              },
+            ];
+          }
+
+          // Multiple conditions - group by logic operator
+          const orConditions = [];
+          const andConditions = [];
+          const andNotConditions = [];
+
+          this.conditions.forEach((condition, index) => {
+            const conditionData = {
+              field: condition.field,
+              operator: condition.operator,
+              value: condition.value,
+            };
+
+            if (index === 0) {
+              // First condition defaults to AND group
+              andConditions.push(conditionData);
+            } else {
+              // Subsequent conditions use their logic operator
+              switch (condition.logic) {
+                case "OR":
+                  orConditions.push(conditionData);
+                  break;
+                case "AND NOT":
+                  andNotConditions.push(conditionData);
+                  break;
+                case "AND":
+                default:
+                  andConditions.push(conditionData);
+                  break;
+              }
+            }
+          });
+
+          console.log("Grouped conditions:", {
+            andConditions,
+            orConditions,
+            andNotConditions,
+          });
+
+          // Build operations based on what we have
+          const operations = [];
+
+          // If we have OR conditions, create an OR operation with all non-NOT conditions
+          if (orConditions.length > 0) {
+            const allOrConditions = [...andConditions, ...orConditions];
+            operations.push({
+              operation_type: "OR",
+              conditions: allOrConditions,
+              nested_operations: [],
+            });
+          } else if (andConditions.length > 0) {
+            // Create AND operation for regular AND conditions
+            operations.push({
+              operation_type: "AND",
+              conditions: andConditions,
+              nested_operations: [],
+            });
+          }
+
+          // Add AND NOT conditions as separate NOT operations
+          andNotConditions.forEach((condition) => {
+            operations.push({
+              operation_type: "NOT",
+              conditions: [condition],
+              nested_operations: [],
+            });
+          });
+
+          return operations;
+        }
+
+        displayResults(response) {
+          console.log("displayResults called with:", response);
+
+          document.getElementById("device-count").textContent =
+            response.total_count;
+          document.getElementById("operations-count").textContent =
+            `(${response.operations_executed} queries executed)`;
+
+          // Calculate pagination
+          this.totalPages = Math.ceil(
+            this.currentResults.length / this.pageSize,
+          );
+
+          // Display current page
+          this.displayCurrentPage();
+
+          // Show pagination for any results
+          this.updatePaginationControls();
+        }
+
+        displayCurrentPage() {
+          const tbody = document.getElementById("device-table-body");
+          tbody.innerHTML = "";
+
+          const startIndex = (this.currentPage - 1) * this.pageSize;
+          const endIndex = Math.min(
+            startIndex + this.pageSize,
+            this.currentResults.length,
+          );
+
+          console.log(
+            `Displaying page ${this.currentPage}: devices ${startIndex + 1} to ${endIndex} of ${this.currentResults.length}`,
+          );
+
+          const pageDevices = this.currentResults.slice(startIndex, endIndex);
+
+          pageDevices.forEach((device, index) => {
+            console.log(`Processing device ${startIndex + index}:`, device);
+            const row = tbody.insertRow();
+            row.innerHTML = `
+              <td><strong>${device.name?.name || device.name || "N/A"}</strong></td>
+              <td>${device.location?.name || device.location || "N/A"}</td>
+              <td>${device.role?.name || device.role || "N/A"}</td>
+              <td>${device.device_type?.model || device.device_type || "N/A"}</td>
+              <td>${device.platform?.name || device.platform || "N/A"}</td>
+              <td>${device.primary_ip4?.address || device.primary_ip4 || "N/A"}</td>
+              <td><span class="badge bg-${this.getStatusColor(device.status?.name || device.status)}">${device.status?.name || device.status || "N/A"}</span></td>
+              <td>${device.tags ? device.tags.join(", ") : "None"}</td>
+            `;
+          });
+
+          console.log(
+            "Finished populating table. Table rows count:",
+            tbody.rows.length,
+          );
+        }
+
+        updatePaginationControls() {
+          const paginationContainer =
+            document.getElementById("ansible-pagination");
+
+          // Always show pagination if we have results
+          if (this.currentResults.length === 0) {
+            paginationContainer.innerHTML = "";
+            return;
+          }
+
+          let paginationHTML = `
+            <div class="row">
+              <div class="col-md-6">
+                <div class="dataTables_info">
+                  Showing ${(this.currentPage - 1) * this.pageSize + 1} to ${Math.min(this.currentPage * this.pageSize, this.currentResults.length)} of ${this.currentResults.length} entries
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 15px;">
+                  <div class="form-inline">
+                    <label class="mr-2">Show:</label>
+                    <select id="page-size" class="form-control form-control-sm" style="width: auto;">
+                      <option value="10" ${this.pageSize === 10 ? "selected" : ""}>10</option>
+                      <option value="20" ${this.pageSize === 20 ? "selected" : ""}>20</option>
+                      <option value="50" ${this.pageSize === 50 ? "selected" : ""}>50</option>
+                      <option value="100" ${this.pageSize === 100 ? "selected" : ""}>100</option>
+                      <option value="200" ${this.pageSize === 200 ? "selected" : ""}>200</option>
+                      <option value="500" ${this.pageSize === 500 ? "selected" : ""}>500</option>
+                    </select>
+                    <span class="ml-2">entries</span>
+                  </div>
+                  <div class="dataTables_paginate paging_simple_numbers">
+                    <ul class="pagination pagination-sm">
+          `;
+
+          // Previous button
+          paginationHTML += `
+            <li class="paginate_button page-item previous ${this.currentPage === 1 ? "disabled" : ""}">
+              <a href="#" class="page-link" data-page="${this.currentPage - 1}">Previous</a>
+            </li>
+          `;
+
+          // Page numbers
+          const startPage = Math.max(1, this.currentPage - 2);
+          const endPage = Math.min(this.totalPages, this.currentPage + 2);
+
+          for (let i = startPage; i <= endPage; i++) {
+            paginationHTML += `
+              <li class="paginate_button page-item ${i === this.currentPage ? "active" : ""}">
+                <a href="#" class="page-link" data-page="${i}">${i}</a>
+              </li>
+            `;
+          }
+
+          // Next button
+          paginationHTML += `
+            <li class="paginate_button page-item next ${this.currentPage === this.totalPages ? "disabled" : ""}">
+              <a href="#" class="page-link" data-page="${this.currentPage + 1}">Next</a>
+            </li>
+          `;
+
+          paginationHTML += `
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+
+          paginationContainer.innerHTML = paginationHTML;
+
+          // Add click event listeners for pagination
+          paginationContainer.addEventListener("click", (e) => {
+            e.preventDefault();
+            const link = e.target.closest("a[data-page]");
+            if (link) {
+              const page = parseInt(link.getAttribute("data-page"));
+              if (
+                page !== this.currentPage &&
+                page >= 1 &&
+                page <= this.totalPages
+              ) {
+                this.currentPage = page;
+                this.displayCurrentPage();
+                this.updatePaginationControls();
+              }
+            }
+          });
+
+          // Add change event listener for page size selector
+          const pageSizeSelect =
+            paginationContainer.querySelector("#page-size");
+          if (pageSizeSelect) {
+            pageSizeSelect.addEventListener("change", (e) => {
+              this.pageSize = parseInt(e.target.value);
+              this.currentPage = 1;
+              this.totalPages = Math.ceil(
+                this.currentResults.length / this.pageSize,
+              );
+              this.displayCurrentPage();
+              this.updatePaginationControls();
+            });
+          }
+        }
+
+        getStatusColor(status) {
+          if (!status) return "secondary";
+          switch (status.toLowerCase()) {
+            case "active":
+              return "success";
+            case "planned":
+              return "info";
+            case "staged":
+              return "warning";
+            case "failed":
+              return "danger";
+            case "offline":
+              return "secondary";
+            default:
+              return "primary";
+          }
+        }
+
+        async loadTemplateCategories() {
+          try {
+            const response = await window.authManager.apiRequest(
+              "/api/templates/categories",
+            );
+            if (response && Array.isArray(response)) {
+              this.templateCategories = response;
+              const select = document.getElementById("template-category");
+              select.innerHTML = '<option value="">Select Category...</option>';
+
+              response.forEach((category) => {
+                const option = document.createElement("option");
+                option.value = category;
+                option.textContent = category;
+                select.appendChild(option);
+              });
+            }
+          } catch (error) {
+            console.error("Error loading template categories:", error);
+          }
+        }
+
+        async loadTemplatesForCategory(category) {
+          const templateSelect = document.getElementById("template-name");
+          templateSelect.innerHTML =
+            '<option value="">Select Template...</option>';
+          templateSelect.disabled = true;
+          document.getElementById("generate-btn").disabled = true;
+
+          if (!category) return;
+
+          try {
+            const response = await window.authManager.apiRequest(
+              `/api/templates?category=${encodeURIComponent(category)}`,
+            );
+            if (response && response.templates) {
+              response.templates.forEach((template) => {
+                const option = document.createElement("option");
+                option.value = template.name;
+                option.textContent = template.name;
+                templateSelect.appendChild(option);
+              });
+              templateSelect.disabled = false;
+            }
+          } catch (error) {
+            console.error("Error loading templates for category:", error);
+            alert("Error loading templates: " + error.message);
+          }
+        }
+
+        async generateInventory() {
+          const templateName = document.getElementById("template-name").value;
+          const templateCategory =
+            document.getElementById("template-category").value;
+
+          if (!templateName || !templateCategory) {
+            alert("Please select both template category and name.");
+            return;
+          }
+
+          if (this.conditions.length === 0) {
+            alert("Please add conditions and preview results first.");
+            return;
+          }
+
+          try {
+            const operations = this.buildOperationsFromConditions();
+            const response = await window.authManager.apiRequest(
+              "/api/ansible-inventory/generate",
+              {
+                method: "POST",
+                body: JSON.stringify({
+                  operations: operations,
+                  template_name: templateName,
+                  template_category: templateCategory,
+                }),
+              },
+            );
+
+            if (response && response.inventory_content) {
+              document.getElementById("inventory-content").textContent =
+                response.inventory_content;
+              document.getElementById("final-device-count").textContent =
+                response.device_count;
+              document.getElementById("inventory-section").style.display =
+                "block";
+
+              // Scroll to inventory section
+              document
+                .getElementById("inventory-section")
+                .scrollIntoView({ behavior: "smooth" });
+            } else {
+              throw new Error("Invalid response format");
+            }
+          } catch (error) {
+            console.error("Generate inventory error:", error);
+            alert("Error generating inventory: " + error.message);
+          }
+        }
+
+        async downloadInventory() {
+          const templateName = document.getElementById("template-name").value;
+          const templateCategory =
+            document.getElementById("template-category").value;
+
+          if (!templateName || !templateCategory) {
+            alert("Please select both template category and name.");
+            return;
+          }
+
+          try {
+            const operations = this.buildOperationsFromConditions();
+
+            // Use fetch for file download
+            const response = await fetch("/api/ansible-inventory/download", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+              },
+              body: JSON.stringify({
+                operations: operations,
+                template_name: templateName,
+                template_category: templateCategory,
+              }),
+            });
+
+            if (response.ok) {
+              const blob = await response.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "inventory.yaml";
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(url);
+              document.body.removeChild(a);
+            } else {
+              throw new Error("Download failed");
+            }
+          } catch (error) {
+            console.error("Download error:", error);
+            alert("Error downloading inventory: " + error.message);
+          }
+        }
+
+        copyToClipboard() {
+          const content =
+            document.getElementById("inventory-content").textContent;
+          if (navigator.clipboard) {
+            navigator.clipboard
+              .writeText(content)
+              .then(() => {
+                alert("Inventory copied to clipboard!");
+              })
+              .catch((err) => {
+                console.error("Copy failed:", err);
+                this.fallbackCopyToClipboard(content);
+              });
+          } else {
+            this.fallbackCopyToClipboard(content);
+          }
+        }
+
+        fallbackCopyToClipboard(text) {
+          const textArea = document.createElement("textarea");
+          textArea.value = text;
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          try {
+            document.execCommand("copy");
+            alert("Inventory copied to clipboard!");
+          } catch (err) {
+            console.error("Fallback copy failed:", err);
+            alert("Failed to copy to clipboard. Please copy manually.");
+          }
+          document.body.removeChild(textArea);
+        }
+
+        // Location hierarchy methods
+        buildLocationHierarchy() {
+          console.log("Building location hierarchy...");
+
+          // Create a map for quick location lookup by ID
+          const locationMap = new Map();
+          this.locationsData.forEach((location) => {
+            locationMap.set(location.id, location);
+          });
+
+          // Build hierarchical path for each location
+          this.locationsData.forEach((location) => {
+            location.hierarchicalPath = this.buildLocationPath(
+              location,
+              locationMap,
+            );
+            location.displayName = location.hierarchicalPath;
+          });
+
+          // Sort locations by their hierarchical path
+          this.locationsData.sort((a, b) => {
+            return a.hierarchicalPath.localeCompare(b.hierarchicalPath);
+          });
+
+          console.log(
+            "Location hierarchy built and sorted:",
+            this.locationsData.map((l) => l.hierarchicalPath),
+          );
+        }
+
+        buildLocationPath(location, locationMap) {
+          const path = [];
+          let current = location;
+
+          // Traverse up the hierarchy to build the full path
+          while (current) {
+            path.unshift(current.name); // Add to beginning of array
+
+            // Move to parent if it exists
+            if (current.parent && current.parent.id) {
+              current = locationMap.get(current.parent.id);
+
+              // Prevent infinite loops in case of circular references
+              if (path.includes(current?.name)) {
+                console.warn(
+                  "Circular reference detected in location hierarchy for:",
+                  location.name,
+                );
+                break;
+              }
+            } else {
+              current = null; // No parent, we've reached the root
+            }
+          }
+
+          // Join path with arrows, or return just the name if it's a root location
+          return path.length > 1 ? path.join(" → ") : path[0];
+        }
+
+        initializeLocationSelector(locations) {
+          console.log(
+            "Initializing location selector with",
+            locations.length,
+            "locations",
+          );
+
+          // Store locations data and build hierarchical paths
+          this.locationsData = locations;
+          this.buildLocationHierarchy();
+
+          const searchInput = document.getElementById(
+            "condition-value-location-search",
+          );
+          const hiddenInput = document.getElementById(
+            "condition-value-location-hidden",
+          );
+          const dropdown = document.getElementById(
+            "condition-value-location-dropdown",
+          );
+
+          // Initialize event listeners
+          searchInput.addEventListener("input", (e) => {
+            this.filterLocations(e.target.value);
+          });
+
+          searchInput.addEventListener("focus", () => {
+            this.showLocationDropdown();
+          });
+
+          // Hide dropdown when clicking outside
+          document.addEventListener("click", (e) => {
+            if (
+              !searchInput.contains(e.target) &&
+              !dropdown.contains(e.target)
+            ) {
+              this.hideLocationDropdown();
+            }
+          });
+
+          // Show all locations initially
+          this.filterLocations("");
+        }
+
+        filterLocations(searchTerm) {
+          const dropdown = document.getElementById(
+            "condition-value-location-dropdown",
+          );
+          const dropdownContent = dropdown.querySelector(".dropdown-content");
+
+          if (!this.locationsData) {
+            console.error("No locations data available");
+            return;
+          }
+
+          const searchLower = searchTerm.toLowerCase();
+          const filteredLocations = this.locationsData.filter((location) => {
+            // Search on the full hierarchical path
+            const hierarchicalPath = location.hierarchicalPath.toLowerCase();
+            return hierarchicalPath.includes(searchLower);
+          });
+
+          // Clear existing content
+          dropdownContent.innerHTML = "";
+
+          if (filteredLocations.length === 0) {
+            const noResults = document.createElement("div");
+            noResults.className = "location-dropdown-item no-results";
+            noResults.textContent = "No locations found";
+            dropdownContent.appendChild(noResults);
+          } else {
+            filteredLocations.forEach((location) => {
+              const item = document.createElement("div");
+              item.className = "location-dropdown-item";
+              // Display the hierarchical path
+              item.textContent = location.hierarchicalPath;
+              item.dataset.value = location.id || location.value || location;
+
+              item.addEventListener("click", () => {
+                this.selectLocation(location);
+              });
+
+              dropdownContent.appendChild(item);
+            });
+          }
+
+          // Show dropdown if we have search term or focus
+          if (
+            searchTerm ||
+            document.activeElement ===
+              document.getElementById("condition-value-location-search")
+          ) {
+            this.showLocationDropdown();
+          }
+        }
+
+        selectLocation(location) {
+          const searchInput = document.getElementById(
+            "condition-value-location-search",
+          );
+          const hiddenInput = document.getElementById(
+            "condition-value-location-hidden",
+          );
+
+          // Use the hierarchical path for display, but store the actual location name for filtering
+          const locationDisplayName = location.hierarchicalPath;
+          const locationValue = location.name; // Use name for filtering, not ID
+
+          searchInput.value = locationDisplayName;
+          searchInput.classList.add("has-selection");
+          hiddenInput.value = locationValue;
+
+          this.hideLocationDropdown();
+
+          console.log(
+            `Selected location: ${locationDisplayName} (value: ${locationValue})`,
+          );
+        }
+
+        showLocationDropdown() {
+          const dropdown = document.getElementById(
+            "condition-value-location-dropdown",
+          );
+          dropdown.style.display = "block";
+        }
+
+        hideLocationDropdown() {
+          const dropdown = document.getElementById(
+            "condition-value-location-dropdown",
+          );
+          dropdown.style.display = "none";
+        }
+
+        getLocationSelectorValue() {
+          const hiddenInput = document.getElementById(
+            "condition-value-location-hidden",
+          );
+          return hiddenInput.value;
+        }
+
+        clearLocationSelector() {
+          const searchInput = document.getElementById(
+            "condition-value-location-search",
+          );
+          const hiddenInput = document.getElementById(
+            "condition-value-location-hidden",
+          );
+
+          searchInput.value = "";
+          searchInput.classList.remove("has-selection");
+          hiddenInput.value = "";
+          this.hideLocationDropdown();
+        }
+
+        async showCustomFieldsMenu() {
+          console.log("showCustomFieldsMenu called");
+
+          try {
+            // Load custom fields from API
+            const response = await window.authManager.apiRequest(
+              "/api/ansible-inventory/custom-fields",
+            );
+            console.log("Custom fields response:", response);
+
+            const menu = document.getElementById("custom-fields-menu");
+            const container = document.getElementById(
+              "custom-fields-container",
+            );
+
+            if (
+              response &&
+              response.custom_fields &&
+              response.custom_fields.length > 0
+            ) {
+              // Clear existing content
+              menu.innerHTML = "";
+
+              // Add each custom field as a menu item
+              response.custom_fields.forEach((cf) => {
+                const item = document.createElement("div");
+                item.className = "custom-field-item";
+                item.textContent = cf.label;
+                item.dataset.value = cf.key; // Use the key (e.g., "net") which will be transformed to cf_net in backend
+                item.dataset.label = cf.label;
+
+                // Add click handler to select the custom field
+                item.addEventListener("click", () => {
+                  this.selectCustomField(cf.key, cf.label);
+                  this.hideCustomFieldsMenu();
+                });
+
+                menu.appendChild(item);
+              });
+            } else {
+              // No custom fields available
+              menu.innerHTML =
+                '<div class="custom-field-item no-results">No custom fields available</div>';
+            }
+
+            // Position and show the menu
+            this.positionCustomFieldsMenu();
+            container.style.display = "block";
+            menu.classList.add("show");
+
+            // Add click outside handler to close menu
+            this.addCustomFieldsMenuCloseHandler();
+          } catch (error) {
+            console.error("Error loading custom fields:", error);
+            const menu = document.getElementById("custom-fields-menu");
+            menu.innerHTML =
+              '<div class="custom-field-item no-results">Error loading custom fields</div>';
+          }
+        }
+
+        selectCustomField(value, label) {
+          console.log("Selected custom field:", value, label);
+
+          // Add cf_ prefix for backend compatibility
+          const cfValue = `cf_${value}`;
+
+          // Set the field select to the custom field value (with cf_ prefix)
+          const fieldSelect = document.getElementById("condition-field");
+
+          // Check if this custom field option already exists
+          let existingOption = fieldSelect.querySelector(
+            `option[value="${cfValue}"]`,
+          );
+          if (!existingOption) {
+            // Add a new option for this custom field
+            existingOption = document.createElement("option");
+            existingOption.value = cfValue;
+            existingOption.textContent = `${label} (Custom)`;
+            existingOption.classList.add("custom-field-option");
+
+            // Insert before the "Custom fields..." option
+            const customFieldsTrigger = fieldSelect.querySelector(
+              'option[value="custom_fields"]',
+            );
+            fieldSelect.insertBefore(existingOption, customFieldsTrigger);
+          }
+
+          // Select the custom field
+          fieldSelect.value = cfValue;
+
+          // Trigger field change to load appropriate input type (should be text for custom fields)
+          this.handleFieldChange(cfValue);
+        }
+
+        positionCustomFieldsMenu() {
+          const fieldSelect = document.getElementById("condition-field");
+          const container = document.getElementById("custom-fields-container");
+          const menu = document.getElementById("custom-fields-menu");
+
+          // Position the container relative to the field select
+          const rect = fieldSelect.getBoundingClientRect();
+          const containerRect =
+            fieldSelect.offsetParent.getBoundingClientRect();
+
+          container.style.position = "absolute";
+          container.style.left = `${rect.left - containerRect.left}px`;
+          container.style.top = `${rect.bottom - containerRect.top}px`;
+          container.style.width = `${rect.width}px`;
+        }
+
+        hideCustomFieldsMenu() {
+          const menu = document.getElementById("custom-fields-menu");
+          const container = document.getElementById("custom-fields-container");
+
+          menu.classList.remove("show");
+          container.style.display = "none";
+
+          // Remove event listeners
+          document.removeEventListener(
+            "click",
+            this._customFieldsMenuClickHandler,
+          );
+        }
+
+        addCustomFieldsMenuCloseHandler() {
+          // Remove existing handler if any
+          if (this._customFieldsMenuClickHandler) {
+            document.removeEventListener(
+              "click",
+              this._customFieldsMenuClickHandler,
+            );
+          }
+
+          // Add new click outside handler
+          this._customFieldsMenuClickHandler = (event) => {
+            const menu = document.getElementById("custom-fields-menu");
+            const container = document.getElementById(
+              "custom-fields-container",
+            );
+            const fieldSelect = document.getElementById("condition-field");
+
+            if (
+              !menu.contains(event.target) &&
+              !container.contains(event.target) &&
+              event.target !== fieldSelect
+            ) {
+              this.hideCustomFieldsMenu();
+            }
+          };
+
+          // Delay adding the event listener to avoid immediate triggering
+          setTimeout(() => {
+            document.addEventListener(
+              "click",
+              this._customFieldsMenuClickHandler,
+            );
+          }, 100);
+        }
+      }
+
+      // Initialize app when DOM is ready
+      document.addEventListener("DOMContentLoaded", function () {
+        // Wait for auth manager to be ready
+        const initApp = () => {
+          if (window.authManager) {
+            window.ansibleApp = new AnsibleInventoryApp();
+          } else {
+            setTimeout(initApp, 100);
+          }
+        };
+        initApp();
+      });
+    </script>
+  </body>
+</html>

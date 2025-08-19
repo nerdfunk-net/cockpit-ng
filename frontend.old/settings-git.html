@@ -1,0 +1,1463 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <!-- Meta, title, CSS, favicons, etc. -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="images/favicon.ico" type="image/ico" />
+
+    <title>Git Management - Cockpit</title>
+
+    <!-- Vite Entry Point - will bundle all styles -->
+    <script type="module" src="/src/main-minimal.js"></script>
+
+    <!-- Configuration -->
+    <script src="js/config.js"></script>
+    <!-- Container configuration (if in container mode) -->
+    <script>
+      // Load container config if in container environment
+      // But NOT if we're running on Vite dev server ports (development mode)
+      const currentPort = window.location.port;
+      const isDevelopment = currentPort === "3000" || currentPort === "3001";
+      const isNonLocalhost =
+        window.location.hostname !== "localhost" &&
+        window.location.hostname !== "127.0.0.1";
+
+      if (isNonLocalhost && !isDevelopment) {
+        const script = document.createElement("script");
+        script.src = "js/config-container.js";
+        document.head.appendChild(script);
+      }
+    </script>
+    <!-- API Manager -->
+    <script src="js/api-manager.js"></script>
+    <script>
+      // Robust authentication check
+      (function () {
+        console.log("Checking authentication...");
+
+        // Check if we have a valid token
+        const token = localStorage.getItem("auth_token");
+        console.log("Token found:", !!token);
+
+        if (!token) {
+          console.log("No token found, redirecting to login");
+          // Use absolute path to ensure proper redirect
+          window.location.href = "/login.html";
+          return;
+        }
+
+        console.log("Token found, user authenticated");
+      })();
+    </script>
+    <script src="js/auth.js"></script>
+  </head>
+
+  <body class="nav-md">
+    <div class="container body">
+      <div class="main_container">
+        <div class="col-md-3 left_col">
+          <div class="left_col scroll-view">
+            <div class="navbar nav_title" style="border: 0">
+              <a href="index.html" class="site_title"
+                ><i class="fas fa-tachometer-alt"></i> <span>Cockpit</span></a
+              >
+            </div>
+
+            <div class="clearfix"></div>
+
+            <!-- menu profile quick info -->
+            <div class="profile clearfix">
+              <div class="profile_info">
+                <span>Welcome,</span>
+                <h2 id="sidebar-username">Loading...</h2>
+              </div>
+            </div>
+            <!-- /menu profile quick info -->
+
+            <br />
+
+            <!-- sidebar menu -->
+            <div
+              id="sidebar-menu"
+              class="main_menu_side hidden-print main_menu"
+            >
+              <div class="menu_section">
+                <h3>General</h3>
+                <ul class="nav side-menu">
+                  <li>
+                    <a href="index.html"><i class="fas fa-home"></i> Home</a>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-rocket"></i> Onboarding
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="onboard-device.html"
+                          ><i class="fas fa-plus-circle"></i> Onboard Device</a
+                        >
+                      </li>
+                      <li>
+                        <a href="sync_devices.html"
+                          ><i class="fas fa-sync"></i> Sync Devices</a
+                        >
+                      </li>
+                      <li>
+                        <a href="scan-and-add.html"
+                          ><i class="fas fa-search-plus"></i> Scan & Add</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-cogs"></i> Configs
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="backup.html"
+                          ><i class="fas fa-save"></i> Backup</a
+                        >
+                      </li>
+                      <li>
+                        <a href="compare.html"
+                          ><i class="fas fa-exchange-alt"></i> Compare</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-cogs"></i> Ansible
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="ansible-inventory.html"
+                          ><i class="fas fa-list"></i> Inventory</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-wrench"></i> Settings
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="settings-nautobot.html"
+                          ><i class="fas fa-server"></i> Nautobot</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-templates.html"
+                          ><i class="fas fa-file-code"></i> Templates</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-git.html" class="current-page"
+                          ><i class="fab fa-git-alt"></i> Git Management</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-cache.html"
+                          ><i class="fas fa-bolt"></i> Cache</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-credentials.html"
+                          ><i class="fas fa-key"></i> Credentials</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <!-- /sidebar menu -->
+
+            <!-- /menu footer buttons -->
+            <div class="sidebar-footer hidden-small">
+              <a
+                href="settings-git.html"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="Settings"
+              >
+                <span class="fas fa-cog" aria-hidden="true"></span>
+              </a>
+              <a
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="FullScreen"
+              >
+                <span class="fas fa-expand" aria-hidden="true"></span>
+              </a>
+              <a data-bs-toggle="tooltip" data-bs-placement="top" title="Lock">
+                <span class="fas fa-eye-slash" aria-hidden="true"></span>
+              </a>
+              <a
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="Logout"
+                href="login.html"
+              >
+                <span class="fas fa-power-off" aria-hidden="true"></span>
+              </a>
+            </div>
+            <!-- /menu footer buttons -->
+          </div>
+        </div>
+
+        <!-- top navigation -->
+        <div class="top_nav">
+          <div class="nav_menu">
+            <div class="nav toggle">
+              <a id="menu_toggle"><i class="fas fa-bars"></i></a>
+            </div>
+            <nav class="nav navbar-nav">
+              <ul class="navbar-right">
+                <li class="nav-item dropdown open" style="padding-left: 15px">
+                  <a
+                    href="javascript:;"
+                    class="user-profile dropdown-toggle"
+                    aria-haspopup="true"
+                    id="navbarDropdown"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <span id="navbar-username">Loading...</span>
+                  </a>
+                  <div
+                    class="dropdown-menu dropdown-usermenu pull-right"
+                    aria-labelledby="navbarDropdown"
+                  >
+                    <a
+                      class="dropdown-item"
+                      href="javascript:;"
+                      onclick="logout()"
+                      ><i class="fas fa-power-off pull-right"></i> Log Out</a
+                    >
+                  </div>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+        <!-- /top navigation -->
+
+        <!-- page content -->
+        <div class="right_col" role="main">
+          <div class="">
+            <div class="page-title">
+              <div class="title_left">
+                <h3>Git Repository Management</h3>
+              </div>
+            </div>
+
+            <div class="clearfix"></div>
+
+            <!-- Status Message Area -->
+            <div id="status-message" style="display: none"></div>
+
+            <!-- Git Management Content -->
+            <div class="row">
+              <div class="col-md-12 col-sm-12">
+                <!-- Existing Git Repositories -->
+                <div class="x_panel">
+                  <div class="x_title">
+                    <h2>
+                      <i class="fas fa-list"></i> Managed Git Repositories
+                    </h2>
+                    <ul class="nav navbar-right panel_toolbox">
+                      <li>
+                        <a class="collapse-link"
+                          ><i class="fas fa-chevron-up"></i
+                        ></a>
+                      </li>
+                      <li>
+                        <a id="refresh-list" title="Refresh"
+                          ><i class="fas fa-sync"></i
+                        ></a>
+                      </li>
+                    </ul>
+                    <div class="clearfix"></div>
+                  </div>
+
+                  <div class="x_content">
+                    <!-- Filters -->
+                    <div class="row" style="margin-bottom: 20px">
+                      <div class="col-md-4">
+                        <input
+                          type="text"
+                          id="search-repos"
+                          class="form-control"
+                          placeholder="Search repositories..."
+                        />
+                      </div>
+                      <div class="col-md-3">
+                        <select id="filter-category" class="form-control">
+                          <option value="">All Categories</option>
+                          <option value="configs">Configs</option>
+                          <option value="templates">Templates</option>
+                          <option value="onboarding">Onboarding</option>
+                        </select>
+                      </div>
+                      <div class="col-md-3">
+                        <select id="filter-status" class="form-control">
+                          <option value="">All Status</option>
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- Repositories Table -->
+                    <div class="table-responsive">
+                      <table
+                        class="table table-striped jambo_table bulk_action"
+                      >
+                        <thead>
+                          <tr class="headings">
+                            <th class="column-title">Name</th>
+                            <th class="column-title">Category</th>
+                            <th class="column-title">URL</th>
+                            <th class="column-title">Branch</th>
+                            <th class="column-title">Status</th>
+                            <th class="column-title">Last Sync</th>
+                            <th class="column-title no-link last">
+                              <span class="nobr">Actions</span>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody id="repositories-table-body">
+                          <tr>
+                            <td colspan="7" class="text-center">
+                              <i class="fas fa-spinner fa-spin"></i> Loading
+                              repositories...
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Add New Git Repository -->
+                <div class="x_panel">
+                  <div class="x_title">
+                    <h2>
+                      <i class="fab fa-git-alt"></i> Add New Git Repository
+                    </h2>
+                    <ul class="nav navbar-right panel_toolbox">
+                      <li>
+                        <a class="collapse-link"
+                          ><i class="fas fa-chevron-up"></i
+                        ></a>
+                      </li>
+                    </ul>
+                    <div class="clearfix"></div>
+                  </div>
+
+                  <div class="x_content">
+                    <form
+                      id="add-git-form"
+                      class="form-horizontal form-label-left"
+                    >
+                      <div class="row">
+                        <div class="col-md-6">
+                          <div class="form-group">
+                            <label for="git-name" class="control-label"
+                              >Repository Name
+                              <span class="required">*</span></label
+                            >
+                            <input
+                              type="text"
+                              id="git-name"
+                              class="form-control"
+                              placeholder="My Config Repository"
+                              required
+                            />
+                            <small class="form-text text-muted"
+                              >Unique name to identify this repository</small
+                            >
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <div class="form-group">
+                            <label for="git-category" class="control-label"
+                              >Category <span class="required">*</span></label
+                            >
+                            <select
+                              id="git-category"
+                              class="form-control"
+                              required
+                            >
+                              <option value="">Select Category</option>
+                              <option value="configs">Configs</option>
+                              <option value="templates">Templates</option>
+                              <option value="onboarding">Onboarding</option>
+                            </select>
+                            <small class="form-text text-muted"
+                              >Purpose of this repository</small
+                            >
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="row">
+                        <div class="col-md-8">
+                          <div class="form-group">
+                            <label for="git-url" class="control-label"
+                              >Repository URL
+                              <span class="required">*</span></label
+                            >
+                            <input
+                              type="url"
+                              id="git-url"
+                              class="form-control"
+                              placeholder="https://github.com/username/repo.git"
+                              required
+                            />
+                            <small class="form-text text-muted"
+                              >Git repository URL</small
+                            >
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="form-group">
+                            <label for="git-branch" class="control-label"
+                              >Default Branch</label
+                            >
+                            <input
+                              type="text"
+                              id="git-branch"
+                              class="form-control"
+                              value="main"
+                              placeholder="main"
+                            />
+                            <small class="form-text text-muted"
+                              >Default branch to use</small
+                            >
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="row">
+                        <div class="col-md-12">
+                          <div class="form-group">
+                            <label
+                              for="git-credential-name"
+                              class="control-label"
+                              >Credential</label
+                            >
+                            <select
+                              id="git-credential-name"
+                              class="form-control"
+                            >
+                              <option value="">
+                                No credential (public repo)
+                              </option>
+                            </select>
+                            <small class="form-text text-muted"
+                              >Select a stored token credential to use for this
+                              repository</small
+                            >
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="row">
+                        <div class="col-md-6">
+                          <div class="form-group">
+                            <label for="git-path" class="control-label"
+                              >Path</label
+                            >
+                            <input
+                              type="text"
+                              id="git-path"
+                              class="form-control"
+                              placeholder="configs/"
+                              value=""
+                            />
+                            <small class="form-text text-muted"
+                              >Path within repository (leave empty for
+                              root)</small
+                            >
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <div class="form-group">
+                            <div class="form-check" style="margin-top: 30px">
+                              <input
+                                type="checkbox"
+                                id="git-verify-ssl"
+                                class="form-check-input"
+                                checked
+                              />
+                              <label
+                                for="git-verify-ssl"
+                                class="form-check-label"
+                                >Verify SSL certificates</label
+                              >
+                              <small class="form-text text-muted"
+                                >Disable for self-signed certificates</small
+                              >
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="form-group">
+                        <label for="git-description" class="control-label"
+                          >Description</label
+                        >
+                        <textarea
+                          id="git-description"
+                          class="form-control"
+                          rows="3"
+                          placeholder="Optional description for this repository"
+                        ></textarea>
+                      </div>
+
+                      <div class="form-group">
+                        <button
+                          type="button"
+                          id="test-connection"
+                          class="btn btn-info btn-sm"
+                        >
+                          <i class="fab fa-git-alt"></i> Test Connection
+                        </button>
+                        <span id="connection-status" class="ml-3"></span>
+                      </div>
+
+                      <div class="form-group">
+                        <button type="submit" class="btn btn-success">
+                          <i class="fas fa-plus"></i> Add Repository
+                        </button>
+                        <button
+                          type="button"
+                          id="reset-form"
+                          class="btn btn-warning ml-3"
+                        >
+                          <i class="fas fa-undo"></i> Reset Form
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- /Git Management Content -->
+          </div>
+        </div>
+        <!-- /page content -->
+      </div>
+    </div>
+
+    <!-- Edit Repository Modal -->
+    <div class="modal fade" id="editRepoModal" tabindex="-1" role="dialog">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title" id="editRepoModalLabel">
+              Edit Git Repository
+            </h4>
+          </div>
+          <div class="modal-body">
+            <form id="edit-repo-form">
+              <input type="hidden" id="edit-repo-id" />
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="edit-repo-name" class="control-label"
+                      >Repository Name</label
+                    >
+                    <input
+                      type="text"
+                      id="edit-repo-name"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="edit-repo-category" class="control-label"
+                      >Category</label
+                    >
+                    <select
+                      id="edit-repo-category"
+                      class="form-control"
+                      required
+                    >
+                      <option value="configs">Configs</option>
+                      <option value="templates">Templates</option>
+                      <option value="onboarding">Onboarding</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-8">
+                  <div class="form-group">
+                    <label for="edit-repo-url" class="control-label"
+                      >Repository URL</label
+                    >
+                    <input
+                      type="url"
+                      id="edit-repo-url"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label for="edit-repo-branch" class="control-label"
+                      >Default Branch</label
+                    >
+                    <input
+                      type="text"
+                      id="edit-repo-branch"
+                      class="form-control"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-12">
+                  <div class="form-group">
+                    <label for="edit-repo-credential-name" class="control-label"
+                      >Credential</label
+                    >
+                    <select id="edit-repo-credential-name" class="form-control">
+                      <option value="">No credential (public repo)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="edit-repo-path" class="control-label"
+                      >Path</label
+                    >
+                    <input
+                      type="text"
+                      id="edit-repo-path"
+                      class="form-control"
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <div class="form-check" style="margin-top: 30px">
+                      <input
+                        type="checkbox"
+                        id="edit-repo-verify-ssl"
+                        class="form-check-input"
+                      />
+                      <label for="edit-repo-verify-ssl" class="form-check-label"
+                        >Verify SSL certificates</label
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="edit-repo-description" class="control-label"
+                  >Description</label
+                >
+                <textarea
+                  id="edit-repo-description"
+                  class="form-control"
+                  rows="3"
+                ></textarea>
+              </div>
+
+              <div class="form-group">
+                <div class="form-check">
+                  <input
+                    type="checkbox"
+                    id="edit-repo-active"
+                    class="form-check-input"
+                  />
+                  <label for="edit-repo-active" class="form-check-label"
+                    >Active</label
+                  >
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary" id="save-repo-edit">
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Git Status Modal -->
+    <div class="modal fade" id="gitStatusModal" tabindex="-1" role="dialog">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title" id="gitStatusModalLabel">
+              Git Repository Status
+            </h4>
+          </div>
+          <div class="modal-body" id="gitStatusModalBody">
+            <div class="text-center">
+              <i class="fas fa-spinner fa-spin"></i> Loading repository
+              status...
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom styles -->
+    <style>
+      .current-page {
+        background-color: #2a3f54 !important;
+        color: #fff !important;
+        border-radius: 3px;
+      }
+
+      .current-page:hover {
+        background-color: #1e2b3a !important;
+      }
+
+      #status-message {
+        margin-top: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        font-weight: 500;
+      }
+
+      .required {
+        color: red;
+      }
+
+      .status-badge {
+        padding: 4px 8px;
+        border-radius: 3px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+
+      .status-active {
+        background-color: #1abb9c;
+        color: white;
+      }
+
+      .status-inactive {
+        background-color: #e74c3c;
+        color: white;
+      }
+
+      .category-badge {
+        padding: 4px 8px;
+        border-radius: 3px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+
+      .category-configs {
+        background-color: #3498db;
+        color: white;
+      }
+
+      .category-templates {
+        background-color: #9b59b6;
+        color: white;
+      }
+      .category-onboarding {
+        background-color: #16a085;
+        color: white;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 5px;
+      }
+    </style>
+
+    <!-- JavaScript for Git Management -->
+    <script>
+      class GitManager {
+        constructor() {
+          this.repositories = [];
+          this.currentEditId = null;
+          this.originalEditValues = null;
+          this.credentials = [];
+          this.init();
+        }
+
+        init() {
+          document.addEventListener("DOMContentLoaded", () => {
+            this.setupEventListeners();
+            this.loadRepositories();
+            this.loadCredentials();
+            this.updateUsernameDisplay();
+          });
+        }
+
+        setupEventListeners() {
+          // Add repository form
+          document
+            .getElementById("add-git-form")
+            .addEventListener("submit", (e) => this.handleAddRepository(e));
+          document
+            .getElementById("reset-form")
+            .addEventListener("click", () => this.resetAddForm());
+          document
+            .getElementById("test-connection")
+            .addEventListener("click", () => this.testConnection());
+
+          // Filters and search
+          document
+            .getElementById("search-repos")
+            .addEventListener("input", () => this.filterRepositories());
+          document
+            .getElementById("filter-category")
+            .addEventListener("change", () => this.filterRepositories());
+          document
+            .getElementById("filter-status")
+            .addEventListener("change", () => this.filterRepositories());
+          document
+            .getElementById("refresh-list")
+            .addEventListener("click", () => this.loadRepositories());
+
+          // Edit modal
+          document
+            .getElementById("save-repo-edit")
+            .addEventListener("click", () => this.saveRepositoryEdit());
+        }
+
+        async loadRepositories() {
+          if (!window.authManager) {
+            setTimeout(() => this.loadRepositories(), 500);
+            return;
+          }
+
+          try {
+            const response = await window.authManager.apiRequest(
+              "/api/git-repositories",
+            );
+            this.repositories = response.repositories || [];
+            this.renderRepositoriesTable();
+          } catch (error) {
+            console.error("Error loading repositories:", error);
+            this.showStatus(
+              "Error loading repositories: " + error.message,
+              "error",
+            );
+          }
+        }
+
+        async loadCredentials() {
+          try {
+            const creds = await window.authManager.apiRequest(
+              "/api/credentials/?include_expired=false",
+            );
+            // Filter to token type only
+            this.credentials = (creds || []).filter((c) => c.type === "token");
+            // Populate both add and edit selects
+            const addSel = document.getElementById("git-credential-name");
+            const editSel = document.getElementById(
+              "edit-repo-credential-name",
+            );
+            const options = [
+              '<option value="">No credential (public repo)</option>',
+            ].concat(
+              this.credentials.map(
+                (c) =>
+                  `<option value="${c.name}">${c.name} (${c.username})</option>`,
+              ),
+            );
+            if (addSel) addSel.innerHTML = options.join("");
+            if (editSel) editSel.innerHTML = options.join("");
+          } catch (e) {
+            console.error("Failed to load credentials", e);
+          }
+        }
+
+        renderRepositoriesTable() {
+          const tbody = document.getElementById("repositories-table-body");
+
+          if (this.repositories.length === 0) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="7" class="text-center">
+                  <i class="fas fa-info-circle"></i> No Git repositories configured yet.
+                </td>
+              </tr>
+            `;
+            return;
+          }
+
+          tbody.innerHTML = this.repositories
+            .map(
+              (repo) => `
+            <tr>
+              <td>${repo.name}</td>
+              <td><span class="category-badge category-${repo.category}">${repo.category}</span></td>
+              <td><a href="${repo.url}" target="_blank" title="${repo.url}">${this.truncateUrl(repo.url)}</a></td>
+              <td>${repo.branch}</td>
+              <td><span class="status-badge status-${repo.is_active ? "active" : "inactive"}">${repo.is_active ? "Active" : "Inactive"}</span></td>
+              <td>${repo.last_sync ? new Date(repo.last_sync).toLocaleDateString() : "Never"}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn btn-warning btn-sm" onclick="gitManager.editRepository(${repo.id})" title="Edit">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-info btn-sm" onclick="gitManager.syncRepository(${repo.id})" title="Sync">
+                    <i class="fas fa-sync"></i>
+                  </button>
+                  <button class="btn btn-secondary btn-sm" onclick="gitManager.showGitStatus(${repo.id})" title="Git Status">
+                    <i class="fas fa-code-branch"></i>
+                  </button>
+                  <button class="btn btn-danger btn-sm" onclick="gitManager.deleteRepository(${repo.id})" title="Delete">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `,
+            )
+            .join("");
+        }
+
+        filterRepositories() {
+          const search = document
+            .getElementById("search-repos")
+            .value.toLowerCase();
+          const categoryFilter =
+            document.getElementById("filter-category").value;
+          const statusFilter = document.getElementById("filter-status").value;
+
+          const filteredRepos = this.repositories.filter((repo) => {
+            const matchesSearch =
+              repo.name.toLowerCase().includes(search) ||
+              repo.url.toLowerCase().includes(search) ||
+              (repo.description &&
+                repo.description.toLowerCase().includes(search));
+            const matchesCategory =
+              !categoryFilter || repo.category === categoryFilter;
+            const matchesStatus =
+              !statusFilter ||
+              (statusFilter === "active" && repo.is_active) ||
+              (statusFilter === "inactive" && !repo.is_active);
+
+            return matchesSearch && matchesCategory && matchesStatus;
+          });
+
+          // Temporarily store original repositories and render filtered ones
+          const originalRepos = this.repositories;
+          this.repositories = filteredRepos;
+          this.renderRepositoriesTable();
+          this.repositories = originalRepos;
+        }
+
+        async handleAddRepository(e) {
+          e.preventDefault();
+
+          const repoData = {
+            name: document.getElementById("git-name").value,
+            category: document.getElementById("git-category").value,
+            url: document.getElementById("git-url").value,
+            branch: document.getElementById("git-branch").value || "main",
+            credential_name:
+              document.getElementById("git-credential-name").value || null,
+            path: document.getElementById("git-path").value,
+            verify_ssl: document.getElementById("git-verify-ssl").checked,
+            description: document.getElementById("git-description").value,
+          };
+
+          try {
+            const response = await window.authManager.apiRequest(
+              "/api/git-repositories",
+              {
+                method: "POST",
+                body: JSON.stringify(repoData),
+              },
+            );
+
+            this.showStatus("Repository added successfully!", "success");
+            this.resetAddForm();
+            this.loadRepositories();
+          } catch (error) {
+            this.showStatus(
+              "Error adding repository: " + error.message,
+              "error",
+            );
+          }
+        }
+
+        async testConnection() {
+          const statusElement = document.getElementById("connection-status");
+          statusElement.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Testing...';
+
+          const testData = {
+            url: document.getElementById("git-url").value,
+            branch: document.getElementById("git-branch").value || "main",
+            credential_name:
+              document.getElementById("git-credential-name").value || null,
+            verify_ssl: document.getElementById("git-verify-ssl").checked,
+          };
+
+          try {
+            const response = await window.authManager.apiRequest(
+              "/api/git-repositories/test",
+              {
+                method: "POST",
+                body: JSON.stringify(testData),
+              },
+            );
+
+            if (response.success) {
+              statusElement.innerHTML =
+                '<span class="text-success"><i class="fas fa-check"></i> Connection successful!</span>';
+            } else {
+              statusElement.innerHTML = `<span class="text-danger"><i class="fas fa-times"></i> ${response.message}</span>`;
+            }
+          } catch (error) {
+            statusElement.innerHTML =
+              '<span class="text-danger"><i class="fas fa-times"></i> Connection failed</span>';
+          }
+        }
+
+        async editRepository(repoId) {
+          try {
+            // Use the edit endpoint to get all fields including token and path
+            const repo = await window.authManager.apiRequest(
+              `/api/git-repositories/${repoId}/edit`,
+            );
+
+            this.currentEditId = repoId;
+            this.originalEditValues = { ...repo };
+
+            document.getElementById("edit-repo-id").value = repo.id;
+            document.getElementById("edit-repo-name").value = repo.name;
+            document.getElementById("edit-repo-category").value = repo.category;
+            document.getElementById("edit-repo-url").value = repo.url;
+            document.getElementById("edit-repo-branch").value = repo.branch;
+            document.getElementById("edit-repo-credential-name").value =
+              repo.credential_name || "";
+            document.getElementById("edit-repo-path").value = repo.path || "";
+            document.getElementById("edit-repo-verify-ssl").checked =
+              repo.verify_ssl !== false;
+            document.getElementById("edit-repo-description").value =
+              repo.description || "";
+            document.getElementById("edit-repo-active").checked =
+              repo.is_active;
+
+            $("#editRepoModal").modal("show");
+          } catch (error) {
+            this.showStatus(
+              "Error loading repository for edit: " + error.message,
+              "error",
+            );
+          }
+        }
+
+        async saveRepositoryEdit() {
+          if (!this.currentEditId) return;
+
+          const repoData = {
+            name: document.getElementById("edit-repo-name").value,
+            category: document.getElementById("edit-repo-category").value,
+            url: document.getElementById("edit-repo-url").value,
+            branch: document.getElementById("edit-repo-branch").value,
+            credential_name:
+              document.getElementById("edit-repo-credential-name").value ||
+              null,
+            path: document.getElementById("edit-repo-path").value,
+            verify_ssl: document.getElementById("edit-repo-verify-ssl").checked,
+            description: document.getElementById("edit-repo-description").value,
+            is_active: document.getElementById("edit-repo-active").checked,
+          };
+
+          try {
+            await window.authManager.apiRequest(
+              `/api/git-repositories/${this.currentEditId}`,
+              {
+                method: "PUT",
+                body: JSON.stringify(repoData),
+              },
+            );
+
+            this.showStatus("Repository updated successfully!", "success");
+            $("#editRepoModal").modal("hide");
+            this.currentEditId = null;
+            this.originalEditValues = null;
+            this.loadRepositories();
+          } catch (error) {
+            this.showStatus(
+              "Error updating repository: " + error.message,
+              "error",
+            );
+          }
+        }
+
+        async syncRepository(repoId) {
+          try {
+            const response = await window.authManager.apiRequest(
+              `/api/git-repositories/${repoId}/sync`,
+              {
+                method: "POST",
+              },
+            );
+
+            this.showStatus("Repository synced successfully!", "success");
+            this.loadRepositories();
+          } catch (error) {
+            this.showStatus(
+              "Error syncing repository: " + error.message,
+              "error",
+            );
+          }
+        }
+
+        async showGitStatus(repoId) {
+          try {
+            const repo = this.repositories.find((r) => r.id === repoId);
+            if (!repo) {
+              this.showStatus("Repository not found", "error");
+              return;
+            }
+
+            // Show modal with loading state
+            document.getElementById("gitStatusModalLabel").textContent =
+              `Git Status - ${repo.name}`;
+            document.getElementById("gitStatusModalBody").innerHTML = `
+              <div class="text-center">
+                <i class="fas fa-spinner fa-spin"></i> Loading repository status...
+              </div>
+            `;
+            $("#gitStatusModal").modal("show");
+
+            // Load Git status for this repository (repo-specific to avoid cross-repo data)
+            const repoStatusResp = await window.authManager.apiRequest(
+              `/api/git-repositories/${repoId}/status`,
+            );
+            if (!repoStatusResp || !repoStatusResp.success) {
+              throw new Error(
+                repoStatusResp && repoStatusResp.message
+                  ? repoStatusResp.message
+                  : "Failed to load repository status",
+              );
+            }
+            const gitStatus = {
+              current_branch:
+                repoStatusResp.data.current_branch ||
+                repoStatusResp.data.repository_branch,
+              is_dirty: !!repoStatusResp.data.is_dirty,
+              modified_files: repoStatusResp.data.modified_files || [],
+              untracked_files: repoStatusResp.data.untracked_files || [],
+              staged_files: repoStatusResp.data.staged_files || [],
+              commits: repoStatusResp.data.commits || [],
+            };
+
+            if (!gitStatus || !gitStatus.current_branch) {
+              throw new Error("Git repository not available or not configured");
+            }
+
+            // Load Git branches
+            const branches = Array.isArray(repoStatusResp.data.branches)
+              ? repoStatusResp.data.branches
+              : [];
+
+            // Create status HTML
+            const statusHtml = `
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="card">
+                    <div class="card-header">
+                      <h5><i class="fas fa-info-circle"></i> Repository Details</h5>
+                    </div>
+                    <div class="card-body">
+                      <dl class="row">
+                        <dt class="col-sm-4">Name:</dt>
+                        <dd class="col-sm-8">${repo.name}</dd>
+                        <dt class="col-sm-4">Category:</dt>
+                        <dd class="col-sm-8"><span class="category-badge category-${repo.category}">${repo.category}</span></dd>
+                        <dt class="col-sm-4">URL:</dt>
+                        <dd class="col-sm-8"><a href="${repo.url}" target="_blank">${repo.url}</a></dd>
+                        <dt class="col-sm-4">Branch:</dt>
+                        <dd class="col-sm-8"><code>${gitStatus.current_branch}</code></dd>
+                        <dt class="col-sm-4">Status:</dt>
+                        <dd class="col-sm-8">
+                          <span class="${gitStatus.is_dirty ? "text-warning" : "text-success"}">
+                            <i class="fas ${gitStatus.is_dirty ? "fa-exclamation-triangle" : "fa-check-circle"}"></i>
+                            ${gitStatus.is_dirty ? "Modified files present" : "Clean working directory"}
+                          </span>
+                        </dd>
+                      </dl>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card">
+                    <div class="card-header">
+                      <h5><i class="fas fa-code-branch"></i> Available Branches</h5>
+                    </div>
+                    <div class="card-body">
+                      ${
+                        branches.length > 0
+                          ? `
+                        <ul class="list-unstyled">
+                          ${branches
+                            .map((branch) => {
+                              const branchName =
+                                typeof branch === "string"
+                                  ? branch
+                                  : branch.name;
+                              const isCurrent =
+                                branchName === gitStatus.current_branch;
+                              return `<li class="${isCurrent ? "text-primary fw-bold" : ""}">${branchName}${isCurrent ? " (current)" : ""}</li>`;
+                            })
+                            .join("")}
+                        </ul>
+                      `
+                          : '<p class="text-muted">No branches available</p>'
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              ${
+                gitStatus.is_dirty
+                  ? `
+                <div class="row mt-3">
+                  <div class="col-md-12">
+                    <div class="card">
+                      <div class="card-header">
+                        <h5><i class="fas fa-file-alt"></i> Working Directory Changes</h5>
+                      </div>
+                      <div class="card-body">
+                        ${
+                          gitStatus.modified_files &&
+                          gitStatus.modified_files.length > 0
+                            ? `
+                          <h6>Modified Files:</h6>
+                          <ul class="list-unstyled">
+                            ${gitStatus.modified_files.map((file) => `<li class="text-warning"><i class="fas fa-edit"></i> ${file}</li>`).join("")}
+                          </ul>
+                        `
+                            : ""
+                        }
+                        ${
+                          gitStatus.untracked_files &&
+                          gitStatus.untracked_files.length > 0
+                            ? `
+                          <h6>Untracked Files:</h6>
+                          <ul class="list-unstyled">
+                            ${gitStatus.untracked_files.map((file) => `<li class="text-info"><i class="fas fa-plus"></i> ${file}</li>`).join("")}
+                          </ul>
+                        `
+                            : ""
+                        }
+                        ${
+                          gitStatus.staged_files &&
+                          gitStatus.staged_files.length > 0
+                            ? `
+                          <h6>Staged Files:</h6>
+                          <ul class="list-unstyled">
+                            ${gitStatus.staged_files.map((file) => `<li class="text-success"><i class="fas fa-check"></i> ${file}</li>`).join("")}
+                          </ul>
+                        `
+                            : ""
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `
+                  : ""
+              }
+
+              ${
+                gitStatus.commits && gitStatus.commits.length > 0
+                  ? `
+                <div class="row mt-3">
+                  <div class="col-md-12">
+                    <div class="card">
+                      <div class="card-header">
+                        <h5><i class="fas fa-history"></i> Recent Commits</h5>
+                      </div>
+                      <div class="card-body">
+                        <div class="table-responsive">
+                          <table class="table table-sm">
+                            <thead>
+                              <tr>
+                                <th>Hash</th>
+                                <th>Message</th>
+                                <th>Author</th>
+                                <th>Date</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              ${gitStatus.commits
+                                .slice(0, 10)
+                                .map(
+                                  (commit) => `
+                                <tr>
+                                  <td><code>${commit.hash.substring(0, 8)}</code></td>
+                                  <td>${commit.message}</td>
+                                  <td>${commit.author}</td>
+                                  <td>${new Date(commit.date).toLocaleDateString()}</td>
+                                </tr>
+                              `,
+                                )
+                                .join("")}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `
+                  : ""
+              }
+            `;
+
+            document.getElementById("gitStatusModalBody").innerHTML =
+              statusHtml;
+          } catch (error) {
+            console.error("Error loading Git status:", error);
+            document.getElementById("gitStatusModalBody").innerHTML = `
+              <div class="alert alert-danger">
+                <h5><i class="fas fa-exclamation-triangle"></i> Error Loading Git Status</h5>
+                <p>${error.message || "Failed to load Git repository status. The repository might not be configured or accessible."}</p>
+                <hr>
+                <p class="mb-0"><strong>Repository Configuration:</strong> ${repo.name} (${repo.url})</p>
+              </div>
+            `;
+          }
+        }
+
+        async deleteRepository(repoId) {
+          const repo = this.repositories.find((r) => r.id === repoId);
+          if (!repo) return;
+
+          if (
+            !confirm(
+              `Are you sure you want to delete the repository "${repo.name}"?`,
+            )
+          ) {
+            return;
+          }
+
+          try {
+            await window.authManager.apiRequest(
+              `/api/git-repositories/${repoId}`,
+              {
+                method: "DELETE",
+              },
+            );
+
+            this.showStatus("Repository deleted successfully!", "success");
+            this.loadRepositories();
+          } catch (error) {
+            this.showStatus(
+              "Error deleting repository: " + error.message,
+              "error",
+            );
+          }
+        }
+
+        resetAddForm() {
+          document.getElementById("add-git-form").reset();
+          document.getElementById("git-branch").value = "main";
+          document.getElementById("git-verify-ssl").checked = true;
+          document.getElementById("connection-status").innerHTML = "";
+        }
+
+        truncateUrl(url) {
+          return url.length > 50 ? url.substring(0, 47) + "..." : url;
+        }
+
+        showStatus(message, type) {
+          const statusDiv = document.getElementById("status-message");
+          const alertClass =
+            type === "success"
+              ? "alert-success"
+              : type === "error"
+                ? "alert-danger"
+                : "alert-info";
+
+          statusDiv.className = `alert ${alertClass}`;
+          statusDiv.innerHTML = message;
+          statusDiv.style.display = "block";
+
+          setTimeout(() => {
+            statusDiv.style.display = "none";
+          }, 5000);
+        }
+
+        updateUsernameDisplay() {
+          const userInfo = localStorage.getItem("user_info");
+          if (userInfo) {
+            try {
+              const user = JSON.parse(userInfo);
+              const sidebarElement =
+                document.getElementById("sidebar-username");
+              const navbarElement = document.getElementById("navbar-username");
+
+              const displayName = user.full_name || user.username || "User";
+
+              if (sidebarElement) sidebarElement.textContent = displayName;
+              if (navbarElement) navbarElement.textContent = displayName;
+            } catch (e) {
+              console.log("Error parsing user info:", e);
+            }
+          }
+        }
+      }
+
+      // Initialize git manager when page loads
+      const gitManager = new GitManager();
+
+      function logout() {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("user_info");
+        window.location.href = "/login.html";
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="images/favicon.ico" type="image/ico" />
+
+    <title>Cache Settings - Cockpit</title>
+
+    <script type="module" src="/src/main-minimal.js"></script>
+
+    <script src="js/config.js"></script>
+    <script>
+      // Load container config if on non-localhost and not Vite dev ports
+      const currentPort = window.location.port;
+      const isDevelopment = currentPort === "3000" || currentPort === "3001";
+      const isNonLocalhost =
+        window.location.hostname !== "localhost" &&
+        window.location.hostname !== "127.0.0.1";
+      if (isNonLocalhost && !isDevelopment) {
+        const script = document.createElement("script");
+        script.src = "js/config-container.js";
+        document.head.appendChild(script);
+      }
+    </script>
+    <script src="js/api-manager.js"></script>
+    <script>
+      (function () {
+        const token = localStorage.getItem("auth_token");
+        if (!token) {
+          window.location.href = "/login.html";
+          return;
+        }
+      })();
+    </script>
+    <script src="js/auth.js"></script>
+  </head>
+
+  <body class="nav-md">
+    <div class="container body">
+      <div class="main_container">
+        <div class="col-md-3 left_col">
+          <div class="left_col scroll-view">
+            <div class="navbar nav_title" style="border: 0">
+              <a href="index.html" class="site_title"
+                ><i class="fas fa-paw"></i> <span>Cockpit!</span></a
+              >
+            </div>
+
+            <div class="clearfix"></div>
+
+            <div class="profile clearfix">
+              <div class="profile_info">
+                <span>Welcome,</span>
+                <h2 id="sidebar-username">Loading...</h2>
+              </div>
+            </div>
+
+            <br />
+
+            <div
+              id="sidebar-menu"
+              class="main_menu_side hidden-print main_menu"
+            >
+              <div class="menu_section">
+                <h3>General</h3>
+                <ul class="nav side-menu">
+                  <li>
+                    <a href="index.html"><i class="fas fa-home"></i> Home</a>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-rocket"></i> Onboarding
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="onboard-device.html"
+                          ><i class="fas fa-plus-circle"></i> Onboard Device</a
+                        >
+                      </li>
+                      <li>
+                        <a href="sync_devices.html"
+                          ><i class="fas fa-sync"></i> Sync Devices</a
+                        >
+                      </li>
+                      <li>
+                        <a href="scan-and-add.html"
+                          ><i class="fas fa-search-plus"></i> Scan & Add</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-cogs"></i> Configs
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="backup.html"
+                          ><i class="fas fa-save"></i> Backup</a
+                        >
+                      </li>
+                      <li>
+                        <a href="compare.html"
+                          ><i class="fas fa-exchange-alt"></i> Compare</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-cogs"></i> Ansible
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="ansible-inventory.html"
+                          ><i class="fas fa-list"></i> Inventory</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-wrench"></i> Settings
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="settings-nautobot.html"
+                          ><i class="fas fa-server"></i> Nautobot</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-templates.html"
+                          ><i class="fas fa-file-code"></i> Templates</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-git.html"
+                          ><i class="fab fa-git-alt"></i> Git Management</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-cache.html" class="current-page"
+                          ><i class="fas fa-bolt"></i> Cache</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-credentials.html"
+                          ><i class="fas fa-key"></i> Credentials</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="sidebar-footer hidden-small">
+              <a
+                href="settings-cache.html"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="Settings"
+              >
+                <span class="fas fa-cog" aria-hidden="true"></span>
+              </a>
+              <a
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="FullScreen"
+              >
+                <span class="fas fa-expand" aria-hidden="true"></span>
+              </a>
+              <a data-bs-toggle="tooltip" data-bs-placement="top" title="Lock">
+                <span class="fas fa-eye-slash" aria-hidden="true"></span>
+              </a>
+              <a
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="Logout"
+                href="login.html"
+              >
+                <span class="fas fa-power-off" aria-hidden="true"></span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="top_nav">
+          <div class="nav_menu">
+            <div class="nav toggle">
+              <a id="menu_toggle"><i class="fas fa-bars"></i></a>
+            </div>
+            <nav class="nav navbar-nav">
+              <ul class="navbar-right">
+                <li class="nav-item dropdown open" style="padding-left: 15px">
+                  <a
+                    href="javascript:;"
+                    class="user-profile dropdown-toggle"
+                    aria-haspopup="true"
+                    id="navbarDropdown"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <span id="navbar-username">Loading...</span>
+                  </a>
+                  <div
+                    class="dropdown-menu dropdown-usermenu pull-right"
+                    aria-labelledby="navbarDropdown"
+                  >
+                    <a
+                      class="dropdown-item"
+                      href="javascript:;"
+                      onclick="logout()"
+                      ><i class="fas fa-power-off pull-right"></i> Log Out</a
+                    >
+                  </div>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+
+        <div class="right_col" role="main">
+          <div class="">
+            <div class="page-title">
+              <div class="title_left">
+                <h3>Cache Settings</h3>
+              </div>
+            </div>
+            <div class="clearfix"></div>
+
+            <div class="row">
+              <div class="col-md-12 col-sm-12">
+                <div class="x_panel">
+                  <div class="x_title">
+                    <h2>
+                      Cache Configuration
+                      <small>Control performance-related caching</small>
+                    </h2>
+                    <ul class="nav navbar-right panel_toolbox">
+                      <li>
+                        <a class="collapse-link"
+                          ><i class="fas fa-chevron-up"></i
+                        ></a>
+                      </li>
+                    </ul>
+                    <div class="clearfix"></div>
+                  </div>
+                  <div class="x_content">
+                    <form
+                      id="cache-settings-form"
+                      class="form-horizontal form-label-left"
+                    >
+                      <div class="form-group row">
+                        <label class="control-label col-md-3 col-sm-3 col-xs-12"
+                          >Enable Cache</label
+                        >
+                        <div class="col-md-6 col-sm-6 col-xs-12">
+                          <input
+                            type="checkbox"
+                            id="cache-enabled"
+                            class="js-switch"
+                          />
+                        </div>
+                      </div>
+
+                      <div class="form-group row">
+                        <label class="control-label col-md-3 col-sm-3 col-xs-12"
+                          >TTL (seconds)</label
+                        >
+                        <div class="col-md-6 col-sm-6 col-xs-12">
+                          <input
+                            type="number"
+                            id="cache-ttl"
+                            class="form-control"
+                            min="30"
+                            step="30"
+                            placeholder="600"
+                          />
+                          <small class="text-muted"
+                            >How long to keep cached items before
+                            refreshing.</small
+                          >
+                        </div>
+                      </div>
+
+                      <div class="form-group row">
+                        <label class="control-label col-md-3 col-sm-3 col-xs-12"
+                          >Prefetch on Startup</label
+                        >
+                        <div class="col-md-6 col-sm-6 col-xs-12">
+                          <input
+                            type="checkbox"
+                            id="cache-prefetch"
+                            class="js-switch"
+                          />
+                          <small class="text-muted"
+                            >Warm the commit list once when the backend
+                            starts.</small
+                          >
+                        </div>
+                      </div>
+
+                      <div class="form-group row">
+                        <label class="control-label col-md-3 col-sm-3 col-xs-12"
+                          >Refresh Interval (minutes)</label
+                        >
+                        <div class="col-md-6 col-sm-6 col-xs-12">
+                          <input
+                            type="number"
+                            id="cache-refresh"
+                            class="form-control"
+                            min="0"
+                            step="1"
+                            placeholder="0"
+                          />
+                          <small class="text-muted"
+                            >0 disables periodic background refresh.</small
+                          >
+                        </div>
+                      </div>
+
+                        <!-- Startup Prefetch Items (integrated) -->
+                        <div class="form-group row">
+                          <label class="control-label col-md-3 col-sm-3 col-xs-12"
+                            >Startup Prefetch Items</label
+                          >
+                          <div class="col-md-6 col-sm-6 col-xs-12">
+                            <div class="form-check form-switch" style="margin-bottom:6px">
+                              <input class="form-check-input" type="checkbox" id="prefetch-git" />
+                              <label class="form-check-label" for="prefetch-git">Git commits</label>
+                            </div>
+                            <div class="form-check form-switch">
+                              <input class="form-check-input" type="checkbox" id="prefetch-locations" />
+                              <label class="form-check-label" for="prefetch-locations">Locations</label>
+                            </div>
+                            <small class="text-muted">Select items to warm on backend startup.</small>
+                          </div>
+                        </div>
+
+                      <div class="form-group row">
+                        <label class="control-label col-md-3 col-sm-3 col-xs-12"
+                          >Max Commits</label
+                        >
+                        <div class="col-md-6 col-sm-6 col-xs-12">
+                          <input
+                            type="number"
+                            id="cache-max-commits"
+                            class="form-control"
+                            min="50"
+                            step="50"
+                            placeholder="500"
+                          />
+                          <small class="text-muted"
+                            >Limit how many commits are prefetched and
+                            returned.</small
+                          >
+                        </div>
+                      </div>
+
+                      <div class="ln_solid"></div>
+                      <div class="form-group">
+                        <div
+                          class="col-md-6 col-sm-6 col-xs-12 col-md-offset-3"
+                        >
+                          <button
+                            type="button"
+                            id="save-cache-settings"
+                            class="btn btn-success"
+                          >
+                            <i class="fas fa-save"></i> Save
+                          </button>
+                          <button
+                            type="button"
+                            id="show-cache-stats"
+                            class="btn btn-info"
+                            style="margin-left:8px;margin-right:4px"
+                          >
+                            <i class="fas fa-list"></i> Show cache stats
+                          </button>
+                          <button
+                            type="button"
+                            id="clear-cache-btn"
+                            class="btn btn-danger"
+                            style="margin-left:0" 
+                          >
+                            <i class="fas fa-trash"></i> Clear cache
+                          </button>
+                        </div>
+                      </div>
+                    </form>
+
+                    <div
+                      id="cache-status"
+                      class="alert"
+                      style="display: none"
+                    ></div>
+                    <div id="cache-stats-panel" style="margin-top:15px; display:none">
+                      <h4>Cache Stats</h4>
+                      <pre id="cache-stats-output" style="background:#f7f7f9;padding:10px;border-radius:4px;max-height:240px;overflow:auto"></pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Wait for AuthManager to be ready
+        window.authManager = new AuthManager();
+
+        // Give AuthManager time to initialize
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        if (!window.authManager.isAuthenticated()) {
+          console.error("User not authenticated, redirecting to login");
+          window.location.href = "/login.html";
+          return;
+        }
+
+        const els = {
+          enabled: document.getElementById("cache-enabled"),
+          ttl: document.getElementById("cache-ttl"),
+          prefetch: document.getElementById("cache-prefetch"),
+          refresh: document.getElementById("cache-refresh"),
+          maxCommits: document.getElementById("cache-max-commits"),
+          status: document.getElementById("cache-status"),
+          save: document.getElementById("save-cache-settings"),
+          // reload removed
+          navbarUser: document.getElementById("navbar-username"),
+          sidebarUser: document.getElementById("sidebar-username"),
+          prefetchGit: document.getElementById("prefetch-git"),
+          prefetchLocations: document.getElementById("prefetch-locations"),
+        };
+
+        // Populate usernames if available
+        try {
+          const userInfo = JSON.parse(
+            localStorage.getItem("user_info") || "{}",
+          );
+          const name = userInfo.full_name || userInfo.username;
+          if (name) {
+            if (els.navbarUser) els.navbarUser.textContent = name;
+            if (els.sidebarUser) els.sidebarUser.textContent = name;
+          }
+        } catch {}
+
+        function showStatus(message, type = "success") {
+          els.status.className = `alert alert-${type}`;
+          els.status.textContent = message;
+          els.status.style.display = "block";
+          setTimeout(() => (els.status.style.display = "none"), 4000);
+        }
+
+        async function loadSettings(showMessage = false) {
+          try {
+            if (!window.authManager.isAuthenticated()) {
+              showStatus(
+                "Authentication expired. Please login again.",
+                "danger",
+              );
+              window.location.href = "/login.html";
+              return;
+            }
+
+            console.log("Loading cache settings...");
+            const res = await window.authManager.apiRequest(
+              "/api/settings/cache",
+            );
+            console.log("Load response:", res);
+
+            if (res && res.success && res.data) {
+              const s = res.data;
+              els.enabled.checked = !!s.enabled;
+              els.ttl.value = Number(s.ttl_seconds ?? 600);
+              els.prefetch.checked = !!s.prefetch_on_startup;
+              els.refresh.value = Number(s.refresh_interval_minutes ?? 0);
+              els.maxCommits.value = Number(s.max_commits ?? 500);
+              const items = (s.prefetch_items) || { git: true, locations: false };
+              if (els.prefetchGit) els.prefetchGit.checked = !!items.git;
+              if (els.prefetchLocations) els.prefetchLocations.checked = !!items.locations;
+
+              if (showMessage)
+                showStatus("Cache settings loaded successfully", "success");
+            } else {
+              showStatus(
+                `Failed to load cache settings: ${res?.message || "Unknown error"}`,
+                "danger",
+              );
+            }
+          } catch (e) {
+            console.error("Error loading cache settings:", e);
+            showStatus(`Error loading cache settings: ${e.message}`, "danger");
+          }
+        }
+
+        // Clear cache button handler
+        const btnClearCache = document.getElementById("clear-cache-btn");
+        if (btnClearCache) {
+          btnClearCache.addEventListener("click", async () => {
+            try {
+              if (!window.authManager.isAuthenticated()) {
+                showStatus("Authentication expired. Please login again.", "danger");
+                window.location.href = "/login.html";
+                return;
+              }
+
+              const ns = prompt("Enter cache namespace to clear (leave blank to clear all):", "");
+              if (ns === null) return; // user cancelled
+
+              btnClearCache.disabled = true;
+              showStatus("Clearing cache...", "info");
+
+              const body = ns ? { namespace: ns } : {};
+              const res = await window.authManager.apiRequest("/api/cache/clear", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+              });
+
+              if (res && res.success) {
+                showStatus(res.message || "Cache cleared", "success");
+                // Refresh stats view if visible
+                if (statsPanel && statsPanel.style.display === "block") {
+                  document.getElementById("show-cache-stats").click();
+                }
+              } else {
+                showStatus(`Failed to clear cache: ${res?.message || 'Unknown'}`, "danger");
+              }
+            } catch (e) {
+              showStatus(`Error clearing cache: ${e.message}`, "danger");
+            } finally {
+              btnClearCache.disabled = false;
+            }
+          });
+        }
+
+        async function saveSettings() {
+          // Read from switchery instances if available, otherwise from checkboxes
+          const enabledValue = window.switchEnabled
+            ? window.switchEnabled.isChecked()
+            : els.enabled.checked;
+          const prefetchValue = window.switchPrefetch
+            ? window.switchPrefetch.isChecked()
+            : els.prefetch.checked;
+
+          const payload = {
+            enabled: !!enabledValue,
+            ttl_seconds: Number(els.ttl.value || 600),
+            prefetch_on_startup: !!prefetchValue,
+            refresh_interval_minutes: Number(els.refresh.value || 0),
+            max_commits: Number(els.maxCommits.value || 500),
+            prefetch_items: {
+              git: !!(els.prefetchGit && els.prefetchGit.checked),
+              locations: !!(els.prefetchLocations && els.prefetchLocations.checked),
+            },
+          };
+
+          console.log("Saving cache settings:", payload);
+
+          try {
+            els.save.disabled = true;
+
+            if (!window.authManager.isAuthenticated()) {
+              showStatus(
+                "Authentication expired. Please login again.",
+                "danger",
+              );
+              window.location.href = "/login.html";
+              return;
+            }
+
+            const res = await window.authManager.apiRequest(
+              "/api/settings/cache",
+              {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              },
+            );
+
+            console.log("PUT response:", res);
+
+            if (!res || res.success === false) {
+              console.log("PUT failed, trying POST...");
+              // Fallback to POST for compatibility
+              const resPost = await window.authManager.apiRequest(
+                "/api/settings/cache",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payload),
+                },
+              );
+              console.log("POST response:", resPost);
+
+              if (!resPost || resPost.success === false) {
+                showStatus(
+                  `Failed to save cache settings: ${resPost?.message || "Unknown error"}`,
+                  "danger",
+                );
+                return;
+              }
+            }
+            showStatus("Cache settings saved successfully", "success");
+            // Reload to reflect persisted values
+            await loadSettings(true);
+          } catch (e) {
+            console.error("Error saving cache settings:", e);
+            showStatus(`Error saving cache settings: ${e.message}`, "danger");
+          } finally {
+            els.save.disabled = false;
+          }
+        }
+
+  els.save.addEventListener("click", saveSettings);
+        // Show cache stats button
+        const btnShowStats = document.getElementById("show-cache-stats");
+        const statsPanel = document.getElementById("cache-stats-panel");
+        const statsOutput = document.getElementById("cache-stats-output");
+        if (btnShowStats) {
+          btnShowStats.addEventListener("click", async () => {
+            try {
+              if (!window.authManager.isAuthenticated()) {
+                showStatus("Authentication expired. Please login again.", "danger");
+                window.location.href = "/login.html";
+                return;
+              }
+              btnShowStats.disabled = true;
+              statsOutput.textContent = "Loading...";
+              statsPanel.style.display = "block";
+              const res = await window.authManager.apiRequest("/api/cache/stats");
+              if (res && res.success) {
+                statsOutput.textContent = JSON.stringify(res.data, null, 2);
+              } else {
+                statsOutput.textContent = `Failed to fetch cache stats: ${res?.message || 'Unknown'}`;
+              }
+            } catch (e) {
+              statsOutput.textContent = `Error fetching cache stats: ${e.message}`;
+            } finally {
+              btnShowStats.disabled = false;
+            }
+          });
+        }
+
+        // Function to initialize switchery
+        function initSwitchery() {
+          if (window.Switchery) {
+            try {
+              // Clean up any existing switchery instances
+              const existingSwitches = document.querySelectorAll(".switchery");
+              existingSwitches.forEach((s) => s.remove());
+
+              // Reset checkbox visibility in case switchery hid them
+              els.enabled.style.display = "";
+              els.prefetch.style.display = "";
+
+              // Initialize new switchery instances
+              window.switchEnabled = new window.Switchery(els.enabled, {
+                color: "#26B99A",
+              });
+              window.switchPrefetch = new window.Switchery(els.prefetch, {
+                color: "#26B99A",
+              });
+            } catch (e) {
+              console.log("Switchery initialization error:", e);
+            }
+          }
+        }
+
+        // Initial load and then initialize switchery
+        loadSettings(false).then(() => {
+          setTimeout(initSwitchery, 100);
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="images/favicon.ico" type="image/ico" />
+
+    <title>Cockpit - Network Management</title>
+
+    <!-- Static CSS -->
+    <link rel="stylesheet" href="static/css/fontawesome.min.css" />
+
+    <!-- Vite Entry Point - will bundle all styles -->
+    <script type="module" src="/src/main-minimal.js"></script>
+
+    <!-- Configuration -->
+    <script src="js/config.js"></script>
+    <!-- Container configuration (automatically loaded in container mode) -->
+    <script src="js/config-container.js"></script>
+    <!-- API Manager -->
+    <script src="js/api-manager.js"></script>
+
+    <script>
+      // Container mode authentication check
+      (function () {
+        console.log("🔐 Container mode - Checking authentication...");
+
+        const token = localStorage.getItem("auth_token");
+        if (!token) {
+          console.log("No token found, redirecting to login");
+          window.location.href = "/login.html";
+          return;
+        }
+
+        // Simple token check - if token exists, allow access
+        console.log("Token found, allowing access to container interface");
+      })();
+    </script>
+
+    <style>
+      /* Container mode specific styles */
+      body.container-mode {
+        font-family: "Helvetica Neue", Roboto, Arial, "Droid Sans", sans-serif;
+      }
+    </style>
+  </head>
+
+  <body class="nav-md">
+    <div class="container body">
+      <div class="main_container">
+        <!-- Main content -->
+        <div id="main-content">
+          <div class="right_col" role="main">
+            <div class="row">
+              <div class="col-md-12">
+                <div class="x_panel">
+                  <div class="x_title">
+                    <h2>Cockpit - Container Mode</h2>
+                    <div class="clearfix"></div>
+                  </div>
+                  <div class="x_content">
+                    <p>Welcome to Cockpit running in container mode.</p>
+                    <p>
+                      <strong>Status:</strong>
+                      <span id="connection-status">Online</span>
+                    </p>
+                    <p>
+                      <strong>Backend:</strong> <span id="backend-url"></span>
+                    </p>
+                    <p><strong>Mode:</strong> <span id="app-mode"></span></p>
+
+                    <div class="btn-group" role="group">
+                      <a href="onboard-device.html" class="btn btn-primary">
+                        <i class="fa fa-plus"></i> Onboard Device
+                      </a>
+                      <a href="sync_devices.html" class="btn btn-info">
+                        <i class="fa fa-sync"></i> Sync Devices
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Initialize container mode interface
+      document.addEventListener("DOMContentLoaded", () => {
+        // Update status information
+        document.getElementById("backend-url").textContent =
+          CockpitConfig.api.baseUrl;
+        document.getElementById("app-mode").textContent = CockpitConfig
+          .environment.isContainer
+          ? "Container"
+          : CockpitConfig.environment.isDevelopment
+            ? "Development"
+            : "Production";
+
+        // Set online status
+        document.getElementById("connection-status").innerHTML =
+          '<span style="color: #27ae60;"><i class="fa fa-check-circle"></i> Online</span>';
+      });
+    </script>
+  </body>
+</html>

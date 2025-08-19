@@ -1,0 +1,2851 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="images/favicon.ico" type="image/ico" />
+    <title>Scan & Add - Cockpit</title>
+    <script type="module" src="/src/main-minimal.js"></script>
+    <script src="js/auth.js"></script>
+  </head>
+  <body class="nav-md">
+    <div class="container body">
+      <div class="main_container">
+        <div class="col-md-3 left_col">
+          <div class="left_col scroll-view">
+            <div class="navbar nav_title" style="border: 0">
+              <a href="index.html" class="site_title"
+                ><i class="fas fa-paw"></i> <span>Cockpit!</span></a
+              >
+            </div>
+            <div class="clearfix"></div>
+            <div class="profile clearfix">
+              <div class="profile_pic"></div>
+              <div class="profile_info">
+                <span id="welcome-message">Welcome,</span>
+                <h2 id="sidebar-username">Loading...</h2>
+              </div>
+            </div>
+            <div
+              id="sidebar-menu"
+              class="main_menu_side hidden-print main_menu"
+            >
+              <div class="menu_section">
+                <h3>General</h3>
+                <ul class="nav side-menu">
+                  <li>
+                    <a href="index.html"><i class="fas fa-home"></i> Home</a>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-rocket"></i> Onboarding
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="onboard-device.html"
+                          ><i class="fas fa-plus-circle"></i> Onboard Device</a
+                        >
+                      </li>
+                      <li>
+                        <a href="sync_devices.html"
+                          ><i class="fas fa-sync"></i> Sync Devices</a
+                        >
+                      </li>
+                      <li>
+                        <a href="scan-and-add.html" class="current-page"
+                          ><i class="fas fa-search-plus"></i> Scan & Add</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-cogs"></i> Configs
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="backup.html"
+                          ><i class="fas fa-save"></i> Backup</a
+                        >
+                      </li>
+                      <li>
+                        <a href="compare.html"
+                          ><i class="fas fa-exchange-alt"></i> Compare</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+
+                  <li>
+                    <a
+                      ><i class="fas fa-cogs"></i> Ansible
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="ansible-inventory.html"
+                          ><i class="fas fa-list"></i> Inventory</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <a
+                      ><i class="fas fa-wrench"></i> Settings
+                      <span class="fas fa-chevron-down"></span
+                    ></a>
+                    <ul class="nav child_menu">
+                      <li>
+                        <a href="settings-nautobot.html"
+                          ><i class="fas fa-server"></i> Nautobot</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-templates.html"
+                          ><i class="fas fa-file-code"></i> Templates</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-git.html"
+                          ><i class="fab fa-git-alt"></i> Git Management</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-cache.html"
+                          ><i class="fas fa-bolt"></i> Cache</a
+                        >
+                      </li>
+                      <li>
+                        <a href="settings-credentials.html"
+                          ><i class="fas fa-key"></i> Credentials</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div class="sidebar-footer hidden-small">
+              <a href="settings-nautobot.html" title="Settings"
+                ><span class="fas fa-cog" aria-hidden="true"></span
+              ></a>
+              <a title="FullScreen"
+                ><span class="fas fa-expand" aria-hidden="true"></span
+              ></a>
+              <a title="Lock"
+                ><span class="fas fa-eye-slash" aria-hidden="true"></span
+              ></a>
+              <a title="Logout" href="login.html"
+                ><span class="fas fa-power-off" aria-hidden="true"></span
+              ></a>
+            </div>
+          </div>
+        </div>
+        <div class="top_nav">
+          <div class="nav_menu">
+            <div class="nav toggle">
+              <a id="menu_toggle"><i class="fas fa-bars"></i></a>
+            </div>
+            <nav class="nav navbar-nav">
+              <ul class="navbar-right">
+                <li class="nav-item dropdown open" style="padding-left: 15px">
+                  <a
+                    href="javascript:;"
+                    class="user-profile dropdown-toggle"
+                    aria-haspopup="true"
+                    id="navbarDropdown"
+                    data-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <span id="topbar-username">User</span>
+                  </a>
+                  <div
+                    class="dropdown-menu dropdown-usermenu pull-right"
+                    aria-labelledby="navbarDropdown"
+                  >
+                    <a class="dropdown-item" href="javascript:;" id="logout-btn"
+                      ><i class="fas fa-sign-out-alt"></i> Log Out</a
+                    >
+                  </div>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+        <div class="right_col" role="main">
+          <span id="nav-username" style="display: none"></span>
+          <div class="page-title" style="margin-top: 10px; margin-bottom: 15px">
+            <h3 style="margin: 0">Scan & Add Devices</h3>
+          </div>
+          <div class="x_panel" style="margin-top: 0">
+            <div class="x_content">
+              <div
+                class="steps-container"
+                style="display: flex; align-items: center; margin-bottom: 25px"
+              >
+                <div class="step active" id="step1-indicator">
+                  <div class="step-number">1</div>
+                  <div class="step-title">Networks</div>
+                </div>
+                <div
+                  class="step-divider"
+                  style="
+                    flex: 1;
+                    height: 2px;
+                    background: #e9ecef;
+                    margin: 0 20px;
+                  "
+                ></div>
+                <div class="step" id="step2-indicator">
+                  <div class="step-number">2</div>
+                  <div class="step-title">Properties</div>
+                </div>
+                <div
+                  class="step-divider"
+                  style="
+                    flex: 1;
+                    height: 2px;
+                    background: #e9ecef;
+                    margin: 0 20px;
+                  "
+                ></div>
+                <div class="step" id="step3-indicator">
+                  <div class="step-number">3</div>
+                  <div class="step-title">Device Onboarding</div>
+                </div>
+              </div>
+
+              <!-- Step 1: Networks -->
+              <div id="step1-content" class="step-content">
+                <div class="row">
+                  <div class="col-md-8 col-sm-12">
+                    <h3>Networks</h3>
+                    <p class="text-muted">
+                      Enter network ranges to scan. Continue to set properties.
+                    </p>
+                    <div class="form-group">
+                      <label class="control-label">Network Ranges (CIDR)</label>
+                      <small class="help-block"
+                        >Maximum /22 networks (up to ~1024 hosts). Up to 10
+                        ranges.</small
+                      >
+                      <div id="cidrs-container">
+                        <div class="cidr-input-group">
+                          <div class="input-group">
+                            <input
+                              type="text"
+                              class="form-control cidr-input"
+                              placeholder="192.168.1.0/24"
+                              pattern="^([0-9]{1,3}\.){3}[0-9]{1,3}\/[0-9]{1,2}$"
+                            />
+                            <span class="input-group-btn">
+                              <button
+                                class="btn btn-danger remove-cidr"
+                                type="button"
+                                style="display: none"
+                              >
+                                <i class="fa fa-minus"></i>
+                              </button>
+                              <button
+                                class="btn btn-primary add-cidr"
+                                type="button"
+                              >
+                                <i class="fa fa-plus"></i>
+                              </button>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <button
+                        type="button"
+                        class="btn btn-primary btn-lg"
+                        id="go-to-properties-btn"
+                      >
+                        <i class="fa fa-arrow-right"></i> Next
+                      </button>
+                    </div>
+                  </div>
+                  <div class="col-md-4 col-sm-12"></div>
+                </div>
+              </div>
+
+              <!-- Step 2: Properties -->
+              <div
+                id="step2-content"
+                class="step-content"
+                style="display: none"
+              >
+                <div class="row">
+                  <div class="col-md-8 col-sm-12">
+                    <h3>Properties</h3>
+                    <p class="text-muted">
+                      Configure authentication and discovery settings for the
+                      scan.
+                    </p>
+                    <form id="scan-form">
+                      <div
+                        id="login-discovery-panel"
+                        style="
+                          display: block;
+                          margin-top: 15px;
+                          border: 1px solid #e9ecef;
+                          padding: 12px;
+                          border-radius: 6px;
+                        "
+                      >
+                        <h4>Login &amp; Discovery</h4>
+                        <p class="text-muted" style="margin-bottom: 8px">
+                          Configure authentication credentials and discovery
+                          mode used for scanning.
+                        </p>
+                        <div class="form-group">
+                          <label class="control-label"
+                            >Authentication Credentials</label
+                          >
+                          <small class="help-block"
+                            >Select credentials to test against discovered
+                            devices.</small
+                          >
+                          <div id="credentials-container">
+                            <div class="credential-select-group">
+                              <div class="input-group">
+                                <select
+                                  class="form-control credential-select"
+                                  required
+                                >
+                                  <option value="">
+                                    Select credentials...
+                                  </option>
+                                </select>
+                                <span class="input-group-btn">
+                                  <button
+                                    class="btn btn-danger remove-credential"
+                                    type="button"
+                                    style="display: none"
+                                  >
+                                    <i class="fa fa-minus"></i>
+                                  </button>
+                                  <button
+                                    class="btn btn-primary add-credential"
+                                    type="button"
+                                  >
+                                    <i class="fa fa-plus"></i>
+                                  </button>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="form-group">
+                          <label class="control-label"
+                            >Network Discovery Mode</label
+                          >
+                          <small class="help-block"
+                            >Choose the method for device authentication and
+                            detection.</small
+                          >
+                          <select
+                            class="form-control"
+                            id="discovery-mode"
+                            required
+                          >
+                            <option value="napalm">
+                              Napalm (Full device detection with platform
+                              identification)
+                            </option>
+                            <option value="ssh-login" selected>
+                              SSH Login (Command-based device detection)
+                            </option>
+                          </select>
+                          <div class="help-block" style="margin-top: 8px">
+                            <strong>Napalm:</strong> Attempts Cisco
+                            (ios/nxos/iosxr) and Linux detection with full
+                            platform details.<br />
+                            <strong>SSH Login:</strong> SSH connectivity with
+                            basic device detection using 'show version' (Cisco)
+                            and 'uname -a' (Linux).
+                          </div>
+                        </div>
+                        <!-- Parser templates (moved from modal) -->
+                        <div
+                          id="parser-templates-section"
+                          style="display: none; margin-top: 15px"
+                        >
+                          <h4>Select Parser Templates</h4>
+                          <div class="table-responsive">
+                            <table class="table table-striped">
+                              <thead>
+                                <tr>
+                                  <th width="40">Use</th>
+                                  <th>Name</th>
+                                  <th>Description</th>
+                                </tr>
+                              </thead>
+                              <tbody id="parser-templates-tbody"></tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Linux Onboarding panel -->
+                      <div
+                        id="linux-onboarding-panel"
+                        style="
+                          display: block;
+                          margin-top: 15px;
+                          border: 1px solid #e9ecef;
+                          padding: 12px;
+                          border-radius: 6px;
+                        "
+                      >
+                        <h4>Linux Onboarding</h4>
+                        <p class="text-muted" style="margin-bottom: 8px">
+                          Options for onboarding Linux devices using Git-backed
+                          inventory templates.
+                        </p>
+                        <div class="form-group">
+                          <label class="control-label"
+                            >Git Repository (Onboarding)</label
+                          >
+                          <select
+                            class="form-control"
+                            id="onboarding-git-repo-select"
+                          >
+                            <option value="">Loading...</option>
+                          </select>
+                          <small class="help-block"
+                            >Select a repository (category: Onboarding)</small
+                          >
+                        </div>
+                        <div class="form-group">
+                          <label class="control-label"
+                            >Inventory Template</label
+                          >
+                          <select
+                            class="form-control"
+                            id="onboarding-inventory-template-select"
+                          >
+                            <option value="">Loading...</option>
+                          </select>
+                          <small class="help-block"
+                            >Select an inventory template (category: Inventory)
+                            to apply for Linux onboarding.</small
+                          >
+                        </div>
+                        <div class="form-group">
+                          <label class="control-label">Filename</label>
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="onboarding-filename"
+                            placeholder="inventory.pending.{time}"
+                          />
+                          <small class="help-block"
+                            >Filename to write for pending inventory (default:
+                            inventory.pending.{time})</small
+                          >
+                        </div>
+                        <div class="form-group">
+                          <div class="checkbox">
+                            <label>
+                              <input
+                                type="checkbox"
+                                id="onboarding-commit-push"
+                                checked
+                              />
+                              Commit &amp; Push
+                            </label>
+                          </div>
+                          <small class="help-block"
+                            >When enabled, the created file will be
+                            auto-committed and pushed. The commit message will
+                            be the filename.</small
+                          >
+                        </div>
+                      </div>
+                      <div
+                        class="form-group"
+                        style="display: flex; align-items: center; gap: 10px"
+                      >
+                        <button
+                          type="button"
+                          id="back-to-networks-btn"
+                          class="btn"
+                          style="
+                            background: #f5f5f5;
+                            border: 1px solid #e9ecef;
+                            color: #333;
+                            padding: 6px 10px;
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 8px;
+                          "
+                        >
+                          <i class="fa fa-arrow-left" aria-hidden="true"></i>
+                          <span>Back</span>
+                        </button>
+                        <button
+                          type="submit"
+                          class="btn btn-primary btn-lg"
+                          id="start-scan-btn"
+                        >
+                          <i class="fa fa-search"></i> Start Network Scan
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                  <div class="col-md-4 col-sm-12">
+                    <div id="scan-progress" style="display: none">
+                      <div class="x_panel">
+                        <div class="x_title">
+                          <h2>
+                            <i class="fa fa-pulse fa-spinner"></i> Scan Progress
+                          </h2>
+                          <div class="clearfix"></div>
+                        </div>
+                        <div class="x_content">
+                          <div class="progress-stats">
+                            <div class="stat-item">
+                              <strong>Job ID:</strong>
+                              <span id="job-id">-</span>
+                            </div>
+                            <div class="stat-item">
+                              <strong>Status:</strong>
+                              <span id="scan-status">-</span>
+                            </div>
+                            <div class="stat-item">
+                              <strong>Progress:</strong>
+                              <div class="progress">
+                                <div
+                                  class="progress-bar"
+                                  id="scan-progress-bar"
+                                  style="width: 0%"
+                                ></div>
+                              </div>
+                              <small
+                                ><span id="scan-progress-text"
+                                  >0 / 0</span
+                                ></small
+                              >
+                            </div>
+                          </div>
+                          <div class="scan-metrics">
+                            <table class="table table-condensed">
+                              <tbody>
+                                <tr>
+                                  <td>
+                                    <i class="fa fa-check text-success"></i>
+                                    Alive
+                                  </td>
+                                  <td><span id="metric-alive">0</span></td>
+                                </tr>
+                                <tr>
+                                  <td>
+                                    <i class="fa fa-key text-info"></i>
+                                    Authenticated
+                                  </td>
+                                  <td>
+                                    <span id="metric-authenticated">0</span>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td>
+                                    <i class="fa fa-times text-danger"></i>
+                                    Unreachable
+                                  </td>
+                                  <td>
+                                    <span id="metric-unreachable">0</span>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td>
+                                    <i
+                                      class="fa fa-exclamation text-warning"
+                                    ></i>
+                                    Auth Failed
+                                  </td>
+                                  <td>
+                                    <span id="metric-auth-failed">0</span>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td>
+                                    <i class="fa fa-question text-muted"></i>
+                                    Driver N/A
+                                  </td>
+                                  <td><span id="metric-driver-na">0</span></td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Step 3: Device Onboarding -->
+              <div
+                id="step3-content"
+                class="step-content"
+                style="display: none"
+              >
+                <h3>Device Onboarding</h3>
+                <p class="text-muted">
+                  Configure and onboard discovered devices.
+                </p>
+                <div class="table-responsive">
+                  <table class="table table-striped">
+                    <thead>
+                      <tr>
+                        <th width="40">
+                          <input type="checkbox" id="select-all-devices" />
+                        </th>
+                        <th>IP</th>
+                        <th>Hostname</th>
+                        <th>Type</th>
+                        <th>Platform</th>
+                        <th>Device Role</th>
+                        <th>Location</th>
+                        <th>Secret Group</th>
+                        <th>Credential</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="devices-tbody"></tbody>
+                  </table>
+                </div>
+                <div
+                  class="form-group"
+                  style="
+                    margin-top: 15px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                  "
+                >
+                  <div>
+                    <button
+                      type="button"
+                      class="btn btn-success btn-lg"
+                      id="onboard-selected-btn"
+                      disabled
+                    >
+                      <i class="fa fa-upload"></i> Onboard Selected Devices
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-default text-muted font-weight-bold"
+                      id="back-to-scan-btn"
+                    >
+                      Back to Properties
+                    </button>
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      class="btn btn-warning"
+                      id="assign-to-all-btn"
+                    >
+                      <i class="fa fa-check-square-o"></i> Assign to All
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Assign to All Modal -->
+    <div
+      class="modal"
+      id="assign-all-modal"
+      tabindex="-1"
+      aria-labelledby="assign-all-modal-label"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="assign-all-modal-label">
+              Assign Settings to Selected Devices
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="assign-all-form">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>Hostname</label
+                    ><input
+                      type="text"
+                      class="form-control"
+                      id="all-hostname"
+                      placeholder="Leave empty to keep"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>Platform</label
+                    ><input
+                      type="text"
+                      class="form-control"
+                      id="all-platform"
+                      placeholder="Leave empty to keep"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>Device Role</label
+                    ><select class="form-control" id="all-role">
+                      <option value="">— leave unchanged —</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Location</label>
+                    <div class="location-selector-wrapper">
+                      <input
+                        type="text"
+                        id="all-location-search"
+                        class="form-control"
+                        placeholder="Search locations... (leave empty to keep)"
+                        autocomplete="off"
+                      />
+                      <input type="hidden" id="all-location-hidden" />
+                      <div
+                        id="all-location-dropdown"
+                        class="location-dropdown"
+                        style="display: none"
+                      >
+                        <div class="dropdown-content"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>IP-Address Namespace</label
+                    ><select class="form-control" id="all-namespace">
+                      <option value="">— leave unchanged —</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Secret Group</label
+                    ><select class="form-control" id="all-secret-group">
+                      <option value="">— leave unchanged —</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Device Status</label
+                    ><select class="form-control" id="all-status">
+                      <option value="">— leave unchanged —</option>
+                      <option>Active</option>
+                      <option>Planned</option>
+                      <option>Staging</option>
+                      <option>Retired</option>
+                      <option>Failed</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Interface Status</label
+                    ><select class="form-control" id="all-interface-status">
+                      <option value="">— leave unchanged —</option>
+                      <option>Active</option>
+                      <option>Provisioning</option>
+                      <option>Error</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>IP Status</label
+                    ><select class="form-control" id="all-ip-status">
+                      <option value="">— leave unchanged —</option>
+                      <option>Active</option>
+                      <option>Provisioning</option>
+                      <option>Error</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="assign-all-confirm"
+            >
+              <i class="fa fa-check"></i> Assign to All
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div
+      class="modal"
+      id="parser-select-modal"
+      tabindex="-1"
+      aria-labelledby="parser-select-label"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="parser-select-label">
+              Select Parser Templates
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th width="40">Use</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody id="parser-templates-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="confirm-start-scan"
+            >
+              Start Network Scan
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="modal"
+      id="device-metadata-modal"
+      tabindex="-1"
+      aria-labelledby="device-metadata-modal-label"
+      aria-hidden="true"
+    >
+      <div
+        class="modal-dialog modal-lg modal-dialog-scrollable"
+        role="document"
+      >
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="device-metadata-modal-label">
+              Device Configuration
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="device-metadata-form">
+              <input type="hidden" id="device-ip" />
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>IP Address</label
+                    ><input
+                      type="text"
+                      class="form-control"
+                      id="device-ip-display"
+                      readonly
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>Hostname</label
+                    ><input
+                      type="text"
+                      class="form-control"
+                      id="device-hostname"
+                      placeholder="Auto-detected or custom"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>Platform</label
+                    ><input
+                      type="text"
+                      class="form-control"
+                      id="device-platform"
+                      placeholder="cisco_ios, cisco_nxos, linux"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>Device Type</label>
+                    <select class="form-control" id="device-type" readonly>
+                      <option value="cisco">Cisco Device</option>
+                      <option value="linux">Linux Server</option>
+                      <option value="unknown">Unknown Device</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-6" id="cisco-fields">
+                  <div class="form-group">
+                    <label>Device Role</label
+                    ><select class="form-control" id="device-role"></select>
+                  </div>
+                  <div class="form-group">
+                    <label>Location</label>
+                    <div class="location-selector-wrapper">
+                      <input
+                        type="text"
+                        id="device-location-search"
+                        class="form-control"
+                        placeholder="Search locations..."
+                        autocomplete="off"
+                      />
+                      <input type="hidden" id="device-location" />
+                      <div
+                        id="device-location-dropdown"
+                        class="location-dropdown"
+                        style="display: none"
+                      >
+                        <div class="dropdown-content"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label>IP-Address Namespace</label
+                    ><select
+                      class="form-control"
+                      id="device-namespace"
+                    ></select>
+                  </div>
+                  <div class="form-group">
+                    <label>Secret Group</label
+                    ><select
+                      class="form-control"
+                      id="device-secret-group"
+                    ></select>
+                  </div>
+                  <div class="form-group">
+                    <label>Device Status</label
+                    ><select class="form-control" id="device-status">
+                      <option>Active</option>
+                      <option>Planned</option>
+                      <option>Staging</option>
+                      <option>Retired</option>
+                      <option>Failed</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Interface Status</label
+                    ><select class="form-control" id="device-interface-status">
+                      <option>Active</option>
+                      <option>Provisioning</option>
+                      <option>Error</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>IP Status</label
+                    ><select class="form-control" id="device-ip-status">
+                      <option>Active</option>
+                      <option>Provisioning</option>
+                      <option>Error</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-6" id="linux-fields" style="display: none">
+                  <div class="form-group">
+                    <label>Device Role</label
+                    ><select class="form-control" id="linux-role"></select>
+                  </div>
+                  <div class="form-group">
+                    <label>Location</label>
+                    <div class="location-selector-wrapper">
+                      <input
+                        type="text"
+                        id="linux-location-search"
+                        class="form-control"
+                        placeholder="Search locations..."
+                        autocomplete="off"
+                      />
+                      <input type="hidden" id="linux-location" />
+                      <div
+                        id="linux-location-dropdown"
+                        class="location-dropdown"
+                        style="display: none"
+                      >
+                        <div class="dropdown-content"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label>Device Status</label
+                    ><select class="form-control" id="linux-status">
+                      <option>Active</option>
+                      <option>Planned</option>
+                      <option>Staging</option>
+                      <option>Retired</option>
+                      <option>Failed</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group" style="margin-top: 15px">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  id="save-device-metadata"
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  data-bs-dismiss="modal"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      #device-metadata-modal .modal-content {
+        background: #fff !important;
+      }
+      .step.active .step-number {
+        background: #337ab7;
+        color: #fff;
+      }
+      .step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-bottom: 8px;
+        border: 2px solid #e9ecef;
+      }
+      .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 120px;
+      }
+      /* Location selector styles (reused) */
+      .location-selector-wrapper {
+        position: relative;
+      }
+      .location-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1050;
+        background: #fff;
+        border: 1px solid #d1d3e2;
+        border-top: none;
+        border-radius: 0 0 6px 6px;
+        max-height: 300px;
+        overflow-y: auto;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+      }
+      .dropdown-content {
+        padding: 0;
+      }
+      .location-dropdown-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #f3f3f4;
+        transition: background-color 0.15s ease-in-out;
+        line-height: 1.4;
+        word-wrap: break-word;
+      }
+      .location-dropdown-item:hover {
+        background-color: #f8f9fc;
+      }
+      .location-dropdown-item:last-child {
+        border-bottom: none;
+        border-radius: 0 0 6px 6px;
+      }
+      .location-dropdown-item.no-results {
+        color: #858796;
+        font-style: italic;
+        cursor: default;
+      }
+      .location-dropdown-item.no-results:hover {
+        background-color: transparent;
+      }
+      .has-selection {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+      }
+      /* Remove hover effect on the Onboard Selected Devices button */
+      #onboard-selected-btn.btn-success {
+        background-color: #26b99a !important;
+        border-color: #169f85 !important;
+        color: #fff !important;
+        transition: none !important;
+      }
+      #onboard-selected-btn.btn-success:hover,
+      #onboard-selected-btn.btn-success:focus,
+      #onboard-selected-btn.btn-success:active,
+      #onboard-selected-btn.btn-success.active {
+        background-color: #26b99a !important;
+        border-color: #169f85 !important;
+        color: #fff !important;
+        box-shadow: none !important;
+      }
+      #onboard-selected-btn.btn-success:disabled,
+      #onboard-selected-btn.btn-success[disabled] {
+        background-color: #26b99a !important;
+        border-color: #169f85 !important;
+        color: #fff !important;
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    </style>
+
+    <script>
+      // Auth redirect (simple)
+      if (!localStorage.getItem("auth_token")) {
+        window.location.href = "login.html";
+      }
+
+      // State
+      // Debugging: set window.SCAN_ADD_DEBUG=false in console to silence
+      window.SCAN_ADD_DEBUG = true;
+      function dbg() {
+        try {
+          if (window.SCAN_ADD_DEBUG) {
+            const ts = new Date().toISOString();
+            console.debug("[scan-and-add]", ts, ...arguments);
+          }
+        } catch (e) {}
+      }
+      let credentialsData = [];
+      let scanJob = null;
+      let discoveredDevices = [];
+      let deviceMetadata = {};
+      let deviceModalInstance = null;
+      let namespacesList = [];
+      let rolesList = [];
+      let locationsData = [];
+      let secretGroupsList = [];
+      // Track selection in a Set to avoid DOM-event ordering races when counting checked boxes
+      let selectedDevices = new Set();
+      // Full objects with IDs for mapping to backend *_id fields
+      let namespacesFull = [];
+      let rolesFull = [];
+      let platformsList = [];
+      let deviceStatusesList = [];
+      let interfaceStatusesList = [];
+      let ipAddressStatusesList = [];
+
+      document.addEventListener("DOMContentLoaded", () => {
+        if (!window.authManager) {
+          window.authManager = new AuthManager();
+        }
+        initPage();
+      });
+
+      async function initPage() {
+        try {
+          // Populate username in sidebar/topbar
+          const userInfo = JSON.parse(
+            localStorage.getItem("user_info") || "{}",
+          );
+          const uname = userInfo.username || "User";
+          const sb = document.getElementById("sidebar-username");
+          if (sb) sb.textContent = uname;
+          const tb = document.getElementById("topbar-username");
+          if (tb) tb.textContent = uname;
+          await loadCredentials();
+          await loadNamespaces();
+          await loadRoles();
+          await loadLocations();
+          await loadSecretGroups();
+          await loadPlatforms();
+          await loadDeviceStatuses();
+          await loadInterfaceStatuses();
+          await loadIpAddressStatuses();
+          // Load new onboarding-specific data
+          await loadOnboardingGitRepos();
+          await loadInventoryTemplates();
+          setupEventListeners();
+          try {
+            observeOnboardBtn();
+          } catch (e) {
+            dbg("observeOnboardBtn failed", e);
+          }
+          // Normalize initial CIDR button states
+          updateCIDRButtons();
+          // Normalize initial credential button states
+          updateCredentialButtons();
+          // Default filename for Linux Onboarding (inventory.pending.{YYYY-MM-DD-hh.mm.ss})
+          try {
+            const fn = document.getElementById("onboarding-filename");
+            if (fn && !fn.value) {
+              const d = new Date();
+              const pad = (n) => String(n).padStart(2, "0");
+              const ts = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}.${pad(d.getMinutes())}.${pad(d.getSeconds())}`;
+              fn.value = `inventory.pending.${ts}`;
+            }
+          } catch (e) {
+            console.debug("Could not set default onboarding filename", e);
+          }
+          const logoutBtn = document.getElementById("logout-btn");
+          if (logoutBtn)
+            logoutBtn.addEventListener("click", (e) => {
+              e.preventDefault();
+              if (window.authManager) window.authManager.logout();
+            });
+        } catch (e) {
+          console.error("Init failed", e);
+        }
+      }
+
+      function observeOnboardBtn() {
+        const btn = document.getElementById("onboard-selected-btn");
+        if (!btn) return;
+        const obs = new MutationObserver((muts) => {
+          muts.forEach((m) => {
+            if (m.attributeName === "disabled") {
+              dbg("MutationObserver: onboard button disabled =>", btn.disabled);
+              // Auto-correct: if something else disabled the button while selections exist, re-enable
+              try {
+                const domCheckedCount = document.querySelectorAll(
+                  ".device-checkbox:checked",
+                ).length;
+                const shouldBeEnabled =
+                  (selectedDevices && selectedDevices.size > 0) ||
+                  domCheckedCount > 0;
+                if (shouldBeEnabled && btn.disabled) {
+                  dbg(
+                    "MutationObserver: correcting unintended disable (selections present)",
+                  );
+                  btn.disabled = false;
+                }
+              } catch (e) {
+                /* noop */
+              }
+            }
+          });
+        });
+        obs.observe(btn, { attributes: true, attributeFilter: ["disabled"] });
+        window._onboardBtnObserver = obs;
+        dbg("MutationObserver attached to onboard button");
+      }
+
+      async function loadNamespaces() {
+        try {
+          const resp = await authManager.apiRequest("/api/nautobot/namespaces");
+          namespacesFull = Array.isArray(resp) ? resp : [];
+          namespacesList = (namespacesFull || []).map((n) => n.name);
+        } catch (e) {
+          console.warn("Failed to load namespaces", e);
+          namespacesFull = [];
+          namespacesList = [];
+        }
+      }
+
+      async function loadRoles() {
+        try {
+          const resp = await authManager.apiRequest(
+            "/api/nautobot/roles/devices",
+          );
+          rolesFull = Array.isArray(resp) ? resp : [];
+          // Keep legacy rolesList for display where needed
+          rolesList = (rolesFull || [])
+            .map((r) => ({
+              name: r.name || r.slug || "",
+              slug: r.slug || r.name || "",
+              id: r.id,
+            }))
+            .filter((r) => r.name);
+        } catch (e) {
+          console.warn("Failed to load roles", e);
+          rolesFull = [];
+          rolesList = [];
+        }
+      }
+
+      async function loadLocations() {
+        try {
+          const resp = await authManager.apiRequest("/api/nautobot/locations");
+          locationsData = Array.isArray(resp) ? resp : [];
+          // Build hierarchical paths similar to onboard-device
+          buildLocationHierarchy();
+          initLocationSelectors();
+        } catch (e) {
+          console.warn("Failed to load locations", e);
+          locationsData = [];
+        }
+      }
+
+      async function loadSecretGroups() {
+        try {
+          const resp = await authManager.apiRequest(
+            "/api/nautobot/secret-groups",
+          );
+          // Expecting list of {id, name}
+          secretGroupsList = Array.isArray(resp) ? resp : [];
+        } catch (e) {
+          console.warn("Failed to load secret groups", e);
+          secretGroupsList = [];
+        }
+      }
+
+      async function loadPlatforms() {
+        try {
+          const resp = await authManager.apiRequest("/api/nautobot/platforms");
+          platformsList = Array.isArray(resp) ? resp : [];
+        } catch (e) {
+          console.warn("Failed to load platforms", e);
+          platformsList = [];
+        }
+      }
+
+      async function loadDeviceStatuses() {
+        try {
+          const resp = await authManager.apiRequest(
+            "/api/nautobot/statuses/device",
+          );
+          deviceStatusesList = Array.isArray(resp) ? resp : [];
+        } catch (e) {
+          console.warn("Failed to load device statuses", e);
+          deviceStatusesList = [];
+        }
+      }
+
+      async function loadInterfaceStatuses() {
+        try {
+          const resp = await authManager.apiRequest(
+            "/api/nautobot/statuses/interface",
+          );
+          interfaceStatusesList = Array.isArray(resp) ? resp : [];
+        } catch (e) {
+          console.warn("Failed to load interface statuses", e);
+          interfaceStatusesList = [];
+        }
+      }
+
+      async function loadIpAddressStatuses() {
+        try {
+          const resp = await authManager.apiRequest(
+            "/api/nautobot/statuses/ipaddress",
+          );
+          ipAddressStatusesList = Array.isArray(resp) ? resp : [];
+        } catch (e) {
+          console.warn("Failed to load IP address statuses", e);
+          ipAddressStatusesList = [];
+        }
+      }
+
+      // Load Git repositories that are categorized as Onboarding for selection
+      async function loadOnboardingGitRepos() {
+        const sel = document.getElementById("onboarding-git-repo-select");
+        if (!sel) return;
+        sel.innerHTML = '<option value="">Loading...</option>';
+        try {
+          // Use the specified endpoint for onboarding repositories (category lower-case)
+          const resp = await authManager.apiRequest(
+            "/api/git-repositories?category=onboarding&active_only=false",
+          );
+          console.debug("loadOnboardingGitRepos: raw response", resp);
+          // Accept several response shapes
+          let repos = [];
+          if (Array.isArray(resp)) repos = resp;
+          else if (resp && Array.isArray(resp.results)) repos = resp.results;
+          else if (resp && Array.isArray(resp.repositories))
+            repos = resp.repositories;
+          else if (resp && Array.isArray(resp.data)) repos = resp.data;
+          // Defensive: ensure objects
+          repos = repos.filter((r) => r && typeof r === "object");
+          // Normalize category check: accept a few possible field names and match 'onboarding'
+          const filtered = repos.filter((r) => {
+            const cat = (
+              r.category ||
+              r.repo_category ||
+              r.category_name ||
+              (r.metadata && r.metadata.category) ||
+              ""
+            )
+              .toString()
+              .toLowerCase();
+            return cat === "onboarding" || cat.indexOf("onboard") !== -1;
+          });
+          console.debug(
+            "loadOnboardingGitRepos: repos count",
+            repos.length,
+            "filtered count",
+            filtered.length,
+            filtered,
+          );
+          // Build options with fallbacks for name fields
+          let optionsHtml = filtered
+            .map((r) => {
+              const display =
+                r.name ||
+                r.repo_name ||
+                r.display_name ||
+                r.path ||
+                r.url ||
+                (r.id ? String(r.id) : null) ||
+                JSON.stringify(r);
+              const value =
+                r.id != null ? String(r.id) : r.name || r.repo_name || display;
+              return `<option value="${String(value)}">${display}</option>`;
+            })
+            .join("");
+          // Fallback: if no filtered repos, show all repos with category annotations to aid diagnosis
+          if (!optionsHtml && repos.length) {
+            console.warn(
+              "loadOnboardingGitRepos: no repos matched category=computed onboarding; falling back to show all repos",
+            );
+            optionsHtml = repos
+              .map((r) => {
+                const display =
+                  r.name ||
+                  r.repo_name ||
+                  r.display_name ||
+                  r.path ||
+                  r.url ||
+                  (r.id ? String(r.id) : null) ||
+                  JSON.stringify(r);
+                const cat = (
+                  r.category ||
+                  r.repo_category ||
+                  r.category_name ||
+                  (r.metadata && r.metadata.category) ||
+                  ""
+                ).toString();
+                const value =
+                  r.id != null
+                    ? String(r.id)
+                    : r.name || r.repo_name || display;
+                return `<option value="${String(value)}">${display} ${cat ? ` (${cat})` : ""}</option>`;
+              })
+              .join("");
+          }
+          // If there is exactly one candidate (either filtered or fallback list), pre-select it for convenience
+          const candidates = filtered && filtered.length ? filtered : repos;
+          if (candidates && candidates.length === 1) {
+            const r = candidates[0];
+            const display =
+              r.name ||
+              r.repo_name ||
+              r.display_name ||
+              r.path ||
+              r.url ||
+              (r.id ? String(r.id) : JSON.stringify(r));
+            const value =
+              r.id != null ? String(r.id) : r.name || r.repo_name || display;
+            sel.innerHTML =
+              '<option value="">— select repository —</option>' +
+              `<option value="${String(value)}">${display}</option>`;
+            sel.value = String(value);
+          } else {
+            sel.innerHTML =
+              '<option value="">— select repository —</option>' +
+              (optionsHtml || "");
+          }
+        } catch (e) {
+          console.error("Failed to load onboarding git repos", e);
+          sel.innerHTML = '<option value="">(failed to load)</option>';
+        }
+      }
+
+      // Load templates with category Inventory for the inventory template select
+      async function loadInventoryTemplates() {
+        const sel = document.getElementById(
+          "onboarding-inventory-template-select",
+        );
+        if (!sel) return;
+        sel.innerHTML = '<option value="">Loading...</option>';
+        try {
+          const resp = await authManager.apiRequest(
+            "/api/templates?category=onboarding&active_only=true",
+          );
+          console.debug("loadInventoryTemplates: raw response", resp);
+          let templates = [];
+          if (Array.isArray(resp)) templates = resp;
+          else if (resp && Array.isArray(resp.results))
+            templates = resp.results;
+          else if (resp && Array.isArray(resp.templates))
+            templates = resp.templates;
+          else if (resp && Array.isArray(resp.data)) templates = resp.data;
+          templates = templates.filter((t) => t && typeof t === "object");
+          console.debug(
+            "loadInventoryTemplates: templates count",
+            templates.length,
+            templates,
+          );
+          let optionsHtml = templates
+            .map((t) => {
+              const id = t.id || t.template_id || t.name || JSON.stringify(t);
+              const name = t.name || t.title || t.template_name || String(id);
+              return `<option value="${String(id)}">${name}</option>`;
+            })
+            .join("");
+          if (!optionsHtml && templates.length) {
+            console.warn(
+              "loadInventoryTemplates: templates present but mapping produced no options; showing raw list",
+            );
+            optionsHtml = templates
+              .map((t) => {
+                const name =
+                  t.name || t.title || t.template_name || JSON.stringify(t);
+                const id = t.id || t.template_id || JSON.stringify(t);
+                return `<option value="${String(id)}">${name}</option>`;
+              })
+              .join("");
+          }
+          // If exactly one template candidate exists, auto-select it for convenience
+          const candidates = templates;
+          if (candidates && candidates.length === 1) {
+            const t = candidates[0];
+            const id = t.id || t.template_id || t.name || JSON.stringify(t);
+            const name = t.name || t.title || t.template_name || String(id);
+            sel.innerHTML =
+              '<option value="">— select template —</option>' +
+              `<option value="${String(id)}">${name}</option>`;
+            sel.value = String(id);
+          } else {
+            sel.innerHTML =
+              '<option value="">— select template —</option>' +
+              (optionsHtml || "");
+          }
+        } catch (e) {
+          console.error("Failed to load inventory templates", e);
+          sel.innerHTML = '<option value="">(failed to load)</option>';
+        }
+      }
+
+      function populateSecretGroupSelect(selectId, current) {
+        const sel = document.getElementById(selectId);
+        if (!sel) return;
+        sel.innerHTML = "";
+        const noneOpt = document.createElement("option");
+        noneOpt.value = "";
+        noneOpt.textContent = "— none —";
+        sel.appendChild(noneOpt);
+        for (const s of secretGroupsList || []) {
+          const o = document.createElement("option");
+          o.value = s.id;
+          o.textContent = s.name;
+          sel.appendChild(o);
+        }
+        if (current) {
+          // Try to match by id or name
+          const found = [...sel.options].some(
+            (o) => o.value == current || o.textContent == current,
+          );
+          if (found) sel.value = current;
+        }
+      }
+      function buildLocationHierarchy() {
+        const map = new Map();
+        locationsData.forEach((l) => map.set(l.id, l));
+        function pathFor(loc) {
+          const parts = [];
+          let cur = loc;
+          const guard = new Set();
+          while (cur && !guard.has(cur.id)) {
+            guard.add(cur.id);
+            parts.unshift(cur.name);
+            cur = cur.parent && cur.parent.id ? map.get(cur.parent.id) : null;
+          }
+          return parts.length > 1 ? parts.join(" → ") : parts[0];
+        }
+        locationsData.forEach((l) => {
+          l.hierarchicalPath = pathFor(l);
+        });
+        locationsData.sort((a, b) =>
+          a.hierarchicalPath.localeCompare(b.hierarchicalPath),
+        );
+      }
+      function filterAndRenderLocations(inputId, dropdownId) {
+        const input = document.getElementById(inputId);
+        const dd = document.getElementById(dropdownId);
+        if (!input || !dd) return;
+        const content = dd.querySelector(".dropdown-content");
+        if (!content) return;
+        const term = (input.value || "").toLowerCase();
+        const filtered = locationsData.filter((l) =>
+          (l.hierarchicalPath || "").toLowerCase().includes(term),
+        );
+        content.innerHTML = "";
+        if (filtered.length === 0) {
+          const no = document.createElement("div");
+          no.className = "location-dropdown-item no-results";
+          no.textContent = "No locations found";
+          content.appendChild(no);
+        } else {
+          filtered.forEach((l) => {
+            const item = document.createElement("div");
+            item.className = "location-dropdown-item";
+            item.textContent = l.hierarchicalPath;
+            item.dataset.value = l.id;
+            item.addEventListener("click", () => {
+              selectLocationFor(inputId, l);
+            });
+            content.appendChild(item);
+          });
+        }
+        dd.style.display = "block";
+      }
+      function selectLocationFor(inputId, loc) {
+        const map = {
+          "device-location-search": { hidden: "device-location" },
+          "linux-location-search": { hidden: "linux-location" },
+          "all-location-search": { hidden: "all-location-hidden" },
+        };
+        const cfg = map[inputId];
+        if (!cfg) return;
+        const searchEl = document.getElementById(inputId);
+        const hiddenEl = document.getElementById(cfg.hidden);
+        if (searchEl) {
+          searchEl.value = loc.hierarchicalPath;
+          searchEl.classList.add("has-selection");
+        }
+        if (hiddenEl) hiddenEl.value = loc.id;
+        const dd =
+          searchEl && searchEl.parentElement
+            ? searchEl.parentElement.querySelector(".location-dropdown")
+            : null;
+        if (dd) dd.style.display = "none";
+      }
+      function initLocationSelectors() {
+        // Device modal
+        ["device", "linux"].forEach((prefix) => {
+          const searchId = `${prefix}-location-search`;
+          const ddId = `${prefix}-location-dropdown`;
+          const input = document.getElementById(searchId);
+          const dd = document.getElementById(ddId);
+          if (!input || !dd) return;
+          input.addEventListener("input", () =>
+            filterAndRenderLocations(searchId, ddId),
+          );
+          input.addEventListener("focus", () =>
+            filterAndRenderLocations(searchId, ddId),
+          );
+          document.addEventListener("click", (e) => {
+            if (!input.contains(e.target) && !dd.contains(e.target))
+              dd.style.display = "none";
+          });
+        });
+        // Assign-all modal
+        const allInput = document.getElementById("all-location-search");
+        const allDd = document.getElementById("all-location-dropdown");
+        if (allInput && allDd) {
+          allInput.addEventListener("input", () =>
+            filterAndRenderLocations(
+              "all-location-search",
+              "all-location-dropdown",
+            ),
+          );
+          allInput.addEventListener("focus", () =>
+            filterAndRenderLocations(
+              "all-location-search",
+              "all-location-dropdown",
+            ),
+          );
+          document.addEventListener("click", (e) => {
+            if (!allInput.contains(e.target) && !allDd.contains(e.target))
+              allDd.style.display = "none";
+          });
+        }
+      }
+
+      async function loadCredentials() {
+        try {
+          credentialsData = await authManager.apiRequest("/api/credentials/");
+          updateCredentialSelects();
+        } catch (err) {
+          console.error("Failed loading credentials", err);
+          showAlert("Failed to load credentials", "danger");
+        }
+      }
+
+      function updateCredentialSelects() {
+        const selects = document.querySelectorAll(".credential-select");
+        selects.forEach((sel) => populateCredentialSelect(sel));
+      }
+
+      function populateCredentialSelect(select) {
+        const current = select.value;
+        select.innerHTML =
+          '<option value="">Select credentials...</option>' +
+          credentialsData
+            .map((c) => `<option value="${c.id}">${c.name}</option>`)
+            .join("");
+        if (current && [...select.options].some((o) => o.value === current))
+          select.value = current;
+      }
+
+      function setupEventListeners() {
+        const scanForm = document.getElementById("scan-form");
+        if (scanForm) {
+          scanForm.addEventListener("submit", startScan);
+        }
+        const backBtn = document.getElementById("back-to-scan-btn");
+        if (backBtn) {
+          backBtn.addEventListener("click", () => {
+            // Restore Properties view to pre-scan state: hide progress, enable start, clear pending parser choice
+            try {
+              resetScanForm();
+            } catch (e) {}
+            try {
+              const sec = document.getElementById("parser-templates-section");
+              if (sec) sec.style.display = "none";
+            } catch (e) {}
+            pendingScanPayload = null;
+            showStep(2);
+          });
+        }
+        const nextBtn = document.getElementById("go-to-properties-btn");
+        if (nextBtn) {
+          nextBtn.addEventListener("click", () => {
+            normalizeCIDRs();
+            showStep(2);
+          });
+        }
+        const backToNetworks = document.getElementById("back-to-networks-btn");
+        if (backToNetworks) {
+          backToNetworks.addEventListener("click", () => {
+            showStep(1);
+          });
+        }
+        // Show/hide parser templates when discovery mode changes
+        const dm = document.getElementById("discovery-mode");
+        if (dm) {
+          dm.addEventListener("change", async () => {
+            const sec = document.getElementById("parser-templates-section");
+            if (!sec) return;
+            if (dm.value === "ssh-login") {
+              try {
+                await openParserTemplateModal();
+              } catch (e) {}
+            } else {
+              sec.style.display = "none";
+            }
+          });
+        }
+        const selectAll = document.getElementById("select-all-devices");
+        if (selectAll) {
+          selectAll.addEventListener("change", toggleAllDevices);
+        }
+        const onboardBtn = document.getElementById("onboard-selected-btn");
+        if (onboardBtn) {
+          onboardBtn.addEventListener("click", onboardSelectedDevices);
+        }
+        const assignAllBtn = document.getElementById("assign-to-all-btn");
+        if (assignAllBtn) {
+          assignAllBtn.addEventListener("click", openAssignAllModal);
+        }
+        const saveBtn = document.getElementById("save-device-metadata");
+        if (saveBtn) {
+          saveBtn.addEventListener("click", saveDeviceMetadata);
+        }
+        document
+          .getElementById("devices-tbody")
+          .addEventListener("click", (e) => {
+            if (e.target.closest(".device-config-btn")) {
+              const ip = e.target.closest("button").dataset.ip;
+              editDeviceMetadata(ip);
+            }
+          });
+        // Delegated for dynamic add/remove
+        document
+          .getElementById("cidrs-container")
+          .addEventListener("click", cidrContainerHandler);
+        document
+          .getElementById("credentials-container")
+          .addEventListener("click", credentialContainerHandler);
+        // Devices table delegated handlers: row click toggles checkbox, changes update onboard button
+        const _devicesTbody = document.getElementById("devices-tbody");
+        if (_devicesTbody) {
+          _devicesTbody.addEventListener("click", (e) => {
+            try {
+              // If the Configure button was clicked, let its own handler run
+              if (e.target.closest(".device-config-btn")) return;
+              // If the checkbox itself (or any control) was clicked, let the native change handler handle it
+              if (e.target.closest('input[type="checkbox"]')) return;
+              if (e.target.closest("a") || e.target.closest("button")) return;
+              // Otherwise, toggle the row's checkbox and dispatch a change event to keep state in sync
+              const row = e.target.closest("tr");
+              if (row) {
+                const cb = row.querySelector(".device-checkbox");
+                if (cb) {
+                  const before = cb.checked;
+                  cb.checked = !cb.checked;
+                  dbg("Row click toggled checkbox", {
+                    ip: cb.dataset.ip,
+                    before,
+                    after: cb.checked,
+                  });
+                  // Dispatch change so our change listener updates the Set and button
+                  cb.dispatchEvent(new Event("change", { bubbles: true }));
+                }
+              }
+            } catch (err) {
+              console.error("devices-tbody click handler error", err);
+              updateOnboardButton();
+            }
+          });
+          _devicesTbody.addEventListener("change", (e) => {
+            try {
+              if (
+                e.target &&
+                e.target.classList &&
+                e.target.classList.contains("device-checkbox")
+              ) {
+                const ip = e.target.dataset.ip;
+                const checked = !!e.target.checked;
+                if (checked) selectedDevices.add(ip);
+                else selectedDevices.delete(ip);
+                const domCount = document.querySelectorAll(
+                  ".device-checkbox:checked",
+                ).length;
+                dbg("Checkbox change", {
+                  ip,
+                  checked,
+                  selectedSize: selectedDevices.size,
+                  domChecked: domCount,
+                });
+                updateOnboardButton();
+              }
+            } catch (err) {
+              console.error("devices-tbody change handler error", err);
+            }
+          });
+        }
+      }
+
+      function cidrContainerHandler(e) {
+        if (e.target.closest(".add-cidr")) addCIDR();
+        else if (e.target.closest(".remove-cidr"))
+          removeCIDR(e.target.closest(".cidr-input-group"));
+      }
+      function credentialContainerHandler(e) {
+        if (e.target.closest(".add-credential")) addCredential();
+        else if (e.target.closest(".remove-credential"))
+          removeCredential(e.target.closest(".credential-select-group"));
+      }
+      function addCIDR() {
+        const container = document.getElementById("cidrs-container");
+        const count = container.querySelectorAll(".cidr-input-group").length;
+        if (count >= 10) {
+          showAlert("Maximum 10 CIDR ranges", "warning");
+          return;
+        }
+        const div = document.createElement("div");
+        div.className = "cidr-input-group";
+        div.innerHTML = `<div class="input-group"><input type="text" class="form-control cidr-input" placeholder="192.168.2.0/24" pattern="^([0-9]{1,3}\.){3}[0-9]{1,3}\/[0-9]{1,2}$"><span class="input-group-btn"><button class="btn btn-danger remove-cidr" type="button"><i class="fa fa-minus"></i></button><button class="btn btn-primary add-cidr" type="button"><i class="fa fa-plus"></i></button></span></div>`;
+        container.appendChild(div);
+        updateCIDRButtons();
+      }
+      function removeCIDR(group) {
+        group.remove();
+        updateCIDRButtons();
+      }
+      function updateCIDRButtons() {
+        const groups = document.querySelectorAll(".cidr-input-group");
+        groups.forEach((g, i) => {
+          const removeBtn = g.querySelector(".remove-cidr");
+          const addBtn = g.querySelector(".add-cidr");
+          if (removeBtn)
+            removeBtn.style.display =
+              groups.length > 1 ? "inline-block" : "none";
+          if (addBtn)
+            addBtn.style.display =
+              i === groups.length - 1 ? "inline-block" : "none";
+        });
+      }
+      // If user entered plain IPv4 addresses (no /prefix), treat them as /32
+      function normalizeCIDRs() {
+        const inputs = document.querySelectorAll(".cidr-input");
+        const ipOnlyRe = /^\s*(?:\d{1,3}\.){3}\d{1,3}\s*$/;
+        inputs.forEach((inp) => {
+          const v = (inp.value || "").trim();
+          if (!v) return;
+          if (ipOnlyRe.test(v)) {
+            // append /32
+            inp.value = v.replace(/\s+/g, "") + "/32";
+          }
+        });
+      }
+      function addCredential() {
+        if (credentialsData.length === 0) {
+          showAlert("No credentials available", "warning");
+          return;
+        }
+        const container = document.getElementById("credentials-container");
+        const groups = container.querySelectorAll(".credential-select-group");
+        if (groups.length >= credentialsData.length) {
+          showAlert("All credentials already added", "warning");
+          return;
+        }
+        const div = document.createElement("div");
+        div.className = "credential-select-group";
+        div.innerHTML = `<div class="input-group"><select class="form-control credential-select" required><option value="">Select credentials...</option>${credentialsData.map((c) => `<option value='${c.id}'>${c.name}</option>`).join("")}</select><span class="input-group-btn"><button class="btn btn-danger remove-credential" type="button"><i class="fa fa-minus"></i></button><button class="btn btn-primary add-credential" type="button"><i class="fa fa-plus"></i></button></span></div>`;
+        container.appendChild(div);
+        updateCredentialButtons();
+      }
+      function removeCredential(group) {
+        group.remove();
+        updateCredentialButtons();
+      }
+      function updateCredentialButtons() {
+        const groups = document.querySelectorAll(".credential-select-group");
+        groups.forEach((g, i) => {
+          const removeBtn = g.querySelector(".remove-credential");
+          const addBtn = g.querySelector(".add-credential");
+          if (removeBtn)
+            removeBtn.style.display =
+              groups.length > 1 ? "inline-block" : "none";
+          if (addBtn) {
+            if (groups.length >= credentialsData.length) {
+              addBtn.style.display = "none";
+            } else {
+              addBtn.style.display =
+                i === groups.length - 1 ? "inline-block" : "none";
+            }
+          }
+        });
+      }
+
+      let pendingScanPayload = null;
+
+      async function startScan(e) {
+        e.preventDefault();
+        // normalize IP-only entries to /32 before validation
+        normalizeCIDRs();
+        const cidrs = [...document.querySelectorAll(".cidr-input")]
+          .map((i) => i.value.trim())
+          .filter((v) => v);
+        if (cidrs.length === 0) {
+          showAlert("Please enter at least one network range", "warning");
+          return;
+        }
+        if (!cidrs.every(isValidCIDR)) {
+          showAlert("Invalid CIDR format or prefix (/22-/32 only)", "danger");
+          return;
+        }
+        const credentialIds = [
+          ...document.querySelectorAll(".credential-select"),
+        ]
+          .map((s) => s.value)
+          .filter((v) => v);
+        if (credentialIds.length === 0) {
+          showAlert("Select at least one credential", "warning");
+          return;
+        }
+        const uniqueCredentials = [...new Set(credentialIds)];
+        if (uniqueCredentials.length !== credentialIds.length) {
+          showAlert("Duplicate credentials selected", "warning");
+          return;
+        }
+        const discoveryMode = document.getElementById("discovery-mode").value;
+        if (!discoveryMode) {
+          showAlert("Select discovery mode", "warning");
+          return;
+        }
+        try {
+          // Collect selected parser templates immediately if ssh-login; do not pause the flow for a modal
+          let selectedParsers = [];
+          if (discoveryMode === "ssh-login") {
+            selectedParsers = Array.from(
+              document.querySelectorAll(".parser-template-checkbox:checked"),
+            ).map((cb) => parseInt(cb.value, 10));
+          }
+          // Normal path: start scan immediately
+          document.getElementById("start-scan-btn").disabled = true;
+          document.getElementById("scan-progress").style.display = "block";
+          const bodyPayload = {
+            cidrs,
+            credential_ids: uniqueCredentials,
+            discovery_mode: discoveryMode,
+          };
+          if (selectedParsers && selectedParsers.length > 0)
+            bodyPayload.parser_template_ids = selectedParsers;
+          const response = await authManager.apiRequest("/api/scan/start", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(bodyPayload),
+          });
+          scanJob = response;
+          document.getElementById("job-id").textContent = response.job_id;
+          document.getElementById("scan-status").textContent = response.state;
+          pollScanProgress();
+        } catch (err) {
+          console.error("Scan start failed", err);
+          showAlert("Failed to start scan", "danger");
+          document.getElementById("start-scan-btn").disabled = false;
+          document.getElementById("scan-progress").style.display = "none";
+        }
+      }
+
+      async function openParserTemplateModal() {
+        // Fetch templates with category=parser and display inline in properties page
+        let templates = [];
+        try {
+          const resp = await authManager.apiRequest(
+            "/api/templates?category=parser",
+          );
+          templates = resp.templates || [];
+        } catch (e) {
+          console.error("Failed to load parser templates", e);
+          showAlert("Failed to load parser templates", "danger");
+        }
+        const tbody = document.getElementById("parser-templates-tbody");
+        tbody.innerHTML = "";
+        if (!templates.length) {
+          tbody.innerHTML =
+            '<tr><td colspan="3"><em>No parser templates available. You can still continue without selecting any.</em></td></tr>';
+        } else {
+          for (const t of templates) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td><input type="checkbox" class="parser-template-checkbox" value="${t.id}" checked></td><td>${t.name}</td><td>${t.description || ""}</td>`;
+            tbody.appendChild(tr);
+          }
+        }
+        // Show inline section (user will press Start to begin scan)
+        const sec = document.getElementById("parser-templates-section");
+        if (sec) sec.style.display = "block";
+      }
+
+      async function confirmStartScanWithParsers() {
+        const selected = [
+          ...document.querySelectorAll(".parser-template-checkbox:checked"),
+        ].map((cb) => parseInt(cb.value, 10));
+        const payload = {
+          ...pendingScanPayload,
+          parser_template_ids: selected,
+        };
+        const sec = document.getElementById("parser-templates-section");
+        if (sec) sec.style.display = "none";
+        try {
+          document.getElementById("start-scan-btn").disabled = true;
+          document.getElementById("scan-progress").style.display = "block";
+          const response = await authManager.apiRequest("/api/scan/start", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          scanJob = response;
+          document.getElementById("job-id").textContent = response.job_id;
+          document.getElementById("scan-status").textContent = response.state;
+          pollScanProgress();
+        } catch (err) {
+          console.error("Scan start failed", err);
+          showAlert("Failed to start scan", "danger");
+          document.getElementById("start-scan-btn").disabled = false;
+          document.getElementById("scan-progress").style.display = "none";
+        } finally {
+          pendingScanPayload = null;
+        }
+      }
+
+      async function pollScanProgress() {
+        if (!scanJob) return;
+        try {
+          const status = await authManager.apiRequest(
+            `/api/scan/${scanJob.job_id}/status`,
+          );
+          updateProgressDisplay(status);
+          if (status.state === "finished") {
+            discoveredDevices = status.results;
+            populateDevicesTable();
+            showStep(3);
+          } else if (status.state === "failed") {
+            showAlert("Scan failed", "danger");
+            resetScanForm();
+          } else {
+            setTimeout(pollScanProgress, 2000);
+          }
+        } catch (err) {
+          console.error("Status poll failed", err);
+          showAlert("Lost connection to scan job", "danger");
+          resetScanForm();
+        }
+      }
+
+      function updateProgressDisplay(status) {
+        const p = status.progress;
+        const pct = p.total > 0 ? (p.scanned / p.total) * 100 : 0;
+        document.getElementById("scan-progress-bar").style.width = `${pct}%`;
+        document.getElementById("scan-progress-text").textContent =
+          `${p.scanned} / ${p.total}`;
+        document.getElementById("metric-alive").textContent = p.alive;
+        document.getElementById("metric-authenticated").textContent =
+          p.authenticated;
+        document.getElementById("metric-unreachable").textContent =
+          p.unreachable;
+        document.getElementById("metric-auth-failed").textContent =
+          p.auth_failed;
+        document.getElementById("metric-driver-na").textContent =
+          p.driver_not_supported;
+        document.getElementById("scan-status").textContent = status.state;
+      }
+
+      function locationDisplay(val) {
+        if (!val) return "unknown";
+        const found = (locationsData || []).find(
+          (l) => String(l.id) === String(val) || l.name === val,
+        );
+        return found ? found.hierarchicalPath || found.name : val;
+      }
+      function populateDevicesTable() {
+        const tbody = document.getElementById("devices-tbody");
+        tbody.innerHTML = "";
+        const presentIps = new Set();
+        discoveredDevices.forEach((d) => {
+          presentIps.add(d.ip);
+          const existing = deviceMetadata[d.ip] || {};
+          // establish defaults once, then keep overrides
+          const merged = {
+            ip: d.ip,
+            credential_id: d.credential_id,
+            device_type: existing.device_type || d.device_type,
+            hostname:
+              existing.hostname !== undefined ? existing.hostname : d.hostname,
+            platform:
+              existing.platform !== undefined ? existing.platform : d.platform,
+            location:
+              existing.location !== undefined ? existing.location : "unknown",
+            namespace: existing.namespace || namespacesList[0] || "Global",
+            role:
+              existing.role ||
+              (d.device_type === "cisco"
+                ? "network"
+                : d.device_type === "linux"
+                  ? "server"
+                  : "unknown"),
+            secret_group_id:
+              existing.secret_group_id || existing.secret_group || "",
+            status: existing.status || "Active",
+            interface_status: existing.interface_status || "Active",
+            ip_status: existing.ip_status || "Active",
+          };
+          deviceMetadata[d.ip] = merged; // persist
+          const cred = credentialsData.find(
+            (c) => c.id === merged.credential_id,
+          );
+          const credName = cred ? cred.name : "Unknown";
+          const tr = document.createElement("tr");
+          const sgObj = (secretGroupsList || []).find(
+            (s) => String(s.id) === String(merged.secret_group_id),
+          );
+          const sgName = sgObj ? sgObj.name : "";
+          tr.innerHTML = `<td><input type='checkbox' class='device-checkbox' data-ip='${merged.ip}'></td>
+           <td>${merged.ip}</td>
+           <td>${merged.hostname || "Unknown"}</td>
+           <td>${merged.device_type}</td>
+           <td>${merged.platform || "Unknown"}</td>
+       <td>${merged.role || "unknown"}</td>
+       <td>${locationDisplay(merged.location)}</td>
+       <td>${sgName}</td>
+           <td>${credName}</td>
+           <td><button class='btn btn-sm btn-info device-config-btn' data-ip='${merged.ip}'><i class='fa fa-edit'></i> Configure</button></td>`;
+          tbody.appendChild(tr);
+        });
+        // Remove any selections for IPs that are no longer present
+        for (const ip of Array.from(selectedDevices)) {
+          if (!presentIps.has(ip)) selectedDevices.delete(ip);
+        }
+        // Ensure checkboxes reflect current selectedDevices set
+        document.querySelectorAll(".device-checkbox").forEach((cb) => {
+          const ip = cb.dataset.ip;
+          cb.checked = selectedDevices.has(ip);
+        });
+        // Update select-all checkbox state
+        try {
+          const master = document.getElementById("select-all-devices");
+          if (master) {
+            const all = Array.from(
+              document.querySelectorAll(".device-checkbox"),
+            );
+            master.checked = all.length > 0 && all.every((cb) => cb.checked);
+          }
+        } catch (e) {}
+        updateOnboardButton();
+      }
+
+      function showStep(n) {
+        document
+          .querySelectorAll(".step")
+          .forEach((s) => s.classList.remove("active"));
+        const ind = document.getElementById(`step${n}-indicator`);
+        if (ind) ind.classList.add("active");
+        document
+          .querySelectorAll(".step-content")
+          .forEach((c) => (c.style.display = "none"));
+        const content = document.getElementById(`step${n}-content`);
+        if (content) content.style.display = "block";
+        if (n === 1) {
+          resetScanForm();
+        }
+        // When showing the Properties step (2), evaluate discovery mode and
+        // show the parser templates section automatically for SSH-Login.
+        if (n === 2) {
+          try {
+            const dm = document.getElementById("discovery-mode");
+            const sec = document.getElementById("parser-templates-section");
+            if (dm && sec) {
+              if (dm.value === "ssh-login") {
+                // populate and show inline parser templates (async) without blocking UI
+                openParserTemplateModal().catch((e) =>
+                  console.error("Failed to open parser templates", e),
+                );
+              } else {
+                sec.style.display = "none";
+              }
+            }
+          } catch (e) {
+            console.error("Error evaluating discovery mode on step change", e);
+          }
+        }
+      }
+      function clearScanProgressUI() {
+        try {
+          const bar = document.getElementById("scan-progress-bar");
+          if (bar) bar.style.width = "0%";
+          const txt = document.getElementById("scan-progress-text");
+          if (txt) txt.textContent = "0 / 0";
+          const status = document.getElementById("scan-status");
+          if (status) status.textContent = "-";
+          [
+            "metric-alive",
+            "metric-authenticated",
+            "metric-unreachable",
+            "metric-auth-failed",
+            "metric-driver-na",
+          ].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = "0";
+          });
+        } catch (e) {}
+      }
+
+      function resetScanForm() {
+        const btn = document.getElementById("start-scan-btn");
+        if (btn) btn.disabled = false;
+        const sp = document.getElementById("scan-progress");
+        if (sp) sp.style.display = "none";
+        clearScanProgressUI();
+        scanJob = null;
+        discoveredDevices = [];
+        deviceMetadata = {};
+        // Also clear any previous selections to ensure button state is accurate when returning later
+        try {
+          selectedDevices.clear();
+          dbg("resetScanForm: cleared selections");
+          updateOnboardButton();
+        } catch (e) {}
+      }
+      function toggleAllDevices() {
+        const master = document.getElementById("select-all-devices");
+        const check = !!(master && master.checked);
+        const boxes = Array.from(document.querySelectorAll(".device-checkbox"));
+        boxes.forEach((cb) => {
+          cb.checked = check;
+          const ip = cb.dataset.ip;
+          if (!ip) return;
+          if (check) selectedDevices.add(ip);
+          else selectedDevices.delete(ip);
+        });
+        dbg("toggleAllDevices", {
+          masterChecked: check,
+          boxes: boxes.length,
+          selectedSize: selectedDevices.size,
+        });
+        updateOnboardButton();
+      }
+
+      // More robust onboard button updater: use authoritative selectedDevices Set
+      function updateOnboardButton() {
+        const btn = document.getElementById("onboard-selected-btn");
+        if (!btn) return;
+        try {
+          // Primary source of truth is the selection Set; fall back to DOM in case of desync
+          const domCheckedCount = document.querySelectorAll(
+            ".device-checkbox:checked",
+          ).length;
+          const anySelected = selectedDevices.size > 0 || domCheckedCount > 0;
+          const before = btn.disabled;
+          btn.disabled = !anySelected;
+          if (before !== btn.disabled) {
+            dbg("updateOnboardButton: state changed", {
+              selectedSize: selectedDevices.size,
+              domCheckedCount,
+              disabled: btn.disabled,
+            });
+          } else {
+            dbg("updateOnboardButton: unchanged", {
+              selectedSize: selectedDevices.size,
+              domCheckedCount,
+              disabled: btn.disabled,
+            });
+          }
+        } catch (e) {
+          console.error("updateOnboardButton error", e);
+          btn.disabled = true;
+        }
+      }
+
+      function editDeviceMetadata(ip) {
+        const d = deviceMetadata[ip];
+        if (!d) return;
+        document.getElementById("device-ip").value = ip;
+        document.getElementById("device-ip-display").value = ip;
+        document.getElementById("device-hostname").value = d.hostname || "";
+        document.getElementById("device-platform").value = d.platform || "";
+        document.getElementById("device-type").value = d.device_type || "";
+        toggleDeviceFields();
+
+        if (d.device_type === "cisco") {
+          const ds = document.getElementById("device-location-search");
+          const dh = document.getElementById("device-location");
+          if (ds) {
+            ds.value = "";
+            ds.classList.remove("has-selection");
+          }
+          if (dh) {
+            dh.value = "";
+          }
+          if (d.location) {
+            const found = locationsData.find(
+              (l) =>
+                String(l.id) === String(d.location) || l.name === d.location,
+            );
+            if (found) {
+              if (ds) {
+                ds.value = found.hierarchicalPath;
+                ds.classList.add("has-selection");
+              }
+              if (dh) {
+                dh.value = found.id;
+              }
+            }
+          }
+          populateNamespaceSelect("device-namespace", d.namespace);
+          const roleEl = document.getElementById("device-role");
+          if (roleEl) roleEl.value = d.role || "network";
+          const statusEl = document.getElementById("device-status");
+          if (statusEl) statusEl.value = d.status || "Active";
+          const ifEl = document.getElementById("device-interface-status");
+          if (ifEl) ifEl.value = d.interface_status || "Active";
+          const ipEl = document.getElementById("device-ip-status");
+          if (ipEl) ipEl.value = d.ip_status || "Active";
+        } else if (d.device_type === "linux") {
+          const ls = document.getElementById("linux-location-search");
+          const lh = document.getElementById("linux-location");
+          if (ls) {
+            ls.value = "";
+            ls.classList.remove("has-selection");
+          }
+          if (lh) {
+            lh.value = "";
+          }
+          if (d.location) {
+            const found = locationsData.find(
+              (l) =>
+                String(l.id) === String(d.location) || l.name === d.location,
+            );
+            if (found) {
+              if (ls) {
+                ls.value = found.hierarchicalPath;
+                ls.classList.add("has-selection");
+              }
+              if (lh) {
+                lh.value = found.id;
+              }
+            }
+          }
+          const linuxRole = document.getElementById("linux-role");
+          if (linuxRole) linuxRole.value = d.role || "server";
+          const linuxStatus = document.getElementById("linux-status");
+          if (linuxStatus) linuxStatus.value = d.status || "Active";
+        }
+
+        const modal = document.getElementById("device-metadata-modal");
+        if (!deviceModalInstance) {
+          deviceModalInstance = new bootstrap.Modal(modal, { backdrop: true });
+        }
+        deviceModalInstance.show();
+      }
+      function populateRoleSelect(
+        selectId,
+        current,
+        options = { includeBlank: false },
+      ) {
+        const sel = document.getElementById(selectId);
+        if (!sel) return;
+        sel.innerHTML = "";
+        if (options.includeBlank) {
+          const o = document.createElement("option");
+          o.value = "";
+          o.textContent = "— leave unchanged —";
+          sel.appendChild(o);
+        }
+        for (const r of rolesList) {
+          const o = document.createElement("option");
+          o.value = r.name;
+          o.textContent = r.name;
+          sel.appendChild(o);
+        }
+        if (current && rolesList.some((r) => r.name === current))
+          sel.value = current;
+        else if (!options.includeBlank && rolesList.length) {
+          sel.value = rolesList[0].name;
+        }
+      }
+      function initRoleSelectsForModal(d) {
+        // Cisco/Linux use different select IDs
+        if (d.device_type === "cisco") {
+          populateRoleSelect(
+            "device-role",
+            d.role || (d.device_type === "linux" ? "server" : "network"),
+          );
+        } else if (d.device_type === "linux") {
+          populateRoleSelect("linux-role", d.role || "server");
+        }
+      }
+      // Hook into edit to populate selects
+      const _origEditDeviceMetadata = editDeviceMetadata;
+      editDeviceMetadata = function (ip) {
+        const d = deviceMetadata[ip];
+        if (!d) return;
+        _origEditDeviceMetadata.call(this, ip);
+        // After elements exist, populate selects
+        initRoleSelectsForModal(d);
+        // Populate secret group select for Cisco devices
+        try {
+          populateSecretGroupSelect(
+            "device-secret-group",
+            d.secret_group || d.secret_group_id || "",
+          );
+        } catch (e) {}
+      };
+      function populateNamespaceSelect(selectId, current) {
+        const sel = document.getElementById(selectId);
+        if (!sel) return;
+        sel.innerHTML = "";
+        // Optionally include a default if none
+        const values =
+          namespacesList && namespacesList.length ? namespacesList : ["Global"];
+        for (const ns of values) {
+          const opt = document.createElement("option");
+          opt.value = ns;
+          opt.textContent = ns;
+          sel.appendChild(opt);
+        }
+        if (current && values.includes(current)) sel.value = current;
+        else sel.value = values[0];
+      }
+      function toggleDeviceFields() {
+        const t = document.getElementById("device-type").value;
+        document.getElementById("cisco-fields").style.display =
+          t === "cisco" ? "block" : "none";
+        document.getElementById("linux-fields").style.display =
+          t === "linux" ? "block" : "none";
+      }
+      function saveDeviceMetadata() {
+        const ip = document.getElementById("device-ip").value;
+        const type = document.getElementById("device-type").value;
+        if (!deviceMetadata[ip]) return;
+        deviceMetadata[ip].hostname =
+          document.getElementById("device-hostname").value;
+        deviceMetadata[ip].platform =
+          document.getElementById("device-platform").value;
+        if (type === "cisco") {
+          deviceMetadata[ip].location =
+            document.getElementById("device-location").value;
+          deviceMetadata[ip].namespace =
+            document.getElementById("device-namespace").value;
+          deviceMetadata[ip].role =
+            document.getElementById("device-role").value;
+          deviceMetadata[ip].status =
+            document.getElementById("device-status").value;
+          deviceMetadata[ip].interface_status = document.getElementById(
+            "device-interface-status",
+          ).value;
+          deviceMetadata[ip].ip_status =
+            document.getElementById("device-ip-status").value;
+          // store secret group id (empty string if none)
+          const sg = document.getElementById("device-secret-group");
+          if (sg) deviceMetadata[ip].secret_group_id = sg.value || "";
+        } else if (type === "linux") {
+          deviceMetadata[ip].role = document.getElementById("linux-role").value;
+          deviceMetadata[ip].location =
+            document.getElementById("linux-location").value;
+          deviceMetadata[ip].status =
+            document.getElementById("linux-status").value;
+        } else {
+          deviceMetadata[ip].role = "unknown";
+          deviceMetadata[ip].status = "Active";
+        }
+        if (deviceModalInstance) deviceModalInstance.hide();
+        // Refresh the devices table so changes (like location) are immediately visible
+        try {
+          populateDevicesTable();
+        } catch (e) {
+          console.error(
+            "Failed to refresh devices table after saving metadata",
+            e,
+          );
+        }
+      }
+
+      // Assign to All
+      let assignAllModalInstance = null;
+      function openAssignAllModal() {
+        const selected = Array.from(selectedDevices);
+        if (selected.length === 0) {
+          showAlert("Select devices first", "warning");
+          return;
+        }
+        const modal = document.getElementById("assign-all-modal");
+        if (!assignAllModalInstance) {
+          assignAllModalInstance = new bootstrap.Modal(modal, {
+            backdrop: true,
+          });
+        }
+        // reset form
+        document.getElementById("assign-all-form").reset();
+        document.getElementById("assign-all-confirm").onclick =
+          confirmAssignAll;
+        assignAllModalInstance.show();
+      }
+      function confirmAssignAll() {
+        const selected = Array.from(selectedDevices);
+        if (selected.length === 0) {
+          showAlert("Select devices first", "warning");
+          return;
+        }
+        const updates = {};
+        const getVal = (id) => document.getElementById(id).value.trim();
+        const hn = getVal("all-hostname");
+        if (hn) updates.hostname = hn;
+        const pf = getVal("all-platform");
+        if (pf) updates.platform = pf;
+        const rl = getVal("all-role");
+        if (rl) updates.role = rl;
+        const lcHidden = document.getElementById("all-location-hidden").value;
+        if (lcHidden) updates.location = lcHidden;
+        const ns = document.getElementById("all-namespace").value;
+        if (ns) updates.namespace = ns;
+        const sg = document.getElementById("all-secret-group").value;
+        if (sg) updates.secret_group_id = sg;
+        const st = document.getElementById("all-status").value;
+        if (st) updates.status = st;
+        const ist = document.getElementById("all-interface-status").value;
+        if (ist) updates.interface_status = ist;
+        const ipst = document.getElementById("all-ip-status").value;
+        if (ipst) updates.ip_status = ipst;
+        if (Object.keys(updates).length === 0) {
+          showAlert("No values to assign", "warning");
+          return;
+        }
+        for (const ip of selected) {
+          deviceMetadata[ip] = { ...(deviceMetadata[ip] || {}), ...updates };
+        }
+        if (assignAllModalInstance) assignAllModalInstance.hide();
+        populateDevicesTable();
+        showAlert("Values assigned to selected devices", "success");
+      }
+
+      // When opening Assign to All, populate namespace options
+      const assignAllBtnHook = document.getElementById("assign-to-all-btn");
+      if (assignAllBtnHook) {
+        assignAllBtnHook.addEventListener("click", () => {
+          const selNs = document.getElementById("all-namespace");
+          if (selNs) {
+            selNs.innerHTML = '<option value=\"\">— leave unchanged —</option>';
+            (namespacesList || []).forEach((ns) => {
+              const o = document.createElement("option");
+              o.value = ns;
+              o.textContent = ns;
+              selNs.appendChild(o);
+            });
+          }
+          populateRoleSelect("all-role", null, { includeBlank: true });
+          // Populate secret group select for bulk assign
+          const allSg = document.getElementById("all-secret-group");
+          if (allSg) {
+            allSg.innerHTML = '<option value="">— leave unchanged —</option>';
+            (secretGroupsList || []).forEach((s) => {
+              const o = document.createElement("option");
+              o.value = s.id;
+              o.textContent = s.name;
+              allSg.appendChild(o);
+            });
+          }
+          // Reset bulk location selector display/hidden
+          const ai = document.getElementById("all-location-search");
+          const ah = document.getElementById("all-location-hidden");
+          const add = document.getElementById("all-location-dropdown");
+          if (ai) {
+            ai.value = "";
+            ai.classList.remove("has-selection");
+          }
+          if (ah) {
+            ah.value = "";
+          }
+          if (add) {
+            const content = add.querySelector(".dropdown-content");
+            if (content) content.innerHTML = "";
+            add.style.display = "none";
+          }
+        });
+      }
+
+      async function onboardSelectedDevices() {
+        const ips = Array.from(selectedDevices);
+        if (ips.length === 0) {
+          showAlert("Select devices to onboard", "warning");
+          return;
+        }
+
+        const btn = document.getElementById("onboard-selected-btn");
+        btn.disabled = true;
+        const originalLabel = btn.innerHTML;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Onboarding...';
+
+        // Separate Cisco devices (to call Nautobot onboard per-device) and others (batch onboard via scan job)
+        const ciscoIps = ips.filter((ip) => {
+          const m = deviceMetadata[ip];
+          return (
+            m &&
+            m.device_type &&
+            String(m.device_type).toLowerCase() === "cisco"
+          );
+        });
+        const otherIps = ips.filter((ip) => !ciscoIps.includes(ip));
+
+        let summaryMsgs = [];
+
+        // Onboard Cisco devices individually using /api/nautobot/devices/onboard
+        if (ciscoIps.length > 0) {
+          let ciscoSuccess = 0;
+          let ciscoFailed = 0;
+          for (const ip of ciscoIps) {
+            const m = deviceMetadata[ip];
+            if (!m) {
+              ciscoFailed++;
+              continue;
+            }
+
+            // Map names to IDs where needed
+            const resolveByName = (arr, name) => {
+              if (!name) return "";
+              const found = (arr || []).find(
+                (x) =>
+                  (x.name || "").toLowerCase() === String(name).toLowerCase(),
+              );
+              return found ? found.id || "" : "";
+            };
+            const namespace_id =
+              m.namespace_id || resolveByName(namespacesFull, m.namespace);
+            const role_id = m.role_id || resolveByName(rolesFull, m.role);
+            const status_id =
+              m.status_id || resolveByName(deviceStatusesList, m.status);
+            const interface_status_id =
+              m.interface_status_id ||
+              resolveByName(interfaceStatusesList, m.interface_status);
+            const ip_address_status_id =
+              m.ip_address_status_id ||
+              resolveByName(ipAddressStatusesList, m.ip_status);
+            // Force auto-detect platform per requirement
+            const platform_id = "detect";
+
+            const payload = {
+              ip_address: m.ip,
+              location_id: m.location || "",
+              namespace_id,
+              role_id,
+              status_id,
+              platform_id,
+              secret_groups_id: m.secret_group_id || "",
+              interface_status_id,
+              ip_address_status_id,
+            };
+
+            try {
+              const resp = await authManager.apiRequest(
+                "/api/nautobot/devices/onboard",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payload),
+                },
+              );
+              // Treat any 2xx-like response as success if no explicit error
+              ciscoSuccess++;
+            } catch (err) {
+              // Log full error and surface a short message
+              console.error("Cisco onboard failed for", ip, err);
+              try {
+                console.error("Cisco onboard error body:", err.message || err);
+              } catch (e) {}
+              ciscoFailed++;
+            }
+          }
+          summaryMsgs.push(
+            `Cisco onboarded: ${ciscoSuccess}, failed: ${ciscoFailed}`,
+          );
+        }
+
+        // Batch onboard non-Cisco devices via existing scan job endpoint
+        if (otherIps.length > 0) {
+          const otherDevices = otherIps.map((ip) => {
+            const m = deviceMetadata[ip];
+            return {
+              ip: m.ip,
+              credential_id: m.credential_id,
+              device_type: m.device_type,
+              hostname: m.hostname,
+              platform: "detect",
+              location: m.location,
+              namespace: m.namespace,
+              role: m.role,
+              status: m.status,
+              interface_status: m.interface_status,
+              ip_status: m.ip_status,
+              secret_group_id: m.secret_group_id || "",
+            };
+          });
+          // Collect Linux onboarding extras
+          const repoSel = document.getElementById("onboarding-git-repo-select");
+          const templateSel = document.getElementById(
+            "onboarding-inventory-template-select",
+          );
+          const filenameInput = document.getElementById("onboarding-filename");
+          const commitPushChk = document.getElementById(
+            "onboarding-commit-push",
+          );
+          const extras = {};
+          if (repoSel && repoSel.value) {
+            // Prefer numeric id when possible
+            const rid = parseInt(repoSel.value, 10);
+            if (!isNaN(rid)) extras.git_repository_id = rid;
+            else extras.git_repository_name = repoSel.value;
+          }
+          if (templateSel && templateSel.value) {
+            const tid = parseInt(templateSel.value, 10);
+            if (!isNaN(tid)) extras.inventory_template_id = tid;
+          }
+          if (filenameInput && filenameInput.value) {
+            extras.filename = filenameInput.value.trim();
+          }
+          if (commitPushChk) {
+            const doCommitPush = !!commitPushChk.checked;
+            extras.auto_commit = doCommitPush;
+            extras.auto_push = doCommitPush;
+            // Commit name should be filename (basename)
+            if (filenameInput && filenameInput.value) {
+              try {
+                extras.commit_message = filenameInput.value
+                  .trim()
+                  .split("/")
+                  .pop();
+              } catch (e) {
+                extras.commit_message = filenameInput.value.trim();
+              }
+            }
+          }
+          try {
+            const resp = await authManager.apiRequest(
+              `/api/scan/${scanJob.job_id}/onboard`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ devices: otherDevices, ...extras }),
+              },
+            );
+            let msg = `Other onboarding completed: ${resp.accepted || 0} devices.`;
+            if (resp.cisco_queued) msg += ` ${resp.cisco_queued} Cisco queued.`;
+            if (resp.linux_added) msg += ` ${resp.linux_added} Linux added.`;
+            if (resp.inventory_path)
+              msg += ` Inventory: ${resp.inventory_path}`;
+            summaryMsgs.push(msg);
+          } catch (err) {
+            console.error("Other onboard failed", err);
+            summaryMsgs.push("Non-Cisco onboarding failed");
+          }
+        }
+
+        // Show consolidated result
+        showAlert(summaryMsgs.join(" — "), "success");
+
+        btn.disabled = false;
+        btn.innerHTML =
+          originalLabel ||
+          '<i class="fa fa-upload"></i> Onboard Selected Devices';
+      }
+
+      function isValidCIDR(c) {
+        const re = /(\d{1,3}\.){3}\d{1,3}\/\d{1,2}/;
+        if (!re.test(c)) return false;
+        const [ip, prefix] = c.split("/");
+        const pn = parseInt(prefix);
+        if (pn < 22 || pn > 32) return false;
+        return ip.split(".").every((o) => {
+          const n = parseInt(o);
+          return n >= 0 && n <= 255;
+        });
+      }
+      function showAlert(msg, type = "info") {
+        const div = document.createElement("div");
+        div.className = `alert alert-${type} alert-dismissible`;
+        div.innerHTML = `<button type='button' class='close' data-dismiss='alert'>&times;</button>${msg}`;
+        const content = document.querySelector(".x_content");
+        content.insertBefore(div, content.firstChild);
+        setTimeout(() => {
+          div.style.transition = "opacity .5s";
+          div.style.opacity = "0";
+          setTimeout(() => div.remove(), 500);
+        }, 5000);
+      }
+    </script>
+  </body>
+</html>
