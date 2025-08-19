@@ -12,6 +12,7 @@ applyTo: "**/*.tsx, **/*.jsx, components/**/*"
 - Use composition over inheritance
 - Implement proper prop types with TypeScript
 - Split large components into smaller, focused ones
+- Add a unique ID for each item
 
 ## Hooks
 - Follow the Rules of Hooks

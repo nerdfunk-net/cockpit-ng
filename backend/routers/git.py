@@ -189,7 +189,15 @@ async def git_branches(current_user: str = Depends(verify_token)):
     try:
         repo = get_git_repo()
 
-        branches = [branch.name for branch in repo.branches]
+        current_branch = repo.active_branch.name if repo.active_branch else None
+        branches = []
+        
+        for branch in repo.branches:
+            branches.append({
+                "name": branch.name,
+                "current": branch.name == current_branch
+            })
+            
         return branches
     except (InvalidGitRepositoryError, GitCommandError) as e:
         raise HTTPException(

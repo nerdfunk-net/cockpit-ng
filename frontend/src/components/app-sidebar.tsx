@@ -181,9 +181,9 @@ export function AppSidebar({ className }: AppSidebarProps) {
                           <Icon className={cn('h-4 w-4', isCollapsed ? '' : 'mr-3')} />
                           {!isCollapsed && (
                             <>
-                              <span className="flex-1 text-left">{item.label}</span>
+                              <span key="nav-label" className="flex-1 text-left">{item.label}</span>
                               {item.badge && (
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge key="nav-badge" variant="secondary" className="text-xs">
                                   {item.badge}
                                 </Badge>
                               )}
