@@ -7,6 +7,7 @@ TypeScript, Next.js App Router, React 18, Shadcn, Sentry and Tailwind 4
 - Important: This application has separated backend and frontend. The frontend MUST not use the backend directly. Instead use nextjs as a middleware / proxy to communicate with the backend.
 - Run backend and terminal in two separated terminals
 - To run the frontend use: "cd ./frontend && npm run dev"
+- All backend endpoints require authentication
 
 # Code Style and Structure
 

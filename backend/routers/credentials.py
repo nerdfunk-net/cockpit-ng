@@ -9,11 +9,11 @@ import credentials_manager as cred_mgr
 
 router = APIRouter(prefix="/api/credentials", tags=["credentials"])
 
-@router.get("/", dependencies=[Depends(verify_token)])
+@router.get("", dependencies=[Depends(verify_token)])
 def list_credentials(include_expired: bool = Query(False)) -> List[dict]:
     return cred_mgr.list_credentials(include_expired=include_expired)
 
-@router.post("/", dependencies=[Depends(verify_token)])
+@router.post("", dependencies=[Depends(verify_token)])
 def create_credential(payload: CredentialCreate) -> dict:
     try:
         return cred_mgr.create_credential(

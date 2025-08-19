@@ -223,6 +223,14 @@ export function AppSidebar({ className }: AppSidebarProps) {
               {!isCollapsed && <span className="ml-2">Logout</span>}
             </Button>
           </div>
+          {/* Copyright notice */}
+          {!isCollapsed && (
+            <div className="mt-3 pt-3 border-t border-gray-200/50">
+              <p className="text-xs text-gray-400 text-center">
+                © 2025 Cockpit Network Management Dashboard
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
