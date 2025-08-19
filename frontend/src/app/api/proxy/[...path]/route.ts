@@ -50,7 +50,14 @@ async function handleRequest(
   try {
     const path = pathSegments.join('/')
     const searchParams = request.nextUrl.searchParams.toString()
-    const url = `${BACKEND_URL}/api/${path}${searchParams ? `?${searchParams}` : ''}`
+    
+    // Handle auth endpoints differently - they don't use /api/ prefix
+    let url: string
+    if (path.startsWith('auth/')) {
+      url = `${BACKEND_URL}/${path}${searchParams ? `?${searchParams}` : ''}`
+    } else {
+      url = `${BACKEND_URL}/api/${path}${searchParams ? `?${searchParams}` : ''}`
+    }
     
     console.log(`Frontend API: Proxying ${method} request to:`, url)
     

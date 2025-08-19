@@ -7,7 +7,7 @@ interface ApiOptions {
 }
 
 export function useApi() {
-  const { token } = useAuthStore()
+  const { token, logout } = useAuthStore()
 
   const apiCall = async <T = any>(endpoint: string, options: ApiOptions = {}): Promise<T> => {
     const { method = 'GET', body, headers = {} } = options
@@ -34,10 +34,23 @@ export function useApi() {
     
     if (!response.ok) {
       const errorText = await response.text()
+      
+      // Handle authentication failures
+      if (response.status === 401 || response.status === 403) {
+        logout() // Clear invalid token
+        throw new Error(`Authentication failed (${response.status}): Please log in again`)
+      }
+      
       throw new Error(`API Error ${response.status}: ${errorText}`)
     }
 
-    return response.json()
+    // Handle empty responses
+    const contentType = response.headers.get('content-type')
+    if (contentType && contentType.includes('application/json')) {
+      return response.json()
+    } else {
+      return {} as T
+    }
   }
 
   return { apiCall }

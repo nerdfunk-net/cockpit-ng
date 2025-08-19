@@ -110,7 +110,7 @@ const GitManagement: React.FC = () => {
     category: '',
     url: '',
     branch: 'main',
-    credential_name: '',
+    credential_name: '__none__',
     path: '',
     verify_ssl: true,
     description: ''
@@ -206,7 +206,7 @@ const GitManagement: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           ...formData,
-          credential_name: formData.credential_name || null
+          credential_name: formData.credential_name === '__none__' ? null : formData.credential_name || null
         })
       })
 
@@ -226,7 +226,7 @@ const GitManagement: React.FC = () => {
       category: '',
       url: '',
       branch: 'main',
-      credential_name: '',
+      credential_name: '__none__',
       path: '',
       verify_ssl: true,
       description: ''
@@ -249,7 +249,7 @@ const GitManagement: React.FC = () => {
         body: JSON.stringify({
           url: formData.url,
           branch: formData.branch || 'main',
-          credential_name: formData.credential_name || null,
+          credential_name: formData.credential_name === '__none__' ? null : formData.credential_name || null,
           verify_ssl: formData.verify_ssl
         })
       })
@@ -275,7 +275,7 @@ const GitManagement: React.FC = () => {
       category: repo.category,
       url: repo.url,
       branch: repo.branch,
-      credential_name: repo.credential_name || '',
+      credential_name: repo.credential_name || '__none__',
       path: repo.path || '',
       verify_ssl: repo.verify_ssl,
       description: repo.description || ''
@@ -292,7 +292,7 @@ const GitManagement: React.FC = () => {
         method: 'PUT',
         body: JSON.stringify({
           ...editFormData,
-          credential_name: editFormData.credential_name || null,
+          credential_name: editFormData.credential_name === '__none__' ? null : editFormData.credential_name || null,
           is_active: editingRepo.is_active
         })
       })
@@ -645,7 +645,7 @@ const GitManagement: React.FC = () => {
                       <SelectValue placeholder="No credential (public repo)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No credential (public repo)</SelectItem>
+                      <SelectItem value="__none__">No credential (public repo)</SelectItem>
                       {credentials.map((cred) => (
                         <SelectItem key={cred.name} value={cred.name}>
                           {cred.name} ({cred.username})
@@ -807,7 +807,7 @@ const GitManagement: React.FC = () => {
                   <SelectValue placeholder="No credential (public repo)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No credential (public repo)</SelectItem>
+                  <SelectItem value="__none__">No credential (public repo)</SelectItem>
                   {credentials.map((cred) => (
                     <SelectItem key={cred.name} value={cred.name}>
                       {cred.name} ({cred.username})
