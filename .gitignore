@@ -183,3 +183,5 @@ cython_debug/
 frontend/.env.local
 /frontend/.next
 /frontend/node_modules
+data/settings/cockpit_settings.db
+backend/data/cache/nautobot_stats.json
