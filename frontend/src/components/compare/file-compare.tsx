@@ -173,11 +173,11 @@ export default function FileCompare() {
   const handleFileSelect = (file: FileItem, side: 'left' | 'right') => {
     if (side === 'left') {
       setSelectedLeftFile(file)
-      setLeftFileSearch('')
+      setLeftFileSearch(file.name)
       setShowLeftResults(false)
     } else {
       setSelectedRightFile(file)
-      setRightFileSearch('')
+      setRightFileSearch(file.name)
       setShowRightResults(false)
     }
   }
@@ -365,11 +365,6 @@ export default function FileCompare() {
                   </div>
                 )}
               </div>
-              {selectedLeftFile && (
-                <div key="unique-id-fh-20" className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
-                  Selected: {selectedLeftFile.path}
-                </div>
-              )}
             </div>
 
             {/* Right File Selection */}
@@ -404,11 +399,6 @@ export default function FileCompare() {
                   </div>
                 )}
               </div>
-              {selectedRightFile && (
-                <div key="unique-id-fh-30" className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
-                  Selected: {selectedRightFile.path}
-                </div>
-              )}
             </div>
           </div>
         </CardContent>

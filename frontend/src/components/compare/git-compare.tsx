@@ -175,7 +175,7 @@ export default function GitCompare() {
 
   const handleGitFileSelect = (file: FileItem) => {
     setSelectedGitFile(file)
-    setGitFileSearch('')
+    setGitFileSearch(file.name)
     setShowGitResults(false)
   }
 
@@ -379,11 +379,6 @@ export default function GitCompare() {
                 </div>
               )}
             </div>
-            {selectedGitFile && (
-              <div key="unique-id-gc-42" className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
-                Selected: {selectedGitFile.path}
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
