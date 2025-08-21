@@ -38,7 +38,7 @@ export function DashboardLayout({ children, className }: DashboardLayoutProps) {
     }
     
     initAuth()
-  }, [isAuthenticated, token])
+  }, []) // Empty dependency array - only run once on mount
 
   if (isLoading) {
     return (
