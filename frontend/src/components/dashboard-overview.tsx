@@ -266,51 +266,6 @@ export default function DashboardOverview() {
           </p>
         </div>
       )}
-
-      {/* Quick Actions - Modern Analytics Style */}
-      <Card className="analytics-card border-0">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-xl font-bold text-slate-900">Quick Actions</CardTitle>
-          <p className="text-slate-600">Common network management tasks</p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="justify-start h-auto p-6 analytics-card border border-slate-200 hover:border-blue-300 group">
-              <div className="flex items-center space-x-4">
-                <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
-                  <Server className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="text-left">
-                  <div className="font-semibold text-slate-900">Onboard Device</div>
-                  <div className="text-sm text-slate-500">Add new network device</div>
-                </div>
-              </div>
-            </Button>
-            <Button variant="outline" className="justify-start h-auto p-6 analytics-card border border-slate-200 hover:border-emerald-300 group">
-              <div className="flex items-center space-x-4">
-                <div className="p-2 bg-emerald-50 rounded-lg group-hover:bg-emerald-100 transition-colors">
-                  <Network className="h-6 w-6 text-emerald-600" />
-                </div>
-                <div className="text-left">
-                  <div className="font-semibold text-slate-900">Backup Configs</div>
-                  <div className="text-sm text-slate-500">Backup device configurations</div>
-                </div>
-              </div>
-            </Button>
-            <Button variant="outline" className="justify-start h-auto p-6 analytics-card border border-slate-200 hover:border-indigo-300 group">
-              <div className="flex items-center space-x-4">
-                <div className="p-2 bg-indigo-50 rounded-lg group-hover:bg-indigo-100 transition-colors">
-                  <Layers className="h-6 w-6 text-indigo-600" />
-                </div>
-                <div className="text-left">
-                  <div className="font-semibold text-slate-900">Manage Templates</div>
-                  <div className="text-sm text-slate-500">Configure device templates</div>
-                </div>
-              </div>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }

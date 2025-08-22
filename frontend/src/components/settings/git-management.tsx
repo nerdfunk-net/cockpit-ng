@@ -413,9 +413,9 @@ const GitManagement: React.FC = () => {
         <TabsContent value="list" className="space-y-4">
           {/* Filters */}
           <Card className="overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-0.5 pl-8 pr-4 -mx-6 -mt-6 mb-1">
-              <CardTitle className="flex items-center gap-2 text-white text-xs">
-                <Search className="h-3 w-3" />
+            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 pl-8 pr-4 -mx-6 -mt-6 mb-1">
+              <CardTitle className="flex items-center gap-2 text-white text-sm font-semibold">
+                <Search className="h-4 w-4" />
                 Repository Filters
               </CardTitle>
             </CardHeader>
@@ -474,8 +474,8 @@ const GitManagement: React.FC = () => {
 
           {/* Repositories Table */}
           <Card className="overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 pl-8 pr-4 -mx-6 -mt-6 mb-4">
-              <CardTitle className="flex items-center gap-2 text-white text-sm">
+            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 pl-8 pr-4 -mx-6 -mt-6 mb-1">
+              <CardTitle className="flex items-center gap-2 text-white text-sm font-semibold">
                 <GitBranch className="h-4 w-4" />
                 Managed Repositories ({filteredRepositories.length})
               </CardTitle>
