@@ -433,14 +433,17 @@ export default function FileHistoryCompare() {
       </div>
 
       {/* Git Selection */}
-      <Card key="unique-id-fhc-7" className="shadow-lg border-0 p-0">
-                <CardHeader key="unique-id-fhc-4" className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-4">
-          <CardTitle key="unique-id-fhc-5" className="flex items-center gap-2 text-white text-base">
+      <div key="unique-id-fhc-7" className="shadow-lg border-0 p-0 bg-white rounded-lg">
+        <div key="unique-id-fhc-4" className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+          <div className="flex items-center space-x-2">
             <GitCommit key="unique-id-fhc-6" className="h-4 w-4" />
-            <span key="unique-id-fhc-7">Git Repository</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent key="unique-id-fhc-10" className="p-6 bg-gradient-to-b from-white to-gray-50">
+            <span className="text-sm font-medium">Git Repository</span>
+          </div>
+          <div className="text-xs text-blue-100">
+            Select branch, commit, and file for history analysis
+          </div>
+        </div>
+        <div key="unique-id-fhc-10" className="p-6 bg-gradient-to-b from-white to-gray-50">
           <div key="unique-id-fhc-11" className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div key="unique-id-fhc-12" className="space-y-2">
                 <Label key="unique-id-fhc-13">Branch</Label>
@@ -451,7 +454,7 @@ export default function FileHistoryCompare() {
                   loadCommitsForBranch(newValue)
                 }
               }}>
-                <SelectTrigger key="unique-id-fhc-15">
+                <SelectTrigger key="unique-id-fhc-15" className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select branch" />
                 </SelectTrigger>
                 <SelectContent key="unique-id-fhc-16">
@@ -470,7 +473,7 @@ export default function FileHistoryCompare() {
               <Select key="unique-id-fhc-21" value={leftCommit || '__none__'} onValueChange={(value) => {
                 setLeftCommit(value === '__none__' ? '' : value)
               }}>
-                <SelectTrigger key="unique-id-fhc-22">
+                <SelectTrigger key="unique-id-fhc-22" className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select source commit" />
                 </SelectTrigger>
                 <SelectContent key="unique-id-fhc-23">
@@ -496,6 +499,7 @@ export default function FileHistoryCompare() {
                     setShowGitResults(e.target.value.length > 0)
                   }}
                   onFocus={() => setShowGitResults(gitFileSearch.length > 0)}
+                  className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
                 />
                 {showGitResults && (
                   <div key="unique-id-fhc-37" className="absolute top-full left-0 right-0 z-[9999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto">
@@ -517,12 +521,21 @@ export default function FileHistoryCompare() {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Compare Actions */}
-      <Card key="unique-id-fhc-43">
-        <CardContent key="unique-id-fhc-44" className="py-2">
+      <div key="unique-id-fhc-43" className="shadow-lg border-0 p-0 bg-white rounded-lg">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+          <div className="flex items-center space-x-2">
+            <GitCommit className="h-4 w-4" />
+            <span className="text-sm font-medium">File History Actions</span>
+          </div>
+          <div className="text-xs text-blue-100">
+            View file history and configure comparison options
+          </div>
+        </div>
+        <div key="unique-id-fhc-44" className="p-6 bg-gradient-to-b from-white to-gray-50">
           <div key="unique-id-fhc-45" className="flex items-center justify-between">
             <div key="unique-id-fhc-46" className="flex items-center gap-2">
             <Button 
@@ -589,50 +602,49 @@ export default function FileHistoryCompare() {
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* File History */}
       {showHistory && fileHistory.length > 0 && (
-        <Card key="unique-id-fhc-history" className="shadow-lg border-0 p-0">
-          <CardHeader key="unique-id-fhc-history-header" className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-4">
-            <div key="unique-id-fhc-history-title-container" className="flex items-center justify-between">
-              <div key="unique-id-fhc-history-title-content">
-                <CardTitle key="unique-id-fhc-history-title" className="flex items-center gap-2 text-white text-base">
-                  <GitCommit key="unique-id-fhc-history-icon" className="h-4 w-4" />
-                  <span key="unique-id-fhc-history-text">File History</span>
-                </CardTitle>
-                <div key="unique-id-fhc-history-desc" className="text-blue-50 mt-1 text-sm">
-                  History of changes for {selectedGitFile?.path}
-                </div>
+        <div key="unique-id-fhc-history" className="shadow-lg border-0 p-0 bg-white rounded-lg">
+          <div key="unique-id-fhc-history-header" className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+            <div key="unique-id-fhc-history-title-container">
+              <div key="unique-id-fhc-history-title-content" className="flex items-center space-x-2">
+                <GitCommit key="unique-id-fhc-history-icon" className="h-4 w-4" />
+                <span className="text-sm font-medium">File History</span>
               </div>
-              <div key="unique-id-fhc-history-actions" className="flex items-center gap-2">
-                {selectedCommits.length === 2 && (
-                  <Button
-                    key="unique-id-fhc-compare-selected"
-                    onClick={handleCompareSelected}
-                    disabled={loading}
-                    className="flex items-center gap-2"
-                  >
-                    <GitCompareIcon key="unique-id-fhc-compare-icon" className="h-4 w-4" />
-                    <span key="unique-id-fhc-compare-text">Compare Selected</span>
-                  </Button>
-                )}
-                <Button
-                  key="unique-id-fhc-history-close"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setShowHistory(false)
-                    setSelectedCommits([])
-                  }}
-                >
-                  <span key="unique-id-fhc-history-close-text">Close</span>
-                </Button>
+              <div key="unique-id-fhc-history-desc" className="text-xs text-blue-100 mt-1">
+                History of changes for {selectedGitFile?.path}
               </div>
             </div>
-          </CardHeader>
-          <CardContent key="unique-id-fhc-history-content">
+            <div key="unique-id-fhc-history-actions" className="flex items-center gap-2">
+              {selectedCommits.length === 2 && (
+                <Button
+                  key="unique-id-fhc-compare-selected"
+                  onClick={handleCompareSelected}
+                  disabled={loading}
+                  className="flex items-center gap-2"
+                >
+                  <GitCompareIcon key="unique-id-fhc-compare-icon" className="h-4 w-4" />
+                  <span key="unique-id-fhc-compare-text">Compare Selected</span>
+                </Button>
+              )}
+              <Button
+                key="unique-id-fhc-history-close"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setShowHistory(false)
+                  setSelectedCommits([])
+                }}
+                className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+              >
+                <span key="unique-id-fhc-history-close-text">Close</span>
+              </Button>
+            </div>
+          </div>
+          <div key="unique-id-fhc-history-content" className="p-6 bg-gradient-to-b from-white to-gray-50">
             <div key="unique-id-fhc-history-list" className="space-y-1">
               {fileHistory.map((commit, index) => (
                 <div
@@ -732,8 +744,8 @@ export default function FileHistoryCompare() {
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* File View */}
@@ -825,10 +837,11 @@ export default function FileHistoryCompare() {
                     variant="outline"
                     onClick={() => navigateDiff('prev')}
                     disabled={currentDiffIndex === 0}
+                    className="bg-white/20 border-white/30 text-white hover:bg-white/30"
                   >
                     <ChevronUp key="unique-id-fhc-77" className="h-4 w-4" />
                   </Button>
-                  <span key="unique-id-fhc-counter" className="text-xs text-gray-500 px-2">
+                  <span key="unique-id-fhc-counter" className="text-xs text-blue-100 px-2">
                     {(() => {
                       const totalDiffs = comparisonResult.left_lines.filter(d => d.type !== 'equal').length
                       return totalDiffs > 0 ? `${currentDiffIndex + 1}/${totalDiffs}` : '0/0'
@@ -843,6 +856,7 @@ export default function FileHistoryCompare() {
                       const visibleDiffs = comparisonResult.left_lines.filter(d => d.type !== 'equal')
                       return currentDiffIndex >= visibleDiffs.length - 1
                     })()}
+                    className="bg-white/20 border-white/30 text-white hover:bg-white/30"
                   >
                     <ChevronDown key="unique-id-fhc-79" className="h-4 w-4" />
                   </Button>
@@ -852,6 +866,7 @@ export default function FileHistoryCompare() {
                   size="sm"
                   variant="outline"
                   onClick={() => setShowComparison(false)}
+                  className="bg-white/20 border-white/30 text-white hover:bg-white/30"
                 >
                   <span key="unique-id-fhc-81">Close</span>
                 </Button>

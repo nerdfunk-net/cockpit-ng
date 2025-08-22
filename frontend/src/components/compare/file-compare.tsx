@@ -328,17 +328,17 @@ export default function FileCompare() {
       </div>
 
       {/* File Selection */}
-      <Card key="unique-id-fh-6" className="shadow-lg border-0 p-0">
-        <CardHeader key="unique-id-fh-7" className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-4">
-          <CardTitle key="unique-id-fh-8" className="flex items-center space-x-2 text-base">
+      <div key="unique-id-fh-6" className="rounded-xl border shadow-sm overflow-visible relative z-50">
+        <div key="unique-id-fh-7" className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+          <div className="flex items-center space-x-2">
             <File className="h-4 w-4" />
-            <span>Select Files to Compare</span>
-          </CardTitle>
-          <div className="text-blue-50 text-sm">
-            Choose source and target configuration files for comparison
+            <div>
+              <h3 className="text-sm font-semibold">Select Files to Compare</h3>
+              <p className="text-blue-100 text-xs">Choose source and target configuration files for comparison</p>
+            </div>
           </div>
-        </CardHeader>
-        <CardContent key="unique-id-fh-9" className="p-6 bg-gradient-to-b from-white to-gray-50">
+        </div>
+        <div key="unique-id-fh-9" className="p-4 bg-white">
           <div key="unique-id-fh-10" className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Left File Selection */}
             <div key="unique-id-fh-11" className="space-y-2" ref={leftSearchRef}>
@@ -353,9 +353,10 @@ export default function FileCompare() {
                     setShowLeftResults(e.target.value.length > 0)
                   }}
                   onFocus={() => setShowLeftResults(leftFileSearch.length > 0)}
+                  className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
                 />
                 {showLeftResults && (
-                  <div key="unique-id-fh-15" className="absolute top-full left-0 right-0 z-[9999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto">
+                  <div key="unique-id-fh-15" className="absolute top-full left-0 right-0 z-[99999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto">
                     {searchFiles(leftFileSearch, leftFiles || []).map((file, index) => (
                       <div
                         key={`unique-id-fh-16-${index}`}
@@ -387,9 +388,10 @@ export default function FileCompare() {
                     setShowRightResults(e.target.value.length > 0)
                   }}
                   onFocus={() => setShowRightResults(rightFileSearch.length > 0)}
+                  className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
                 />
                 {showRightResults && (
-                  <div key="unique-id-fh-25" className="absolute top-full left-0 right-0 z-[9999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto">
+                  <div key="unique-id-fh-25" className="absolute top-full left-0 right-0 z-[99999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto">
                     {searchFiles(rightFileSearch, rightFiles || []).map((file, index) => (
                       <div
                         key={`unique-id-fh-26-${index}`}
@@ -408,21 +410,21 @@ export default function FileCompare() {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Compare Actions */}
-      <Card key="unique-id-fh-31" className="shadow-lg border-0 p-0">
-        <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-4">
-          <CardTitle className="flex items-center space-x-2 text-base">
+      <div key="unique-id-fh-31" className="rounded-xl border shadow-sm overflow-hidden relative z-10">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+          <div className="flex items-center space-x-2">
             <GitCompare className="h-4 w-4" />
-            <span>Compare Actions</span>
-          </CardTitle>
-          <div className="text-blue-50 text-sm">
-            Execute comparison and configure display options
+            <div>
+              <h3 className="text-sm font-semibold">Compare Actions</h3>
+              <p className="text-blue-100 text-xs">Execute comparison and configure display options</p>
+            </div>
           </div>
-        </CardHeader>
-        <CardContent key="unique-id-fh-32" className="p-6 bg-gradient-to-b from-white to-gray-50">
+        </div>
+        <div key="unique-id-fh-32" className="p-4 bg-white">
           <div key="unique-id-fh-33" className="flex items-center justify-between">
             <div key="unique-id-fh-34" className="flex items-center gap-2">
               <Button 
@@ -465,20 +467,20 @@ export default function FileCompare() {
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Comparison Results */}
       {showComparison && comparisonResult && (
-        <Card key="unique-id-fh-47" className="shadow-lg border-0 p-0">
-          <CardHeader key="unique-id-fh-48" className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-4">
+        <div key="unique-id-fh-47" className="rounded-xl border shadow-sm overflow-hidden">
+          <div key="unique-id-fh-48" className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
             <div key="unique-id-fh-49" className="flex items-center justify-between">
               <div key="unique-id-fh-50">
-                <CardTitle key="unique-id-fh-51" className="flex items-center gap-2 text-white text-base">
+                <div key="unique-id-fh-51" className="flex items-center gap-2 text-white text-sm">
                   <GitCompare key="unique-id-fh-52" className="h-4 w-4" />
                   <span key="unique-id-fh-53">File Comparison Results</span>
-                </CardTitle>
-                <div key="unique-id-fh-54" className="text-blue-50 mt-1 text-sm">
+                </div>
+                <div key="unique-id-fh-54" className="text-blue-100 mt-1 text-xs">
                   {comparisonResult.left_file} ↔ {comparisonResult.right_file}
                 </div>
               </div>
@@ -533,8 +535,8 @@ export default function FileCompare() {
                 </Button>
               </div>
             </div>
-          </CardHeader>
-          <CardContent key="unique-id-fh-69" className="p-6 bg-gradient-to-b from-white to-gray-50">
+          </div>
+          <div key="unique-id-fh-69" className="p-4 bg-white">
             <div 
               key="unique-id-fh-70"
               className="border rounded-lg overflow-auto font-mono"
@@ -593,8 +595,8 @@ export default function FileCompare() {
                 return rows
               })()}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
     </div>
   )

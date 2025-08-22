@@ -480,7 +480,7 @@ export function OnboardDevicePage() {
             value={deviceSearchQuery}
             onChange={(e) => setDeviceSearchQuery(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSearchDevice()}
-            className="w-64"
+            className="w-64 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
           />
           <Button 
             onClick={handleSearchDevice}
@@ -529,21 +529,21 @@ export function OnboardDevicePage() {
       {/* Main Form */}
       <div className="space-y-6">
         {/* Device Information Panel */}
-        <Card className="shadow-lg border-0 bg-gradient-to-r from-gray-50 to-white overflow-hidden p-0">
-          <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-6">
-            <CardTitle className="flex items-center space-x-2">
-              <Search className="h-5 w-5" />
-              <span>Device Information</span>
-            </CardTitle>
-            <CardDescription className="text-blue-50">
-              Enter the IP address and verify availability in Nautobot
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-6">
+        <div className="rounded-xl border shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+            <div className="flex items-center space-x-2">
+              <Search className="h-4 w-4" />
+              <div>
+                <h3 className="text-sm font-semibold">Device Information</h3>
+                <p className="text-blue-100 text-xs">Enter IP address and verify availability</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4 bg-white">
             {/* IP Address Section */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="ip_address">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="md:col-span-2 space-y-1">
+                <Label htmlFor="ip_address" className="text-xs font-medium">
                   IP Address(es) <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -551,54 +551,55 @@ export function OnboardDevicePage() {
                   placeholder="192.168.1.1 or 192.168.1.1, 192.168.1.2"
                   value={formData.ip_address}
                   onChange={(e) => handleIPChange(e.target.value)}
-                  className={`${
-                    ipValidation.isValid ? 'border-green-500' : 
-                    formData.ip_address && !ipValidation.isValid ? 'border-red-500' : ''
+                  className={`h-8 text-sm border-2 bg-white ${
+                    ipValidation.isValid ? 'border-green-500 bg-green-50' : 
+                    formData.ip_address && !ipValidation.isValid ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400 focus:border-blue-500'
                   }`}
                 />
                 {formData.ip_address && (
-                  <p className={`text-sm ${ipValidation.isValid ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className={`text-xs ${ipValidation.isValid ? 'text-green-600' : 'text-red-600'}`}>
                     {ipValidation.message}
                   </p>
                 )}
               </div>
-              <div className="space-y-2">
-                <Label>&nbsp;</Label>
+              <div className="space-y-1">
+                <Label className="text-xs">&nbsp;</Label>
                 <Button
                   onClick={handleCheckIPInNautobot}
                   disabled={!ipValidation.isValid || isValidatingIP}
                   variant="outline"
-                  className="w-full"
+                  size="sm"
+                  className="w-full h-8 text-xs"
                 >
                   {isValidatingIP ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2" />
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500 mr-1" />
                       Checking...
                     </>
                   ) : (
                     <>
-                      <Search className="h-4 w-4 mr-2" />
-                      Check IP in Nautobot
+                      <Search className="h-3 w-3 mr-1" />
+                      Check IP
                     </>
                   )}
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Device Properties Panel */}
-        <Card className="shadow-lg border-0 overflow-hidden p-0">
-          <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-6">
-            <CardTitle className="flex items-center space-x-2">
-              <Settings className="h-5 w-5" />
-              <span>Device Properties</span>
-            </CardTitle>
-            <CardDescription className="text-blue-50">
-              Configure device settings and network properties
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50">
+        <div className="rounded-xl border shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+            <div className="flex items-center space-x-2">
+              <Settings className="h-4 w-4" />
+              <div>
+                <h3 className="text-sm font-semibold">Device Properties</h3>
+                <p className="text-blue-100 text-xs">Configure device settings and network properties</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4 bg-white">
             {/* Device Properties Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Location - Special hierarchical selector */}
@@ -613,7 +614,7 @@ export function OnboardDevicePage() {
                   value={locationSearch}
                   onChange={(e) => setLocationSearch(e.target.value)}
                   onFocus={() => setShowLocationDropdown(true)}
-                  className={formData.location_id ? 'bg-blue-50 border-blue-300' : ''}
+                  className={`border-2 ${formData.location_id ? 'bg-blue-50 border-blue-500' : 'bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500'}`}
                 />
                 {showLocationDropdown && (
                   <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
@@ -645,7 +646,7 @@ export function OnboardDevicePage() {
               <Select value={formData.namespace_id} onValueChange={(value) => 
                 setFormData(prev => ({ ...prev, namespace_id: value }))
               }>
-                <SelectTrigger>
+                <SelectTrigger className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select namespace..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -666,7 +667,7 @@ export function OnboardDevicePage() {
               <Select value={formData.role_id} onValueChange={(value) => 
                 setFormData(prev => ({ ...prev, role_id: value }))
               }>
-                <SelectTrigger>
+                <SelectTrigger className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select device role..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -685,7 +686,7 @@ export function OnboardDevicePage() {
               <Select value={formData.platform_id} onValueChange={(value) => 
                 setFormData(prev => ({ ...prev, platform_id: value }))
               }>
-                <SelectTrigger>
+                <SelectTrigger className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select platform..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -707,7 +708,7 @@ export function OnboardDevicePage() {
               <Select value={formData.status_id} onValueChange={(value) => 
                 setFormData(prev => ({ ...prev, status_id: value }))
               }>
-                <SelectTrigger>
+                <SelectTrigger className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select device status..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -728,7 +729,7 @@ export function OnboardDevicePage() {
               <Select value={formData.secret_groups_id} onValueChange={(value) => 
                 setFormData(prev => ({ ...prev, secret_groups_id: value }))
               }>
-                <SelectTrigger>
+                <SelectTrigger className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select secret group..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -749,7 +750,7 @@ export function OnboardDevicePage() {
               <Select value={formData.interface_status_id} onValueChange={(value) => 
                 setFormData(prev => ({ ...prev, interface_status_id: value }))
               }>
-                <SelectTrigger>
+                <SelectTrigger className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select interface status..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -770,7 +771,7 @@ export function OnboardDevicePage() {
               <Select value={formData.ip_address_status_id} onValueChange={(value) => 
                 setFormData(prev => ({ ...prev, ip_address_status_id: value }))
               }>
-                <SelectTrigger>
+                <SelectTrigger className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select IP address status..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -795,6 +796,7 @@ export function OnboardDevicePage() {
                   ...prev, 
                   port: parseInt(e.target.value) || 22 
                 }))}
+                className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
               />
             </div>
 
@@ -810,6 +812,7 @@ export function OnboardDevicePage() {
                   ...prev, 
                   timeout: parseInt(e.target.value) || 30 
                 }))}
+                className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
               />
             </div>
           </div>
@@ -834,8 +837,8 @@ export function OnboardDevicePage() {
               )}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
 
       {/* Click outside to close location dropdown */}

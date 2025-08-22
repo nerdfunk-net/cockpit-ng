@@ -281,17 +281,17 @@ export default function GitCompare() {
       </div>
 
       {/* Git Selection */}
-      <Card key="unique-id-gc-7" className="shadow-lg border-0 p-0">
-        <CardHeader key="unique-id-gc-8" className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-4">
-          <CardTitle key="unique-id-gc-9" className="flex items-center space-x-2 text-base">
+      <div key="unique-id-gc-7" className="shadow-lg border-0 p-0 bg-white rounded-lg">
+        <div key="unique-id-gc-8" className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+          <div className="flex items-center space-x-2">
             <GitCommit className="h-4 w-4" />
-            <span>Select Commits and File</span>
-          </CardTitle>
-          <div className="text-blue-50 text-sm">
+            <span className="text-sm font-medium">Select Commits and File</span>
+          </div>
+          <div className="text-xs text-blue-100">
             Choose branch, commits, and file to compare between Git revisions
           </div>
-        </CardHeader>
-        <CardContent key="unique-id-gc-10" className="p-6 bg-gradient-to-b from-white to-gray-50">
+        </div>
+        <div key="unique-id-gc-10" className="p-6 bg-gradient-to-b from-white to-gray-50">
           <div key="unique-id-gc-11" className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div key="unique-id-gc-12" className="space-y-2">
                 <Label key="unique-id-gc-13">Branch</Label>
@@ -302,7 +302,7 @@ export default function GitCompare() {
                   loadCommitsForBranch(newValue)
                 }
               }}>
-                <SelectTrigger key="unique-id-gc-15">
+                <SelectTrigger key="unique-id-gc-15" className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select branch" />
                 </SelectTrigger>
                 <SelectContent key="unique-id-gc-16">
@@ -321,7 +321,7 @@ export default function GitCompare() {
               <Select key="unique-id-gc-21" value={leftCommit || '__none__'} onValueChange={(value) => {
                 setLeftCommit(value === '__none__' ? '' : value)
               }}>
-                <SelectTrigger key="unique-id-gc-22">
+                <SelectTrigger key="unique-id-gc-22" className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select source commit" />
                 </SelectTrigger>
                 <SelectContent key="unique-id-gc-23">
@@ -340,7 +340,7 @@ export default function GitCompare() {
               <Select key="unique-id-gc-28" value={rightCommit || '__none__'} onValueChange={(value) => {
                 setRightCommit(value === '__none__' ? '' : value)
               }}>
-                <SelectTrigger key="unique-id-gc-29">
+                <SelectTrigger key="unique-id-gc-29" className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select target commit" />
                 </SelectTrigger>
                 <SelectContent key="unique-id-gc-30">
@@ -367,6 +367,7 @@ export default function GitCompare() {
                   setShowGitResults(e.target.value.length > 0)
                 }}
                 onFocus={() => setShowGitResults(gitFileSearch.length > 0)}
+                className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
               />
               {showGitResults && (
                 <div key="unique-id-gc-37" className="absolute top-full left-0 right-0 z-[9999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto">
@@ -387,21 +388,21 @@ export default function GitCompare() {
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Compare Actions */}
-      <Card key="unique-id-gc-43" className="shadow-lg border-0 p-0">
-        <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-4">
-          <CardTitle className="flex items-center space-x-2 text-base">
+      <div key="unique-id-gc-43" className="shadow-lg border-0 p-0 bg-white rounded-lg">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+          <div className="flex items-center space-x-2">
             <GitCompareIcon className="h-4 w-4" />
-            <span>Git Compare Actions</span>
-          </CardTitle>
-          <div className="text-blue-50 text-sm">
+            <span className="text-sm font-medium">Git Compare Actions</span>
+          </div>
+          <div className="text-xs text-blue-100">
             Execute Git comparison and configure display options
           </div>
-        </CardHeader>
-        <CardContent key="unique-id-gc-44" className="p-6 bg-gradient-to-b from-white to-gray-50">
+        </div>
+        <div key="unique-id-gc-44" className="p-6 bg-gradient-to-b from-white to-gray-50">
           <div key="unique-id-gc-45" className="flex items-center justify-between">
             <div key="unique-id-gc-46" className="flex items-center gap-2">
             <Button 
@@ -436,7 +437,7 @@ export default function GitCompare() {
                 <div key="unique-id-font-selector" className="flex items-center gap-2">
                   <Label key="unique-id-font-label" className="text-sm">Font Size:</Label>
                   <Select key="unique-id-font-select" value={fontSize.toString()} onValueChange={(value) => setFontSize(parseInt(value))}>
-                    <SelectTrigger key="unique-id-font-trigger" className="w-20 h-8">
+                    <SelectTrigger key="unique-id-font-trigger" className="w-20 h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                       <SelectValue key="unique-id-font-value" />
                     </SelectTrigger>
                     <SelectContent key="unique-id-font-content">
@@ -468,8 +469,8 @@ export default function GitCompare() {
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Comparison Results */}
       {showComparison && comparisonResult && (

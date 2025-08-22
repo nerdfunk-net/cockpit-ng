@@ -547,25 +547,25 @@ export function SyncDevicesPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Sync Properties Panel */}
         <div className="lg:col-span-1">
-          <Card className="shadow-lg border-0 overflow-hidden p-0">
-            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-6">
-              <CardTitle className="flex items-center space-x-2">
-                <Settings className="h-5 w-5" />
-                <span>Sync Properties</span>
-              </CardTitle>
-              <CardDescription className="text-blue-50">
-                Configure synchronization settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6 space-y-4">
+          <div className="rounded-xl border shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+              <div className="flex items-center space-x-2">
+                <Settings className="h-4 w-4" />
+                <div>
+                  <h3 className="text-sm font-semibold">Sync Properties</h3>
+                  <p className="text-blue-100 text-xs">Configure synchronization settings</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 bg-white space-y-3">
               {/* Namespace */}
-              <div className="space-y-2">
-                <Label htmlFor="namespace">Namespace <span className="text-red-500">*</span></Label>
+              <div className="space-y-1">
+                <Label htmlFor="namespace" className="text-xs font-medium">Namespace <span className="text-red-500">*</span></Label>
                 <Select 
                   value={syncProperties.namespace} 
                   onValueChange={(value) => setSyncProperties(prev => ({ ...prev, namespace: value }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                     <SelectValue placeholder="Select namespace..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -579,13 +579,13 @@ export function SyncDevicesPage() {
               </div>
 
               {/* Prefix Status */}
-              <div className="space-y-2">
-                <Label htmlFor="prefix-status">Prefix Status <span className="text-red-500">*</span></Label>
+              <div className="space-y-1">
+                <Label htmlFor="prefix-status" className="text-xs font-medium">Prefix Status <span className="text-red-500">*</span></Label>
                 <Select 
                   value={syncProperties.prefix_status} 
                   onValueChange={(value) => setSyncProperties(prev => ({ ...prev, prefix_status: value }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                     <SelectValue placeholder="Select prefix status..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -599,13 +599,13 @@ export function SyncDevicesPage() {
               </div>
 
               {/* Interface Status */}
-              <div className="space-y-2">
-                <Label htmlFor="interface-status">Interface Status <span className="text-red-500">*</span></Label>
+              <div className="space-y-1">
+                <Label htmlFor="interface-status" className="text-xs font-medium">Interface Status <span className="text-red-500">*</span></Label>
                 <Select 
                   value={syncProperties.interface_status} 
                   onValueChange={(value) => setSyncProperties(prev => ({ ...prev, interface_status: value }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                     <SelectValue placeholder="Select interface status..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -619,13 +619,13 @@ export function SyncDevicesPage() {
               </div>
 
               {/* IP Address Status */}
-              <div className="space-y-2">
-                <Label htmlFor="ip-address-status">IP Address Status <span className="text-red-500">*</span></Label>
+              <div className="space-y-1">
+                <Label htmlFor="ip-address-status" className="text-xs font-medium">IP Address Status <span className="text-red-500">*</span></Label>
                 <Select 
                   value={syncProperties.ip_address_status} 
                   onValueChange={(value) => setSyncProperties(prev => ({ ...prev, ip_address_status: value }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                     <SelectValue placeholder="Select IP address status..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -682,38 +682,36 @@ export function SyncDevicesPage() {
                   )}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         {/* Devices Table */}
         <div className="lg:col-span-3">
-          <Card className="shadow-lg border-0 overflow-hidden p-0">
-            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-6">
+          <div className="rounded-xl border shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Search className="h-5 w-5" />
-                    <span>Devices</span>
-                  </CardTitle>
-                  <CardDescription className="text-blue-50">
-                    Select devices to synchronize with Nautobot
-                  </CardDescription>
+                <div className="flex items-center space-x-2">
+                  <Search className="h-4 w-4" />
+                  <div>
+                    <h3 className="text-sm font-semibold">Devices</h3>
+                    <p className="text-blue-100 text-xs">Select devices to synchronize with Nautobot</p>
+                  </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={clearAllFilters}
-                    className="text-white hover:bg-white/20"
+                    className="text-white hover:bg-white/20 text-xs h-6"
                   >
-                    <RotateCcw className="h-4 w-4 mr-1" />
+                    <RotateCcw className="h-3 w-3 mr-1" />
                     Clear Filters
                   </Button>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent className="p-0">
+            </div>
+            <div className="p-0">
               {/* Filters Row */}
               <div className="bg-gray-50 border-b p-4">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -724,7 +722,7 @@ export function SyncDevicesPage() {
                       placeholder="Filter by name..."
                       value={filters.deviceName}
                       onChange={(e) => handleFilterChange('deviceName', e.target.value)}
-                      className="h-8 text-xs"
+                      className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
                     />
                   </div>
 
@@ -732,7 +730,7 @@ export function SyncDevicesPage() {
                   <div className="space-y-1">
                     <Label className="text-xs font-medium text-gray-600">Role</Label>
                     <Select value={filters.role} onValueChange={(value) => handleFilterChange('role', value)}>
-                      <SelectTrigger className="h-8 text-xs">
+                      <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                         <SelectValue placeholder="All Roles" />
                       </SelectTrigger>
                       <SelectContent>
@@ -748,7 +746,7 @@ export function SyncDevicesPage() {
                   <div className="space-y-1">
                     <Label className="text-xs font-medium text-gray-600">Location</Label>
                     <Select value={filters.location} onValueChange={(value) => handleFilterChange('location', value)}>
-                      <SelectTrigger className="h-8 text-xs">
+                      <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                         <SelectValue placeholder="All Locations" />
                       </SelectTrigger>
                       <SelectContent>
@@ -764,7 +762,7 @@ export function SyncDevicesPage() {
                   <div className="space-y-1">
                     <Label className="text-xs font-medium text-gray-600">Device Type</Label>
                     <Select value={filters.deviceType} onValueChange={(value) => handleFilterChange('deviceType', value)}>
-                      <SelectTrigger className="h-8 text-xs">
+                      <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                         <SelectValue placeholder="All Types" />
                       </SelectTrigger>
                       <SelectContent>
@@ -780,7 +778,7 @@ export function SyncDevicesPage() {
                   <div className="space-y-1">
                     <Label className="text-xs font-medium text-gray-600">Status</Label>
                     <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
-                      <SelectTrigger className="h-8 text-xs">
+                      <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                         <SelectValue placeholder="All Statuses" />
                       </SelectTrigger>
                       <SelectContent>
@@ -927,8 +925,8 @@ export function SyncDevicesPage() {
                   </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>

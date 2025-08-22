@@ -463,17 +463,17 @@ export default function BackupPage() {
       )}
 
       {/* Date Filters and Controls */}
-      <Card className="shadow-lg border-0 overflow-hidden p-0">
-        <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-6">
-          <CardTitle className="flex items-center space-x-2">
-            <Filter className="h-5 w-5" />
-            <span>Filter & Controls</span>
-          </CardTitle>
-          <div className="text-blue-50">
-            Filter devices by backup date and manage display options
+      <div className="rounded-xl border shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+          <div className="flex items-center space-x-2">
+            <Filter className="h-4 w-4" />
+            <div>
+              <h3 className="text-sm font-semibold">Filter & Controls</h3>
+              <p className="text-blue-100 text-xs">Filter devices by backup date and manage display options</p>
+            </div>
           </div>
-        </CardHeader>
-        <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50">
+        </div>
+        <div className="p-4 bg-white">
           <div className="flex flex-wrap items-end gap-4">
             <div>
               <Label htmlFor="backup-date-filter">Last Backup Date</Label>
@@ -482,13 +482,13 @@ export default function BackupPage() {
                 type="date"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="min-w-[150px]"
+                className="min-w-[150px] border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
               />
             </div>
             <div>
               <Label htmlFor="date-comparison">Date Comparison</Label>
               <Select value={dateComparison || "none"} onValueChange={(value) => setDateComparison(value === "none" ? "" : value)}>
-                <SelectTrigger className="min-w-[150px]">
+                <SelectTrigger className="min-w-[150px] border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="No Date Filter" />
                 </SelectTrigger>
                 <SelectContent>
@@ -510,32 +510,31 @@ export default function BackupPage() {
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Devices table */}
-      <Card className="shadow-lg border-0 overflow-hidden p-0">
-        <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-6">
-          <CardTitle className="flex items-center space-x-2">
-            <Search className="h-5 w-5" />
-            <span>Device Backup Management</span>
-            {activeFiltersCount > 0 || sortColumn ? (
-              <span className="text-sm font-normal text-blue-50 ml-2">
-                Showing {filteredDevices.length} of {devices.length} devices
-                {activeFiltersCount > 0 && ` (${activeFiltersCount} filter${activeFiltersCount > 1 ? 's' : ''} active)`}
-                {sortColumn && ` - Sorted by ${sortColumn.replace('_', ' ')} (${sortOrder})`}
-              </span>
-            ) : (
-              <span className="text-sm font-normal text-blue-50 ml-2">
-                Showing all {devices.length} devices
-              </span>
-            )}
-          </CardTitle>
-          <div className="text-blue-50">
-            Backup and restore device configurations
+      <div className="rounded-xl border shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+          <div className="flex items-center space-x-2">
+            <Search className="h-4 w-4" />
+            <div>
+              <h3 className="text-sm font-semibold">Device Backup Management</h3>
+              {activeFiltersCount > 0 || sortColumn ? (
+                <p className="text-blue-100 text-xs">
+                  Showing {filteredDevices.length} of {devices.length} devices
+                  {activeFiltersCount > 0 && ` (${activeFiltersCount} filter${activeFiltersCount > 1 ? 's' : ''} active)`}
+                  {sortColumn && ` - Sorted by ${sortColumn.replace('_', ' ')} (${sortOrder})`}
+                </p>
+              ) : (
+                <p className="text-blue-100 text-xs">
+                  Showing all {devices.length} devices
+                </p>
+              )}
+            </div>
           </div>
-        </CardHeader>
-        <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50">
+        </div>
+        <div className="p-4 bg-white">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -548,7 +547,7 @@ export default function BackupPage() {
                           placeholder="Type 3+ chars for backend search..."
                           value={deviceNameFilter}
                           onChange={(e) => setDeviceNameFilter(e.target.value)}
-                          className="h-8 text-xs"
+                          className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
                         />
                       </div>
                     </div>
@@ -559,7 +558,7 @@ export default function BackupPage() {
                       <div>Role</div>
                       <div>
                         <Select value={roleFilter || "all"} onValueChange={(value) => setRoleFilter(value === "all" ? "" : value)}>
-                          <SelectTrigger className="h-8 text-xs">
+                          <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                             <SelectValue placeholder="All Roles" />
                           </SelectTrigger>
                           <SelectContent>
@@ -577,7 +576,7 @@ export default function BackupPage() {
                       <div>Location</div>
                       <div>
                         <Select value={locationFilter || "all"} onValueChange={(value) => setLocationFilter(value === "all" ? "" : value)}>
-                          <SelectTrigger className="h-8 text-xs">
+                          <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                             <SelectValue placeholder="All Locations" />
                           </SelectTrigger>
                           <SelectContent>
@@ -595,7 +594,7 @@ export default function BackupPage() {
                       <div>Device Type</div>
                       <div>
                         <Select value={deviceTypeFilter || "all"} onValueChange={(value) => setDeviceTypeFilter(value === "all" ? "" : value)}>
-                          <SelectTrigger className="h-8 text-xs">
+                          <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                             <SelectValue placeholder="All Types" />
                           </SelectTrigger>
                           <SelectContent>
@@ -613,7 +612,7 @@ export default function BackupPage() {
                       <div>Status</div>
                       <div>
                         <Select value={statusFilter || "all"} onValueChange={(value) => setStatusFilter(value === "all" ? "" : value)}>
-                          <SelectTrigger className="h-8 text-xs">
+                          <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                             <SelectValue placeholder="All Statuses" />
                           </SelectTrigger>
                           <SelectContent>
@@ -769,7 +768,7 @@ export default function BackupPage() {
               <div className="flex items-center gap-1 ml-2">
                 <Label htmlFor="page-size" className="text-xs text-muted-foreground">Show:</Label>
                 <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(parseInt(value))}>
-                  <SelectTrigger className="w-20 h-8">
+                  <SelectTrigger className="w-20 h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -783,8 +782,8 @@ export default function BackupPage() {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Backup History Modal */}
       <Dialog open={isHistoryModalOpen} onOpenChange={setIsHistoryModalOpen}>
