@@ -412,27 +412,33 @@ const GitManagement: React.FC = () => {
         {/* Repository List Tab */}
         <TabsContent value="list" className="space-y-4">
           {/* Filters */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-0.5 pl-8 pr-4 -mx-6 -mt-6 mb-1">
+              <CardTitle className="flex items-center gap-2 text-white text-xs">
+                <Search className="h-3 w-3" />
+                Repository Filters
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-1 pb-2">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-1.5">
                 <div>
-                  <Label htmlFor="search">Search Repositories</Label>
+                  <Label htmlFor="search" className="text-xs font-medium text-gray-700 mb-0 block">Search</Label>
                   <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-1.5 top-1 h-2.5 w-2.5 text-gray-400" />
                     <Input
                       id="search"
-                      placeholder="Search by name, URL, or description..."
+                      placeholder="Search repositories..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9"
+                      className="pl-6 h-6 text-xs"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="filter-category">Category</Label>
+                  <Label htmlFor="filter-category" className="text-xs font-medium text-gray-700 mb-0 block">Category</Label>
                   <Select value={filterCategory} onValueChange={setFilterCategory}>
-                    <SelectTrigger id="filter-category">
-                      <SelectValue placeholder="All Categories" />
+                    <SelectTrigger id="filter-category" className="h-6 text-xs">
+                      <SelectValue placeholder="All" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__all__">All Categories</SelectItem>
@@ -443,10 +449,10 @@ const GitManagement: React.FC = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="filter-status">Status</Label>
+                  <Label htmlFor="filter-status" className="text-xs font-medium text-gray-700 mb-0 block">Status</Label>
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger id="filter-status">
-                      <SelectValue placeholder="All Status" />
+                    <SelectTrigger id="filter-status" className="h-6 text-xs">
+                      <SelectValue placeholder="All" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__all__">All Status</SelectItem>
@@ -455,21 +461,22 @@ const GitManagement: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div className="flex justify-end mt-4">
-                <Button onClick={loadRepositories} variant="outline" size="sm">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh
-                </Button>
+                <div>
+                  <Label className="text-xs font-medium text-gray-700 mb-0 block">Actions</Label>
+                  <Button onClick={loadRepositories} variant="outline" size="sm" className="h-6 px-1.5 text-xs w-full">
+                    <RefreshCw className="h-2.5 w-2.5 mr-0.5" />
+                    Refresh
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Repositories Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GitBranch className="h-5 w-5" />
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 pl-8 pr-4 -mx-6 -mt-6 mb-4">
+              <CardTitle className="flex items-center gap-2 text-white text-sm">
+                <GitBranch className="h-4 w-4" />
                 Managed Repositories ({filteredRepositories.length})
               </CardTitle>
             </CardHeader>
@@ -567,13 +574,13 @@ const GitManagement: React.FC = () => {
 
         {/* Add Repository Tab */}
         <TabsContent value="add" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="h-5 w-5" />
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
+              <CardTitle className="flex items-center gap-2 text-white text-base">
+                <Plus className="h-4 w-4" />
                 Add New Git Repository
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-blue-50 text-sm">
                 Configure a new Git repository for configurations, templates, or other resources
               </CardDescription>
             </CardHeader>
@@ -581,23 +588,24 @@ const GitManagement: React.FC = () => {
               <form onSubmit={handleFormSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Repository Name *</Label>
+                    <Label htmlFor="name" className="text-sm font-semibold text-gray-800">Repository Name *</Label>
                     <Input
                       id="name"
                       placeholder="My Config Repository"
                       value={formData.name}
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
                       required
                     />
-                    <p className="text-sm text-gray-500">Unique name to identify this repository</p>
+                    <p className="text-xs text-gray-600">Unique name to identify this repository</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="category">Category *</Label>
+                    <Label htmlFor="category" className="text-sm font-semibold text-gray-800">Category *</Label>
                     <Select 
                       value={formData.category} 
                       onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
                     >
-                      <SelectTrigger id="category">
+                      <SelectTrigger id="category" className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200">
                         <SelectValue placeholder="Select Category" />
                       </SelectTrigger>
                       <SelectContent>
@@ -606,42 +614,44 @@ const GitManagement: React.FC = () => {
                         <SelectItem value="onboarding">Onboarding</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-sm text-gray-500">Purpose of this repository</p>
+                    <p className="text-xs text-gray-600">Purpose of this repository</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="md:col-span-2 space-y-2">
-                    <Label htmlFor="url">Repository URL *</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="url" className="text-sm font-semibold text-gray-800">Repository URL *</Label>
                     <Input
                       id="url"
                       type="url"
                       placeholder="https://github.com/username/repo.git"
                       value={formData.url}
                       onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
+                      className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
                       required
                     />
-                    <p className="text-sm text-gray-500">Git repository URL</p>
+                    <p className="text-xs text-gray-600">Git repository URL</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="branch">Default Branch</Label>
+                    <Label htmlFor="branch" className="text-sm font-semibold text-gray-800">Default Branch</Label>
                     <Input
                       id="branch"
                       placeholder="main"
                       value={formData.branch}
                       onChange={(e) => setFormData(prev => ({ ...prev, branch: e.target.value }))}
+                      className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
                     />
-                    <p className="text-sm text-gray-500">Default branch to use</p>
+                    <p className="text-xs text-gray-600">Default branch to use</p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="credential">Credential</Label>
+                  <Label htmlFor="credential" className="text-sm font-semibold text-gray-800">Credential</Label>
                   <Select 
                     value={formData.credential_name} 
                     onValueChange={(value) => setFormData(prev => ({ ...prev, credential_name: value }))}
                   >
-                    <SelectTrigger id="credential">
+                    <SelectTrigger id="credential" className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200">
                       <SelectValue placeholder="No credential (public repo)" />
                     </SelectTrigger>
                     <SelectContent>
@@ -653,19 +663,20 @@ const GitManagement: React.FC = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-sm text-gray-500">Select a stored token credential to use for this repository</p>
+                  <p className="text-xs text-gray-600">Select a stored token credential to use for this repository</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="path">Path</Label>
+                    <Label htmlFor="path" className="text-sm font-semibold text-gray-800">Path</Label>
                     <Input
                       id="path"
                       placeholder="configs/"
                       value={formData.path}
                       onChange={(e) => setFormData(prev => ({ ...prev, path: e.target.value }))}
+                      className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
                     />
-                    <p className="text-sm text-gray-500">Path within repository (leave empty for root)</p>
+                    <p className="text-xs text-gray-600">Path within repository (leave empty for root)</p>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2 pt-6">
@@ -673,67 +684,78 @@ const GitManagement: React.FC = () => {
                         id="verify-ssl"
                         checked={formData.verify_ssl}
                         onCheckedChange={(checked) => setFormData(prev => ({ ...prev, verify_ssl: !!checked }))}
+                        className="border-2 border-gray-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                       />
-                      <Label htmlFor="verify-ssl">Verify SSL certificates</Label>
+                      <Label htmlFor="verify-ssl" className="text-sm font-semibold text-gray-800">Verify SSL certificates</Label>
                     </div>
-                    <p className="text-sm text-gray-500">Disable for self-signed certificates</p>
+                    <p className="text-xs text-gray-600">Disable for self-signed certificates</p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description" className="text-sm font-semibold text-gray-800">Description</Label>
                   <Textarea
                     id="description"
                     placeholder="Optional description for this repository"
                     rows={3}
                     value={formData.description}
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 resize-none"
                   />
                 </div>
 
                 <Separator />
 
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Button
-                    type="button"
-                    onClick={testConnection}
-                    variant="outline"
-                    disabled={isTestingConnection || !formData.url}
-                  >
-                    {isTestingConnection ? (
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <TestTube className="h-4 w-4 mr-2" />
-                    )}
-                    Test Connection
-                  </Button>
-                  
-                  {connectionStatus && (
-                    <div className={`flex items-center gap-2 text-sm ${
-                      connectionStatus.type === 'success' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {connectionStatus.type === 'success' ? (
-                        <CheckCircle className="h-4 w-4" />
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-900 mb-2">Test Connection</h4>
+                  <p className="text-sm text-blue-700 mb-3">
+                    Verify that the repository can be accessed with the provided settings.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Button
+                      type="button"
+                      onClick={testConnection}
+                      variant="outline"
+                      disabled={isTestingConnection || !formData.url}
+                      className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                    >
+                      {isTestingConnection ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                       ) : (
-                        <AlertCircle className="h-4 w-4" />
+                        <TestTube className="h-4 w-4 mr-2" />
                       )}
-                      {connectionStatus.text}
-                    </div>
-                  )}
+                      Test Connection
+                    </Button>
+                    
+                    {connectionStatus && (
+                      <div className={`flex items-center gap-2 text-sm ${
+                        connectionStatus.type === 'success' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {connectionStatus.type === 'success' ? (
+                          <CheckCircle className="h-4 w-4" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4" />
+                        )}
+                        {connectionStatus.text}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex gap-4">
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Plus className="h-4 w-4 mr-2" />
-                    )}
-                    Add Repository
-                  </Button>
-                  <Button type="button" onClick={resetForm} variant="outline">
-                    Reset Form
-                  </Button>
+                <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                  <div className="flex gap-4">
+                    <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
+                      {isSubmitting ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4 mr-2" />
+                      )}
+                      Add Repository
+                    </Button>
+                    <Button type="button" onClick={resetForm} variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
+                      Reset Form
+                    </Button>
+                  </div>
                 </div>
               </form>
             </CardContent>

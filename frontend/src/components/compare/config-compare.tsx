@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
   File, 
   GitCommit, 
@@ -10,7 +11,8 @@ import {
   GitBranch,
   RefreshCw,
   XCircle,
-  Settings
+  Settings,
+  ChevronDown
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
@@ -21,6 +23,7 @@ import FileHistoryCompare from './file-history-compare'
 interface Repository {
   id: number
   name: string
+  category: string
   url: string
   branch: string
   status: string
@@ -61,16 +64,18 @@ export default function ConfigCompare() {
       const response = await apiCall<GitRepositoryListResponse>('git-repositories')
       console.log('Compare: API response received:', response)
       
-      const repositories = response.repositories || []
-      console.log('Compare: Extracted repositories:', repositories)
+      // Filter to only show repositories with category "configs"
+      const allRepositories = response.repositories || []
+      const configRepositories = allRepositories.filter(repo => repo.category === 'configs')
+      console.log('Compare: Filtered config repositories:', configRepositories)
       
-      setRepositories(repositories)
-      if (repositories && repositories.length > 0) {
-        console.log('Compare: Auto-selecting first repository:', repositories[0])
-        await selectRepository(repositories[0])
+      setRepositories(configRepositories)
+      if (configRepositories && configRepositories.length > 0) {
+        console.log('Compare: Auto-selecting first config repository:', configRepositories[0])
+        await selectRepository(configRepositories[0])
         setRepositoryStatus('ready')
       } else {
-        console.log('Compare: No repositories found')
+        console.log('Compare: No config repositories found')
         setRepositoryStatus('error')
       }
     } catch (error) {
@@ -149,7 +154,7 @@ export default function ConfigCompare() {
             <CardDescription>
               {!authReady 
                 ? 'Please log in to access the configuration compare tool.'
-                : 'No Git repositories found. Please configure at least one repository to use the compare functionality.'
+                : 'No Git repositories with category "configs" found. Please configure at least one config repository to use the compare functionality.'
               }
             </CardDescription>
           </CardHeader>
@@ -206,75 +211,142 @@ export default function ConfigCompare() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Configuration Compare</h1>
-          <p className="text-gray-600">Compare configuration files and track changes across Git history</p>
+          <h1 className="text-3xl font-bold text-gray-900">Configuration Compare</h1>
+          <p className="text-gray-600 mt-1">Compare configuration files and track changes across Git history</p>
+        </div>
+        
+        {/* Quick Actions */}
+        <div className="flex items-center space-x-2">
+          <Button 
+            onClick={() => loadRepositories()}
+            variant="outline"
+            disabled={!authReady}
+          >
+            {!authReady ? (
+              <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            Refresh
+          </Button>
         </div>
       </div>
 
       {/* Repository Selection */}
-      {selectedRepository && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <GitBranch className="h-5 w-5" />
-              Repository: {selectedRepository.name}
-            </CardTitle>
-            <CardDescription className="flex items-center justify-between">
-              <span>URL: {selectedRepository.url} | Branch: {selectedRepository.branch}</span>
-              <div className="flex items-center gap-2">
+      {repositories.length > 0 && (
+        <Card className="shadow-lg border-0 overflow-hidden p-0">
+          <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center space-x-2 text-sm font-medium">
+                <GitBranch className="h-3 w-3" />
+                <span>Config Repository</span>
+              </CardTitle>
+              {selectedRepository && (
                 <Button 
                   size="sm" 
                   variant="outline" 
                   onClick={syncRepository}
                   disabled={syncingRepo}
+                  className="bg-white/20 border-white/30 text-white hover:bg-white/30 h-5 px-1.5 text-xs"
                 >
                   {syncingRepo ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    <RefreshCw className="h-3 w-3 animate-spin" />
                   ) : (
-                    <RefreshCw className="h-4 w-4" />
+                    <RefreshCw className="h-3 w-3" />
                   )}
-                  Sync
                 </Button>
-              </div>
-            </CardDescription>
+              )}
+            </div>
           </CardHeader>
+          <CardContent className="py-1.5 px-3 bg-gradient-to-b from-white to-gray-50">
+            <div className="flex items-center gap-2">
+              {repositories.length > 1 ? (
+                <div className="flex-1">
+                  <Select 
+                    value={selectedRepository?.id.toString() || ''} 
+                    onValueChange={(value) => {
+                      const repo = repositories.find(r => r.id.toString() === value)
+                      if (repo) selectRepository(repo)
+                    }}
+                  >
+                    <SelectTrigger className="h-7 text-sm border-gray-200">
+                      <SelectValue>
+                        {selectedRepository ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium">{selectedRepository.name}</span>
+                            <span className="text-gray-500 text-xs">({selectedRepository.branch})</span>
+                          </div>
+                        ) : 'Select repository'}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {repositories.map((repo) => (
+                        <SelectItem key={repo.id} value={repo.id.toString()}>
+                          <div className="flex items-center gap-1.5">
+                            <GitBranch className="h-3 w-3" />
+                            <span className="font-medium">{repo.name}</span>
+                            <span className="text-gray-500 text-xs">({repo.branch})</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center gap-1.5">
+                  <span className="font-medium text-sm">{selectedRepository?.name}</span>
+                  <span className="text-gray-500 text-xs">({selectedRepository?.branch})</span>
+                </div>
+              )}
+              
+              {selectedRepository && (
+                <div className="text-xs text-gray-400 truncate max-w-48 hidden sm:block">
+                  {selectedRepository.url}
+                </div>
+              )}
+            </div>
+          </CardContent>
         </Card>
       )}
 
       {/* Mode Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Comparison Mode</CardTitle>
+      <Card className="shadow-lg border-0 overflow-hidden p-0">
+        <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-3">
+          <CardTitle className="flex items-center space-x-2 text-sm font-medium">
+            <Settings className="h-3 w-3" />
+            <span>Comparison Mode</span>
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
+        <CardContent className="py-1.5 px-3 bg-gradient-to-b from-white to-gray-50">
+          <div className="flex flex-wrap gap-1.5">
             <Button
               key="mode-files"
               variant={comparisonMode === 'files' ? 'default' : 'outline'}
               onClick={() => setComparisonMode('files')}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1.5 h-7 px-2 text-xs"
             >
-              <File className="h-4 w-4" />
+              <File className="h-3 w-3" />
               Files
             </Button>
             <Button
               key="mode-git"
               variant={comparisonMode === 'git' ? 'default' : 'outline'}
               onClick={() => setComparisonMode('git')}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1.5 h-7 px-2 text-xs"
             >
-              <GitCommit className="h-4 w-4" />
+              <GitCommit className="h-3 w-3" />
               Git Commits
             </Button>
             <Button
               key="mode-history"
               variant={comparisonMode === 'history' ? 'default' : 'outline'}
               onClick={() => setComparisonMode('history')}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1.5 h-7 px-2 text-xs"
             >
-              <History className="h-4 w-4" />
+              <History className="h-3 w-3" />
               File History
             </Button>
           </div>

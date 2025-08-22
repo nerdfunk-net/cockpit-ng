@@ -107,45 +107,52 @@ export function AppSidebar({ className }: AppSidebarProps) {
         className
       )}
     >
-      <div className="h-full bg-white/95 backdrop-blur-xl border-r border-gray-200/50 shadow-apple-lg flex flex-col">
+      <div className="h-full bg-white border-r border-slate-200 shadow-analytics-lg flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200/50">
+        <div className="p-6 border-b border-slate-100">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                <Heart className="w-5 h-5 text-white" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-analytics">
+                <Heart className="w-6 h-6 text-white" />
               </div>
               {!isCollapsed && (
-                <h1 className="text-xl font-semibold text-gray-900">Cockpit!</h1>
+                <div>
+                  <h1 className="text-xl font-bold text-slate-900">Analytics</h1>
+                  <p className="text-xs text-slate-500">Network Dashboard</p>
+                </div>
               )}
             </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={toggleCollapsed}
-              className="h-8 w-8 p-0"
+              className="h-9 w-9 p-0 hover:bg-slate-100 button-analytics"
             >
-              <Menu className="h-4 w-4" />
+              <Menu className="h-5 w-5 text-slate-600" />
             </Button>
           </div>
         </div>
 
         {/* User Profile */}
         {user && (
-          <div className="p-4 border-b border-gray-200/50">
+          <div className="p-6 border-b border-slate-100">
             <div className="flex items-center space-x-3">
-              <Avatar className="h-10 w-10">
+              <Avatar className="h-12 w-12 ring-2 ring-blue-100">
                 <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.username}`} />
-                <AvatarFallback>
+                <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold">
                   {user.username.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               {!isCollapsed && (
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    Welcome, {user.username}
+                  <p className="text-sm font-semibold text-slate-900 truncate">
+                    {user.username}
                   </p>
-                  <p className="text-xs text-gray-500">Network Engineer</p>
+                  <p className="text-xs text-slate-500">Network Engineer</p>
+                  <div className="flex items-center space-x-1 mt-1">
+                    <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                    <span className="text-xs text-emerald-600 font-medium">Online</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -153,16 +160,16 @@ export function AppSidebar({ className }: AppSidebarProps) {
         )}
 
         {/* Navigation */}
-        <div className="flex-1 overflow-y-auto py-4">
-          <nav className="space-y-6">
+        <div className="flex-1 overflow-y-auto py-6">
+          <nav className="space-y-8">
             {navigationSections.map((section) => (
-              <div key={section.title} className="px-4">
+              <div key={section.title} className="px-6">
                 {!isCollapsed && (
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
                     {section.title}
                   </h3>
                 )}
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {section.items.map((item) => {
                     const isActive = pathname === item.href
                     const Icon = item.icon
@@ -172,19 +179,19 @@ export function AppSidebar({ className }: AppSidebarProps) {
                         <Button
                           variant={isActive ? 'default' : 'ghost'}
                           className={cn(
-                            'w-full justify-start h-9 transition-all duration-200',
-                            isCollapsed ? 'px-2' : 'px-3',
+                            'w-full justify-start h-11 transition-all duration-200 button-analytics',
+                            isCollapsed ? 'px-3' : 'px-4',
                             isActive
-                              ? 'bg-blue-500 text-white shadow-apple hover:bg-blue-600'
-                              : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                              ? 'bg-blue-600 text-white shadow-analytics hover:bg-blue-700'
+                              : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                           )}
                         >
-                          <Icon className={cn('h-4 w-4', isCollapsed ? '' : 'mr-3')} />
+                          <Icon className={cn('h-5 w-5', isCollapsed ? '' : 'mr-3')} />
                           {!isCollapsed && (
                             <>
-                              <span key="nav-label" className="flex-1 text-left">{item.label}</span>
+                              <span key="nav-label" className="flex-1 text-left font-medium">{item.label}</span>
                               {item.badge && (
-                                <Badge key="nav-badge" variant="secondary" className="text-xs">
+                                <Badge key="nav-badge" variant="secondary" className="text-xs bg-slate-100 text-slate-600">
                                   {item.badge}
                                 </Badge>
                               )}
@@ -201,34 +208,36 @@ export function AppSidebar({ className }: AppSidebarProps) {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200/50 p-4">
+        <div className="border-t border-slate-100 p-6">
           <div className={cn('flex', isCollapsed ? 'flex-col space-y-2' : 'space-x-2')}>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsVisible(!isVisible)}
-              className={cn('h-8', isCollapsed ? 'w-8 p-0' : 'flex-1')}
+              className={cn('h-10 button-analytics hover:bg-slate-100', isCollapsed ? 'w-10 p-0' : 'flex-1')}
               title={isVisible ? 'Hide sidebar' : 'Show sidebar'}
             >
-              {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              {!isCollapsed && <span className="ml-2">Hide</span>}
+              {isVisible ? <EyeOff className="h-4 w-4 text-slate-600" /> : <Eye className="h-4 w-4 text-slate-600" />}
+              {!isCollapsed && <span className="ml-2 text-slate-700 font-medium">Hide</span>}
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleLogout}
-              className={cn('h-8 text-red-600 hover:text-red-700 hover:bg-red-50', isCollapsed ? 'w-8 p-0' : 'flex-1')}
+              className={cn('h-10 text-red-600 hover:text-red-700 hover:bg-red-50 button-analytics', isCollapsed ? 'w-10 p-0' : 'flex-1')}
               title="Logout"
             >
               <LogOut className="h-4 w-4" />
-              {!isCollapsed && <span className="ml-2">Logout</span>}
+              {!isCollapsed && <span className="ml-2 font-medium">Logout</span>}
             </Button>
           </div>
           {/* Copyright notice */}
           {!isCollapsed && (
-            <div className="mt-3 pt-3 border-t border-gray-200/50">
-              <p className="text-xs text-gray-400 text-center">
-                © 2025 Cockpit Network Management Dashboard
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <p className="text-xs text-slate-400 text-center leading-relaxed">
+                © 2025 Analytics Dashboard
+                <br />
+                <span className="text-slate-300">Network Management</span>
               </p>
             </div>
           )}

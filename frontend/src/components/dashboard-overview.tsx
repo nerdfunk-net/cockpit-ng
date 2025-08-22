@@ -134,46 +134,50 @@ export default function DashboardOverview() {
       value: stats.devices,
       icon: Server,
       color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
+      bgColor: 'bg-blue-50',
+      iconBg: 'bg-blue-100',
       description: 'Network devices in Nautobot'
     },
     {
       title: 'Total Locations',
       value: stats.locations,
       icon: MapPin,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
+      color: 'text-emerald-600',
+      bgColor: 'bg-emerald-50',
+      iconBg: 'bg-emerald-100',
       description: 'Physical locations'
     },
     {
       title: 'IP Addresses',
       value: stats.ip_addresses,
       icon: Network,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100',
+      color: 'text-cyan-600',
+      bgColor: 'bg-cyan-50',
+      iconBg: 'bg-cyan-100',
       description: 'Assigned IP addresses'
     },
     {
       title: 'Total Prefixes',
       value: stats.prefixes,
       icon: Layers,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-50',
+      iconBg: 'bg-indigo-100',
       description: 'Network prefixes'
     }
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 p-6 bg-slate-50/50 min-h-screen">
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Nautobot Dashboard</h1>
-          <p className="text-gray-600">Network infrastructure overview and statistics</p>
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold text-slate-900">Analytics Dashboard</h1>
+          <p className="text-slate-600">Network infrastructure overview and real-time statistics</p>
         </div>
         <div className="flex items-center space-x-4">
           {cacheInfo && (
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
+            <div className="flex items-center space-x-2 text-sm text-slate-500 bg-white px-3 py-2 rounded-lg border border-slate-200">
               <Clock className="h-4 w-4" />
               <span>{cacheInfo}</span>
             </div>
@@ -182,7 +186,7 @@ export default function DashboardOverview() {
             onClick={refreshData}
             disabled={loadingState === 'loading'}
             size="sm"
-            className="flex items-center space-x-2"
+            className="flex items-center space-x-2 button-analytics bg-blue-600 hover:bg-blue-700 text-white"
           >
             <RefreshCw className={cn(
               "h-4 w-4",
@@ -195,7 +199,7 @@ export default function DashboardOverview() {
 
       {/* Loading/Error States */}
       {loadingState === 'loading' && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="status-info border rounded-xl p-4 analytics-card">
           <div className="flex items-center space-x-3">
             <RefreshCw className="h-5 w-5 text-blue-500 animate-spin" />
             <span className="text-blue-800 font-medium">Loading dashboard statistics...</span>
@@ -204,7 +208,7 @@ export default function DashboardOverview() {
       )}
 
       {loadingState === 'error' && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="status-error border rounded-xl p-4 analytics-card">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <Database className="h-5 w-5 text-red-500" />
@@ -212,7 +216,7 @@ export default function DashboardOverview() {
                 Failed to load dashboard data. Please check your Nautobot connection.
               </span>
             </div>
-            <Button onClick={refreshData} size="sm" variant="outline">
+            <Button onClick={refreshData} size="sm" variant="outline" className="button-analytics">
               Try Again
             </Button>
           </div>
@@ -220,36 +224,34 @@ export default function DashboardOverview() {
       )}
 
       {/* Stats Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="analytics-grid">
         {statCards.map((card) => {
           const IconComponent = card.icon
           return (
             <Card key={card.title} className={cn(
-              "transition-all duration-200 hover:shadow-lg",
+              "analytics-card border-0 transition-all duration-300 hover:shadow-analytics-lg",
               loadingState === 'loading' && "animate-pulse"
             )}>
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
-                  <div className={`p-2 rounded-lg ${card.bgColor}`}>
+                  <div className={`p-3 rounded-xl ${card.iconBg} ring-1 ring-white/20`}>
                     <IconComponent className={`h-6 w-6 ${card.color}`} />
                   </div>
                   <div className="text-right">
                     <div className={cn(
-                      "text-2xl font-bold text-gray-900",
-                      loadingState === 'loading' && "text-gray-400"
+                      "text-3xl font-bold text-slate-900",
+                      loadingState === 'loading' && "text-slate-400"
                     )}>
                       {loadingState === 'loading' ? '-' : formatNumber(card.value)}
                     </div>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <CardTitle className="text-sm font-medium text-gray-600 mb-1">
+              <CardContent className="pt-0">
+                <CardTitle className="text-sm font-semibold text-slate-700 mb-2">
                   {card.title}
                 </CardTitle>
-                <p className="text-xs text-gray-500">
-                  {card.description}
-                </p>
+                <p className="text-xs text-slate-500 leading-relaxed">{card.description}</p>
               </CardContent>
             </Card>
           )
@@ -259,43 +261,50 @@ export default function DashboardOverview() {
       {/* Last Updated Info */}
       {lastUpdated && loadingState === 'success' && (
         <div className="text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-slate-500 bg-white px-4 py-2 rounded-lg border border-slate-200 inline-block">
             Last updated: {lastUpdated.toLocaleString()}
           </p>
         </div>
       )}
 
-      {/* Quick Actions - Future Enhancement */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+      {/* Quick Actions - Modern Analytics Style */}
+      <Card className="analytics-card border-0">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl font-bold text-slate-900">Quick Actions</CardTitle>
+          <p className="text-slate-600">Common network management tasks</p>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="justify-start h-auto p-4">
-              <div className="flex items-center space-x-3">
-                <Server className="h-5 w-5 text-blue-600" />
+            <Button variant="outline" className="justify-start h-auto p-6 analytics-card border border-slate-200 hover:border-blue-300 group">
+              <div className="flex items-center space-x-4">
+                <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+                  <Server className="h-6 w-6 text-blue-600" />
+                </div>
                 <div className="text-left">
-                  <div className="font-medium">Onboard Device</div>
-                  <div className="text-sm text-gray-500">Add new network device</div>
+                  <div className="font-semibold text-slate-900">Onboard Device</div>
+                  <div className="text-sm text-slate-500">Add new network device</div>
                 </div>
               </div>
             </Button>
-            <Button variant="outline" className="justify-start h-auto p-4">
-              <div className="flex items-center space-x-3">
-                <Network className="h-5 w-5 text-green-600" />
+            <Button variant="outline" className="justify-start h-auto p-6 analytics-card border border-slate-200 hover:border-emerald-300 group">
+              <div className="flex items-center space-x-4">
+                <div className="p-2 bg-emerald-50 rounded-lg group-hover:bg-emerald-100 transition-colors">
+                  <Network className="h-6 w-6 text-emerald-600" />
+                </div>
                 <div className="text-left">
-                  <div className="font-medium">Backup Configs</div>
-                  <div className="text-sm text-gray-500">Backup device configurations</div>
+                  <div className="font-semibold text-slate-900">Backup Configs</div>
+                  <div className="text-sm text-slate-500">Backup device configurations</div>
                 </div>
               </div>
             </Button>
-            <Button variant="outline" className="justify-start h-auto p-4">
-              <div className="flex items-center space-x-3">
-                <Layers className="h-5 w-5 text-purple-600" />
+            <Button variant="outline" className="justify-start h-auto p-6 analytics-card border border-slate-200 hover:border-indigo-300 group">
+              <div className="flex items-center space-x-4">
+                <div className="p-2 bg-indigo-50 rounded-lg group-hover:bg-indigo-100 transition-colors">
+                  <Layers className="h-6 w-6 text-indigo-600" />
+                </div>
                 <div className="text-left">
-                  <div className="font-medium">Manage Templates</div>
-                  <div className="text-sm text-gray-500">Configure device templates</div>
+                  <div className="font-semibold text-slate-900">Manage Templates</div>
+                  <div className="text-sm text-slate-500">Configure device templates</div>
                 </div>
               </div>
             </Button>

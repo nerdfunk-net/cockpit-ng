@@ -956,18 +956,18 @@ export function ScanAndAddPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 p-6 bg-slate-50/50 min-h-screen">
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Scan & Add Devices</h1>
-          <p className="text-gray-600 mt-1">Discover and onboard network devices</p>
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold text-slate-900">Scan & Add Devices</h1>
+          <p className="text-slate-600">Discover and onboard network devices to your infrastructure</p>
         </div>
       </div>
 
       {/* Status Messages */}
       {statusMessage && (
-        <Alert className={`${
+        <Alert className={`analytics-card border-0 ${
           statusMessage.type === 'error' ? 'border-red-500 bg-red-50' :
           statusMessage.type === 'success' ? 'border-green-500 bg-green-50' :
           statusMessage.type === 'warning' ? 'border-yellow-500 bg-yellow-50' :

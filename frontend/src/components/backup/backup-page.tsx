@@ -389,11 +389,35 @@ export default function BackupPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Configuration Backup</h1>
-          <p className="text-muted-foreground">Manage device configuration backups</p>
+          <h1 className="text-3xl font-bold text-gray-900">Configuration Backup</h1>
+          <p className="text-gray-600 mt-1">Manage device configuration backups</p>
+        </div>
+        
+        {/* Quick Actions */}
+        <div className="flex items-center space-x-2">
+          <Button 
+            onClick={() => loadDevices()}
+            variant="outline"
+            disabled={loading}
+          >
+            {loading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2" />
+            ) : (
+              <RotateCcw className="h-4 w-4 mr-2" />
+            )}
+            Refresh
+          </Button>
+          <Button 
+            onClick={() => {/* TODO: Implement bulk backup */}}
+            disabled={filteredDevices.length === 0}
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Backup All
+          </Button>
         </div>
       </div>
 
@@ -439,8 +463,17 @@ export default function BackupPage() {
       )}
 
       {/* Date Filters and Controls */}
-      <Card>
-        <CardContent className="p-4">
+      <Card className="shadow-lg border-0 overflow-hidden p-0">
+        <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-6">
+          <CardTitle className="flex items-center space-x-2">
+            <Filter className="h-5 w-5" />
+            <span>Filter & Controls</span>
+          </CardTitle>
+          <div className="text-blue-50">
+            Filter devices by backup date and manage display options
+          </div>
+        </CardHeader>
+        <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50">
           <div className="flex flex-wrap items-end gap-4">
             <div>
               <Label htmlFor="backup-date-filter">Last Backup Date</Label>
@@ -481,26 +514,28 @@ export default function BackupPage() {
       </Card>
 
       {/* Devices table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>
-              Devices
-              {activeFiltersCount > 0 || sortColumn ? (
-                <span className="text-sm font-normal text-muted-foreground ml-2">
-                  Showing {filteredDevices.length} of {devices.length} devices
-                  {activeFiltersCount > 0 && ` (${activeFiltersCount} filter${activeFiltersCount > 1 ? 's' : ''} active)`}
-                  {sortColumn && ` - Sorted by ${sortColumn.replace('_', ' ')} (${sortOrder})`}
-                </span>
-              ) : (
-                <span className="text-sm font-normal text-muted-foreground ml-2">
-                  Showing all {devices.length} devices
-                </span>
-              )}
-            </CardTitle>
+      <Card className="shadow-lg border-0 overflow-hidden p-0">
+        <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-6">
+          <CardTitle className="flex items-center space-x-2">
+            <Search className="h-5 w-5" />
+            <span>Device Backup Management</span>
+            {activeFiltersCount > 0 || sortColumn ? (
+              <span className="text-sm font-normal text-blue-50 ml-2">
+                Showing {filteredDevices.length} of {devices.length} devices
+                {activeFiltersCount > 0 && ` (${activeFiltersCount} filter${activeFiltersCount > 1 ? 's' : ''} active)`}
+                {sortColumn && ` - Sorted by ${sortColumn.replace('_', ' ')} (${sortOrder})`}
+              </span>
+            ) : (
+              <span className="text-sm font-normal text-blue-50 ml-2">
+                Showing all {devices.length} devices
+              </span>
+            )}
+          </CardTitle>
+          <div className="text-blue-50">
+            Backup and restore device configurations
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>

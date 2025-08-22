@@ -424,19 +424,23 @@ export default function FileHistoryCompare() {
 
   return (
     <div key="unique-id-fhc-1" className="space-y-6">
+      {/* Header */}
       <div key="unique-id-fhc-2" className="flex items-center justify-between">
         <div key="unique-id-fhc-3">
-          <h2 key="unique-id-fhc-4" className="text-2xl font-bold tracking-tight">File History</h2>
-          <p key="unique-id-fhc-5" className="text-gray-600">View the history of changes for a specific file</p>
+          <h2 key="unique-id-fhc-4" className="text-2xl font-bold text-gray-900">File History</h2>
+          <p key="unique-id-fhc-5" className="text-gray-600 mt-1">View the history of changes for a specific file</p>
         </div>
       </div>
 
       {/* Git Selection */}
-      <Card key="unique-id-fhc-7">
-        <CardHeader key="unique-id-fhc-8">
-          <CardTitle key="unique-id-fhc-9">Select Commit and File</CardTitle>
+      <Card key="unique-id-fhc-7" className="shadow-lg border-0 p-0">
+                <CardHeader key="unique-id-fhc-4" className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-4">
+          <CardTitle key="unique-id-fhc-5" className="flex items-center gap-2 text-white text-base">
+            <GitCommit key="unique-id-fhc-6" className="h-4 w-4" />
+            <span key="unique-id-fhc-7">Git Repository</span>
+          </CardTitle>
         </CardHeader>
-        <CardContent key="unique-id-fhc-10">
+        <CardContent key="unique-id-fhc-10" className="p-6 bg-gradient-to-b from-white to-gray-50">
           <div key="unique-id-fhc-11" className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div key="unique-id-fhc-12" className="space-y-2">
                 <Label key="unique-id-fhc-13">Branch</Label>
@@ -494,7 +498,7 @@ export default function FileHistoryCompare() {
                   onFocus={() => setShowGitResults(gitFileSearch.length > 0)}
                 />
                 {showGitResults && (
-                  <div key="unique-id-fhc-37" className="absolute top-full left-0 right-0 z-10 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  <div key="unique-id-fhc-37" className="absolute top-full left-0 right-0 z-[9999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto">
                     {searchFiles(gitFileSearch, gitFiles || []).map((file, index) => (
                       <div
                         key={`unique-id-fhc-38-${index}`}
@@ -590,17 +594,17 @@ export default function FileHistoryCompare() {
 
       {/* File History */}
       {showHistory && fileHistory.length > 0 && (
-        <Card key="unique-id-fhc-history">
-          <CardHeader key="unique-id-fhc-history-header">
+        <Card key="unique-id-fhc-history" className="shadow-lg border-0 p-0">
+          <CardHeader key="unique-id-fhc-history-header" className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-4">
             <div key="unique-id-fhc-history-title-container" className="flex items-center justify-between">
               <div key="unique-id-fhc-history-title-content">
-                <CardTitle key="unique-id-fhc-history-title" className="flex items-center gap-2">
-                  <GitCommit key="unique-id-fhc-history-icon" className="h-5 w-5" />
+                <CardTitle key="unique-id-fhc-history-title" className="flex items-center gap-2 text-white text-base">
+                  <GitCommit key="unique-id-fhc-history-icon" className="h-4 w-4" />
                   <span key="unique-id-fhc-history-text">File History</span>
                 </CardTitle>
-                <CardDescription key="unique-id-fhc-history-desc">
+                <div key="unique-id-fhc-history-desc" className="text-blue-50 mt-1 text-sm">
                   History of changes for {selectedGitFile?.path}
-                </CardDescription>
+                </div>
               </div>
               <div key="unique-id-fhc-history-actions" className="flex items-center gap-2">
                 {selectedCommits.length === 2 && (
@@ -734,17 +738,17 @@ export default function FileHistoryCompare() {
 
       {/* File View */}
       {showFileView && viewingCommit && (
-        <Card key="unique-id-fhc-file-view">
-          <CardHeader key="unique-id-fhc-file-view-header">
+        <Card key="unique-id-fhc-file-view" className="shadow-lg border-0 p-0">
+          <CardHeader key="unique-id-fhc-file-view-header" className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-4">
             <div key="unique-id-fhc-file-view-title-container" className="flex items-center justify-between">
               <div key="unique-id-fhc-file-view-title-content">
-                <CardTitle key="unique-id-fhc-file-view-title" className="flex items-center gap-2">
-                  <Eye key="unique-id-fhc-file-view-icon" className="h-5 w-5" />
+                <CardTitle key="unique-id-fhc-file-view-title" className="flex items-center gap-2 text-white text-base">
+                  <Eye key="unique-id-fhc-file-view-icon" className="h-4 w-4" />
                   <span key="unique-id-fhc-file-view-text">File Content</span>
                 </CardTitle>
-                <CardDescription key="unique-id-fhc-file-view-desc">
+                <div key="unique-id-fhc-file-view-desc" className="text-blue-50 mt-1 text-sm">
                   {viewingCommit.message}, ({viewingCommit.short_hash}), {selectedGitFile?.name}
-                </CardDescription>
+                </div>
               </div>
               <div key="unique-id-fhc-file-view-actions" className="flex items-center gap-2">
                 {fileContent && (
@@ -789,30 +793,30 @@ export default function FileHistoryCompare() {
 
       {/* Comparison Results */}
       {showComparison && comparisonResult && (
-        <Card key="unique-id-fhc-60">
-          <CardHeader key="unique-id-fhc-61">
+        <Card key="unique-id-fhc-60" className="shadow-lg border-0 p-0">
+          <CardHeader key="unique-id-fhc-61" className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-4">
             <div key="unique-id-fhc-62" className="flex items-center justify-between">
               <div key="unique-id-fhc-63">
-                <CardTitle key="unique-id-fhc-64" className="flex items-center gap-2">
-                  <GitCompareIcon key="unique-id-fhc-65" className="h-5 w-5" />
+                <CardTitle key="unique-id-fhc-64" className="flex items-center gap-2 text-white text-base">
+                  <GitCompareIcon key="unique-id-fhc-65" className="h-4 w-4" />
                   <span key="unique-id-fhc-66">
-                    {selectedCommits.length === 2 ? 'Commit Comparison' : 'Commit Changes'}
+                    {selectedCommits.length === 2 ? 'Commit Comparison Results' : 'Commit Changes'}
                   </span>
                 </CardTitle>
-                <CardDescription key="unique-id-fhc-67">
+                <div key="unique-id-fhc-67" className="text-blue-50 mt-1 text-sm">
                   {selectedCommits.length === 2 
                     ? `Comparing ${comparisonResult.commit1} (Selected 1) → ${comparisonResult.commit2} (Selected 2)`
                     : `Changes in ${comparisonResult.commit2}`
                   }
-                </CardDescription>
+                </div>
               </div>
               <div key="unique-id-fhc-68" className="flex items-center gap-2">
-                <div key="unique-id-fhc-69" className="text-sm text-gray-600">
-                  <span key="unique-id-fhc-70" className="text-green-600">+{comparisonResult.stats.additions}</span>
+                <div key="unique-id-fhc-69" className="text-sm text-blue-50">
+                  <span key="unique-id-fhc-70" className="text-green-200">+{comparisonResult.stats.additions}</span>
                   <span key="unique-id-fhc-71"> </span>
-                  <span key="unique-id-fhc-72" className="text-red-600">-{comparisonResult.stats.deletions}</span>
+                  <span key="unique-id-fhc-72" className="text-red-200">-{comparisonResult.stats.deletions}</span>
                   <span key="unique-id-fhc-73"> </span>
-                  <span key="unique-id-fhc-74" className="text-blue-600">{comparisonResult.stats.changes} changes</span>
+                  <span key="unique-id-fhc-74" className="text-blue-200">{comparisonResult.stats.changes} changes</span>
                 </div>
                 <div key="unique-id-fhc-75" className="flex items-center gap-1">
                   <Button

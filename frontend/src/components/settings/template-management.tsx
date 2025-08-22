@@ -434,9 +434,12 @@ export default function TemplateManagement() {
 
         {/* Templates List Tab */}
         <TabsContent value="list" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Templates List</CardTitle>
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
+              <CardTitle className="flex items-center gap-2 text-white text-base">
+                <FileCode className="h-4 w-4" />
+                Templates List
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Filters */}

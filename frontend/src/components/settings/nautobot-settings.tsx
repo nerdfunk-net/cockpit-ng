@@ -173,21 +173,18 @@ export default function NautobotSettingsForm() {
       )}
 
       {/* Settings Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Settings className="h-5 w-5" />
+      <Card className="shadow-lg border-0 overflow-hidden p-0">
+        <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
+          <CardTitle className="flex items-center space-x-2 text-sm font-medium">
+            <Settings className="h-4 w-4" />
             <span>Nautobot Connection Settings</span>
           </CardTitle>
-          <CardDescription>
-            Configure the connection to your Nautobot instance
-          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Nautobot URL */}
             <div className="space-y-2">
-              <Label htmlFor="nautobot-url" className="text-sm font-medium">
+              <Label htmlFor="nautobot-url" className="text-sm font-medium text-gray-700">
                 Nautobot Server URL <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -197,7 +194,7 @@ export default function NautobotSettingsForm() {
                 value={settings.url}
                 onChange={(e) => updateSetting('url', e.target.value)}
                 required
-                className="w-full"
+                className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
               />
               <p className="text-xs text-gray-500">
                 The base URL of your Nautobot instance
@@ -206,7 +203,7 @@ export default function NautobotSettingsForm() {
 
             {/* API Token */}
             <div className="space-y-2">
-              <Label htmlFor="nautobot-token" className="text-sm font-medium">
+              <Label htmlFor="nautobot-token" className="text-sm font-medium text-gray-700">
                 API Token <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -216,7 +213,7 @@ export default function NautobotSettingsForm() {
                 value={settings.token}
                 onChange={(e) => updateSetting('token', e.target.value)}
                 required
-                className="w-full"
+                className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
               />
               <p className="text-xs text-gray-500">
                 Get your API token from Nautobot: Admin → Users → [Your User] → API Tokens.{' '}
@@ -226,7 +223,7 @@ export default function NautobotSettingsForm() {
 
             {/* Connection Timeout */}
             <div className="space-y-2">
-              <Label htmlFor="nautobot-timeout" className="text-sm font-medium">
+              <Label htmlFor="nautobot-timeout" className="text-sm font-medium text-gray-700">
                 Connection Timeout (seconds)
               </Label>
               <Input
@@ -236,7 +233,7 @@ export default function NautobotSettingsForm() {
                 max="300"
                 value={settings.timeout}
                 onChange={(e) => updateSetting('timeout', parseInt(e.target.value) || 30)}
-                className="w-full"
+                className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
               />
               <p className="text-xs text-gray-500">
                 Request timeout in seconds (default: 30)
@@ -245,14 +242,15 @@ export default function NautobotSettingsForm() {
 
             {/* SSL Verification */}
             <div className="space-y-2">
-              <Label htmlFor="nautobot-ssl" className="text-sm font-medium">
+              <Label htmlFor="nautobot-ssl" className="text-sm font-medium text-gray-700">
                 SSL Verification
               </Label>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 p-3 bg-white rounded-lg border border-gray-200">
                 <Checkbox
                   id="nautobot-ssl"
                   checked={settings.verify_ssl}
                   onCheckedChange={(checked) => updateSetting('verify_ssl', !!checked)}
+                  className="border-gray-300"
                 />
                 <Label htmlFor="nautobot-ssl" className="text-sm text-gray-700">
                   Verify SSL certificates
@@ -266,62 +264,71 @@ export default function NautobotSettingsForm() {
 
           {/* Test Connection Button */}
           <div className="pt-4 border-t border-gray-200">
-            <div className="flex items-center space-x-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={testConnection}
-                disabled={status === 'testing' || !settings.url || !settings.token}
-                className="flex items-center space-x-2"
-              >
-                {status === 'testing' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Server className="h-4 w-4" />
-                )}
-                <span>{status === 'testing' ? 'Testing...' : 'Test Connection'}</span>
-              </Button>
-              
-              {/* Connection Status */}
-              {status === 'success' && (
-                <div className="flex items-center space-x-2 text-green-600">
-                  <CheckCircle className="h-4 w-4" />
-                  <span className="text-sm font-medium">Connection successful!</span>
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={testConnection}
+                    disabled={status === 'testing' || !settings.url || !settings.token}
+                    className="flex items-center space-x-2 border-blue-300 text-blue-700 hover:bg-blue-100"
+                  >
+                    {status === 'testing' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Server className="h-4 w-4" />
+                    )}
+                    <span>{status === 'testing' ? 'Testing...' : 'Test Connection'}</span>
+                  </Button>
+                  
+                  {/* Connection Status */}
+                  {status === 'success' && (
+                    <div className="flex items-center space-x-2 text-green-600">
+                      <CheckCircle className="h-4 w-4" />
+                      <span className="text-sm font-medium">Connection successful!</span>
+                    </div>
+                  )}
+                  
+                  {status === 'error' && message && (
+                    <div className="flex items-center space-x-2 text-red-600">
+                      <XCircle className="h-4 w-4" />
+                      <span className="text-sm font-medium">{message}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-              
-              {status === 'error' && message && (
-                <div className="flex items-center space-x-2 text-red-600">
-                  <XCircle className="h-4 w-4" />
-                  <span className="text-sm font-medium">{message}</span>
+                <div className="text-xs text-blue-600 font-medium">
+                  Test your connection before saving
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={resetSettings}
-          className="flex items-center space-x-2"
-        >
-          <RotateCcw className="h-4 w-4" />
-          <span>Reset to Defaults</span>
-        </Button>
-        
-        <Button
-          type="button"
-          onClick={saveSettings}
-          disabled={status === 'saving' || !settings.url || !settings.token}
-          className="flex items-center space-x-2"
-        >
-          {status === 'saving' && <Loader2 className="h-4 w-4 animate-spin" />}
-          <span>{status === 'saving' ? 'Saving...' : 'Save Nautobot Settings'}</span>
-        </Button>
+      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={resetSettings}
+            className="flex items-center space-x-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+          >
+            <RotateCcw className="h-4 w-4" />
+            <span>Reset to Defaults</span>
+          </Button>
+          
+          <Button
+            type="button"
+            onClick={saveSettings}
+            disabled={status === 'saving' || !settings.url || !settings.token}
+            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            {status === 'saving' && <Loader2 className="h-4 w-4 animate-spin" />}
+            <span>{status === 'saving' ? 'Saving...' : 'Save Nautobot Settings'}</span>
+          </Button>
+        </div>
       </div>
     </div>
   )

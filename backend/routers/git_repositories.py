@@ -323,16 +323,36 @@ async def test_git_connection(
                         return GitConnectionTestResponse(
                             success=False,
                             message=f"Credential '{test_request.credential_name}' not found or not a token type",
-                            details={}
+                            details={"available_credentials": [c['name'] for c in creds if c['type'] == 'token']}
                         )
                     resolved_username = match['username']
                     try:
+                        # Check if credential has necessary data
+                        if not match.get('has_password', False):
+                            return GitConnectionTestResponse(
+                                success=False,
+                                message=f"Credential '{test_request.credential_name}' has no password/token data",
+                                details={}
+                            )
                         resolved_token = cred_mgr.get_decrypted_password(match['id'])
+                        if not resolved_token:
+                            return GitConnectionTestResponse(
+                                success=False,
+                                message=f"Credential '{test_request.credential_name}' has empty or invalid token",
+                                details={}
+                            )
+                    except ValueError as ve:
+                        # This is the decryption error - likely SECRET_KEY mismatch
+                        return GitConnectionTestResponse(
+                            success=False,
+                            message=f"Failed to decrypt credential token - possible SECRET_KEY mismatch. Please recreate the credential.",
+                            details={"error": str(ve), "credential_id": match['id']}
+                        )
                     except Exception as de:
                         return GitConnectionTestResponse(
                             success=False,
-                            message=f"Failed to decrypt credential token",
-                            details={"error": str(de)}
+                            message=f"Failed to decrypt credential token: {str(de)}",
+                            details={"error": str(de), "credential_id": match.get('id')}
                         )
                 except Exception as ce:
                     return GitConnectionTestResponse(

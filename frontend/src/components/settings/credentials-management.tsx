@@ -290,35 +290,38 @@ export default function CredentialsManagement() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Page Header */}
-      <div className="border-b border-gray-200 pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-100 p-2 rounded-lg">
-              <Key className="h-6 w-6 text-blue-600" />
+    <div className="space-y-2">
+      {/* Modern Header */}
+      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 pl-6 pr-4 rounded-lg border shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Key className="h-5 w-5" />
+              <div>
+                <h1 className="text-lg font-semibold">Credentials Management</h1>
+                <p className="text-blue-100 text-xs">Manage stored credentials for device access</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Credentials</h1>
-              <p className="text-gray-600">Manage stored credentials for device access</p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={loadCredentials}
+                disabled={loading}
+                className="flex items-center gap-2 bg-white/20 text-white border-white/30 hover:bg-white/30"
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                Reload
+              </Button>
+              <Button 
+                size="sm"
+                onClick={openAddDialog} 
+                className="flex items-center gap-2 bg-white text-blue-600 hover:bg-blue-50"
+              >
+                <Plus className="h-4 w-4" />
+                Add Credential
+              </Button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={loadCredentials}
-              disabled={loading}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Reload
-            </Button>
-            <Button onClick={openAddDialog} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add Credential
-            </Button>
-          </div>
-        </div>
       </div>
 
       {/* Status Message */}
@@ -339,10 +342,19 @@ export default function CredentialsManagement() {
         </div>
       )}
 
-      {/* Filters */}
+      {/* Credentials Table */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center space-x-4">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Lock className="h-5 w-5" />
+              <div>
+                <CardTitle>Stored Credentials</CardTitle>
+                <CardDescription>
+                  Passwords are encrypted and never displayed for security
+                </CardDescription>
+              </div>
+            </div>
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
@@ -351,24 +363,11 @@ export default function CredentialsManagement() {
                 onChange={(e) => setIncludeExpired(e.target.checked)}
                 className="rounded border-gray-300"
               />
-              <Label htmlFor="include-expired" className="text-sm">
-                Include expired credentials
+              <Label htmlFor="include-expired" className="text-sm text-gray-600">
+                Include expired
               </Label>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Credentials Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lock className="h-5 w-5" />
-            Stored Credentials
-          </CardTitle>
-          <CardDescription>
-            Passwords are encrypted and never displayed for security
-          </CardDescription>
         </CardHeader>
         <CardContent>
           {credentials.length === 0 ? (

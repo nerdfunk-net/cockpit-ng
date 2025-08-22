@@ -235,13 +235,13 @@ export default function CacheManagement() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Settings */}
         <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
+              <CardTitle className="flex items-center gap-2 text-white text-base">
+                <Settings className="h-4 w-4" />
                 Cache Configuration
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-blue-50 text-sm">
                 Configure caching behavior to optimize performance
               </CardDescription>
             </CardHeader>
@@ -442,12 +442,24 @@ export default function CacheManagement() {
                 <>
                   <Separator />
                   <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Cache Size:</span>
+                    <span className="font-medium">{(stats.cache_size / 1024 / 1024).toFixed(2)} MB</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-600">Total Entries:</span>
                     <span className="font-medium">{stats.total_entries}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Cache Hits:</span>
+                    <span className="font-medium text-green-600">{stats.hit_count}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Cache Misses:</span>
+                    <span className="font-medium text-red-600">{stats.miss_count}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-600">Hit Rate:</span>
-                    <span className="font-medium">{(stats.hit_rate * 100).toFixed(1)}%</span>
+                    <span className="font-medium text-blue-600">{(stats.hit_rate * 100).toFixed(1)}%</span>
                   </div>
                 </>
               )}

@@ -272,19 +272,26 @@ export default function GitCompare() {
 
   return (
     <div key="unique-id-gc-1" className="space-y-6">
+      {/* Header */}
       <div key="unique-id-gc-2" className="flex items-center justify-between">
         <div key="unique-id-gc-3">
-          <h2 key="unique-id-gc-4" className="text-2xl font-bold tracking-tight">Git Commit Comparison</h2>
-          <p key="unique-id-gc-5" className="text-gray-600">Compare files between different Git commits</p>
+          <h2 key="unique-id-gc-4" className="text-2xl font-bold text-gray-900">Git Commit Comparison</h2>
+          <p key="unique-id-gc-5" className="text-gray-600 mt-1">Compare files between different Git commits</p>
         </div>
       </div>
 
       {/* Git Selection */}
-      <Card key="unique-id-gc-7">
-        <CardHeader key="unique-id-gc-8">
-          <CardTitle key="unique-id-gc-9">Select Commits and File</CardTitle>
+      <Card key="unique-id-gc-7" className="shadow-lg border-0 p-0">
+        <CardHeader key="unique-id-gc-8" className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-4">
+          <CardTitle key="unique-id-gc-9" className="flex items-center space-x-2 text-base">
+            <GitCommit className="h-4 w-4" />
+            <span>Select Commits and File</span>
+          </CardTitle>
+          <div className="text-blue-50 text-sm">
+            Choose branch, commits, and file to compare between Git revisions
+          </div>
         </CardHeader>
-        <CardContent key="unique-id-gc-10">
+        <CardContent key="unique-id-gc-10" className="p-6 bg-gradient-to-b from-white to-gray-50">
           <div key="unique-id-gc-11" className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div key="unique-id-gc-12" className="space-y-2">
                 <Label key="unique-id-gc-13">Branch</Label>
@@ -362,7 +369,7 @@ export default function GitCompare() {
                 onFocus={() => setShowGitResults(gitFileSearch.length > 0)}
               />
               {showGitResults && (
-                <div key="unique-id-gc-37" className="absolute top-full left-0 right-0 z-10 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                <div key="unique-id-gc-37" className="absolute top-full left-0 right-0 z-[9999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto">
                   {searchFiles(gitFileSearch, gitFiles || []).map((file, index) => (
                     <div
                       key={`unique-id-gc-38-${index}`}
@@ -384,8 +391,17 @@ export default function GitCompare() {
       </Card>
 
       {/* Compare Actions */}
-      <Card key="unique-id-gc-43">
-        <CardContent key="unique-id-gc-44" className="pt-6">
+      <Card key="unique-id-gc-43" className="shadow-lg border-0 p-0">
+        <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-4">
+          <CardTitle className="flex items-center space-x-2 text-base">
+            <GitCompareIcon className="h-4 w-4" />
+            <span>Git Compare Actions</span>
+          </CardTitle>
+          <div className="text-blue-50 text-sm">
+            Execute Git comparison and configure display options
+          </div>
+        </CardHeader>
+        <CardContent key="unique-id-gc-44" className="p-6 bg-gradient-to-b from-white to-gray-50">
           <div key="unique-id-gc-45" className="flex items-center justify-between">
             <div key="unique-id-gc-46" className="flex items-center gap-2">
             <Button 
@@ -457,25 +473,25 @@ export default function GitCompare() {
 
       {/* Comparison Results */}
       {showComparison && comparisonResult && (
-        <Card key="unique-id-gc-60">
-          <CardHeader key="unique-id-gc-61">
+        <Card key="unique-id-gc-60" className="shadow-lg border-0 p-0">
+          <CardHeader key="unique-id-gc-61" className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-4">
             <div key="unique-id-gc-62" className="flex items-center justify-between">
               <div key="unique-id-gc-63">
-                <CardTitle key="unique-id-gc-64" className="flex items-center gap-2">
-                  <GitCompareIcon key="unique-id-gc-65" className="h-5 w-5" />
-                  <span key="unique-id-gc-66">Git Commit Comparison</span>
+                <CardTitle key="unique-id-gc-64" className="flex items-center gap-2 text-white text-base">
+                  <GitCompareIcon key="unique-id-gc-65" className="h-4 w-4" />
+                  <span key="unique-id-gc-66">Git Commit Comparison Results</span>
                 </CardTitle>
-                <CardDescription key="unique-id-gc-67">
+                <div key="unique-id-gc-67" className="text-blue-50 mt-1 text-sm">
                   {comparisonResult.left_file} ↔ {comparisonResult.right_file}
-                </CardDescription>
+                </div>
               </div>
               <div key="unique-id-gc-68" className="flex items-center gap-2">
-                <div key="unique-id-gc-69" className="text-sm text-gray-600">
-                  <span key="unique-id-gc-70" className="text-green-600">+{comparisonResult.stats.additions}</span>
+                <div key="unique-id-gc-69" className="text-sm text-blue-50">
+                  <span key="unique-id-gc-70" className="text-green-200">+{comparisonResult.stats.additions}</span>
                   <span key="unique-id-gc-71"> </span>
-                  <span key="unique-id-gc-72" className="text-red-600">-{comparisonResult.stats.deletions}</span>
+                  <span key="unique-id-gc-72" className="text-red-200">-{comparisonResult.stats.deletions}</span>
                   <span key="unique-id-gc-73"> </span>
-                  <span key="unique-id-gc-74" className="text-blue-600">{comparisonResult.stats.changes} changes</span>
+                  <span key="unique-id-gc-74" className="text-blue-200">{comparisonResult.stats.changes} changes</span>
                 </div>
                 <div key="unique-id-gc-75" className="flex items-center gap-1">
                   <Button
@@ -484,6 +500,7 @@ export default function GitCompare() {
                     variant="outline"
                     onClick={() => navigateDiff('prev')}
                     disabled={currentDiffIndex === 0}
+                    className="bg-white/20 border-white/30 text-white hover:bg-white/30"
                   >
                     <ChevronUp key="unique-id-gc-77" className="h-4 w-4" />
                   </Button>
@@ -496,6 +513,7 @@ export default function GitCompare() {
                       const visibleDiffs = comparisonResult.left_lines.filter(d => d.type !== 'equal')
                       return currentDiffIndex >= visibleDiffs.length - 1
                     })()}
+                    className="bg-white/20 border-white/30 text-white hover:bg-white/30"
                   >
                     <ChevronDown key="unique-id-gc-79" className="h-4 w-4" />
                   </Button>
@@ -505,13 +523,14 @@ export default function GitCompare() {
                   size="sm"
                   variant="outline"
                   onClick={() => setShowComparison(false)}
+                  className="bg-white/20 border-white/30 text-white hover:bg-white/30"
                 >
                   <span key="unique-id-gc-81">Close</span>
                 </Button>
               </div>
             </div>
           </CardHeader>
-          <CardContent key="unique-id-gc-82">
+          <CardContent key="unique-id-gc-82" className="p-6 bg-gradient-to-b from-white to-gray-50">
             <div 
               key="unique-id-gc-83"
               className="border rounded-lg overflow-auto font-mono"

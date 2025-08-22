@@ -43,22 +43,28 @@ function DashboardLayoutInner({ children, className }: DashboardLayoutProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-500 border-t-transparent mx-auto" />
+          <p className="text-slate-600 font-medium">Loading Analytics Dashboard...</p>
+        </div>
       </div>
     )
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-500 border-t-transparent mx-auto" />
+          <p className="text-slate-600 font-medium">Authenticating...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen bg-slate-50">
       <AppSidebar />
       
       {/* Main Content */}
@@ -67,9 +73,11 @@ function DashboardLayoutInner({ children, className }: DashboardLayoutProps) {
         isCollapsed ? 'pl-16' : 'pl-64',
         className
       )}>
-        {/* Page Content - Remove extra navigation, move content to the left */}
-        <main className="pl-4 pr-6 pt-4 pb-6">
-          {children}
+        {/* Page Content - Analytics Dashboard Style */}
+        <main className="px-6 py-6">
+          <div className="fade-in">
+            {children}
+          </div>
         </main>
       </div>
     </div>
