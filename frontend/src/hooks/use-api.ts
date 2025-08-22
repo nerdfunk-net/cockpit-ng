@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/lib/auth-store'
+import { useRouter } from 'next/navigation'
 
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
@@ -8,6 +9,7 @@ interface ApiOptions {
 
 export function useApi() {
   const { token, logout } = useAuthStore()
+  const router = useRouter()
 
   const apiCall = async <T = any>(endpoint: string, options: ApiOptions = {}): Promise<T> => {
     const { method = 'GET', body, headers = {} } = options
@@ -35,10 +37,15 @@ export function useApi() {
     if (!response.ok) {
       const errorText = await response.text()
       
-      // Handle authentication failures
+      // Handle authentication failures - redirect to login instead of throwing error
       if (response.status === 401 || response.status === 403) {
         logout() // Clear invalid token
-        throw new Error(`Authentication failed (${response.status}): Please log in again`)
+        // Small delay to ensure logout completes
+        setTimeout(() => {
+          router.push('/login')
+        }, 100)
+        // Return a rejected promise that components can handle gracefully
+        return Promise.reject(new Error('Session expired, redirecting to login...'))
       }
       
       throw new Error(`API Error ${response.status}: ${errorText}`)
