@@ -1,6 +1,6 @@
 # Multi-stage Docker build for Cockpit-NG
 # Stage 1: Build the frontend
-FROM node:20-alpine AS frontend-builder
+FROM node:24-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
@@ -18,7 +18,7 @@ COPY frontend/ ./
 RUN DOCKER_BUILD=true npm run build
 
 # Stage 2: Final runtime image
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
