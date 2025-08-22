@@ -37,12 +37,48 @@ interface CacheSettings {
 }
 
 interface CacheStats {
-  cache_size: number
+  overview: {
+    total_items: number
+    valid_items: number
+    expired_items: number
+    total_size_bytes: number
+    total_size_mb: number
+    uptime_seconds: number
+  }
+  performance: {
+    cache_hits: number
+    cache_misses: number
+    hit_rate_percent: number
+    expired_entries: number
+    entries_created: number
+    entries_cleared: number
+  }
+  namespaces: Record<string, { count: number; size_bytes: number }>
+  keys: string[]
+}
+
+interface CacheEntry {
+  key: string
+  namespace: string
+  created_at: number
+  expires_at: number
+  last_accessed: number
+  access_count: number
+  size_bytes: number
+  age_seconds: number
+  ttl_seconds: number
+  last_accessed_ago: number
+  is_expired: boolean
+}
+
+interface NamespaceInfo {
+  namespace: string
   total_entries: number
-  hit_count: number
-  miss_count: number
-  hit_rate: number
-  namespaces: Record<string, number>
+  valid_entries: number
+  expired_entries: number
+  total_size_bytes: number
+  total_size_mb: number
+  entries: CacheEntry[]
 }
 
 interface StatusMessage {
@@ -65,12 +101,19 @@ export default function CacheManagement() {
   })
   const [originalSettings, setOriginalSettings] = useState<CacheSettings | null>(null)
   const [stats, setStats] = useState<CacheStats | null>(null)
+  const [entries, setEntries] = useState<CacheEntry[]>([])
+  const [selectedNamespace, setSelectedNamespace] = useState<string>('')
+  const [namespaceInfo, setNamespaceInfo] = useState<NamespaceInfo | null>(null)
   const [showStats, setShowStats] = useState(false)
+  const [showEntries, setShowEntries] = useState(false)
+  const [includeExpired, setIncludeExpired] = useState(false)
   const [message, setMessage] = useState<StatusMessage | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [clearingCache, setClearingCache] = useState(false)
   const [loadingStats, setLoadingStats] = useState(false)
+  const [loadingEntries, setLoadingEntries] = useState(false)
+  const [loadingNamespace, setLoadingNamespace] = useState(false)
 
   const showMessage = (text: string, type: StatusMessage['type'] = 'success') => {
     setMessage({ text, type })
@@ -140,6 +183,66 @@ export default function CacheManagement() {
     }
   }
 
+  const loadEntries = async () => {
+    setLoadingEntries(true)
+    try {
+      const response = await apiCall<{ success: boolean; data: CacheEntry[]; count: number }>(`cache/entries?include_expired=${includeExpired}`)
+      if (response?.success && response.data) {
+        setEntries(response.data)
+      } else {
+        showMessage('Failed to load cache entries', 'error')
+      }
+    } catch (error) {
+      console.error('Error loading cache entries:', error)
+      showMessage('Error loading cache entries', 'error')
+    } finally {
+      setLoadingEntries(false)
+    }
+  }
+
+  const loadNamespaceInfo = async (namespace: string) => {
+    setLoadingNamespace(true)
+    try {
+      const response = await apiCall<{ success: boolean; data: NamespaceInfo }>(`cache/namespace/${namespace}`)
+      if (response?.success && response.data) {
+        setNamespaceInfo(response.data)
+      } else {
+        showMessage(`Failed to load namespace '${namespace}' information`, 'error')
+      }
+    } catch (error) {
+      console.error('Error loading namespace info:', error)
+      showMessage('Error loading namespace information', 'error')
+    } finally {
+      setLoadingNamespace(false)
+    }
+  }
+
+  const cleanupExpired = async () => {
+    setClearingCache(true)
+    try {
+      const response = await apiCall<{ success: boolean; message?: string; removed_count?: number }>('cache/cleanup', {
+        method: 'POST'
+      })
+
+      if (response?.success) {
+        showMessage(response.message || `Removed ${response.removed_count || 0} expired entries`, 'success')
+        if (showStats) {
+          await loadStats()
+        }
+        if (showEntries) {
+          await loadEntries()
+        }
+      } else {
+        showMessage(`Failed to cleanup expired entries: ${response?.message || 'Unknown error'}`, 'error')
+      }
+    } catch (error) {
+      console.error('Error cleaning up expired entries:', error)
+      showMessage('Error cleaning up expired entries', 'error')
+    } finally {
+      setClearingCache(false)
+    }
+  }
+
   const clearCache = async (namespace?: string) => {
     const confirmMessage = namespace 
       ? `Are you sure you want to clear the "${namespace}" cache namespace?`
@@ -150,7 +253,7 @@ export default function CacheManagement() {
     setClearingCache(true)
     try {
       const body = namespace ? { namespace } : {}
-      const response = await apiCall<{ success: boolean; message?: string }>('cache/clear', {
+      const response = await apiCall<{ success: boolean; message?: string; cleared_count?: number }>('cache/clear', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -160,6 +263,9 @@ export default function CacheManagement() {
         showMessage(response.message || 'Cache cleared successfully', 'success')
         if (showStats) {
           await loadStats() // Refresh stats if visible
+        }
+        if (showEntries) {
+          await loadEntries() // Refresh entries if visible
         }
       } else {
         showMessage(`Failed to clear cache: ${response?.message || 'Unknown error'}`, 'error')
@@ -235,17 +341,19 @@ export default function CacheManagement() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Settings */}
         <div className="lg:col-span-2">
-          <Card className="overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
-              <CardTitle className="flex items-center gap-2 text-white text-base">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+            {/* Compact Header */}
+            <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
                 <Settings className="h-4 w-4" />
-                Cache Configuration
-              </CardTitle>
-              <CardDescription className="text-blue-50 text-sm">
-                Configure caching behavior to optimize performance
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+                <div>
+                  <h1 className="text-sm font-semibold">Cache Configuration</h1>
+                  <p className="text-blue-100 text-xs">Configure caching behavior to optimize performance</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-6">
               {/* Enable Cache */}
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
@@ -366,7 +474,7 @@ export default function CacheManagement() {
               <Separator />
 
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex flex-wrap gap-3 pt-4">
                 <Button
                   onClick={saveSettings}
                   disabled={saving || !hasChanges}
@@ -391,8 +499,37 @@ export default function CacheManagement() {
                   className="flex items-center gap-2"
                 >
                   <BarChart3 className="h-4 w-4" />
-                  {showStats ? 'Hide' : 'Show'} Cache Stats
+                  {showStats ? 'Hide' : 'Show'} Stats
                   {showStats ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowEntries(!showEntries)
+                    if (!showEntries && entries.length === 0) {
+                      loadEntries()
+                    }
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <Database className="h-4 w-4" />
+                  {showEntries ? 'Hide' : 'Show'} Entries
+                  {showEntries ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={cleanupExpired}
+                  disabled={clearingCache}
+                  className="flex items-center gap-2"
+                >
+                  {clearingCache ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Clock className="h-4 w-4" />
+                  )}
+                  Cleanup Expired
                 </Button>
 
                 <Button
@@ -406,11 +543,11 @@ export default function CacheManagement() {
                   ) : (
                     <Trash2 className="h-4 w-4" />
                   )}
-                  Clear Cache
+                  Clear All Cache
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         {/* Cache Stats Sidebar */}
@@ -443,23 +580,31 @@ export default function CacheManagement() {
                   <Separator />
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-600">Cache Size:</span>
-                    <span className="font-medium">{(stats.cache_size / 1024 / 1024).toFixed(2)} MB</span>
+                    <span className="font-medium">{stats.overview.total_size_mb.toFixed(2)} MB</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-600">Total Entries:</span>
-                    <span className="font-medium">{stats.total_entries}</span>
+                    <span className="font-medium">{stats.overview.total_items}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Valid Entries:</span>
+                    <span className="font-medium text-green-600">{stats.overview.valid_items}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Expired Entries:</span>
+                    <span className="font-medium text-red-600">{stats.overview.expired_items}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-600">Cache Hits:</span>
-                    <span className="font-medium text-green-600">{stats.hit_count}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600">Cache Misses:</span>
-                    <span className="font-medium text-red-600">{stats.miss_count}</span>
+                    <span className="font-medium text-green-600">{stats.performance.cache_hits}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-600">Hit Rate:</span>
-                    <span className="font-medium text-blue-600">{(stats.hit_rate * 100).toFixed(1)}%</span>
+                    <span className="font-medium text-blue-600">{stats.performance.hit_rate_percent.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Uptime:</span>
+                    <span className="font-medium">{Math.floor(stats.overview.uptime_seconds / 60)}m</span>
                   </div>
                 </>
               )}
@@ -506,22 +651,38 @@ export default function CacheManagement() {
                 {/* Performance Metrics */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-blue-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{stats.total_entries}</div>
+                    <div className="text-2xl font-bold text-blue-600">{stats.overview.total_items}</div>
                     <div className="text-sm text-blue-700">Total Entries</div>
                   </div>
                   <div className="bg-green-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{stats.hit_count}</div>
-                    <div className="text-sm text-green-700">Cache Hits</div>
+                    <div className="text-2xl font-bold text-green-600">{stats.overview.valid_items}</div>
+                    <div className="text-sm text-green-700">Valid Entries</div>
                   </div>
-                  <div className="bg-red-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-red-600">{stats.miss_count}</div>
-                    <div className="text-sm text-red-700">Cache Misses</div>
+                  <div className="bg-orange-50 p-4 rounded-lg">
+                    <div className="text-2xl font-bold text-orange-600">{stats.overview.expired_items}</div>
+                    <div className="text-sm text-orange-700">Expired Entries</div>
                   </div>
                   <div className="bg-purple-50 p-4 rounded-lg">
                     <div className="text-2xl font-bold text-purple-600">
-                      {(stats.hit_rate * 100).toFixed(1)}%
+                      {stats.performance.hit_rate_percent.toFixed(1)}%
                     </div>
                     <div className="text-sm text-purple-700">Hit Rate</div>
+                  </div>
+                </div>
+
+                {/* Additional Performance Metrics */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <div className="text-lg font-bold text-gray-600">{stats.performance.cache_hits}</div>
+                    <div className="text-xs text-gray-600">Cache Hits</div>
+                  </div>
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <div className="text-lg font-bold text-gray-600">{stats.performance.cache_misses}</div>
+                    <div className="text-xs text-gray-600">Cache Misses</div>
+                  </div>
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <div className="text-lg font-bold text-gray-600">{stats.overview.total_size_mb.toFixed(2)} MB</div>
+                    <div className="text-xs text-gray-600">Memory Usage</div>
                   </div>
                 </div>
 
@@ -530,21 +691,34 @@ export default function CacheManagement() {
                   <div>
                     <h4 className="text-lg font-medium mb-3">Cache Namespaces</h4>
                     <div className="space-y-2">
-                      {Object.entries(stats.namespaces).map(([namespace, count]) => (
+                      {Object.entries(stats.namespaces).map(([namespace, info]) => (
                         <div key={namespace} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div>
                             <div className="font-medium">{namespace}</div>
-                            <div className="text-sm text-gray-500">{count} entries</div>
+                            <div className="text-sm text-gray-500">
+                              {info.count} entries • {(info.size_bytes / 1024 / 1024).toFixed(2)} MB
+                            </div>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => clearCache(namespace)}
-                            disabled={clearingCache}
-                            className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => loadNamespaceInfo(namespace)}
+                              disabled={loadingNamespace}
+                              className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
+                            >
+                              <Database className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => clearCache(namespace)}
+                              disabled={clearingCache}
+                              className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -569,6 +743,159 @@ export default function CacheManagement() {
                 Failed to load cache statistics
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Cache Entries Panel */}
+      {showEntries && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Cache Entries
+            </CardTitle>
+            <CardDescription>
+              Detailed view of individual cache entries with access patterns
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingEntries ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                <span className="ml-2 text-gray-500">Loading cache entries...</span>
+              </div>
+            ) : entries && entries.length > 0 ? (
+              <div className="space-y-4">
+                {/* Controls */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="include-expired"
+                      checked={includeExpired}
+                      onCheckedChange={(checked) => {
+                        setIncludeExpired(checked)
+                        loadEntries()
+                      }}
+                    />
+                    <Label htmlFor="include-expired" className="text-sm">
+                      Include expired entries
+                    </Label>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={loadEntries}
+                    disabled={loadingEntries}
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${loadingEntries ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
+
+                {/* Entries List */}
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {entries.map((entry, index) => (
+                    <div 
+                      key={entry.key} 
+                      className={`p-3 rounded-lg border ${
+                        entry.is_expired 
+                          ? 'bg-red-50 border-red-200' 
+                          : 'bg-white border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-mono text-sm text-gray-900 truncate">
+                            {entry.key}
+                          </div>
+                          <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                            <span>NS: {entry.namespace}</span>
+                            <span>Size: {(entry.size_bytes / 1024).toFixed(1)}KB</span>
+                            <span>Accessed: {entry.access_count}x</span>
+                            <span>Age: {Math.floor(entry.age_seconds / 60)}m</span>
+                            {!entry.is_expired && (
+                              <span className="text-green-600">
+                                TTL: {Math.floor(entry.ttl_seconds / 60)}m
+                              </span>
+                            )}
+                            {entry.is_expired && (
+                              <span className="text-red-600">EXPIRED</span>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => clearCache(entry.namespace)}
+                          disabled={clearingCache}
+                          className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="text-sm text-gray-500 text-center">
+                  Showing {entries.length} entries
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No cache entries found
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Namespace Details Modal */}
+      {namespaceInfo && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Namespace: {namespaceInfo.namespace}
+            </CardTitle>
+            <CardDescription>
+              Detailed information about the '{namespaceInfo.namespace}' cache namespace
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Namespace Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <div className="text-xl font-bold text-blue-600">{namespaceInfo.total_entries}</div>
+                  <div className="text-sm text-blue-700">Total Entries</div>
+                </div>
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <div className="text-xl font-bold text-green-600">{namespaceInfo.valid_entries}</div>
+                  <div className="text-sm text-green-700">Valid Entries</div>
+                </div>
+                <div className="bg-red-50 p-3 rounded-lg">
+                  <div className="text-xl font-bold text-red-600">{namespaceInfo.expired_entries}</div>
+                  <div className="text-sm text-red-700">Expired Entries</div>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <div className="text-xl font-bold text-purple-600">{namespaceInfo.total_size_mb.toFixed(2)} MB</div>
+                  <div className="text-sm text-purple-700">Memory Usage</div>
+                </div>
+              </div>
+
+              {/* Close Button */}
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setNamespaceInfo(null)}
+                  className="flex items-center gap-2"
+                >
+                  Close Details
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
