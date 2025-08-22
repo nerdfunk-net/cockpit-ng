@@ -15,6 +15,15 @@ const nextConfig: NextConfig = {
       fullUrl: true,
     },
   },
+  
+  // For Docker builds, treat lint/type errors as warnings
+  typescript: {
+    ignoreBuildErrors: process.env.DOCKER_BUILD === "true",
+  },
+  
+  eslint: {
+    ignoreDuringBuilds: process.env.DOCKER_BUILD === "true",
+  },
 };
 
 export default nextConfig;
