@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Search, Plus, CheckCircle, AlertCircle, Info, X } from 'lucide-react'
+import { Search, Plus, CheckCircle, AlertCircle, Info, X, Settings } from 'lucide-react'
 
 // Type definitions based on the original implementation
 interface DropdownOption {
@@ -527,61 +527,80 @@ export function OnboardDevicePage() {
       )}
 
       {/* Main Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Device Information</CardTitle>
-          <CardDescription>
-            Enter the device details to add it to your network inventory
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* IP Address Section */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2 space-y-2">
-              <Label htmlFor="ip_address">
-                IP Address(es) <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="ip_address"
-                placeholder="192.168.1.1 or 192.168.1.1, 192.168.1.2"
-                value={formData.ip_address}
-                onChange={(e) => handleIPChange(e.target.value)}
-                className={`${
-                  ipValidation.isValid ? 'border-green-500' : 
-                  formData.ip_address && !ipValidation.isValid ? 'border-red-500' : ''
-                }`}
-              />
-              {formData.ip_address && (
-                <p className={`text-sm ${ipValidation.isValid ? 'text-green-600' : 'text-red-600'}`}>
-                  {ipValidation.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>&nbsp;</Label>
-              <Button
-                onClick={handleCheckIPInNautobot}
-                disabled={!ipValidation.isValid || isValidatingIP}
-                variant="outline"
-                className="w-full"
-              >
-                {isValidatingIP ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2" />
-                    Checking...
-                  </>
-                ) : (
-                  <>
-                    <Search className="h-4 w-4 mr-2" />
-                    Check IP in Nautobot
-                  </>
+      <div className="space-y-6">
+        {/* Device Information Panel */}
+        <Card className="shadow-lg border-0 bg-gradient-to-r from-gray-50 to-white overflow-hidden p-0">
+          <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-6">
+            <CardTitle className="flex items-center space-x-2">
+              <Search className="h-5 w-5" />
+              <span>Device Information</span>
+            </CardTitle>
+            <CardDescription className="text-blue-50">
+              Enter the IP address and verify availability in Nautobot
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            {/* IP Address Section */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2 space-y-2">
+                <Label htmlFor="ip_address">
+                  IP Address(es) <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="ip_address"
+                  placeholder="192.168.1.1 or 192.168.1.1, 192.168.1.2"
+                  value={formData.ip_address}
+                  onChange={(e) => handleIPChange(e.target.value)}
+                  className={`${
+                    ipValidation.isValid ? 'border-green-500' : 
+                    formData.ip_address && !ipValidation.isValid ? 'border-red-500' : ''
+                  }`}
+                />
+                {formData.ip_address && (
+                  <p className={`text-sm ${ipValidation.isValid ? 'text-green-600' : 'text-red-600'}`}>
+                    {ipValidation.message}
+                  </p>
                 )}
-              </Button>
+              </div>
+              <div className="space-y-2">
+                <Label>&nbsp;</Label>
+                <Button
+                  onClick={handleCheckIPInNautobot}
+                  disabled={!ipValidation.isValid || isValidatingIP}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {isValidatingIP ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2" />
+                      Checking...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="h-4 w-4 mr-2" />
+                      Check IP in Nautobot
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          {/* Device Properties Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Device Properties Panel */}
+        <Card className="shadow-lg border-0 overflow-hidden p-0">
+          <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 p-6">
+            <CardTitle className="flex items-center space-x-2">
+              <Settings className="h-5 w-5" />
+              <span>Device Properties</span>
+            </CardTitle>
+            <CardDescription className="text-blue-50">
+              Configure device settings and network properties
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50">
+            {/* Device Properties Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Location - Special hierarchical selector */}
             <div className="space-y-2 relative">
               <Label htmlFor="location_search">
@@ -817,6 +836,7 @@ export function OnboardDevicePage() {
           </div>
         </CardContent>
       </Card>
+    </div>
 
       {/* Click outside to close location dropdown */}
       {showLocationDropdown && (
