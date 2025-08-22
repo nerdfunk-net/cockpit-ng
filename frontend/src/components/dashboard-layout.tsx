@@ -6,6 +6,7 @@ import { useAuthStore } from '@/lib/auth-store'
 import { useEffect, useState } from 'react'
 import { checkDevAuth, debugAuth } from '@/lib/auth-debug'
 import { SidebarProvider, useSidebar } from './sidebar-context'
+import { useSessionManager } from '@/hooks/use-session-manager'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -16,6 +17,13 @@ function DashboardLayoutInner({ children, className }: DashboardLayoutProps) {
   const { isAuthenticated, token } = useAuthStore()
   const { isCollapsed } = useSidebar()
   const [isLoading, setIsLoading] = useState(true)
+  
+  // Initialize session management for automatic token renewal
+  useSessionManager({
+    refreshBeforeExpiry: 2 * 60 * 1000, // Refresh 2 minutes before expiry
+    activityTimeout: 15 * 60 * 1000,    // Consider user inactive after 15 minutes
+    checkInterval: 30 * 1000,           // Check every 30 seconds
+  })
   
   // Check authentication status
   useEffect(() => {

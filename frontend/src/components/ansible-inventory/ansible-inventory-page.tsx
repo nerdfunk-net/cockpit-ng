@@ -621,17 +621,17 @@ export default function AnsibleInventoryPage() {
       </div>
 
       {/* Condition Builder */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Filter className="h-5 w-5" />
-            <span>Logical Operations</span>
-          </CardTitle>
-          <CardDescription>
+      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+          <div className="flex items-center space-x-2">
+            <Filter className="h-4 w-4" />
+            <span className="text-sm font-medium">Logical Operations</span>
+          </div>
+          <div className="text-xs text-blue-100">
             Add conditions to filter devices. Use logical operators to combine multiple conditions.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </div>
+        </div>
+        <div className="p-6 bg-gradient-to-b from-white to-gray-50">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_2fr_1fr_auto] gap-4">
             {/* Field Selection */}
             <div className="space-y-2">
@@ -806,24 +806,22 @@ export default function AnsibleInventoryPage() {
               <span>{isLoadingPreview ? 'Loading...' : 'Preview Results'}</span>
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Preview Results */}
       {showPreviewResults && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Database className="h-5 w-5" />
-                <span>Preview Results</span>
-              </div>
-              <div className="text-sm text-gray-600">
-                {totalDevices} devices found ({operationsExecuted} queries executed)
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+          <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+            <div className="flex items-center space-x-2">
+              <Database className="h-4 w-4" />
+              <span className="text-sm font-medium">Preview Results</span>
+            </div>
+            <div className="text-xs text-blue-100">
+              {totalDevices} devices found ({operationsExecuted} queries executed)
+            </div>
+          </div>
+          <div className="p-6 bg-gradient-to-b from-white to-gray-50">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -918,23 +916,23 @@ export default function AnsibleInventoryPage() {
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Template Selection */}
       {showTemplateSection && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <FileText className="h-5 w-5" />
-              <span>Template Selection and Final Generation</span>
-            </CardTitle>
-            <CardDescription>
+        <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+          <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+            <div className="flex items-center space-x-2">
+              <FileText className="h-4 w-4" />
+              <span className="text-sm font-medium">Template Selection and Final Generation</span>
+            </div>
+            <div className="text-xs text-blue-100">
               Select a Jinja2 template to generate the final Ansible inventory.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            </div>
+          </div>
+          <div className="p-6 bg-gradient-to-b from-white to-gray-50">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="category">Template Category</Label>
@@ -997,42 +995,40 @@ export default function AnsibleInventoryPage() {
                 <span>Download</span>
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Generated Inventory */}
       {showInventorySection && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <FileText className="h-5 w-5" />
-                <span>Generated Inventory</span>
-              </div>
-              <Button
-                onClick={copyToClipboard}
-                variant="outline"
-                size="sm"
-                className="flex items-center space-x-2"
-              >
-                <Copy className="h-4 w-4" />
-                <span>Copy</span>
-              </Button>
-            </CardTitle>
-            <CardDescription>
+        <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+          <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+            <div className="flex items-center space-x-2">
+              <FileText className="h-4 w-4" />
+              <span className="text-sm font-medium">Generated Inventory</span>
+            </div>
+            <div className="text-xs text-blue-100">
               Final inventory ({previewDevices.length} devices) generated using {selectedCategory}/{selectedTemplate}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </div>
+            <Button
+              onClick={copyToClipboard}
+              variant="outline"
+              size="sm"
+              className="bg-white/20 border-white/30 text-white hover:bg-white/30 flex items-center space-x-2"
+            >
+              <Copy className="h-4 w-4" />
+              <span>Copy</span>
+            </Button>
+          </div>
+          <div className="p-6 bg-gradient-to-b from-white to-gray-50">
             <Textarea
               value={generatedInventory}
               readOnly
               className="font-mono text-sm min-h-[400px] resize-none"
               style={{ fontFamily: 'Courier New, monospace' }}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Custom Fields Menu */}

@@ -9,6 +9,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSidebar } from './sidebar-context'
+import { SessionStatus } from './session-status'
 import {
   Home,
   Plus,
@@ -209,6 +210,13 @@ export function AppSidebar({ className }: AppSidebarProps) {
 
         {/* Footer */}
         <div className="border-t border-slate-100 p-6">
+          {/* Session Status */}
+          {!isCollapsed && (
+            <div className="mb-4">
+              <SessionStatus showDetails={false} />
+            </div>
+          )}
+          
           <div className={cn('flex', isCollapsed ? 'flex-col space-y-2' : 'space-x-2')}>
             <Button
               variant="ghost"
