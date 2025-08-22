@@ -8,6 +8,7 @@ import { useAuthStore } from '@/lib/auth-store'
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useSidebar } from './sidebar-context'
 import {
   Home,
   Plus,
@@ -85,7 +86,7 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ className }: AppSidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const { isCollapsed, toggleCollapsed } = useSidebar()
   const [isVisible, setIsVisible] = useState(true)
   const { user, logout } = useAuthStore()
   const pathname = usePathname()
@@ -121,7 +122,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsCollapsed(!isCollapsed)}
+              onClick={toggleCollapsed}
               className="h-8 w-8 p-0"
             >
               <Menu className="h-4 w-4" />

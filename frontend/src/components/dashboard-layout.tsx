@@ -5,15 +5,16 @@ import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/lib/auth-store'
 import { useEffect, useState } from 'react'
 import { checkDevAuth, debugAuth } from '@/lib/auth-debug'
+import { SidebarProvider, useSidebar } from './sidebar-context'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
   className?: string
 }
 
-export function DashboardLayout({ children, className }: DashboardLayoutProps) {
+function DashboardLayoutInner({ children, className }: DashboardLayoutProps) {
   const { isAuthenticated, token } = useAuthStore()
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const { isCollapsed } = useSidebar()
   const [isLoading, setIsLoading] = useState(true)
   
   // Check authentication status
@@ -61,12 +62,26 @@ export function DashboardLayout({ children, className }: DashboardLayoutProps) {
       <AppSidebar />
       
       {/* Main Content */}
-      <div className={cn('pl-64 transition-all duration-300', className)}>
+      <div className={cn(
+        'transition-all duration-300', 
+        isCollapsed ? 'pl-16' : 'pl-64',
+        className
+      )}>
         {/* Page Content - Remove extra navigation, move content to the left */}
         <main className="pl-4 pr-6 pt-4 pb-6">
           {children}
         </main>
       </div>
     </div>
+  )
+}
+
+export function DashboardLayout({ children, className }: DashboardLayoutProps) {
+  return (
+    <SidebarProvider>
+      <DashboardLayoutInner className={className}>
+        {children}
+      </DashboardLayoutInner>
+    </SidebarProvider>
   )
 }
