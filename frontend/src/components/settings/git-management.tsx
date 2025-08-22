@@ -744,7 +744,7 @@ const GitManagement: React.FC = () => {
 
                 <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                   <div className="flex gap-4">
-                    <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
+                    <Button type="submit" disabled={isSubmitting} className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700">
                       {isSubmitting ? (
                         <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                       ) : (
@@ -874,7 +874,7 @@ const GitManagement: React.FC = () => {
               <Button onClick={() => setShowEditDialog(false)} variant="outline">
                 Cancel
               </Button>
-              <Button onClick={saveRepositoryEdit} disabled={isSubmitting}>
+              <Button onClick={saveRepositoryEdit} disabled={isSubmitting} className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700">
                 {isSubmitting ? (
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                 ) : (

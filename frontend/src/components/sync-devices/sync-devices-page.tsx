@@ -485,7 +485,7 @@ export function SyncDevicesPage() {
 
   const getStatusBadgeClass = (status: string) => {
     const statusLower = status.toLowerCase()
-    if (statusLower.includes('active') || statusLower.includes('online')) return 'bg-green-500'
+    if (statusLower.includes('active') || statusLower.includes('online')) return 'bg-blue-500'
     if (statusLower.includes('failed') || statusLower.includes('offline')) return 'bg-red-500'
     if (statusLower.includes('maintenance')) return 'bg-yellow-500'
     return 'bg-gray-500'

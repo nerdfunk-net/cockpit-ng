@@ -134,8 +134,8 @@ export default function LoginPage() {
                 type="submit"
                 className={cn(
                   'w-full h-11 button-apple',
-                  'bg-gradient-to-r from-blue-500 to-indigo-600',
-                  'hover:from-blue-600 hover:to-indigo-700',
+                  'bg-gradient-to-r from-green-500 to-green-600',
+                  'hover:from-green-600 hover:to-green-700',
                   'text-white font-medium shadow-apple-lg'
                 )}
                 disabled={isLoading}

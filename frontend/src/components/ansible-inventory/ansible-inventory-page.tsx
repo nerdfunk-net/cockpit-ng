@@ -637,7 +637,7 @@ export default function AnsibleInventoryPage() {
             <div className="space-y-2">
               <Label htmlFor="field">Field</Label>
               <Select value={currentField} onValueChange={handleFieldChange}>
-                <SelectTrigger>
+                <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
                   <SelectValue placeholder="Select field..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -654,7 +654,7 @@ export default function AnsibleInventoryPage() {
             <div className="space-y-2">
               <Label htmlFor="operator">Operator</Label>
               <Select value={currentOperator} onValueChange={handleOperatorChange}>
-                <SelectTrigger>
+                <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
                   <SelectValue placeholder="Select operator..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -680,6 +680,7 @@ export default function AnsibleInventoryPage() {
                       setShowLocationDropdown(true)
                     }}
                     onFocus={() => setShowLocationDropdown(true)}
+                    className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
                   />
                   {showLocationDropdown && (
                     <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
@@ -706,7 +707,7 @@ export default function AnsibleInventoryPage() {
                 </div>
               ) : fieldValues.length > 0 ? (
                 <Select value={currentValue} onValueChange={setCurrentValue}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
                     <SelectValue placeholder="Choose value..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -723,6 +724,7 @@ export default function AnsibleInventoryPage() {
                   value={currentValue}
                   onChange={(e) => setCurrentValue(e.target.value)}
                   disabled={!currentField || isLoadingFieldValues}
+                  className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200"
                 />
               )}
             </div>
@@ -731,7 +733,7 @@ export default function AnsibleInventoryPage() {
             <div className="space-y-2">
               <Label htmlFor="logic">Logic</Label>
               <Select value={currentLogic} onValueChange={setCurrentLogic}>
-                <SelectTrigger>
+                <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
                   <SelectValue placeholder="Select logic..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -876,7 +878,7 @@ export default function AnsibleInventoryPage() {
                     setPageSize(parseInt(value))
                     setCurrentPage(1)
                   }}>
-                    <SelectTrigger className="w-20">
+                    <SelectTrigger className="w-20 border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -941,7 +943,7 @@ export default function AnsibleInventoryPage() {
                   setSelectedTemplate('')
                   loadTemplatesForCategory(value)
                 }}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
                     <SelectValue placeholder="Select Category..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -961,7 +963,7 @@ export default function AnsibleInventoryPage() {
                   onValueChange={setSelectedTemplate}
                   disabled={!selectedCategory}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
                     <SelectValue placeholder="Select Template..." />
                   </SelectTrigger>
                   <SelectContent>

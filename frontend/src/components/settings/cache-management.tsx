@@ -478,7 +478,7 @@ export default function CacheManagement() {
                 <Button
                   onClick={saveSettings}
                   disabled={saving || !hasChanges}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
                 >
                   {saving ? (
                     <RefreshCw className="h-4 w-4 animate-spin" />

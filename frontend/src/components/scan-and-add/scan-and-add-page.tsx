@@ -1049,7 +1049,7 @@ export function ScanAndAddPage() {
                   value={cidr}
                   onChange={(e) => updateCidrRange(index, e.target.value)}
                   placeholder="192.168.1.0/24 or 192.168.1.1"
-                  className="flex-1"
+                  className="flex-1 border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
                 />
                 {cidrRanges.length > 1 && (
                   <Button
@@ -1076,7 +1076,7 @@ export function ScanAndAddPage() {
             
             <div className="flex justify-between pt-4">
               <div /> {/* Empty div for spacing */}
-              <Button onClick={goToNextPhase} className="flex items-center space-x-2">
+              <Button onClick={goToNextPhase} className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700">
                 <span>Continue to Properties</span>
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -1250,6 +1250,7 @@ export function ScanAndAddPage() {
                   value={filename}
                   onChange={(e) => setFilename(e.target.value)}
                   placeholder="inventory.pending.2024-01-01-12.00.00"
+                  className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
                 />
               </div>
 
@@ -1280,7 +1281,7 @@ export function ScanAndAddPage() {
               </Button>
               <Button 
                 onClick={goToNextPhase}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
                 disabled={isScanning}
               >
                 {isScanning ? (
@@ -1383,7 +1384,7 @@ export function ScanAndAddPage() {
                     <Button
                       onClick={onboardSelectedDevices}
                       disabled={selectedDevices.size === 0 || isOnboarding}
-                      className="bg-green-600 hover:bg-green-700"
+                      className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
                     >
                       {isOnboarding ? (
                         <>
@@ -1514,6 +1515,7 @@ export function ScanAndAddPage() {
                   value={deviceMetadata[editingDeviceIp]?.hostname || ''}
                   onChange={(e) => updateDeviceMetadata(editingDeviceIp, 'hostname', e.target.value)}
                   placeholder="Enter hostname"
+                  className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
                 />
               </div>
 
@@ -1717,7 +1719,7 @@ export function ScanAndAddPage() {
             <Button variant="outline" onClick={() => setIsDeviceModalOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={saveDeviceConfiguration}>
+            <Button onClick={saveDeviceConfiguration} className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700">
               Save Configuration
             </Button>
           </DialogFooter>
@@ -1743,6 +1745,7 @@ export function ScanAndAddPage() {
                 value={assignAllData.hostname || ''}
                 onChange={(e) => setAssignAllData(prev => ({ ...prev, hostname: e.target.value }))}
                 placeholder="Leave empty to keep existing"
+                className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
               />
             </div>
 
@@ -1905,7 +1908,7 @@ export function ScanAndAddPage() {
             <Button variant="outline" onClick={() => setIsAssignAllModalOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={applyAssignToAll}>
+            <Button onClick={applyAssignToAll} className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700">
               Apply to {selectedDevices.size} Devices
             </Button>
           </DialogFooter>

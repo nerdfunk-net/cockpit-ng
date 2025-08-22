@@ -822,7 +822,7 @@ export function OnboardDevicePage() {
             <Button
               onClick={handleSubmit}
               disabled={!isFormValid || isSubmitting}
-              className="px-8"
+              className="px-8 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
             >
               {isSubmitting ? (
                 <>

@@ -531,7 +531,7 @@ export default function CredentialsManagement() {
               <Button variant="outline" onClick={closeDialog}>
                 Cancel
               </Button>
-              <Button onClick={saveCredential} disabled={saving}>
+              <Button onClick={saveCredential} disabled={saving} className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700">
                 {saving ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
