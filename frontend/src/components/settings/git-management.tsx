@@ -177,7 +177,7 @@ const GitManagement: React.FC = () => {
   }
 
   const filterRepositories = () => {
-    let filtered = repositories.filter(repo => {
+    const filtered = repositories.filter(repo => {
       const matchesSearch = repo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            repo.url.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            (repo.description && repo.description.toLowerCase().includes(searchTerm.toLowerCase()))

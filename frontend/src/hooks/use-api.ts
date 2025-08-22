@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation'
 
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
-  body?: any
+  body?: unknown
   headers?: Record<string, string>
 }
 
@@ -11,7 +11,7 @@ export function useApi() {
   const { token, logout } = useAuthStore()
   const router = useRouter()
 
-  const apiCall = async <T = any>(endpoint: string, options: ApiOptions = {}): Promise<T> => {
+  const apiCall = async <T = unknown>(endpoint: string, options: ApiOptions = {}): Promise<T> => {
     const { method = 'GET', body, headers = {} } = options
     
     const defaultHeaders: Record<string, string> = {

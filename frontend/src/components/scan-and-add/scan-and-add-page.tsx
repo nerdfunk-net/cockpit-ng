@@ -59,6 +59,15 @@ interface DiscoveredDevice {
   is_alive?: boolean
 }
 
+interface ScanResult {
+  ip: string
+  hostname?: string
+  platform?: string
+  credential_id?: string
+  is_authenticated?: boolean
+  is_alive?: boolean
+}
+
 interface DeviceMetadata {
   ip: string
   hostname?: string
@@ -86,7 +95,7 @@ interface ScanJob {
     auth_failed: number
     driver_not_supported: number
   }
-  results: any[]
+  results: ScanResult[]
 }
 
 interface StatusMessage {
@@ -256,7 +265,11 @@ export function ScanAndAddPage() {
 
   const loadGitRepositories = async () => {
     try {
-      const response = await apiCall<any>('git-repositories?category=onboarding&active_only=false')
+      const response = await apiCall<GitRepository[] | { 
+        results?: GitRepository[];
+        repositories?: GitRepository[];
+        data?: GitRepository[];
+      }>('git-repositories?category=onboarding&active_only=false')
       
       // Handle different response formats from the API
       let repos: GitRepository[] = []
@@ -286,7 +299,11 @@ export function ScanAndAddPage() {
 
   const loadInventoryTemplates = async () => {
     try {
-      const response = await apiCall<any>('templates?category=onboarding&active_only=true')
+      const response = await apiCall<Template[] | { 
+        results?: Template[];
+        templates?: Template[];
+        data?: Template[];
+      }>('templates?category=onboarding&active_only=true')
       
       // Handle different response formats from the API
       let templates: Template[] = []
@@ -316,7 +333,11 @@ export function ScanAndAddPage() {
 
   const loadParserTemplates = async () => {
     try {
-      const response = await apiCall<any>('templates?category=parser&active_only=true')
+      const response = await apiCall<Template[] | { 
+        results?: Template[];
+        templates?: Template[];
+        data?: Template[];
+      }>('templates?category=parser&active_only=true')
       
       // Handle different response formats from the API
       let templates: Template[] = []
@@ -652,7 +673,7 @@ export function ScanAndAddPage() {
         console.log('Raw results array:', status.results)
         
         // Extract devices from scan results
-        const devices = status.results?.map((result: any, index: number) => {
+        const devices = status.results?.map((result: ScanResult, index: number) => {
           console.log(`Processing result ${index}:`, result)
           const device = {
             ip: result.ip,
@@ -799,7 +820,18 @@ export function ScanAndAddPage() {
       }))
 
       // Collect Linux onboarding extras (only used for Linux devices)
-      const extras: any = {}
+      const extras: {
+        git_repository_id?: number;
+        git_repository_name?: string;
+        inventory_template_id?: number;
+        inventory_template_name?: string;
+        parser_template_ids?: number[];
+        parser_template_names?: string[];
+        filename?: string;
+        auto_commit?: boolean;
+        auto_push?: boolean;
+        commit_message?: string;
+      } = {}
       if (gitRepository) {
         const repoId = parseInt(gitRepository, 10)
         if (!isNaN(repoId)) {
@@ -837,7 +869,12 @@ export function ScanAndAddPage() {
 
       console.log('Onboarding payload:', onboardPayload)
 
-      const response = await apiCall(`scan/${scanJob.job_id}/onboard`, {
+      const response = await apiCall<{
+        cisco_queued?: number;
+        linux_added?: number;
+        inventory_path?: string;
+        accepted?: number;
+      }>(`scan/${scanJob.job_id}/onboard`, {
         method: 'POST',
         body: onboardPayload
       })
@@ -846,10 +883,10 @@ export function ScanAndAddPage() {
 
       // Build success message from response
       const messages: string[] = []
-      if (response.cisco_queued > 0) {
+      if (response.cisco_queued && response.cisco_queued > 0) {
         messages.push(`${response.cisco_queued} Cisco device(s) queued for onboarding`)
       }
-      if (response.linux_added > 0) {
+      if (response.linux_added && response.linux_added > 0) {
         messages.push(`${response.linux_added} Linux device(s) added to inventory`)
       }
       if (response.inventory_path) {

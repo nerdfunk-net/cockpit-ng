@@ -15,8 +15,8 @@ import {
 import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
 import { devLogin } from '@/lib/auth-debug'
-import FileCompare from './file-compare'
-import GitCompare from './git-compare'
+import FileCompare from '../file-compare'
+import GitCompare from '../git-compare'
 
 interface Repository {
   id: number
@@ -61,7 +61,7 @@ export default function ConfigCompare() {
         const user = JSON.parse(storedUser)
         if (user && user.username) {
           console.log('Compare: Restoring authentication from localStorage:', user.username)
-          useAuthStore.getState().login(user, storedToken)
+          useAuthStore.getState().login(storedToken, user)
           setAuthReady(true)
           setTimeout(() => {
             loadRepositories(true)
@@ -87,7 +87,8 @@ export default function ConfigCompare() {
       loadRepositories()
     } else {
       console.log('Compare: No authentication found, trying dev login...')
-      devLogin().then((newAuthState) => {
+      devLogin().then(() => {
+        const newAuthState = useAuthStore.getState()
         if (newAuthState.isAuthenticated && newAuthState.token) {
           console.log('Compare: Dev login successful')
           setAuthReady(true)

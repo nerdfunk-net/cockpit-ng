@@ -10,8 +10,8 @@ export function interceptReactKeyWarnings() {
   
   let keyWarningCount = 0
   
-  const interceptor = function(originalFunction: Function, prefix: string) {
-    return function(...args: any[]) {
+  const interceptor = function(originalFunction: (...args: unknown[]) => void, _prefix: string) {
+    return function(...args: unknown[]) {
       const message = args.join(' ')
       
       if (message.includes('Each child in a list should have a unique "key" prop') ||
@@ -130,7 +130,7 @@ export function inspectDOMForKeyIssues() {
 export function findReactComponents() {
   console.log('🔍 Searching for React components in DOM...')
   
-  const reactElements: Array<{element: Element, fiberNode: any}> = []
+  const reactElements: Array<{element: Element, fiberNode: unknown}> = []
   
   document.querySelectorAll('*').forEach(element => {
     // Check for React fiber nodes (different possible property names)
@@ -141,7 +141,7 @@ export function findReactComponents() {
     )
     
     if (fiberKeys.length > 0) {
-      const fiberNode = (element as any)[fiberKeys[0]]
+      const fiberNode = (element as unknown as { [key: string]: unknown })[fiberKeys[0]]
       reactElements.push({ element, fiberNode })
     }
   })
@@ -149,8 +149,9 @@ export function findReactComponents() {
   if (reactElements.length > 0) {
     console.group(`🎯 Found ${reactElements.length} React elements:`)
     reactElements.slice(0, 10).forEach((item, index) => { // Limit output
-      const componentName = item.fiberNode?.type?.name || 
-                           item.fiberNode?.elementType?.name || 
+      const fiberNode = item.fiberNode as { type?: { name?: string }; elementType?: { name?: string } } | null
+      const componentName = fiberNode?.type?.name || 
+                           fiberNode?.elementType?.name || 
                            'Unknown'
       console.log(`${index + 1}. ${componentName}:`, item.element)
     })
@@ -194,6 +195,6 @@ export function debugReactKeysSimple() {
     console.log('💡 To stop monitoring, run: cleanup()')
     
     // Make cleanup available globally for manual stopping
-    ;(window as any).stopReactKeyDebugging = cleanup
+    ;(window as { stopReactKeyDebugging?: () => void }).stopReactKeyDebugging = cleanup
   }, 1500)
 }

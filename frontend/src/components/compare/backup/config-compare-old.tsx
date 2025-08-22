@@ -314,9 +314,10 @@ export default function ConfigCompare() {
         console.log('Compare: No repositories found')
         setRepositoryStatus('error')
       }
-    } catch (error: any) {
-      console.error('Compare: Error loading repositories:', error)
-      if (error.message?.includes('401') || error.message?.includes('403')) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Compare: Error loading repositories:', errorMessage)
+      if (errorMessage.includes('401') || errorMessage.includes('403')) {
         console.log('Compare: Authentication error, resetting auth state')
         setRepositoryStatus('error')
         setAuthReady(false)
@@ -372,9 +373,10 @@ export default function ConfigCompare() {
       const files = response || []
       setLeftFiles(files)
       setRightFiles(files)
-    } catch (error: any) {
-      console.error('Error loading files:', error)
-      if (error.message?.includes('401') || error.message?.includes('403')) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error loading files:', errorMessage)
+      if (errorMessage.includes('401') || errorMessage.includes('403')) {
         setRepositoryStatus('error')
       }
     }
@@ -392,9 +394,10 @@ export default function ConfigCompare() {
         setHistoryBranch(currentBranch.name)
         await loadCommitsForBranch(currentBranch.name)
       }
-    } catch (error: any) {
-      console.error('Error loading branches:', error)
-      if (error.message?.includes('401') || error.message?.includes('403')) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error loading branches:', errorMessage)
+      if (errorMessage.includes('401') || errorMessage.includes('403')) {
         setRepositoryStatus('error')
       }
     }
@@ -404,9 +407,10 @@ export default function ConfigCompare() {
     try {
       const response = await apiCall<Commit[]>(`git/commits/${branch}`)
       setCommits(response || [])
-    } catch (error: any) {
-      console.error('Error loading commits:', error)
-      if (error.message?.includes('401') || error.message?.includes('403')) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error loading commits:', errorMessage)
+      if (errorMessage.includes('401') || errorMessage.includes('403')) {
         setRepositoryStatus('error')
       }
     }
@@ -416,9 +420,10 @@ export default function ConfigCompare() {
     try {
       const response = await apiCall<FileItem[]>('git/status')
       setGitFiles(response || [])
-    } catch (error: any) {
-      console.error('Error loading git files:', error)
-      if (error.message?.includes('401') || error.message?.includes('403')) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error loading git files:', errorMessage)
+      if (errorMessage.includes('401') || errorMessage.includes('403')) {
         setRepositoryStatus('error')
       }
     }
@@ -486,9 +491,10 @@ export default function ConfigCompare() {
       setComparisonResult(response)
       setShowComparison(true)
       setCurrentDiffIndex(0)
-    } catch (error: any) {
-      console.error('Error comparing files:', error)
-      if (error.message?.includes('401') || error.message?.includes('403')) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error comparing files:', errorMessage)
+      if (errorMessage.includes('401') || errorMessage.includes('403')) {
         setRepositoryStatus('error')
       }
     } finally {
@@ -514,9 +520,10 @@ export default function ConfigCompare() {
       setComparisonResult(response)
       setShowComparison(true)
       setCurrentDiffIndex(0)
-    } catch (error: any) {
-      console.error('Error comparing git commits:', error)
-      if (error.message?.includes('401') || error.message?.includes('403')) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error comparing git commits:', errorMessage)
+      if (errorMessage.includes('401') || errorMessage.includes('403')) {
         setRepositoryStatus('error')
       }
     } finally {
@@ -556,7 +563,7 @@ export default function ConfigCompare() {
     if (!comparisonResult) return
     
     try {
-      const response = await apiCall('files/export-diff', {
+      const response = await apiCall<{ content: string }>('files/export-diff', {
         method: 'POST',
         body: JSON.stringify({
           left_file: comparisonResult.leftFile,

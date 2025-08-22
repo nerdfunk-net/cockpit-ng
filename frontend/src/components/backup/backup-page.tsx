@@ -140,7 +140,17 @@ export default function BackupPage() {
       }
 
       const endpoint = `nautobot/devices${params.toString() ? '?' + params.toString() : ''}`
-      const response = await apiCall(endpoint)
+      const response = await apiCall<{
+        devices?: Device[];
+        is_paginated?: boolean;
+        has_more?: boolean;
+        count?: number;
+        current_limit?: number;
+        current_offset?: number;
+        sites?: string[];
+        locations?: string[];
+        device_types?: string[];
+      }>(endpoint)
 
       if (response?.devices) {
         const newDevices = response.devices
@@ -151,7 +161,7 @@ export default function BackupPage() {
           isBackendPaginated: response.is_paginated || false,
           hasMore: response.has_more || false,
           totalCount: response.count || 0,
-          currentLimit: response.current_limit,
+          currentLimit: response.current_limit || null,
           currentOffset: response.current_offset || 0,
           filterType: deviceNameFilter ? 'name' : null,
           filterValue: deviceNameFilter || null,
@@ -220,7 +230,7 @@ export default function BackupPage() {
     // Apply sorting
     if (sortColumn && sortOrder !== 'none') {
       filtered = filtered.slice().sort((a, b) => {
-        let aVal: any, bVal: any
+        let aVal: string | Date | number, bVal: string | Date | number
 
         switch (sortColumn) {
           case 'last_backup':

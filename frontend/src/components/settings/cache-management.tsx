@@ -860,7 +860,7 @@ export default function CacheManagement() {
               Namespace: {namespaceInfo.namespace}
             </CardTitle>
             <CardDescription>
-              Detailed information about the '{namespaceInfo.namespace}' cache namespace
+              Detailed information about the &apos;{namespaceInfo.namespace}&apos; cache namespace
             </CardDescription>
           </CardHeader>
           <CardContent>

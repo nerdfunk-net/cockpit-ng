@@ -217,7 +217,7 @@ export default function NautobotSettingsForm() {
               />
               <p className="text-xs text-gray-500">
                 Get your API token from Nautobot: Admin → Users → [Your User] → API Tokens.{' '}
-                <strong>Required permissions:</strong> At minimum 'read' access to dcim models (devices, sites, etc.)
+                <strong>Required permissions:</strong> At minimum &apos;read&apos; access to dcim models (devices, sites, etc.)
               </p>
             </div>
 

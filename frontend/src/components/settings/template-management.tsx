@@ -194,7 +194,20 @@ export default function TemplateManagement() {
 
     setIsCreating(true)
     try {
-      const templateData: any = {
+      const templateData: {
+        name: string;
+        source: string;
+        template_type: string;
+        category: string;
+        description: string;
+        git_repo_url?: string;
+        git_branch?: string;
+        git_path?: string;
+        git_username?: string;
+        git_token?: string;
+        content?: string;
+        filename?: string;
+      } = {
         name: formData.name,
         source: formData.source,
         template_type: formData.template_type,
@@ -265,7 +278,20 @@ export default function TemplateManagement() {
 
     setIsCreating(true)
     try {
-      const templateData: any = {
+      const templateData: {
+        name: string;
+        source: string;
+        template_type: string;
+        category: string;
+        description: string;
+        git_repo_url?: string;
+        git_branch?: string;
+        git_path?: string;
+        git_username?: string;
+        git_token?: string;
+        content?: string;
+        filename?: string;
+      } = {
         name: formData.name,
         source: formData.source,
         template_type: formData.template_type,
@@ -617,7 +643,7 @@ export default function TemplateManagement() {
                   <Label htmlFor="template-source">
                     Source <span className="text-red-500">*</span>
                   </Label>
-                  <Select value={formData.source} onValueChange={(value: any) => handleFormChange('source', value)}>
+                  <Select value={formData.source} onValueChange={(value: string) => handleFormChange('source', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select source..." />
                     </SelectTrigger>

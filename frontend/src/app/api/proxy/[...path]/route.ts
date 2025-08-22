@@ -4,7 +4,7 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   const resolvedParams = await params
   return handleRequest(request, 'GET', resolvedParams.path)
@@ -12,7 +12,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   const resolvedParams = await params
   return handleRequest(request, 'POST', resolvedParams.path)
@@ -20,7 +20,7 @@ export async function POST(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   const resolvedParams = await params
   return handleRequest(request, 'PUT', resolvedParams.path)
@@ -28,7 +28,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   const resolvedParams = await params
   return handleRequest(request, 'DELETE', resolvedParams.path)
@@ -36,7 +36,7 @@ export async function DELETE(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   const resolvedParams = await params
   return handleRequest(request, 'PATCH', resolvedParams.path)

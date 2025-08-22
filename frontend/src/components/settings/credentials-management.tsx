@@ -84,9 +84,10 @@ export default function CredentialsManagement() {
     try {
       const response = await apiCall<Credential[]>(`credentials?include_expired=${includeExpired}`)
       setCredentials(response || [])
-    } catch (error: any) {
-      console.error('Error loading credentials:', error)
-      if (error.message?.includes('401') || error.message?.includes('403')) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error loading credentials:', errorMessage)
+      if (errorMessage.includes('401') || errorMessage.includes('403')) {
         showMessage('Authentication required. Please log in again.', 'error')
       } else {
         showMessage('Failed to load credentials', 'error')
@@ -152,7 +153,15 @@ export default function CredentialsManagement() {
 
     setSaving(true)
     try {
-      const payload: any = {
+      const payload: {
+        name: string;
+        username: string;
+        type: string;
+        valid_until: string | null;
+        password?: string;
+        private_key?: string;
+        passphrase?: string;
+      } = {
         name: formData.name.trim(),
         username: formData.username.trim(),
         type: formData.type,
@@ -180,11 +189,12 @@ export default function CredentialsManagement() {
 
       closeDialog()
       loadCredentials()
-    } catch (error: any) {
-      console.error('Error saving credential:', error)
-      if (error.message?.includes('401') || error.message?.includes('403')) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error saving credential:', errorMessage)
+      if (errorMessage.includes('401') || errorMessage.includes('403')) {
         showMessage('Authentication required. Please log in again.', 'error')
-      } else if (error.message?.includes('400')) {
+      } else if (errorMessage.includes('400')) {
         showMessage('Invalid credential data. Please check your inputs.', 'error')
       } else {
         showMessage('Failed to save credential', 'error')
@@ -206,9 +216,10 @@ export default function CredentialsManagement() {
       })
       showMessage('Credential deleted successfully', 'success')
       loadCredentials()
-    } catch (error: any) {
-      console.error('Error deleting credential:', error)
-      if (error.message?.includes('401') || error.message?.includes('403')) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error deleting credential:', errorMessage)
+      if (errorMessage.includes('401') || errorMessage.includes('403')) {
         showMessage('Authentication required. Please log in again.', 'error')
       } else {
         showMessage('Failed to delete credential', 'error')
