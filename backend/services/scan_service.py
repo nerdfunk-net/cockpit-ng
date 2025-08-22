@@ -144,6 +144,7 @@ class ScanService:
 
         # Preload parser templates content
         parser_templates: List[Tuple[int, str]] = []
+        logger.info(f"Processing parser_template_ids: {parser_template_ids}")
         if parser_template_ids and textfsm is not None:
             for tid in parser_template_ids:
                 try:
@@ -152,8 +153,14 @@ class ScanService:
                         content = template_manager.get_template_content(tid)
                         if content:
                             parser_templates.append((tid, content))
+                            logger.info(f"Loaded parser template {tid}: {t.get('name', 'Unknown')}")
                 except Exception as e:
                     logger.warning(f"Failed to preload parser template {tid}: {e}")
+        logger.info(f"Total parser templates loaded: {len(parser_templates)}")
+        if not parser_template_ids:
+            logger.info("No parser templates specified")
+        elif textfsm is None:
+            logger.warning("TextFSM not available, parser templates will be ignored")
 
         async def worker(ip: str):
             async with semaphore:

@@ -88,6 +88,9 @@ export default function TemplateManagement() {
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isCreating, setIsCreating] = useState(false)
+  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null)
+  const [activeTab, setActiveTab] = useState('list')
+  const [showSourceChangeModal, setShowSourceChangeModal] = useState(false)
 
   useEffect(() => {
     loadTemplates()
@@ -140,6 +143,97 @@ export default function TemplateManagement() {
       git_token: ''
     })
     setSelectedFile(null)
+    setEditingTemplate(null)
+  }
+
+  const handleEditTemplate = async (template: Template) => {
+    try {
+      // Load template content for editing
+      const response = await apiCall<{ content: string }>(`templates/${template.id}/content`)
+      
+      // Populate form with template data
+      // For file-sourced templates, default to webeditor to enable editing
+      const editSource = template.source === 'file' ? 'webeditor' : template.source
+      
+      setFormData({
+        name: template.name,
+        source: editSource,
+        template_type: template.template_type,
+        category: template.category || '__none__',
+        description: template.description || '',
+        content: response.content || '',
+        git_repo_url: template.git_repo_url || '',
+        git_branch: template.git_branch || 'main',
+        git_path: template.git_path || '',
+        git_username: '',
+        git_token: ''
+      })
+      
+      setEditingTemplate(template)
+      setActiveTab('create') // Switch to create tab for editing
+      
+      // Show modal notification for source conversion
+      if (template.source === 'file' && editSource === 'webeditor') {
+        setShowSourceChangeModal(true)
+        setTimeout(() => setShowSourceChangeModal(false), 2000)
+        showMessage('Template loaded for editing', 'success')
+      } else {
+        showMessage('Template loaded for editing', 'success')
+      }
+    } catch (error) {
+      console.error('Error loading template for edit:', error)
+      showMessage('Failed to load template for editing', 'error')
+    }
+  }
+
+  const handleUpdateTemplate = async () => {
+    if (!editingTemplate || !formData.name || !formData.source) {
+      showMessage('Please fill in required fields', 'error')
+      return
+    }
+
+    setIsCreating(true)
+    try {
+      const templateData: any = {
+        name: formData.name,
+        source: formData.source,
+        template_type: formData.template_type,
+        category: formData.category === '__none__' ? '' : formData.category,
+        description: formData.description
+      }
+
+      // Add source-specific data
+      if (formData.source === 'git') {
+        templateData.git_repo_url = formData.git_repo_url
+        templateData.git_branch = formData.git_branch
+        templateData.git_path = formData.git_path
+        templateData.git_username = formData.git_username
+        templateData.git_token = formData.git_token
+      } else if (formData.source === 'webeditor') {
+        templateData.content = formData.content
+      } else if (formData.source === 'file' && selectedFile) {
+        templateData.filename = selectedFile.name
+        templateData.content = await readFileContent(selectedFile)
+      } else if (formData.source === 'file' && !selectedFile && formData.content) {
+        // For file source without new file, keep existing content
+        templateData.content = formData.content
+      }
+
+      await apiCall(`templates/${editingTemplate.id}`, {
+        method: 'PUT',
+        body: templateData
+      })
+
+      showMessage('Template updated successfully!', 'success')
+      resetForm()
+      setActiveTab('list')
+      loadTemplates()
+    } catch (error) {
+      console.error('Error updating template:', error)
+      showMessage('Failed to update template', 'error')
+    } finally {
+      setIsCreating(false)
+    }
   }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -322,7 +416,7 @@ export default function TemplateManagement() {
       )}
 
       {/* Main Content */}
-      <Tabs defaultValue="list" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="list" className="flex items-center space-x-2">
             <FileCode className="h-4 w-4" />
@@ -456,7 +550,7 @@ export default function TemplateManagement() {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => {/* TODO: Implement edit */}}
+                                    onClick={() => handleEditTemplate(template)}
                                     title="Edit Template"
                                   >
                                     <Edit className="h-4 w-4" />
@@ -498,7 +592,9 @@ export default function TemplateManagement() {
         <TabsContent value="create" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Create New Template</CardTitle>
+              <CardTitle>
+                {editingTemplate ? `Edit Template: ${editingTemplate.name}` : 'Create New Template'}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Basic Information */}
@@ -686,16 +782,21 @@ export default function TemplateManagement() {
                   className="flex items-center space-x-2"
                 >
                   <RotateCcw className="h-4 w-4" />
-                  <span>Reset</span>
+                  <span>{editingTemplate ? 'Cancel Edit' : 'Reset'}</span>
                 </Button>
                 <Button
-                  onClick={handleCreateTemplate}
+                  onClick={editingTemplate ? handleUpdateTemplate : handleCreateTemplate}
                   disabled={isCreating || !formData.name || !formData.source}
                   className="flex items-center space-x-2"
                 >
                   {isCreating && <RefreshCw className="h-4 w-4 animate-spin" />}
                   <Save className="h-4 w-4" />
-                  <span>{isCreating ? 'Creating...' : 'Create Template'}</span>
+                  <span>
+                    {isCreating 
+                      ? (editingTemplate ? 'Updating...' : 'Creating...') 
+                      : (editingTemplate ? 'Update Template' : 'Create Template')
+                    }
+                  </span>
                 </Button>
               </div>
             </CardContent>
@@ -718,6 +819,30 @@ export default function TemplateManagement() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Source Change Modal Notification */}
+      {showSourceChangeModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+          <div className="bg-white border border-blue-200 shadow-lg rounded-lg p-6 max-w-md mx-4 pointer-events-auto animate-in fade-in-0 zoom-in-95 duration-200">
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Code className="w-5 h-5 text-blue-600" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-gray-900 mb-1">
+                  Source Changed to Web Editor
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Template source changed from File Upload to Web Editor to enable content editing. 
+                  You can now modify the template content directly below.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

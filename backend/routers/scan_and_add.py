@@ -132,6 +132,7 @@ class OnboardResponse(BaseModel):
 async def start_scan(request: ScanStartRequest):
     """Start a new network scan job."""
     try:
+        logger.info(f"Starting scan job with CIDRs: {request.cidrs}, credentials: {request.credential_ids}, mode: {request.discovery_mode} template id: {request.parser_template_ids}")
         job = await scan_service.start_job(
             request.cidrs,
             request.credential_ids,
