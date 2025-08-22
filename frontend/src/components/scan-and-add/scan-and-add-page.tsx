@@ -71,6 +71,7 @@ interface DeviceMetadata {
   interface_status?: string
   ip_status?: string
   secret_group_id?: string
+  credential_id?: string
 }
 
 interface ScanJob {
@@ -201,8 +202,13 @@ export function ScanAndAddPage() {
     setShowParserTemplates(discoveryMode === 'ssh-login')
     if (discoveryMode !== 'ssh-login') {
       setSelectedParserTemplates([])
+    } else {
+      // Auto-select if only one parser template is available when switching to SSH Login
+      if (parserTemplates.length === 1 && selectedParserTemplates.length === 0) {
+        setSelectedParserTemplates([String(parserTemplates[0].id)])
+      }
     }
-  }, [discoveryMode])
+  }, [discoveryMode, parserTemplates])
 
   const loadInitialData = async () => {
     setIsLoading(true)
@@ -235,7 +241,13 @@ export function ScanAndAddPage() {
   const loadCredentials = async () => {
     try {
       const data = await apiCall<Credential[]>('credentials/')
-      setCredentials(Array.isArray(data) ? data : [])
+      const validCredentials = Array.isArray(data) ? data : []
+      setCredentials(validCredentials)
+      
+      // Auto-select if only one credential is available and no credential is selected
+      if (validCredentials.length === 1 && selectedCredentials.length === 1 && selectedCredentials[0] === '') {
+        setSelectedCredentials([String(validCredentials[0].id)])
+      }
     } catch (error) {
       console.error('Error loading credentials:', error)
       setCredentials([])
@@ -245,7 +257,6 @@ export function ScanAndAddPage() {
   const loadGitRepositories = async () => {
     try {
       const response = await apiCall<any>('git-repositories?category=onboarding&active_only=false')
-      console.debug('Git repositories API response:', response)
       
       // Handle different response formats from the API
       let repos: GitRepository[] = []
@@ -261,8 +272,12 @@ export function ScanAndAddPage() {
       
       // Filter and ensure objects
       const validRepos = repos.filter((r) => r && typeof r === 'object')
-      console.debug('Processed git repositories:', validRepos)
       setGitRepositories(validRepos || [])
+      
+      // Auto-select if only one git repository is available and none is selected
+      if (validRepos.length === 1 && (!gitRepository || gitRepository === '')) {
+        setGitRepository(String(validRepos[0].id))
+      }
     } catch (error) {
       console.error('Error loading git repositories:', error)
       setGitRepositories([])
@@ -288,6 +303,11 @@ export function ScanAndAddPage() {
       // Filter and ensure objects
       const validTemplates = templates.filter((t) => t && typeof t === 'object')
       setInventoryTemplates(validTemplates || [])
+      
+      // Auto-select if only one inventory template is available and none is selected
+      if (validTemplates.length === 1 && (!inventoryTemplate || inventoryTemplate === '')) {
+        setInventoryTemplate(String(validTemplates[0].id))
+      }
     } catch (error) {
       console.error('Error loading inventory templates:', error)
       setInventoryTemplates([])
@@ -313,6 +333,11 @@ export function ScanAndAddPage() {
       // Filter and ensure objects
       const validTemplates = templates.filter((t) => t && typeof t === 'object')
       setParserTemplates(validTemplates || [])
+      
+      // Auto-select if only one parser template is available and SSH Login mode is enabled
+      if (validTemplates.length === 1 && showParserTemplates && selectedParserTemplates.length === 0) {
+        setSelectedParserTemplates([String(validTemplates[0].id)])
+      }
     } catch (error) {
       console.error('Error loading parser templates:', error)
       setParserTemplates([])
@@ -359,7 +384,11 @@ export function ScanAndAddPage() {
   const loadPlatforms = async () => {
     try {
       const data = await apiCall<DropdownOption[]>('nautobot/platforms')
-      setPlatforms(data || [])
+      const platformsWithAutodetect = [
+        { id: 'autodetect', name: 'Auto-detect' },
+        ...(data || [])
+      ]
+      setPlatforms(platformsWithAutodetect)
     } catch (error) {
       console.error('Error loading platforms:', error)
     }
@@ -646,18 +675,39 @@ export function ScanAndAddPage() {
           console.log(`Creating metadata for device ${index} (${device.ip}):`)
           console.log('  - hostname from scan:', device.hostname)
           console.log('  - platform from scan:', device.platform)
+          console.log('  - credential_id from scan:', device.credential_id)
+          
+          // Determine default device type based on platform or other indicators
+          let defaultDeviceType = 'cisco' // Default fallback
+          if (device.platform) {
+            const platformLower = String(device.platform).toLowerCase()
+            // If platform contains linux, ubuntu, centos, rhel, etc., assume it's a Linux server
+            if (platformLower.includes('linux') || 
+                platformLower.includes('ubuntu') || 
+                platformLower.includes('centos') || 
+                platformLower.includes('rhel') || 
+                platformLower.includes('debian') ||
+                platformLower.includes('server')) {
+              defaultDeviceType = 'linux'
+            }
+          }
+          
+          // Determine default role based on device type
+          const defaultRole = defaultDeviceType === 'linux' ? 'server' : 'network'
           
           metadata[device.ip] = {
             ip: device.ip,
             hostname: device.hostname || '',
-            platform: device.platform || '',
-            role: 'network',
-            device_type: 'cisco',
+            platform: device.platform || (discoveryMode === 'ssh-login' ? 'autodetect' : ''),
+            credential_id: device.credential_id || '',
+            role: defaultRole,
+            device_type: defaultDeviceType,
             status: 'Active',
             interface_status: 'Active',
             ip_status: 'Active',
             namespace: 'Global'
           }
+          console.log('  - detected device_type:', defaultDeviceType)
           console.log('  - final metadata:', metadata[device.ip])
         })
         console.log('Complete metadata object:', metadata)
@@ -723,52 +773,96 @@ export function ScanAndAddPage() {
       const selectedIps = Array.from(selectedDevices)
       const devicesToOnboard = selectedIps.map(ip => deviceMetadata[ip]).filter(Boolean)
 
-      // Separate Cisco and other devices for different onboarding methods
-      const ciscoDevices = devicesToOnboard.filter(d => d.device_type === 'cisco')
-      const otherDevices = devicesToOnboard.filter(d => d.device_type !== 'cisco')
-
-      let successCount = 0
-      let failureCount = 0
-
-      // Onboard Cisco devices individually
-      for (const device of ciscoDevices) {
-        try {
-          await apiCall('nautobot/devices/onboard', {
-            method: 'POST',
-            body: device
-          })
-          successCount++
-        } catch (error) {
-          console.error(`Failed to onboard device ${device.ip}:`, error)
-          failureCount++
-        }
+      if (!scanJob?.job_id) {
+        setStatusMessage({
+          type: 'error',
+          message: 'No scan job available for onboarding'
+        })
+        return
       }
 
-      // Batch onboard other devices if any
-      if (otherDevices.length > 0) {
-        try {
-          const batchPayload = {
-            devices: otherDevices,
-            git_repository_id: gitRepository || undefined,
-            inventory_template_id: inventoryTemplate || undefined,
-            filename: filename || undefined,
-            commit_and_push: commitAndPush
+      // Prepare all devices for batch onboarding via scan job endpoint
+      // The backend will automatically separate Cisco vs Linux devices based on device_type
+      const transformedDevices = devicesToOnboard.map(device => ({
+        ip: device.ip,
+        credential_id: device.credential_id ? parseInt(String(device.credential_id), 10) : 0,
+        device_type: device.device_type || 'cisco', // Default to cisco if not specified
+        hostname: device.hostname,
+        platform: device.platform === 'autodetect' ? 'auto-detect' : device.platform,
+        // Cisco-specific fields (ignored for Linux devices by backend)
+        location: device.location,
+        namespace: device.namespace,
+        role: device.role,
+        status: device.status,
+        interface_status: device.interface_status,
+        ip_status: device.ip_status,
+      }))
+
+      // Collect Linux onboarding extras (only used for Linux devices)
+      const extras: any = {}
+      if (gitRepository) {
+        const repoId = parseInt(gitRepository, 10)
+        if (!isNaN(repoId)) {
+          extras.git_repository_id = repoId
+        } else {
+          extras.git_repository_name = gitRepository
+        }
+      }
+      if (inventoryTemplate) {
+        const templateId = parseInt(inventoryTemplate, 10)
+        if (!isNaN(templateId)) {
+          extras.inventory_template_id = templateId
+        }
+      }
+      if (filename) {
+        extras.filename = filename.trim()
+      }
+      if (commitAndPush) {
+        extras.auto_commit = true
+        extras.auto_push = true
+        // Set commit message to filename basename
+        if (filename) {
+          try {
+            extras.commit_message = filename.trim().split('/').pop()
+          } catch (e) {
+            extras.commit_message = filename.trim()
           }
-
-          await apiCall('scan/onboard', {
-            method: 'POST',
-            body: batchPayload
-          })
-          successCount += otherDevices.length
-        } catch (error) {
-          console.error('Failed to batch onboard devices:', error)
-          failureCount += otherDevices.length
         }
       }
+
+      const onboardPayload = {
+        devices: transformedDevices,
+        ...extras
+      }
+
+      console.log('Onboarding payload:', onboardPayload)
+
+      const response = await apiCall(`scan/${scanJob.job_id}/onboard`, {
+        method: 'POST',
+        body: onboardPayload
+      })
+
+      console.log('Onboard response:', response)
+
+      // Build success message from response
+      const messages: string[] = []
+      if (response.cisco_queued > 0) {
+        messages.push(`${response.cisco_queued} Cisco device(s) queued for onboarding`)
+      }
+      if (response.linux_added > 0) {
+        messages.push(`${response.linux_added} Linux device(s) added to inventory`)
+      }
+      if (response.inventory_path) {
+        messages.push(`Inventory created: ${response.inventory_path}`)
+      }
+
+      const finalMessage = messages.length > 0 
+        ? messages.join(', ') 
+        : `${response.accepted || 0} device(s) processed for onboarding`
 
       setStatusMessage({
-        type: successCount > 0 ? 'success' : 'error',
-        message: `Onboarding complete: ${successCount} successful, ${failureCount} failed`
+        type: 'success',
+        message: finalMessage
       })
 
       // Clear selection after onboarding
@@ -1073,17 +1167,18 @@ export function ScanAndAddPage() {
                       parserTemplates.map(template => (
                         <div key={template.id} className="flex items-center space-x-2 py-1">
                           <Checkbox
-                            id={template.id}
-                            checked={selectedParserTemplates.includes(template.id)}
+                            id={String(template.id)}
+                            checked={selectedParserTemplates.includes(String(template.id))}
                             onCheckedChange={(checked) => {
+                              const templateIdStr = String(template.id)
                               if (checked) {
-                                setSelectedParserTemplates([...selectedParserTemplates, template.id])
+                                setSelectedParserTemplates([...selectedParserTemplates, templateIdStr])
                               } else {
-                                setSelectedParserTemplates(selectedParserTemplates.filter(id => id !== template.id))
+                                setSelectedParserTemplates(selectedParserTemplates.filter(id => id !== templateIdStr))
                               }
                             }}
                           />
-                          <Label htmlFor={template.id} className="text-sm cursor-pointer">
+                          <Label htmlFor={String(template.id)} className="text-sm cursor-pointer">
                             {template.name}
                           </Label>
                         </div>

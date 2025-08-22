@@ -5,10 +5,14 @@ applyTo: "**/*.py"
 # Code Style & Formatting
 
 - **Follow PEP 8** style guidelines strictly
+  - snake_case for functions and variables
+  - PascalCase for classes
+  - UPPER_CASE for constants
 - Use **4 spaces** for indentation (no tabs)
 - Maximum line length of **88 characters** (Black formatter standard)
 - Use **double quotes** for strings unless single quotes avoid escaping
 - Import organization: standard library → third-party → local imports
+- Use absolute imports over relative imports
 - Do not use wildcard imports (e.g., `from module import *`)
 - Avoid unnecessary complexity in code structure
 - Do not use spaces in empty lines. Empty lines should be completely blank.
@@ -26,7 +30,13 @@ applyTo: "**/*.py"
 # Type Hints & Documentation
 
 - **Always use type hints** for function parameters and return values
+- **Use pep 484** for type hints
 - Use `from __future__ import annotations` for forward references
+- Import types from `typing` module
+- Use `Optional[Type]` instead of `Type | None`
+- Use `TypeVar` for generic types
+- Define custom types in `types.py`
+- Use `Protocol` for duck typing
 - Include **docstrings** for all public functions, classes, and modules using Google style format:
 
 ```python

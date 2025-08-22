@@ -5,6 +5,9 @@ applyTo: "**/*.tsx, **/*.jsx, components/**/*"
 
 # React Best Practices
 
+## general
+- To run the frontend use: "cd ./frontend && npm run dev"
+
 ## Component Structure
 - Use functional components over class components
 - Keep components small and focused
