@@ -1,15 +1,5 @@
 from __future__ import annotations
-"""Scan & Add service for network discovery and credential-based login attempts.
 
-Implementation per specification:
-- ICMP ping (1500ms timeout) + 3 retries per device
-- Concurrency limit: 10 hosts
-- SSH/Napalm login timeout: 5s
-- Napalm drivers: ios -> nxos_ssh -> iosxr -> Linux (paramiko)
-- Stop on first credential success per host
-- Result fields: {ip, credential_id, device_type, hostname, platform}
-- In-memory job store with 24h TTL
-"""
 import asyncio
 import io
 import ipaddress
@@ -29,6 +19,18 @@ try:
     import textfsm  # type: ignore
 except Exception:
     textfsm = None  # Will guard usage
+
+"""Scan & Add service for network discovery and credential-based login attempts.
+
+Implementation per specification:
+- ICMP ping (1500ms timeout) + 3 retries per device
+- Concurrency limit: 10 hosts
+- SSH/Napalm login timeout: 5s
+- Napalm drivers: ios -> nxos_ssh -> iosxr -> Linux (paramiko)
+- Stop on first credential success per host
+- Result fields: {ip, credential_id, device_type, hostname, platform}
+- In-memory job store with 24h TTL
+"""
 
 logger = logging.getLogger(__name__)
 

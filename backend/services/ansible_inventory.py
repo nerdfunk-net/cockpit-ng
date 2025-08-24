@@ -4,7 +4,7 @@ Ansible Inventory service for handling device queries and inventory generation.
 
 from __future__ import annotations
 import logging
-from typing import List, Dict, Any, Set, Optional
+from typing import List, Dict, Any, Set
 from models.ansible_inventory import LogicalOperation, LogicalCondition, DeviceInfo
 
 logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ class AnsibleInventoryService:
                         # NOT operation as first operation means start with empty set
                         # (we can't subtract from nothing)
                         result_devices = set()
-                        logger.info(f"First operation is NOT, starting with empty set")
+                        logger.info("First operation is NOT, starting with empty set")
                     else:
                         result_devices = operation_result
                         logger.info(f"First operation set result devices to {len(result_devices)} devices")

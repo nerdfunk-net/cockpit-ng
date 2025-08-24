@@ -1,22 +1,22 @@
 from __future__ import annotations
-"""API router for Scan & Add wizard operations."""
 
-import asyncio
 import os
 import json
 import logging
-from typing import List, Optional, Dict, Any, Union
+import ipaddress
+from typing import List, Optional, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, validator
-import ipaddress
+from jinja2 import Environment, BaseLoader
 
 from core.auth import verify_token
 from services.scan_service import scan_service
 from services.nautobot import nautobot_service
 from template_manager import template_manager
-from jinja2 import Environment, BaseLoader
 from git_repositories_manager import GitRepositoryManager
+
+"""API router for Scan & Add wizard operations."""
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/scan", tags=["scan"], dependencies=[Depends(verify_token)])
@@ -419,7 +419,7 @@ async def _create_linux_inventory(
     # Optionally commit and push to the selected Git repository
     if repo_info and (auto_commit or auto_push):
         try:
-            from git import Repo, GitCommandError
+            from git import Repo
         except Exception as e:
             logger.warning(f"GitPython not available, skipping commit/push: {e}")
             return len(linux_devices), written_path

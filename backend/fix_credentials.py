@@ -8,7 +8,6 @@ import os
 sys.path.append(os.path.dirname(__file__))
 
 from credentials_manager import list_credentials, delete_credential
-import sqlite3
 from config import settings
 
 def main():

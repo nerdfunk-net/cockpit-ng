@@ -6,7 +6,6 @@ Tests Nautobot and Git connections with user-provided settings
 import asyncio
 import logging
 import requests
-import git
 import tempfile
 import shutil
 import os
@@ -78,9 +77,9 @@ class ConnectionTester:
                         # This looks like a Nautobot/NetBox instance
                         pass
                     else:
-                        return False, f"URL appears to be accessible but doesn't look like a Nautobot instance. Please verify the URL points to your Nautobot installation."
+                        return False, "URL appears to be accessible but doesn't look like a Nautobot instance. Please verify the URL points to your Nautobot installation."
                 elif response.status_code == 404:
-                    return False, f"Base URL not found. Please verify the Nautobot URL is correct (e.g., http://nautobot.example.com or http://localhost:8080)."
+                    return False, "Base URL not found. Please verify the Nautobot URL is correct (e.g., http://nautobot.example.com or http://localhost:8080)."
                 elif response.status_code in [401, 403]:
                     # Auth required even for base page, try API directly
                     pass
@@ -129,7 +128,7 @@ class ConnectionTester:
                     elif response.status_code == 403:
                         return False, "Access forbidden. Your token may not have sufficient permissions. Please ensure your token has at least 'read' permissions."
                     # If we get 404, try the next endpoint
-                except Exception as e:
+                except Exception:
                     continue  # Try next endpoint
 
             # None of the API endpoints worked

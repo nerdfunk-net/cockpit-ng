@@ -21,7 +21,9 @@ from .settings import (
 
 __all__ = [
     # Auth models
-    "LoginRequest",
+    "UserLogin",
+    "UserCreate", 
+    "LoginResponse",
     "Token", 
     "TokenData",
 

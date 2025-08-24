@@ -96,9 +96,6 @@ async def get_statistics():
     Redirects to Nautobot stats.
     """
     # Import here to avoid circular imports
-    from routers.nautobot import get_nautobot_stats
-    from core.auth import verify_token
-    from fastapi import Depends
 
     # This would need token verification in a real implementation
     # For now, just return basic stats

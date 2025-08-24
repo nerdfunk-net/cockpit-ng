@@ -4,7 +4,6 @@ Ansible Inventory router for building dynamic Ansible inventories.
 
 from __future__ import annotations
 import logging
-from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response
 
@@ -13,8 +12,7 @@ from models.ansible_inventory import (
     InventoryPreviewRequest,
     InventoryPreviewResponse,
     InventoryGenerateRequest,
-    InventoryGenerateResponse,
-    DeviceInfo
+    InventoryGenerateResponse
 )
 from services.ansible_inventory import ansible_inventory_service
 

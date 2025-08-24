@@ -35,11 +35,11 @@ def test_credentials():
                     print(f"  Decryption: SUCCESS (length: {len(decrypted)})")
                 except ValueError as ve:
                     print(f"  Decryption: FAILED - {ve}")
-                    print(f"    This likely means the SECRET_KEY has changed since credential creation")
+                    print("    This likely means the SECRET_KEY has changed since credential creation")
                 except Exception as e:
                     print(f"  Decryption: ERROR - {e}")
             else:
-                print(f"  Decryption: SKIPPED (no password data)")
+                print("  Decryption: SKIPPED (no password data)")
                 
     except Exception as e:
         print(f"Error listing credentials: {e}")

@@ -4,7 +4,7 @@ Nautobot router for device management and API interactions.
 
 from __future__ import annotations
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import verify_token
@@ -39,7 +39,7 @@ async def test_current_nautobot_connection(current_user: str = Depends(verify_to
                 }
             else:
                 raise Exception("No database settings")
-        except Exception as e:
+        except Exception:
             # Fallback to environment variables
             from config import settings
             nautobot_config = {
@@ -89,7 +89,6 @@ async def get_devices(
     """
     try:
         # Build GraphQL query based on filters
-        query_filters = ""
         variables = {}
 
         if filter_type and filter_value:
@@ -595,7 +594,7 @@ async def onboard_device(request: DeviceOnboardRequest, current_user: str = Depe
             try:
                 error_response = response.json()
                 error_detail = error_response.get("detail", error_response.get("message", str(error_response)))
-            except:
+            except (ValueError, KeyError, TypeError):
                 error_detail = response.text or f"HTTP {response.status_code}"
 
             logger.error(f"Nautobot job API failed: {error_detail}")
@@ -671,7 +670,7 @@ async def sync_network_data(request: SyncNetworkDataRequest, current_user: str =
             try:
                 error_response = response.json()
                 error_detail = error_response.get("detail", error_response.get("message", str(error_response)))
-            except:
+            except (ValueError, KeyError, TypeError):
                 error_detail = response.text or f"HTTP {response.status_code}"
 
             return {
@@ -811,13 +810,13 @@ async def get_nautobot_stats(current_user: str = Depends(verify_token)):
         try:
             ip_addresses_result = await nautobot_service.rest_request("ipam/ip-addresses/")
             ip_addresses_count = ip_addresses_result.get("count", 0)
-        except:
+        except Exception:
             ip_addresses_count = 0
 
         try:
             prefixes_result = await nautobot_service.rest_request("ipam/prefixes/")
             prefixes_count = prefixes_result.get("count", 0)
-        except:
+        except Exception:
             prefixes_count = 0
 
         from datetime import datetime, timezone

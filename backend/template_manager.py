@@ -11,7 +11,6 @@ import json
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 import hashlib
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -470,7 +469,7 @@ class TemplateManager:
         """Render a template using Jinja2 with provided data"""
         try:
             # Import Jinja2 here to avoid import errors if not installed
-            from jinja2 import Template, Environment, BaseLoader
+            from jinja2 import Environment, BaseLoader
 
             # Find template by name and category
             template = self.get_template_by_name(template_name)

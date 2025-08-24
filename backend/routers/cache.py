@@ -6,8 +6,7 @@ and management operations. All endpoints are protected by token authentication.
 """
 
 from __future__ import annotations
-from typing import Optional
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query
 
 from core.auth import verify_token
 from services.cache_service import cache_service

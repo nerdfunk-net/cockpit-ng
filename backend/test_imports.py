@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Test individual imports to find the issue."""
 
-import sys
 import traceback
 
 def test_import(module_name, description):

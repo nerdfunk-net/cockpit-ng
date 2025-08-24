@@ -6,7 +6,6 @@ Runs Uvicorn from backend directory with strict file watching isolation.
 
 import uvicorn
 import os
-import sys
 
 # Ensure we're running from the backend directory
 if not os.path.basename(os.getcwd()) == 'backend':

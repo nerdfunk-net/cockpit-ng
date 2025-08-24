@@ -3,8 +3,7 @@ Git repositories management API endpoints.
 """
 
 from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import JSONResponse
-from typing import List, Optional
+from typing import Optional
 import logging
 import os
 
@@ -345,7 +344,7 @@ async def test_git_connection(
                         # This is the decryption error - likely SECRET_KEY mismatch
                         return GitConnectionTestResponse(
                             success=False,
-                            message=f"Failed to decrypt credential token - possible SECRET_KEY mismatch. Please recreate the credential.",
+                            message="Failed to decrypt credential token - possible SECRET_KEY mismatch. Please recreate the credential.",
                             details={"error": str(ve), "credential_id": match['id']}
                         )
                     except Exception as de:
@@ -357,7 +356,7 @@ async def test_git_connection(
                 except Exception as ce:
                     return GitConnectionTestResponse(
                         success=False,
-                        message=f"Credential lookup error",
+                        message="Credential lookup error",
                         details={"error": str(ce)}
                     )
 
@@ -624,11 +623,10 @@ async def sync_repository(
     current_user: dict = Depends(verify_token)
 ):
     """Sync a git repository (clone if not exists, pull if exists)."""
-    import subprocess
     import shutil
     import time
     import os
-    from urllib.parse import urlparse, quote as urlquote
+    from urllib.parse import urlparse
     from git import Repo, GitCommandError
 
     try:
@@ -693,7 +691,6 @@ async def sync_repository(
                 logger.info(f"Backed up existing directory to {backup_path}")
 
             # SSL env toggle
-            ssl_env_set = False
             try:
                 if not repository.get("verify_ssl", True):
                     logger.warning("Git SSL verification disabled - not recommended for production")
@@ -894,7 +891,7 @@ async def search_repository_files(
         if query:
             def sort_key(item):
                 name_lower = item['name'].lower()
-                path_lower = item['path'].lower()
+                item['path'].lower()
                 query_lower = query.lower()
 
                 # Exact filename match gets highest priority

@@ -4,7 +4,6 @@ Git repository management system.
 
 import sqlite3
 import logging
-import os
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from pathlib import Path

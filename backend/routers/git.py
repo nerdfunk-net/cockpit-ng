@@ -5,18 +5,13 @@ Git router for repository management and version control operations.
 from __future__ import annotations
 import difflib
 import logging
-import os
-import shutil
-from pathlib import Path
-from typing import Dict, Any, Optional
-from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, HTTPException, status
-from git import Repo, InvalidGitRepositoryError, GitCommandError
+from git import InvalidGitRepositoryError, GitCommandError
 
 from core.auth import verify_token
 from models.git import GitCommitRequest, GitBranchRequest
 from services.cache_service import cache_service
-from services.git_utils import open_or_clone, repo_path, normalize_git_url
+from services.git_utils import open_or_clone
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/git", tags=["git"])
@@ -528,9 +523,9 @@ async def get_file_last_change(
 
         # Check if file exists in the last commit
         try:
-            file_content = (last_commit.tree / file_path).data_stream.read().decode('utf-8')
+            (last_commit.tree / file_path).data_stream.read().decode('utf-8')
             file_exists = True
-        except:
+        except (KeyError, AttributeError, UnicodeDecodeError, OSError):
             file_exists = False
 
         return {
@@ -795,17 +790,17 @@ async def get_repository_info(repo_id: int, current_user: str = Depends(verify_t
         # Collect repository statistics
         try:
             total_commits = sum(1 for _ in repo.iter_commits())
-        except:
+        except (AttributeError, OSError, ValueError):
             total_commits = 0
             
         try:
             total_branches = len(list(repo.branches))
-        except:
+        except (AttributeError, OSError):
             total_branches = 0
             
         try:
             current_branch = repo.active_branch.name if repo.active_branch else None
-        except:
+        except (AttributeError, TypeError):
             current_branch = None
             
         return {

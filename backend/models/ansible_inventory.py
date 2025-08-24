@@ -3,7 +3,7 @@ Ansible Inventory models for request/response data.
 """
 
 from __future__ import annotations
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
 

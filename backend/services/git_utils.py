@@ -22,7 +22,7 @@ from typing import Dict, Optional
 from urllib.parse import urlparse, urlunparse, quote as urlquote
 
 from git import Repo
-from git.exc import InvalidGitRepositoryError, GitCommandError
+from git.exc import InvalidGitRepositoryError
 
 logger = logging.getLogger(__name__)
 

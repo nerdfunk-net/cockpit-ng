@@ -6,7 +6,7 @@ from __future__ import annotations
 import time
 import threading
 import sys
-from typing import Dict, Any, Optional, Tuple, List
+from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 
 @dataclass
@@ -27,7 +27,7 @@ class CacheEntry:
         """Rough estimate of object size in bytes."""
         try:
             return sys.getsizeof(obj)
-        except:
+        except (TypeError, OSError):
             return 0
 
 class CacheService:

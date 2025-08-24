@@ -6,7 +6,6 @@ from __future__ import annotations
 import logging
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
-from fastapi.responses import JSONResponse
 import os
 
 from core.auth import verify_token
