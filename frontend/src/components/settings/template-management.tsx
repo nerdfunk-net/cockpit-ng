@@ -24,7 +24,12 @@ import {
   Upload,
   Code,
   Save,
-  RotateCcw
+  RotateCcw,
+  CheckSquare,
+  Square,
+  AlertCircle,
+  CheckCircle,
+  Loader2
 } from 'lucide-react'
 
 interface Template {
@@ -55,6 +60,20 @@ interface TemplateFormData {
   filename?: string
 }
 
+interface ImportableTemplate {
+  filename: string
+  import: string
+  path: string
+  properties: {
+    name: string
+    source: string
+    template_type: string
+    category: string
+    description: string
+  }
+  selected?: boolean
+}
+
 type LoadingState = 'idle' | 'loading' | 'error' | 'success'
 
 export default function TemplateManagement() {
@@ -70,6 +89,12 @@ export default function TemplateManagement() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCategory, setFilterCategory] = useState('__all__')
   const [filterSource, setFilterSource] = useState('__all__')
+  
+  // Import state
+  const [importableTemplates, setImportableTemplates] = useState<ImportableTemplate[]>([])
+  const [importLoading, setImportLoading] = useState(false)
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 })
+  const [importResults, setImportResults] = useState<{ success: string[], failed: string[] }>({ success: [], failed: [] })
   
   // Form state
   const [formData, setFormData] = useState<TemplateFormData>({
