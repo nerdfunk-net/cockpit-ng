@@ -61,16 +61,12 @@ interface TemplateFormData {
 }
 
 interface ImportableTemplate {
-  filename: string
-  import: string
-  path: string
-  properties: {
-    name: string
-    source: string
-    template_type: string
-    category: string
-    description: string
-  }
+  name: string
+  description: string
+  category: string
+  source: string
+  file_path: string
+  template_type: string
   selected?: boolean
 }
 
@@ -89,6 +85,10 @@ export default function TemplateManagement() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCategory, setFilterCategory] = useState('__all__')
   const [filterSource, setFilterSource] = useState('__all__')
+  
+  // Selection state for bulk operations
+  const [selectedTemplates, setSelectedTemplates] = useState<Set<number>>(new Set())
+  const [isDeleting, setIsDeleting] = useState(false)
   
   // Import state
   const [importableTemplates, setImportableTemplates] = useState<ImportableTemplate[]>([])
@@ -128,6 +128,8 @@ export default function TemplateManagement() {
       const response = await apiCall<{ templates: Template[] }>('templates')
       setTemplates(response.templates || [])
       setLoadingState('success')
+      // Clear selection when templates are reloaded
+      clearSelection()
     } catch (error) {
       console.error('Error loading templates:', error)
       setLoadingState('error')
@@ -169,6 +171,31 @@ export default function TemplateManagement() {
     })
     setSelectedFile(null)
     setEditingTemplate(null)
+  }
+
+  // Selection helper functions
+  const toggleTemplateSelection = (templateId: number) => {
+    setSelectedTemplates(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(templateId)) {
+        newSet.delete(templateId)
+      } else {
+        newSet.add(templateId)
+      }
+      return newSet
+    })
+  }
+
+  const toggleSelectAllTemplates = () => {
+    if (selectedTemplates.size === filteredTemplates.length) {
+      setSelectedTemplates(new Set())
+    } else {
+      setSelectedTemplates(new Set(filteredTemplates.map(t => t.id)))
+    }
+  }
+
+  const clearSelection = () => {
+    setSelectedTemplates(new Set())
   }
 
   const handleEditTemplate = async (template: Template) => {
@@ -367,6 +394,47 @@ export default function TemplateManagement() {
     }
   }
 
+  const handleBulkDeleteTemplates = async () => {
+    if (selectedTemplates.size === 0) {
+      showMessage('Please select templates to delete', 'error')
+      return
+    }
+
+    const templateNames = filteredTemplates
+      .filter(t => selectedTemplates.has(t.id))
+      .map(t => t.name)
+      .join(', ')
+
+    if (!confirm(`Are you sure you want to delete ${selectedTemplates.size} template(s)?\n\nTemplates: ${templateNames}`)) {
+      return
+    }
+
+    setIsDeleting(true)
+    let successCount = 0
+    let errorCount = 0
+
+    for (const templateId of selectedTemplates) {
+      try {
+        await apiCall(`templates/${templateId}`, { method: 'DELETE' })
+        successCount++
+      } catch (error) {
+        console.error(`Error deleting template ${templateId}:`, error)
+        errorCount++
+      }
+    }
+
+    if (successCount > 0) {
+      showMessage(`Successfully deleted ${successCount} template(s)`, 'success')
+    }
+    if (errorCount > 0) {
+      showMessage(`Failed to delete ${errorCount} template(s)`, 'error')
+    }
+
+    clearSelection()
+    setIsDeleting(false)
+    loadTemplates()
+  }
+
   const handleSyncTemplate = async (templateId: number) => {
     try {
       await apiCall('templates/sync', {
@@ -408,6 +476,87 @@ export default function TemplateManagement() {
     } catch (error) {
       console.error('Error viewing template:', error)
       showMessage('Failed to load template content', 'error')
+    }
+  }
+
+  // Import functionality
+  const scanImportDirectory = async () => {
+    setImportLoading(true)
+    try {
+      const response = await apiCall<{ templates: ImportableTemplate[] }>('templates/scan-import')
+      const templatesWithSelection = response.templates.map(template => ({
+        ...template,
+        selected: true // Default to selected
+      }))
+      setImportableTemplates(templatesWithSelection)
+      setImportResults({ success: [], failed: [] })
+      showMessage(`Found ${templatesWithSelection.length} importable templates`, 'success')
+    } catch (error) {
+      console.error('Error scanning import directory:', error)
+      showMessage('Failed to scan import directory', 'error')
+      setImportableTemplates([])
+    } finally {
+      setImportLoading(false)
+    }
+  }
+
+  const toggleImportableTemplateSelection = (filePath: string) => {
+    setImportableTemplates(prev => 
+      prev.map(template => 
+        template.file_path === filePath 
+          ? { ...template, selected: !template.selected }
+          : template
+      )
+    )
+  }
+
+  const toggleSelectAll = () => {
+    const allSelected = importableTemplates.every(t => t.selected)
+    setImportableTemplates(prev => 
+      prev.map(template => ({ ...template, selected: !allSelected }))
+    )
+  }
+
+  const importSelectedTemplates = async () => {
+    const selectedTemplates = importableTemplates.filter(t => t.selected)
+    if (selectedTemplates.length === 0) {
+      showMessage('Please select at least one template to import', 'error')
+      return
+    }
+
+    setImportLoading(true)
+    setImportProgress({ current: 0, total: selectedTemplates.length })
+    
+    try {
+      // Use yaml_bulk import for YAML files
+      const response = await apiCall<any>('templates/import', {
+        method: 'POST',
+        body: { 
+          source_type: 'yaml_bulk',
+          yaml_file_paths: selectedTemplates.map(t => t.file_path),
+          overwrite_existing: false
+        }
+      })
+      
+      setImportResults({ 
+        success: response.imported_templates || [], 
+        failed: response.failed_templates || [] 
+      })
+      
+      if (response.imported_templates?.length > 0) {
+        showMessage(`Successfully imported ${response.imported_templates.length} templates`, 'success')
+        loadTemplates() // Refresh the templates list
+      }
+      
+      if (response.failed_templates?.length > 0) {
+        showMessage(`Failed to import ${response.failed_templates.length} templates`, 'error')
+      }
+      
+    } catch (error) {
+      console.error('Error importing templates:', error)
+      showMessage('Failed to import templates', 'error')
+    } finally {
+      setImportLoading(false)
     }
   }
 
@@ -493,7 +642,7 @@ export default function TemplateManagement() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Filters */}
+              {/* Filters and Bulk Actions */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -536,12 +685,62 @@ export default function TemplateManagement() {
                 </Button>
               </div>
 
+              {/* Bulk Actions */}
+              {selectedTemplates.size > 0 && (
+                <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center space-x-4">
+                    <span className="text-sm font-medium text-blue-900">
+                      {selectedTemplates.size} template(s) selected
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={clearSelection}
+                      className="text-blue-700 border-blue-300 hover:bg-blue-100"
+                    >
+                      Clear Selection
+                    </Button>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleBulkDeleteTemplates}
+                    disabled={isDeleting}
+                    className="flex items-center space-x-2"
+                  >
+                    {isDeleting ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    <span>{isDeleting ? 'Deleting...' : 'Delete Selected'}</span>
+                  </Button>
+                </div>
+              )}
+
               {/* Templates Table */}
               <div className="border rounded-lg overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50">
                       <tr>
+                        <th className="px-4 py-3 text-left">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={toggleSelectAllTemplates}
+                              className="flex items-center justify-center w-4 h-4"
+                              disabled={filteredTemplates.length === 0}
+                            >
+                              {selectedTemplates.size === filteredTemplates.length && filteredTemplates.length > 0 ? (
+                                <CheckSquare className="h-4 w-4 text-blue-600" />
+                              ) : selectedTemplates.size > 0 ? (
+                                <Square className="h-4 w-4 text-blue-600 bg-blue-100" />
+                              ) : (
+                                <Square className="h-4 w-4 text-gray-400" />
+                              )}
+                            </button>
+                          </div>
+                        </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
@@ -554,22 +753,41 @@ export default function TemplateManagement() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {loadingState === 'loading' ? (
                         <tr>
-                          <td colSpan={7} className="px-6 py-4 text-center">
+                          <td colSpan={8} className="px-6 py-4 text-center">
                             <RefreshCw className="h-5 w-5 animate-spin mx-auto" />
                             <span className="ml-2">Loading templates...</span>
                           </td>
                         </tr>
                       ) : filteredTemplates.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                          <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
                             No templates found
                           </td>
                         </tr>
                       ) : (
                         filteredTemplates.map((template) => {
                           const SourceIcon = getSourceIcon(template.source)
+                          const isSelected = selectedTemplates.has(template.id)
                           return (
-                            <tr key={template.id} className="hover:bg-gray-50">
+                            <tr 
+                              key={template.id} 
+                              className={cn(
+                                "hover:bg-gray-50 transition-colors",
+                                isSelected && "bg-blue-50"
+                              )}
+                            >
+                              <td className="px-4 py-4">
+                                <button
+                                  onClick={() => toggleTemplateSelection(template.id)}
+                                  className="flex items-center justify-center w-4 h-4"
+                                >
+                                  {isSelected ? (
+                                    <CheckSquare className="h-4 w-4 text-blue-600" />
+                                  ) : (
+                                    <Square className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                                  )}
+                                </button>
+                              </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="font-medium text-gray-900">{template.name}</div>
                               </td>
@@ -867,16 +1085,259 @@ export default function TemplateManagement() {
 
         {/* Import Templates Tab */}
         <TabsContent value="import" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Bulk Import Templates</CardTitle>
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
+              <CardTitle className="flex items-center gap-2 text-white text-base">
+                <Download className="h-4 w-4" />
+                Import Templates from YAML Files
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-gray-500">
-                <Download className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-lg font-medium mb-2">Import Feature Coming Soon</h3>
-                <p>Bulk import functionality will be available in the next update.</p>
+            <CardContent className="space-y-6">
+              {/* Import Instructions */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h3 className="font-medium text-blue-900 mb-1">Template Import Instructions</h3>
+                    <p className="text-blue-800 text-sm">
+                      This feature scans the <code className="bg-blue-100 px-1 rounded">./data/import_on_new_installation</code> directory 
+                      for YAML files containing template definitions. Each YAML file should have properties like name, source, type, 
+                      category, and description. Perfect for initial setup or bulk template imports.
+                    </p>
+                  </div>
+                </div>
               </div>
+
+              {/* Scan Button */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-1">Available Templates</h3>
+                  <p className="text-gray-600 text-sm">
+                    {importableTemplates.length > 0 
+                      ? `Found ${importableTemplates.length} importable templates`
+                      : 'Click "Scan Directory" to discover available templates'
+                    }
+                  </p>
+                </div>
+                <Button 
+                  onClick={scanImportDirectory}
+                  disabled={importLoading}
+                  className="flex items-center space-x-2"
+                >
+                  {importLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                  <span>Scan Directory</span>
+                </Button>
+              </div>
+
+              {/* Import Progress */}
+              {importLoading && importProgress.total > 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-center space-x-3">
+                    <Loader2 className="h-5 w-5 text-yellow-600 animate-spin" />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-yellow-900">
+                          Importing Templates
+                        </span>
+                        <span className="text-sm text-yellow-700">
+                          {importProgress.current} of {importProgress.total}
+                        </span>
+                      </div>
+                      <div className="w-full bg-yellow-200 rounded-full h-2">
+                        <div 
+                          className="bg-yellow-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Import Results */}
+              {(importResults.success.length > 0 || importResults.failed.length > 0) && (
+                <div className="space-y-3">
+                  {importResults.success.length > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                        <div>
+                          <h4 className="font-medium text-green-900 mb-2">Successfully Imported ({importResults.success.length})</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {importResults.success.map(name => (
+                              <Badge key={name} variant="outline" className="bg-green-100 text-green-800 border-green-300">
+                                {name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {importResults.failed.length > 0 && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                        <div>
+                          <h4 className="font-medium text-red-900 mb-2">Failed to Import ({importResults.failed.length})</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {importResults.failed.map(name => (
+                              <Badge key={name} variant="outline" className="bg-red-100 text-red-800 border-red-300">
+                                {name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Templates Table */}
+              {importableTemplates.length > 0 && (
+                <div className="space-y-4">
+                  {/* Selection Controls */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleSelectAll}
+                        className="flex items-center space-x-2"
+                      >
+                        {importableTemplates.every(t => t.selected) ? (
+                          <CheckSquare className="h-4 w-4" />
+                        ) : (
+                          <Square className="h-4 w-4" />
+                        )}
+                        <span>
+                          {importableTemplates.every(t => t.selected) ? 'Deselect All' : 'Select All'}
+                        </span>
+                      </Button>
+                      <span className="text-sm text-gray-600">
+                        {importableTemplates.filter(t => t.selected).length} of {importableTemplates.length} selected
+                      </span>
+                    </div>
+                    <Button 
+                      onClick={importSelectedTemplates}
+                      disabled={importLoading || importableTemplates.filter(t => t.selected).length === 0}
+                      className="flex items-center space-x-2"
+                    >
+                      {importLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4" />
+                      )}
+                      <span>Import Selected Templates</span>
+                    </Button>
+                  </div>
+
+                  {/* Templates Table */}
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left">
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={toggleSelectAll}
+                                  className="flex items-center justify-center w-4 h-4"
+                                >
+                                  {importableTemplates.every(t => t.selected) ? (
+                                    <CheckSquare className="h-4 w-4 text-blue-600" />
+                                  ) : (
+                                    <Square className="h-4 w-4 text-gray-400" />
+                                  )}
+                                </button>
+                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Select</span>
+                              </div>
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {importableTemplates.map((template) => (
+                            <tr 
+                              key={template.file_path} 
+                              className={cn(
+                                "hover:bg-gray-50 transition-colors",
+                                template.selected && "bg-blue-50"
+                              )}
+                            >
+                              <td className="px-4 py-4">
+                                <button
+                                  onClick={() => toggleImportableTemplateSelection(template.file_path)}
+                                  className="flex items-center justify-center w-4 h-4"
+                                >
+                                  {template.selected ? (
+                                    <CheckSquare className="h-4 w-4 text-blue-600" />
+                                  ) : (
+                                    <Square className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                                  )}
+                                </button>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="font-medium text-gray-900">{template.name}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <Badge variant={getSourceBadgeVariant(template.source)}>
+                                  {template.source}
+                                </Badge>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {template.template_type}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {template.category || '-'}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
+                                {template.description || '-'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {template.file_path}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!importLoading && importableTemplates.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Download className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Templates Found</h3>
+                  <p className="text-gray-600 mb-4 max-w-md mx-auto">
+                    No YAML template files were found in the import directory. Make sure template files are placed in 
+                    <code className="bg-gray-100 px-1 rounded mx-1">./data/import_on_new_installation</code> and click &quot;Scan Directory&quot;.
+                  </p>
+                  <Button 
+                    onClick={scanImportDirectory}
+                    variant="outline"
+                    className="flex items-center space-x-2"
+                  >
+                    <Search className="h-4 w-4" />
+                    <span>Scan Directory</span>
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

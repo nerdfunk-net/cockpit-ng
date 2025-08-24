@@ -20,7 +20,9 @@ from models.templates import (
     TemplateSyncResponse,
     TemplateImportRequest,
     TemplateImportResponse,
-    TemplateUpdateRequest
+    TemplateUpdateRequest,
+    ImportableTemplateInfo,
+    TemplateScanImportResponse
 )
 
 logger = logging.getLogger(__name__)
@@ -74,6 +76,80 @@ async def get_template_categories(current_user: str = Depends(verify_token)) -> 
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get categories: {str(e)}"
+        )
+
+
+@router.get("/scan-import", response_model=TemplateScanImportResponse)
+async def scan_import_directory(
+    current_user: str = Depends(verify_token)
+) -> TemplateScanImportResponse:
+    """Scan the import directory for YAML template files."""
+    try:
+        import yaml
+        import glob
+        from pathlib import Path
+        
+        # Import directory path
+        import_dir = Path("../data/import_on_new_installation")
+        if not import_dir.exists():
+            return TemplateScanImportResponse(
+                templates=[],
+                total_found=0,
+                message="Import directory not found"
+            )
+        
+        templates = []
+        yaml_files = list(import_dir.glob("*.yaml")) + list(import_dir.glob("*.yml"))
+        
+        for yaml_file in yaml_files:
+            try:
+                with open(yaml_file, 'r', encoding='utf-8') as f:
+                    data = yaml.safe_load(f)
+                
+                # Extract template information from YAML
+                if isinstance(data, dict):
+                    # Check if it's the expected import format with properties
+                    if 'properties' in data and isinstance(data['properties'], dict):
+                        props = data['properties']
+                        source_value = props.get('source', 'file')
+                        print(f"DEBUG: Processing {yaml_file.name} - source from props: {source_value}")
+                        template_info = ImportableTemplateInfo(
+                            name=props.get('name', yaml_file.stem),
+                            description=props.get('description', 'No description available'),
+                            category=props.get('category', 'default'),
+                            source=source_value,
+                            file_path=str(yaml_file.absolute()),
+                            template_type=props.get('type', props.get('template_type', 'jinja2'))
+                        )
+                    else:
+                        # Fallback for direct format (properties at root level)
+                        source_value = data.get('source', 'file')
+                        print(f"DEBUG: Processing {yaml_file.name} - source from root: {source_value}")
+                        template_info = ImportableTemplateInfo(
+                            name=data.get('name', yaml_file.stem),
+                            description=data.get('description', 'No description available'),
+                            category=data.get('category', 'default'),
+                            source=source_value,
+                            file_path=str(yaml_file.absolute()),
+                            template_type=data.get('template_type', 'jinja2')
+                        )
+                    print(f"DEBUG: Created template_info for {yaml_file.name}: source={template_info.source}")
+                    templates.append(template_info)
+            except Exception as e:
+                logger.warning(f"Failed to parse {yaml_file}: {str(e)}")
+                continue
+        
+        return TemplateScanImportResponse(
+            templates=templates,
+            total_found=len(templates),
+            message=f"Found {len(templates)} importable templates"
+        )
+    
+    except Exception as e:
+        logger.error(f"Failed to scan import directory: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to scan import directory: {str(e)}"
         )
 
 
@@ -485,6 +561,94 @@ async def import_templates(
             # Import from Git repository
             imported_templates = ["template1", "template2", "template3"]
             message = f"Imported {len(imported_templates)} templates from Git repository"
+        elif import_request.source_type == "yaml_bulk":
+            # Import from YAML files
+            import yaml
+            
+            if import_request.yaml_file_paths:
+                for yaml_path in import_request.yaml_file_paths:
+                    try:
+                        print(f"Processing YAML file: {yaml_path}")
+                        
+                        # Read and parse YAML file
+                        with open(yaml_path, 'r', encoding='utf-8') as f:
+                            yaml_data = yaml.safe_load(f)
+                        
+                        print(f"YAML data: {yaml_data}")
+                        
+                        # Extract template info from YAML
+                        template_path = yaml_data.get('path', '')
+                        properties = yaml_data.get('properties', {})
+                        
+                        if not template_path:
+                            failed_templates.append(yaml_path)
+                            errors[yaml_path] = "No template path specified in YAML"
+                            continue
+                        
+                        # Make path absolute - the path in YAML is relative to project root
+                        if not os.path.isabs(template_path):
+                            # Get the project root (go up from backend/routers/ to project root)
+                            current_file = os.path.abspath(__file__)
+                            routers_dir = os.path.dirname(current_file)  # backend/routers
+                            backend_dir = os.path.dirname(routers_dir)   # backend
+                            project_root = os.path.dirname(backend_dir)  # project root
+                            template_path = os.path.join(project_root, template_path)
+                        
+                        print(f"Template path: {template_path}")
+                        
+                        # Read actual template content
+                        if not os.path.exists(template_path):
+                            failed_templates.append(yaml_path)
+                            errors[yaml_path] = f"Template file not found: {template_path}"
+                            print(f"ERROR: Template file not found: {template_path}")
+                            continue
+                            
+                        print(f"Reading template content from: {template_path}")
+                        with open(template_path, 'r', encoding='utf-8') as f:
+                            template_content = f.read()
+                        
+                        print(f"Template content length: {len(template_content)} characters")
+                        
+                        # Prepare template data
+                        template_name = properties.get('name', os.path.splitext(os.path.basename(template_path))[0])
+                        template_data = {
+                            'name': template_name,
+                            'source': properties.get('source', 'file'),
+                            'template_type': properties.get('type', 'jinja2'),
+                            'category': properties.get('category', import_request.default_category or 'uncategorized'),
+                            'content': template_content,
+                            'description': properties.get('description', ''),
+                            'filename': os.path.basename(template_path)
+                        }
+                        
+                        print(f"Template data prepared: {template_data['name']}, type: {template_data['template_type']}, category: {template_data['category']}, content_length: {len(template_data['content'])}")
+                        
+                        # Check for existing template
+                        if not import_request.overwrite_existing:
+                            existing = template_manager.get_template_by_name(template_data['name'])
+                            if existing:
+                                skipped_templates.append(template_data['name'])
+                                print(f"SKIPPED: Template {template_data['name']} already exists")
+                                continue
+                        
+                        # Create template
+                        print(f"Creating template: {template_data['name']}")
+                        template_id = template_manager.create_template(template_data)
+                        print(f"Template creation result: {template_id}")
+                        if template_id:
+                            imported_templates.append(template_data['name'])
+                            print(f"SUCCESS: Imported template: {template_data['name']}")
+                        else:
+                            failed_templates.append(template_data['name'])
+                            errors[template_data['name']] = "Failed to create template"
+                            print(f"FAILED: Could not create template: {template_data['name']}")
+                            
+                    except Exception as e:
+                        failed_templates.append(yaml_path)
+                        errors[yaml_path] = str(e)
+                        print(f"Error processing {yaml_path}: {e}")
+                        
+            message = f"Imported {len(imported_templates)} templates from YAML files"
         elif import_request.source_type == "file_bulk":
             # Import from uploaded files
             # Accept .textfsm, .j2, .txt, etc.

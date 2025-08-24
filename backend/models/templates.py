@@ -126,9 +126,26 @@ class TemplateSyncResponse(BaseModel):
     message: str
 
 
+class ImportableTemplateInfo(BaseModel):
+    """Information about an importable template file."""
+    name: str = Field(..., description="Template name")
+    description: str = Field(..., description="Template description")
+    category: str = Field(..., description="Template category")
+    source: str = Field(..., description="Template source")
+    file_path: str = Field(..., description="Path to the template file")
+    template_type: str = Field(default="jinja2", description="Template type")
+
+
+class TemplateScanImportResponse(BaseModel):
+    """Response model for template scan import operation."""
+    templates: List[ImportableTemplateInfo] = Field(..., description="List of importable templates found")
+    total_found: int = Field(..., description="Total number of templates found")
+    message: str = Field(..., description="Status message")
+
+
 class TemplateImportRequest(BaseModel):
     """Template import request model."""
-    source_type: str = Field(..., description="Import source type: 'git_bulk', 'file_bulk'")
+    source_type: str = Field(..., description="Import source type: 'git_bulk', 'file_bulk', 'yaml_bulk'")
 
     # Git bulk import
     git_repo_url: Optional[str] = None
@@ -140,6 +157,9 @@ class TemplateImportRequest(BaseModel):
 
     # File bulk import
     file_contents: Optional[List[Dict[str, str]]] = None  # [{"filename": "...", "content": "..."}]
+
+    # YAML bulk import
+    yaml_file_paths: Optional[List[str]] = None  # List of YAML file paths to import
 
     # Common settings
     default_category: Optional[str] = None
