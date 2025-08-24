@@ -18,6 +18,16 @@ import {
 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 
+interface GitRepository {
+  id: number
+  name: string
+  category: string
+  url: string
+  branch: string
+  is_active: boolean
+  description?: string
+}
+
 interface FileItem {
   name: string
   path: string
@@ -82,6 +92,10 @@ interface FileHistoryCommit {
 export default function FileHistoryCompare() {
   const { apiCall } = useApi()
   
+  // Repository state
+  const [repositories, setRepositories] = useState<GitRepository[]>([])
+  const [selectedRepo, setSelectedRepo] = useState<GitRepository | null>(null)
+  
   // Git state
   const [branches, setBranches] = useState<Branch[]>([])
   const [selectedBranch, setSelectedBranch] = useState<string>('')
@@ -119,9 +133,26 @@ export default function FileHistoryCompare() {
 
   // Load initial data
   useEffect(() => {
-    loadBranches()
-    loadFiles()
+    loadRepositories()
   }, [])
+
+  // Load branches and files when repository is selected
+  useEffect(() => {
+    if (selectedRepo) {
+      loadBranches()
+      loadFiles()
+    } else {
+      // Clear state when no repository is selected
+      setBranches([])
+      setSelectedBranch('')
+      setCommits([])
+      setLeftCommit('')
+      setRightCommit('')
+      setGitFiles([])
+      setSelectedGitFile(null)
+      setGitFileSearch('')
+    }
+  }, [selectedRepo])
 
   // Load font size from localStorage
   useEffect(() => {
@@ -143,10 +174,30 @@ export default function FileHistoryCompare() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const loadBranches = async () => {
+  const loadRepositories = async () => {
     try {
-      console.log('Loading branches...')
-      const response = await apiCall<Branch[]>('git/branches')
+      console.log('Loading repositories...')
+      const response = await apiCall<{repositories: GitRepository[]}>('git/repositories')
+      console.log('Repositories loaded:', response)
+      setRepositories(response.repositories || [])
+      
+      // Auto-select the first active repository
+      const activeRepos = response.repositories?.filter(repo => repo.is_active) || []
+      if (activeRepos.length > 0) {
+        console.log('Auto-selecting first active repository:', activeRepos[0].name)
+        setSelectedRepo(activeRepos[0])
+      }
+    } catch (error) {
+      console.error('Error loading repositories:', error)
+    }
+  }
+
+  const loadBranches = async () => {
+    if (!selectedRepo) return
+    
+    try {
+      console.log('Loading branches for repo:', selectedRepo.name)
+      const response = await apiCall<Branch[]>(`git/${selectedRepo.id}/branches`)
       console.log('Branches loaded:', response)
       setBranches(response)
       
@@ -163,8 +214,13 @@ export default function FileHistoryCompare() {
   }
 
   const loadFiles = async () => {
+    if (!selectedRepo) {
+      setGitFiles([])
+      return
+    }
+
     try {
-      const response = await apiCall<{files: FileItem[]}>('files/list')
+      const response = await apiCall<{files: FileItem[]}>(`files/list?repo_id=${selectedRepo.id}`)
       const files = Array.isArray(response?.files) ? response.files : []
       setGitFiles(files)
     } catch (error) {
@@ -175,11 +231,19 @@ export default function FileHistoryCompare() {
   }
 
   const loadCommitsForBranch = async (branch: string) => {
+    if (!selectedRepo) return
+    
     try {
-      console.log('Loading commits for branch:', branch)
-      const response = await apiCall<Commit[]>(`git/commits/${encodeURIComponent(branch)}`)
+      console.log('Loading commits for branch:', branch, 'in repo:', selectedRepo.name)
+      const response = await apiCall<Commit[]>(`git/${selectedRepo.id}/commits/${encodeURIComponent(branch)}`)
       console.log('Commits loaded:', response.length, 'commits')
       setCommits(response)
+      
+      // Clear previous selections when branch changes
+      setLeftCommit('')
+      setRightCommit('')
+      setComparisonResult(null)
+      setShowComparison(false)
     } catch (error) {
       console.error('Error loading commits:', error)
     }
@@ -205,17 +269,17 @@ export default function FileHistoryCompare() {
   }
 
   const canViewHistory = () => {
-    return leftCommit && leftCommit.trim() !== '' && 
+    return selectedRepo && leftCommit && leftCommit.trim() !== '' && 
            selectedGitFile
   }
 
   const handleViewHistory = async () => {
-    if (!selectedGitFile || !leftCommit) return
+    if (!selectedGitFile || !leftCommit || !selectedRepo) return
 
     setHistoryLoading(true)
     try {
       // Get file history for the selected file starting from the selected source commit
-      const response = await apiCall<{commits: FileHistoryCommit[]}>(`git/file-complete-history/${encodeURIComponent(selectedGitFile.path)}?from_commit=${encodeURIComponent(leftCommit)}`)
+      const response = await apiCall<{commits: FileHistoryCommit[]}>(`git/${selectedRepo.id}/file-complete-history/${encodeURIComponent(selectedGitFile.path)}?from_commit=${encodeURIComponent(leftCommit)}`)
       setFileHistory(response.commits)
       setShowHistory(true)
       setSelectedCommits([])
@@ -240,12 +304,12 @@ export default function FileHistoryCompare() {
   }
 
   const handleShowChanges = async (commitHash: string) => {
-    if (!selectedGitFile) return
+    if (!selectedGitFile || !selectedRepo) return
 
     setLoading(true)
     try {
       // Get changes for this specific commit
-      const response = await apiCall<ComparisonResult>('git/diff', {
+      const response = await apiCall<ComparisonResult>(`git/${selectedRepo.id}/diff`, {
         method: 'POST',
         body: JSON.stringify({
           commit1: `${commitHash}^`, // Parent commit
@@ -276,11 +340,11 @@ export default function FileHistoryCompare() {
   }
 
   const handleCompareSelected = async () => {
-    if (selectedCommits.length !== 2 || !selectedGitFile) return
+    if (selectedCommits.length !== 2 || !selectedGitFile || !selectedRepo) return
 
     setLoading(true)
     try {
-      const response = await apiCall<ComparisonResult>('git/diff', {
+      const response = await apiCall<ComparisonResult>(`git/${selectedRepo.id}/diff`, {
         method: 'POST',
         body: JSON.stringify({
           commit1: selectedCommits[0], // First selected (Selected 1) - left side
@@ -300,11 +364,11 @@ export default function FileHistoryCompare() {
   }
 
   const handleDownloadFile = async (commitHash: string) => {
-    if (!selectedGitFile) return
+    if (!selectedGitFile || !selectedRepo) return
 
     try {
       // Get file content from the specific commit
-      const response = await apiCall<{content: string}>(`git/files/${commitHash}?file_path=${encodeURIComponent(selectedGitFile.path)}`)
+      const response = await apiCall<{content: string}>(`git/${selectedRepo.id}/files/${commitHash}?file_path=${encodeURIComponent(selectedGitFile.path)}`)
       
       // Create blob and download
       const blob = new Blob([response.content], { type: 'text/plain' })
@@ -322,12 +386,12 @@ export default function FileHistoryCompare() {
   }
 
   const handleViewFile = async (commitHash: string) => {
-    if (!selectedGitFile) return
+    if (!selectedGitFile || !selectedRepo) return
 
     setLoading(true)
     try {
       // Get file content from the specific commit
-      const response = await apiCall<{content: string}>(`git/files/${commitHash}?file_path=${encodeURIComponent(selectedGitFile.path)}`)
+      const response = await apiCall<{content: string}>(`git/${selectedRepo.id}/files/${commitHash}?file_path=${encodeURIComponent(selectedGitFile.path)}`)
       
       // Find the commit info for the header
       const commit = fileHistory.find(c => c.hash === commitHash)
@@ -444,7 +508,38 @@ export default function FileHistoryCompare() {
           </div>
         </div>
         <div key="unique-id-fhc-10" className="p-6 bg-gradient-to-b from-white to-gray-50">
-          <div key="unique-id-fhc-11" className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div key="unique-id-fhc-11" className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div key="unique-id-fhc-repo" className="space-y-2">
+              <Label key="unique-id-fhc-repo-label">Repository</Label>
+              <Select key="unique-id-fhc-repo-select" value={selectedRepo?.id.toString() || '__none__'} onValueChange={(value) => {
+                if (value === '__none__') {
+                  setSelectedRepo(null)
+                  setBranches([])
+                  setSelectedBranch('')
+                  setCommits([])
+                } else {
+                  const repo = repositories.find(r => r.id.toString() === value)
+                  if (repo) {
+                    setSelectedRepo(repo)
+                    setSelectedBranch('')
+                    setCommits([])
+                  }
+                }
+              }}>
+                <SelectTrigger key="unique-id-fhc-repo-trigger" className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                  <SelectValue placeholder="Select repository" />
+                </SelectTrigger>
+                <SelectContent key="unique-id-fhc-repo-content">
+                  <SelectItem key="unique-id-fhc-repo-none" value="__none__">Select repository...</SelectItem>
+                  {repositories.map((repo) => (
+                    <SelectItem key={`unique-id-fhc-repo-${repo.id}`} value={repo.id.toString()}>
+                      {repo.name} {!repo.is_active && '(inactive)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div key="unique-id-fhc-12" className="space-y-2">
                 <Label key="unique-id-fhc-13">Branch</Label>
               <Select key="unique-id-fhc-14" value={selectedBranch || '__none__'} onValueChange={(value) => {
@@ -453,7 +548,7 @@ export default function FileHistoryCompare() {
                 if (newValue) {
                   loadCommitsForBranch(newValue)
                 }
-              }}>
+              }} disabled={!selectedRepo}>
                 <SelectTrigger key="unique-id-fhc-15" className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select branch" />
                 </SelectTrigger>
@@ -783,6 +878,7 @@ export default function FileHistoryCompare() {
                   size="sm"
                   variant="outline"
                   onClick={() => setShowFileView(false)}
+                  className="bg-white/20 border-white/30 text-white hover:bg-white/30"
                 >
                   <span key="unique-id-fhc-file-view-close-text">Close</span>
                 </Button>

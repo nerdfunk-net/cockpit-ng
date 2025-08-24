@@ -42,6 +42,7 @@ interface GitRepository {
   id: string
   name: string
   category: string
+  is_active: boolean
 }
 
 interface Template {
@@ -265,31 +266,25 @@ export function ScanAndAddPage() {
 
   const loadGitRepositories = async () => {
     try {
-      const response = await apiCall<GitRepository[] | { 
-        results?: GitRepository[];
-        repositories?: GitRepository[];
-        data?: GitRepository[];
-      }>('git-repositories?category=onboarding&active_only=false')
+      const response = await apiCall<{ 
+        repositories: GitRepository[];
+      }>('git/repositories')
       
-      // Handle different response formats from the API
-      let repos: GitRepository[] = []
-      if (Array.isArray(response)) {
-        repos = response
-      } else if (response && Array.isArray(response.results)) {
-        repos = response.results
-      } else if (response && Array.isArray(response.repositories)) {
-        repos = response.repositories
-      } else if (response && Array.isArray(response.data)) {
-        repos = response.data
-      }
+      // Extract repositories from the response
+      const repos = response.repositories || []
       
-      // Filter and ensure objects
-      const validRepos = repos.filter((r) => r && typeof r === 'object')
-      setGitRepositories(validRepos || [])
+      // Filter active repositories for onboarding category
+      const onboardingRepos = repos.filter((r) => 
+        r && typeof r === 'object' && 
+        r.is_active && 
+        r.category === 'onboarding'
+      )
+      
+      setGitRepositories(onboardingRepos)
       
       // Auto-select if only one git repository is available and none is selected
-      if (validRepos.length === 1 && (!gitRepository || gitRepository === '')) {
-        setGitRepository(String(validRepos[0].id))
+      if (onboardingRepos.length === 1 && (!gitRepository || gitRepository === '')) {
+        setGitRepository(String(onboardingRepos[0].id))
       }
     } catch (error) {
       console.error('Error loading git repositories:', error)

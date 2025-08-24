@@ -7,8 +7,8 @@ import difflib
 import logging
 import os
 from pathlib import Path
-from typing import Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Dict, Any, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import Response
 
 from core.auth import verify_token
@@ -19,18 +19,26 @@ router = APIRouter(prefix="/api/files", tags=["files"])
 
 
 @router.get("/list")
-async def list_files(current_user: str = Depends(verify_token)):
-    """List all configuration files."""
+async def list_files(
+    repo_id: Optional[int] = Query(None, description="Repository ID to list files from"),
+    current_user: str = Depends(verify_token)
+):
+    """List all configuration files from a specific repository."""
     try:
-        # Use the selected Git repository from the new system
-        from routers.git import get_git_repo
+        if not repo_id:
+            # If no repository specified, return empty list
+            logger.warning("No repository ID specified for file listing")
+            return {"files": []}
+
+        # Use the repository-specific Git function
+        from routers.git import get_git_repo_by_id
 
         try:
-            repo = get_git_repo()
+            repo = get_git_repo_by_id(repo_id)
             config_dir = Path(repo.working_dir)
         except Exception as e:
-            # If no repository is selected or available, return empty list
-            logger.warning(f"Could not get Git repository for file listing: {e}")
+            # If repository is not found or available, return empty list
+            logger.warning(f"Could not get Git repository {repo_id} for file listing: {e}")
             return {"files": []}
 
         # Check if directory exists
@@ -76,13 +84,16 @@ async def compare_files(
     file_comparison: FileCompareRequest,
     current_user: str = Depends(verify_token)
 ):
-    """Compare two files from Git commits."""
+    """Compare two files from a Git repository."""
     try:
-        from routers.git import get_git_repo
+        if not file_comparison.repo_id:
+            raise HTTPException(status_code=400, detail="Repository ID is required for file comparison")
+
+        from routers.git import get_git_repo_by_id
 
         # Get the Git repository
         try:
-            repo = get_git_repo()
+            repo = get_git_repo_by_id(file_comparison.repo_id)
         except Exception as e:
             raise HTTPException(status_code=404, detail=f"Git repository not found: {e}")
 
@@ -236,11 +247,14 @@ async def export_diff(
 ):
     """Export comparison diff to a file."""
     try:
-        from routers.git import get_git_repo
+        if not file_comparison.repo_id:
+            raise HTTPException(status_code=400, detail="Repository ID is required for file export")
+
+        from routers.git import get_git_repo_by_id
 
         # Get the Git repository
         try:
-            repo = get_git_repo()
+            repo = get_git_repo_by_id(file_comparison.repo_id)
         except Exception as e:
             raise HTTPException(status_code=404, detail=f"Git repository not found: {e}")
 
@@ -298,18 +312,30 @@ async def export_diff(
 
 
 @router.get("/config")
-async def get_file_config(current_user: str = Depends(verify_token)):
+async def get_file_config(
+    repo_id: Optional[int] = Query(None, description="Repository ID to get config from"),
+    current_user: str = Depends(verify_token)
+):
     """Get file storage configuration information."""
     try:
-        # Use the selected Git repository from the new system
-        from routers.git import get_git_repo
+        if not repo_id:
+            # Return default config if no repository is specified
+            return {
+                "directory": "",
+                "total_size": 0,
+                "file_count": 0,
+                "supported_extensions": ['.txt', '.conf', '.cfg', '.config', '.ini', '.yml', '.yaml', '.json']
+            }
+
+        # Use the repository-specific Git function
+        from routers.git import get_git_repo_by_id
 
         try:
-            repo = get_git_repo()
+            repo = get_git_repo_by_id(repo_id)
             config_dir = Path(repo.working_dir)
         except Exception as e:
-            logger.warning(f"Could not get Git repository for file config: {e}")
-            # Return default config if no repository is available
+            logger.warning(f"Could not get Git repository {repo_id} for file config: {e}")
+            # Return default config if repository is not available
             return {
                 "directory": "",
                 "directory_exists": False,

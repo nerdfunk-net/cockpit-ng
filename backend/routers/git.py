@@ -22,33 +22,25 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/git", tags=["git"])
 
 
-def get_git_repo():
-    """Get Git repository instance for the selected config repository."""
+def get_git_repo_by_id(repo_id: int):
+    """Get Git repository instance by ID (no global state dependency)."""
     try:
-        from settings_manager import settings_manager
         from git_repositories_manager import GitRepositoryManager
 
-        # Get the selected repository from Git Management
-        selected_id = settings_manager.get_selected_git_repository()
-        if not selected_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No Git repository selected for configuration comparison. Please select a repository in Git Management."
-            )
-
-        # Get repository details
+        # Get repository details directly by ID
         git_repo_manager = GitRepositoryManager()
-        repository = git_repo_manager.get_repository(selected_id)
+        repository = git_repo_manager.get_repository(repo_id)
+        
         if not repository:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Selected Git repository not found. Please select a valid repository in Git Management."
+                detail=f"Git repository with ID {repo_id} not found."
             )
 
         if not repository['is_active']:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Selected Git repository is inactive. Please activate it or select a different repository."
+                detail=f"Git repository '{repository['name']}' is inactive. Please activate it first."
             )
 
         # Open the repository (or clone if needed) using shared utilities
@@ -65,18 +57,39 @@ def get_git_repo():
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting Git repository: {e}")
+        logger.error(f"Error getting Git repository {repo_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Git repository error: {str(e)}"
         )
 
 
-@router.get("/status")
-async def git_status(current_user: str = Depends(verify_token)):
+@router.get("/repositories")
+async def list_repositories(current_user: str = Depends(verify_token)):
+    """Get list of all available git repositories."""
+    try:
+        from git_repositories_manager import GitRepositoryManager
+        
+        git_repo_manager = GitRepositoryManager()
+        repositories = git_repo_manager.get_repositories()
+        
+        return {
+            "repositories": repositories,
+            "total": len(repositories)
+        }
+    except Exception as e:
+        logger.error(f"Error listing repositories: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list repositories: {str(e)}"
+        )
+
+
+@router.get("/{repo_id}/status")
+async def git_status(repo_id: int, current_user: str = Depends(verify_token)):
     """Get Git repository status."""
     try:
-        repo = get_git_repo()
+        repo = get_git_repo_by_id(repo_id)
 
         # Check if repository has any commits
         commits = []
@@ -149,14 +162,15 @@ async def git_status(current_user: str = Depends(verify_token)):
         )
 
 
-@router.post("/commit")
+@router.post("/{repo_id}/commit")
 async def git_commit(
+    repo_id: int,
     request: GitCommitRequest,
     current_user: str = Depends(verify_token)
 ):
     """Commit changes to Git repository."""
     try:
-        repo = get_git_repo()
+        repo = get_git_repo_by_id(repo_id)
 
         # Add files
         if request.files:
@@ -183,11 +197,11 @@ async def git_commit(
         )
 
 
-@router.get("/branches")
-async def git_branches(current_user: str = Depends(verify_token)):
+@router.get("/{repo_id}/branches")
+async def git_branches(repo_id: int, current_user: str = Depends(verify_token)):
     """Get list of Git branches."""
     try:
-        repo = get_git_repo()
+        repo = get_git_repo_by_id(repo_id)
 
         current_branch = repo.active_branch.name if repo.active_branch else None
         branches = []
@@ -211,14 +225,15 @@ async def git_branches(current_user: str = Depends(verify_token)):
         )
 
 
-@router.post("/branch")
+@router.post("/{repo_id}/branch")
 async def git_branch(
+    repo_id: int,
     request: GitBranchRequest,
     current_user: str = Depends(verify_token)
 ):
     """Create or switch to a Git branch."""
     try:
-        repo = get_git_repo()
+        repo = get_git_repo_by_id(repo_id)
 
         if request.create:
             # Create new branch
@@ -238,14 +253,15 @@ async def git_branch(
         )
 
 
-@router.get("/diff/{commit_hash}")
+@router.get("/{repo_id}/diff/{commit_hash}")
 async def git_diff(
+    repo_id: int,
     commit_hash: str,
     current_user: str = Depends(verify_token)
 ):
     """Get diff for a specific commit."""
     try:
-        repo = get_git_repo()
+        repo = get_git_repo_by_id(repo_id)
 
         commit = repo.commit(commit_hash)
 
@@ -280,8 +296,9 @@ async def git_diff(
         )
 
 
-@router.get("/commits/{branch_name}")
+@router.get("/{repo_id}/commits/{branch_name}")
 async def git_commits(
+    repo_id: int,
     branch_name: str,
     current_user: str = Depends(verify_token)
 ):
@@ -289,8 +306,7 @@ async def git_commits(
     try:
         from settings_manager import settings_manager
         cache_cfg = settings_manager.get_cache_settings()
-        selected_id = settings_manager.get_selected_git_repository()
-        repo = get_git_repo()
+        repo = get_git_repo_by_id(repo_id)
 
         # Check if branch exists
         if branch_name not in [ref.name for ref in repo.refs]:
@@ -300,7 +316,7 @@ async def git_commits(
             )
 
         # Try cache first
-        repo_scope = f"repo:{selected_id}" if selected_id else "repo:default"
+        repo_scope = f"repo:{repo_id}"
         cache_key = f"{repo_scope}:commits:{branch_name}"
         if cache_cfg.get('enabled', True):
             cached = cache_service.get(cache_key)
@@ -337,15 +353,16 @@ async def git_commits(
             detail=f"Failed to get commits: {str(e)}"
         )
 
-@router.get("/files/{commit_hash}")
+@router.get("/{repo_id}/files/{commit_hash}")
 async def git_files(
+    repo_id: int,
     commit_hash: str,
     file_path: str = None,
     current_user: str = Depends(verify_token)
 ):
     """Get list of files in a specific commit or file content if file_path is provided."""
     try:
-        repo = get_git_repo()
+        repo = get_git_repo_by_id(repo_id)
 
         # Get the commit
         commit = repo.commit(commit_hash)
@@ -386,8 +403,9 @@ async def git_files(
         )
 
 
-@router.post("/diff")
+@router.post("/{repo_id}/diff")
 async def git_diff_compare(
+    repo_id: int,
     request: dict,
     current_user: str = Depends(verify_token)
 ):
@@ -403,7 +421,7 @@ async def git_diff_compare(
                 detail="Missing required parameters: commit1, commit2, file_path"
             )
 
-        repo = get_git_repo()
+        repo = get_git_repo_by_id(repo_id)
 
         # Get the commits
         commit_obj1 = repo.commit(commit1)
@@ -487,14 +505,15 @@ async def git_diff_compare(
         )
 
 
-@router.get("/file-history/{file_path:path}")
+@router.get("/{repo_id}/file-history/{file_path:path}")
 async def get_file_last_change(
+    repo_id: int,
     file_path: str,
     current_user: str = Depends(verify_token)
 ):
     """Get the last change information for a specific file."""
     try:
-        repo = get_git_repo()
+        repo = get_git_repo_by_id(repo_id)
 
         # Get the commit history for the specific file
         commits = list(repo.iter_commits(paths=file_path, max_count=1))
@@ -543,16 +562,20 @@ async def get_file_last_change(
         )
 
 
-@router.get("/file-complete-history/{file_path:path}")
-async def get_file_complete_history(file_path: str, from_commit: str = None, current_user: str = Depends(verify_token)):
+@router.get("/{repo_id}/file-complete-history/{file_path:path}")
+async def get_file_complete_history(
+    repo_id: int, 
+    file_path: str, 
+    from_commit: str = None, 
+    current_user: str = Depends(verify_token)
+):
     """Get the complete history of a file from a specific commit backwards to its creation."""
     try:
         from settings_manager import settings_manager
         cache_cfg = settings_manager.get_cache_settings()
-        selected_id = settings_manager.get_selected_git_repository()
-        repo = get_git_repo()
+        repo = get_git_repo_by_id(repo_id)
         # Cache key per file and starting point
-        repo_scope = f"repo:{selected_id}" if selected_id else "repo:default"
+        repo_scope = f"repo:{repo_id}"
         cache_key = f"{repo_scope}:filehistory:{from_commit or 'HEAD'}:{file_path}"
         if cache_cfg.get('enabled', True):
             cached = cache_service.get(cache_key)
@@ -660,11 +683,11 @@ async def get_file_complete_history(file_path: str, from_commit: str = None, cur
         )
 
 
-@router.get("/debug")
-async def debug_git(current_user: str = Depends(verify_token)):
+@router.get("/{repo_id}/debug")
+async def debug_git(repo_id: int, current_user: str = Depends(verify_token)):
     """Debug Git setup."""
     try:
-        repo = get_git_repo()
+        repo = get_git_repo_by_id(repo_id)
         return {
             "status": "success",
             "repo_path": repo.working_dir,
@@ -676,5 +699,141 @@ async def debug_git(current_user: str = Depends(verify_token)):
             "error": str(e),
             "error_type": type(e).__name__
         }
+
+
+@router.post("/compare-across-repos")
+async def compare_files_across_repos(
+    request: dict,
+    current_user: str = Depends(verify_token)
+):
+    """Compare files between different repositories."""
+    try:
+        repo1_id = request.get("repo1_id")
+        repo2_id = request.get("repo2_id")
+        file_path = request.get("file_path")
+        commit1 = request.get("commit1", "HEAD")
+        commit2 = request.get("commit2", "HEAD")
+        
+        if not all([repo1_id, repo2_id, file_path]):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Missing required parameters: repo1_id, repo2_id, file_path"
+            )
+        
+        # Get both repositories
+        repo1 = get_git_repo_by_id(repo1_id)
+        repo2 = get_git_repo_by_id(repo2_id)
+        
+        # Get file content from both repos
+        try:
+            file_content1 = (repo1.commit(commit1).tree / file_path).data_stream.read().decode('utf-8')
+        except KeyError:
+            file_content1 = ""
+        
+        try:
+            file_content2 = (repo2.commit(commit2).tree / file_path).data_stream.read().decode('utf-8')
+        except KeyError:
+            file_content2 = ""
+        
+        # Generate diff
+        diff_lines = []
+        lines1 = file_content1.splitlines(keepends=True)
+        lines2 = file_content2.splitlines(keepends=True)
+        
+        for line in difflib.unified_diff(lines1, lines2, n=3):
+            diff_lines.append(line.rstrip('\n'))
+        
+        # Calculate stats
+        additions = sum(1 for line in diff_lines if line.startswith('+') and not line.startswith('+++'))
+        deletions = sum(1 for line in diff_lines if line.startswith('-') and not line.startswith('---'))
+        
+        return {
+            "repo1_id": repo1_id,
+            "repo2_id": repo2_id,
+            "file_path": file_path,
+            "commit1": commit1,
+            "commit2": commit2,
+            "diff_lines": diff_lines,
+            "left_file": f"{file_path} (repo {repo1_id}:{commit1})",
+            "right_file": f"{file_path} (repo {repo2_id}:{commit2})",
+            "stats": {
+                "additions": additions,
+                "deletions": deletions,
+                "changes": additions + deletions,
+                "total_lines": len(diff_lines)
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to compare files across repositories: {str(e)}"
+        )
+
+
+@router.get("/{repo_id}/info")
+async def get_repository_info(repo_id: int, current_user: str = Depends(verify_token)):
+    """Get detailed information about a repository."""
+    try:
+        from git_repositories_manager import GitRepositoryManager
+        
+        # Get repository metadata from DB
+        git_repo_manager = GitRepositoryManager()
+        repository = git_repo_manager.get_repository(repo_id)
+        
+        if not repository:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Repository with ID {repo_id} not found"
+            )
+        
+        # Get git repository instance
+        repo = get_git_repo_by_id(repo_id)
+        
+        # Collect repository statistics
+        try:
+            total_commits = sum(1 for _ in repo.iter_commits())
+        except:
+            total_commits = 0
+            
+        try:
+            total_branches = len(list(repo.branches))
+        except:
+            total_branches = 0
+            
+        try:
+            current_branch = repo.active_branch.name if repo.active_branch else None
+        except:
+            current_branch = None
+            
+        return {
+            "id": repository["id"],
+            "name": repository["name"],
+            "category": repository["category"],
+            "url": repository["url"],
+            "branch": repository["branch"],
+            "path": repository.get("path"),
+            "is_active": repository["is_active"],
+            "description": repository.get("description"),
+            "created_at": repository.get("created_at"),
+            "last_sync": repository.get("last_sync"),
+            "sync_status": repository.get("sync_status"),
+            "git_stats": {
+                "current_branch": current_branch,
+                "total_commits": total_commits,
+                "total_branches": total_branches,
+                "working_directory": repo.working_dir
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get repository info: {str(e)}"
+        )
 
 

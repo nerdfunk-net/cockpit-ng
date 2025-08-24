@@ -153,7 +153,7 @@ const GitManagement: React.FC = () => {
 
   const loadRepositories = async () => {
     try {
-      const response = await apiCall<{ repositories: GitRepository[] }>('git-repositories')
+      const response = await apiCall<{ repositories: GitRepository[] }>('git/repositories')
       setRepositories(response.repositories || [])
     } catch (error) {
       console.error('Error loading repositories:', error)
@@ -202,7 +202,7 @@ const GitManagement: React.FC = () => {
 
     setIsSubmitting(true)
     try {
-      await apiCall('git-repositories', {
+      await apiCall('git/repositories', {
         method: 'POST',
         body: JSON.stringify({
           ...formData,
@@ -244,7 +244,7 @@ const GitManagement: React.FC = () => {
     setConnectionStatus(null)
 
     try {
-      const response = await apiCall<{ success: boolean; message: string }>('git-repositories/test', {
+      const response = await apiCall<{ success: boolean; message: string }>('git/repositories/test', {
         method: 'POST',
         body: JSON.stringify({
           url: formData.url,
@@ -288,7 +288,7 @@ const GitManagement: React.FC = () => {
 
     setIsSubmitting(true)
     try {
-      await apiCall(`git-repositories/${editingRepo.id}`, {
+      await apiCall(`git/repositories/${editingRepo.id}`, {
         method: 'PUT',
         body: JSON.stringify({
           ...editFormData,
@@ -314,7 +314,7 @@ const GitManagement: React.FC = () => {
     }
 
     try {
-      await apiCall(`git-repositories/${repo.id}`, { method: 'DELETE' })
+      await apiCall(`git/repositories/${repo.id}`, { method: 'DELETE' })
       showMessage('Repository deleted successfully!', 'success')
       loadRepositories()
     } catch (error) {
@@ -324,7 +324,7 @@ const GitManagement: React.FC = () => {
 
   const syncRepository = async (repo: GitRepository) => {
     try {
-      await apiCall(`git-repositories/${repo.id}/sync`, { method: 'POST' })
+      await apiCall(`git/${repo.id}/sync`, { method: 'POST' })
       showMessage('Repository synced successfully!', 'success')
       loadRepositories()
     } catch (error) {
@@ -337,7 +337,7 @@ const GitManagement: React.FC = () => {
       setStatusData(null)
       setShowStatusDialog(true)
       
-      const response = await apiCall<{ success: boolean; data: GitStatus }>(`git-repositories/${repo.id}/status`)
+      const response = await apiCall<{ success: boolean; data: GitStatus }>(`git/${repo.id}/status`)
       if (response.success) {
         setStatusData(response.data)
       } else {

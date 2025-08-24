@@ -184,7 +184,7 @@ async def startup_prefetch_cache():
         logger.info("Startup cache: hook invoked")
         # Local imports to avoid circular dependencies at import time
         from settings_manager import settings_manager
-        from routers.git import get_git_repo
+        from routers.git import get_git_repo_by_id
         from services.cache_service import cache_service
 
         cache_cfg = settings_manager.get_cache_settings()
@@ -196,8 +196,12 @@ async def startup_prefetch_cache():
         async def prefetch_commits_once():
             try:
                 logger.info("Startup cache: prefetch_commits_once() starting")
-                repo = get_git_repo()
                 selected_id = settings_manager.get_selected_git_repository()
+                if not selected_id:
+                    logger.warning("Startup cache: No repository selected; skipping commits prefetch")
+                    return
+                    
+                repo = get_git_repo_by_id(selected_id)
                 # Determine branch; handle empty repos safely
                 try:
                     branch_name = repo.active_branch.name

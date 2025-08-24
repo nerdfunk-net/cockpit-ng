@@ -14,9 +14,17 @@ import {
   EyeOff, 
   ChevronUp, 
   ChevronDown,
-  RefreshCw 
+  RefreshCw,
+  GitBranch
 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
+
+interface GitRepository {
+  id: number
+  name: string
+  category: string
+  is_active: boolean
+}
 
 interface FileItem {
   name: string
@@ -46,6 +54,11 @@ function calculateStats(leftLines: DiffLine[], rightLines: DiffLine[]) {
   let removed = 0
   let modified = 0
   let unchanged = 0
+
+  // Safety checks for undefined arrays
+  if (!leftLines || !rightLines) {
+    return { added: 0, removed: 0, modified: 0, unchanged: 0 }
+  }
 
   // Count from right lines (additions and modifications)
   rightLines.forEach(line => {
@@ -93,6 +106,10 @@ function mergeLinesToUnified(leftLines: DiffLine[], rightLines: DiffLine[]): Dif
 export default function FileCompare() {
   const { apiCall } = useApi()
   
+  // Repository state
+  const [repositories, setRepositories] = useState<GitRepository[]>([])
+  const [selectedRepo, setSelectedRepo] = useState<GitRepository | null>(null)
+  
   // File selection state
   const [leftFiles, setLeftFiles] = useState<FileItem[]>([])
   const [rightFiles, setRightFiles] = useState<FileItem[]>([])
@@ -117,8 +134,20 @@ export default function FileCompare() {
 
   // Load files on mount
   useEffect(() => {
-    loadFiles()
+    loadRepositories()
   }, [])
+
+  // Load files when repository changes
+  useEffect(() => {
+    if (selectedRepo) {
+      loadFiles()
+    } else {
+      setLeftFiles([])
+      setRightFiles([])
+      setSelectedLeftFile(null)
+      setSelectedRightFile(null)
+    }
+  }, [selectedRepo])
 
   // Load font size from localStorage
   useEffect(() => {
@@ -143,9 +172,33 @@ export default function FileCompare() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const loadFiles = async () => {
+  const loadRepositories = async () => {
     try {
-      const response = await apiCall<{files: FileItem[]}>('files/list')
+      console.log('Loading repositories...')
+      const response = await apiCall<{repositories: GitRepository[]}>('git/repositories')
+      console.log('Repositories loaded:', response)
+      setRepositories(response.repositories || [])
+      
+      // Auto-select the first active repository
+      const activeRepos = response.repositories?.filter(repo => repo.is_active) || []
+      if (activeRepos.length > 0) {
+        console.log('Auto-selecting first active repository:', activeRepos[0].name)
+        setSelectedRepo(activeRepos[0])
+      }
+    } catch (error) {
+      console.error('Error loading repositories:', error)
+    }
+  }
+
+  const loadFiles = async () => {
+    if (!selectedRepo) {
+      setLeftFiles([])
+      setRightFiles([])
+      return
+    }
+
+    try {
+      const response = await apiCall<{files: FileItem[]}>(`files/list?repo_id=${selectedRepo.id}`)
       const files = Array.isArray(response?.files) ? response.files : []
       setLeftFiles(files)
       setRightFiles(files)
@@ -183,7 +236,7 @@ export default function FileCompare() {
   }
 
   const canCompare = () => {
-    return selectedLeftFile && selectedRightFile
+    return selectedRepo && selectedLeftFile && selectedRightFile
   }
 
   const handleCompare = async () => {
@@ -195,7 +248,8 @@ export default function FileCompare() {
         method: 'POST',
         body: JSON.stringify({
           left_file: selectedLeftFile!.path,
-          right_file: selectedRightFile!.path
+          right_file: selectedRightFile!.path,
+          repo_id: selectedRepo!.id
         })
       })
 
@@ -333,80 +387,117 @@ export default function FileCompare() {
           <div className="flex items-center space-x-2">
             <File className="h-4 w-4" />
             <div>
-              <h3 className="text-sm font-semibold">Select Files to Compare</h3>
-              <p className="text-blue-100 text-xs">Choose source and target configuration files for comparison</p>
+              <h3 className="text-sm font-semibold">Select Repository and Files to Compare</h3>
+              <p className="text-blue-100 text-xs">Choose repository and source/target configuration files for comparison</p>
             </div>
           </div>
         </div>
         <div key="unique-id-fh-9" className="p-4 bg-white">
-          <div key="unique-id-fh-10" className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Left File Selection */}
-            <div key="unique-id-fh-11" className="space-y-2" ref={leftSearchRef}>
-              <Label key="unique-id-fh-12">Source File</Label>
-              <div key="unique-id-fh-13" className="relative">
-                <Input
-                  key="unique-id-fh-14"
-                  placeholder="Search for source file..."
-                  value={leftFileSearch}
-                  onChange={(e) => {
-                    setLeftFileSearch(e.target.value)
-                    setShowLeftResults(e.target.value.length > 0)
-                  }}
-                  onFocus={() => setShowLeftResults(leftFileSearch.length > 0)}
-                  className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
-                />
-                {showLeftResults && (
-                  <div key="unique-id-fh-15" className="absolute top-full left-0 right-0 z-[99999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto">
-                    {searchFiles(leftFileSearch, leftFiles || []).map((file, index) => (
-                      <div
-                        key={`unique-id-fh-16-${index}`}
-                        className="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                        onClick={() => handleFileSelect(file, 'left')}
-                      >
-                        <div key={`unique-id-fh-17-${index}`} className="font-medium text-sm">{file.name}</div>
-                        <div key={`unique-id-fh-18-${index}`} className="text-xs text-gray-500">{file.path}</div>
-                      </div>
+          <div key="unique-id-fh-10" className="space-y-4">
+            {/* Single Row Layout for Repository and File Selection */}
+            <div key="unique-id-fh-row" className="grid grid-cols-3 gap-4">
+              {/* Repository Selection */}
+              <div key="unique-id-fh-repo" className="space-y-2">
+                <Label key="unique-id-fh-repo-label">Repository</Label>
+                <Select key="unique-id-fh-repo-select" value={selectedRepo?.id.toString() || '__none__'} onValueChange={(value) => {
+                  if (value === '__none__') {
+                    setSelectedRepo(null)
+                  } else {
+                    const repo = repositories.find(r => r.id.toString() === value)
+                    if (repo) {
+                      setSelectedRepo(repo)
+                      // Clear file selections when repository changes
+                      setSelectedLeftFile(null)
+                      setSelectedRightFile(null)
+                      setLeftFileSearch('')
+                      setRightFileSearch('')
+                    }
+                  }
+                }}>
+                  <SelectTrigger key="unique-id-fh-repo-trigger" className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                    <SelectValue placeholder="Select repository" />
+                  </SelectTrigger>
+                  <SelectContent key="unique-id-fh-repo-content">
+                    <SelectItem key="unique-id-fh-repo-none" value="__none__">Select repository...</SelectItem>
+                    {repositories.map((repo) => (
+                      <SelectItem key={`unique-id-fh-repo-${repo.id}`} value={repo.id.toString()}>
+                        {repo.name} {!repo.is_active && '(inactive)'}
+                      </SelectItem>
                     ))}
-                    {searchFiles(leftFileSearch, leftFiles || []).length === 0 && (
-                      <div key="unique-id-fh-19" className="p-2 text-sm text-gray-500">No files found</div>
-                    )}
-                  </div>
-                )}
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
+              
+              {/* Source File Selection */}
+              <div key="unique-id-fh-11" className="space-y-2" ref={leftSearchRef}>
+                <Label key="unique-id-fh-12">Source File</Label>
+                <div key="unique-id-fh-13" className="relative">
+                  <Input
+                    key="unique-id-fh-14"
+                    placeholder="Search for source file..."
+                    value={leftFileSearch}
+                    onChange={(e) => {
+                      setLeftFileSearch(e.target.value)
+                      setShowLeftResults(e.target.value.length > 0)
+                    }}
+                    onFocus={() => setShowLeftResults(leftFileSearch.length > 0)}
+                    disabled={!selectedRepo}
+                    className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                  />
+                  {showLeftResults && selectedRepo && (
+                    <div key="unique-id-fh-15" className="absolute top-full left-0 right-0 z-[99999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto">
+                      {searchFiles(leftFileSearch, leftFiles || []).map((file, index) => (
+                        <div
+                          key={`unique-id-fh-16-${index}`}
+                          className="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                          onClick={() => handleFileSelect(file, 'left')}
+                        >
+                          <div key={`unique-id-fh-17-${index}`} className="font-medium text-sm">{file.name}</div>
+                          <div key={`unique-id-fh-18-${index}`} className="text-xs text-gray-500">{file.path}</div>
+                        </div>
+                      ))}
+                      {searchFiles(leftFileSearch, leftFiles || []).length === 0 && (
+                        <div key="unique-id-fh-19" className="p-2 text-sm text-gray-500">No files found</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
 
-            {/* Right File Selection */}
-            <div key="unique-id-fh-21" className="space-y-2" ref={rightSearchRef}>
-              <Label key="unique-id-fh-22">Target File</Label>
-              <div key="unique-id-fh-23" className="relative">
-                <Input
-                  key="unique-id-fh-24"
-                  placeholder="Search for target file..."
-                  value={rightFileSearch}
-                  onChange={(e) => {
-                    setRightFileSearch(e.target.value)
-                    setShowRightResults(e.target.value.length > 0)
-                  }}
-                  onFocus={() => setShowRightResults(rightFileSearch.length > 0)}
-                  className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
-                />
-                {showRightResults && (
-                  <div key="unique-id-fh-25" className="absolute top-full left-0 right-0 z-[99999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto">
-                    {searchFiles(rightFileSearch, rightFiles || []).map((file, index) => (
-                      <div
-                        key={`unique-id-fh-26-${index}`}
-                        className="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                        onClick={() => handleFileSelect(file, 'right')}
-                      >
-                        <div key={`unique-id-fh-27-${index}`} className="font-medium text-sm">{file.name}</div>
-                        <div key={`unique-id-fh-28-${index}`} className="text-xs text-gray-500">{file.path}</div>
-                      </div>
-                    ))}
-                    {searchFiles(rightFileSearch, rightFiles || []).length === 0 && (
-                      <div key="unique-id-fh-29" className="p-2 text-sm text-gray-500">No files found</div>
-                    )}
-                  </div>
-                )}
+              {/* Target File Selection */}
+              <div key="unique-id-fh-21" className="space-y-2" ref={rightSearchRef}>
+                <Label key="unique-id-fh-22">Target File</Label>
+                <div key="unique-id-fh-23" className="relative">
+                  <Input
+                    key="unique-id-fh-24"
+                    placeholder="Search for target file..."
+                    value={rightFileSearch}
+                    onChange={(e) => {
+                      setRightFileSearch(e.target.value)
+                      setShowRightResults(e.target.value.length > 0)
+                    }}
+                    onFocus={() => setShowRightResults(rightFileSearch.length > 0)}
+                    disabled={!selectedRepo}
+                    className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                  />
+                  {showRightResults && selectedRepo && (
+                    <div key="unique-id-fh-25" className="absolute top-full left-0 right-0 z-[99999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto">
+                      {searchFiles(rightFileSearch, rightFiles || []).map((file, index) => (
+                        <div
+                          key={`unique-id-fh-26-${index}`}
+                          className="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                          onClick={() => handleFileSelect(file, 'right')}
+                        >
+                          <div key={`unique-id-fh-27-${index}`} className="font-medium text-sm">{file.name}</div>
+                          <div key={`unique-id-fh-28-${index}`} className="text-xs text-gray-500">{file.path}</div>
+                        </div>
+                      ))}
+                      {searchFiles(rightFileSearch, rightFiles || []).length === 0 && (
+                        <div key="unique-id-fh-29" className="p-2 text-sm text-gray-500">No files found</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
