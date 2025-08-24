@@ -37,10 +37,17 @@ type ComparisonMode = 'files' | 'git' | 'history'
 
 export default function ConfigCompare() {
   const { isAuthenticated, token } = useAuthStore()
+  const { apiCall } = useApi()
   
   // Core state
   const [authReady, setAuthReady] = useState(false)
   const [comparisonMode, setComparisonMode] = useState<ComparisonMode>('files')
+  
+  // Repository state
+  const [repositories, setRepositories] = useState<Repository[]>([])
+  const [selectedRepository, setSelectedRepository] = useState<Repository | null>(null)
+  const [repositoryStatus, setRepositoryStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [syncingRepo, setSyncingRepo] = useState(false)
 
   // Authentication effect - simplified since DashboardLayout handles auth
   useEffect(() => {
@@ -49,6 +56,13 @@ export default function ConfigCompare() {
       setAuthReady(true)
     }
   }, [isAuthenticated, token])
+
+  // Load repositories when auth is ready
+  useEffect(() => {
+    if (authReady) {
+      loadRepositories()
+    }
+  }, [authReady])
 
   const loadRepositories = async () => {
     try {
