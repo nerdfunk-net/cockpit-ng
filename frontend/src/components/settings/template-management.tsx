@@ -627,7 +627,7 @@ export default function TemplateManagement() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Basic Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="template-name">
                     Template Name <span className="text-red-500">*</span>
@@ -637,30 +637,16 @@ export default function TemplateManagement() {
                     placeholder="e.g., cisco-ios-base"
                     value={formData.name}
                     onChange={(e) => handleFormChange('name', e.target.value)}
+                    className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 shadow-sm"
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="template-source">
-                    Source <span className="text-red-500">*</span>
-                  </Label>
-                  <Select value={formData.source} onValueChange={(value: string) => handleFormChange('source', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select source..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="git">Git Repository</SelectItem>
-                      <SelectItem value="file">File Upload</SelectItem>
-                      <SelectItem value="webeditor">Web Editor</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <div className="space-y-2 md:col-span-1">
                   <Label htmlFor="template-type">Template Type</Label>
                   <Select value={formData.template_type} onValueChange={(value) => handleFormChange('template_type', value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-sm border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -670,30 +656,45 @@ export default function TemplateManagement() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
+
+                <div className="space-y-2 md:col-span-1">
                   <Label htmlFor="template-category">Category</Label>
                   <Select value={formData.category} onValueChange={(value) => handleFormChange('category', value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-sm border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                       <SelectValue placeholder="Select category..." />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">No Category</SelectItem>
-                      {categories.map(category => (
-                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      {/* Canonical categories only to avoid duplicates from the API */}
+                      {['inventory', 'onboarding', 'parser'].map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</SelectItem>
                       ))}
-                      <SelectItem value="inventory">Inventory</SelectItem>
-                      <SelectItem value="parser">Parser</SelectItem>
-                      <SelectItem value="onboarding">Onboarding</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
+
+                <div className="space-y-2 md:col-span-1">
+                  <Label htmlFor="template-source">Source <span className="text-red-500">*</span></Label>
+                  <Select value={formData.source} onValueChange={(value: string) => handleFormChange('source', value)}>
+                    <SelectTrigger className="h-8 text-sm border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                      <SelectValue placeholder="Select source..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="git">Git Repository</SelectItem>
+                      <SelectItem value="file">File Upload</SelectItem>
+                      <SelectItem value="webeditor">Web Editor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2 md:col-span-3">
                   <Label htmlFor="template-description">Description</Label>
                   <Input
                     id="template-description"
                     placeholder="Brief description"
                     value={formData.description}
                     onChange={(e) => handleFormChange('description', e.target.value)}
+                    className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 shadow-sm"
                   />
                 </div>
               </div>
@@ -715,6 +716,7 @@ export default function TemplateManagement() {
                           placeholder="https://github.com/user/repo.git"
                           value={formData.git_repo_url}
                           onChange={(e) => handleFormChange('git_repo_url', e.target.value)}
+                          className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 shadow-sm"
                         />
                       </div>
                       <div className="space-y-2">
@@ -723,6 +725,7 @@ export default function TemplateManagement() {
                           placeholder="main"
                           value={formData.git_branch}
                           onChange={(e) => handleFormChange('git_branch', e.target.value)}
+                          className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 shadow-sm"
                         />
                       </div>
                     </div>
@@ -733,6 +736,7 @@ export default function TemplateManagement() {
                           placeholder="templates/template.j2"
                           value={formData.git_path}
                           onChange={(e) => handleFormChange('git_path', e.target.value)}
+                          className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 shadow-sm"
                         />
                       </div>
                       <div className="space-y-2">
@@ -740,6 +744,7 @@ export default function TemplateManagement() {
                         <Input
                           value={formData.git_username}
                           onChange={(e) => handleFormChange('git_username', e.target.value)}
+                          className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 shadow-sm"
                         />
                       </div>
                     </div>
@@ -749,6 +754,7 @@ export default function TemplateManagement() {
                         type="password"
                         value={formData.git_token}
                         onChange={(e) => handleFormChange('git_token', e.target.value)}
+                        className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 shadow-sm"
                       />
                     </div>
                   </CardContent>
@@ -770,6 +776,7 @@ export default function TemplateManagement() {
                         type="file"
                         accept=".txt,.conf,.cfg,.j2,.jinja2,.textfsm"
                         onChange={handleFileChange}
+                        className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 shadow-sm"
                       />
                       {selectedFile && (
                         <p className="text-sm text-gray-600">
@@ -793,7 +800,7 @@ export default function TemplateManagement() {
                     <div className="space-y-2">
                       <Label>Template Content <span className="text-red-500">*</span></Label>
                       <textarea
-                        className="w-full h-64 p-3 border border-gray-300 rounded-md font-mono text-sm"
+                        className="w-full h-64 p-3 border-2 bg-white border-gray-300 rounded-md font-mono text-sm focus:border-blue-500"
                         placeholder="Enter your template content here..."
                         value={formData.content}
                         onChange={(e) => handleFormChange('content', e.target.value)}

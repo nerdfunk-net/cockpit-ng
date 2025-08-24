@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
 import { Button } from '@/components/ui/button'
@@ -169,6 +169,16 @@ export function ScanAndAddPage() {
   const [isAssignAllModalOpen, setIsAssignAllModalOpen] = useState<boolean>(false)
   const [editingDeviceIp, setEditingDeviceIp] = useState<string>('')
   const [assignAllData, setAssignAllData] = useState<Partial<DeviceMetadata>>({})
+  // Modal-local location filter state for device configuration modal
+  const [modalLocationSearch, setModalLocationSearch] = useState<string>('')
+  const [modalLocationFiltered, setModalLocationFiltered] = useState<Location[]>([])
+  const [modalShowLocationDropdown, setModalShowLocationDropdown] = useState<boolean>(false)
+  const modalLocationRef = useRef<HTMLDivElement | null>(null)
+  // Modal-local location filter state for "Assign to all" modal
+  const [assignLocationSearch, setAssignLocationSearch] = useState<string>('')
+  const [assignLocationFiltered, setAssignLocationFiltered] = useState<Location[]>([])
+  const [assignShowLocationDropdown, setAssignShowLocationDropdown] = useState<boolean>(false)
+  const assignLocationRef = useRef<HTMLDivElement | null>(null)
 
   // Check authentication
   useEffect(() => {
@@ -387,6 +397,57 @@ export function ScanAndAddPage() {
       console.error('Error loading locations:', error)
     }
   }
+
+  // Sync modal search field when editingDeviceIp changes
+  useEffect(() => {
+    if (!editingDeviceIp) return
+    const locId = deviceMetadata[editingDeviceIp]?.location
+    if (locId) {
+      const loc = locations.find(l => l.id === locId)
+      setModalLocationSearch(loc?.hierarchicalPath || '')
+      setModalLocationFiltered(locations)
+    } else {
+      setModalLocationSearch('')
+      setModalLocationFiltered(locations)
+    }
+  }, [editingDeviceIp, deviceMetadata, locations])
+
+  // Click outside handler for modal dropdown
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (!modalLocationRef.current) return
+      if (!modalLocationRef.current.contains(e.target as Node)) {
+        setModalShowLocationDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [])
+
+  // Sync assign-modal search field when assignAllData.location changes
+  useEffect(() => {
+    const locId = assignAllData.location
+    if (locId) {
+      const loc = locations.find(l => l.id === locId)
+      setAssignLocationSearch(loc?.hierarchicalPath || '')
+      setAssignLocationFiltered(locations)
+    } else {
+      setAssignLocationSearch('')
+      setAssignLocationFiltered(locations)
+    }
+  }, [assignAllData.location, locations])
+
+  // Click outside handler for assign-all modal dropdown
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (!assignLocationRef.current) return
+      if (!assignLocationRef.current.contains(e.target as Node)) {
+        setAssignShowLocationDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [])
 
   const loadSecretGroups = async () => {
     try {
@@ -1615,23 +1676,42 @@ export function ScanAndAddPage() {
               {/* Location */}
               <div className="space-y-2">
                 <Label htmlFor="device-location">Location</Label>
-                <Select 
-                  value={deviceMetadata[editingDeviceIp]?.location || ''} 
-                  onValueChange={(value) => updateDeviceMetadata(editingDeviceIp, 'location', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select location..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.isArray(locations) && locations
-                      .filter(location => location.id && String(location.id).trim() !== '')
-                      .map(location => (
-                      <SelectItem key={location.id} value={String(location.id)}>
-                        {location.hierarchicalPath || location.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="relative" ref={modalLocationRef}>
+                  <Input
+                    placeholder="Select location..."
+                    value={modalLocationSearch}
+                    onChange={(e) => {
+                      const q = e.target.value
+                      setModalLocationSearch(q)
+                      if (!q.trim()) setModalLocationFiltered(locations)
+                      else setModalLocationFiltered(locations.filter(l => (l.hierarchicalPath || '').toLowerCase().includes(q.toLowerCase())))
+                      setModalShowLocationDropdown(true)
+                    }}
+                    onFocus={() => setModalShowLocationDropdown(true)}
+                    className="h-8 text-sm border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                  />
+                  {modalShowLocationDropdown && (
+                    <div className="absolute z-50 mt-1 left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                      {modalLocationFiltered.length > 0 ? (
+                        modalLocationFiltered.map(loc => (
+                          <div
+                            key={loc.id}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                            onClick={() => {
+                              updateDeviceMetadata(editingDeviceIp, 'location', loc.id)
+                              setModalLocationSearch(loc.hierarchicalPath || loc.name)
+                              setModalShowLocationDropdown(false)
+                            }}
+                          >
+                            {loc.hierarchicalPath || loc.name}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-gray-500 italic">No locations found</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Namespace */}
@@ -1828,23 +1908,42 @@ export function ScanAndAddPage() {
             {/* Location */}
             <div className="space-y-2">
               <Label htmlFor="assign-location">Location</Label>
-              <Select 
-                value={assignAllData.location || ''} 
-                onValueChange={(value) => setAssignAllData(prev => ({ ...prev, location: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Leave empty to keep existing" />
-                </SelectTrigger>
-                <SelectContent>
-                  {locations
-                    .filter(location => location.id && String(location.id).trim() !== '')
-                    .map(location => (
-                    <SelectItem key={location.id} value={String(location.id)}>
-                      {location.hierarchicalPath || location.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="relative" ref={assignLocationRef}>
+                <Input
+                  placeholder="Leave empty to keep existing"
+                  value={assignLocationSearch}
+                  onChange={(e) => {
+                    const q = e.target.value
+                    setAssignLocationSearch(q)
+                    if (!q.trim()) setAssignLocationFiltered(locations)
+                    else setAssignLocationFiltered(locations.filter(l => (l.hierarchicalPath || '').toLowerCase().includes(q.toLowerCase())))
+                    setAssignShowLocationDropdown(true)
+                  }}
+                  onFocus={() => setAssignShowLocationDropdown(true)}
+                  className="h-8 text-sm border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                />
+                {assignShowLocationDropdown && (
+                  <div className="absolute z-50 mt-1 left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {assignLocationFiltered.length > 0 ? (
+                      assignLocationFiltered.map(loc => (
+                        <div
+                          key={loc.id}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                          onClick={() => {
+                            setAssignAllData(prev => ({ ...prev, location: loc.id }))
+                            setAssignLocationSearch(loc.hierarchicalPath || loc.name)
+                            setAssignShowLocationDropdown(false)
+                          }}
+                        >
+                          {loc.hierarchicalPath || loc.name}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-gray-500 italic">No locations found</div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Namespace */}

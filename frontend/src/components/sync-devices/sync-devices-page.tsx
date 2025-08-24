@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
 import { Button } from '@/components/ui/button'
@@ -59,6 +59,14 @@ interface SyncProperties {
 interface DropdownOption {
   id: string
   name: string
+}
+
+// LocationItem shape used by the location filter
+interface LocationItem {
+  id: string
+  name: string
+  parent?: { id: string }
+  hierarchicalPath?: string
 }
 
 interface StatusMessage {
@@ -133,6 +141,14 @@ export function SyncDevicesPage() {
     deviceTypes: [] as DropdownOption[],
     statuses: [] as DropdownOption[]
   })
+
+  // Location filter state (per LOCATION_FILTER.md)
+  const [locationsList, setLocationsList] = useState<LocationItem[]>([])
+  const [locationFiltered, setLocationFiltered] = useState<LocationItem[]>([])
+  const [locationSearch, setLocationSearch] = useState<string>('')
+  const [showLocationDropdown, setShowLocationDropdown] = useState<boolean>(false)
+  const [selectedLocationId, setSelectedLocationId] = useState<string>('')
+  const locationContainerRef = useRef<HTMLDivElement | null>(null)
 
   // Check authentication
   useEffect(() => {
@@ -224,7 +240,8 @@ export function SyncDevicesPage() {
         loadNamespaces(),
         loadPrefixStatuses(),
         loadInterfaceStatuses(),
-        loadIPAddressStatuses()
+        loadIPAddressStatuses(),
+        loadLocations()
       ])
     } catch (error) {
       console.error('Error loading initial data:', error)
@@ -236,6 +253,70 @@ export function SyncDevicesPage() {
       setIsLoading(false)
     }
   }
+
+  // Location filter helpers (from LOCATION_FILTER.md)
+  const buildLocationPath = (location: LocationItem, locationMap: Map<string, LocationItem>) => {
+    const names: string[] = []
+    const visited = new Set<string>()
+    let current: LocationItem | undefined = location
+
+    while (current) {
+      if (visited.has(current.id)) {
+        // cycle detected
+        names.unshift(`${current.name} (cycle)`)
+        break
+      }
+      visited.add(current.id)
+      names.unshift(current.name)
+
+      const parentId = current.parent?.id
+      if (!parentId) break
+      current = locationMap.get(parentId)
+      if (!current) break
+    }
+
+    return names.join(' → ')
+  }
+
+  const buildLocationHierarchy = (locations: LocationItem[]) => {
+    const map = new Map<string, LocationItem>()
+    locations.forEach(l => map.set(l.id, { ...l }))
+
+    const processed = locations.map(loc => {
+      const copy = { ...loc }
+      copy.hierarchicalPath = buildLocationPath(copy, map)
+      return copy
+    })
+
+    processed.sort((a, b) => (a.hierarchicalPath || '').localeCompare(b.hierarchicalPath || ''))
+    return processed
+  }
+
+  const loadLocations = async () => {
+    try {
+      const data = await apiCall<LocationItem[]>('nautobot/locations')
+      const arr = Array.isArray(data) ? data : (data || [])
+      const processed = buildLocationHierarchy(arr)
+      setLocationsList(processed)
+      setLocationFiltered(processed)
+    } catch (error) {
+      console.error('Error loading locations:', error)
+      setLocationsList([])
+      setLocationFiltered([])
+    }
+  }
+
+  // Click outside handler to close dropdown
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (!locationContainerRef.current) return
+      if (!locationContainerRef.current.contains(e.target as Node)) {
+        setShowLocationDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [])
 
   const loadDevices = async () => {
     try {
@@ -742,20 +823,47 @@ export function SyncDevicesPage() {
                     </Select>
                   </div>
 
-                  {/* Location Filter */}
-                  <div className="space-y-1">
+                  {/* Location Filter - hierarchical searchable dropdown (LOCATION_FILTER.md) */}
+                  <div className="space-y-1 relative" ref={locationContainerRef}>
                     <Label className="text-xs font-medium text-gray-600">Location</Label>
-                    <Select value={filters.location} onValueChange={(value) => handleFilterChange('location', value)}>
-                      <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                        <SelectValue placeholder="All Locations" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Locations</SelectItem>
-                        {dropdownOptions.locations.map(location => (
-                          <SelectItem key={location.id} value={location.name}>{location.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div>
+                      <Input
+                        placeholder="Filter by location..."
+                        value={locationSearch || (selectedLocationId ? locationsList.find(l => l.id === selectedLocationId)?.hierarchicalPath || '' : '')}
+                        onChange={(e) => {
+                          const q = e.target.value
+                          setLocationSearch(q)
+                          if (!q.trim()) setLocationFiltered(locationsList)
+                          else setLocationFiltered(locationsList.filter(l => (l.hierarchicalPath || '').toLowerCase().includes(q.toLowerCase())))
+                          setShowLocationDropdown(true)
+                        }}
+                        onFocus={() => setShowLocationDropdown(true)}
+                        className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                      />
+                      {showLocationDropdown && (
+                        <div className="absolute z-50 mt-1 left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                          {locationFiltered.length > 0 ? (
+                            locationFiltered.map(loc => (
+                              <div
+                                key={loc.id}
+                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                                onClick={() => {
+                                  setSelectedLocationId(loc.id)
+                                  setLocationSearch(loc.hierarchicalPath || loc.name)
+                                  setShowLocationDropdown(false)
+                                  // Apply filter by location name to existing filters model
+                                  handleFilterChange('location', loc.name)
+                                }}
+                              >
+                                {loc.hierarchicalPath}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-3 py-2 text-sm text-gray-500 italic">No locations found</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Device Type Filter */}
