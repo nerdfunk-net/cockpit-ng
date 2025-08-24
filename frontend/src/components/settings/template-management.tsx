@@ -619,9 +619,10 @@ export default function TemplateManagement() {
 
         {/* Create Template Tab */}
         <TabsContent value="create" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
+              <CardTitle className="flex items-center gap-2 text-white text-base">
+                <Plus className="h-4 w-4" />
                 {editingTemplate ? `Edit Template: ${editingTemplate.name}` : 'Create New Template'}
               </CardTitle>
             </CardHeader>
