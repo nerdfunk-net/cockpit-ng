@@ -186,3 +186,4 @@ frontend/.env.local
 data/settings/cockpit_settings.db
 backend/data/cache/nautobot_stats.json
 /docker/wheelhouse
+/.venv-temp
