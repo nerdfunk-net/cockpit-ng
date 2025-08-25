@@ -188,3 +188,4 @@ backend/data/cache/nautobot_stats.json
 /docker/wheelhouse
 /.venv-temp
 /docker/frontend-build
+/docker/airgap-artifacts
