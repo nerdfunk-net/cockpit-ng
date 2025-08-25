@@ -1,0 +1,28 @@
+# Dockerfile.base - Pre-built base image with all system dependencies
+# Build this online and save as tar for air-gapped environments
+FROM python:3.12-slim
+
+# Install all required system packages while online
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    wget \
+    nodejs \
+    npm \
+    supervisor \
+    build-essential \
+    python3-dev \
+    libffi-dev \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Upgrade npm to latest version
+RUN npm install -g npm@latest
+
+# Create necessary directories
+RUN mkdir -p /var/log/supervisor
+
+# This image will be saved and transferred to air-gapped environment
+LABEL description="Cockpit-NG base image with all system dependencies"
+LABEL version="1.0"

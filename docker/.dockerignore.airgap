@@ -1,0 +1,50 @@
+# .dockerignore for air-gap builds
+# Exclude unnecessary files to reduce build context size
+
+# Git and development files
+.git
+.gitignore
+.github/
+*.md
+README*
+
+# Development and build artifacts (except the ones we specifically include)
+.vscode/
+.idea/
+*.log
+*.tmp
+
+# Node.js (we include the specific built artifacts)
+frontend/node_modules/.cache/
+frontend/.next/.cache/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+.venv/
+.venv-temp/
+*.egg-info/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Application specific
+data/
+logs/
+*.sqlite
+*.db
+
+# Don't exclude our required build artifacts
+!docker/frontend-build/
+!docker/wheelhouse/
+!docker/airgap-artifacts/

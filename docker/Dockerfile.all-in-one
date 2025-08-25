@@ -1,0 +1,101 @@
+# Dockerfile.all-in-one - Complete self-contained image for air-gap deployment
+# This creates a single image that contains everything needed to run Cockpit-NG
+# No external dependencies or separate artifacts required
+
+# Stage 1: Base image with system dependencies
+FROM python:3.12-slim AS base
+
+# Install all required system packages
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    wget \
+    nodejs \
+    npm \
+    supervisor \
+    build-essential \
+    python3-dev \
+    libffi-dev \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Upgrade npm to latest version
+RUN npm install -g npm@latest
+
+# Stage 2: Build frontend
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app/frontend
+
+# Copy package files and install dependencies
+COPY frontend/package*.json ./
+RUN npm ci
+
+# Copy frontend source and build
+COPY frontend/ ./
+RUN DOCKER_BUILD=true npm run build
+
+# Stage 3: Prepare Python dependencies
+FROM base AS python-builder
+
+# Create wheelhouse with all Python dependencies
+COPY backend/requirements.txt /tmp/
+RUN pip install --upgrade pip wheel
+RUN pip wheel -r /tmp/requirements.txt -w /tmp/wheelhouse
+RUN pip wheel supervisor -w /tmp/wheelhouse
+
+# Stage 4: Final runtime image
+FROM base AS runtime
+
+WORKDIR /app
+
+# Install Python dependencies from local wheels (no network access needed)
+COPY --from=python-builder /tmp/wheelhouse /tmp/wheelhouse
+COPY backend/requirements.txt ./backend/
+RUN pip install --no-index --find-links /tmp/wheelhouse -r backend/requirements.txt \
+    && pip install --no-index --find-links /tmp/wheelhouse supervisor \
+    && rm -rf /tmp/wheelhouse
+
+# Copy backend source code
+COPY backend/ ./backend/
+
+# Copy built frontend from build stage
+COPY --from=frontend-builder /app/frontend/.next ./frontend/.next
+COPY --from=frontend-builder /app/frontend/public ./frontend/public
+COPY --from=frontend-builder /app/frontend/node_modules ./frontend/node_modules
+COPY --from=frontend-builder /app/frontend/package*.json ./frontend/
+COPY --from=frontend-builder /app/frontend/next.config.ts ./frontend/
+COPY --from=frontend-builder /app/frontend/postcss.config.mjs ./frontend/
+COPY --from=frontend-builder /app/frontend/tsconfig.json ./frontend/
+
+# Copy Docker configuration files
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/start.sh ./start.sh
+RUN chmod +x start.sh
+
+# Create necessary directories
+RUN mkdir -p /app/data/settings \
+    /app/data/git \
+    /app/data/cache \
+    /var/log/supervisor
+
+# Set proper permissions
+RUN chown -R root:root /app/data \
+    && chmod -R 755 /app/data
+
+# Expose ports (backend: 8000, frontend: 3000)
+EXPOSE 3000 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:3000 && curl -f http://localhost:8000/health || exit 1
+
+# Use supervisor to manage both services
+CMD ["./start.sh"]
+
+# Labels
+LABEL org.opencontainers.image.title="Cockpit-NG All-in-One"
+LABEL org.opencontainers.image.description="Complete self-contained Cockpit-NG application for air-gapped environments"
+LABEL org.opencontainers.image.version="1.0"
+LABEL org.opencontainers.image.vendor="nerdfunk-net"
