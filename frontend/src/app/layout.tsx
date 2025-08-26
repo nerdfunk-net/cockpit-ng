@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import React from "react";
 import "./globals.css";
 import { localFonts, loadLocalFonts } from "@/lib/local-fonts";
+import { DebugProvider } from "@/contexts/debug-context";
 
 // Use local font configuration for air-gapped environments
 const geistSans = {
@@ -62,7 +63,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <React.StrictMode>
-          {children}
+          <DebugProvider>
+            {children}
+          </DebugProvider>
         </React.StrictMode>
       </body>
     </html>

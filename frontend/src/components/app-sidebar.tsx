@@ -139,23 +139,27 @@ export function AppSidebar({ className }: AppSidebarProps) {
         {user && (
           <div className="p-6 border-b border-slate-100">
             <div className="flex items-center space-x-3">
-              <Avatar className="h-12 w-12 ring-2 ring-blue-100">
-                <AvatarImage 
-                  src={generateAvatarDataUrl(user.username, 48)}
-                  onError={(e) => {
-                    // If local generation fails, hide the image and show fallback
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-                <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold">
-                  {user.username.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <Link href="/profile">
+                <Avatar className="h-12 w-12 ring-2 ring-blue-100 hover:ring-blue-300 cursor-pointer transition-all">
+                  <AvatarImage 
+                    src={generateAvatarDataUrl(user.username, 48)}
+                    onError={(e) => {
+                      // If local generation fails, hide the image and show fallback
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                  <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold">
+                    {user.username.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
               {!isCollapsed && (
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-900 truncate">
-                    {user.username}
-                  </p>
+                  <Link href="/profile">
+                    <p className="text-sm font-semibold text-slate-900 truncate hover:text-blue-600 cursor-pointer transition-colors">
+                      {user.username}
+                    </p>
+                  </Link>
                   <p className="text-xs text-slate-500">Network Engineer</p>
                   <div className="flex items-center space-x-1 mt-1">
                     <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>

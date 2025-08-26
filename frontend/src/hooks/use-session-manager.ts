@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
+import { debug } from '@/lib/debug'
 
 interface SessionConfig {
   /** Time before token expiry to refresh (in milliseconds) */
@@ -82,6 +83,7 @@ export function useSessionManager(config: SessionConfig = {}) {
 
     try {
       console.log('Session Manager: Refreshing token...')
+      debug.log('SessionManager: Starting token refresh')
       
       const response = await fetch('/api/auth/refresh', {
         method: 'POST',
@@ -106,6 +108,7 @@ export function useSessionManager(config: SessionConfig = {}) {
       
       if (data.access_token && data.user) {
         console.log('Session Manager: Token refreshed successfully')
+        debug.log('SessionManager: Token refresh successful, new token expires at:', new Date(data.expires_in * 1000 + Date.now()).toISOString())
         login(data.access_token, {
           id: data.user.username,
           username: data.user.username,
