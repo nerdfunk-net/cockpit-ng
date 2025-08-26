@@ -102,6 +102,10 @@ ARG NO_PROXY
 # If you want the container to use the proxy automatically at runtime, uncomment the ENV lines below.
 # ENV HTTP_PROXY=${HTTP_PROXY} HTTPS_PROXY=${HTTPS_PROXY} NO_PROXY=${NO_PROXY}
 
+# Set default logging level (can be overridden at runtime with -e LOG_LEVEL=DEBUG)
+ENV LOG_LEVEL=INFO
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
 # Install Python dependencies from local wheels (no network access needed)

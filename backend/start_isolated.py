@@ -57,6 +57,10 @@ def main():
     global logger
     logger = logging.getLogger(__name__)
 
+    # Log current log level for verification
+    logger.debug(f"DEBUG: Logging configured at {settings.log_level} level")
+    logger.debug(f"DEBUG: Environment LOG_LEVEL = {os.getenv('LOG_LEVEL', 'not set')}")
+
     # Initialize database settings
     initialize_database_settings()
 
