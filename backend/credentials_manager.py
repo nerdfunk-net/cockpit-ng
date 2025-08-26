@@ -77,9 +77,6 @@ def _create_initial_credential() -> None:
         print(f"Warning: Failed to create initial credential: {e}")
 
 
-_ensure_table()
-_create_initial_credential()
-
 def _build_key(secret: str) -> bytes:
     digest = hashlib.sha256(secret.encode("utf-8")).digest()
     return base64.urlsafe_b64encode(digest)
@@ -99,6 +96,10 @@ class EncryptionService:
             raise ValueError("Failed to decrypt stored credential") from e
 
 encryption_service = EncryptionService()
+
+# Initialize database and create initial credential after encryption service is ready
+_ensure_table()
+_create_initial_credential()
 
 def _row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
     valid_until = row["valid_until"]
