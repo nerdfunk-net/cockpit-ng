@@ -32,8 +32,9 @@ def get_env_list(key: str, default: list = None) -> list:
 
 class Settings:
 	# Server Configuration
-	host: str = os.getenv('SERVER_HOST', '127.0.0.1')
-	port: int = int(os.getenv('SERVER_PORT', '8000'))
+	# Prefer backend-specific env vars, fall back to legacy SERVER_* names for compatibility
+	host: str = os.getenv('BACKEND_SERVER_HOST', os.getenv('SERVER_HOST', '127.0.0.1'))
+	port: int = int(os.getenv('BACKEND_SERVER_PORT', os.getenv('SERVER_PORT', '8000')))
 	debug: bool = get_env_bool('DEBUG', True)
 	log_level: str = os.getenv('LOG_LEVEL', 'INFO')
 

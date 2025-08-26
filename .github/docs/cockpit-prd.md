@@ -270,8 +270,12 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 # =============================================================================
 
 # Server Configuration
-SERVER_HOST=127.0.0.1
-SERVER_PORT=8000
+# Backend-specific server variables (frontend may have its own SERVER_* vars)
+BACKEND_SERVER_HOST=127.0.0.1
+BACKEND_SERVER_PORT=8000
+# Legacy names (for backward compatibility):
+# SERVER_HOST=127.0.0.1
+# SERVER_PORT=8000
 DEBUG=false
 
 # Logging Configuration
@@ -361,7 +365,7 @@ VITE_PORT=3000
 VITE_ALLOWED_HOSTS=auto                      # Comma-separated list of allowed hosts or 'auto'
 
 # Backend Server Configuration
-SERVER_HOST=0.0.0.0
+BACKEND_SERVER_HOST=0.0.0.0  # previously SERVER_HOST
 SERVER_PORT=8000
 ```
 
@@ -370,7 +374,7 @@ SERVER_PORT=8000
 **Development Configuration:**
 - `DEBUG=true` - Enables debug mode with auto-reload
 - `LOG_LEVEL=DEBUG` - Verbose logging for troubleshooting
-- `SERVER_HOST=127.0.0.1` - Local development binding
+- `BACKEND_SERVER_HOST=127.0.0.1` - Local development binding (legacy: SERVER_HOST)
 - `ACCESS_TOKEN_EXPIRE_MINUTES=30` - Shorter token expiry for security testing
 - `GIT_SSL_VERIFY=false` - May be disabled for local Git servers
 
@@ -392,7 +396,7 @@ environment:
   - VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS:-auto}
 
   # Backend Server Configuration
-  - SERVER_HOST=0.0.0.0
+  - BACKEND_SERVER_HOST=0.0.0.0
   - SERVER_PORT=8000
   - DEBUG=false
 

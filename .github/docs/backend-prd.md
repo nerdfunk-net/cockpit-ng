@@ -585,7 +585,7 @@ def add_auth_to_url(url: str, username: str = None, token: str = None) -> str:
 ```python
 class Settings:
     # Server Configuration
-    host: str = os.getenv('SERVER_HOST', '127.0.0.1')
+    host: str = os.getenv('BACKEND_SERVER_HOST', os.getenv('SERVER_HOST', '127.0.0.1'))
     port: int = int(os.getenv('SERVER_PORT', '8000'))
     debug: bool = get_env_bool('DEBUG', True)
     log_level: str = os.getenv('LOG_LEVEL', 'INFO')
@@ -721,7 +721,7 @@ NAUTOBOT_TOKEN=your-api-token
 SECRET_KEY=your-secure-secret-key
 
 # Server Configuration
-SERVER_HOST=0.0.0.0
+BACKEND_SERVER_HOST=0.0.0.0  # previously SERVER_HOST
 SERVER_PORT=8000
 DEBUG=false
 LOG_LEVEL=INFO
