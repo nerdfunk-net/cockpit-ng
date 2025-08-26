@@ -323,10 +323,10 @@ export default function NautobotSettingsForm() {
             type="button"
             onClick={saveSettings}
             disabled={status === 'saving' || !settings.url || !settings.token}
-            className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
+            className="flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 text-base font-medium"
           >
             {status === 'saving' && <Loader2 className="h-4 w-4 animate-spin" />}
-            <span>{status === 'saving' ? 'Saving...' : 'Save Nautobot Settings'}</span>
+            <span>{status === 'saving' ? 'Saving...' : 'Save Settings'}</span>
           </Button>
         </div>
       </div>
