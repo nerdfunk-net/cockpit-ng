@@ -86,7 +86,6 @@ async def scan_import_directory(
     """Scan the import directory for YAML template files."""
     try:
         import yaml
-        import glob
         from pathlib import Path
         
         # Import directory path

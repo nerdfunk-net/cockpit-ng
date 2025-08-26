@@ -65,8 +65,6 @@ def main():
     logger.info(f"Git SSL Verification: {settings.git_ssl_verify}")
 
     # Start the server
-    import os
-
     # Get the backend directory path
     backend_dir = os.path.dirname(__file__)
 
