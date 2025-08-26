@@ -29,39 +29,7 @@ export const devLogin = async () => {
     })
 
     if (!response.ok) {
-      // Try guest login as fallback
-      console.log('Admin login failed, trying guest login...')
-      const guestResponse = await fetch('/api/proxy/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: 'guest',
-          password: 'guest'
-        })
-      })
-
-      if (!guestResponse.ok) {
-        throw new Error('Both admin and guest login failed')
-      }
-
-      const guestData = await guestResponse.json()
-      const { login } = useAuthStore.getState()
-      const user = {
-        id: guestData.user.username,
-        username: guestData.user.username,
-        email: `${guestData.user.username}@demo.com`
-      }
-      
-      // Store in localStorage (like old version)
-      localStorage.setItem('auth_token', guestData.access_token)
-      localStorage.setItem('user_info', JSON.stringify(user))
-      
-      // Update auth store
-      login(guestData.access_token, user)
-      console.log('Development guest login successful:', guestData.user)
-      return
+      throw new Error('Admin login failed')
     }
 
     const data = await response.json()

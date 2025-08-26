@@ -39,48 +39,46 @@ def _ensure_table() -> None:
         )
         conn.commit()
 
-        # Lightweight migration: ensure CHECK constraint includes 'token'
-        try:
-            row = conn.execute(
-                "SELECT sql FROM sqlite_master WHERE type='table' AND name='credentials'"
-            ).fetchone()
-            table_sql = row[0] if row else ""
-            if "CHECK(type IN" in table_sql and "'token'" not in table_sql:
-                # Recreate table with updated CHECK constraint and copy data
-                conn.execute("BEGIN")
-                conn.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS credentials_new (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT NOT NULL,
-                        username TEXT NOT NULL,
-                        type TEXT NOT NULL CHECK(type IN ('ssh','tacacs','generic','token')),
-                        password_encrypted BLOB NOT NULL,
-                        valid_until TEXT,
-                        is_active INTEGER NOT NULL DEFAULT 1,
-                        created_at TEXT NOT NULL,
-                        updated_at TEXT NOT NULL
-                    )
-                    """
-                )
-                # Copy data
-                conn.execute(
-                    """
-                    INSERT INTO credentials_new (id, name, username, type, password_encrypted, valid_until, is_active, created_at, updated_at)
-                    SELECT id, name, username, type, password_encrypted, valid_until, is_active, created_at, updated_at FROM credentials
-                    """
-                )
-                conn.execute("DROP TABLE credentials")
-                conn.execute("ALTER TABLE credentials_new RENAME TO credentials")
-                conn.commit()
-        except Exception:
-            # Don't block startup if inspection fails; table already usable
-            try:
-                conn.rollback()
-            except Exception:
-                pass
+
+def _create_initial_credential() -> None:
+    """Create initial credential on first startup if none exist."""
+    try:
+        with _get_conn() as conn:
+            # Check if any credentials exist
+            cursor = conn.execute("SELECT COUNT(*) FROM credentials")
+            count = cursor.fetchone()[0]
+            
+            if count == 0:
+                # No credentials exist, create initial one from environment
+                initial_username = config_settings.initial_username
+                initial_password = config_settings.initial_password
+                
+                if initial_username and initial_password:
+                    encrypted = encryption_service.encrypt(initial_password)
+                    now = datetime.utcnow().isoformat()
+                    
+                    conn.execute("""
+                        INSERT INTO credentials (name, username, type, password_encrypted, valid_until, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        "Initial Admin Credential",
+                        initial_username,
+                        "generic",
+                        encrypted,
+                        None,  # No expiration
+                        now,
+                        now
+                    ))
+                    conn.commit()
+                    print(f"Created initial credential for user: {initial_username}")
+                else:
+                    print("Warning: INITIAL_USERNAME or INITIAL_PASSWORD not set, skipping initial credential creation")
+    except Exception as e:
+        print(f"Warning: Failed to create initial credential: {e}")
+
 
 _ensure_table()
+_create_initial_credential()
 
 def _build_key(secret: str) -> bytes:
     digest = hashlib.sha256(secret.encode("utf-8")).digest()

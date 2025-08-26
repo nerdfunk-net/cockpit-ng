@@ -48,9 +48,9 @@ class Settings:
 	algorithm: str = os.getenv('ALGORITHM', 'HS256')
 	access_token_expire_minutes: int = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', '10'))
 
-	# Demo credentials
-	demo_username: str = os.getenv('DEMO_USERNAME', 'admin')
-	demo_password: str = os.getenv('DEMO_PASSWORD', 'admin')
+	# Initial credentials for first-time setup
+	initial_username: str = os.getenv('INITIAL_USERNAME', 'admin')
+	initial_password: str = os.getenv('INITIAL_PASSWORD', 'admin')
 
 	# SSL/TLS Configuration for Git operations
 	git_ssl_verify: bool = os.getenv('GIT_SSL_VERIFY', 'true').lower() == 'true'

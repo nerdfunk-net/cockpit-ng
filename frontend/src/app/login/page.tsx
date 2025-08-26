@@ -150,18 +150,6 @@ export default function LoginPage() {
                 )}
               </Button>
             </form>
-            
-            {/* Demo Credentials Info */}
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs text-blue-700 font-medium mb-1">Demo Credentials:</p>
-              <p className="text-xs text-blue-600">
-                Username: <code className="bg-blue-100 px-1 rounded">admin</code> | 
-                Password: <code className="bg-blue-100 px-1 rounded">admin</code>
-              </p>
-              <p className="text-xs text-blue-600 mt-1">
-                Or: <code className="bg-blue-100 px-1 rounded">guest/guest</code>
-              </p>
-            </div>
           </CardContent>
         </Card>
 

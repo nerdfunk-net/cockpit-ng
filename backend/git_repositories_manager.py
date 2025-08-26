@@ -36,8 +36,6 @@ class GitRepositoryManager:
                         category TEXT NOT NULL CHECK (category IN ('configs', 'templates', 'onboarding')),
                         url TEXT NOT NULL,
                         branch TEXT NOT NULL DEFAULT 'main',
-                        username TEXT,
-                        token TEXT,
                         credential_name TEXT,
                         path TEXT,
                         verify_ssl BOOLEAN NOT NULL DEFAULT 1,
@@ -50,60 +48,6 @@ class GitRepositoryManager:
                     )
                 """)
 
-                # Ensure CHECK constraint includes 'onboarding' for existing DBs by recreating table if needed
-                try:
-                    row = conn.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='git_repositories'").fetchone()
-                    create_sql = row[0] if row else ''
-                    if "category IN ('configs', 'templates')" in create_sql and 'onboarding' not in create_sql:
-                        logger.info("Migrating git_repositories table to include 'onboarding' category in CHECK constraint")
-                        conn.execute('BEGIN')
-                        # Create new table with updated constraint
-                        conn.execute("""
-                            CREATE TABLE git_repositories_new (
-                                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                name TEXT UNIQUE NOT NULL,
-                                category TEXT NOT NULL CHECK (category IN ('configs', 'templates', 'onboarding')),
-                                url TEXT NOT NULL,
-                                branch TEXT NOT NULL DEFAULT 'main',
-                                username TEXT,
-                                token TEXT,
-                                credential_name TEXT,
-                                path TEXT,
-                                verify_ssl BOOLEAN NOT NULL DEFAULT 1,
-                                description TEXT,
-                                is_active BOOLEAN NOT NULL DEFAULT 1,
-                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                last_sync TIMESTAMP,
-                                sync_status TEXT
-                            )
-                        """)
-                        # Copy data
-                        conn.execute("""
-                            INSERT INTO git_repositories_new
-                            (id, name, category, url, branch, username, token, credential_name, path, verify_ssl, description, is_active, created_at, updated_at, last_sync, sync_status)
-                            SELECT id, name, category, url, branch, username, token, NULL as credential_name, path, verify_ssl, description, is_active, created_at, updated_at, last_sync, sync_status
-                            FROM git_repositories
-                        """)
-                        # Replace old table
-                        conn.execute("DROP TABLE git_repositories")
-                        conn.execute("ALTER TABLE git_repositories_new RENAME TO git_repositories")
-                        # Recreate indexes
-                        conn.execute("CREATE INDEX IF NOT EXISTS idx_git_repos_category ON git_repositories (category)")
-                        conn.execute("CREATE INDEX IF NOT EXISTS idx_git_repos_active ON git_repositories (is_active)")
-                        conn.execute('COMMIT')
-                        logger.info("Migration of git_repositories table completed successfully")
-                except Exception as m_e:
-                    logger.warning(f"Could not verify or migrate git_repositories CHECK constraint: {m_e}")
-
-                # For existing DBs that weren't recreated, ensure 'credential_name' column exists
-                try:
-                    cols = [r[1] for r in conn.execute("PRAGMA table_info(git_repositories)").fetchall()]
-                    if 'credential_name' not in cols:
-                        conn.execute("ALTER TABLE git_repositories ADD COLUMN credential_name TEXT")
-                        conn.commit()
-                except Exception as e:
-                    logger.warning(f"Could not add credential_name column if missing: {e}")
 
                 # Create indexes for better performance
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_git_repos_category ON git_repositories (category)")
@@ -121,15 +65,13 @@ class GitRepositoryManager:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.execute("""
                     INSERT INTO git_repositories 
-                    (name, category, url, branch, username, token, credential_name, path, verify_ssl, description, is_active)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (name, category, url, branch, credential_name, path, verify_ssl, description, is_active)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     repo_data["name"],
                     repo_data["category"],
                     repo_data["url"],
                     repo_data.get("branch", "main"),
-                    repo_data.get("username"),
-                    repo_data.get("token"),
                     repo_data.get("credential_name"),
                     repo_data.get("path"),
                     repo_data.get("verify_ssl", True),
@@ -199,7 +141,7 @@ class GitRepositoryManager:
             set_clauses = []
             params = []
 
-            for field in ["name", "category", "url", "branch", "username", "token", "credential_name", "path", "verify_ssl", "description", "is_active"]:
+            for field in ["name", "category", "url", "branch", "credential_name", "path", "verify_ssl", "description", "is_active"]:
                 if field in repo_data:
                     set_clauses.append(f"{field} = ?")
                     params.append(repo_data[field])

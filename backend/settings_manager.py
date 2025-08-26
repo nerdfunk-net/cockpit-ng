@@ -137,9 +137,6 @@ class SettingsManager:
                     )
                 ''')
 
-                # Run database migrations
-                self._run_migrations(cursor)
-
                 # Check if we need to insert default values
                 cursor.execute('SELECT COUNT(*) FROM nautobot_settings')
                 if cursor.fetchone()[0] == 0:
@@ -156,10 +153,10 @@ class SettingsManager:
                     logger.info("Inserting default Cache settings")
                     self._insert_default_cache_settings(cursor)
 
-                # Set database version
+                # Set initial metadata
                 cursor.execute('''
                     INSERT OR REPLACE INTO settings_metadata (key, value)
-                    VALUES ('db_version', '1.0')
+                    VALUES ('initialized', 'true')
                 ''')
 
                 conn.commit()
@@ -170,43 +167,6 @@ class SettingsManager:
             logger.error(f"Database initialization failed: {e}")
             return False
 
-    def _run_migrations(self, cursor):
-        """Run database migrations for schema updates"""
-        try:
-            # Check if verify_ssl column exists in git_settings table
-            cursor.execute("PRAGMA table_info(git_settings)")
-            columns = [column[1] for column in cursor.fetchall()]
-
-            if 'verify_ssl' not in columns:
-                logger.info("Adding verify_ssl column to git_settings table")
-                cursor.execute('ALTER TABLE git_settings ADD COLUMN verify_ssl BOOLEAN NOT NULL DEFAULT 1')
-
-            # Ensure cache_settings table exists or has all columns
-            cursor.execute("PRAGMA table_info(cache_settings)")
-            cache_columns = [column[1] for column in cursor.fetchall()]
-            if not cache_columns:
-                logger.info("Creating cache_settings table via migration")
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS cache_settings (
-                        id INTEGER PRIMARY KEY,
-                        enabled BOOLEAN NOT NULL DEFAULT 1,
-                        ttl_seconds INTEGER NOT NULL DEFAULT 600,
-                        prefetch_on_startup BOOLEAN NOT NULL DEFAULT 1,
-                        refresh_interval_minutes INTEGER NOT NULL DEFAULT 15,
-                        max_commits INTEGER NOT NULL DEFAULT 500,
-                        prefetch_items TEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                ''')
-            # Add prefetch_items column if missing
-            else:
-                if 'prefetch_items' not in cache_columns:
-                    logger.info("Adding prefetch_items column to cache_settings table")
-                    cursor.execute('ALTER TABLE cache_settings ADD COLUMN prefetch_items TEXT')
-
-        except sqlite3.Error as e:
-            logger.error(f"Migration failed: {e}")
 
     def _insert_default_nautobot_settings(self, cursor):
         """Insert default Nautobot settings"""
@@ -294,7 +254,7 @@ class SettingsManager:
                         'token': row['token'] or '',
                         'config_path': row['config_path'],
                         'sync_interval': row['sync_interval'],
-                        'verify_ssl': bool(row['verify_ssl']) if 'verify_ssl' in row.keys() else True
+                        'verify_ssl': bool(row['verify_ssl'])
                     }
                 else:
                     # Fallback to defaults

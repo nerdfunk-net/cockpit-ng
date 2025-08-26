@@ -390,13 +390,12 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 ### Demo Authentication
 ```python
-# Simple demo credentials (backend/routers/auth.py)
+# Authentication using stored credentials (backend/routers/auth.py)
 @router.post("/login", response_model=LoginResponse)
 async def login(user_data: UserLogin):
     if user_data.username == "admin" and user_data.password == "admin":
         # Create admin token
-    elif user_data.username == "guest" and user_data.password == "guest":
-        # Create guest token
+    # Authentication failed
     else:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 ```
@@ -600,9 +599,9 @@ class Settings:
     algorithm: str = os.getenv('ALGORITHM', 'HS256')
     access_token_expire_minutes: int = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', '10'))
 
-    # Demo credentials
-    demo_username: str = os.getenv('DEMO_USERNAME', 'admin')
-    demo_password: str = os.getenv('DEMO_PASSWORD', 'admin')
+    # Initial credentials for first-time setup
+    initial_username: str = os.getenv('INITIAL_USERNAME', 'admin')
+    initial_password: str = os.getenv('INITIAL_PASSWORD', 'admin')
 
     # Git SSL Configuration
     git_ssl_verify: bool = get_env_bool('GIT_SSL_VERIFY', True)

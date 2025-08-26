@@ -109,6 +109,43 @@ def set_ssl_env(repository: Dict):
                 os.environ[key] = val
 
 
+def resolve_git_credentials(repository: Dict) -> tuple[Optional[str], Optional[str]]:
+    """Resolve username and token from credential_name or direct fields.
+    
+    Args:
+        repository: Repository metadata dict with credential_name or legacy username/token
+        
+    Returns:
+        Tuple of (username, token) or (None, None) if no credentials found
+    """
+    # Try credential_name first (preferred)
+    if repository.get("credential_name"):
+        try:
+            import credentials_manager as cred_mgr
+            creds = cred_mgr.list_credentials(include_expired=False)
+            match = next(
+                (c for c in creds if c["name"] == repository["credential_name"] and c["type"] == "token"),
+                None,
+            )
+            if match:
+                username = match.get("username")
+                try:
+                    token = cred_mgr.get_decrypted_password(match["id"])
+                    return username, token
+                except Exception as de:
+                    logger.error(f"Failed to decrypt credential '{repository['credential_name']}': {de}")
+                    return None, None
+            else:
+                logger.warning(f"Credential '{repository['credential_name']}' not found or not token type")
+                return None, None
+        except Exception as ce:
+            logger.error(f"Error resolving credential '{repository['credential_name']}': {ce}")
+            return None, None
+    
+    # Fallback to legacy direct username/token (for backward compatibility)
+    return repository.get("username"), repository.get("token")
+
+
 def open_or_clone(repository: Dict) -> Repo:
     """Open the repo at its path, or clone if missing/invalid/mismatched.
 
@@ -156,10 +193,12 @@ def open_or_clone(repository: Dict) -> Repo:
                 logger.warning("Failed to remove repo dir before re-clone: %s", re)
         repo_dir.mkdir(parents=True, exist_ok=True)
 
+        # Resolve credentials from credential_name or legacy fields
+        username, token = resolve_git_credentials(repository)
         clone_url = add_auth_to_url(
             repository.get("url", ""),
-            repository.get("username"),
-            repository.get("token"),
+            username,
+            token,
         )
 
         with set_ssl_env(repository):

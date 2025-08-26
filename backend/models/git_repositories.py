@@ -21,8 +21,6 @@ class GitRepositoryRequest(BaseModel):
     category: GitCategory = Field(..., description="Repository category")
     url: str = Field(..., description="Git repository URL")
     branch: str = Field(default="main", description="Default branch")
-    username: Optional[str] = Field(None, description="Git username (legacy; prefer credential_name)")
-    token: Optional[str] = Field(None, description="Git personal access token (legacy; prefer credential_name)")
     credential_name: Optional[str] = Field(None, description="Name of stored token credential to use")
     path: Optional[str] = Field(None, description="Path within repository")
     verify_ssl: bool = Field(default=True, description="Verify SSL certificates")
@@ -37,9 +35,7 @@ class GitRepositoryResponse(BaseModel):
     category: GitCategory
     url: str
     branch: str
-    username: Optional[str]
     credential_name: Optional[str]
-    # Note: token is not included in response for security
     path: Optional[str]
     verify_ssl: bool
     description: Optional[str]
@@ -66,8 +62,6 @@ class GitRepositoryUpdateRequest(BaseModel):
     category: Optional[GitCategory] = Field(None, description="Repository category")
     url: Optional[str] = Field(None, description="Repository URL")
     branch: Optional[str] = Field(None, description="Default branch")
-    username: Optional[str] = Field(None, description="Git username (legacy; prefer credential_name)")
-    token: Optional[str] = Field(None, description="Git personal access token (legacy; prefer credential_name)")
     credential_name: Optional[str] = Field(None, description="Name of stored token credential to use")
     path: Optional[str] = Field(None, description="Path within repository")
     verify_ssl: Optional[bool] = Field(None, description="Verify SSL certificates")

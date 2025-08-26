@@ -19,8 +19,7 @@ from models.git_repositories import (
 )
 from git_repositories_manager import GitRepositoryManager
 from core.auth import verify_token
-import credentials_manager as cred_mgr
-from services.git_utils import repo_path as git_repo_path, add_auth_to_url, set_ssl_env
+from services.git_utils import repo_path as git_repo_path, add_auth_to_url, set_ssl_env, resolve_git_credentials
 
 logger = logging.getLogger(__name__)
 
@@ -40,13 +39,10 @@ async def get_repositories(
     try:
         repositories = git_repo_manager.get_repositories(category=category, active_only=active_only)
 
-        # Convert to response models (excluding sensitive data like tokens)
+        # Convert to response models
         repo_responses = []
         for repo in repositories:
-            repo_dict = dict(repo)
-            # Remove token from response for security
-            repo_dict.pop('token', None)
-            repo_responses.append(GitRepositoryResponse(**repo_dict))
+            repo_responses.append(GitRepositoryResponse(**dict(repo)))
 
         return GitRepositoryListResponse(
             repositories=repo_responses,
@@ -63,13 +59,10 @@ async def get_config_repositories(current_user: dict = Depends(verify_token)):
     try:
         repositories = git_repo_manager.get_repositories(category='configs', active_only=True)
 
-        # Convert to response models (excluding sensitive data like tokens)
+        # Convert to response models
         repo_responses = []
         for repo in repositories:
-            repo_dict = dict(repo)
-            # Remove token from response for security
-            repo_dict.pop('token', None)
-            repo_responses.append(GitRepositoryResponse(**repo_dict))
+            repo_responses.append(GitRepositoryResponse(**dict(repo)))
 
         return GitRepositoryListResponse(
             repositories=repo_responses,
@@ -97,9 +90,8 @@ async def get_selected_repository(current_user: dict = Depends(verify_token)):
             settings_manager.set_selected_git_repository(0)
             return {"selected_repository": None}
 
-        # Remove sensitive data
+        # Convert repository data
         repo_dict = dict(repository)
-        repo_dict.pop('token', None)
 
         return {
             "selected_repository": GitRepositoryResponse(**repo_dict),
@@ -154,9 +146,8 @@ async def get_repository(
         if not repository:
             raise HTTPException(status_code=404, detail="Repository not found")
 
-        # Remove token from response for security
+        # Convert repository data
         repo_dict = dict(repository)
-        repo_dict.pop('token', None)
 
         return GitRepositoryResponse(**repo_dict)
     except HTTPException:
@@ -195,10 +186,9 @@ async def create_repository(
     """Create a new git repository."""
     try:
         repo_data = repository.dict()
-        # Prefer credential_name over legacy inline credentials
-        if repo_data.get('credential_name'):
-            repo_data['username'] = None
-            repo_data['token'] = None
+        # Remove legacy username/token fields - only use credential_name
+        repo_data.pop('username', None)
+        repo_data.pop('token', None)
         repo_id = git_repo_manager.create_repository(repo_data)
 
         # Get the created repository
@@ -206,9 +196,8 @@ async def create_repository(
         if not created_repo:
             raise HTTPException(status_code=500, detail="Failed to retrieve created repository")
 
-        # Remove token from response for security
+        # Convert created repository data
         repo_dict = dict(created_repo)
-        repo_dict.pop('token', None)
 
         return GitRepositoryResponse(**repo_dict)
     except ValueError as e:
@@ -233,11 +222,9 @@ async def update_repository(
 
         # Update only provided fields
         repo_data = {k: v for k, v in repository.dict().items() if v is not None}
-        # Prefer credential_name over legacy inline credentials
-        if repo_data.get('credential_name'):
-            repo_data['username'] = None
-            # Only clear token if explicitly provided or credential selected
-            repo_data['token'] = None
+        # Remove legacy username/token fields - only use credential_name
+        repo_data.pop('username', None)
+        repo_data.pop('token', None)
 
         if not repo_data:
             raise HTTPException(status_code=400, detail="No fields to update")
@@ -251,9 +238,8 @@ async def update_repository(
         if not updated_repo:
             raise HTTPException(status_code=500, detail="Failed to retrieve updated repository")
 
-        # Remove token from response for security
+        # Convert updated repository data
         repo_dict = dict(updated_repo)
-        repo_dict.pop('token', None)
 
         return GitRepositoryResponse(**repo_dict)
     except HTTPException:
@@ -310,55 +296,24 @@ async def test_git_connection(
 
             # Build git clone command
             clone_url = test_request.url
-            resolved_username = test_request.username
-            resolved_token = test_request.token
-
-            # Resolve from credential_name when provided
-            if test_request.credential_name:
-                try:
-                    creds = cred_mgr.list_credentials(include_expired=False)
-                    match = next((c for c in creds if c['name'] == test_request.credential_name and c['type'] == 'token'), None)
-                    if not match:
-                        return GitConnectionTestResponse(
-                            success=False,
-                            message=f"Credential '{test_request.credential_name}' not found or not a token type",
-                            details={"available_credentials": [c['name'] for c in creds if c['type'] == 'token']}
-                        )
-                    resolved_username = match['username']
-                    try:
-                        # Check if credential has necessary data
-                        if not match.get('has_password', False):
-                            return GitConnectionTestResponse(
-                                success=False,
-                                message=f"Credential '{test_request.credential_name}' has no password/token data",
-                                details={}
-                            )
-                        resolved_token = cred_mgr.get_decrypted_password(match['id'])
-                        if not resolved_token:
-                            return GitConnectionTestResponse(
-                                success=False,
-                                message=f"Credential '{test_request.credential_name}' has empty or invalid token",
-                                details={}
-                            )
-                    except ValueError as ve:
-                        # This is the decryption error - likely SECRET_KEY mismatch
-                        return GitConnectionTestResponse(
-                            success=False,
-                            message="Failed to decrypt credential token - possible SECRET_KEY mismatch. Please recreate the credential.",
-                            details={"error": str(ve), "credential_id": match['id']}
-                        )
-                    except Exception as de:
-                        return GitConnectionTestResponse(
-                            success=False,
-                            message=f"Failed to decrypt credential token: {str(de)}",
-                            details={"error": str(de), "credential_id": match.get('id')}
-                        )
-                except Exception as ce:
-                    return GitConnectionTestResponse(
-                        success=False,
-                        message="Credential lookup error",
-                        details={"error": str(ce)}
-                    )
+            
+            # Create a temporary repository dict to use credential resolution
+            temp_repo = {
+                "credential_name": test_request.credential_name,
+                "username": test_request.username,  # fallback
+                "token": test_request.token  # fallback
+            }
+            
+            # Resolve credentials using the utility function
+            resolved_username, resolved_token = resolve_git_credentials(temp_repo)
+            
+            # Handle credential resolution errors
+            if test_request.credential_name and not resolved_token:
+                return GitConnectionTestResponse(
+                    success=False,
+                    message=f"Failed to resolve credential '{test_request.credential_name}' - credential not found, not a token type, or decryption failed",
+                    details={}
+                )
 
             if resolved_username and resolved_token:
                 # Add authentication to URL
@@ -651,26 +606,8 @@ async def sync_repository(
         is_git_repo = os.path.isdir(os.path.join(repo_path, ".git"))
         needs_clone = not is_git_repo
 
-        # 4) Resolve credentials (legacy or via credential_name)
-        resolved_username = repository.get("username")
-        resolved_token = repository.get("token")
-        if repository.get("credential_name"):
-            try:
-                creds = cred_mgr.list_credentials(include_expired=False)
-                match = next(
-                    (c for c in creds if c["name"] == repository["credential_name"] and c["type"] == "token"),
-                    None,
-                )
-                if match:
-                    resolved_username = match.get("username")
-                    try:
-                        resolved_token = cred_mgr.get_decrypted_password(match["id"])
-                    except Exception as de:
-                        logger.error(f"Failed to decrypt token for credential '{repository['credential_name']}': {de}")
-                else:
-                    logger.error(f"Credential '{repository['credential_name']}' not found or not a token type")
-            except Exception as ce:
-                logger.error(f"Credential lookup error: {ce}")
+        # 4) Resolve credentials using the utility function
+        resolved_username, resolved_token = resolve_git_credentials(repository)
 
         # 5) Build clone URL (inject auth for http/https)
         clone_url = repository["url"]

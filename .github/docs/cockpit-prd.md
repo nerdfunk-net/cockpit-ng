@@ -126,7 +126,7 @@ routers = [
 - **JWT Implementation:** Token-based authentication with configurable expiry
 - **Password Hashing:** bcrypt for secure password storage
 - **Session Management:** Browser localStorage with cross-tab synchronization
-- **Demo Credentials:** admin/admin and guest/guest for testing
+- **Authentication:** Uses credentials stored in the credential manager
 
 ### Template Management System
 - **Template Storage:** File system storage with SQLite metadata
@@ -283,12 +283,12 @@ LOG_LEVEL=INFO
 LOG_FORMAT=%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 # =============================================================================
-# AUTHENTICATION & DEMO CREDENTIALS
+# AUTHENTICATION & INITIAL CREDENTIALS
 # =============================================================================
 
-# Demo credentials (change in production)
-DEMO_USERNAME=admin
-DEMO_PASSWORD=admin
+# Initial credentials for first-time setup (change in production)
+INITIAL_USERNAME=admin
+INITIAL_PASSWORD=admin
 
 # =============================================================================
 # GIT & SSL CONFIGURATION
@@ -519,7 +519,7 @@ backend/
 - **Backend:** FastAPI TestClient for API endpoint testing
 - **Frontend:** Manual testing with browser developer tools
 - **Integration:** Docker compose for full stack testing
-- **Authentication:** Test with demo credentials (admin/admin)
+- **Authentication:** Test with credentials from the credential manager
 
 ## 12. User Interface & Application Structure
 
@@ -948,7 +948,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 ```python
 @router.post("/auth/login", response_model=LoginResponse)
 async def login(user_data: UserLogin):
-    # Demo credentials: admin/admin, guest/guest
+    # Authentication: Uses stored credentials from credential manager
     if user_data.username == "admin" and user_data.password == "admin":
         access_token = create_access_token(
             data={"sub": user_data.username, "role": "admin"}

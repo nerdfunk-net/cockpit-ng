@@ -38,7 +38,6 @@ interface GitRepository {
   category: string
   url: string
   branch: string
-  username?: string
   credential_name?: string
   path?: string
   verify_ssl: boolean

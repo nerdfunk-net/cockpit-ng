@@ -14,48 +14,47 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 @router.post("/login", response_model=LoginResponse)
 async def login(user_data: UserLogin):
     """
-    Authenticate user and return JWT token.
-
-    For demo purposes, using simple hardcoded auth.
-    In production, this should validate against a proper user database.
+    Authenticate user against stored credentials.
     """
     from config import settings
+    import credentials_manager as cred_mgr
 
-    if user_data.username == settings.demo_username and user_data.password == settings.demo_password:
-        access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
-        access_token = create_access_token(
-            data={"sub": user_data.username}, expires_delta=access_token_expires
-        )
+    # Try to authenticate against stored credentials
+    try:
+        credentials = cred_mgr.list_credentials(include_expired=False)
+        authenticated = False
+        
+        for cred in credentials:
+            if cred['username'] == user_data.username and cred['status'] == 'active':
+                try:
+                    stored_password = cred_mgr.get_decrypted_password(cred['id'])
+                    if stored_password == user_data.password:
+                        authenticated = True
+                        break
+                except Exception:
+                    continue  # Skip this credential if decryption fails
+        
+        if authenticated:
+            access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
+            access_token = create_access_token(
+                data={"sub": user_data.username}, expires_delta=access_token_expires
+            )
 
-        return LoginResponse(
-            access_token=access_token,
-            token_type="bearer",
-            expires_in=settings.access_token_expire_minutes * 60,
-            user={
-                "username": user_data.username,
-                "role": "admin" if user_data.username == settings.demo_username else "user"
-            }
-        )
+            return LoginResponse(
+                access_token=access_token,
+                token_type="bearer",
+                expires_in=settings.access_token_expire_minutes * 60,
+                user={
+                    "username": user_data.username,
+                    "role": "admin"  # All authenticated users are admin for now
+                }
+            )
+    except Exception as e:
+        # Log the error but don't expose it to the user
+        pass
 
-    # Try guest login
-    elif user_data.username == "guest" and user_data.password == "guest":
-        access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
-        access_token = create_access_token(
-            data={"sub": user_data.username}, expires_delta=access_token_expires
-        )
-
-        return LoginResponse(
-            access_token=access_token,
-            token_type="bearer", 
-            expires_in=settings.access_token_expire_minutes * 60,
-            user={
-                "username": user_data.username,
-                "role": "guest"
-            }
-        )
-
-    else:
-        raise HTTPException(
+    # No valid authentication found
+    raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
             headers={"WWW-Authenticate": "Bearer"},
@@ -77,10 +76,8 @@ async def refresh_token(current_user: str = Depends(verify_token)):
             data={"sub": current_user}, expires_delta=access_token_expires
         )
 
-        # Recreate minimal user info
-        role = "guest" if current_user == "guest" else (
-            "admin" if current_user == settings.demo_username else "user"
-        )
+        # All authenticated users are admin
+        role = "admin"
 
         return LoginResponse(
             access_token=access_token,
