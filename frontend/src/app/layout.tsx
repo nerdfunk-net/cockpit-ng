@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
 import React from "react";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { localFonts, loadLocalFonts } from "@/lib/local-fonts";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+// Use local font configuration for air-gapped environments
+const geistSans = {
+  variable: localFonts.geistSans.variable,
+  className: localFonts.geistSans.className,
+};
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const geistMono = {
+  variable: localFonts.geistMono.variable,
+  className: localFonts.geistMono.className,
+};
 
 export const metadata: Metadata = {
   title: "Cockpit Network Management",
@@ -44,6 +45,19 @@ export default function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        {/* Load local fonts for air-gapped environments */}
+        <link rel="stylesheet" href="/fonts/geist.css" media="all" />
+        <link rel="stylesheet" href="/fonts/geist-mono.css" media="all" />
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            :root {
+              --font-geist-sans: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              --font-geist-mono: 'Geist Mono', 'SF Mono', Monaco, Inconsolata, 'Roboto Mono', Consolas, 'Courier New', monospace;
+            }
+          `
+        }} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

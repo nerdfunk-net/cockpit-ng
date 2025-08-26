@@ -10,6 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
+
+// Template import response interface
+interface TemplateImportResponse {
+  success: boolean
+  message: string
+  imported_count?: number
+  skipped_count?: number
+  errors?: string[]
+  imported_templates?: string[]
+  failed_templates?: string[]
+}
 import { 
   FileCode, 
   Plus, 
@@ -529,7 +540,7 @@ export default function TemplateManagement() {
     
     try {
       // Use yaml_bulk import for YAML files
-      const response = await apiCall<any>('templates/import', {
+      const response = await apiCall<TemplateImportResponse>('templates/import', {
         method: 'POST',
         body: { 
           source_type: 'yaml_bulk',
@@ -543,12 +554,12 @@ export default function TemplateManagement() {
         failed: response.failed_templates || [] 
       })
       
-      if (response.imported_templates?.length > 0) {
+      if (response.imported_templates && response.imported_templates.length > 0) {
         showMessage(`Successfully imported ${response.imported_templates.length} templates`, 'success')
         loadTemplates() // Refresh the templates list
       }
       
-      if (response.failed_templates?.length > 0) {
+      if (response.failed_templates && response.failed_templates.length > 0) {
         showMessage(`Failed to import ${response.failed_templates.length} templates`, 'error')
       }
       

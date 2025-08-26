@@ -20,9 +20,53 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: process.env.DOCKER_BUILD === "true",
   },
-  
+
   eslint: {
     ignoreDuringBuilds: process.env.DOCKER_BUILD === "true",
+  },
+
+  // Air-gapped environment optimizations
+  images: {
+    // Disable external image optimization for air-gapped environments
+    unoptimized: process.env.NEXT_PUBLIC_AIR_GAPPED === "true",
+    // Allow local and data URLs for avatars
+    domains: [],
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+  },
+
+  // Bundle analyzer and optimization settings
+  experimental: {
+    // Optimize for offline usage
+    optimizeCss: false, // Disable to avoid critters issue
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+  },
+
+  // Headers for offline caching
+  async headers() {
+    if (process.env.NEXT_PUBLIC_AIR_GAPPED === "true") {
+      return [
+        {
+          source: '/fonts/:path*',
+          headers: [
+            {
+              key: 'Cache-Control',
+              value: 'public, max-age=31536000, immutable',
+            },
+          ],
+        },
+        {
+          source: '/_next/static/:path*',
+          headers: [
+            {
+              key: 'Cache-Control', 
+              value: 'public, max-age=31536000, immutable',
+            },
+          ],
+        },
+      ];
+    }
+    return [];
   },
 };
 

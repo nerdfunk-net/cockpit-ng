@@ -34,7 +34,14 @@ RUN npm ci
 
 # Copy frontend source and build
 COPY frontend/ ./
-RUN DOCKER_BUILD=true npm run build
+
+# Set air-gapped environment variables for build
+ENV NEXT_PUBLIC_AIR_GAPPED=true
+ENV NEXT_PUBLIC_ANALYTICS_DISABLED=true
+ENV NEXT_PUBLIC_CDN_DISABLED=true
+ENV DOCKER_BUILD=true
+
+RUN npm run build
 
 # Stage 3: Prepare Python dependencies
 FROM base AS python-builder

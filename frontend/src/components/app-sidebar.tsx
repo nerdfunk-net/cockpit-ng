@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { generateAvatarDataUrl } from '@/components/ui/local-avatar'
 import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/lib/auth-store'
 import { useState } from 'react'
@@ -139,7 +140,13 @@ export function AppSidebar({ className }: AppSidebarProps) {
           <div className="p-6 border-b border-slate-100">
             <div className="flex items-center space-x-3">
               <Avatar className="h-12 w-12 ring-2 ring-blue-100">
-                <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.username}`} />
+                <AvatarImage 
+                  src={generateAvatarDataUrl(user.username, 48)}
+                  onError={(e) => {
+                    // If local generation fails, hide the image and show fallback
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
                 <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold">
                   {user.username.slice(0, 2).toUpperCase()}
                 </AvatarFallback>

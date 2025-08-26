@@ -1,0 +1,33 @@
+/* Geist Mono Font - Local fallback for air-gapped environments */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  /* Use system monospace fonts as fallback when offline */
+  src: local('SF Mono'), local('Monaco'), local('Inconsolata'), local('Roboto Mono'), local('Consolas'), local('Courier New'), local('monospace');
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: local('SF Mono Medium'), local('Monaco'), local('Inconsolata'), local('Roboto Mono'), local('Consolas'), local('Courier New'), local('monospace');
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('SF Mono SemiBold'), local('Monaco'), local('Inconsolata'), local('Roboto Mono'), local('Consolas'), local('Courier New'), local('monospace');
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('SF Mono Bold'), local('Monaco'), local('Inconsolata'), local('Roboto Mono'), local('Consolas'), local('Courier New'), local('monospace');
+}
