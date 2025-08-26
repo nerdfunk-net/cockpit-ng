@@ -802,7 +802,7 @@ export default function AnsibleInventoryPage() {
             <Button
               onClick={previewResults}
               disabled={conditions.length === 0 || isLoadingPreview}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white border-0"
             >
               <Play className="h-4 w-4" />
               <span>{isLoadingPreview ? 'Loading...' : 'Preview Results'}</span>
@@ -935,7 +935,7 @@ export default function AnsibleInventoryPage() {
             </div>
           </div>
           <div className="p-6 bg-gradient-to-b from-white to-gray-50">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
               <div className="space-y-2">
                 <Label htmlFor="category">Template Category</Label>
                 <Select value={selectedCategory} onValueChange={(value) => {
@@ -975,27 +975,29 @@ export default function AnsibleInventoryPage() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            <div className="flex space-x-4">
-              <Button
-                onClick={generateInventory}
-                disabled={!selectedCategory || !selectedTemplate || isGeneratingInventory}
-                className="flex items-center space-x-2"
-              >
-                <Settings className="h-4 w-4" />
-                <span>{isGeneratingInventory ? 'Generating...' : 'Generate Inventory'}</span>
-              </Button>
+              <div>
+                <Button
+                  onClick={generateInventory}
+                  disabled={!selectedCategory || !selectedTemplate || isGeneratingInventory}
+                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white w-full"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>{isGeneratingInventory ? 'Generating...' : 'Generate Inventory'}</span>
+                </Button>
+              </div>
 
-              <Button
-                onClick={downloadInventory}
-                disabled={!selectedCategory || !selectedTemplate}
-                variant="outline"
-                className="flex items-center space-x-2"
-              >
-                <Download className="h-4 w-4" />
-                <span>Download</span>
-              </Button>
+              <div>
+                <Button
+                  onClick={downloadInventory}
+                  disabled={!selectedCategory || !selectedTemplate}
+                  variant="outline"
+                  className="flex items-center space-x-2 w-full"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>Download</span>
+                </Button>
+              </div>
             </div>
           </div>
         </div>

@@ -1078,7 +1078,7 @@ export default function TemplateManagement() {
                 <Button
                   onClick={editingTemplate ? handleUpdateTemplate : handleCreateTemplate}
                   disabled={isCreating || !formData.name || !formData.source}
-                  className="flex items-center space-x-2"
+                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white"
                 >
                   {isCreating && <RefreshCw className="h-4 w-4 animate-spin" />}
                   <Save className="h-4 w-4" />
@@ -1133,7 +1133,7 @@ export default function TemplateManagement() {
                 <Button 
                   onClick={scanImportDirectory}
                   disabled={importLoading}
-                  className="flex items-center space-x-2"
+                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white"
                 >
                   {importLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1238,7 +1238,7 @@ export default function TemplateManagement() {
                     <Button 
                       onClick={importSelectedTemplates}
                       disabled={importLoading || importableTemplates.filter(t => t.selected).length === 0}
-                      className="flex items-center space-x-2"
+                      className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white"
                     >
                       {importLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -1342,7 +1342,7 @@ export default function TemplateManagement() {
                   <Button 
                     onClick={scanImportDirectory}
                     variant="outline"
-                    className="flex items-center space-x-2"
+                    className="flex items-center space-x-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
                   >
                     <Search className="h-4 w-4" />
                     <span>Scan Directory</span>
