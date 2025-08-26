@@ -189,3 +189,4 @@ backend/data/cache/nautobot_stats.json
 /.venv-temp
 /docker/frontend-build
 /docker/airgap-artifacts
+/data/settings
