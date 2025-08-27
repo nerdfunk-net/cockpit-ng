@@ -5,7 +5,7 @@ Core authentication functions and dependencies.
 from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 from passlib.context import CryptContext
@@ -85,6 +85,74 @@ def verify_admin_token(user_info: dict = Depends(verify_token)) -> dict:
         )
     
     return user_info
+
+
+def verify_api_key(x_api_key: Optional[str] = None) -> dict:
+    """Verify API key and return user info."""
+    from fastapi import Header
+    import profile_manager
+    
+    if not x_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key required",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+    
+    # Search for user with matching API key
+    import sqlite3
+    from config import settings as config_settings
+    import os
+    
+    db_path = os.path.join(config_settings.data_directory, "settings", "cockpit_settings.db")
+    
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        
+        user_row = conn.execute(
+            "SELECT username FROM user_profiles WHERE api_key = ? AND api_key IS NOT NULL", 
+            (x_api_key,)
+        ).fetchone()
+        
+        conn.close()
+        
+        if not user_row:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid API key",
+                headers={"WWW-Authenticate": "ApiKey"},
+            )
+        
+        # Get user details from user management system
+        from services.user_management import get_user_by_username
+        user = get_user_by_username(user_row["username"])
+        
+        if not user or not user.get("is_active", False):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User account inactive",
+                headers={"WWW-Authenticate": "ApiKey"},
+            )
+        
+        return {
+            "username": user["username"],
+            "user_id": user["id"],
+            "permissions": user["permissions"]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Authentication error"
+        )
+
+
+def get_api_key_user(x_api_key: str = Header(None, alias="X-Api-Key")) -> dict:
+    """Dependency to get user info from API key header."""
+    return verify_api_key(x_api_key)
 
 
 # Backward compatibility function for existing code
