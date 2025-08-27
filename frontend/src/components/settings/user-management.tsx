@@ -370,31 +370,32 @@ export default function UserManagement() {
       )}
 
       {/* Main Content */}
-      <Card>
-        <CardHeader>
+      <Card className="overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle className="flex items-center space-x-2">
+              <CardTitle className="flex items-center space-x-2 text-white text-base">
                 <UserCheck className="h-5 w-5" />
                 <span>Users ({users.length})</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-blue-100">
                 Manage user accounts, roles, and access permissions
               </CardDescription>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 mr-4">
               <Button
                 onClick={loadUsers}
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 disabled={loading}
+                className="bg-white/20 text-white border-white/30 hover:bg-white/30"
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
               <Dialog open={showDialog} onOpenChange={setShowDialog}>
                 <DialogTrigger asChild>
-                  <Button onClick={openCreateDialog}>
+                  <Button onClick={openCreateDialog} className="bg-white text-blue-600 hover:bg-blue-50">
                     <Plus className="h-4 w-4 mr-2" />
                     Add User
                   </Button>
@@ -494,7 +495,7 @@ export default function UserManagement() {
                       >
                         Cancel
                       </Button>
-                      <Button onClick={saveUser} disabled={saving}>
+                      <Button onClick={saveUser} disabled={saving} className="bg-green-600 hover:bg-green-700 text-white">
                         {saving ? 'Saving...' : (editingUser ? 'Update' : 'Create')}
                       </Button>
                     </div>
