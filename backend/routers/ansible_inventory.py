@@ -7,7 +7,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response
 
-from core.auth import verify_token
+from core.auth import get_current_username
 from models.ansible_inventory import (
     InventoryPreviewRequest,
     InventoryPreviewResponse,
@@ -23,7 +23,7 @@ router = APIRouter(prefix="/api/ansible-inventory", tags=["ansible-inventory"])
 @router.post("/preview", response_model=InventoryPreviewResponse)
 async def preview_inventory(
     request: InventoryPreviewRequest,
-    current_user: str = Depends(verify_token)
+    current_user: str = Depends(get_current_username)
 ) -> InventoryPreviewResponse:
     """
     Preview inventory by executing logical operations and returning matching devices.
@@ -70,7 +70,7 @@ async def preview_inventory(
 @router.post("/generate", response_model=InventoryGenerateResponse)
 async def generate_inventory(
     request: InventoryGenerateRequest,
-    current_user: str = Depends(verify_token)
+    current_user: str = Depends(get_current_username)
 ) -> InventoryGenerateResponse:
     """
     Generate final Ansible inventory using Jinja2 template.
@@ -111,7 +111,7 @@ async def generate_inventory(
 @router.post("/download")
 async def download_inventory(
     request: InventoryGenerateRequest,
-    current_user: str = Depends(verify_token)
+    current_user: str = Depends(get_current_username)
 ):
     """
     Generate and download Ansible inventory as YAML file.
@@ -139,7 +139,7 @@ async def download_inventory(
 
 
 @router.get("/field-options")
-async def get_field_options(current_user: str = Depends(verify_token)) -> dict:
+async def get_field_options(current_user: str = Depends(get_current_username)) -> dict:
     """
     Get available field options for building logical operations.
     """
@@ -175,7 +175,7 @@ async def get_field_options(current_user: str = Depends(verify_token)) -> dict:
 
 
 @router.get("/custom-fields")
-async def get_custom_fields(current_user: str = Depends(verify_token)) -> dict:
+async def get_custom_fields(current_user: str = Depends(get_current_username)) -> dict:
     """
     Get available custom fields for building logical operations.
     """
@@ -196,7 +196,7 @@ async def get_custom_fields(current_user: str = Depends(verify_token)) -> dict:
 @router.get("/field-values/{field_name}")
 async def get_field_values(
     field_name: str,
-    current_user: str = Depends(verify_token)
+    current_user: str = Depends(get_current_username)
 ) -> dict:
     """
     Get available values for a specific field for dropdown population.

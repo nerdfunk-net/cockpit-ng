@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, validator
 from jinja2 import Environment, BaseLoader
 
-from core.auth import verify_token
+from core.auth import get_current_username
 from services.scan_service import scan_service
 from services.nautobot import nautobot_service
 from template_manager import template_manager
@@ -19,7 +19,7 @@ from git_repositories_manager import GitRepositoryManager
 """API router for Scan & Add wizard operations."""
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/scan", tags=["scan"], dependencies=[Depends(verify_token)])
+router = APIRouter(prefix="/api/scan", tags=["scan"], dependencies=[Depends(get_current_username)])
 
 
 # Request/Response Models

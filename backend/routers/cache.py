@@ -8,14 +8,14 @@ and management operations. All endpoints are protected by token authentication.
 from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 
-from core.auth import verify_token
+from core.auth import verify_admin_token
 from services.cache_service import cache_service
 
 router = APIRouter(prefix="/api/cache", tags=["cache"])
 
 
 @router.get("/stats")
-async def cache_stats(current_user: str = Depends(verify_token)):
+async def cache_stats(current_user: dict = Depends(verify_admin_token)):
     """Return comprehensive cache statistics including performance metrics."""
     try:
         stats = cache_service.stats()
@@ -27,7 +27,7 @@ async def cache_stats(current_user: str = Depends(verify_token)):
 @router.get("/entries")
 async def cache_entries(
     include_expired: bool = Query(False, description="Include expired entries in the response"),
-    current_user: str = Depends(verify_token)
+    current_user: dict = Depends(verify_admin_token)
 ):
     """Return detailed information about all cache entries."""
     try:
@@ -40,7 +40,7 @@ async def cache_entries(
 @router.get("/namespace/{namespace}")
 async def cache_namespace_info(
     namespace: str,
-    current_user: str = Depends(verify_token)
+    current_user: dict = Depends(verify_admin_token)
 ):
     """Return detailed information about a specific cache namespace."""
     try:
@@ -51,7 +51,7 @@ async def cache_namespace_info(
 
 
 @router.get("/performance")
-async def cache_performance(current_user: str = Depends(verify_token)):
+async def cache_performance(current_user: dict = Depends(verify_admin_token)):
     """Return detailed cache performance metrics."""
     try:
         metrics = cache_service.get_performance_metrics()
@@ -61,7 +61,7 @@ async def cache_performance(current_user: str = Depends(verify_token)):
 
 
 @router.post("/clear")
-async def clear_cache(payload: dict = None, current_user: str = Depends(verify_token)):
+async def clear_cache(payload: dict = None, current_user: dict = Depends(verify_admin_token)):
     """Clear cache entries. Accepts optional JSON { "namespace": "repo:123" }.
 
     If namespace is omitted or empty, clears the entire cache.
@@ -91,7 +91,7 @@ async def clear_cache(payload: dict = None, current_user: str = Depends(verify_t
 
 
 @router.post("/cleanup")
-async def cleanup_expired(current_user: str = Depends(verify_token)):
+async def cleanup_expired(current_user: dict = Depends(verify_admin_token)):
     """Remove expired cache entries and return count of removed items."""
     try:
         removed_count = cache_service.cleanup_expired()

@@ -3,17 +3,17 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List
 
-from core.auth import verify_token
+from core.auth import verify_admin_token
 from models.credentials import CredentialCreate, CredentialUpdate
 import credentials_manager as cred_mgr
 
 router = APIRouter(prefix="/api/credentials", tags=["credentials"])
 
-@router.get("", dependencies=[Depends(verify_token)])
+@router.get("", dependencies=[Depends(verify_admin_token)])
 def list_credentials(include_expired: bool = Query(False)) -> List[dict]:
     return cred_mgr.list_credentials(include_expired=include_expired)
 
-@router.post("", dependencies=[Depends(verify_token)])
+@router.post("", dependencies=[Depends(verify_admin_token)])
 def create_credential(payload: CredentialCreate) -> dict:
     try:
         return cred_mgr.create_credential(
@@ -26,7 +26,7 @@ def create_credential(payload: CredentialCreate) -> dict:
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.put("/{cred_id}", dependencies=[Depends(verify_token)])
+@router.put("/{cred_id}", dependencies=[Depends(verify_admin_token)])
 def update_credential(cred_id: int, payload: CredentialUpdate) -> dict:
     try:
         return cred_mgr.update_credential(
@@ -42,7 +42,7 @@ def update_credential(cred_id: int, payload: CredentialUpdate) -> dict:
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.delete("/{cred_id}", dependencies=[Depends(verify_token)])
+@router.delete("/{cred_id}", dependencies=[Depends(verify_admin_token)])
 def delete_credential(cred_id: int) -> dict:
     try:
         cred_mgr.delete_credential(cred_id)

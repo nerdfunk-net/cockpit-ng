@@ -55,9 +55,11 @@ export default function LoginPage() {
       
       if (data.access_token) {
         login(data.access_token, {
-          id: data.user?.id || '1',
+          id: data.user?.id?.toString() || '1',
           username: data.user?.username || username,
           email: data.user?.email,
+          role: data.user?.role,
+          permissions: data.user?.permissions,
         })
         router.push('/')
       } else {

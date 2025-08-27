@@ -37,8 +37,8 @@ export function useApi() {
     if (!response.ok) {
       const errorText = await response.text()
       
-      // Handle authentication failures - redirect to login instead of throwing error
-      if (response.status === 401 || response.status === 403) {
+      // Handle authentication failures (401) - redirect to login
+      if (response.status === 401) {
         logout() // Clear invalid token
         // Small delay to ensure logout completes
         setTimeout(() => {
@@ -46,6 +46,18 @@ export function useApi() {
         }, 100)
         // Return a rejected promise that components can handle gracefully
         return Promise.reject(new Error('Session expired, redirecting to login...'))
+      }
+      
+      // Handle authorization failures (403) - don't logout, just throw error with details
+      if (response.status === 403) {
+        let errorMessage = 'Access denied'
+        try {
+          const errorData = JSON.parse(errorText)
+          errorMessage = errorData.detail || errorMessage
+        } catch {
+          // If can't parse JSON, use default message
+        }
+        throw new Error(errorMessage)
       }
       
       throw new Error(`API Error ${response.status}: ${errorText}`)

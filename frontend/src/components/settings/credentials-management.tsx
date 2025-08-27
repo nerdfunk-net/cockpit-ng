@@ -87,11 +87,8 @@ export default function CredentialsManagement() {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       console.error('Error loading credentials:', errorMessage)
-      if (errorMessage.includes('401') || errorMessage.includes('403')) {
-        showMessage('Authentication required. Please log in again.', 'error')
-      } else {
-        showMessage('Failed to load credentials', 'error')
-      }
+      // Show the actual error message (which will be "Admin access required" for 403)
+      showMessage(errorMessage, 'error')
     } finally {
       setLoading(false)
     }
@@ -192,9 +189,7 @@ export default function CredentialsManagement() {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       console.error('Error saving credential:', errorMessage)
-      if (errorMessage.includes('401') || errorMessage.includes('403')) {
-        showMessage('Authentication required. Please log in again.', 'error')
-      } else if (errorMessage.includes('400')) {
+      if (errorMessage.includes('400')) {
         showMessage('Invalid credential data. Please check your inputs.', 'error')
       } else {
         showMessage('Failed to save credential', 'error')
@@ -219,11 +214,8 @@ export default function CredentialsManagement() {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       console.error('Error deleting credential:', errorMessage)
-      if (errorMessage.includes('401') || errorMessage.includes('403')) {
-        showMessage('Authentication required. Please log in again.', 'error')
-      } else {
-        showMessage('Failed to delete credential', 'error')
-      }
+      // Show the actual error message (which will be "Admin access required" for 403)  
+      showMessage(errorMessage, 'error')
     } finally {
       setDeleting(null)
     }

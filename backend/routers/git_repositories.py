@@ -18,7 +18,7 @@ from models.git_repositories import (
     GitSyncResponse
 )
 from git_repositories_manager import GitRepositoryManager
-from core.auth import verify_token
+from core.auth import verify_admin_token
 from services.git_utils import repo_path as git_repo_path, add_auth_to_url, set_ssl_env, resolve_git_credentials
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ git_repo_manager = GitRepositoryManager()
 async def get_repositories(
     category: Optional[str] = None,
     active_only: bool = False,
-    current_user: dict = Depends(verify_token)
+    current_user: dict = Depends(verify_admin_token)
 ):
     """Get all git repositories."""
     try:
@@ -54,7 +54,7 @@ async def get_repositories(
 
 
 @router.get("/configs")
-async def get_config_repositories(current_user: dict = Depends(verify_token)):
+async def get_config_repositories(current_user: dict = Depends(verify_admin_token)):
     """Get all Git repositories in the 'configs' category."""
     try:
         repositories = git_repo_manager.get_repositories(category='configs', active_only=True)
@@ -74,7 +74,7 @@ async def get_config_repositories(current_user: dict = Depends(verify_token)):
 
 
 @router.get("/selected")
-async def get_selected_repository(current_user: dict = Depends(verify_token)):
+async def get_selected_repository(current_user: dict = Depends(verify_admin_token)):
     """Get the currently selected Git repository for configuration comparison."""
     try:
         from settings_manager import settings_manager
@@ -105,7 +105,7 @@ async def get_selected_repository(current_user: dict = Depends(verify_token)):
 @router.post("/selected/{repository_id}")
 async def set_selected_repository(
     repository_id: int, 
-    current_user: dict = Depends(verify_token)
+    current_user: dict = Depends(verify_admin_token)
 ):
     """Set the selected Git repository for configuration comparison."""
     try:
@@ -138,7 +138,7 @@ async def set_selected_repository(
 @router.get("/{repo_id}", response_model=GitRepositoryResponse)
 async def get_repository(
     repo_id: int,
-    current_user: dict = Depends(verify_token)
+    current_user: dict = Depends(verify_admin_token)
 ):
     """Get a specific git repository by ID."""
     try:
@@ -160,7 +160,7 @@ async def get_repository(
 @router.get("/{repo_id}/edit")
 async def get_repository_for_edit(
     repo_id: int,
-    current_user: dict = Depends(verify_token)
+    current_user: dict = Depends(verify_admin_token)
 ):
     """Get a specific git repository by ID with all fields for editing."""
     try:
@@ -181,7 +181,7 @@ async def get_repository_for_edit(
 @router.post("", response_model=GitRepositoryResponse)
 async def create_repository(
     repository: GitRepositoryRequest,
-    current_user: dict = Depends(verify_token)
+    current_user: dict = Depends(verify_admin_token)
 ):
     """Create a new git repository."""
     try:
@@ -211,7 +211,7 @@ async def create_repository(
 async def update_repository(
     repo_id: int,
     repository: GitRepositoryUpdateRequest,
-    current_user: dict = Depends(verify_token)
+    current_user: dict = Depends(verify_admin_token)
 ):
     """Update a git repository."""
     try:
@@ -255,7 +255,7 @@ async def update_repository(
 async def delete_repository(
     repo_id: int,
     hard_delete: bool = True,
-    current_user: dict = Depends(verify_token)
+    current_user: dict = Depends(verify_admin_token)
 ):
     """Delete a git repository."""
     try:
@@ -280,7 +280,7 @@ async def delete_repository(
 @router.post("/test", response_model=GitConnectionTestResponse)
 async def test_git_connection(
     test_request: GitConnectionTestRequest,
-    current_user: dict = Depends(verify_token)
+    current_user: dict = Depends(verify_admin_token)
 ):
     """Test git repository connection."""
     try:
@@ -380,7 +380,7 @@ async def test_git_connection(
 @router.get("/{repo_id}/status")
 async def get_repository_status(
     repo_id: int,
-    current_user: dict = Depends(verify_token)
+    current_user: dict = Depends(verify_admin_token)
 ):
     """Get the status of a specific repository (exists, sync status, commit info)."""
     import subprocess
@@ -575,7 +575,7 @@ async def get_repository_status(
 @router.post("/{repo_id}/sync")
 async def sync_repository(
     repo_id: int,
-    current_user: dict = Depends(verify_token)
+    current_user: dict = Depends(verify_admin_token)
 ):
     """Sync a git repository (clone if not exists, pull if exists)."""
     import shutil
@@ -702,7 +702,7 @@ async def sync_repository(
 @router.post("/sync", response_model=GitSyncResponse)
 async def sync_repositories(
     sync_request: GitSyncRequest,
-    current_user: dict = Depends(verify_token)
+    current_user: dict = Depends(verify_admin_token)
 ):
     """Sync git repositories."""
     try:
@@ -756,7 +756,7 @@ async def search_repository_files(
     repo_id: int,
     query: str = "", 
     limit: int = 50,
-    current_user: dict = Depends(verify_token)
+    current_user: dict = Depends(verify_admin_token)
 ):
     """Search for files in a specific Git repository with filtering and pagination."""
     import fnmatch
@@ -875,7 +875,7 @@ async def search_repository_files(
 
 
 @router.get("/health")
-async def health_check(current_user: dict = Depends(verify_token)):
+async def health_check(current_user: dict = Depends(verify_admin_token)):
     """Health check for git repository management."""
     try:
         health = git_repo_manager.health_check()

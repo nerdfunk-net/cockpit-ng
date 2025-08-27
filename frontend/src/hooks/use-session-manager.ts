@@ -95,13 +95,15 @@ export function useSessionManager(config: SessionConfig = {}) {
 
       if (!response.ok) {
         console.log('Session Manager: Token refresh failed with status:', response.status)
-        if (response.status === 401 || response.status === 403) {
-          // Token is invalid, logout user
+        if (response.status === 401) {
+          // Token is invalid/expired, logout user
           console.log('Session Manager: Token invalid, logging out user')
           logout()
           return false
         }
-        throw new Error(`Token refresh failed: ${response.status}`)
+        // For 403 and other errors, don't logout but stop refresh attempts
+        console.log('Session Manager: Token refresh failed, but keeping user logged in')
+        return false
       }
 
       const data = await response.json()
@@ -110,9 +112,11 @@ export function useSessionManager(config: SessionConfig = {}) {
         console.log('Session Manager: Token refreshed successfully')
         debug.log('SessionManager: Token refresh successful, new token expires at:', new Date(data.expires_in * 1000 + Date.now()).toISOString())
         login(data.access_token, {
-          id: data.user.username,
+          id: data.user.id?.toString() || data.user.username,
           username: data.user.username,
-          email: data.user.email || `${data.user.username}@demo.com`
+          email: data.user.email || `${data.user.username}@demo.com`,
+          role: data.user.role,
+          permissions: data.user.permissions,
         })
         return true
       } else {

@@ -24,6 +24,7 @@ import {
   GitBranch,
   Zap,
   Key,
+  Users,
   LogOut,
   Menu,
   Eye,
@@ -79,6 +80,7 @@ const navigationSections: NavSection[] = [
       { label: 'Git Management', href: '/settings/git', icon: GitBranch },
       { label: 'Cache', href: '/settings/cache', icon: Zap },
       { label: 'Credentials', href: '/settings/credentials', icon: Key },
+      { label: 'User Management', href: '/settings/users', icon: Users },
     ],
   },
 ]
@@ -92,6 +94,9 @@ export function AppSidebar({ className }: AppSidebarProps) {
   const [isVisible, setIsVisible] = useState(true)
   const { user, logout } = useAuthStore()
   const pathname = usePathname()
+  
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin' || user?.permissions === 31
 
   const handleLogout = () => {
     logout()
@@ -99,6 +104,15 @@ export function AppSidebar({ className }: AppSidebarProps) {
   }
 
   const sidebarWidth = isCollapsed ? 'w-16' : 'w-64'
+  
+  // Filter navigation sections based on user role
+  const visibleSections = navigationSections.filter(section => {
+    // Hide Settings section for non-admin users
+    if (section.title === 'Settings' && !isAdmin) {
+      return false
+    }
+    return true
+  })
 
   return (
     <div
@@ -160,7 +174,14 @@ export function AppSidebar({ className }: AppSidebarProps) {
                       {user.username}
                     </p>
                   </Link>
-                  <p className="text-xs text-slate-500">Network Engineer</p>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-xs text-slate-500">Network Engineer</p>
+                    {user.role === 'admin' && (
+                      <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
+                        Admin
+                      </Badge>
+                    )}
+                  </div>
                   <div className="flex items-center space-x-1 mt-1">
                     <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
                     <span className="text-xs text-emerald-600 font-medium">Online</span>
@@ -174,7 +195,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto py-6">
           <nav className="space-y-8">
-            {navigationSections.map((section) => (
+            {visibleSections.map((section) => (
               <div key={section.title} className="px-6">
                 {!isCollapsed && (
                   <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">

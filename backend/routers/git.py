@@ -8,7 +8,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from git import InvalidGitRepositoryError, GitCommandError
 
-from core.auth import verify_token
+from core.auth import get_current_username
 from models.git import GitCommitRequest, GitBranchRequest
 from services.cache_service import cache_service
 from services.git_utils import open_or_clone
@@ -60,7 +60,7 @@ def get_git_repo_by_id(repo_id: int):
 
 
 @router.get("/repositories")
-async def list_repositories(current_user: str = Depends(verify_token)):
+async def list_repositories(current_user: str = Depends(get_current_username)):
     """Get list of all available git repositories."""
     try:
         from git_repositories_manager import GitRepositoryManager
@@ -81,7 +81,7 @@ async def list_repositories(current_user: str = Depends(verify_token)):
 
 
 @router.get("/{repo_id}/status")
-async def git_status(repo_id: int, current_user: str = Depends(verify_token)):
+async def git_status(repo_id: int, current_user: str = Depends(get_current_username)):
     """Get Git repository status."""
     try:
         repo = get_git_repo_by_id(repo_id)
@@ -161,7 +161,7 @@ async def git_status(repo_id: int, current_user: str = Depends(verify_token)):
 async def git_commit(
     repo_id: int,
     request: GitCommitRequest,
-    current_user: str = Depends(verify_token)
+    current_user: str = Depends(get_current_username)
 ):
     """Commit changes to Git repository."""
     try:
@@ -193,7 +193,7 @@ async def git_commit(
 
 
 @router.get("/{repo_id}/branches")
-async def git_branches(repo_id: int, current_user: str = Depends(verify_token)):
+async def git_branches(repo_id: int, current_user: str = Depends(get_current_username)):
     """Get list of Git branches."""
     try:
         repo = get_git_repo_by_id(repo_id)
@@ -224,7 +224,7 @@ async def git_branches(repo_id: int, current_user: str = Depends(verify_token)):
 async def git_branch(
     repo_id: int,
     request: GitBranchRequest,
-    current_user: str = Depends(verify_token)
+    current_user: str = Depends(get_current_username)
 ):
     """Create or switch to a Git branch."""
     try:
@@ -252,7 +252,7 @@ async def git_branch(
 async def git_diff(
     repo_id: int,
     commit_hash: str,
-    current_user: str = Depends(verify_token)
+    current_user: str = Depends(get_current_username)
 ):
     """Get diff for a specific commit."""
     try:
@@ -295,7 +295,7 @@ async def git_diff(
 async def git_commits(
     repo_id: int,
     branch_name: str,
-    current_user: str = Depends(verify_token)
+    current_user: str = Depends(get_current_username)
 ):
     """Get commits for a specific branch."""
     try:
@@ -353,7 +353,7 @@ async def git_files(
     repo_id: int,
     commit_hash: str,
     file_path: str = None,
-    current_user: str = Depends(verify_token)
+    current_user: str = Depends(get_current_username)
 ):
     """Get list of files in a specific commit or file content if file_path is provided."""
     try:
@@ -402,7 +402,7 @@ async def git_files(
 async def git_diff_compare(
     repo_id: int,
     request: dict,
-    current_user: str = Depends(verify_token)
+    current_user: str = Depends(get_current_username)
 ):
     """Compare files between two Git commits."""
     try:
@@ -504,7 +504,7 @@ async def git_diff_compare(
 async def get_file_last_change(
     repo_id: int,
     file_path: str,
-    current_user: str = Depends(verify_token)
+    current_user: str = Depends(get_current_username)
 ):
     """Get the last change information for a specific file."""
     try:
@@ -562,7 +562,7 @@ async def get_file_complete_history(
     repo_id: int, 
     file_path: str, 
     from_commit: str = None, 
-    current_user: str = Depends(verify_token)
+    current_user: str = Depends(get_current_username)
 ):
     """Get the complete history of a file from a specific commit backwards to its creation."""
     try:
@@ -679,7 +679,7 @@ async def get_file_complete_history(
 
 
 @router.get("/{repo_id}/debug")
-async def debug_git(repo_id: int, current_user: str = Depends(verify_token)):
+async def debug_git(repo_id: int, current_user: str = Depends(get_current_username)):
     """Debug Git setup."""
     try:
         repo = get_git_repo_by_id(repo_id)
@@ -699,7 +699,7 @@ async def debug_git(repo_id: int, current_user: str = Depends(verify_token)):
 @router.post("/compare-across-repos")
 async def compare_files_across_repos(
     request: dict,
-    current_user: str = Depends(verify_token)
+    current_user: str = Depends(get_current_username)
 ):
     """Compare files between different repositories."""
     try:
@@ -769,7 +769,7 @@ async def compare_files_across_repos(
 
 
 @router.get("/{repo_id}/info")
-async def get_repository_info(repo_id: int, current_user: str = Depends(verify_token)):
+async def get_repository_info(repo_id: int, current_user: str = Depends(get_current_username)):
     """Get detailed information about a repository."""
     try:
         from git_repositories_manager import GitRepositoryManager

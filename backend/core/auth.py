@@ -43,8 +43,8 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
-    """Verify JWT token and return username."""
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    """Verify JWT token and return user info."""
     from config import settings
 
     credentials_exception = HTTPException(
@@ -57,13 +57,37 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
         payload = jwt.decode(credentials.credentials, settings.secret_key, 
                            algorithms=[settings.algorithm])
         username: str = payload.get("sub")
+        user_id: int = payload.get("user_id")
+        permissions: int = payload.get("permissions", 0)
+        
         if username is None:
             raise credentials_exception
-        token_data = TokenData(username=username)
+            
+        return {
+            "username": username,
+            "user_id": user_id,
+            "permissions": permissions
+        }
     except jwt.InvalidTokenError:
         raise credentials_exception
 
-    if token_data.username is None:
-        raise credentials_exception
 
-    return token_data.username
+def verify_admin_token(user_info: dict = Depends(verify_token)) -> dict:
+    """Verify token and ensure user has admin permissions."""
+    from user_db_manager import PERMISSIONS_ADMIN
+    
+    # Check if user has full admin permissions (exact match)
+    user_permissions = user_info["permissions"]
+    if user_permissions != PERMISSIONS_ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    
+    return user_info
+
+
+# Backward compatibility function for existing code
+def get_current_username(user_info: dict = Depends(verify_token)) -> str:
+    """Extract username from user info for backward compatibility."""
+    return user_info["username"]

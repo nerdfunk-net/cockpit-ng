@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Server, FileCode, GitBranch, Zap, Key } from 'lucide-react'
+import { Server, FileCode, GitBranch, Zap, Key, Users } from 'lucide-react'
 
 const settingsPages = [
   {
@@ -42,6 +42,14 @@ const settingsPages = [
     icon: Key,
     color: 'text-red-600',
     bgColor: 'bg-red-100'
+  },
+  {
+    title: 'User Management',
+    description: 'Manage system users and permissions',
+    href: '/settings/users',
+    icon: Users,
+    color: 'text-indigo-600',
+    bgColor: 'bg-indigo-100'
   }
 ]
 

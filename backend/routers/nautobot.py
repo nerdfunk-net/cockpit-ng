@@ -7,7 +7,7 @@ import logging
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from core.auth import verify_token
+from core.auth import verify_admin_token
 from models.nautobot import (
     CheckIPRequest, 
     DeviceOnboardRequest, 
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/api/nautobot", tags=["nautobot"])
 
 
 @router.get("/test")
-async def test_current_nautobot_connection(current_user: str = Depends(verify_token)):
+async def test_current_nautobot_connection(current_user: dict = Depends(verify_admin_token)):
     """Test current Nautobot connection."""
     try:
         # Get nautobot config using the same pattern as the original code
@@ -77,7 +77,7 @@ async def get_devices(
     offset: Optional[int] = None,
     filter_type: Optional[str] = None,
     filter_value: Optional[str] = None,
-    current_user: str = Depends(verify_token)
+    current_user: dict = Depends(verify_admin_token)
 ):
     """Get list of devices from Nautobot with optional filtering and pagination.
 
@@ -404,7 +404,7 @@ async def get_devices(
 
 
 @router.get("/devices/{device_id}")
-async def get_device(device_id: str, current_user: str = Depends(verify_token)):
+async def get_device(device_id: str, current_user: dict = Depends(verify_admin_token)):
     """Get specific device details from Nautobot."""
     try:
         query = """
@@ -450,7 +450,7 @@ async def get_device(device_id: str, current_user: str = Depends(verify_token)):
 @router.post("/devices/search")
 async def search_devices(
     filters: DeviceFilter,
-    current_user: str = Depends(verify_token)
+    current_user: dict = Depends(verify_admin_token)
 ):
     """Search devices with filters."""
     try:
@@ -475,7 +475,7 @@ async def search_devices(
 
 
 @router.post("/check-ip")
-async def check_ip_address(request: CheckIPRequest, current_user: str = Depends(verify_token)):
+async def check_ip_address(request: CheckIPRequest, current_user: dict = Depends(verify_admin_token)):
     """Check if an IP address is available in Nautobot."""
     try:
         # Use GraphQL query as specified in nautobot_access.md
@@ -527,7 +527,7 @@ async def check_ip_address(request: CheckIPRequest, current_user: str = Depends(
 
 
 @router.post("/devices/onboard")
-async def onboard_device(request: DeviceOnboardRequest, current_user: str = Depends(verify_token)):
+async def onboard_device(request: DeviceOnboardRequest, current_user: dict = Depends(verify_admin_token)):
     """Onboard a new device to Nautobot."""
     try:
         # Get nautobot config
@@ -614,7 +614,7 @@ async def onboard_device(request: DeviceOnboardRequest, current_user: str = Depe
 
 
 @router.post("/sync-network-data")
-async def sync_network_data(request: SyncNetworkDataRequest, current_user: str = Depends(verify_token)):
+async def sync_network_data(request: SyncNetworkDataRequest, current_user: dict = Depends(verify_admin_token)):
     """Sync network data with Nautobot."""
     try:
         # Get nautobot config
@@ -688,7 +688,7 @@ async def sync_network_data(request: SyncNetworkDataRequest, current_user: str =
 
 # Additional endpoints for various Nautobot resources
 @router.get("/locations")
-async def get_locations(current_user: str = Depends(verify_token)):
+async def get_locations(current_user: dict = Depends(verify_admin_token)):
     """Get list of locations from Nautobot with parent and children relationships."""
     try:
                 # Try in-memory cache first
@@ -739,7 +739,7 @@ async def get_locations(current_user: str = Depends(verify_token)):
 
 
 @router.get("/namespaces")
-async def get_namespaces(current_user: str = Depends(verify_token)):
+async def get_namespaces(current_user: dict = Depends(verify_admin_token)):
     """Get list of namespaces from Nautobot."""
     try:
         query = """
@@ -768,7 +768,7 @@ async def get_namespaces(current_user: str = Depends(verify_token)):
 
 
 @router.get("/stats")
-async def get_nautobot_stats(current_user: str = Depends(verify_token)):
+async def get_nautobot_stats(current_user: dict = Depends(verify_admin_token)):
     """Get Nautobot statistics with 10-minute caching."""
     from datetime import datetime, timezone, timedelta
     import json
@@ -855,7 +855,7 @@ async def get_nautobot_stats(current_user: str = Depends(verify_token)):
 
 
 @router.get("/roles")
-async def get_nautobot_roles(current_user: str = Depends(verify_token)):
+async def get_nautobot_roles(current_user: dict = Depends(verify_admin_token)):
     """Get Nautobot device roles."""
     try:
         result = await nautobot_service.rest_request("extras/roles/")
@@ -868,7 +868,7 @@ async def get_nautobot_roles(current_user: str = Depends(verify_token)):
 
 
 @router.get("/roles/devices")
-async def get_nautobot_device_roles(current_user: str = Depends(verify_token)):
+async def get_nautobot_device_roles(current_user: dict = Depends(verify_admin_token)):
     """Get Nautobot roles specifically for dcim.device content type."""
     try:
         result = await nautobot_service.rest_request("extras/roles/?content_types=dcim.device")
@@ -881,7 +881,7 @@ async def get_nautobot_device_roles(current_user: str = Depends(verify_token)):
 
 
 @router.get("/platforms")
-async def get_nautobot_platforms(current_user: str = Depends(verify_token)):
+async def get_nautobot_platforms(current_user: dict = Depends(verify_admin_token)):
     """Get Nautobot platforms."""
     try:
         result = await nautobot_service.rest_request("dcim/platforms/")
@@ -894,7 +894,7 @@ async def get_nautobot_platforms(current_user: str = Depends(verify_token)):
 
 
 @router.get("/statuses")
-async def get_nautobot_statuses(current_user: str = Depends(verify_token)):
+async def get_nautobot_statuses(current_user: dict = Depends(verify_admin_token)):
     """Get all Nautobot statuses."""
     try:
         result = await nautobot_service.rest_request("extras/statuses/")
@@ -907,7 +907,7 @@ async def get_nautobot_statuses(current_user: str = Depends(verify_token)):
 
 
 @router.get("/statuses/device")
-async def get_nautobot_device_statuses(current_user: str = Depends(verify_token)):
+async def get_nautobot_device_statuses(current_user: dict = Depends(verify_admin_token)):
     """Get Nautobot device statuses."""
     try:
         result = await nautobot_service.rest_request("extras/statuses/?content_types=dcim.device")
@@ -920,7 +920,7 @@ async def get_nautobot_device_statuses(current_user: str = Depends(verify_token)
 
 
 @router.get("/statuses/interface")
-async def get_nautobot_interface_statuses(current_user: str = Depends(verify_token)):
+async def get_nautobot_interface_statuses(current_user: dict = Depends(verify_admin_token)):
     """Get Nautobot interface statuses."""
     try:
         result = await nautobot_service.rest_request("extras/statuses/?content_types=dcim.interface")
@@ -933,7 +933,7 @@ async def get_nautobot_interface_statuses(current_user: str = Depends(verify_tok
 
 
 @router.get("/statuses/ipaddress")
-async def get_nautobot_ipaddress_statuses(current_user: str = Depends(verify_token)):
+async def get_nautobot_ipaddress_statuses(current_user: dict = Depends(verify_admin_token)):
     """Get Nautobot IP address statuses."""
     try:
         result = await nautobot_service.rest_request("extras/statuses/?content_types=ipam.ipaddress")
@@ -946,7 +946,7 @@ async def get_nautobot_ipaddress_statuses(current_user: str = Depends(verify_tok
 
 
 @router.get("/statuses/prefix")
-async def get_nautobot_prefix_statuses(current_user: str = Depends(verify_token)):
+async def get_nautobot_prefix_statuses(current_user: dict = Depends(verify_admin_token)):
     """Get Nautobot prefix statuses."""
     try:
         result = await nautobot_service.rest_request("extras/statuses/?content_types=ipam.prefix")
@@ -959,7 +959,7 @@ async def get_nautobot_prefix_statuses(current_user: str = Depends(verify_token)
 
 
 @router.get("/statuses/combined")
-async def get_nautobot_combined_statuses(current_user: str = Depends(verify_token)):
+async def get_nautobot_combined_statuses(current_user: dict = Depends(verify_admin_token)):
     """Get combined Nautobot statuses."""
     try:
         result = await nautobot_service.rest_request("extras/statuses/")
@@ -972,7 +972,7 @@ async def get_nautobot_combined_statuses(current_user: str = Depends(verify_toke
 
 
 @router.get("/secret-groups")
-async def get_nautobot_secret_groups(current_user: str = Depends(verify_token)):
+async def get_nautobot_secret_groups(current_user: dict = Depends(verify_admin_token)):
     """Get Nautobot secret groups."""
     try:
         # Use GraphQL query as specified in nautobot_access.md
@@ -998,7 +998,7 @@ async def get_nautobot_secret_groups(current_user: str = Depends(verify_token)):
 
 
 @router.get("/device-types")
-async def get_nautobot_device_types(current_user: str = Depends(verify_token)):
+async def get_nautobot_device_types(current_user: dict = Depends(verify_admin_token)):
     """Get Nautobot device types."""
     try:
         result = await nautobot_service.rest_request("dcim/device-types/")
@@ -1011,7 +1011,7 @@ async def get_nautobot_device_types(current_user: str = Depends(verify_token)):
 
 
 @router.get("/manufacturers")
-async def get_nautobot_manufacturers(current_user: str = Depends(verify_token)):
+async def get_nautobot_manufacturers(current_user: dict = Depends(verify_admin_token)):
     """Get Nautobot manufacturers."""
     try:
         result = await nautobot_service.rest_request("dcim/manufacturers/")
@@ -1024,7 +1024,7 @@ async def get_nautobot_manufacturers(current_user: str = Depends(verify_token)):
 
 
 @router.get("/tags")
-async def get_nautobot_tags(current_user: str = Depends(verify_token)):
+async def get_nautobot_tags(current_user: dict = Depends(verify_admin_token)):
     """Get Nautobot tags."""
     try:
         result = await nautobot_service.rest_request("extras/tags/")
@@ -1037,7 +1037,7 @@ async def get_nautobot_tags(current_user: str = Depends(verify_token)):
 
 
 @router.get("/tags/devices")
-async def get_nautobot_device_tags(current_user: str = Depends(verify_token)):
+async def get_nautobot_device_tags(current_user: dict = Depends(verify_admin_token)):
     """Get Nautobot tags specifically for dcim.device content type."""
     try:
         result = await nautobot_service.rest_request("extras/tags/?content_types=dcim.device")
@@ -1050,7 +1050,7 @@ async def get_nautobot_device_tags(current_user: str = Depends(verify_token)):
 
 
 @router.get("/custom-fields/devices")
-async def get_nautobot_device_custom_fields(current_user: str = Depends(verify_token)):
+async def get_nautobot_device_custom_fields(current_user: dict = Depends(verify_admin_token)):
     """Get Nautobot custom fields specifically for dcim.device content type."""
     try:
         result = await nautobot_service.rest_request("extras/custom-fields/?content_types=dcim.device")

@@ -6,7 +6,7 @@ from __future__ import annotations
 from datetime import timedelta
 from fastapi import APIRouter, HTTPException, status, Depends
 from models.auth import UserLogin, LoginResponse
-from core.auth import create_access_token, verify_token
+from core.auth import create_access_token, get_current_username
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -14,30 +14,24 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 @router.post("/login", response_model=LoginResponse)
 async def login(user_data: UserLogin):
     """
-    Authenticate user against stored credentials.
+    Authenticate user against new user database.
     """
     from config import settings
-    import credentials_manager as cred_mgr
+    from services.user_management import authenticate_user
 
-    # Try to authenticate against stored credentials
     try:
-        credentials = cred_mgr.list_credentials(include_expired=False)
-        authenticated = False
+        # Authenticate against new user database
+        user = authenticate_user(user_data.username, user_data.password)
         
-        for cred in credentials:
-            if cred['username'] == user_data.username and cred['status'] == 'active':
-                try:
-                    stored_password = cred_mgr.get_decrypted_password(cred['id'])
-                    if stored_password == user_data.password:
-                        authenticated = True
-                        break
-                except Exception:
-                    continue  # Skip this credential if decryption fails
-        
-        if authenticated:
+        if user:
             access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
             access_token = create_access_token(
-                data={"sub": user_data.username}, expires_delta=access_token_expires
+                data={
+                    "sub": user["username"],
+                    "user_id": user["id"],
+                    "permissions": user["permissions"]
+                }, 
+                expires_delta=access_token_expires
             )
 
             return LoginResponse(
@@ -45,13 +39,17 @@ async def login(user_data: UserLogin):
                 token_type="bearer",
                 expires_in=settings.access_token_expire_minutes * 60,
                 user={
-                    "username": user_data.username,
-                    "role": "admin"  # All authenticated users are admin for now
+                    "id": user["id"],
+                    "username": user["username"],
+                    "realname": user["realname"],
+                    "role": user["role"],
+                    "permissions": user["permissions"],
+                    "debug": user["debug"]
                 }
             )
     except Exception as e:
         # Log the error but don't expose it to the user
-        pass
+        logger.error(f"Authentication error for user {user_data.username}: {e}")
 
     # No valid authentication found
     raise HTTPException(
@@ -62,35 +60,53 @@ async def login(user_data: UserLogin):
 
 
 @router.post("/refresh", response_model=LoginResponse)
-async def refresh_token(current_user: str = Depends(verify_token)):
+async def refresh_token(current_user: str = Depends(get_current_username)):
     """Issue a new access token for the currently authenticated user.
 
-    Uses the same expiration policy as login. Since we don't have a user DB,
-    we reconstruct a minimal user payload based on the username.
+    Uses the same expiration policy as login and fetches current user data.
     """
     from config import settings
+    from services.user_management import get_user_by_username
 
     try:
+        # Get current user data from database
+        user = get_user_by_username(current_user)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
         access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
         access_token = create_access_token(
-            data={"sub": current_user}, expires_delta=access_token_expires
+            data={
+                "sub": user["username"],
+                "user_id": user["id"],
+                "permissions": user["permissions"]
+            }, 
+            expires_delta=access_token_expires
         )
-
-        # All authenticated users are admin
-        role = "admin"
 
         return LoginResponse(
             access_token=access_token,
             token_type="bearer",
             expires_in=settings.access_token_expire_minutes * 60,
             user={
-                "username": current_user,
-                "role": role,
-            },
+                "id": user["id"],
+                "username": user["username"],
+                "realname": user["realname"],
+                "role": user["role"],
+                "permissions": user["permissions"],
+                "debug": user["debug"]
+            }
         )
+    except HTTPException:
+        raise
     except Exception as exc:
+        logger.error(f"Token refresh failed for user {current_user}: {exc}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token refresh failed: {exc}",
+            detail="Token refresh failed",
             headers={"WWW-Authenticate": "Bearer"},
         )

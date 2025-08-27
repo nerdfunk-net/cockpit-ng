@@ -24,6 +24,7 @@ from routers.ansible_inventory import router as ansible_inventory_router
 from routers.scan_and_add import router as scan_and_add_router
 from routers.cache import router as cache_router
 from routers.profile import router as profile_router
+from routers.user_management import router as user_management_router
 from health import router as health_router
 
 # Import auth dependency
@@ -56,6 +57,7 @@ app.include_router(credentials_router)
 app.include_router(scan_and_add_router)
 app.include_router(cache_router)
 app.include_router(profile_router)
+app.include_router(user_management_router)
 app.include_router(health_router)
 
 # Health check and basic endpoints

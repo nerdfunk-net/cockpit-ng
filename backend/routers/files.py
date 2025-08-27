@@ -11,7 +11,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import Response
 
-from core.auth import verify_token
+from core.auth import get_current_username
 from models.files import FileCompareRequest, FileExportRequest
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/api/files", tags=["files"])
 @router.get("/list")
 async def list_files(
     repo_id: Optional[int] = Query(None, description="Repository ID to list files from"),
-    current_user: str = Depends(verify_token)
+    current_user: str = Depends(get_current_username)
 ):
     """List all configuration files from a specific repository."""
     try:
@@ -82,7 +82,7 @@ async def list_files(
 @router.post("/compare")
 async def compare_files(
     file_comparison: FileCompareRequest,
-    current_user: str = Depends(verify_token)
+    current_user: str = Depends(get_current_username)
 ):
     """Compare two files from a Git repository."""
     try:
@@ -243,7 +243,7 @@ async def compare_files(
 @router.post("/export-diff")
 async def export_diff(
     file_comparison: FileExportRequest,
-    current_user: str = Depends(verify_token)
+    current_user: str = Depends(get_current_username)
 ):
     """Export comparison diff to a file."""
     try:
@@ -314,7 +314,7 @@ async def export_diff(
 @router.get("/config")
 async def get_file_config(
     repo_id: Optional[int] = Query(None, description="Repository ID to get config from"),
-    current_user: str = Depends(verify_token)
+    current_user: str = Depends(get_current_username)
 ):
     """Get file storage configuration information."""
     try:
