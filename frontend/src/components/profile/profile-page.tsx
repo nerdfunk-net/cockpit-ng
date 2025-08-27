@@ -12,13 +12,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { generateAvatarDataUrl } from '@/components/ui/local-avatar'
 import { useDebug } from '@/contexts/debug-context'
 import { debug, debugFetch } from '@/lib/debug'
-import { Eye, EyeOff, Save, User, Mail, Lock, Bug } from 'lucide-react'
+import { Eye, EyeOff, Save, User, Mail, Lock, Bug, Key, RefreshCw } from 'lucide-react'
 
 interface ProfileData {
   username: string
   realname: string
   email: string
   debug: boolean
+  api_key: string
 }
 
 export function ProfilePage() {
@@ -34,7 +35,8 @@ export function ProfilePage() {
     username: '',
     realname: '',
     email: '',
-    debug: false
+    debug: false,
+    api_key: ''
   })
 
   const [passwords, setPasswords] = useState({
@@ -69,7 +71,8 @@ export function ProfilePage() {
             username: data.username || user.username,
             realname: data.realname || '',
             email: data.email || '',
-            debug: data.debug || false
+            debug: data.debug || false,
+            api_key: data.api_key || ''
           })
         } else {
           debug.warn('ProfilePage: Profile endpoint not found, using default values')
@@ -78,7 +81,8 @@ export function ProfilePage() {
             username: user.username,
             realname: '',
             email: '',
-            debug: false
+            debug: false,
+            api_key: ''
           })
         }
       } catch (error) {
@@ -88,7 +92,8 @@ export function ProfilePage() {
           username: user.username,
           realname: '',
           email: '',
-          debug: false
+          debug: false,
+          api_key: ''
         })
       } finally {
         setIsLoading(false)
@@ -113,9 +118,36 @@ export function ProfilePage() {
     return true
   }
 
+  const validateApiKey = (apiKey: string) => {
+    if (apiKey && apiKey.length !== 42) {
+      return 'API key must be exactly 42 characters long'
+    }
+    return ''
+  }
+
+  const generateApiKey = () => {
+    // Generate a 42-character API key using alphanumeric characters
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    let result = ''
+    for (let i = 0; i < 42; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    setFormData(prev => ({ ...prev, api_key: result }))
+  }
+
   const handleSave = async () => {
     if (!validatePasswords()) {
       debug.warn('ProfilePage: Password validation failed')
+      return
+    }
+
+    const apiKeyError = validateApiKey(formData.api_key)
+    if (apiKeyError) {
+      toast({
+        title: 'Validation Error',
+        description: apiKeyError,
+        variant: 'destructive',
+      })
       return
     }
 
@@ -125,7 +157,8 @@ export function ProfilePage() {
       const updateData: any = {
         realname: formData.realname,
         email: formData.email,
-        debug: formData.debug
+        debug: formData.debug,
+        api_key: formData.api_key
       }
 
       // Only include password if it's being changed
@@ -210,13 +243,13 @@ export function ProfilePage() {
         </div>
 
         {/* Profile Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+        <Card className="overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
+            <CardTitle className="flex items-center space-x-2 text-white text-base">
               <User className="h-5 w-5" />
               <span>Personal Information</span>
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-blue-100">
               Update your personal details and account preferences
             </CardDescription>
           </CardHeader>
@@ -259,6 +292,54 @@ export function ProfilePage() {
               />
             </div>
 
+            {/* API Key */}
+            <div className="space-y-2">
+              <Label htmlFor="api_key" className="flex items-center space-x-2">
+                <Key className="h-4 w-4" />
+                <span>API Key</span>
+              </Label>
+              <div className="flex space-x-2">
+                <Input
+                  id="api_key"
+                  type="text"
+                  value={formData.api_key}
+                  onChange={(e) => setFormData(prev => ({ ...prev, api_key: e.target.value }))}
+                  placeholder="Enter your 42-character API key"
+                  className="font-mono text-sm"
+                  maxLength={42}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="default"
+                  onClick={generateApiKey}
+                  className="shrink-0 px-3"
+                  title="Generate new API key"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <p className="text-slate-500">
+                  API key must be exactly 42 characters long
+                </p>
+                <span className={`font-mono ${
+                  formData.api_key.length === 42 
+                    ? 'text-green-600' 
+                    : formData.api_key.length > 0 
+                      ? 'text-red-600' 
+                      : 'text-slate-400'
+                }`}>
+                  {formData.api_key.length}/42
+                </span>
+              </div>
+              {formData.api_key && formData.api_key.length !== 42 && (
+                <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+                  API key must be exactly 42 characters long
+                </div>
+              )}
+            </div>
+
             {/* Debug Mode */}
             <div className="flex items-center justify-between p-4 border rounded-lg">
               <div className="space-y-0.5">
@@ -279,13 +360,13 @@ export function ProfilePage() {
         </Card>
 
         {/* Password Change */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+        <Card className="overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
+            <CardTitle className="flex items-center space-x-2 text-white text-base">
               <Lock className="h-5 w-5" />
               <span>Change Password</span>
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-blue-100">
               Update your password (leave empty to keep current password)
             </CardDescription>
           </CardHeader>
@@ -355,8 +436,8 @@ export function ProfilePage() {
         <div className="flex justify-end">
           <Button
             onClick={handleSave}
-            disabled={isSaving || !!passwordError}
-            className="min-w-[120px]"
+            disabled={isSaving || !!passwordError || (formData.api_key.length > 0 && formData.api_key.length !== 42)}
+            className="min-w-[120px] bg-green-600 hover:bg-green-700 text-white"
           >
             {isSaving ? (
               <>

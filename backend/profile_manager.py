@@ -28,11 +28,20 @@ def _ensure_profile_table() -> None:
                 realname TEXT,
                 email TEXT,
                 debug_mode INTEGER NOT NULL DEFAULT 0,
+                api_key TEXT DEFAULT NULL,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
             """
         )
+        
+        # Add api_key column if it doesn't exist (for existing installations)
+        try:
+            conn.execute("SELECT api_key FROM user_profiles LIMIT 1")
+        except sqlite3.OperationalError:
+            # Column doesn't exist, add it
+            conn.execute("ALTER TABLE user_profiles ADD COLUMN api_key TEXT DEFAULT NULL")
+        
         conn.commit()
 
 def get_user_profile(username: str) -> Optional[Dict[str, Any]]:
@@ -52,6 +61,7 @@ def get_user_profile(username: str) -> Optional[Dict[str, Any]]:
                 "realname": row["realname"],
                 "email": row["email"],
                 "debug": bool(row["debug_mode"]),
+                "api_key": row["api_key"],
                 "created_at": row["created_at"],
                 "updated_at": row["updated_at"]
             }
@@ -61,14 +71,16 @@ def get_user_profile(username: str) -> Optional[Dict[str, Any]]:
             "username": username,
             "realname": "",
             "email": "",
-            "debug": False
+            "debug": False,
+            "api_key": None
         }
 
 def update_user_profile(
     username: str, 
     realname: Optional[str] = None,
     email: Optional[str] = None,
-    debug_mode: Optional[bool] = None
+    debug_mode: Optional[bool] = None,
+    api_key: Optional[str] = None
 ) -> Dict[str, Any]:
     """Update or create user profile."""
     _ensure_profile_table()
@@ -99,6 +111,10 @@ def update_user_profile(
                 updates.append("debug_mode = ?")
                 params.append(1 if debug_mode else 0)
             
+            if api_key is not None:
+                updates.append("api_key = ?")
+                params.append(api_key)
+            
             updates.append("updated_at = ?")
             params.append(now)
             params.append(username)
@@ -111,14 +127,15 @@ def update_user_profile(
             # Create new profile
             conn.execute(
                 """
-                INSERT INTO user_profiles (username, realname, email, debug_mode, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO user_profiles (username, realname, email, debug_mode, api_key, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     username,
                     realname or "",
                     email or "",
                     1 if debug_mode else 0,
+                    api_key,
                     now,
                     now
                 )
