@@ -15,6 +15,7 @@ import paramiko  # type: ignore
 
 from credentials_manager import get_decrypted_password, list_credentials
 from template_manager import template_manager
+
 try:
     import textfsm  # type: ignore
 except Exception:
@@ -78,7 +79,8 @@ class ScanService:
         """Remove jobs older than 24 hours."""
         now = time.time()
         expired_jobs = [
-            job_id for job_id, job in self._jobs.items()
+            job_id
+            for job_id, job in self._jobs.items()
             if now - job.created > JOB_TTL_SECONDS
         ]
         for job_id in expired_jobs:
@@ -86,9 +88,15 @@ class ScanService:
             logger.info(f"Purged expired scan job: {job_id}")
 
     def _next_job_id(self) -> str:
-        return f"scan_{int(time.time()*1000)}_{len(self._jobs)+1}"
+        return f"scan_{int(time.time() * 1000)}_{len(self._jobs) + 1}"
 
-    async def start_job(self, cidrs: List[str], credential_ids: List[int], discovery_mode: str = "napalm", parser_template_ids: Optional[List[int]] = None) -> ScanJob:
+    async def start_job(
+        self,
+        cidrs: List[str],
+        credential_ids: List[int],
+        discovery_mode: str = "napalm",
+        parser_template_ids: Optional[List[int]] = None,
+    ) -> ScanJob:
         """Start a new network scan job."""
         # Expand and deduplicate IP addresses from CIDRs
         targets: List[str] = []
@@ -132,7 +140,9 @@ class ScanService:
         self._purge_expired()
         return self._jobs.get(job_id)
 
-    async def _run_scan(self, job: ScanJob, targets: List[str], parser_template_ids: List[int]) -> None:
+    async def _run_scan(
+        self, job: ScanJob, targets: List[str], parser_template_ids: List[int]
+    ) -> None:
         """Execute the network scan with concurrency control."""
         semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
 
@@ -151,11 +161,17 @@ class ScanService:
             for tid in parser_template_ids:
                 try:
                     t = template_manager.get_template(tid)
-                    if t and t.get('category') == 'parser' and t.get('template_type') in ('textfsm', 'text'):
+                    if (
+                        t
+                        and t.get("category") == "parser"
+                        and t.get("template_type") in ("textfsm", "text")
+                    ):
                         content = template_manager.get_template_content(tid)
                         if content:
                             parser_templates.append((tid, content))
-                            logger.info(f"Loaded parser template {tid}: {t.get('name', 'Unknown')}")
+                            logger.info(
+                                f"Loaded parser template {tid}: {t.get('name', 'Unknown')}"
+                            )
                 except Exception as e:
                     logger.warning(f"Failed to preload parser template {tid}: {e}")
         logger.info(f"Total parser templates loaded: {len(parser_templates)}")
@@ -175,9 +191,17 @@ class ScanService:
             job.errors.append(str(e))
         finally:
             job.state = "finished"
-            logger.info(f"Scan job {job.job_id} completed: {job.authenticated} authenticated, {job.unreachable} unreachable, {job.auth_failed} auth failed")
+            logger.info(
+                f"Scan job {job.job_id} completed: {job.authenticated} authenticated, {job.unreachable} unreachable, {job.auth_failed} auth failed"
+            )
 
-    async def _process_ip(self, job: ScanJob, ip: str, credentials: Dict[int, Dict[str, Any]], parser_templates: List[Tuple[int, str]]):
+    async def _process_ip(
+        self,
+        job: ScanJob,
+        ip: str,
+        credentials: Dict[int, Dict[str, Any]],
+        parser_templates: List[Tuple[int, str]],
+    ):
         """Process a single IP address: ping test + credential trials."""
         # Step 1: Liveness check with retries
         alive = False
@@ -187,7 +211,7 @@ class ScanService:
                     alive = True
                     break
             except Exception as e:
-                logger.debug(f"Ping attempt {attempt+1} failed for {ip}: {e}")
+                logger.debug(f"Ping attempt {attempt + 1} failed for {ip}: {e}")
 
         if not alive:
             job.unreachable += 1
@@ -207,29 +231,44 @@ class ScanService:
             try:
                 password = get_decrypted_password(cred_id)
             except Exception as e:
-                logger.error(f"Failed to decrypt password for credential {cred_id}: {e}")
+                logger.error(
+                    f"Failed to decrypt password for credential {cred_id}: {e}"
+                )
                 continue
 
             # Try authentication based on discovery mode
-            result = await self._try_authentication(job.discovery_mode, ip, username, password, parser_templates)
+            result = await self._try_authentication(
+                job.discovery_mode, ip, username, password, parser_templates
+            )
             if result:
-                job.results.append(ScanResult(
-                    ip=ip,
-                    credential_id=cred_id,
-                    device_type=result["device_type"],
-                    hostname=result.get("hostname"),
-                    platform=result.get("platform")
-                ))
+                job.results.append(
+                    ScanResult(
+                        ip=ip,
+                        credential_id=cred_id,
+                        device_type=result["device_type"],
+                        hostname=result.get("hostname"),
+                        platform=result.get("platform"),
+                    )
+                )
                 job.authenticated += 1
                 job.scanned += 1
-                logger.info(f"Device detected: {ip} (type: {result['device_type']}, platform: {result.get('platform', 'unknown')})")
+                logger.info(
+                    f"Device detected: {ip} (type: {result['device_type']}, platform: {result.get('platform', 'unknown')})"
+                )
                 return
 
         # No credentials worked
         job.auth_failed += 1
         job.scanned += 1
 
-    async def _try_authentication(self, discovery_mode: str, ip: str, username: str, password: str, parser_templates: List[Tuple[int, str]]) -> Optional[Dict[str, str]]:
+    async def _try_authentication(
+        self,
+        discovery_mode: str,
+        ip: str,
+        username: str,
+        password: str,
+        parser_templates: List[Tuple[int, str]],
+    ) -> Optional[Dict[str, str]]:
         """Try authentication based on discovery mode."""
         if discovery_mode == "napalm":
             # Full device detection using Napalm + Paramiko
@@ -239,7 +278,7 @@ class ScanService:
                 return {
                     "device_type": "cisco",
                     "hostname": cisco_result.get("hostname"),
-                    "platform": cisco_result.get("platform")
+                    "platform": cisco_result.get("platform"),
                 }
 
             # Try Linux (paramiko + uname)
@@ -248,22 +287,30 @@ class ScanService:
                 return {
                     "device_type": "linux",
                     "hostname": linux_result.get("hostname"),
-                    "platform": linux_result.get("platform")
+                    "platform": linux_result.get("platform"),
                 }
 
         elif discovery_mode == "ssh-login":
             # Enhanced SSH authentication with basic device detection
-            ssh_result = await self._try_basic_ssh_login(ip, username, password, parser_templates)
+            ssh_result = await self._try_basic_ssh_login(
+                ip, username, password, parser_templates
+            )
             if ssh_result:
                 return {
                     "device_type": ssh_result.get("device_type", "unknown"),
                     "hostname": ssh_result.get("hostname"),
-                    "platform": ssh_result.get("platform", "ssh-accessible")
+                    "platform": ssh_result.get("platform", "ssh-accessible"),
                 }
 
         return None
 
-    async def _try_basic_ssh_login(self, ip: str, username: str, password: str, parser_templates: List[Tuple[int, str]]) -> Optional[Dict[str, str]]:
+    async def _try_basic_ssh_login(
+        self,
+        ip: str,
+        username: str,
+        password: str,
+        parser_templates: List[Tuple[int, str]],
+    ) -> Optional[Dict[str, str]]:
         """Basic SSH login test with simple device detection."""
         try:
             client = paramiko.SSHClient()
@@ -278,7 +325,7 @@ class ScanService:
                 banner_timeout=SSH_LOGIN_TIMEOUT,
                 auth_timeout=SSH_LOGIN_TIMEOUT,
                 look_for_keys=False,
-                allow_agent=False
+                allow_agent=False,
             )
 
             # Step 1: Try 'show version' command to detect Cisco device
@@ -290,7 +337,9 @@ class ScanService:
 
                 # If we get meaningful output and no errors, it's likely a Cisco device
                 if stdout_data and len(stdout_data) > 50 and not stderr_data:
-                    logger.info(f"'show version' succeeded on {ip}, detected as Cisco device")
+                    logger.info(
+                        f"'show version' succeeded on {ip}, detected as Cisco device"
+                    )
                     # Parse with TextFSM templates if available
                     hostname = None
                     platform = "cisco-unknown"
@@ -301,13 +350,24 @@ class ScanService:
                                 rows = fsm.ParseText(stdout_data)
                                 # Build dicts from headers
                                 for row in rows:
-                                    record = {h.lower(): row[i] for i, h in enumerate(fsm.header)}
+                                    record = {
+                                        h.lower(): row[i]
+                                        for i, h in enumerate(fsm.header)
+                                    }
                                     # Prefer hostname if present and non-empty
-                                    hn = record.get('hostname') or record.get('host') or record.get('device')
+                                    hn = (
+                                        record.get("hostname")
+                                        or record.get("host")
+                                        or record.get("device")
+                                    )
                                     if hn and len(hn.strip()) > 0:
                                         hostname = hn.strip()
                                     # Grab platform-like fields if exposed
-                                    plat = record.get('platform') or record.get('version') or record.get('os')
+                                    plat = (
+                                        record.get("platform")
+                                        or record.get("version")
+                                        or record.get("os")
+                                    )
                                     if plat and len(plat.strip()) > 0:
                                         platform = plat.strip()
                                     if hostname:
@@ -315,16 +375,22 @@ class ScanService:
                                 if hostname:
                                     break
                             except Exception as e:
-                                logger.debug(f"TextFSM parse failed for template {tid} on {ip}: {e}")
+                                logger.debug(
+                                    f"TextFSM parse failed for template {tid} on {ip}: {e}"
+                                )
                     # Fallback heuristic if no hostname yet
                     if not hostname:
-                        for line in stdout_data.split('\n'):
-                            if 'uptime is' in line.lower():
+                        for line in stdout_data.split("\n"):
+                            if "uptime is" in line.lower():
                                 parts = line.strip().split()
                                 if parts:
                                     hostname = parts[0]
                                     break
-                            elif line.strip() and not line.startswith(' ') and 'version' not in line.lower():
+                            elif (
+                                line.strip()
+                                and not line.startswith(" ")
+                                and "version" not in line.lower()
+                            ):
                                 hostname = line.strip()
                                 break
 
@@ -332,7 +398,7 @@ class ScanService:
                     return {
                         "device_type": "cisco",
                         "hostname": hostname,
-                        "platform": platform
+                        "platform": platform,
                     }
 
             except Exception as e:
@@ -349,16 +415,24 @@ class ScanService:
                     stdin, stdout, stderr = client.exec_command("hostname", timeout=5)
                     # Wait for command to complete
                     exit_status = stdout.channel.recv_exit_status()
-                    hostname_output = stdout.read().decode('utf-8', errors='ignore').strip()
-                    stderr_output = stderr.read().decode('utf-8', errors='ignore').strip()
+                    hostname_output = (
+                        stdout.read().decode("utf-8", errors="ignore").strip()
+                    )
+                    stderr_output = (
+                        stderr.read().decode("utf-8", errors="ignore").strip()
+                    )
 
-                    logger.info(f"Hostname command on {ip} - exit_status: {exit_status}, stdout: '{hostname_output}', stderr: '{stderr_output}'")
+                    logger.info(
+                        f"Hostname command on {ip} - exit_status: {exit_status}, stdout: '{hostname_output}', stderr: '{stderr_output}'"
+                    )
 
                     if hostname_output and exit_status == 0:
                         hostname = hostname_output
                         logger.info(f"Hostname command succeeded on {ip}: {hostname}")
                     else:
-                        logger.info(f"Hostname command failed on {ip} - exit_status: {exit_status}")
+                        logger.info(
+                            f"Hostname command failed on {ip} - exit_status: {exit_status}"
+                        )
 
                 except Exception as e:
                     logger.info(f"Hostname command exception on {ip}: {e}")
@@ -370,16 +444,24 @@ class ScanService:
                     stdin, stdout, stderr = client.exec_command("uname -a", timeout=5)
                     # Wait for command to complete
                     exit_status = stdout.channel.recv_exit_status()
-                    uname_output = stdout.read().decode('utf-8', errors='ignore').strip()
-                    stderr_output = stderr.read().decode('utf-8', errors='ignore').strip()
+                    uname_output = (
+                        stdout.read().decode("utf-8", errors="ignore").strip()
+                    )
+                    stderr_output = (
+                        stderr.read().decode("utf-8", errors="ignore").strip()
+                    )
 
-                    logger.info(f"uname command on {ip} - exit_status: {exit_status}, stdout: '{uname_output}', stderr: '{stderr_output}'")
+                    logger.info(
+                        f"uname command on {ip} - exit_status: {exit_status}, stdout: '{uname_output}', stderr: '{stderr_output}'"
+                    )
 
                     if uname_output and exit_status == 0:
                         platform = uname_output
                         logger.info(f"uname -a command succeeded on {ip}: {platform}")
                     else:
-                        logger.info(f"uname -a command failed on {ip} - exit_status: {exit_status}")
+                        logger.info(
+                            f"uname -a command failed on {ip} - exit_status: {exit_status}"
+                        )
 
                 except Exception as e:
                     logger.info(f"uname -a command exception on {ip}: {e}")
@@ -387,15 +469,19 @@ class ScanService:
                 # If at least hostname worked, consider it a Linux device
                 # (uname might fail on some restricted systems but hostname usually works)
                 if hostname:
-                    logger.info(f"Detected Linux device on {ip} - hostname: {hostname}, platform: {platform or 'unknown'}")
+                    logger.info(
+                        f"Detected Linux device on {ip} - hostname: {hostname}, platform: {platform or 'unknown'}"
+                    )
                     client.close()
                     return {
                         "device_type": "linux",
                         "hostname": hostname,
-                        "platform": platform or "linux-unknown"
+                        "platform": platform or "linux-unknown",
                     }
                 else:
-                    logger.info(f"Linux detection failed on {ip} - no hostname obtained")
+                    logger.info(
+                        f"Linux detection failed on {ip} - no hostname obtained"
+                    )
 
             except Exception as e:
                 logger.info(f"Linux commands failed on {ip}: {e}")
@@ -406,7 +492,7 @@ class ScanService:
             return {
                 "device_type": "unknown",
                 "hostname": None,
-                "platform": "ssh-accessible"
+                "platform": "ssh-accessible",
             }
 
         except Exception as e:
@@ -428,7 +514,7 @@ class ScanService:
                 cmd,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                timeout=PING_TIMEOUT_SECONDS + 1  # Allow extra time for process
+                timeout=PING_TIMEOUT_SECONDS + 1,  # Allow extra time for process
             )
             return result.returncode == 0
         except subprocess.TimeoutExpired:
@@ -436,7 +522,9 @@ class ScanService:
         except Exception:
             return False
 
-    async def _try_cisco_devices(self, ip: str, username: str, password: str) -> Optional[Dict[str, str]]:
+    async def _try_cisco_devices(
+        self, ip: str, username: str, password: str
+    ) -> Optional[Dict[str, str]]:
         """Try Cisco device detection using napalm drivers in priority order."""
         drivers = ["ios", "nxos_ssh", "iosxr"]
 
@@ -453,7 +541,9 @@ class ScanService:
 
         return None
 
-    def _napalm_connect_get_facts(self, driver_name: str, ip: str, username: str, password: str) -> Optional[Dict[str, str]]:
+    def _napalm_connect_get_facts(
+        self, driver_name: str, ip: str, username: str, password: str
+    ) -> Optional[Dict[str, str]]:
         """Connect to device using napalm driver and get facts."""
         try:
             driver_class = get_network_driver(driver_name)
@@ -461,16 +551,13 @@ class ScanService:
                 hostname=ip,
                 username=username,
                 password=password,
-                optional_args={"timeout": SSH_LOGIN_TIMEOUT}
+                optional_args={"timeout": SSH_LOGIN_TIMEOUT},
             )
 
             device.open()
             try:
                 facts = device.get_facts()
-                return {
-                    "hostname": facts.get("hostname", ip),
-                    "platform": driver_name
-                }
+                return {"hostname": facts.get("hostname", ip), "platform": driver_name}
             finally:
                 device.close()
 
@@ -478,11 +565,17 @@ class ScanService:
             logger.debug(f"Napalm {driver_name} connection failed for {ip}: {e}")
             return None
 
-    async def _try_linux_server(self, ip: str, username: str, password: str) -> Optional[Dict[str, str]]:
+    async def _try_linux_server(
+        self, ip: str, username: str, password: str
+    ) -> Optional[Dict[str, str]]:
         """Try Linux server detection using paramiko + uname commands."""
-        return await asyncio.to_thread(self._paramiko_uname_check, ip, username, password)
+        return await asyncio.to_thread(
+            self._paramiko_uname_check, ip, username, password
+        )
 
-    def _paramiko_uname_check(self, ip: str, username: str, password: str) -> Optional[Dict[str, str]]:
+    def _paramiko_uname_check(
+        self, ip: str, username: str, password: str
+    ) -> Optional[Dict[str, str]]:
         """Connect via SSH and run uname commands to identify Linux server."""
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -494,7 +587,7 @@ class ScanService:
                 password=password,
                 timeout=SSH_LOGIN_TIMEOUT,
                 allow_agent=False,
-                look_for_keys=False
+                look_for_keys=False,
             )
 
             # Execute uname -n (hostname)
@@ -507,10 +600,7 @@ class ScanService:
 
             # Verify it's actually a Linux system
             if kernel.lower() == "linux":
-                return {
-                    "hostname": hostname,
-                    "platform": "linux"
-                }
+                return {"hostname": hostname, "platform": "linux"}
             else:
                 logger.debug(f"Non-Linux system detected on {ip}: {kernel}")
                 return None

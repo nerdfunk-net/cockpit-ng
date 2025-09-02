@@ -62,7 +62,16 @@ def add_auth_to_url(url: str, username: Optional[str], token: Optional[str]) -> 
         if "@" in netloc:
             netloc = netloc.split("@", 1)[-1]
         netloc = f"{user_enc}:{token_enc}@{netloc}"
-        return urlunparse((parsed.scheme, netloc, parsed.path, parsed.params, parsed.query, parsed.fragment))
+        return urlunparse(
+            (
+                parsed.scheme,
+                netloc,
+                parsed.path,
+                parsed.params,
+                parsed.query,
+                parsed.fragment,
+            )
+        )
     except Exception:
         # Be conservative; return original URL on parsing errors
         return url
@@ -111,10 +120,10 @@ def set_ssl_env(repository: Dict):
 
 def resolve_git_credentials(repository: Dict) -> tuple[Optional[str], Optional[str]]:
     """Resolve username and token from credential_name or direct fields.
-    
+
     Args:
         repository: Repository metadata dict with credential_name or legacy username/token
-        
+
     Returns:
         Tuple of (username, token) or (None, None) if no credentials found
     """
@@ -122,9 +131,15 @@ def resolve_git_credentials(repository: Dict) -> tuple[Optional[str], Optional[s
     if repository.get("credential_name"):
         try:
             import credentials_manager as cred_mgr
+
             creds = cred_mgr.list_credentials(include_expired=False)
             match = next(
-                (c for c in creds if c["name"] == repository["credential_name"] and c["type"] == "token"),
+                (
+                    c
+                    for c in creds
+                    if c["name"] == repository["credential_name"]
+                    and c["type"] == "token"
+                ),
                 None,
             )
             if match:
@@ -133,15 +148,21 @@ def resolve_git_credentials(repository: Dict) -> tuple[Optional[str], Optional[s
                     token = cred_mgr.get_decrypted_password(match["id"])
                     return username, token
                 except Exception as de:
-                    logger.error(f"Failed to decrypt credential '{repository['credential_name']}': {de}")
+                    logger.error(
+                        f"Failed to decrypt credential '{repository['credential_name']}': {de}"
+                    )
                     return None, None
             else:
-                logger.warning(f"Credential '{repository['credential_name']}' not found or not token type")
+                logger.warning(
+                    f"Credential '{repository['credential_name']}' not found or not token type"
+                )
                 return None, None
         except Exception as ce:
-            logger.error(f"Error resolving credential '{repository['credential_name']}': {ce}")
+            logger.error(
+                f"Error resolving credential '{repository['credential_name']}': {ce}"
+            )
             return None, None
-    
+
     # Fallback to legacy direct username/token (for backward compatibility)
     return repository.get("username"), repository.get("token")
 
@@ -163,7 +184,9 @@ def open_or_clone(repository: Dict) -> Repo:
     repo_dir = repo_path(repository)
     repo_dir.mkdir(parents=True, exist_ok=True)
 
-    expected_url_norm = normalize_git_url(repository["url"]) if repository.get("url") else None
+    expected_url_norm = (
+        normalize_git_url(repository["url"]) if repository.get("url") else None
+    )
 
     try:
         repo = Repo(repo_dir)
@@ -209,7 +232,9 @@ def open_or_clone(repository: Dict) -> Repo:
                     branch=repository.get("branch", "main"),
                 )
                 logger.info(
-                    "Cloned repository %s from %s", repository.get("name"), repository.get("url")
+                    "Cloned repository %s from %s",
+                    repository.get("name"),
+                    repository.get("url"),
                 )
                 return repo
             except Exception:

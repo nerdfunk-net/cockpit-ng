@@ -11,6 +11,7 @@ print("Testing uvicorn module loading...")
 # Simulate what uvicorn does
 try:
     import importlib
+
     module = importlib.import_module("main")
     app = getattr(module, "app")
 
@@ -19,14 +20,14 @@ try:
 
     print("\nRoutes in app:")
     for i, route in enumerate(app.routes):
-        if hasattr(route, 'path'):
-            methods = getattr(route, 'methods', 'N/A')
-            print(f"  {i+1:2d}. {route.path} - {methods}")
+        if hasattr(route, "path"):
+            methods = getattr(route, "methods", "N/A")
+            print(f"  {i + 1:2d}. {route.path} - {methods}")
 
     # Check if there's an openapi schema
     try:
         schema = app.openapi()
-        paths = schema.get('paths', {})
+        paths = schema.get("paths", {})
         print(f"\nOpenAPI paths: {len(paths)}")
         for path in sorted(paths.keys()):
             print(f"  {path}")
@@ -36,4 +37,5 @@ try:
 except Exception as e:
     print(f"Error: {e}")
     import traceback
+
     traceback.print_exc()

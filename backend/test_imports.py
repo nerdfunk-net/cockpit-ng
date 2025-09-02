@@ -3,6 +3,7 @@
 
 import traceback
 
+
 def test_import(module_name, description):
     """Test importing a specific module."""
     try:
@@ -14,6 +15,7 @@ def test_import(module_name, description):
         print(f"❌ {description} failed: {e}")
         traceback.print_exc()
         return False
+
 
 def main():
     print("=== Testing Individual Imports ===")
@@ -48,15 +50,17 @@ def main():
     try:
         print("Importing main module...")
         import main
+
         print(f"Main module imported: {main}")
         print(f"Main module __dict__ keys: {list(main.__dict__.keys())}")
-        if hasattr(main, 'app'):
+        if hasattr(main, "app"):
             print(f"✅ App found: {main.app}")
         else:
             print("❌ App not found in main module")
     except Exception as e:
         print(f"❌ Main module import failed: {e}")
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     main()

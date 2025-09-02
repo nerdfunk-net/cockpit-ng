@@ -10,13 +10,14 @@ sys.path.insert(0, str(backend_dir))
 try:
     print("Attempting to import main module...")
     import main
+
     print("Import successful!")
 
     print(f"\nRegistered routes ({len(main.app.routes)}):")
     for i, route in enumerate(main.app.routes):
-        if hasattr(route, 'path'):
-            methods = getattr(route, 'methods', 'N/A')
-            print(f"  {i+1:2d}. {route.path} - {methods}")
+        if hasattr(route, "path"):
+            methods = getattr(route, "methods", "N/A")
+            print(f"  {i + 1:2d}. {route.path} - {methods}")
 
     print(f"\nTotal routes: {len(main.app.routes)}")
 

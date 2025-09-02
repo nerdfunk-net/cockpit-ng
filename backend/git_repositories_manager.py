@@ -18,6 +18,7 @@ class GitRepositoryManager:
         if db_path is None:
             # Use data directory from configuration
             from config import settings as config_settings
+
             data_dir = Path(config_settings.data_directory) / "settings"
             data_dir.mkdir(parents=True, exist_ok=True)
             db_path = data_dir / "git_repositories.db"
@@ -48,10 +49,13 @@ class GitRepositoryManager:
                     )
                 """)
 
-
                 # Create indexes for better performance
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_git_repos_category ON git_repositories (category)")
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_git_repos_active ON git_repositories (is_active)")
+                conn.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_git_repos_category ON git_repositories (category)"
+                )
+                conn.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_git_repos_active ON git_repositories (is_active)"
+                )
 
                 conn.commit()
                 logger.info(f"Git repositories database initialized at {self.db_path}")
@@ -63,29 +67,36 @@ class GitRepositoryManager:
         """Create a new git repository."""
         try:
             with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.execute("""
+                cursor = conn.execute(
+                    """
                     INSERT INTO git_repositories 
                     (name, category, url, branch, credential_name, path, verify_ssl, description, is_active)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    repo_data["name"],
-                    repo_data["category"],
-                    repo_data["url"],
-                    repo_data.get("branch", "main"),
-                    repo_data.get("credential_name"),
-                    repo_data.get("path"),
-                    repo_data.get("verify_ssl", True),
-                    repo_data.get("description"),
-                    repo_data.get("is_active", True)
-                ))
+                """,
+                    (
+                        repo_data["name"],
+                        repo_data["category"],
+                        repo_data["url"],
+                        repo_data.get("branch", "main"),
+                        repo_data.get("credential_name"),
+                        repo_data.get("path"),
+                        repo_data.get("verify_ssl", True),
+                        repo_data.get("description"),
+                        repo_data.get("is_active", True),
+                    ),
+                )
                 repo_id = cursor.lastrowid
                 conn.commit()
 
-                logger.info(f"Created git repository: {repo_data['name']} (ID: {repo_id})")
+                logger.info(
+                    f"Created git repository: {repo_data['name']} (ID: {repo_id})"
+                )
                 return repo_id
         except sqlite3.IntegrityError as e:
             if "UNIQUE constraint failed" in str(e):
-                raise ValueError(f"Repository with name '{repo_data['name']}' already exists")
+                raise ValueError(
+                    f"Repository with name '{repo_data['name']}' already exists"
+                )
             raise
         except Exception as e:
             logger.error(f"Error creating git repository: {e}")
@@ -96,9 +107,12 @@ class GitRepositoryManager:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
-                cursor = conn.execute("""
+                cursor = conn.execute(
+                    """
                     SELECT * FROM git_repositories WHERE id = ?
-                """, (repo_id,))
+                """,
+                    (repo_id,),
+                )
                 row = cursor.fetchone()
 
                 if row:
@@ -108,7 +122,9 @@ class GitRepositoryManager:
             logger.error(f"Error getting git repository {repo_id}: {e}")
             raise
 
-    def get_repositories(self, category: Optional[str] = None, active_only: bool = False) -> List[Dict[str, Any]]:
+    def get_repositories(
+        self, category: Optional[str] = None, active_only: bool = False
+    ) -> List[Dict[str, Any]]:
         """Get all git repositories, optionally filtered by category and active status."""
         try:
             with sqlite3.connect(self.db_path) as conn:
@@ -141,7 +157,17 @@ class GitRepositoryManager:
             set_clauses = []
             params = []
 
-            for field in ["name", "category", "url", "branch", "credential_name", "path", "verify_ssl", "description", "is_active"]:
+            for field in [
+                "name",
+                "category",
+                "url",
+                "branch",
+                "credential_name",
+                "path",
+                "verify_ssl",
+                "description",
+                "is_active",
+            ]:
                 if field in repo_data:
                     set_clauses.append(f"{field} = ?")
                     params.append(repo_data[field])
@@ -153,7 +179,9 @@ class GitRepositoryManager:
             params.append(repo_id)
 
             with sqlite3.connect(self.db_path) as conn:
-                query = f"UPDATE git_repositories SET {', '.join(set_clauses)} WHERE id = ?"
+                query = (
+                    f"UPDATE git_repositories SET {', '.join(set_clauses)} WHERE id = ?"
+                )
                 cursor = conn.execute(query, params)
                 updated = cursor.rowcount > 0
                 conn.commit()
@@ -163,7 +191,9 @@ class GitRepositoryManager:
                 return updated
         except sqlite3.IntegrityError as e:
             if "UNIQUE constraint failed" in str(e):
-                raise ValueError(f"Repository with name '{repo_data.get('name')}' already exists")
+                raise ValueError(
+                    f"Repository with name '{repo_data.get('name')}' already exists"
+                )
             raise
         except Exception as e:
             logger.error(f"Error updating git repository {repo_id}: {e}")
@@ -174,13 +204,18 @@ class GitRepositoryManager:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 if hard_delete:
-                    cursor = conn.execute("DELETE FROM git_repositories WHERE id = ?", (repo_id,))
+                    cursor = conn.execute(
+                        "DELETE FROM git_repositories WHERE id = ?", (repo_id,)
+                    )
                 else:
-                    cursor = conn.execute("""
+                    cursor = conn.execute(
+                        """
                         UPDATE git_repositories 
                         SET is_active = 0, updated_at = CURRENT_TIMESTAMP 
                         WHERE id = ?
-                    """, (repo_id,))
+                    """,
+                        (repo_id,),
+                    )
 
                 deleted = cursor.rowcount > 0
                 conn.commit()
@@ -193,18 +228,23 @@ class GitRepositoryManager:
             logger.error(f"Error deleting git repository {repo_id}: {e}")
             raise
 
-    def update_sync_status(self, repo_id: int, status: str, last_sync: Optional[datetime] = None) -> bool:
+    def update_sync_status(
+        self, repo_id: int, status: str, last_sync: Optional[datetime] = None
+    ) -> bool:
         """Update the sync status of a repository."""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 if last_sync is None:
                     last_sync = datetime.now()
 
-                cursor = conn.execute("""
+                cursor = conn.execute(
+                    """
                     UPDATE git_repositories 
                     SET sync_status = ?, last_sync = ?, updated_at = CURRENT_TIMESTAMP 
                     WHERE id = ?
-                """, (status, last_sync.isoformat(), repo_id))
+                """,
+                    (status, last_sync.isoformat(), repo_id),
+                )
 
                 updated = cursor.rowcount > 0
                 conn.commit()
@@ -221,10 +261,14 @@ class GitRepositoryManager:
         """Check the health of the git repository management system."""
         try:
             with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.execute("SELECT COUNT(*) as total, category FROM git_repositories GROUP BY category")
+                cursor = conn.execute(
+                    "SELECT COUNT(*) as total, category FROM git_repositories GROUP BY category"
+                )
                 category_counts = {row[1]: row[0] for row in cursor.fetchall()}
 
-                cursor = conn.execute("SELECT COUNT(*) FROM git_repositories WHERE is_active = 1")
+                cursor = conn.execute(
+                    "SELECT COUNT(*) FROM git_repositories WHERE is_active = 1"
+                )
                 active_count = cursor.fetchone()[0]
 
                 cursor = conn.execute("SELECT COUNT(*) FROM git_repositories")
@@ -235,12 +279,8 @@ class GitRepositoryManager:
                     "total_repositories": total_count,
                     "active_repositories": active_count,
                     "categories": category_counts,
-                    "database_path": self.db_path
+                    "database_path": self.db_path,
                 }
         except Exception as e:
             logger.error(f"Health check failed: {e}")
-            return {
-                "status": "error",
-                "error": str(e),
-                "database_path": self.db_path
-            }
+            return {"status": "error", "error": str(e), "database_path": self.db_path}

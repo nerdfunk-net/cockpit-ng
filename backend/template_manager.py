@@ -21,15 +21,19 @@ class TemplateManager:
     def __init__(self, db_path: str = None, storage_path: str = None):
         if db_path is None:
             # Use data/settings directory for persistence across containers
-            settings_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'settings')
+            settings_dir = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)), "data", "settings"
+            )
             os.makedirs(settings_dir, exist_ok=True)
-            self.db_path = os.path.join(settings_dir, 'cockpit_templates.db')
+            self.db_path = os.path.join(settings_dir, "cockpit_templates.db")
         else:
             self.db_path = db_path
 
         if storage_path is None:
             # Use data/templates directory for file storage
-            self.storage_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'templates')
+            self.storage_path = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)), "data", "templates"
+            )
             os.makedirs(self.storage_path, exist_ok=True)
         else:
             self.storage_path = storage_path
@@ -44,7 +48,7 @@ class TemplateManager:
                 cursor = conn.cursor()
 
                 # Create templates table
-                cursor.execute('''
+                cursor.execute("""
                     CREATE TABLE IF NOT EXISTS templates (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         name TEXT NOT NULL,
@@ -79,10 +83,10 @@ class TemplateManager:
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
-                ''')
+                """)
 
                 # Create template_versions table for history
-                cursor.execute('''
+                cursor.execute("""
                     CREATE TABLE IF NOT EXISTS template_versions (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         template_id INTEGER NOT NULL,
@@ -94,17 +98,29 @@ class TemplateManager:
                         change_notes TEXT,
                         FOREIGN KEY (template_id) REFERENCES templates (id) ON DELETE CASCADE
                     )
-                ''')
+                """)
 
                 # Create indexes for performance
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_templates_name ON templates(name)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_templates_source ON templates(source)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_templates_category ON templates(category)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_templates_active ON templates(is_active)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_template_versions_template_id ON template_versions(template_id)')
+                cursor.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_templates_name ON templates(name)"
+                )
+                cursor.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_templates_source ON templates(source)"
+                )
+                cursor.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_templates_category ON templates(category)"
+                )
+                cursor.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_templates_active ON templates(is_active)"
+                )
+                cursor.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_template_versions_template_id ON template_versions(template_id)"
+                )
 
                 # Create unique index for active template names
-                cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_templates_active_name ON templates(name) WHERE is_active = 1')
+                cursor.execute(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS idx_templates_active_name ON templates(name) WHERE is_active = 1"
+                )
 
                 conn.commit()
                 logger.info(f"Templates database initialized at {self.db_path}")
@@ -114,7 +130,6 @@ class TemplateManager:
             logger.error(f"Template database initialization failed: {e}")
             return False
 
-
     def create_template(self, template_data: Dict[str, Any]) -> Optional[int]:
         """Create a new template"""
         try:
@@ -122,75 +137,96 @@ class TemplateManager:
                 cursor = conn.cursor()
 
                 # Validate required fields
-                if not template_data.get('name'):
+                if not template_data.get("name"):
                     raise ValueError("Template name is required")
 
-                if not template_data.get('source'):
+                if not template_data.get("source"):
                     raise ValueError("Template source is required")
 
                 # Check for existing active template with same name
-                cursor.execute('SELECT id FROM templates WHERE name = ? AND is_active = 1', (template_data['name'],))
+                cursor.execute(
+                    "SELECT id FROM templates WHERE name = ? AND is_active = 1",
+                    (template_data["name"],),
+                )
                 existing = cursor.fetchone()
                 if existing:
-                    raise ValueError(f"Template with name '{template_data['name']}' already exists")
+                    raise ValueError(
+                        f"Template with name '{template_data['name']}' already exists"
+                    )
 
                 # Prepare data
                 now = datetime.now(timezone.utc).isoformat()
-                variables_json = json.dumps(template_data.get('variables', {}))
-                tags_json = json.dumps(template_data.get('tags', []))
+                variables_json = json.dumps(template_data.get("variables", {}))
+                tags_json = json.dumps(template_data.get("tags", []))
 
                 # Handle content based on source
-                content = template_data.get('content', '')
-                content_hash = hashlib.sha256(content.encode()).hexdigest() if content else None
+                content = template_data.get("content", "")
+                content_hash = (
+                    hashlib.sha256(content.encode()).hexdigest() if content else None
+                )
 
                 # Insert template
-                cursor.execute('''
+                cursor.execute(
+                    """
                     INSERT INTO templates (
                         name, source, template_type, category, description,
                         git_repo_url, git_branch, git_username, git_token, git_path, git_verify_ssl,
                         content, filename, content_hash,
                         variables, tags, is_active, updated_at
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    template_data['name'],
-                    template_data['source'],
-                    template_data.get('template_type', 'jinja2'),
-                    template_data.get('category'),
-                    template_data.get('description'),
-                    template_data.get('git_repo_url'),
-                    template_data.get('git_branch', 'main'),
-                    template_data.get('git_username'),
-                    template_data.get('git_token'),
-                    template_data.get('git_path'),
-                    template_data.get('git_verify_ssl', True),
-                    content,
-                    template_data.get('filename'),
-                    content_hash,
-                    variables_json,
-                    tags_json,
-                    True,
-                    now
-                ))
+                """,
+                    (
+                        template_data["name"],
+                        template_data["source"],
+                        template_data.get("template_type", "jinja2"),
+                        template_data.get("category"),
+                        template_data.get("description"),
+                        template_data.get("git_repo_url"),
+                        template_data.get("git_branch", "main"),
+                        template_data.get("git_username"),
+                        template_data.get("git_token"),
+                        template_data.get("git_path"),
+                        template_data.get("git_verify_ssl", True),
+                        content,
+                        template_data.get("filename"),
+                        content_hash,
+                        variables_json,
+                        tags_json,
+                        True,
+                        now,
+                    ),
+                )
 
                 template_id = cursor.lastrowid
 
                 # Save content to file if it's a file or webeditor template
-                if template_data['source'] in ['file', 'webeditor'] and content:
-                    self._save_template_to_file(template_id, template_data['name'], content, template_data.get('filename'))
+                if template_data["source"] in ["file", "webeditor"] and content:
+                    self._save_template_to_file(
+                        template_id,
+                        template_data["name"],
+                        content,
+                        template_data.get("filename"),
+                    )
 
                 # Create initial version
                 if content:
-                    self._create_template_version(cursor, template_id, content, content_hash, "Initial version")
+                    self._create_template_version(
+                        cursor, template_id, content, content_hash, "Initial version"
+                    )
 
                 conn.commit()
-                logger.info(f"Template '{template_data['name']}' created with ID {template_id}")
+                logger.info(
+                    f"Template '{template_data['name']}' created with ID {template_id}"
+                )
                 return template_id
 
         except ValueError as e:
             raise e
         except sqlite3.IntegrityError as e:
             if "UNIQUE constraint failed" in str(e):
-                raise ValueError(f"Template with name '{template_data['name']}' already exists")
+                raise ValueError(
+                    f"Template with name '{template_data['name']}' already exists"
+                )
             raise e
         except Exception as e:
             logger.error(f"Error creating template: {e}")
@@ -203,7 +239,7 @@ class TemplateManager:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
 
-                cursor.execute('SELECT * FROM templates WHERE id = ?', (template_id,))
+                cursor.execute("SELECT * FROM templates WHERE id = ?", (template_id,))
                 row = cursor.fetchone()
 
                 if row:
@@ -221,7 +257,9 @@ class TemplateManager:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
 
-                cursor.execute('SELECT * FROM templates WHERE name = ? AND is_active = 1', (name,))
+                cursor.execute(
+                    "SELECT * FROM templates WHERE name = ? AND is_active = 1", (name,)
+                )
                 row = cursor.fetchone()
 
                 if row:
@@ -232,7 +270,9 @@ class TemplateManager:
             logger.error(f"Error getting template by name '{name}': {e}")
             return None
 
-    def list_templates(self, category: str = None, source: str = None, active_only: bool = True) -> List[Dict[str, Any]]:
+    def list_templates(
+        self, category: str = None, source: str = None, active_only: bool = True
+    ) -> List[Dict[str, Any]]:
         """List templates with optional filtering"""
         try:
             with sqlite3.connect(self.db_path) as conn:
@@ -277,17 +317,20 @@ class TemplateManager:
 
                 # Prepare update data
                 now = datetime.now(timezone.utc).isoformat()
-                variables_json = json.dumps(template_data.get('variables', {}))
-                tags_json = json.dumps(template_data.get('tags', []))
+                variables_json = json.dumps(template_data.get("variables", {}))
+                tags_json = json.dumps(template_data.get("tags", []))
 
-                content = template_data.get('content', current.get('content', ''))
-                content_hash = hashlib.sha256(content.encode()).hexdigest() if content else None
+                content = template_data.get("content", current.get("content", ""))
+                content_hash = (
+                    hashlib.sha256(content.encode()).hexdigest() if content else None
+                )
 
                 # Check if content changed
-                content_changed = content_hash != current.get('content_hash')
+                content_changed = content_hash != current.get("content_hash")
 
                 # Update template
-                cursor.execute('''
+                cursor.execute(
+                    """
                     UPDATE templates SET
                         name = ?, template_type = ?, category = ?, description = ?,
                         git_repo_url = ?, git_branch = ?, git_username = ?, git_token = ?, 
@@ -295,34 +338,46 @@ class TemplateManager:
                         content = ?, filename = ?, content_hash = ?,
                         variables = ?, tags = ?, updated_at = ?
                     WHERE id = ?
-                ''', (
-                    template_data.get('name', current['name']),
-                    template_data.get('template_type', current['template_type']),
-                    template_data.get('category', current['category']),
-                    template_data.get('description', current['description']),
-                    template_data.get('git_repo_url', current['git_repo_url']),
-                    template_data.get('git_branch', current['git_branch']),
-                    template_data.get('git_username', current['git_username']),
-                    template_data.get('git_token', current['git_token']),
-                    template_data.get('git_path', current['git_path']),
-                    template_data.get('git_verify_ssl', current['git_verify_ssl']),
-                    content,
-                    template_data.get('filename', current['filename']),
-                    content_hash,
-                    variables_json,
-                    tags_json,
-                    now,
-                    template_id
-                ))
+                """,
+                    (
+                        template_data.get("name", current["name"]),
+                        template_data.get("template_type", current["template_type"]),
+                        template_data.get("category", current["category"]),
+                        template_data.get("description", current["description"]),
+                        template_data.get("git_repo_url", current["git_repo_url"]),
+                        template_data.get("git_branch", current["git_branch"]),
+                        template_data.get("git_username", current["git_username"]),
+                        template_data.get("git_token", current["git_token"]),
+                        template_data.get("git_path", current["git_path"]),
+                        template_data.get("git_verify_ssl", current["git_verify_ssl"]),
+                        content,
+                        template_data.get("filename", current["filename"]),
+                        content_hash,
+                        variables_json,
+                        tags_json,
+                        now,
+                        template_id,
+                    ),
+                )
 
                 # Save content to file if needed
-                if current['source'] in ['file', 'webeditor'] and content:
-                    self._save_template_to_file(template_id, template_data.get('name', current['name']), content, template_data.get('filename', current.get('filename')))
+                if current["source"] in ["file", "webeditor"] and content:
+                    self._save_template_to_file(
+                        template_id,
+                        template_data.get("name", current["name"]),
+                        content,
+                        template_data.get("filename", current.get("filename")),
+                    )
 
                 # Create new version if content changed
                 if content_changed and content:
-                    self._create_template_version(cursor, template_id, content, content_hash, 
-                                                template_data.get('change_notes', 'Template updated'))
+                    self._create_template_version(
+                        cursor,
+                        template_id,
+                        content,
+                        content_hash,
+                        template_data.get("change_notes", "Template updated"),
+                    )
 
                 conn.commit()
                 logger.info(f"Template {template_id} updated")
@@ -342,16 +397,23 @@ class TemplateManager:
                     # Hard delete - remove from database and file system
                     template = self.get_template(template_id)
                     if template:
-                        cursor.execute('DELETE FROM templates WHERE id = ?', (template_id,))
+                        cursor.execute(
+                            "DELETE FROM templates WHERE id = ?", (template_id,)
+                        )
                         # Remove file if it exists
-                        if template['source'] in ['file', 'webeditor']:
-                            self._remove_template_file(template_id, template['name'])
+                        if template["source"] in ["file", "webeditor"]:
+                            self._remove_template_file(template_id, template["name"])
                 else:
                     # Soft delete - mark as inactive
-                    cursor.execute('UPDATE templates SET is_active = 0 WHERE id = ?', (template_id,))
+                    cursor.execute(
+                        "UPDATE templates SET is_active = 0 WHERE id = ?",
+                        (template_id,),
+                    )
 
                 conn.commit()
-                logger.info(f"Template {template_id} {'deleted' if hard_delete else 'deactivated'}")
+                logger.info(
+                    f"Template {template_id} {'deleted' if hard_delete else 'deactivated'}"
+                )
                 return True
 
         except Exception as e:
@@ -366,14 +428,16 @@ class TemplateManager:
                 return None
 
             # For Git templates, content might need to be fetched
-            if template['source'] == 'git':
+            if template["source"] == "git":
                 # TODO: Implement Git content fetching
-                return template.get('content')
+                return template.get("content")
 
             # For file/webeditor templates, try database first, then file
-            content = template.get('content')
-            if not content and template['source'] in ['file', 'webeditor']:
-                content = self._load_template_from_file(template_id, template['name'], template.get('filename'))
+            content = template.get("content")
+            if not content and template["source"] in ["file", "webeditor"]:
+                content = self._load_template_from_file(
+                    template_id, template["name"], template.get("filename")
+                )
 
             return content
 
@@ -381,7 +445,9 @@ class TemplateManager:
             logger.error(f"Error getting template content for {template_id}: {e}")
             return None
 
-    def render_template(self, template_name: str, category: str, data: Dict[str, Any]) -> str:
+    def render_template(
+        self, template_name: str, category: str, data: Dict[str, Any]
+    ) -> str:
         """Render a template using Jinja2 with provided data"""
         try:
             # Import Jinja2 here to avoid import errors if not installed
@@ -392,14 +458,18 @@ class TemplateManager:
             if not template:
                 # If no exact name match, try searching templates
                 templates = self.list_templates(category=category if category else None)
-                matching_templates = [t for t in templates if t['name'] == template_name]
+                matching_templates = [
+                    t for t in templates if t["name"] == template_name
+                ]
                 if matching_templates:
                     template = matching_templates[0]
                 else:
-                    raise ValueError(f"Template '{template_name}' not found in category '{category}'")
+                    raise ValueError(
+                        f"Template '{template_name}' not found in category '{category}'"
+                    )
 
             # Get template content
-            content = self.get_template_content(template['id'])
+            content = self.get_template_content(template["id"])
             if not content:
                 raise ValueError(f"Template content not found for '{template_name}'")
 
@@ -408,11 +478,15 @@ class TemplateManager:
             jinja_template = env.from_string(content)
             rendered = jinja_template.render(**data)
 
-            logger.info(f"Successfully rendered template '{template_name}' from category '{category}'")
+            logger.info(
+                f"Successfully rendered template '{template_name}' from category '{category}'"
+            )
             return rendered
 
         except Exception as e:
-            logger.error(f"Error rendering template '{template_name}' in category '{category}': {e}")
+            logger.error(
+                f"Error rendering template '{template_name}' in category '{category}': {e}"
+            )
             raise e
 
     def get_template_versions(self, template_id: int) -> List[Dict[str, Any]]:
@@ -422,11 +496,14 @@ class TemplateManager:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
 
-                cursor.execute('''
+                cursor.execute(
+                    """
                     SELECT * FROM template_versions 
                     WHERE template_id = ? 
                     ORDER BY version_number DESC
-                ''', (template_id,))
+                """,
+                    (template_id,),
+                )
 
                 rows = cursor.fetchall()
                 return [dict(row) for row in rows]
@@ -440,74 +517,80 @@ class TemplateManager:
         result = dict(row)
 
         # Parse JSON fields
-        if result.get('variables'):
+        if result.get("variables"):
             try:
-                result['variables'] = json.loads(result['variables'])
+                result["variables"] = json.loads(result["variables"])
             except json.JSONDecodeError:
-                result['variables'] = {}
+                result["variables"] = {}
 
-        if result.get('tags'):
+        if result.get("tags"):
             try:
-                result['tags'] = json.loads(result['tags'])
+                result["tags"] = json.loads(result["tags"])
             except json.JSONDecodeError:
-                result['tags'] = []
+                result["tags"] = []
 
         # Convert boolean fields
-        result['is_active'] = bool(result['is_active'])
-        result['git_verify_ssl'] = bool(result.get('git_verify_ssl', True))
+        result["is_active"] = bool(result["is_active"])
+        result["git_verify_ssl"] = bool(result.get("git_verify_ssl", True))
 
         return result
 
-    def _save_template_to_file(self, template_id: int, name: str, content: str, filename: str = None) -> None:
+    def _save_template_to_file(
+        self, template_id: int, name: str, content: str, filename: str = None
+    ) -> None:
         """Save template content to file system, preserving extension if possible"""
         try:
             # Use original extension if provided, else default to .txt
-            ext = '.txt'
+            ext = ".txt"
             if filename:
-                ext = os.path.splitext(filename)[1] or '.txt'
+                ext = os.path.splitext(filename)[1] or ".txt"
             else:
                 # Try to extract extension from name
-                if '.' in name:
-                    ext = os.path.splitext(name)[1] or '.txt'
-            safe_name = name.replace(' ', '_').replace('/', '_')
+                if "." in name:
+                    ext = os.path.splitext(name)[1] or ".txt"
+            safe_name = name.replace(" ", "_").replace("/", "_")
             file_out = f"{template_id}_{safe_name}{ext}"
             filepath = os.path.join(self.storage_path, file_out)
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 f.write(content)
             logger.debug(f"Template content saved to {filepath}")
         except Exception as e:
             logger.error(f"Error saving template to file: {e}")
 
-    def _load_template_from_file(self, template_id: int, name: str, filename: str = None) -> Optional[str]:
+    def _load_template_from_file(
+        self, template_id: int, name: str, filename: str = None
+    ) -> Optional[str]:
         """Load template content from file system, trying multiple extensions"""
         try:
-            safe_name = name.replace(' ', '_').replace('/', '_')
-            exts = ['.txt', '.j2', '.textfsm']
+            safe_name = name.replace(" ", "_").replace("/", "_")
+            exts = [".txt", ".j2", ".textfsm"]
             if filename:
                 exts.insert(0, os.path.splitext(filename)[1])
             else:
-                if '.' in name:
+                if "." in name:
                     exts.insert(0, os.path.splitext(name)[1])
             for ext in exts:
                 file_in = f"{template_id}_{safe_name}{ext}"
                 filepath = os.path.join(self.storage_path, file_in)
                 if os.path.exists(filepath):
-                    with open(filepath, 'r', encoding='utf-8') as f:
+                    with open(filepath, "r", encoding="utf-8") as f:
                         return f.read()
             return None
         except Exception as e:
             logger.error(f"Error loading template from file: {e}")
             return None
 
-    def _remove_template_file(self, template_id: int, name: str, filename: str = None) -> None:
+    def _remove_template_file(
+        self, template_id: int, name: str, filename: str = None
+    ) -> None:
         """Remove template file from file system, trying multiple extensions"""
         try:
-            safe_name = name.replace(' ', '_').replace('/', '_')
-            exts = ['.txt', '.j2', '.textfsm']
+            safe_name = name.replace(" ", "_").replace("/", "_")
+            exts = [".txt", ".j2", ".textfsm"]
             if filename:
                 exts.insert(0, os.path.splitext(filename)[1])
             else:
-                if '.' in name:
+                if "." in name:
                     exts.insert(0, os.path.splitext(name)[1])
             for ext in exts:
                 file_rm = f"{template_id}_{safe_name}{ext}"
@@ -518,23 +601,33 @@ class TemplateManager:
         except Exception as e:
             logger.error(f"Error removing template file: {e}")
 
-    def _create_template_version(self, cursor, template_id: int, content: str, content_hash: str, notes: str = "") -> None:
+    def _create_template_version(
+        self, cursor, template_id: int, content: str, content_hash: str, notes: str = ""
+    ) -> None:
         """Create a new version entry for a template"""
         try:
             # Get current version number
-            cursor.execute('SELECT MAX(version_number) FROM template_versions WHERE template_id = ?', (template_id,))
+            cursor.execute(
+                "SELECT MAX(version_number) FROM template_versions WHERE template_id = ?",
+                (template_id,),
+            )
             result = cursor.fetchone()
             version_number = (result[0] or 0) + 1
 
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO template_versions (template_id, version_number, content, content_hash, change_notes)
                 VALUES (?, ?, ?, ?, ?)
-            ''', (template_id, version_number, content, content_hash, notes))
+            """,
+                (template_id, version_number, content, content_hash, notes),
+            )
 
         except Exception as e:
             logger.error(f"Error creating template version: {e}")
 
-    def search_templates(self, query: str, search_content: bool = False) -> List[Dict[str, Any]]:
+    def search_templates(
+        self, query: str, search_content: bool = False
+    ) -> List[Dict[str, Any]]:
         """Search templates by name, description, category, or content"""
         try:
             with sqlite3.connect(self.db_path) as conn:
@@ -544,7 +637,8 @@ class TemplateManager:
                 search_pattern = f"%{query}%"
 
                 if search_content:
-                    cursor.execute('''
+                    cursor.execute(
+                        """
                         SELECT * FROM templates 
                         WHERE is_active = 1 AND (
                             name LIKE ? OR 
@@ -553,9 +647,17 @@ class TemplateManager:
                             content LIKE ?
                         )
                         ORDER BY name
-                    ''', (search_pattern, search_pattern, search_pattern, search_pattern))
+                    """,
+                        (
+                            search_pattern,
+                            search_pattern,
+                            search_pattern,
+                            search_pattern,
+                        ),
+                    )
                 else:
-                    cursor.execute('''
+                    cursor.execute(
+                        """
                         SELECT * FROM templates 
                         WHERE is_active = 1 AND (
                             name LIKE ? OR 
@@ -563,7 +665,9 @@ class TemplateManager:
                             category LIKE ?
                         )
                         ORDER BY name
-                    ''', (search_pattern, search_pattern, search_pattern))
+                    """,
+                        (search_pattern, search_pattern, search_pattern),
+                    )
 
                 rows = cursor.fetchall()
                 return [self._row_to_dict(row) for row in rows]
@@ -578,11 +682,11 @@ class TemplateManager:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
 
-                cursor.execute('''
+                cursor.execute("""
                     SELECT DISTINCT category FROM templates 
                     WHERE is_active = 1 AND category IS NOT NULL AND category != ''
                     ORDER BY category
-                ''')
+                """)
 
                 return [row[0] for row in cursor.fetchall()]
 
@@ -596,31 +700,32 @@ class TemplateManager:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
 
-                cursor.execute('SELECT COUNT(*) FROM templates WHERE is_active = 1')
+                cursor.execute("SELECT COUNT(*) FROM templates WHERE is_active = 1")
                 active_count = cursor.fetchone()[0]
 
-                cursor.execute('SELECT COUNT(*) FROM templates')
+                cursor.execute("SELECT COUNT(*) FROM templates")
                 total_count = cursor.fetchone()[0]
 
-                cursor.execute('SELECT COUNT(DISTINCT category) FROM templates WHERE category IS NOT NULL')
+                cursor.execute(
+                    "SELECT COUNT(DISTINCT category) FROM templates WHERE category IS NOT NULL"
+                )
                 categories_count = cursor.fetchone()[0]
 
                 return {
-                    'status': 'healthy',
-                    'database_path': self.db_path,
-                    'storage_path': self.storage_path,
-                    'active_templates': active_count,
-                    'total_templates': total_count,
-                    'categories': categories_count,
-                    'database_size': os.path.getsize(self.db_path) if os.path.exists(self.db_path) else 0
+                    "status": "healthy",
+                    "database_path": self.db_path,
+                    "storage_path": self.storage_path,
+                    "active_templates": active_count,
+                    "total_templates": total_count,
+                    "categories": categories_count,
+                    "database_size": os.path.getsize(self.db_path)
+                    if os.path.exists(self.db_path)
+                    else 0,
                 }
 
         except Exception as e:
             logger.error(f"Template database health check failed: {e}")
-            return {
-                'status': 'unhealthy',
-                'error': str(e)
-            }
+            return {"status": "unhealthy", "error": str(e)}
 
 
 # Global template manager instance

@@ -7,9 +7,10 @@ import os
 import shutil
 from config import settings
 
+
 def migrate_data():
     """Migrate data from old location to new location"""
-    old_data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+    old_data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
     new_data_dir = settings.data_directory
 
     print(f"Migrating data from: {old_data_dir}")
@@ -37,6 +38,7 @@ def migrate_data():
 
     except Exception as e:
         print(f"Migration failed: {e}")
+
 
 if __name__ == "__main__":
     migrate_data()

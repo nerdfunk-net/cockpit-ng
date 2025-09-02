@@ -41,7 +41,7 @@ app = FastAPI(
     version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    redirect_slashes=False
+    redirect_slashes=False,
 )
 
 # Include routers
@@ -60,6 +60,7 @@ app.include_router(profile_router)
 app.include_router(user_management_router)
 app.include_router(health_router)
 
+
 # Health check and basic endpoints
 @app.get("/")
 async def root():
@@ -69,7 +70,7 @@ async def root():
         "timestamp": datetime.now().isoformat(),
         "version": "2.0.0",
         "docs_url": "/docs",
-        "redoc_url": "/redoc"
+        "redoc_url": "/redoc",
     }
 
 
@@ -79,17 +80,14 @@ async def health_check():
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
-        "version": "2.0.0"
+        "version": "2.0.0",
     }
 
 
 @app.get("/api/test")
 async def test_endpoint():
     """Simple test endpoint."""
-    return {
-        "message": "Test endpoint working", 
-        "timestamp": datetime.now().isoformat()
-    }
+    return {"message": "Test endpoint working", "timestamp": datetime.now().isoformat()}
 
 
 # Legacy compatibility endpoints that might still be used by frontend
@@ -105,7 +103,7 @@ async def get_statistics():
     # For now, just return basic stats
     return {
         "message": "Use /api/nautobot/stats for detailed statistics",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
 
 
@@ -126,7 +124,7 @@ async def graphql_endpoint(query_data: dict, current_user: str = Depends(verify_
         if not query:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="GraphQL query is required"
+                detail="GraphQL query is required",
             )
 
         result = await nautobot_service.graphql_query(query, variables)
@@ -134,11 +132,11 @@ async def graphql_endpoint(query_data: dict, current_user: str = Depends(verify_
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"GraphQL query failed: {str(e)}"
+            detail=f"GraphQL query failed: {str(e)}",
         )
 
 
-@app.post("/api/nautobot/graphql")  
+@app.post("/api/nautobot/graphql")
 async def nautobot_graphql_endpoint(query_data: dict):
     """
     Execute GraphQL query against Nautobot - compatibility endpoint.
@@ -155,7 +153,7 @@ async def nautobot_graphql_endpoint(query_data: dict):
         if not query:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="GraphQL query is required"
+                detail="GraphQL query is required",
             )
 
         result = await nautobot_service.graphql_query(query, variables)
@@ -163,7 +161,7 @@ async def nautobot_graphql_endpoint(query_data: dict):
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"GraphQL query failed: {str(e)}"
+            detail=f"GraphQL query failed: {str(e)}",
         )
 
 
@@ -172,6 +170,7 @@ if __name__ == "__main__":
     from config import settings
 
     uvicorn.run(app, host="0.0.0.0", port=settings.port)
+
 
 # Startup prefetch for Git cache (commits, optionally refresh loop)
 @app.on_event("startup")
@@ -199,47 +198,59 @@ async def startup_prefetch_cache():
                 logger.info("Startup cache: prefetch_commits_once() starting")
                 selected_id = settings_manager.get_selected_git_repository()
                 if not selected_id:
-                    logger.warning("Startup cache: No repository selected; skipping commits prefetch")
+                    logger.warning(
+                        "Startup cache: No repository selected; skipping commits prefetch"
+                    )
                     return
-                    
+
                 repo = get_git_repo_by_id(selected_id)
                 # Determine branch; handle empty repos safely
                 try:
                     branch_name = repo.active_branch.name
                 except Exception:
-                    logger.warning("Startup cache: No active branch detected; skipping commits prefetch")
+                    logger.warning(
+                        "Startup cache: No active branch detected; skipping commits prefetch"
+                    )
                     return
 
                 # Skip if repo has no valid HEAD
                 try:
                     if not repo.head.is_valid():
-                        logger.info("Startup cache: Repository has no commits yet; nothing to prefetch")
+                        logger.info(
+                            "Startup cache: Repository has no commits yet; nothing to prefetch"
+                        )
                         return
                 except Exception:
-                    logger.info("Startup cache: Unable to validate HEAD; skipping prefetch")
+                    logger.info(
+                        "Startup cache: Unable to validate HEAD; skipping prefetch"
+                    )
                     return
 
                 # Build commits payload similar to /api/git/commits
                 limit = int(cache_cfg.get("max_commits", 500))
                 commits = []
                 for commit in repo.iter_commits(branch_name, max_count=limit):
-                    commits.append({
-                        "hash": commit.hexsha,
-                        "short_hash": commit.hexsha[:8],
-                        "message": commit.message.strip(),
-                        "author": {
-                            "name": commit.author.name,
-                            "email": commit.author.email,
-                        },
-                        "date": commit.committed_datetime.isoformat(),
-                        "files_changed": len(commit.stats.files),
-                    })
+                    commits.append(
+                        {
+                            "hash": commit.hexsha,
+                            "short_hash": commit.hexsha[:8],
+                            "message": commit.message.strip(),
+                            "author": {
+                                "name": commit.author.name,
+                                "email": commit.author.email,
+                            },
+                            "date": commit.committed_datetime.isoformat(),
+                            "files_changed": len(commit.stats.files),
+                        }
+                    )
 
                 ttl = int(cache_cfg.get("ttl_seconds", 600))
                 repo_scope = f"repo:{selected_id}" if selected_id else "repo:default"
                 cache_key = f"{repo_scope}:commits:{branch_name}"
                 cache_service.set(cache_key, commits, ttl)
-                logger.info(f"Startup cache: Prefetched {len(commits)} commits for branch '{branch_name}' (ttl={ttl}s)")
+                logger.info(
+                    f"Startup cache: Prefetched {len(commits)} commits for branch '{branch_name}' (ttl={ttl}s)"
+                )
             except Exception as e:
                 logger.warning(f"Startup cache: commits prefetch failed: {e}")
 
@@ -248,6 +259,7 @@ async def startup_prefetch_cache():
             try:
                 logger.info("Startup cache: prefetch_locations_once() starting")
                 from services.nautobot import nautobot_service
+
                 # Use the same GraphQL query shape as /api/nautobot/locations endpoint
                 query = """
                 query locations {
@@ -274,7 +286,9 @@ async def startup_prefetch_cache():
                 locations = result["data"]["locations"]
                 ttl = int(cache_cfg.get("ttl_seconds", 600))
                 cache_service.set("nautobot:locations:list", locations, ttl)
-                logger.info(f"Startup cache: Prefetched locations ({len(locations)} items) (ttl={ttl}s)")
+                logger.info(
+                    f"Startup cache: Prefetched locations ({len(locations)} items) (ttl={ttl}s)"
+                )
             except Exception as e:
                 logger.warning(f"Startup cache: locations prefetch failed: {e}")
 
@@ -291,7 +305,10 @@ async def startup_prefetch_cache():
 
         # Kick off a one-time prefetch without blocking startup (if enabled)
         if cache_cfg.get("prefetch_on_startup", True):
-            prefetch_items = cache_cfg.get("prefetch_items") or {"git": True, "locations": False}
+            prefetch_items = cache_cfg.get("prefetch_items") or {
+                "git": True,
+                "locations": False,
+            }
             # Map item keys to their prefetch coroutine
             prefetch_map = {
                 "git": prefetch_commits_once,
@@ -300,7 +317,9 @@ async def startup_prefetch_cache():
             # Launch tasks for all enabled items that we know how to prefetch
             for key, enabled in prefetch_items.items():
                 if enabled and key in prefetch_map:
-                    logger.info(f"Startup cache: prefetch enabled for '{key}' — scheduling task")
+                    logger.info(
+                        f"Startup cache: prefetch enabled for '{key}' — scheduling task"
+                    )
                     asyncio.create_task(prefetch_map[key]())
                 elif not enabled:
                     logger.info(f"Startup cache: prefetch disabled for '{key}'")
@@ -309,11 +328,16 @@ async def startup_prefetch_cache():
         # Start background refresh if requested (applies to git commits only)
         if int(cache_cfg.get("refresh_interval_minutes", 0)) > 0:
             # Only refresh commits if git prefetch is enabled
-            p_items = cache_cfg.get("prefetch_items") or {"git": True, "locations": False}
+            p_items = cache_cfg.get("prefetch_items") or {
+                "git": True,
+                "locations": False,
+            }
             if p_items.get("git", True):
                 logger.info("Startup cache: starting commits refresh loop task")
                 asyncio.create_task(refresh_loop())
             else:
-                logger.info("Startup cache: refresh loop disabled because git prefetch is off")
+                logger.info(
+                    "Startup cache: refresh loop disabled because git prefetch is off"
+                )
     except Exception as e:
         logger.warning(f"Startup cache: Failed to initialize cache prefetch: {e}")
