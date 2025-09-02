@@ -22,16 +22,18 @@ async def login(user_data: UserLogin):
     try:
         # Authenticate against new user database
         user = authenticate_user(user_data.username, user_data.password)
-        
+
         if user:
-            access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
+            access_token_expires = timedelta(
+                minutes=settings.access_token_expire_minutes
+            )
             access_token = create_access_token(
                 data={
                     "sub": user["username"],
                     "user_id": user["id"],
-                    "permissions": user["permissions"]
-                }, 
-                expires_delta=access_token_expires
+                    "permissions": user["permissions"],
+                },
+                expires_delta=access_token_expires,
             )
 
             return LoginResponse(
@@ -44,8 +46,8 @@ async def login(user_data: UserLogin):
                     "realname": user["realname"],
                     "role": user["role"],
                     "permissions": user["permissions"],
-                    "debug": user["debug"]
-                }
+                    "debug": user["debug"],
+                },
             )
     except Exception as e:
         # Log the error but don't expose it to the user
@@ -53,10 +55,10 @@ async def login(user_data: UserLogin):
 
     # No valid authentication found
     raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid username or password",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 @router.post("/refresh", response_model=LoginResponse)
@@ -83,9 +85,9 @@ async def refresh_token(current_user: str = Depends(get_current_username)):
             data={
                 "sub": user["username"],
                 "user_id": user["id"],
-                "permissions": user["permissions"]
-            }, 
-            expires_delta=access_token_expires
+                "permissions": user["permissions"],
+            },
+            expires_delta=access_token_expires,
         )
 
         return LoginResponse(
@@ -98,8 +100,8 @@ async def refresh_token(current_user: str = Depends(get_current_username)):
                 "realname": user["realname"],
                 "role": user["role"],
                 "permissions": user["permissions"],
-                "debug": user["debug"]
-            }
+                "debug": user["debug"],
+            },
         )
     except HTTPException:
         raise
@@ -126,10 +128,10 @@ async def api_key_login(user_info: dict = Depends(get_api_key_user)):
         access_token = create_access_token(
             data={
                 "sub": user_info["username"],
-                "user_id": user_info["user_id"], 
-                "permissions": user_info["permissions"]
+                "user_id": user_info["user_id"],
+                "permissions": user_info["permissions"],
             },
-            expires_delta=access_token_expires
+            expires_delta=access_token_expires,
         )
 
         return LoginResponse(
@@ -142,11 +144,11 @@ async def api_key_login(user_info: dict = Depends(get_api_key_user)):
                 "realname": user_info.get("realname", ""),
                 "role": "api_user",
                 "permissions": user_info["permissions"],
-                "debug": False
-            }
+                "debug": False,
+            },
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate access token"
+            detail="Failed to generate access token",
         )

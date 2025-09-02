@@ -19,15 +19,24 @@ from git_repositories_manager import GitRepositoryManager
 """API router for Scan & Add wizard operations."""
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/scan", tags=["scan"], dependencies=[Depends(get_current_username)])
+router = APIRouter(
+    prefix="/api/scan", tags=["scan"], dependencies=[Depends(get_current_username)]
+)
 
 
 # Request/Response Models
 class ScanStartRequest(BaseModel):
-    cidrs: List[str] = Field(..., max_items=10, description="List of CIDR networks to scan")
+    cidrs: List[str] = Field(
+        ..., max_items=10, description="List of CIDR networks to scan"
+    )
     credential_ids: List[int] = Field(..., description="List of credential IDs to try")
-    discovery_mode: str = Field(default="napalm", description="Discovery mode: napalm or ssh-login")
-    parser_template_ids: Optional[List[int]] = Field(default=None, description="Template IDs to use for parsing 'show version' output (textfsm)")
+    discovery_mode: str = Field(
+        default="napalm", description="Discovery mode: napalm or ssh-login"
+    )
+    parser_template_ids: Optional[List[int]] = Field(
+        default=None,
+        description="Template IDs to use for parsing 'show version' output (textfsm)",
+    )
 
     @validator("discovery_mode")
     def validate_discovery_mode(cls, v: str):
@@ -132,7 +141,9 @@ class OnboardResponse(BaseModel):
 async def start_scan(request: ScanStartRequest):
     """Start a new network scan job."""
     try:
-        logger.info(f"Starting scan job with CIDRs: {request.cidrs}, credentials: {request.credential_ids}, mode: {request.discovery_mode} template id: {request.parser_template_ids}")
+        logger.info(
+            f"Starting scan job with CIDRs: {request.cidrs}, credentials: {request.credential_ids}, mode: {request.discovery_mode} template id: {request.parser_template_ids}"
+        )
         job = await scan_service.start_job(
             request.cidrs,
             request.credential_ids,
@@ -141,15 +152,13 @@ async def start_scan(request: ScanStartRequest):
         )
 
         return ScanStartResponse(
-            job_id=job.job_id,
-            total_targets=job.total_targets,
-            state=job.state
+            job_id=job.job_id, total_targets=job.total_targets, state=job.state
         )
     except Exception as e:
         logger.error(f"Failed to start scan: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to start scan: {str(e)}"
+            detail=f"Failed to start scan: {str(e)}",
         )
 
 
@@ -160,8 +169,7 @@ async def get_scan_status(job_id: str):
 
     if not job:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Scan job not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Scan job not found"
         )
 
     return ScanStatusResponse(
@@ -174,7 +182,7 @@ async def get_scan_status(job_id: str):
             authenticated=job.authenticated,
             unreachable=job.unreachable,
             auth_failed=job.auth_failed,
-            driver_not_supported=job.driver_not_supported
+            driver_not_supported=job.driver_not_supported,
         ),
         results=[
             {
@@ -182,10 +190,10 @@ async def get_scan_status(job_id: str):
                 "credential_id": result.credential_id,
                 "device_type": result.device_type,
                 "hostname": result.hostname,
-                "platform": result.platform
+                "platform": result.platform,
             }
             for result in job.results
-        ]
+        ],
     )
 
 
@@ -196,8 +204,7 @@ async def onboard_devices(job_id: str, request: OnboardRequest):
     job = await scan_service.get_job(job_id)
     if not job:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Scan job not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Scan job not found"
         )
 
     # Validate devices against scan results
@@ -207,7 +214,7 @@ async def onboard_devices(job_id: str, request: OnboardRequest):
     if not valid_devices:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No valid devices selected for onboarding"
+            detail="No valid devices selected for onboarding",
         )
 
     # Separate Cisco and Linux devices
@@ -246,7 +253,7 @@ async def onboard_devices(job_id: str, request: OnboardRequest):
             logger.error(f"Linux inventory creation failed: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to create Linux inventory: {str(e)}"
+                detail=f"Failed to create Linux inventory: {str(e)}",
             )
 
     return OnboardResponse(
@@ -254,11 +261,13 @@ async def onboard_devices(job_id: str, request: OnboardRequest):
         cisco_queued=cisco_queued,
         linux_added=linux_added,
         inventory_path=inventory_path,
-        job_ids=job_ids
+        job_ids=job_ids,
     )
 
 
-async def _onboard_cisco_devices(cisco_devices: List[OnboardDevice]) -> tuple[int, List[str]]:
+async def _onboard_cisco_devices(
+    cisco_devices: List[OnboardDevice],
+) -> tuple[int, List[str]]:
     """Onboard Cisco devices via Nautobot API."""
     job_ids = []
     queued_count = 0
@@ -275,7 +284,7 @@ async def _onboard_cisco_devices(cisco_devices: List[OnboardDevice]) -> tuple[in
                 "role": device.role or "network",
                 "status": device.status or "Active",
                 "interface_status": device.interface_status or "Active",
-                "ip_status": device.ip_status or "Active"
+                "ip_status": device.ip_status or "Active",
             }
 
             # Call Nautobot onboarding API
@@ -284,9 +293,13 @@ async def _onboard_cisco_devices(cisco_devices: List[OnboardDevice]) -> tuple[in
             if response.get("job_id"):
                 job_ids.append(response["job_id"])
                 queued_count += 1
-                logger.info(f"Cisco device {device.ip} queued for onboarding with job {response['job_id']}")
+                logger.info(
+                    f"Cisco device {device.ip} queued for onboarding with job {response['job_id']}"
+                )
             else:
-                logger.warning(f"Cisco device {device.ip} onboarding returned no job ID")
+                logger.warning(
+                    f"Cisco device {device.ip} onboarding returned no job ID"
+                )
 
         except Exception as e:
             logger.error(f"Failed to onboard Cisco device {device.ip}: {e}")
@@ -315,8 +328,12 @@ async def _create_linux_inventory(
     devices_list = []  # This will also serve as all_devices (list of dicts)
     for device in linux_devices:
         # Normalize platform: avoid passing through 'detect'
-        platform_val = (device.platform or "linux")
-        if isinstance(platform_val, str) and platform_val.lower() in ("detect", "auto", "auto-detect"):
+        platform_val = device.platform or "linux"
+        if isinstance(platform_val, str) and platform_val.lower() in (
+            "detect",
+            "auto",
+            "auto-detect",
+        ):
             platform_val = "linux"
 
         d = {
@@ -335,7 +352,7 @@ async def _create_linux_inventory(
         logger.info(
             "[Scan&Add] all_devices list built (count=%d):\n%s",
             len(devices_list),
-            json.dumps(devices_list, indent=2, sort_keys=True)
+            json.dumps(devices_list, indent=2, sort_keys=True),
         )
     except Exception as e:
         logger.warning(f"Failed to log all_devices map: {e}")
@@ -346,7 +363,9 @@ async def _create_linux_inventory(
         try:
             content = template_manager.get_template_content(inventory_template_id)
             if not content:
-                raise ValueError(f"Template content not found for ID {inventory_template_id}")
+                raise ValueError(
+                    f"Template content not found for ID {inventory_template_id}"
+                )
             env = Environment(loader=BaseLoader())
             template = env.from_string(content)
             # all_devices must be a list of dicts; pass devices_list for both for compatibility
@@ -357,10 +376,14 @@ async def _create_linux_inventory(
             )
         except Exception as e:
             logger.warning(f"Template rendering failed, using JSON fallback: {e}")
-            rendered_content = json.dumps({"all_devices": devices_list, "devices": devices_list}, indent=2)
+            rendered_content = json.dumps(
+                {"all_devices": devices_list, "devices": devices_list}, indent=2
+            )
     else:
         # Fallback to JSON if no template selected
-        rendered_content = json.dumps({"all_devices": devices_list, "devices": devices_list}, indent=2)
+        rendered_content = json.dumps(
+            {"all_devices": devices_list, "devices": devices_list}, indent=2
+        )
 
     # Determine output path
     written_path: str
@@ -380,18 +403,27 @@ async def _create_linux_inventory(
                 # Find by name
                 repos = git_mgr.get_repositories()
                 for r in repos:
-                    if str(r.get("name", "")).lower() == str(git_repository_name).lower():
+                    if (
+                        str(r.get("name", "")).lower()
+                        == str(git_repository_name).lower()
+                    ):
                         repo = r
                         break
             except Exception:
                 repo = None
         if not repo:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Selected Git repository not found")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Selected Git repository not found",
+            )
 
         # Compute repo directory under data/git/<path or name>
         from config import settings as config_settings
-        sub_path = (repo.get('path') or repo.get('name') or '').lstrip('/') or f"repo_{repo.get('id')}"
-        base_dir = os.path.join(config_settings.data_directory, 'git', sub_path)
+
+        sub_path = (repo.get("path") or repo.get("name") or "").lstrip(
+            "/"
+        ) or f"repo_{repo.get('id')}"
+        base_dir = os.path.join(config_settings.data_directory, "git", sub_path)
         os.makedirs(base_dir, exist_ok=True)
         repo_info = repo
     else:
@@ -402,13 +434,13 @@ async def _create_linux_inventory(
     # Decide filename
     out_name = (filename or f"inventory_{job_id}.yaml").strip()
     # Prevent path traversal
-    out_name = out_name.lstrip('/').replace('..', '__')
+    out_name = out_name.lstrip("/").replace("..", "__")
     written_path = os.path.join(base_dir, out_name)
     # Ensure parent directory exists if filename contains subdirs
     os.makedirs(os.path.dirname(written_path), exist_ok=True)
 
     # Write file
-    with open(written_path, 'w', encoding='utf-8') as f:
+    with open(written_path, "w", encoding="utf-8") as f:
         f.write(rendered_content)
 
     logger.info(
@@ -427,7 +459,9 @@ async def _create_linux_inventory(
         repo_dir = base_dir
         git_dir = os.path.join(repo_dir, ".git")
         if not os.path.isdir(git_dir):
-            logger.warning("Selected repository directory is not a Git repo (.git missing); skipping commit/push")
+            logger.warning(
+                "Selected repository directory is not a Git repo (.git missing); skipping commit/push"
+            )
             return len(linux_devices), written_path
 
         committed = False
@@ -441,11 +475,13 @@ async def _create_linux_inventory(
             if auto_commit:
                 # If not provided, use the filename as commit message per requirement
                 default_msg = os.path.basename(written_path)
-                msg = (commit_message or default_msg)
+                msg = commit_message or default_msg
                 commit = repo.index.commit(msg)
                 commit_hash = getattr(commit, "hexsha", None)
                 committed = True
-                logger.info(f"Committed inventory file to Git: {rel_file} ({commit_hash[:8] if commit_hash else 'no-hash'})")
+                logger.info(
+                    f"Committed inventory file to Git: {rel_file} ({commit_hash[:8] if commit_hash else 'no-hash'})"
+                )
 
             if auto_push:
                 try:
@@ -458,20 +494,37 @@ async def _create_linux_inventory(
                     # Resolve credentials similar to sync flow
                     try:
                         from urllib.parse import urlparse, quote as urlquote
+
                         resolved_username = repo_info.get("username")
                         resolved_token = repo_info.get("token")
                         cred_name = repo_info.get("credential_name")
                         if cred_name:
                             try:
                                 import credentials_manager as cred_mgr  # lazy import
+
                                 creds = cred_mgr.list_credentials(include_expired=False)
-                                match = next((c for c in creds if c.get("name") == cred_name and c.get("type") == "token"), None)
+                                match = next(
+                                    (
+                                        c
+                                        for c in creds
+                                        if c.get("name") == cred_name
+                                        and c.get("type") == "token"
+                                    ),
+                                    None,
+                                )
                                 if match:
-                                    resolved_username = match.get("username") or resolved_username
+                                    resolved_username = (
+                                        match.get("username") or resolved_username
+                                    )
                                     try:
-                                        resolved_token = cred_mgr.get_decrypted_password(match["id"]) or resolved_token
+                                        resolved_token = (
+                                            cred_mgr.get_decrypted_password(match["id"])
+                                            or resolved_token
+                                        )
                                     except Exception as de:
-                                        logger.error(f"Failed to decrypt token for credential '{cred_name}': {de}")
+                                        logger.error(
+                                            f"Failed to decrypt token for credential '{cred_name}': {de}"
+                                        )
                             except Exception as ce:
                                 logger.error(f"Credential lookup error: {ce}")
 
@@ -479,7 +532,9 @@ async def _create_linux_inventory(
                         parsed = urlparse(remote_url)
                         auth_url = remote_url
                         if parsed.scheme in ["http", "https"] and resolved_token:
-                            user_enc = urlquote(str(resolved_username or "git"), safe="")
+                            user_enc = urlquote(
+                                str(resolved_username or "git"), safe=""
+                            )
                             token_enc = urlquote(str(resolved_token), safe="")
                             auth_url = f"{parsed.scheme}://{user_enc}:{token_enc}@{parsed.netloc}{parsed.path}"
                     except Exception as prep_e:
@@ -503,7 +558,9 @@ async def _create_linux_inventory(
                         branch = repo_info.get("branch") or "main"
                         origin.push(branch)
                         pushed = True
-                        logger.info(f"Pushed commit to remote '{origin.name}' branch '{branch}'")
+                        logger.info(
+                            f"Pushed commit to remote '{origin.name}' branch '{branch}'"
+                        )
                     except Exception as pe:
                         logger.error(f"Git push failed: {pe}")
                     finally:
@@ -534,8 +591,7 @@ async def delete_scan_job(job_id: str):
 
     if not job:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Scan job not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Scan job not found"
         )
 
     # Remove job from service
@@ -551,12 +607,14 @@ async def list_scan_jobs():
 
     jobs = []
     for job in scan_service._jobs.values():
-        jobs.append({
-            "job_id": job.job_id,
-            "state": job.state,
-            "created": job.created,
-            "total_targets": job.total_targets,
-            "authenticated": job.authenticated
-        })
+        jobs.append(
+            {
+                "job_id": job.job_id,
+                "state": job.state,
+                "created": job.created,
+                "total_targets": job.total_targets,
+                "authenticated": job.authenticated,
+            }
+        )
 
     return {"jobs": jobs}

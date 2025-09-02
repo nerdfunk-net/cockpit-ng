@@ -9,9 +9,11 @@ import credentials_manager as cred_mgr
 
 router = APIRouter(prefix="/api/credentials", tags=["credentials"])
 
+
 @router.get("", dependencies=[Depends(verify_admin_token)])
 def list_credentials(include_expired: bool = Query(False)) -> List[dict]:
     return cred_mgr.list_credentials(include_expired=include_expired)
+
 
 @router.post("", dependencies=[Depends(verify_admin_token)])
 def create_credential(payload: CredentialCreate) -> dict:
@@ -21,10 +23,13 @@ def create_credential(payload: CredentialCreate) -> dict:
             username=payload.username,
             cred_type=payload.type,
             password=payload.password,
-            valid_until=payload.valid_until.isoformat() if payload.valid_until else None,
+            valid_until=payload.valid_until.isoformat()
+            if payload.valid_until
+            else None,
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @router.put("/{cred_id}", dependencies=[Depends(verify_admin_token)])
 def update_credential(cred_id: int, payload: CredentialUpdate) -> dict:
@@ -35,12 +40,15 @@ def update_credential(cred_id: int, payload: CredentialUpdate) -> dict:
             username=payload.username,
             cred_type=payload.type,
             password=payload.password,
-            valid_until=payload.valid_until.isoformat() if payload.valid_until else None,
+            valid_until=payload.valid_until.isoformat()
+            if payload.valid_until
+            else None,
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @router.delete("/{cred_id}", dependencies=[Depends(verify_admin_token)])
 def delete_credential(cred_id: int) -> dict:

@@ -20,8 +20,10 @@ router = APIRouter(prefix="/api/files", tags=["files"])
 
 @router.get("/list")
 async def list_files(
-    repo_id: Optional[int] = Query(None, description="Repository ID to list files from"),
-    current_user: str = Depends(get_current_username)
+    repo_id: Optional[int] = Query(
+        None, description="Repository ID to list files from"
+    ),
+    current_user: str = Depends(get_current_username),
 ):
     """List all configuration files from a specific repository."""
     try:
@@ -38,7 +40,9 @@ async def list_files(
             config_dir = Path(repo.working_dir)
         except Exception as e:
             # If repository is not found or available, return empty list
-            logger.warning(f"Could not get Git repository {repo_id} for file listing: {e}")
+            logger.warning(
+                f"Could not get Git repository {repo_id} for file listing: {e}"
+            )
             return {"files": []}
 
         # Check if directory exists
@@ -47,24 +51,37 @@ async def list_files(
 
         files = []
         # Use common config file extensions
-        allowed_extensions = ['.txt', '.conf', '.cfg', '.config', '.ini', '.yml', '.yaml', '.json']
+        allowed_extensions = [
+            ".txt",
+            ".conf",
+            ".cfg",
+            ".config",
+            ".ini",
+            ".yml",
+            ".yaml",
+            ".json",
+        ]
 
-        for file_path in config_dir.rglob('*'):
-            if file_path.is_file() and any(file_path.name.endswith(ext) for ext in allowed_extensions):
+        for file_path in config_dir.rglob("*"):
+            if file_path.is_file() and any(
+                file_path.name.endswith(ext) for ext in allowed_extensions
+            ):
                 # Skip .git directory
-                if '.git' in file_path.parts:
+                if ".git" in file_path.parts:
                     continue
 
                 # Get relative path from config directory
                 relative_path = file_path.relative_to(config_dir)
 
-                files.append({
-                    "name": file_path.name,
-                    "path": str(relative_path),
-                    "size": file_path.stat().st_size,
-                    "modified": file_path.stat().st_mtime,
-                    "type": "file"
-                })
+                files.append(
+                    {
+                        "name": file_path.name,
+                        "path": str(relative_path),
+                        "size": file_path.stat().st_size,
+                        "modified": file_path.stat().st_mtime,
+                        "type": "file",
+                    }
+                )
 
         # Sort files by name
         files.sort(key=lambda x: x["name"].lower())
@@ -75,19 +92,21 @@ async def list_files(
         logger.error(f"Error listing files: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list files: {str(e)}"
+            detail=f"Failed to list files: {str(e)}",
         )
 
 
 @router.post("/compare")
 async def compare_files(
     file_comparison: FileCompareRequest,
-    current_user: str = Depends(get_current_username)
+    current_user: str = Depends(get_current_username),
 ):
     """Compare two files from a Git repository."""
     try:
         if not file_comparison.repo_id:
-            raise HTTPException(status_code=400, detail="Repository ID is required for file comparison")
+            raise HTTPException(
+                status_code=400, detail="Repository ID is required for file comparison"
+            )
 
         from routers.git import get_git_repo_by_id
 
@@ -95,7 +114,9 @@ async def compare_files(
         try:
             repo = get_git_repo_by_id(file_comparison.repo_id)
         except Exception as e:
-            raise HTTPException(status_code=404, detail=f"Git repository not found: {e}")
+            raise HTTPException(
+                status_code=404, detail=f"Git repository not found: {e}"
+            )
 
         # Initialize result with proper structure for frontend
         file1_content = ""
@@ -132,83 +153,87 @@ async def compare_files(
         right_line_num = 1
 
         for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-            if tag == 'equal':
+            if tag == "equal":
                 # Lines are the same
                 for i in range(i1, i2):
-                    left_lines.append({
-                        "line_number": left_line_num,
-                        "content": file1_lines[i],
-                        "type": "equal"
-                    })
-                    right_lines.append({
-                        "line_number": right_line_num,
-                        "content": file2_lines[j1 + (i - i1)],
-                        "type": "equal"
-                    })
+                    left_lines.append(
+                        {
+                            "line_number": left_line_num,
+                            "content": file1_lines[i],
+                            "type": "equal",
+                        }
+                    )
+                    right_lines.append(
+                        {
+                            "line_number": right_line_num,
+                            "content": file2_lines[j1 + (i - i1)],
+                            "type": "equal",
+                        }
+                    )
                     left_line_num += 1
                     right_line_num += 1
 
-            elif tag == 'delete':
+            elif tag == "delete":
                 # Lines only in left file (deleted)
                 for i in range(i1, i2):
-                    left_lines.append({
-                        "line_number": left_line_num,
-                        "content": file1_lines[i],
-                        "type": "delete"
-                    })
-                    right_lines.append({
-                        "line_number": None,
-                        "content": "",
-                        "type": "empty"
-                    })
+                    left_lines.append(
+                        {
+                            "line_number": left_line_num,
+                            "content": file1_lines[i],
+                            "type": "delete",
+                        }
+                    )
+                    right_lines.append(
+                        {"line_number": None, "content": "", "type": "empty"}
+                    )
                     left_line_num += 1
 
-            elif tag == 'insert':
+            elif tag == "insert":
                 # Lines only in right file (added)
                 for j in range(j1, j2):
-                    left_lines.append({
-                        "line_number": None,
-                        "content": "",
-                        "type": "empty"
-                    })
-                    right_lines.append({
-                        "line_number": right_line_num,
-                        "content": file2_lines[j],
-                        "type": "insert"
-                    })
+                    left_lines.append(
+                        {"line_number": None, "content": "", "type": "empty"}
+                    )
+                    right_lines.append(
+                        {
+                            "line_number": right_line_num,
+                            "content": file2_lines[j],
+                            "type": "insert",
+                        }
+                    )
                     right_line_num += 1
 
-            elif tag == 'replace':
+            elif tag == "replace":
                 # Lines are different
                 max_lines = max(i2 - i1, j2 - j1)
                 for k in range(max_lines):
                     if k < (i2 - i1):
-                        left_lines.append({
-                            "line_number": left_line_num,
-                            "content": file1_lines[i1 + k],
-                            "type": "delete" if k >= (j2 - j1) else "replace"
-                        })
+                        left_lines.append(
+                            {
+                                "line_number": left_line_num,
+                                "content": file1_lines[i1 + k],
+                                "type": "delete" if k >= (j2 - j1) else "replace",
+                            }
+                        )
                         left_line_num += 1
                     else:
-                        left_lines.append({
-                            "line_number": None,
-                            "content": "",
-                            "type": "empty"
-                        })
+                        left_lines.append(
+                            {"line_number": None, "content": "", "type": "empty"}
+                        )
 
                     if k < (j2 - j1):
-                        right_lines.append({
-                            "line_number": right_line_num,
-                            "content": file2_lines[j1 + k],
-                            "type": "insert" if k >= (i2 - i1) else "replace"
-                        })
+                        right_lines.append(
+                            {
+                                "line_number": right_line_num,
+                                "content": file2_lines[j1 + k],
+                                "type": "insert" if k >= (i2 - i1) else "replace",
+                            }
+                        )
                         right_line_num += 1
                     else:
-                        right_lines.append({
-                            "line_number": None,
-                            "content": "",
-                            "type": "empty"
-                        })
+                        right_lines.append(
+                            {"line_number": None, "content": "", "type": "empty"}
+                        )
 
         # Generate diff
         diff_content = ""
@@ -217,7 +242,7 @@ async def compare_files(
                 file1_content.splitlines(keepends=True),
                 file2_content.splitlines(keepends=True),
                 fromfile=file_comparison.left_file,
-                tofile=file_comparison.right_file
+                tofile=file_comparison.right_file,
             )
             diff_content = "".join(diff)
 
@@ -227,7 +252,7 @@ async def compare_files(
             "right_lines": right_lines,
             "diff": diff_content,
             "left_file": file_comparison.left_file,
-            "right_file": file_comparison.right_file
+            "right_file": file_comparison.right_file,
         }
 
         return result
@@ -236,19 +261,21 @@ async def compare_files(
         logger.error(f"Error comparing files: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to compare files: {str(e)}"
+            detail=f"Failed to compare files: {str(e)}",
         )
 
 
 @router.post("/export-diff")
 async def export_diff(
     file_comparison: FileExportRequest,
-    current_user: str = Depends(get_current_username)
+    current_user: str = Depends(get_current_username),
 ):
     """Export comparison diff to a file."""
     try:
         if not file_comparison.repo_id:
-            raise HTTPException(status_code=400, detail="Repository ID is required for file export")
+            raise HTTPException(
+                status_code=400, detail="Repository ID is required for file export"
+            )
 
         from routers.git import get_git_repo_by_id
 
@@ -256,7 +283,9 @@ async def export_diff(
         try:
             repo = get_git_repo_by_id(file_comparison.repo_id)
         except Exception as e:
-            raise HTTPException(status_code=404, detail=f"Git repository not found: {e}")
+            raise HTTPException(
+                status_code=404, detail=f"Git repository not found: {e}"
+            )
 
         # Get file contents for both files
         file1_content = ""
@@ -282,14 +311,14 @@ async def export_diff(
                 file1_content.splitlines(keepends=True),
                 file2_content.splitlines(keepends=True),
                 fromfile=file_comparison.left_file,
-                tofile=file_comparison.right_file
+                tofile=file_comparison.right_file,
             )
         else:
             diff_lines = difflib.context_diff(
                 file1_content.splitlines(keepends=True),
                 file2_content.splitlines(keepends=True),
                 fromfile=file_comparison.left_file,
-                tofile=file_comparison.right_file
+                tofile=file_comparison.right_file,
             )
 
         diff_content = "".join(diff_lines)
@@ -300,21 +329,23 @@ async def export_diff(
             media_type="text/plain",
             headers={
                 "Content-Disposition": f"attachment; filename=diff_{file_comparison.left_file}_{file_comparison.right_file}.txt"
-            }
+            },
         )
 
     except Exception as e:
         logger.error(f"Error exporting diff: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to export diff: {str(e)}"
+            detail=f"Failed to export diff: {str(e)}",
         )
 
 
 @router.get("/config")
 async def get_file_config(
-    repo_id: Optional[int] = Query(None, description="Repository ID to get config from"),
-    current_user: str = Depends(get_current_username)
+    repo_id: Optional[int] = Query(
+        None, description="Repository ID to get config from"
+    ),
+    current_user: str = Depends(get_current_username),
 ):
     """Get file storage configuration information."""
     try:
@@ -324,7 +355,16 @@ async def get_file_config(
                 "directory": "",
                 "total_size": 0,
                 "file_count": 0,
-                "supported_extensions": ['.txt', '.conf', '.cfg', '.config', '.ini', '.yml', '.yaml', '.json']
+                "supported_extensions": [
+                    ".txt",
+                    ".conf",
+                    ".cfg",
+                    ".config",
+                    ".ini",
+                    ".yml",
+                    ".yaml",
+                    ".json",
+                ],
             }
 
         # Use the repository-specific Git function
@@ -334,26 +374,47 @@ async def get_file_config(
             repo = get_git_repo_by_id(repo_id)
             config_dir = Path(repo.working_dir)
         except Exception as e:
-            logger.warning(f"Could not get Git repository {repo_id} for file config: {e}")
+            logger.warning(
+                f"Could not get Git repository {repo_id} for file config: {e}"
+            )
             # Return default config if repository is not available
             return {
                 "directory": "",
                 "directory_exists": False,
-                "allowed_extensions": ['.txt', '.conf', '.cfg', '.config', '.ini', '.yml', '.yaml', '.json'],
+                "allowed_extensions": [
+                    ".txt",
+                    ".conf",
+                    ".cfg",
+                    ".config",
+                    ".ini",
+                    ".yml",
+                    ".yaml",
+                    ".json",
+                ],
                 "max_file_size_mb": 10,
-                "directory_writable": False
+                "directory_writable": False,
             }
 
         return {
             "directory": str(config_dir.absolute()),
             "directory_exists": config_dir.exists(),
-            "allowed_extensions": ['.txt', '.conf', '.cfg', '.config', '.ini', '.yml', '.yaml', '.json'],
+            "allowed_extensions": [
+                ".txt",
+                ".conf",
+                ".cfg",
+                ".config",
+                ".ini",
+                ".yml",
+                ".yaml",
+                ".json",
+            ],
             "max_file_size_mb": 10,
-            "directory_writable": config_dir.exists() and os.access(config_dir, os.W_OK)
+            "directory_writable": config_dir.exists()
+            and os.access(config_dir, os.W_OK),
         }
     except Exception as e:
         logger.error(f"Error getting file config: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get file configuration: {str(e)}"
+            detail=f"Failed to get file configuration: {str(e)}",
         )

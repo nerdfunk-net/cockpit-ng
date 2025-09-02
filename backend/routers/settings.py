@@ -14,7 +14,7 @@ from models.settings import (
     AllSettingsRequest,
     ConnectionTestRequest,
     GitTestRequest,
-    CacheSettingsRequest
+    CacheSettingsRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,15 +26,18 @@ async def get_all_settings(current_user: dict = Depends(verify_admin_token)):
     """Get all application settings."""
     try:
         from settings_manager import settings_manager
+
         settings_data = settings_manager.get_all_settings()
 
         # Check if database was recovered from corruption
-        metadata = settings_data.get('metadata', {})
-        if metadata.get('status') == 'recovered':
+        metadata = settings_data.get("metadata", {})
+        if metadata.get("status") == "recovered":
             return {
                 "settings": settings_data,
-                "warning": metadata.get('message', 'Database was recovered from corruption'),
-                "recovery_performed": True
+                "warning": metadata.get(
+                    "message", "Database was recovered from corruption"
+                ),
+                "recovery_performed": True,
             }
 
         return {"settings": settings_data}
@@ -43,7 +46,7 @@ async def get_all_settings(current_user: dict = Depends(verify_admin_token)):
         logger.error(f"Error getting settings: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve settings: {str(e)}"
+            detail=f"Failed to retrieve settings: {str(e)}",
         )
 
 
@@ -52,17 +55,15 @@ async def get_nautobot_settings(current_user: dict = Depends(verify_admin_token)
     """Get Nautobot settings."""
     try:
         from settings_manager import settings_manager
+
         nautobot_settings = settings_manager.get_nautobot_settings()
-        return {
-            "success": True,
-            "data": nautobot_settings
-        }
+        return {"success": True, "data": nautobot_settings}
 
     except Exception as e:
         logger.error(f"Error getting Nautobot settings: {e}")
         return {
             "success": False,
-            "message": f"Failed to retrieve Nautobot settings: {str(e)}"
+            "message": f"Failed to retrieve Nautobot settings: {str(e)}",
         }
 
 
@@ -71,17 +72,15 @@ async def get_git_settings(current_user: dict = Depends(verify_admin_token)):
     """Get Git settings."""
     try:
         from settings_manager import settings_manager
+
         git_settings = settings_manager.get_git_settings()
-        return {
-            "success": True,
-            "data": git_settings
-        }
+        return {"success": True, "data": git_settings}
 
     except Exception as e:
         logger.error(f"Error getting Git settings: {e}")
         return {
             "success": False,
-            "message": f"Failed to retrieve Git settings: {str(e)}"
+            "message": f"Failed to retrieve Git settings: {str(e)}",
         }
 
 
@@ -90,27 +89,26 @@ async def get_cache_settings(current_user: dict = Depends(verify_admin_token)):
     """Get Cache settings."""
     try:
         from settings_manager import settings_manager
+
         cache_settings = settings_manager.get_cache_settings()
-        return {
-            "success": True,
-            "data": cache_settings
-        }
+        return {"success": True, "data": cache_settings}
     except Exception as e:
         logger.error(f"Error getting Cache settings: {e}")
         return {
             "success": False,
-            "message": f"Failed to retrieve Cache settings: {str(e)}"
+            "message": f"Failed to retrieve Cache settings: {str(e)}",
         }
 
 
 @router.put("/cache")
 async def update_cache_settings(
     cache_request: CacheSettingsRequest,
-    current_user: dict = Depends(verify_admin_token)
+    current_user: dict = Depends(verify_admin_token),
 ):
     """Update Cache settings."""
     try:
         from settings_manager import settings_manager
+
         success = settings_manager.update_cache_settings(cache_request.dict())
         if success:
             updated = settings_manager.get_cache_settings()
@@ -118,29 +116,30 @@ async def update_cache_settings(
                 "success": True,
                 "message": "Cache settings updated successfully",
                 "data": updated,
-                "cache": updated  # backward compatibility
+                "cache": updated,  # backward compatibility
             }
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to update Cache settings"
+                detail="Failed to update Cache settings",
             )
     except Exception as e:
         logger.error(f"Error updating Cache settings: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update Cache settings: {str(e)}"
+            detail=f"Failed to update Cache settings: {str(e)}",
         )
 
 
 @router.post("/cache")
 async def create_cache_settings(
     cache_request: CacheSettingsRequest,
-    current_user: dict = Depends(verify_admin_token)
+    current_user: dict = Depends(verify_admin_token),
 ):
     """Create/Update Cache settings via POST."""
     try:
         from settings_manager import settings_manager
+
         success = settings_manager.update_cache_settings(cache_request.dict())
         if success:
             updated = settings_manager.get_cache_settings()
@@ -148,32 +147,30 @@ async def create_cache_settings(
                 "success": True,
                 "message": "Cache settings updated successfully",
                 "data": updated,
-                "cache": updated  # backward compatibility
+                "cache": updated,  # backward compatibility
             }
         else:
-            return {
-                "success": False,
-                "message": "Failed to update Cache settings"
-            }
+            return {"success": False, "message": "Failed to update Cache settings"}
     except Exception as e:
         logger.error(f"Error updating Cache settings: {e}")
         return {
             "success": False,
-            "message": f"Failed to update Cache settings: {str(e)}"
+            "message": f"Failed to update Cache settings: {str(e)}",
         }
 
 
 @router.put("")
 async def update_all_settings(
     settings_request: AllSettingsRequest,
-    current_user: dict = Depends(verify_admin_token)
+    current_user: dict = Depends(verify_admin_token),
 ):
     """Update all application settings."""
     try:
         from settings_manager import settings_manager
+
         settings_dict = {
             "nautobot": settings_request.nautobot.dict(),
-            "git": settings_request.git.dict()
+            "git": settings_request.git.dict(),
         }
         if settings_request.cache is not None:
             settings_dict["cache"] = settings_request.cache.dict()
@@ -183,77 +180,78 @@ async def update_all_settings(
         if success:
             return {
                 "message": "Settings updated successfully",
-                "settings": settings_manager.get_all_settings()
+                "settings": settings_manager.get_all_settings(),
             }
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to update settings"
+                detail="Failed to update settings",
             )
 
     except Exception as e:
         logger.error(f"Error updating settings: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update settings: {str(e)}"
+            detail=f"Failed to update settings: {str(e)}",
         )
 
 
 @router.put("/nautobot")
 async def update_nautobot_settings(
     nautobot_request: NautobotSettingsRequest,
-    current_user: dict = Depends(verify_admin_token)
+    current_user: dict = Depends(verify_admin_token),
 ):
     """Update Nautobot settings."""
     try:
         from settings_manager import settings_manager
+
         success = settings_manager.update_nautobot_settings(nautobot_request.dict())
 
         if success:
             return {
                 "message": "Nautobot settings updated successfully",
-                "nautobot": settings_manager.get_nautobot_settings()
+                "nautobot": settings_manager.get_nautobot_settings(),
             }
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to update Nautobot settings"
+                detail="Failed to update Nautobot settings",
             )
 
     except Exception as e:
         logger.error(f"Error updating Nautobot settings: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update Nautobot settings: {str(e)}"
+            detail=f"Failed to update Nautobot settings: {str(e)}",
         )
 
 
 @router.put("/git")
 async def update_git_settings(
-    git_request: GitSettingsRequest,
-    current_user: dict = Depends(verify_admin_token)
+    git_request: GitSettingsRequest, current_user: dict = Depends(verify_admin_token)
 ):
     """Update Git settings."""
     try:
         from settings_manager import settings_manager
+
         success = settings_manager.update_git_settings(git_request.dict())
 
         if success:
             return {
                 "message": "Git settings updated successfully",
-                "git": settings_manager.get_git_settings()
+                "git": settings_manager.get_git_settings(),
             }
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to update Git settings"
+                detail="Failed to update Git settings",
             )
 
     except Exception as e:
         logger.error(f"Error updating Git settings: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update Git settings: {str(e)}"
+            detail=f"Failed to update Git settings: {str(e)}",
         )
 
 
@@ -261,78 +259,73 @@ async def update_git_settings(
 @router.post("/nautobot")
 async def create_nautobot_settings(
     nautobot_request: NautobotSettingsRequest,
-    current_user: dict = Depends(verify_admin_token)
+    current_user: dict = Depends(verify_admin_token),
 ):
     """Create/Update Nautobot settings via POST."""
     try:
         from settings_manager import settings_manager
+
         success = settings_manager.update_nautobot_settings(nautobot_request.dict())
 
         if success:
             return {
                 "success": True,
                 "message": "Nautobot settings updated successfully",
-                "data": settings_manager.get_nautobot_settings()
+                "data": settings_manager.get_nautobot_settings(),
             }
         else:
-            return {
-                "success": False,
-                "message": "Failed to update Nautobot settings"
-            }
+            return {"success": False, "message": "Failed to update Nautobot settings"}
 
     except Exception as e:
         logger.error(f"Error updating Nautobot settings: {e}")
         return {
             "success": False,
-            "message": f"Failed to update Nautobot settings: {str(e)}"
+            "message": f"Failed to update Nautobot settings: {str(e)}",
         }
 
 
 @router.post("/git")
 async def create_git_settings(
-    git_request: GitSettingsRequest,
-    current_user: dict = Depends(verify_admin_token)
+    git_request: GitSettingsRequest, current_user: dict = Depends(verify_admin_token)
 ):
     """Create/Update Git settings via POST."""
     try:
         from settings_manager import settings_manager
+
         success = settings_manager.update_git_settings(git_request.dict())
 
         if success:
             return {
                 "success": True,
-                "message": "Git settings updated successfully", 
-                "data": settings_manager.get_git_settings()
+                "message": "Git settings updated successfully",
+                "data": settings_manager.get_git_settings(),
             }
         else:
-            return {
-                "success": False,
-                "message": "Failed to update Git settings"
-            }
+            return {"success": False, "message": "Failed to update Git settings"}
 
     except Exception as e:
         logger.error(f"Error updating Git settings: {e}")
-        return {
-            "success": False,
-            "message": f"Failed to update Git settings: {str(e)}"
-        }
+        return {"success": False, "message": f"Failed to update Git settings: {str(e)}"}
 
 
 @router.post("/test/nautobot")
 async def test_nautobot_connection(
     test_request: ConnectionTestRequest,
-    current_user: dict = Depends(verify_admin_token)
+    current_user: dict = Depends(verify_admin_token),
 ):
     """Test Nautobot connection with provided settings."""
     try:
         from connection_tester import connection_tester
-        success, message = await connection_tester.test_nautobot_connection(test_request.dict())
+
+        success, message = await connection_tester.test_nautobot_connection(
+            test_request.dict()
+        )
 
         return {
             "success": success,
             "message": message,
             "tested_url": test_request.url,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
     except Exception as e:
@@ -341,26 +334,28 @@ async def test_nautobot_connection(
             "success": False,
             "message": f"Test failed: {str(e)}",
             "tested_url": test_request.url,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
 
 @router.post("/test/git")
 async def test_git_connection(
-    test_request: GitTestRequest,
-    current_user: dict = Depends(verify_admin_token)
+    test_request: GitTestRequest, current_user: dict = Depends(verify_admin_token)
 ):
     """Test Git connection with provided settings."""
     try:
         from connection_tester import connection_tester
-        success, message = await connection_tester.test_git_connection(test_request.dict())
+
+        success, message = await connection_tester.test_git_connection(
+            test_request.dict()
+        )
 
         return {
             "success": success,
             "message": message,
             "tested_repo": test_request.repo_url,
             "tested_branch": test_request.branch,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
     except Exception as e:
@@ -370,7 +365,7 @@ async def test_git_connection(
             "message": f"Test failed: {str(e)}",
             "tested_repo": test_request.repo_url,
             "tested_branch": test_request.branch,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
 
@@ -379,24 +374,25 @@ async def reset_settings_to_defaults(current_user: dict = Depends(verify_admin_t
     """Reset all settings to default values."""
     try:
         from settings_manager import settings_manager
+
         success = settings_manager.reset_to_defaults()
 
         if success:
             return {
                 "message": "Settings reset to defaults successfully",
-                "settings": settings_manager.get_all_settings()
+                "settings": settings_manager.get_all_settings(),
             }
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to reset settings to defaults"
+                detail="Failed to reset settings to defaults",
             )
 
     except Exception as e:
         logger.error(f"Error resetting settings: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to reset settings: {str(e)}"
+            detail=f"Failed to reset settings: {str(e)}",
         )
 
 
@@ -405,9 +401,10 @@ async def check_settings_health(current_user: dict = Depends(verify_admin_token)
     """Check settings database health."""
     try:
         from settings_manager import settings_manager
+
         health_info = settings_manager.health_check()
 
-        if health_info['status'] == 'healthy':
+        if health_info["status"] == "healthy":
             return health_info
         else:
             # Database is unhealthy, try to recover
@@ -415,7 +412,7 @@ async def check_settings_health(current_user: dict = Depends(verify_admin_token)
             return {
                 **health_info,
                 "recovery_attempted": True,
-                "recovery_result": recovery_result
+                "recovery_result": recovery_result,
             }
 
     except Exception as e:
@@ -423,7 +420,7 @@ async def check_settings_health(current_user: dict = Depends(verify_admin_token)
         return {
             "status": "error",
             "message": f"Health check failed: {str(e)}",
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
 
@@ -434,19 +431,18 @@ async def get_template_settings(current_user: dict = Depends(verify_admin_token)
     return {
         "message": "Template settings have been moved to /api/templates",
         "redirect_url": "/api/templates",
-        "legacy": True
+        "legacy": True,
     }
 
 
 @router.post("/templates")
 async def update_template_settings(
-    template_data: dict,
-    current_user: dict = Depends(verify_admin_token)
+    template_data: dict, current_user: dict = Depends(verify_admin_token)
 ):
     """Update template settings (legacy endpoint - redirects to new template management)."""
     return {
         "message": "Template settings have been moved to /api/templates",
         "redirect_url": "/api/templates",
         "legacy": True,
-        "note": "Please use the new template management interface"
+        "note": "Please use the new template management interface",
     }

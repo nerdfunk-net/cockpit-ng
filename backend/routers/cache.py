@@ -26,8 +26,10 @@ async def cache_stats(current_user: dict = Depends(verify_admin_token)):
 
 @router.get("/entries")
 async def cache_entries(
-    include_expired: bool = Query(False, description="Include expired entries in the response"),
-    current_user: dict = Depends(verify_admin_token)
+    include_expired: bool = Query(
+        False, description="Include expired entries in the response"
+    ),
+    current_user: dict = Depends(verify_admin_token),
 ):
     """Return detailed information about all cache entries."""
     try:
@@ -39,8 +41,7 @@ async def cache_entries(
 
 @router.get("/namespace/{namespace}")
 async def cache_namespace_info(
-    namespace: str,
-    current_user: dict = Depends(verify_admin_token)
+    namespace: str, current_user: dict = Depends(verify_admin_token)
 ):
     """Return detailed information about a specific cache namespace."""
     try:
@@ -61,7 +62,9 @@ async def cache_performance(current_user: dict = Depends(verify_admin_token)):
 
 
 @router.post("/clear")
-async def clear_cache(payload: dict = None, current_user: dict = Depends(verify_admin_token)):
+async def clear_cache(
+    payload: dict = None, current_user: dict = Depends(verify_admin_token)
+):
     """Clear cache entries. Accepts optional JSON { "namespace": "repo:123" }.
 
     If namespace is omitted or empty, clears the entire cache.
@@ -75,16 +78,16 @@ async def clear_cache(payload: dict = None, current_user: dict = Depends(verify_
         if not namespace:
             cleared_count = cache_service.clear_all()
             return {
-                "success": True, 
+                "success": True,
                 "message": f"Cleared all cache entries ({cleared_count} items)",
-                "cleared_count": cleared_count
+                "cleared_count": cleared_count,
             }
 
         cleared_count = cache_service.clear_namespace(namespace)
         return {
-            "success": True, 
+            "success": True,
             "message": f"Cleared cache namespace '{namespace}' ({cleared_count} items)",
-            "cleared_count": cleared_count
+            "cleared_count": cleared_count,
         }
     except Exception as exc:
         return {"success": False, "message": str(exc)}
@@ -98,7 +101,7 @@ async def cleanup_expired(current_user: dict = Depends(verify_admin_token)):
         return {
             "success": True,
             "message": f"Removed {removed_count} expired entries",
-            "removed_count": removed_count
+            "removed_count": removed_count,
         }
     except Exception as exc:
         return {"success": False, "message": str(exc)}
