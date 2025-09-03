@@ -12,6 +12,7 @@ import { Checkbox } from '../ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Separator } from '../ui/separator'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
 import { 
   GitBranch, 
   GitCommit, 
@@ -28,7 +29,8 @@ import {
   CheckCircle,
   Clock,
   ExternalLink,
-  Settings
+  Settings,
+  RotateCcw
 } from 'lucide-react'
 import { useApi } from '../../hooks/use-api'
 
@@ -332,6 +334,20 @@ const GitManagement: React.FC = () => {
     }
   }
 
+  const removeAndSyncRepository = async (repo: GitRepository) => {
+    if (!confirm(`Are you sure you want to remove and re-clone "${repo.name}"? This will permanently delete the local copy and create a fresh clone.`)) {
+      return
+    }
+
+    try {
+      await apiCall(`git-repositories/${repo.id}/remove-and-sync`, { method: 'POST' })
+      showMessage('Repository removed and re-cloned successfully!', 'success')
+      loadRepositories()
+    } catch (error) {
+      showMessage('Failed to remove and sync repository', 'error')
+    }
+  }
+
   const showRepositoryStatus = async (repo: GitRepository) => {
     try {
       setStatusData(null)
@@ -463,10 +479,19 @@ const GitManagement: React.FC = () => {
                 </div>
                 <div>
                   <Label className="text-xs font-medium text-gray-700 mb-0 block">Actions</Label>
-                  <Button onClick={loadRepositories} variant="outline" size="sm" className="h-6 px-1.5 text-xs w-full">
-                    <RefreshCw className="h-2.5 w-2.5 mr-0.5" />
-                    Refresh
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button onClick={loadRepositories} variant="outline" size="sm" className="h-6 px-1.5 text-xs w-full">
+                          <RefreshCw className="h-2.5 w-2.5 mr-0.5" />
+                          Refresh
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Reload repository list</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
             </CardContent>
@@ -532,37 +557,82 @@ const GitManagement: React.FC = () => {
                             <p className="text-sm text-gray-600">{repo.description}</p>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 ml-4">
-                          <Button
-                            onClick={() => editRepository(repo)}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            onClick={() => syncRepository(repo)}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            onClick={() => showRepositoryStatus(repo)}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            onClick={() => deleteRepository(repo)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <TooltipProvider>
+                          <div className="flex items-center gap-2 ml-4">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  onClick={() => editRepository(repo)}
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Edit repository settings</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  onClick={() => syncRepository(repo)}
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Sync repository (pull latest changes)</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  onClick={() => removeAndSyncRepository(repo)}
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-orange-600 hover:text-orange-700"
+                                >
+                                  <RotateCcw className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Remove and re-clone repository</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  onClick={() => showRepositoryStatus(repo)}
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>View repository status and details</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  onClick={() => deleteRepository(repo)}
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Delete repository</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TooltipProvider>
                       </div>
                     </div>
                   ))}
@@ -712,20 +782,29 @@ const GitManagement: React.FC = () => {
                     Verify that the repository can be accessed with the provided settings.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <Button
-                      type="button"
-                      onClick={testConnection}
-                      variant="outline"
-                      disabled={isTestingConnection || !formData.url}
-                      className="border-blue-300 text-blue-600 hover:bg-blue-50"
-                    >
-                      {isTestingConnection ? (
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <TestTube className="h-4 w-4 mr-2" />
-                      )}
-                      Test Connection
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            onClick={testConnection}
+                            variant="outline"
+                            disabled={isTestingConnection || !formData.url}
+                            className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                          >
+                            {isTestingConnection ? (
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <TestTube className="h-4 w-4 mr-2" />
+                            )}
+                            Test Connection
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Verify repository access with current settings</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     
                     {connectionStatus && (
                       <div className={`flex items-center gap-2 text-sm ${

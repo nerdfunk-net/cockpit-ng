@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 import logging
 import os
+import subprocess
 
 from models.git_repositories import (
     GitRepositoryRequest,
@@ -25,6 +26,7 @@ from services.git_utils import (
     set_ssl_env,
     resolve_git_credentials,
 )
+from services.cache_service import cache_service
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +34,103 @@ router = APIRouter(prefix="/api/git-repositories", tags=["git-repositories"])
 
 # Initialize git repository manager
 git_repo_manager = GitRepositoryManager()
+
+
+def get_cached_commits(repo_id: int, branch_name: str, repo_path: str, limit: int = 50):
+    """
+    Get commits for a repository using cache when available, fallback to subprocess.
+    Uses the same cache key format as the git router for consistency.
+    """
+    try:
+        # Get cache configuration
+        from settings_manager import settings_manager
+        cache_cfg = settings_manager.get_cache_settings()
+        
+        # Try cache first if enabled
+        repo_scope = f"repo:{repo_id}"
+        cache_key = f"{repo_scope}:commits:{branch_name}"
+        
+        if cache_cfg.get("enabled", True):
+            cached_commits = cache_service.get(cache_key)
+            if cached_commits is not None:
+                # Return limited commits from cache
+                logger.debug(f"Using cached commits for repo {repo_id}, branch {branch_name}")
+                return cached_commits[:limit]
+        
+        # Cache miss or disabled - fetch using GitPython for consistency
+        try:
+            from git import Repo
+            repo = Repo(repo_path)
+            
+            commits = []
+            for commit in repo.iter_commits(branch_name, max_count=limit):
+                commits.append({
+                    "hash": commit.hexsha,
+                    "short_hash": commit.hexsha[:8],
+                    "message": commit.message.strip(),
+                    "author": commit.author.name,
+                    "date": commit.committed_datetime.isoformat(),
+                })
+            
+            # Store in cache if enabled
+            if cache_cfg.get("enabled", True):
+                # Use max_commits from config for full cache entry
+                max_commits = int(cache_cfg.get("max_commits", 500))
+                if len(commits) < max_commits:
+                    # Fetch full commit list for cache
+                    full_commits = []
+                    for commit in repo.iter_commits(branch_name, max_count=max_commits):
+                        full_commits.append({
+                            "hash": commit.hexsha,
+                            "short_hash": commit.hexsha[:8],
+                            "message": commit.message.strip(),
+                            "author": commit.author.name,
+                            "date": commit.committed_datetime.isoformat(),
+                        })
+                    
+                    ttl = int(cache_cfg.get("ttl_seconds", 600))
+                    cache_service.set(cache_key, full_commits, ttl)
+                    logger.debug(f"Cached {len(full_commits)} commits for repo {repo_id}, branch {branch_name}")
+            
+            return commits
+            
+        except Exception as git_error:
+            # Fallback to subprocess if GitPython fails
+            logger.warning(f"GitPython failed for repo {repo_id}, falling back to subprocess: {git_error}")
+            
+            log = subprocess.run(
+                [
+                    "git",
+                    "log",
+                    "-n",
+                    str(limit),
+                    "--date=iso",
+                    "--format=%H|%s|%an|%ad",
+                ],
+                cwd=repo_path,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            
+            commits = []
+            if log.returncode == 0 and log.stdout:
+                for line in log.stdout.splitlines():
+                    parts = line.split("|", 3)
+                    if len(parts) == 4:
+                        commits.append({
+                            "hash": parts[0],
+                            "short_hash": parts[0][:8],
+                            "message": parts[1],
+                            "author": parts[2],
+                            "date": parts[3],
+                        })
+            
+            return commits
+            
+    except Exception as e:
+        logger.error(f"Failed to get commits for repo {repo_id}: {e}")
+        return []
 
 
 @router.get("", response_model=GitRepositoryListResponse)
@@ -398,7 +497,6 @@ async def get_repository_status(
     repo_id: int, current_user: dict = Depends(verify_admin_token)
 ):
     """Get the status of a specific repository (exists, sync status, commit info)."""
-    import subprocess
 
     try:
         # Get repository details
@@ -501,39 +599,14 @@ async def get_repository_status(
                     except Exception as e:
                         logger.warning(f"Could not list branches: {e}")
 
-                    # Get recent commits
+                    # Get recent commits using cache
                     try:
-                        log = subprocess.run(
-                            [
-                                "git",
-                                "log",
-                                "-n",
-                                "50",
-                                "--date=iso",
-                                "--format=%H|%s|%an|%ad",
-                            ],
-                            cwd=repo_path,
-                            capture_output=True,
-                            text=True,
-                            timeout=10,
+                        status_info["commits"] = get_cached_commits(
+                            repo_id, repository["branch"], repo_path
                         )
-                        commits = []
-                        if log.returncode == 0 and log.stdout:
-                            for line in log.stdout.splitlines():
-                                parts = line.split("|", 3)
-                                if len(parts) == 4:
-                                    commits.append(
-                                        {
-                                            "hash": parts[0],
-                                            "short_hash": parts[0][:8],
-                                            "message": parts[1],
-                                            "author": parts[2],
-                                            "date": parts[3],
-                                        }
-                                    )
-                        status_info["commits"] = commits
                     except Exception as e:
                         logger.warning(f"Could not get recent commits: {e}")
+                        status_info["commits"] = []
 
                     # Check if repository is synced with remote
                     try:
@@ -945,6 +1018,114 @@ async def search_repository_files(
     except Exception as e:
         logger.error(f"Error searching repository files: {e}")
         return {"success": False, "message": f"File search failed: {str(e)}"}
+
+
+@router.post("/{repo_id}/remove-and-sync")
+async def remove_and_sync_repository(
+    repo_id: int, current_user: dict = Depends(verify_admin_token)
+):
+    """Remove existing repository and clone fresh copy."""
+    import shutil
+    import time
+    import os
+    from urllib.parse import urlparse
+    from git import Repo, GitCommandError
+
+    try:
+        # Get repository details
+        repository = git_repo_manager.get_repository(repo_id)
+        if not repository:
+            raise HTTPException(status_code=404, detail="Repository not found")
+
+        git_repo_manager.update_sync_status(repo_id, "removing-and-syncing")
+
+        # Resolve repository working directory
+        repo_path = str(git_repo_path(repository))
+
+        logger.info(f"Remove and sync repository '{repository['name']}' at path: {repo_path}")
+        
+        # Remove existing directory if it exists
+        if os.path.exists(repo_path):
+            # Create backup with timestamp
+            parent_dir = os.path.dirname(repo_path.rstrip(os.sep)) or os.path.dirname(repo_path)
+            base_name = os.path.basename(os.path.normpath(repo_path))
+            backup_path = os.path.join(parent_dir, f"{base_name}_removed_{int(time.time())}")
+            
+            try:
+                shutil.move(repo_path, backup_path)
+                logger.info(f"Existing repository backed up to {backup_path}")
+            except Exception as e:
+                logger.warning(f"Could not backup existing repository: {e}")
+                # Try to remove directly
+                shutil.rmtree(repo_path, ignore_errors=True)
+                logger.info(f"Removed existing repository at {repo_path}")
+
+        # Ensure parent directory exists
+        os.makedirs(os.path.dirname(repo_path), exist_ok=True)
+
+        # Resolve credentials using the utility function
+        resolved_username, resolved_token = resolve_git_credentials(repository)
+
+        # Build clone URL (inject auth for http/https)
+        clone_url = repository["url"]
+        parsed = urlparse(repository["url"]) if repository.get("url") else None
+        if parsed and parsed.scheme in ["http", "https"] and resolved_token:
+            clone_url = add_auth_to_url(repository["url"], resolved_username, resolved_token)
+
+        # Clone fresh copy
+        success = False
+        message = ""
+
+        try:
+            if not repository.get("verify_ssl", True):
+                logger.warning("Git SSL verification disabled - not recommended for production")
+            
+            with set_ssl_env(repository):
+                logger.info(f"Cloning fresh copy of branch {repository['branch']} into {repo_path}")
+                Repo.clone_from(clone_url, repo_path, branch=repository["branch"])
+
+            if not os.path.isdir(os.path.join(repo_path, ".git")):
+                raise GitCommandError("clone", 1, b"", b".git not found after clone")
+
+            success = True
+            message = f"Repository '{repository['name']}' removed and re-cloned successfully"
+            logger.info(message)
+
+        except GitCommandError as gce:
+            err = str(gce)
+            logger.error(f"Git clone failed: {err}")
+            if "authentication" in err.lower():
+                message = "Authentication failed. Please check your Git credentials."
+            elif "not found" in err.lower():
+                message = f"Repository or branch not found. URL: {repository['url']} Branch: {repository['branch']}"
+            else:
+                message = f"Git clone failed: {err}"
+        except Exception as e:
+            logger.error(f"Unexpected error during Git clone: {e}")
+            message = f"Unexpected error: {str(e)}"
+        finally:
+            # Cleanup empty directory after failed clone
+            try:
+                if not success and os.path.isdir(repo_path) and not os.listdir(repo_path):
+                    shutil.rmtree(repo_path)
+                    logger.info(f"Removed empty directory after failed clone: {repo_path}")
+            except Exception as ce:
+                logger.warning(f"Cleanup after failed clone skipped: {ce}")
+
+        # Final status update
+        if success:
+            git_repo_manager.update_sync_status(repo_id, "synced")
+            return {"success": True, "message": message, "repository_path": repo_path}
+        else:
+            git_repo_manager.update_sync_status(repo_id, f"error: {message}")
+            raise HTTPException(status_code=500, detail=message)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error removing and syncing repository {repo_id}: {e}")
+        git_repo_manager.update_sync_status(repo_id, f"error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/health")

@@ -37,6 +37,89 @@ This script will:
 3. 🗜️ Compress the image for transfer
 4. 📊 Show image size and details
 
+### 🌐 Proxy Configuration
+
+The build script automatically detects and uses proxy environment variables when building the Docker image. This is essential for corporate environments with proxy requirements.
+
+#### Automatic Proxy Detection
+
+The script checks for these environment variables:
+- `HTTP_PROXY` - Proxy for HTTP requests
+- `HTTPS_PROXY` - Proxy for HTTPS requests  
+- `NO_PROXY` - Comma-separated list of hosts to bypass proxy
+
+#### Usage Examples
+
+**Standard Environment (No Proxy):**
+```bash
+# No configuration needed - script detects automatically
+./docker/prepare-all-in-one.sh
+```
+Output: `🌍 No proxy configuration detected - building with direct internet access`
+
+**Corporate Environment (HTTPS Proxy):**
+```bash
+# Set proxy environment variable
+export HTTPS_PROXY=http://proxy.company.com:8080
+./docker/prepare-all-in-one.sh
+```
+Output: 
+```
+🔒 HTTPS Proxy detected: http://proxy.company.com:8080
+📡 Using proxy configuration for Docker build
+```
+
+**Full Proxy Configuration:**
+```bash
+# Configure all proxy settings
+export HTTP_PROXY=http://proxy.company.com:8080
+export HTTPS_PROXY=http://proxy.company.com:8080
+export NO_PROXY=localhost,127.0.0.1,.local,.company.com
+
+./docker/prepare-all-in-one.sh
+```
+Output:
+```
+🌐 HTTP Proxy detected: http://proxy.company.com:8080
+🔒 HTTPS Proxy detected: http://proxy.company.com:8080
+🚫 No Proxy list detected: localhost,127.0.0.1,.local,.company.com
+📡 Using proxy configuration for Docker build
+```
+
+**Proxy with Authentication:**
+```bash
+# Include username and password in proxy URL
+export HTTPS_PROXY=http://username:password@proxy.company.com:8080
+./docker/prepare-all-in-one.sh
+```
+
+#### Proxy Configuration Tips
+
+- **🔐 Security**: Avoid hardcoding credentials in scripts - use environment variables
+- **🏢 Corporate Networks**: Check with IT department for correct proxy settings
+- **🌐 SSL/TLS**: Use HTTPS proxy settings for secure package downloads
+- **🚫 Exceptions**: Add internal domains to NO_PROXY to avoid routing through proxy
+- **🔄 Persistence**: Add proxy exports to `.bashrc` or `.profile` for permanent setup
+
+#### Troubleshooting Proxy Issues
+
+**Build fails with connection errors:**
+```bash
+# Verify proxy settings
+echo "HTTP_PROXY: $HTTP_PROXY"
+echo "HTTPS_PROXY: $HTTPS_PROXY"
+
+# Test proxy connectivity
+curl -I --proxy $HTTPS_PROXY https://registry-1.docker.io/
+```
+
+**Authentication failures:**
+```bash
+# URL-encode special characters in passwords
+# @ becomes %40, : becomes %3A, etc.
+export HTTPS_PROXY=http://user%40domain:pass%3Aword@proxy.company.com:8080
+```
+
 ### Output Files
 
 The script creates:
@@ -172,6 +255,32 @@ docker inspect cockpit-ng | grep -A 5 "Health"
 ```
 
 ## 🔍 Troubleshooting
+
+### Build Issues
+
+**Image build fails with network errors:**
+```bash
+# Check proxy configuration during build
+echo "HTTP_PROXY: $HTTP_PROXY"
+echo "HTTPS_PROXY: $HTTPS_PROXY"
+echo "NO_PROXY: $NO_PROXY"
+
+# Test proxy connectivity
+curl -I --proxy $HTTPS_PROXY https://registry-1.docker.io/
+
+# Try build with verbose output
+./docker/prepare-all-in-one.sh 2>&1 | tee build.log
+```
+
+**Corporate firewall/proxy blocking downloads:**
+```bash
+# Verify proxy settings with IT department
+# Common corporate proxy ports: 8080, 3128, 8000
+
+# Test different proxy configurations
+export HTTPS_PROXY=http://proxy.company.com:3128
+./docker/prepare-all-in-one.sh
+```
 
 ### Container Won't Start
 

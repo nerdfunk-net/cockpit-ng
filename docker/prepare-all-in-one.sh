@@ -19,12 +19,34 @@ mkdir -p docker/airgap-artifacts
 echo "📦 Building complete self-contained image..."
 echo "   Image: ${FULL_IMAGE_NAME}"
 echo "   Output: ${OUTPUT_FILE}"
+
+# Detect proxy environment variables and build proxy arguments
+PROXY_ARGS=""
+if [ -n "${HTTP_PROXY}" ]; then
+    PROXY_ARGS="${PROXY_ARGS} --build-arg HTTP_PROXY=${HTTP_PROXY}"
+    echo "   🌐 HTTP Proxy detected: ${HTTP_PROXY}"
+fi
+
+if [ -n "${HTTPS_PROXY}" ]; then
+    PROXY_ARGS="${PROXY_ARGS} --build-arg HTTPS_PROXY=${HTTPS_PROXY}"
+    echo "   🔒 HTTPS Proxy detected: ${HTTPS_PROXY}"
+fi
+
+if [ -n "${NO_PROXY}" ]; then
+    PROXY_ARGS="${PROXY_ARGS} --build-arg NO_PROXY=${NO_PROXY}"
+    echo "   🚫 No Proxy list detected: ${NO_PROXY}"
+fi
+
+if [ -n "${PROXY_ARGS}" ]; then
+    echo "   📡 Using proxy configuration for Docker build"
+else
+    echo "   🌍 No proxy configuration detected - building with direct internet access"
+fi
 echo ""
 
-# Build the all-in-one image
+# Build the all-in-one image with conditional proxy arguments
 docker build -t "${FULL_IMAGE_NAME}" -f docker/Dockerfile.all-in-one . \
-    --progress=plain \
-    --no-cache
+    --no-cache ${PROXY_ARGS}
 
 echo ""
 echo "💾 Saving image to tar file..."
