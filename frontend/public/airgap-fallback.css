@@ -1,0 +1,46 @@
+/* Simple CSS fallback for air-gapped environments - no external dependencies */
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+code, pre, .font-mono {
+  font-family: 'SF Mono', Monaco, Inconsolata, 'Roboto Mono', Consolas, 'Courier New', monospace !important;
+}
+
+/* Ensure core colors work without external dependencies */
+:root {
+  --primary-color: #2563eb;
+  --primary-hover: #1d4ed8;
+  --success-color: #10b981;
+  --success-hover: #059669;
+  --background-color: #ffffff;
+  --text-color: #1f2937;
+  --border-color: #e5e7eb;
+}
+
+/* Basic button styling as fallback */
+.btn-primary {
+  background-color: var(--primary-color) !important;
+  color: white !important;
+  border: 1px solid var(--primary-color) !important;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover) !important;
+}
+
+.btn-success {
+  background-color: var(--success-color) !important;
+  color: white !important;
+  border: 1px solid var(--success-color) !important;
+}
+
+.btn-success:hover {
+  background-color: var(--success-hover) !important;
+}
+
+/* Header styling fallback */
+.header, .navbar, .top-bar {
+  background-color: var(--primary-color) !important;
+  color: white !important;
+}

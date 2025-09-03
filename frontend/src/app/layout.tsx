@@ -51,11 +51,15 @@ export default function RootLayout({
         {/* Load local fonts for air-gapped environments */}
         <link rel="stylesheet" href="/fonts/geist.css" media="all" />
         <link rel="stylesheet" href="/fonts/geist-mono.css" media="all" />
+        {/* Air-gapped fallback CSS */}
+        {process.env.NEXT_PUBLIC_AIR_GAPPED === "true" && (
+          <link rel="stylesheet" href="/airgap-fallback.css" media="all" />
+        )}
         <style dangerouslySetInnerHTML={{
           __html: `
             :root {
-              --font-geist-sans: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-              --font-geist-mono: 'Geist Mono', 'SF Mono', Monaco, Inconsolata, 'Roboto Mono', Consolas, 'Courier New', monospace;
+              --font-geist-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              --font-geist-mono: 'SF Mono', Monaco, Inconsolata, 'Roboto Mono', Consolas, 'Courier New', monospace;
             }
           `
         }} />

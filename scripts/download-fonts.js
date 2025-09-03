@@ -55,8 +55,8 @@ async function downloadFontFiles(cssUrl, fontFamily) {
       
       response.on('end', async () => {
         try {
-          // Extract font URLs from CSS
-          const fontUrlRegex = /url\((https:\/\/[^)]+\.woff2?)\)/g;
+          // Extract font URLs from CSS - Updated regex for TTF and WOFF2
+          const fontUrlRegex = /url\((https:\/\/[^)]+\.(ttf|woff2?))\)/g;
           const fontUrls = [];
           let match;
           
@@ -69,7 +69,8 @@ async function downloadFontFiles(cssUrl, fontFamily) {
           // Download each font file
           for (let i = 0; i < fontUrls.length; i++) {
             const fontUrl = fontUrls[i];
-            const fileName = `${fontFamily.toLowerCase().replace(/\s+/g, '-')}-${i + 1}.woff2`;
+            const extension = fontUrl.includes('.woff2') ? 'woff2' : fontUrl.includes('.woff') ? 'woff' : 'ttf';
+            const fileName = `${fontFamily.toLowerCase().replace(/\s+/g, '-')}-${i + 1}.${extension}`;
             const filePath = path.join(fontDir, fileName);
             
             try {
@@ -79,11 +80,12 @@ async function downloadFontFiles(cssUrl, fontFamily) {
             }
           }
           
-          // Create local CSS file
+          // Create local CSS file with proper file extensions
           const localCss = data.replace(/https:\/\/fonts\.gstatic\.com\/[^)]+/g, (match) => {
             const index = fontUrls.indexOf(match);
             if (index !== -1) {
-              return `/fonts/${fontFamily.toLowerCase().replace(/\s+/g, '-')}-${index + 1}.woff2`;
+              const extension = match.includes('.woff2') ? 'woff2' : match.includes('.woff') ? 'woff' : 'ttf';
+              return `/fonts/${fontFamily.toLowerCase().replace(/\s+/g, '-')}-${index + 1}.${extension}`;
             }
             return match;
           });
