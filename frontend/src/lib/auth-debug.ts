@@ -80,10 +80,16 @@ export const checkDevAuth = async () => {
       }
     }
     
-    // If still not authenticated, try backend login
-    if (!state.isAuthenticated && !state.token) {
-      console.log('checkDevAuth: No authentication found, attempting backend login')
+    // Only attempt auto-login in development mode and if explicitly enabled
+    const isDevMode = process.env.NODE_ENV === 'development'
+    const autoLoginEnabled = process.env.NEXT_PUBLIC_DEV_AUTO_LOGIN === 'true'
+    
+    // If still not authenticated, try backend login only if enabled
+    if (!state.isAuthenticated && !state.token && isDevMode && autoLoginEnabled) {
+      console.log('checkDevAuth: No authentication found, attempting backend login (auto-login enabled)')
       await devLogin()
+    } else if (!state.isAuthenticated && !state.token) {
+      console.log('checkDevAuth: No authentication found, auto-login disabled - user needs to login manually')
     } else {
       console.log('checkDevAuth: Already authenticated')
     }

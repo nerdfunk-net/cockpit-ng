@@ -21,11 +21,16 @@ const DEFAULT_CONFIG: Required<SessionConfig> = {
 
 export function useSessionManager(config: SessionConfig = {}) {
   const finalConfig = { ...DEFAULT_CONFIG, ...config }
-  const { token, login, logout, user } = useAuthStore()
+  const { token, login, logout, user, hydrate } = useAuthStore()
   
   const lastActivityRef = useRef<number>(Date.now())
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // Hydrate auth state from cookies on component mount
+  useEffect(() => {
+    hydrate()
+  }, [hydrate])
   
   // Track user activity
   const updateActivity = useCallback(() => {
@@ -166,7 +171,7 @@ export function useSessionManager(config: SessionConfig = {}) {
     }
   }, [finalConfig.refreshBeforeExpiry, isUserActive, refreshToken, getTokenExpiry])
 
-  // Periodic check for token expiry and user activity
+  // Periodic check for token expiry, user activity, and cookie presence
   const startPeriodicCheck = useCallback(() => {
     if (checkIntervalRef.current) {
       clearInterval(checkIntervalRef.current)
@@ -175,6 +180,16 @@ export function useSessionManager(config: SessionConfig = {}) {
 
     checkIntervalRef.current = setInterval(() => {
       const currentToken = useAuthStore.getState().token
+      
+      // Check if cookies were cleared externally
+      const cookieToken = typeof window !== 'undefined' ? 
+        document.cookie.split(';').find(row => row.trim().startsWith('cockpit_auth_token=')) : null
+      
+      if (currentToken && !cookieToken) {
+        console.log('Session Manager: Cookies cleared externally, logging out')
+        logout()
+        return
+      }
       
       if (!currentToken) {
         console.log('Session Manager: No token available, stopping periodic check')

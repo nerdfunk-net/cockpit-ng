@@ -34,8 +34,8 @@ function DashboardLayoutInner({ children, className }: DashboardLayoutProps) {
       // Debug authentication state
       debugAuth()
       
-      // For development, auto-login if no auth
-      await checkDevAuth()
+      // For development, auto-login if no auth (disabled for testing)
+      // await checkDevAuth()
       
       // Give some time for auth to rehydrate
       setTimeout(() => {
