@@ -5,7 +5,7 @@ User profile management router.
 from __future__ import annotations
 import logging
 from fastapi import APIRouter, HTTPException, status, Depends
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import Optional
 from core.auth import get_current_username
 import profile_manager

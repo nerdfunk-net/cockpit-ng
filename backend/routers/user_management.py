@@ -5,7 +5,6 @@ User management router for CRUD operations.
 from __future__ import annotations
 import logging
 from fastapi import APIRouter, HTTPException, status, Depends
-from typing import List
 from core.auth import verify_admin_token
 from models.user_management import (
     UserCreate,
@@ -14,7 +13,6 @@ from models.user_management import (
     UserListResponse,
     BulkUserAction,
     UserRole,
-    UserPermissions,
 )
 from services.user_management import (
     create_user,
@@ -22,14 +20,9 @@ from services.user_management import (
     get_user_by_id,
     update_user,
     delete_user,
-    bulk_delete_users,
     bulk_hard_delete_users,
     bulk_update_permissions,
-    get_permission_name,
     toggle_user_status,
-    PERMISSIONS_USER,
-    PERMISSIONS_ADMIN,
-    PERMISSIONS_VIEWER,
 )
 
 logger = logging.getLogger(__name__)

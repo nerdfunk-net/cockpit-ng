@@ -3,10 +3,13 @@ Authentication router for login and token management.
 """
 
 from __future__ import annotations
+import logging
 from datetime import timedelta
 from fastapi import APIRouter, HTTPException, status, Depends
 from models.auth import UserLogin, LoginResponse
 from core.auth import create_access_token, get_current_username, get_api_key_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -147,7 +150,7 @@ async def api_key_login(user_info: dict = Depends(get_api_key_user)):
                 "debug": False,
             },
         )
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to generate access token",

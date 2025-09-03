@@ -128,7 +128,8 @@ def create_user(
                 ):
                     cred_mgr.delete_credential(cred["id"])
                     break
-        except:
+        except Exception:
+            # Ignore errors during cleanup
             pass
         raise Exception(f"Failed to create user: {str(e)}")
 

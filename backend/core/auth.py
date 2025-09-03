@@ -10,7 +10,6 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 from passlib.context import CryptContext
 
-from models.auth import TokenData
 
 
 # Security setup
@@ -89,8 +88,6 @@ def verify_admin_token(user_info: dict = Depends(verify_token)) -> dict:
 
 def verify_api_key(x_api_key: Optional[str] = None) -> dict:
     """Verify API key and return user info."""
-    from fastapi import Header
-    import profile_manager
     
     if not x_api_key:
         raise HTTPException(
@@ -143,7 +140,7 @@ def verify_api_key(x_api_key: Optional[str] = None) -> dict:
         
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Authentication error"
