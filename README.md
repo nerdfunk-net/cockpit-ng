@@ -233,7 +233,12 @@ cockpit-ng/
 │   ├── src/components/  # React components
 │   └── src/hooks/       # Custom hooks
 ├── data/                # Persistent data
-└── docker-compose.yml   # Container orchestration
+└── docker/              # Docker deployment files
+    ├── docker-compose.yml   # Development (requires internet)
+    ├── Dockerfile.basic     # Basic multi-stage build
+    ├── Dockerfile.all-in-one # Air-gap production build
+    ├── prepare-all-in-one.sh # Build air-gap image
+    └── README-*.md          # Docker documentation
 ```
 
 ### **Technology Stack**
