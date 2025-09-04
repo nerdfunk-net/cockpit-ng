@@ -31,7 +31,7 @@ class ScanStartRequest(BaseModel):
     )
     credential_ids: List[int] = Field(..., description="List of credential IDs to try")
     discovery_mode: str = Field(
-        default="napalm", description="Discovery mode: napalm or ssh-login"
+        default="netmiko", description="Discovery mode: napalm, ssh-login, or netmiko"
     )
     parser_template_ids: Optional[List[int]] = Field(
         default=None,
@@ -40,8 +40,8 @@ class ScanStartRequest(BaseModel):
 
     @validator("discovery_mode")
     def validate_discovery_mode(cls, v: str):
-        if v not in ["napalm", "ssh-login"]:
-            raise ValueError("discovery_mode must be 'napalm' or 'ssh-login'")
+        if v not in ["napalm", "ssh-login", "netmiko"]:
+            raise ValueError("discovery_mode must be 'napalm', 'ssh-login', or 'netmiko'")
         return v
 
     @validator("cidrs")
@@ -138,17 +138,23 @@ class OnboardResponse(BaseModel):
 
 # API Endpoints
 @router.post("/start", response_model=ScanStartResponse)
-async def start_scan(request: ScanStartRequest):
+async def start_scan(request: ScanStartRequest, current_user: str = Depends(get_current_username)):
     """Start a new network scan job."""
     try:
+        # Get user's debug setting
+        from services.user_management import get_user_by_username
+        user = get_user_by_username(current_user)
+        debug_enabled = user.get("debug", False) if user else False
+        
         logger.info(
-            f"Starting scan job with CIDRs: {request.cidrs}, credentials: {request.credential_ids}, mode: {request.discovery_mode} template id: {request.parser_template_ids}"
+            f"Starting scan job with CIDRs: {request.cidrs}, credentials: {request.credential_ids}, mode: {request.discovery_mode} template id: {request.parser_template_ids}, debug: {debug_enabled}"
         )
         job = await scan_service.start_job(
             request.cidrs,
             request.credential_ids,
             request.discovery_mode,
             parser_template_ids=request.parser_template_ids,
+            debug_enabled=debug_enabled,
         )
 
         return ScanStartResponse(
@@ -191,6 +197,7 @@ async def get_scan_status(job_id: str):
                 "device_type": result.device_type,
                 "hostname": result.hostname,
                 "platform": result.platform,
+                "debug_info": result.debug_info,
             }
             for result in job.results
         ],

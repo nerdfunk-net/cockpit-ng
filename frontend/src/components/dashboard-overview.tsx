@@ -12,7 +12,10 @@ import {
   Layers,
   RefreshCw,
   Clock,
-  Database
+  Database,
+  Shield,
+  Loader2,
+  AlertTriangle
 } from 'lucide-react'
 
 interface DashboardStats {
@@ -20,6 +23,11 @@ interface DashboardStats {
   locations: number
   ip_addresses: number
   prefixes: number
+}
+
+interface CheckMKStats {
+  total_hosts: number
+  timestamp: string
 }
 
 interface CachedStats {
@@ -40,13 +48,31 @@ export default function DashboardOverview() {
     ip_addresses: 0,
     prefixes: 0
   })
+  const [checkmkStats, setCheckmkStats] = useState<CheckMKStats | null>(null)
+  const [checkmkLoading, setCheckmkLoading] = useState(true)
+  const [checkmkError, setCheckmkError] = useState<string | null>(null)
   const [loadingState, setLoadingState] = useState<LoadingState>('idle')
   const [cacheInfo, setCacheInfo] = useState<string>('')
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   useEffect(() => {
     loadDashboardData()
+    loadCheckmkData()
   }, [])
+
+  const loadCheckmkData = async () => {
+    try {
+      setCheckmkLoading(true)
+      setCheckmkError(null)
+      const data = await apiCall<CheckMKStats>('checkmk/stats')
+      setCheckmkStats(data)
+    } catch (error) {
+      console.error('Error fetching CheckMK stats:', error)
+      setCheckmkError(error instanceof Error ? error.message : 'Failed to load CheckMK stats')
+    } finally {
+      setCheckmkLoading(false)
+    }
+  }
 
   const getCachedStats = (): DashboardStats | null => {
     try {
@@ -117,6 +143,7 @@ export default function DashboardOverview() {
     localStorage.removeItem(CACHE_KEY)
     setCacheInfo('')
     loadDashboardData(true)
+    loadCheckmkData()
   }
 
   const formatNumber = (num: number): string => {
@@ -130,7 +157,7 @@ export default function DashboardOverview() {
 
   const statCards = [
     {
-      title: 'Total Devices',
+      title: 'Total Nautobot Devices',
       value: stats.devices,
       icon: Server,
       color: 'text-blue-600',
@@ -224,7 +251,7 @@ export default function DashboardOverview() {
       )}
 
       {/* Stats Cards Grid */}
-      <div className="analytics-grid">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         {statCards.map((card) => {
           const IconComponent = card.icon
           return (
@@ -256,6 +283,50 @@ export default function DashboardOverview() {
             </Card>
           )
         })}
+        
+        {/* CheckMK Hosts Card */}
+        <Card className="analytics-card border-0 transition-all duration-300 hover:shadow-analytics-lg">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div className="p-3 rounded-xl bg-orange-100 ring-1 ring-white/20">
+                <Shield className="h-6 w-6 text-orange-600" />
+              </div>
+              <div className="text-right">
+                <div className={cn(
+                  "text-3xl font-bold text-slate-900",
+                  checkmkLoading && "text-slate-400"
+                )}>
+                  {checkmkLoading ? (
+                    <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                  ) : checkmkError ? (
+                    <AlertTriangle className="h-8 w-8 text-red-500" />
+                  ) : (
+                    formatNumber(checkmkStats?.total_hosts ?? 0)
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <CardTitle className="text-sm font-semibold text-slate-700 mb-2">
+              CheckMK Hosts
+            </CardTitle>
+            {checkmkLoading ? (
+              <p className="text-xs text-slate-500 leading-relaxed">Loading CheckMK data...</p>
+            ) : checkmkError ? (
+              <p className="text-xs text-red-500 leading-relaxed">{checkmkError}</p>
+            ) : (
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Total hosts monitored by CheckMK
+                {checkmkStats?.timestamp && (
+                  <span className="block mt-1 text-slate-400">
+                    Updated: {new Date(checkmkStats.timestamp).toLocaleTimeString()}
+                  </span>
+                )}
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Last Updated Info */}

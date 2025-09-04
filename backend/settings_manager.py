@@ -43,6 +43,17 @@ class GitSettings:
 
 
 @dataclass
+class CheckMKSettings:
+    """CheckMK connection settings"""
+
+    url: str = ""  # Must be configured by user
+    site: str = ""  # Must be configured by user
+    username: str = ""  # Must be configured by user  
+    password: str = ""  # Must be configured by user
+    verify_ssl: bool = True
+
+
+@dataclass
 class CacheSettings:
     """Cache configuration for Git data"""
 
@@ -81,6 +92,7 @@ class SettingsManager:
             self.default_nautobot = NautobotSettings()
 
         self.default_git = GitSettings()
+        self.default_checkmk = CheckMKSettings()
         self.default_cache = CacheSettings()
 
         # Initialize database
@@ -130,6 +142,20 @@ class SettingsManager:
                     )
                 """)
 
+                # Create checkmk_settings table
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS checkmk_settings (
+                        id INTEGER PRIMARY KEY,
+                        url TEXT NOT NULL,
+                        site TEXT NOT NULL,
+                        username TEXT NOT NULL,
+                        password TEXT NOT NULL,
+                        verify_ssl BOOLEAN NOT NULL DEFAULT 1,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+
                 # Create cache_settings table
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS cache_settings (
@@ -155,6 +181,11 @@ class SettingsManager:
                 if cursor.fetchone()[0] == 0:
                     logger.info("Inserting default Git settings")
                     self._insert_default_git_settings(cursor)
+
+                cursor.execute("SELECT COUNT(*) FROM checkmk_settings")
+                if cursor.fetchone()[0] == 0:
+                    logger.info("Inserting default CheckMK settings")
+                    self._insert_default_checkmk_settings(cursor)
 
                 cursor.execute("SELECT COUNT(*) FROM cache_settings")
                 if cursor.fetchone()[0] == 0:
@@ -205,6 +236,22 @@ class SettingsManager:
                 self.default_git.config_path,
                 self.default_git.sync_interval,
                 self.default_git.verify_ssl,
+            ),
+        )
+
+    def _insert_default_checkmk_settings(self, cursor):
+        """Insert default CheckMK settings"""
+        cursor.execute(
+            """
+            INSERT INTO checkmk_settings (url, site, username, password, verify_ssl)
+            VALUES (?, ?, ?, ?, ?)
+        """,
+            (
+                self.default_checkmk.url,
+                self.default_checkmk.site,
+                self.default_checkmk.username,
+                self.default_checkmk.password,
+                self.default_checkmk.verify_ssl,
             ),
         )
 
@@ -284,11 +331,42 @@ class SettingsManager:
             self._handle_database_corruption()
             return asdict(self.default_git)
 
+    def get_checkmk_settings(self) -> Optional[Dict[str, Any]]:
+        """Get current CheckMK settings"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+
+                cursor.execute(
+                    "SELECT * FROM checkmk_settings ORDER BY id DESC LIMIT 1"
+                )
+                row = cursor.fetchone()
+
+                if row:
+                    return {
+                        "url": row["url"],
+                        "site": row["site"],
+                        "username": row["username"],
+                        "password": row["password"],
+                        "verify_ssl": bool(row["verify_ssl"]),
+                    }
+                else:
+                    # Fallback to defaults
+                    return asdict(self.default_checkmk)
+
+        except sqlite3.Error as e:
+            logger.error(f"Error getting CheckMK settings: {e}")
+            # Auto-recover by recreating database
+            self._handle_database_corruption()
+            return asdict(self.default_checkmk)
+
     def get_all_settings(self) -> Dict[str, Any]:
         """Get all settings combined"""
         return {
             "nautobot": self.get_nautobot_settings(),
             "git": self.get_git_settings(),
+            "checkmk": self.get_checkmk_settings(),
             "cache": self.get_cache_settings(),
             "metadata": self._get_metadata(),
         }
@@ -534,6 +612,65 @@ class SettingsManager:
             logger.error(f"Error updating Git settings: {e}")
             return False
 
+    def update_checkmk_settings(self, settings: Dict[str, Any]) -> bool:
+        """Update CheckMK settings"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+
+                # First, check if any settings exist
+                cursor.execute("SELECT COUNT(*) FROM checkmk_settings")
+                count = cursor.fetchone()[0]
+
+                if count == 0:
+                    # Insert new settings
+                    cursor.execute(
+                        """
+                        INSERT INTO checkmk_settings (url, site, username, password, verify_ssl)
+                        VALUES (?, ?, ?, ?, ?)
+                    """,
+                        (
+                            settings.get("url", self.default_checkmk.url),
+                            settings.get("site", self.default_checkmk.site),
+                            settings.get("username", self.default_checkmk.username),
+                            settings.get("password", self.default_checkmk.password),
+                            settings.get(
+                                "verify_ssl", self.default_checkmk.verify_ssl
+                            ),
+                        ),
+                    )
+                else:
+                    # Update existing settings (update the first/most recent record)
+                    cursor.execute(
+                        """
+                        UPDATE checkmk_settings SET 
+                            url = ?, 
+                            site = ?, 
+                            username = ?, 
+                            password = ?, 
+                            verify_ssl = ?,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = (SELECT id FROM checkmk_settings ORDER BY id DESC LIMIT 1)
+                    """,
+                        (
+                            settings.get("url", self.default_checkmk.url),
+                            settings.get("site", self.default_checkmk.site),
+                            settings.get("username", self.default_checkmk.username),
+                            settings.get("password", self.default_checkmk.password),
+                            settings.get(
+                                "verify_ssl", self.default_checkmk.verify_ssl
+                            ),
+                        ),
+                    )
+
+                conn.commit()
+                logger.info("CheckMK settings updated successfully")
+                return True
+
+        except sqlite3.Error as e:
+            logger.error(f"Error updating CheckMK settings: {e}")
+            return False
+
     def update_all_settings(self, settings: Dict[str, Any]) -> bool:
         """Update all settings"""
         success = True
@@ -543,6 +680,9 @@ class SettingsManager:
 
         if "git" in settings:
             success &= self.update_git_settings(settings["git"])
+
+        if "checkmk" in settings:
+            success &= self.update_checkmk_settings(settings["checkmk"])
 
         if "cache" in settings:
             success &= self.update_cache_settings(settings["cache"])
@@ -605,11 +745,13 @@ class SettingsManager:
                 # Clear existing settings
                 cursor.execute("DELETE FROM nautobot_settings")
                 cursor.execute("DELETE FROM git_settings")
+                cursor.execute("DELETE FROM checkmk_settings")
                 cursor.execute("DELETE FROM cache_settings")
 
                 # Insert defaults
                 self._insert_default_nautobot_settings(cursor)
                 self._insert_default_git_settings(cursor)
+                self._insert_default_checkmk_settings(cursor)
                 self._insert_default_cache_settings(cursor)
 
                 conn.commit()

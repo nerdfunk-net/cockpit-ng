@@ -77,8 +77,8 @@ async def update_profile(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
 
-        # Validate API key length if provided
-        if update_data.api_key is not None and len(update_data.api_key) != 42:
+        # Validate API key length if provided (allow empty string for no API key)
+        if update_data.api_key is not None and update_data.api_key != "" and len(update_data.api_key) != 42:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="API key must be exactly 42 characters long",

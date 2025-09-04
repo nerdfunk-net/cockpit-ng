@@ -11,4 +11,6 @@ gitpython
 jinja2
 cryptography>=42.0.0
 textfsm
+netmiko
+ntc-templates
 napalm

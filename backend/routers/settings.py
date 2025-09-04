@@ -11,8 +11,10 @@ from core.auth import verify_admin_token
 from models.settings import (
     NautobotSettingsRequest,
     GitSettingsRequest,
+    CheckMKSettingsRequest,
     AllSettingsRequest,
     ConnectionTestRequest,
+    CheckMKTestRequest,
     GitTestRequest,
     CacheSettingsRequest,
 )
@@ -330,6 +332,78 @@ async def test_nautobot_connection(
 
     except Exception as e:
         logger.error(f"Error testing Nautobot connection: {e}")
+        return {
+            "success": False,
+            "message": f"Test failed: {str(e)}",
+            "tested_url": test_request.url,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+
+
+@router.get("/checkmk")
+async def get_checkmk_settings(current_user: dict = Depends(verify_admin_token)):
+    """Get CheckMK settings."""
+    try:
+        from settings_manager import settings_manager
+
+        settings_data = settings_manager.get_checkmk_settings()
+        return {"success": True, "data": settings_data}
+
+    except Exception as e:
+        logger.error(f"Error getting CheckMK settings: {e}")
+        return {"success": False, "message": f"Failed to get CheckMK settings: {str(e)}"}
+
+
+@router.post("/checkmk")
+async def create_checkmk_settings(
+    checkmk_request: CheckMKSettingsRequest, current_user: dict = Depends(verify_admin_token)
+):
+    """Create/Update CheckMK settings via POST."""
+    try:
+        from settings_manager import settings_manager
+
+        success = settings_manager.update_checkmk_settings(checkmk_request.dict())
+
+        if success:
+            return {
+                "success": True,
+                "message": "CheckMK settings updated successfully",
+                "data": settings_manager.get_checkmk_settings(),
+            }
+        else:
+            return {"success": False, "message": "Failed to update CheckMK settings"}
+
+    except Exception as e:
+        logger.error(f"Error updating CheckMK settings: {e}")
+        return {"success": False, "message": f"Failed to update CheckMK settings: {str(e)}"}
+
+
+@router.post("/test/checkmk")
+async def test_checkmk_connection(
+    test_request: CheckMKTestRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Test CheckMK connection with provided settings."""
+    try:
+        from services.checkmk import checkmk_service
+
+        success, message = await checkmk_service.test_connection(
+            test_request.url,
+            test_request.site,
+            test_request.username,
+            test_request.password,
+            test_request.verify_ssl
+        )
+
+        return {
+            "success": success,
+            "message": message,
+            "tested_url": test_request.url,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+
+    except Exception as e:
+        logger.error(f"Error testing CheckMK connection: {e}")
         return {
             "success": False,
             "message": f"Test failed: {str(e)}",

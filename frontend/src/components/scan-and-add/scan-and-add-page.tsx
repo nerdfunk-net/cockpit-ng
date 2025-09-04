@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
+import { useDebug } from '@/contexts/debug-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,7 +30,8 @@ import {
   Search,
   Users,
   GitBranch,
-  FileText
+  FileText,
+  Bug
 } from 'lucide-react'
 
 // Type definitions
@@ -67,6 +69,16 @@ interface ScanResult {
   credential_id?: string
   is_authenticated?: boolean
   is_alive?: boolean
+  debug_info?: {
+    device_type_tried?: string
+    show_version_raw?: string
+    show_version_structured?: any
+    parsing_method?: string
+    hostname_extracted?: string
+    hostname_extraction_method?: string
+    parsed_fields?: string[] | string
+    error?: string
+  }
 }
 
 interface DeviceMetadata {
@@ -123,6 +135,7 @@ export function ScanAndAddPage() {
   // Auth and API
   const { isAuthenticated, logout } = useAuthStore()
   const { apiCall } = useApi()
+  const { isDebugEnabled } = useDebug()
 
   // State management
   const [currentPhase, setCurrentPhase] = useState<WizardPhase>('networks')
@@ -134,7 +147,7 @@ export function ScanAndAddPage() {
 
   // Phase 2: Properties
   const [selectedCredentials, setSelectedCredentials] = useState<string[]>([''])
-  const [discoveryMode, setDiscoveryMode] = useState<string>('ssh-login')
+  const [discoveryMode, setDiscoveryMode] = useState<string>('netmiko')
   const [selectedParserTemplates, setSelectedParserTemplates] = useState<(string | number)[]>([])
   const [gitRepository, setGitRepository] = useState<string>('')
   const [inventoryTemplate, setInventoryTemplate] = useState<string>('')
@@ -167,6 +180,8 @@ export function ScanAndAddPage() {
   // Modal states
   const [isDeviceModalOpen, setIsDeviceModalOpen] = useState<boolean>(false)
   const [isAssignAllModalOpen, setIsAssignAllModalOpen] = useState<boolean>(false)
+  const [isScanResultsModalOpen, setIsScanResultsModalOpen] = useState<boolean>(false)
+  const [isDebugModalOpen, setIsDebugModalOpen] = useState<boolean>(false)
   const [editingDeviceIp, setEditingDeviceIp] = useState<string>('')
   const [assignAllData, setAssignAllData] = useState<Partial<DeviceMetadata>>({})
   // Modal-local location filter state for device configuration modal
@@ -791,6 +806,12 @@ export function ScanAndAddPage() {
         setDeviceMetadata(metadata)
         console.log('=== END SCAN RESULTS DEBUG ===')
         
+        // Check if scan completed but no devices were reachable
+        if (devices.length === 0 && status.progress && (status.progress.unreachable > 0 || status.progress.auth_failed > 0)) {
+          // Show scan results modal when no devices found but some were scanned
+          setIsScanResultsModalOpen(true)
+        }
+        
         setStatusMessage({
           type: 'success',
           message: 'Network scan completed successfully'
@@ -1247,6 +1268,7 @@ export function ScanAndAddPage() {
                   <SelectContent>
                     <SelectItem value="ssh-login">SSH Login</SelectItem>
                     <SelectItem value="napalm">Napalm</SelectItem>
+                    <SelectItem value="netmiko">Netmiko</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1474,6 +1496,18 @@ export function ScanAndAddPage() {
                       <Edit className="h-4 w-4 mr-1" />
                       Assign to All
                     </Button>
+                    {isDebugEnabled && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsDebugModalOpen(true)}
+                        disabled={discoveredDevices.length === 0}
+                        className="text-purple-600 hover:text-purple-700 border-purple-200 hover:border-purple-300"
+                      >
+                        <Bug className="h-4 w-4 mr-1" />
+                        Debug Info
+                      </Button>
+                    )}
                     <Button
                       onClick={onboardSelectedDevices}
                       disabled={selectedDevices.size === 0 || isOnboarding}
@@ -2045,6 +2079,221 @@ export function ScanAndAddPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Scan Results Modal */}
+      <Dialog open={isScanResultsModalOpen} onOpenChange={setIsScanResultsModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <AlertCircle className="h-5 w-5 text-orange-500" />
+              <span>Scan Results Summary</span>
+            </DialogTitle>
+            <DialogDescription>
+              The network scan completed, but no devices were successfully authenticated or are reachable.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {scanJob && (
+            <div className="space-y-4">
+              {/* Scan Statistics */}
+              <div className="bg-slate-50 rounded-lg p-4">
+                <h3 className="font-semibold text-slate-900 mb-3">Scan Statistics</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-slate-600">{scanJob.progress?.total || 0}</div>
+                    <div className="text-slate-500">Total Scanned</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-green-600">{scanJob.progress?.alive || 0}</div>
+                    <div className="text-slate-500">Alive</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-blue-600">{scanJob.progress?.authenticated || 0}</div>
+                    <div className="text-slate-500">Authenticated</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-red-600">{scanJob.progress?.unreachable || 0}</div>
+                    <div className="text-slate-500">Unreachable</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-orange-600">{scanJob.progress?.auth_failed || 0}</div>
+                    <div className="text-slate-500">Auth Failed</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-slate-600">{scanJob.progress?.driver_not_supported || 0}</div>
+                    <div className="text-slate-500">Driver N/A</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Detailed Results */}
+              {scanJob.results && scanJob.results.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-slate-900">Device Status Details</h3>
+                  <div className="max-h-64 overflow-y-auto border rounded-lg">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-100 sticky top-0">
+                        <tr>
+                          <th className="text-left p-3 font-medium">IP Address</th>
+                          <th className="text-left p-3 font-medium">Status</th>
+                          <th className="text-left p-3 font-medium">Issue</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {scanJob.results
+                          .filter(result => !result.is_alive || !result.is_authenticated)
+                          .map((result, index) => (
+                          <tr key={`${result.ip}-${index}`} className="border-b">
+                            <td className="p-3 font-mono">{result.ip}</td>
+                            <td className="p-3">
+                              <Badge variant={result.is_alive ? 'secondary' : 'destructive'}>
+                                {result.is_alive ? 'Alive' : 'Unreachable'}
+                              </Badge>
+                            </td>
+                            <td className="p-3 text-slate-600">
+                              {!result.is_alive 
+                                ? 'Device did not respond to network scan'
+                                : !result.is_authenticated 
+                                ? 'Authentication failed with provided credentials'
+                                : 'Driver not supported for this device type'
+                              }
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Recommendations */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-900 mb-2 flex items-center">
+                  <Info className="h-4 w-4 mr-2" />
+                  Recommendations
+                </h3>
+                <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+                  <li>Verify the network ranges are correct and devices are powered on</li>
+                  <li>Check that the selected credentials are valid for the target devices</li>
+                  <li>Ensure network connectivity between the scanner and target devices</li>
+                  <li>Consider trying different discovery modes (SSH Login vs Napalm)</li>
+                </ul>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button 
+              onClick={() => setIsScanResultsModalOpen(false)}
+              className="w-full sm:w-auto"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Debug Modal */}
+      {isDebugEnabled && (
+        <Dialog open={isDebugModalOpen} onOpenChange={setIsDebugModalOpen}>
+          <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <Bug className="h-5 w-5 text-purple-500" />
+                <span>Debug Information</span>
+              </DialogTitle>
+              <DialogDescription>
+                Debug information for scanned devices including raw command output and parsing results.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {discoveredDevices.map((device) => {
+                const debugInfo = scanJob?.results?.find(r => r.ip === device.ip)?.debug_info
+                
+                if (!debugInfo) {
+                  return (
+                    <Card key={device.ip} className="border-slate-200">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center justify-between">
+                          <span>{device.ip} ({device.hostname || 'Unknown'})</span>
+                          <Badge variant="secondary">No Debug Data</Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-slate-600">No debug information available for this device.</p>
+                      </CardContent>
+                    </Card>
+                  )
+                }
+
+                return (
+                  <Card key={device.ip} className="border-slate-200">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center justify-between">
+                        <span>{device.ip} ({device.hostname || 'Unknown'})</span>
+                        <Badge variant="outline" className="text-purple-600 border-purple-200">
+                          {debugInfo.device_type_tried}
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Connection Info */}
+                      <div>
+                        <h4 className="font-medium text-sm text-slate-700 mb-2">Connection Details</h4>
+                        <div className="bg-slate-50 p-3 rounded-lg text-sm space-y-1">
+                          <div><strong>Device Type Tried:</strong> {debugInfo.device_type_tried}</div>
+                          <div><strong>Parsing Method:</strong> {debugInfo.parsing_method}</div>
+                          {debugInfo.hostname_extracted && (
+                            <div><strong>Hostname Extracted:</strong> {debugInfo.hostname_extracted}</div>
+                          )}
+                          {debugInfo.hostname_extraction_method && (
+                            <div><strong>Extraction Method:</strong> {debugInfo.hostname_extraction_method}</div>
+                          )}
+                          {debugInfo.parsed_fields && (
+                            <div><strong>Parsed Fields:</strong> {Array.isArray(debugInfo.parsed_fields) ? debugInfo.parsed_fields.join(', ') : debugInfo.parsed_fields}</div>
+                          )}
+                          {debugInfo.error && (
+                            <div className="text-red-600"><strong>Error:</strong> {debugInfo.error}</div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Raw Show Version Output */}
+                      {debugInfo.show_version_raw && (
+                        <div>
+                          <h4 className="font-medium text-sm text-slate-700 mb-2">Raw "show version" Output</h4>
+                          <div className="bg-slate-900 text-slate-100 p-4 rounded-lg text-xs font-mono max-h-60 overflow-y-auto">
+                            <pre className="whitespace-pre-wrap">{debugInfo.show_version_raw}</pre>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Structured Parsing Results */}
+                      {debugInfo.show_version_structured && (
+                        <div>
+                          <h4 className="font-medium text-sm text-slate-700 mb-2">Structured Parsing Results (ntc-templates)</h4>
+                          <div className="bg-green-50 p-4 rounded-lg text-xs font-mono max-h-60 overflow-y-auto">
+                            <pre className="whitespace-pre-wrap text-green-800">
+                              {JSON.stringify(debugInfo.show_version_structured, null, 2)}
+                            </pre>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+            
+            <DialogFooter>
+              <Button onClick={() => setIsDebugModalOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

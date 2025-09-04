@@ -336,16 +336,17 @@ class CheckMKClient:
         """
         Get all monitored hosts with status information
 
-        Endpoint: GET /domain-types/host/collections/all
+        Endpoint: POST /domain-types/host/collections/all
+        Note: This endpoint uses POST method for complex queries
         """
-        params = {}
+        json_data = {}
         if columns:
-            params["columns"] = columns
+            json_data["columns"] = columns
         if query:
-            params["query"] = query
+            json_data["query"] = query
 
         response = self._make_request(
-            "GET", "domain-types/host/collections/all", params=params
+            "POST", "domain-types/host/collections/all", json_data=json_data
         )
         return self._handle_response(response)
 
@@ -353,13 +354,16 @@ class CheckMKClient:
         """
         Get monitored host with status information
 
-        Endpoint: GET /objects/host/{host_name}
+        Endpoint: POST /objects/host/{host_name}/actions/show_service/invoke
+        Note: Based on actual API structure, monitoring data is accessed differently
         """
-        params = {}
+        json_data = {}
         if columns:
-            params["columns"] = columns
+            json_data["columns"] = columns
 
-        response = self._make_request("GET", f"objects/host/{hostname}", params=params)
+        response = self._make_request(
+            "POST", f"objects/host/{hostname}/actions/show_service/invoke", json_data=json_data
+        )
         return self._handle_response(response)
 
     def get_host_services(

@@ -119,7 +119,12 @@ export function ProfilePage() {
   }
 
   const validateApiKey = (apiKey: string) => {
-    if (apiKey && apiKey.length !== 42) {
+    // Allow empty API keys (signals no API key configured)
+    if (apiKey.length === 0) {
+      return ''
+    }
+    // If API key is provided, it must be exactly 42 characters
+    if (apiKey.length !== 42) {
       return 'API key must be exactly 42 characters long'
     }
     return ''
@@ -321,19 +326,19 @@ export function ProfilePage() {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <p className="text-slate-500">
-                  API key must be exactly 42 characters long
+                  Leave empty for no API key, or enter exactly 42 characters
                 </p>
                 <span className={`font-mono ${
-                  formData.api_key.length === 42 
-                    ? 'text-green-600' 
-                    : formData.api_key.length > 0 
-                      ? 'text-red-600' 
-                      : 'text-slate-400'
+                  formData.api_key.length === 0 
+                    ? 'text-slate-400' 
+                    : formData.api_key.length === 42 
+                      ? 'text-green-600' 
+                      : 'text-red-600'
                 }`}>
                   {formData.api_key.length}/42
                 </span>
               </div>
-              {formData.api_key && formData.api_key.length !== 42 && (
+              {formData.api_key.length > 0 && formData.api_key.length !== 42 && (
                 <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
                   API key must be exactly 42 characters long
                 </div>

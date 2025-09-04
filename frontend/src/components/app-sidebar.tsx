@@ -30,6 +30,7 @@ import {
   Eye,
   EyeOff,
   Heart,
+  Shield,
 } from 'lucide-react'
 
 interface NavItem {
@@ -76,6 +77,7 @@ const navigationSections: NavSection[] = [
     title: 'Settings',
     items: [
       { label: 'Nautobot', href: '/settings/nautobot', icon: Database },
+      { label: 'CheckMK', href: '/settings/checkmk', icon: Shield },
       { label: 'Templates', href: '/settings/templates', icon: FileText },
       { label: 'Git Management', href: '/settings/git', icon: GitBranch },
       { label: 'Cache', href: '/settings/cache', icon: Zap },

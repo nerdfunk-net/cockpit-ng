@@ -1,0 +1,7 @@
+{% for role, devices in all_devices|groupby('role') %}
+[{{ role|default('ungrouped') }}]
+{% for device in devices %}
+{{ device.name }} ansible_host={{ device.primary_ip4 }}
+{% endfor %}
+
+{% endfor %}
