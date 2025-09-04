@@ -504,7 +504,6 @@ export function SyncDevicesPage() {
       syncProperties.interface_status &&
       syncProperties.ip_address_status &&
       syncProperties.namespace &&
-      syncProperties.sync_options.length > 0 &&
       selectedDevices.size > 0
     )
   }
@@ -513,7 +512,7 @@ export function SyncDevicesPage() {
     if (!isFormValid()) {
       setStatusMessage({
         type: 'error',
-        message: 'Please select devices and complete all sync properties'
+        message: 'Please select devices and complete required sync properties'
       })
       return
     }
@@ -721,7 +720,7 @@ export function SyncDevicesPage() {
 
               {/* Sync Options */}
               <div className="space-y-3">
-                <Label>Sync Options <span className="text-red-500">*</span></Label>
+                <Label>Sync Options</Label>
                 <div className="space-y-2">
                   {[
                     { id: 'cables', label: 'Sync Cables' },
