@@ -16,9 +16,9 @@ ARG HTTPS_PROXY
 ARG NO_PROXY
 
 # Export env so apt/pip see them during RUN commands in this stage
-ENV HTTP_PROXY=${HTTP_PROXY} \
-    HTTPS_PROXY=${HTTPS_PROXY} \
-    NO_PROXY=${NO_PROXY}
+# ENV HTTP_PROXY=${HTTP_PROXY} \
+#     HTTPS_PROXY=${HTTPS_PROXY} \
+#     NO_PROXY=${NO_PROXY}
 
 # Install all required system packages. If proxy is set, temporarily configure apt.
 RUN if [ -n "$HTTP_PROXY" ] || [ -n "$HTTPS_PROXY" ]; then \
@@ -50,9 +50,9 @@ ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG NO_PROXY
 
-ENV HTTP_PROXY=${HTTP_PROXY} \
-    HTTPS_PROXY=${HTTPS_PROXY} \
-    NO_PROXY=${NO_PROXY}
+# ENV HTTP_PROXY=${HTTP_PROXY} \
+#     HTTPS_PROXY=${HTTPS_PROXY} \
+#     NO_PROXY=${NO_PROXY}
 
 WORKDIR /app/frontend
 
@@ -81,9 +81,9 @@ ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG NO_PROXY
 
-ENV HTTP_PROXY=${HTTP_PROXY} \
-    HTTPS_PROXY=${HTTPS_PROXY} \
-    NO_PROXY=${NO_PROXY}
+# ENV HTTP_PROXY=${HTTP_PROXY} \
+#     HTTPS_PROXY=${HTTPS_PROXY} \
+#     NO_PROXY=${NO_PROXY}
 
 # Create wheelhouse with all Python dependencies
 COPY backend/requirements.txt /tmp/

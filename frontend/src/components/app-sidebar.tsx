@@ -31,6 +31,8 @@ import {
   EyeOff,
   Heart,
   Shield,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react'
 
 interface NavItem {
@@ -94,6 +96,7 @@ interface AppSidebarProps {
 export function AppSidebar({ className }: AppSidebarProps) {
   const { isCollapsed, toggleCollapsed } = useSidebar()
   const [isVisible, setIsVisible] = useState(true)
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
   const { user, logout } = useAuthStore()
   const pathname = usePathname()
   
@@ -103,6 +106,18 @@ export function AppSidebar({ className }: AppSidebarProps) {
   const handleLogout = () => {
     logout()
     window.location.href = '/login'
+  }
+
+  const toggleSection = (sectionTitle: string) => {
+    setCollapsedSections(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(sectionTitle)) {
+        newSet.delete(sectionTitle)
+      } else {
+        newSet.add(sectionTitle)
+      }
+      return newSet
+    })
   }
 
   const sidebarWidth = isCollapsed ? 'w-16' : 'w-64'
@@ -197,48 +212,65 @@ export function AppSidebar({ className }: AppSidebarProps) {
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto py-6">
           <nav className="space-y-8">
-            {visibleSections.map((section) => (
-              <div key={section.title} className="px-6">
-                {!isCollapsed && (
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
-                    {section.title}
-                  </h3>
-                )}
-                <div className="space-y-2">
-                  {section.items.map((item) => {
-                    const isActive = pathname === item.href
-                    const Icon = item.icon
-                    
-                    return (
-                      <Link key={item.href} href={item.href}>
-                        <Button
-                          variant={isActive ? 'default' : 'ghost'}
-                          className={cn(
-                            'w-full justify-start h-11 transition-all duration-200 button-analytics',
-                            isCollapsed ? 'px-3' : 'px-4',
-                            isActive
-                              ? 'bg-blue-600 text-white shadow-analytics hover:bg-blue-700'
-                              : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                          )}
-                        >
-                          <Icon className={cn('h-5 w-5', isCollapsed ? '' : 'mr-3')} />
-                          {!isCollapsed && (
-                            <>
-                              <span key="nav-label" className="flex-1 text-left font-medium">{item.label}</span>
-                              {item.badge && (
-                                <Badge key="nav-badge" variant="secondary" className="text-xs bg-slate-100 text-slate-600">
-                                  {item.badge}
-                                </Badge>
-                              )}
-                            </>
-                          )}
-                        </Button>
-                      </Link>
-                    )
-                  })}
+            {visibleSections.map((section) => {
+              const isSectionCollapsed = collapsedSections.has(section.title)
+              
+              return (
+                <div key={section.title} className="px-6">
+                  {!isCollapsed && (
+                    <button
+                      onClick={() => toggleSection(section.title)}
+                      className="flex items-center justify-between w-full text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 hover:text-slate-700 transition-colors group"
+                    >
+                      <span>{section.title}</span>
+                      {isSectionCollapsed ? (
+                        <ChevronRight className="h-3 w-3 group-hover:text-slate-700 transition-colors" />
+                      ) : (
+                        <ChevronDown className="h-3 w-3 group-hover:text-slate-700 transition-colors" />
+                      )}
+                    </button>
+                  )}
+                  <div 
+                    className={cn(
+                      "space-y-2 transition-all duration-300 overflow-hidden",
+                      !isCollapsed && isSectionCollapsed ? "max-h-0 opacity-0" : "max-h-none opacity-100"
+                    )}
+                  >
+                    {section.items.map((item) => {
+                      const isActive = pathname === item.href
+                      const Icon = item.icon
+                      
+                      return (
+                        <Link key={item.href} href={item.href}>
+                          <Button
+                            variant={isActive ? 'default' : 'ghost'}
+                            className={cn(
+                              'w-full justify-start h-11 transition-all duration-200 button-analytics',
+                              isCollapsed ? 'px-3' : 'px-4',
+                              isActive
+                                ? 'bg-blue-600 text-white shadow-analytics hover:bg-blue-700'
+                                : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                            )}
+                          >
+                            <Icon className={cn('h-5 w-5', isCollapsed ? '' : 'mr-3')} />
+                            {!isCollapsed && (
+                              <>
+                                <span key="nav-label" className="flex-1 text-left font-medium">{item.label}</span>
+                                {item.badge && (
+                                  <Badge key="nav-badge" variant="secondary" className="text-xs bg-slate-100 text-slate-600">
+                                    {item.badge}
+                                  </Badge>
+                                )}
+                              </>
+                            )}
+                          </Button>
+                        </Link>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </nav>
         </div>
 
