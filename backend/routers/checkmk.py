@@ -33,12 +33,18 @@ from models.checkmk import (
     CheckMKFolderUpdateRequest,
     CheckMKFolderMoveRequest,
     CheckMKFolderBulkUpdateRequest,
+    CheckMKHostTagGroupCreateRequest,
+    CheckMKHostTagGroupUpdateRequest,
+    CheckMKHostGroupUpdateRequest,
+    CheckMKHostGroupBulkUpdateRequest,
+    CheckMKHostGroupBulkDeleteRequest,
     CheckMKHostListResponse,
     CheckMKHostStatusListResponse,
     CheckMKServiceListResponse,
     CheckMKPendingChangesResponse,
     CheckMKHostGroupListResponse,
     CheckMKFolderListResponse,
+    CheckMKHostTagGroupListResponse,
     CheckMKVersionResponse,
     CheckMKOperationResponse,
 )
@@ -1181,6 +1187,106 @@ async def create_host_group(
         )
 
 
+@router.put("/host-groups/{name}", response_model=CheckMKOperationResponse)
+async def update_host_group(
+    name: str,
+    request: CheckMKHostGroupUpdateRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Update existing host group"""
+    try:
+        client = _get_checkmk_client()
+        result = client.update_host_group(name, alias=request.alias)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Updated host group {name} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating host group {name}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update host group {name}: {str(e)}",
+        )
+
+
+@router.delete("/host-groups/{name}", response_model=CheckMKOperationResponse)
+async def delete_host_group(
+    name: str,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Delete host group"""
+    try:
+        client = _get_checkmk_client()
+        client.delete_host_group(name)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Deleted host group {name} successfully"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting host group {name}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete host group {name}: {str(e)}",
+        )
+
+
+@router.put("/host-groups/bulk-update", response_model=CheckMKOperationResponse)
+async def bulk_update_host_groups(
+    request: CheckMKHostGroupBulkUpdateRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Update multiple host groups in one request"""
+    try:
+        client = _get_checkmk_client()
+        result = client.bulk_update_host_groups(request.entries)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Updated {len(request.entries)} host groups successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error bulk updating host groups: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to bulk update host groups: {str(e)}",
+        )
+
+
+@router.delete("/host-groups/bulk-delete", response_model=CheckMKOperationResponse)
+async def bulk_delete_host_groups(
+    request: CheckMKHostGroupBulkDeleteRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Delete multiple host groups in one request"""
+    try:
+        client = _get_checkmk_client()
+        result = client.bulk_delete_host_groups(request.entries)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Deleted {len(request.entries)} host groups successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error bulk deleting host groups: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to bulk delete host groups: {str(e)}",
+        )
+
+
 # Folder Management Endpoints
 
 @router.get("/folders", response_model=CheckMKFolderListResponse)
@@ -1408,5 +1514,163 @@ async def get_hosts_in_folder(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get hosts in folder {folder_path}: {str(e)}",
+        )
+
+
+# Host Tag Groups Endpoints
+
+@router.get("/host-tag-groups", response_model=CheckMKHostTagGroupListResponse)
+async def get_all_host_tag_groups(
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get all host tag groups"""
+    try:
+        client = _get_checkmk_client()
+        result = client.get_all_host_tag_groups()
+        
+        tag_groups = []
+        for group_data in result.get("value", []):
+            group_info = group_data.get("extensions", {})
+            tag_groups.append({
+                "id": group_data.get("id", ""),
+                "title": group_data.get("title", ""),
+                "topic": group_info.get("topic"),
+                "help": group_info.get("help"),
+                "tags": group_info.get("tags", [])
+            })
+        
+        return CheckMKHostTagGroupListResponse(tag_groups=tag_groups, total=len(tag_groups))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting host tag groups: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get host tag groups: {str(e)}",
+        )
+
+
+@router.get("/host-tag-groups/{name}", response_model=CheckMKOperationResponse)
+async def get_host_tag_group(
+    name: str,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get specific host tag group"""
+    try:
+        client = _get_checkmk_client()
+        result = client.get_host_tag_group(name)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Retrieved host tag group {name} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting host tag group {name}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get host tag group {name}: {str(e)}",
+        )
+
+
+@router.post("/host-tag-groups", response_model=CheckMKOperationResponse)
+async def create_host_tag_group(
+    request: CheckMKHostTagGroupCreateRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Create new host tag group"""
+    try:
+        client = _get_checkmk_client()
+        
+        # Convert tags to format expected by CheckMK API
+        tags = [tag.dict() for tag in request.tags]
+        
+        result = client.create_host_tag_group(
+            id=request.id,
+            title=request.title,
+            tags=tags,
+            topic=request.topic,
+            help=request.help
+        )
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Created host tag group {request.id} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating host tag group {request.id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create host tag group {request.id}: {str(e)}",
+        )
+
+
+@router.put("/host-tag-groups/{name}", response_model=CheckMKOperationResponse)
+async def update_host_tag_group(
+    name: str,
+    request: CheckMKHostTagGroupUpdateRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Update existing host tag group"""
+    try:
+        client = _get_checkmk_client()
+        
+        # Convert tags to format expected by CheckMK API if provided
+        tags = None
+        if request.tags is not None:
+            tags = [tag.dict() for tag in request.tags]
+        
+        result = client.update_host_tag_group(
+            name=name,
+            title=request.title,
+            tags=tags,
+            topic=request.topic,
+            help=request.help,
+            repair=request.repair
+        )
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Updated host tag group {name} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating host tag group {name}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update host tag group {name}: {str(e)}",
+        )
+
+
+@router.delete("/host-tag-groups/{name}", response_model=CheckMKOperationResponse)
+async def delete_host_tag_group(
+    name: str,
+    repair: bool = False,
+    mode: str = None,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Delete host tag group"""
+    try:
+        client = _get_checkmk_client()
+        client.delete_host_tag_group(name, repair=repair, mode=mode)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Deleted host tag group {name} successfully"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting host tag group {name}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete host tag group {name}: {str(e)}",
         )
 

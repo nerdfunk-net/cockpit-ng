@@ -862,6 +862,117 @@ class CheckMKClient:
         else:
             raise CheckMKAPIError(f"Failed to get ETag for folder {folder_path}")
 
+    # Host Tag Groups Methods
+
+    def get_all_host_tag_groups(self) -> Dict:
+        """
+        Get all host tag groups
+
+        Endpoint: GET /domain-types/host_tag_group/collections/all
+        """
+        response = self._make_request("GET", "domain-types/host_tag_group/collections/all")
+        return self._handle_response(response)
+
+    def get_host_tag_group(self, name: str) -> Dict:
+        """
+        Get specific host tag group
+
+        Endpoint: GET /objects/host_tag_group/{name}
+        """
+        response = self._make_request("GET", f"objects/host_tag_group/{name}")
+        return self._handle_response(response)
+
+    def create_host_tag_group(
+        self,
+        id: str,
+        title: str,
+        tags: List[Dict],
+        topic: str = None,
+        help: str = None
+    ) -> Dict:
+        """
+        Create new host tag group
+
+        Endpoint: POST /domain-types/host_tag_group/collections/all
+        """
+        json_data = {
+            "id": id,
+            "title": title,
+            "tags": tags
+        }
+        if topic is not None:
+            json_data["topic"] = topic
+        if help is not None:
+            json_data["help"] = help
+
+        response = self._make_request(
+            "POST", "domain-types/host_tag_group/collections/all", json_data=json_data
+        )
+        return self._handle_response(response)
+
+    def update_host_tag_group(
+        self,
+        name: str,
+        title: str = None,
+        tags: List[Dict] = None,
+        topic: str = None,
+        help: str = None,
+        repair: bool = False,
+        etag: str = None
+    ) -> Dict:
+        """
+        Update existing host tag group
+
+        Endpoint: PUT /objects/host_tag_group/{name}
+        """
+        if etag is None:
+            etag = self.get_host_tag_group_etag(name)
+
+        json_data = {"repair": repair}
+        if title is not None:
+            json_data["title"] = title
+        if tags is not None:
+            json_data["tags"] = tags
+        if topic is not None:
+            json_data["topic"] = topic
+        if help is not None:
+            json_data["help"] = help
+
+        response = self._make_request(
+            "PUT", f"objects/host_tag_group/{name}", json_data=json_data, etag=etag
+        )
+        return self._handle_response(response)
+
+    def delete_host_tag_group(
+        self,
+        name: str,
+        repair: bool = False,
+        mode: str = None
+    ) -> bool:
+        """
+        Delete host tag group
+
+        Endpoint: DELETE /objects/host_tag_group/{name}
+        """
+        params = {"repair": repair}
+        if mode is not None:
+            params["mode"] = mode
+
+        response = self._make_request(
+            "DELETE", f"objects/host_tag_group/{name}", params=params
+        )
+        self._handle_response(response)
+        return True
+
+    def get_host_tag_group_etag(self, name: str) -> str:
+        """Get ETag for a host tag group (used for updates)"""
+        response = self._make_request("GET", f"objects/host_tag_group/{name}")
+        
+        if response.status_code == 200:
+            return response.headers.get("ETag", "*")
+        else:
+            raise CheckMKAPIError(f"Failed to get ETag for host tag group {name}")
+
     # Host Groups
 
     def get_host_groups(self) -> Dict:
@@ -900,6 +1011,78 @@ class CheckMKClient:
             json_data=json_data,
         )
         return self._handle_response(response)
+
+    def update_host_group(
+        self,
+        name: str,
+        alias: str = None,
+        etag: str = None
+    ) -> Dict:
+        """
+        Update existing host group
+
+        Endpoint: PUT /objects/host_group_config/{name}
+        """
+        if etag is None:
+            etag = self.get_host_group_etag(name)
+
+        json_data = {}
+        if alias is not None:
+            json_data["alias"] = alias
+
+        response = self._make_request(
+            "PUT", f"objects/host_group_config/{name}", json_data=json_data, etag=etag
+        )
+        return self._handle_response(response)
+
+    def delete_host_group(self, name: str) -> bool:
+        """
+        Delete host group
+
+        Endpoint: DELETE /objects/host_group_config/{name}
+        """
+        response = self._make_request("DELETE", f"objects/host_group_config/{name}")
+        self._handle_response(response)
+        return True
+
+    def bulk_update_host_groups(self, entries: List[Dict]) -> Dict:
+        """
+        Update multiple host groups in one request
+
+        Endpoint: PUT /domain-types/host_group_config/actions/bulk-update/invoke
+        """
+        json_data = {"entries": entries}
+
+        response = self._make_request(
+            "PUT",
+            "domain-types/host_group_config/actions/bulk-update/invoke",
+            json_data=json_data
+        )
+        return self._handle_response(response)
+
+    def bulk_delete_host_groups(self, entries: List[str]) -> Dict:
+        """
+        Delete multiple host groups in one request
+
+        Endpoint: DELETE /domain-types/host_group_config/actions/bulk-delete/invoke
+        """
+        json_data = {"entries": entries}
+
+        response = self._make_request(
+            "DELETE",
+            "domain-types/host_group_config/actions/bulk-delete/invoke",
+            json_data=json_data
+        )
+        return self._handle_response(response)
+
+    def get_host_group_etag(self, name: str) -> str:
+        """Get ETag for a host group (used for updates)"""
+        response = self._make_request("GET", f"objects/host_group_config/{name}")
+        
+        if response.status_code == 200:
+            return response.headers.get("ETag", "*")
+        else:
+            raise CheckMKAPIError(f"Failed to get ETag for host group {name}")
 
     # Utility Methods
 

@@ -286,3 +286,62 @@ class CheckMKFolderListResponse(BaseModel):
     """Response model for folder list"""
     folders: List[CheckMKFolder] = Field(..., description="List of folders")
     total: int = Field(..., description="Total number of folders")
+
+
+# Host Tag Groups Models
+
+class CheckMKHostTag(BaseModel):
+    """CheckMK host tag representation"""
+    id: str = Field(..., description="Tag ID")
+    title: str = Field(..., description="Tag title")
+    aux_tags: Optional[List[str]] = Field(None, description="Auxiliary tags")
+
+
+class CheckMKHostTagGroup(BaseModel):
+    """CheckMK host tag group representation"""
+    id: str = Field(..., description="Tag group ID")
+    title: str = Field(..., description="Tag group title")
+    topic: Optional[str] = Field(None, description="Tag group topic")
+    help: Optional[str] = Field(None, description="Tag group help text")
+    tags: List[CheckMKHostTag] = Field(..., description="List of tags in the group")
+
+
+class CheckMKHostTagGroupCreateRequest(BaseModel):
+    """Request model for creating a host tag group"""
+    id: str = Field(..., description="Tag group ID")
+    title: str = Field(..., description="Tag group title")
+    topic: Optional[str] = Field(None, description="Tag group topic")
+    help: Optional[str] = Field(None, description="Tag group help text")
+    tags: List[CheckMKHostTag] = Field(..., description="List of tags in the group")
+
+
+class CheckMKHostTagGroupUpdateRequest(BaseModel):
+    """Request model for updating a host tag group"""
+    title: Optional[str] = Field(None, description="Tag group title")
+    topic: Optional[str] = Field(None, description="Tag group topic")
+    help: Optional[str] = Field(None, description="Tag group help text")
+    tags: Optional[List[CheckMKHostTag]] = Field(None, description="List of tags in the group")
+    repair: Optional[bool] = Field(False, description="Repair affected hosts")
+
+
+class CheckMKHostTagGroupListResponse(BaseModel):
+    """Response model for host tag group list"""
+    tag_groups: List[CheckMKHostTagGroup] = Field(..., description="List of host tag groups")
+    total: int = Field(..., description="Total number of host tag groups")
+
+
+# Additional Host Group Models (for completion)
+
+class CheckMKHostGroupUpdateRequest(BaseModel):
+    """Request model for updating a host group"""
+    alias: Optional[str] = Field(None, description="Host group alias/description")
+
+
+class CheckMKHostGroupBulkUpdateRequest(BaseModel):
+    """Request model for bulk host group updates"""
+    entries: List[Dict[str, Any]] = Field(..., description="Host group updates with name and attributes")
+
+
+class CheckMKHostGroupBulkDeleteRequest(BaseModel):
+    """Request model for bulk host group deletions"""
+    entries: List[str] = Field(..., description="List of host group names to delete")
