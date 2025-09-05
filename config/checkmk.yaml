@@ -1,0 +1,49 @@
+---
+site:
+  # use folders to statically map sites to a checkmk device
+  # use 0.0.0.0/0 to set a default site
+  by_location:
+    building: site
+  by_ip:
+    0.0.0.0/0: cmk
+    192.168.1.0/24: cmk
+  by_name:
+    none: cmk
+
+folders:
+  # use folders to statically map folders to a checkmk device
+  by_location:
+    lab: /test/
+  by_ip:
+    0.0.0.0/0: /test/
+    192.168.1.0/24: /test/
+  by_name:
+    0.0.0.0: /test/
+
+cf2htg:
+  # use cf2htg to map custom fields to checkmk host tag groups
+  # name_of_custom_field: name_of_checkmk_host_tag_group
+  cf_net: net
+  cf_latency: latency
+
+tags2htg:
+  # use tags2htg to map custom tags to checkmk host tag groups
+  # name_of_tag: name_of_checkmk_host_tag_group
+  cmktag: my_nb_tag
+
+additional_attributes:
+  # use additional_attributes to set additional attributes for checkmk hosts
+  # these settings will be added to the internal dictionary of the checkmk host
+  by_ip:
+    192.168.1.20:
+      alias: test
+  by_name:
+    localhost:
+      alias: test
+
+mapping:
+  # use mappings to map a value from nautobot to a value in checkmk
+  # this is a simple key value mapping. The key is the name of the nautobot attribute
+  # the value is the name in checkmk
+  hostname: alias
+

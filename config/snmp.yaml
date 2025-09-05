@@ -1,0 +1,21 @@
+---
+snmp-id-1:
+  version: 3
+  type: v3_auth_privacy
+  username: user
+  group: group
+  auth_protocol_long: SHA-1-96
+  auth_protocol: SHA
+  auth_password: authpass
+  privacy_protocol_long: AES-128
+  privacy_protocol: AES
+  privacy_password: privpass
+  privacy_option: 128
+snmp-id-2:
+  version: 3
+  type: v3_auth_no_privacy
+  username: user2
+  group: group
+  auth_protocol_long: MD5-96
+  auth_protocol: MD5
+  auth_password: authpass2
