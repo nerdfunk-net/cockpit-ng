@@ -10,7 +10,38 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import verify_admin_token
-from models.checkmk import CheckMKTestConnectionRequest, CheckMKTestConnectionResponse
+from models.checkmk import (
+    CheckMKTestConnectionRequest, 
+    CheckMKTestConnectionResponse,
+    CheckMKHostCreateRequest,
+    CheckMKHostUpdateRequest,
+    CheckMKHostMoveRequest,
+    CheckMKHostRenameRequest,
+    CheckMKBulkHostCreateRequest,
+    CheckMKBulkHostUpdateRequest,
+    CheckMKBulkHostDeleteRequest,
+    CheckMKServiceQueryRequest,
+    CheckMKServiceDiscoveryRequest,
+    CheckMKDiscoveryPhaseUpdateRequest,
+    CheckMKAcknowledgeHostRequest,
+    CheckMKAcknowledgeServiceRequest,
+    CheckMKDowntimeRequest,
+    CheckMKCommentRequest,
+    CheckMKActivateChangesRequest,
+    CheckMKHostGroupCreateRequest,
+    CheckMKFolderCreateRequest,
+    CheckMKFolderUpdateRequest,
+    CheckMKFolderMoveRequest,
+    CheckMKFolderBulkUpdateRequest,
+    CheckMKHostListResponse,
+    CheckMKHostStatusListResponse,
+    CheckMKServiceListResponse,
+    CheckMKPendingChangesResponse,
+    CheckMKHostGroupListResponse,
+    CheckMKFolderListResponse,
+    CheckMKVersionResponse,
+    CheckMKOperationResponse,
+)
 from services.checkmk import checkmk_service
 
 logger = logging.getLogger(__name__)
@@ -189,5 +220,1193 @@ async def get_checkmk_stats(current_user: dict = Depends(verify_admin_token)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch CheckMK statistics: {str(e)}",
+        )
+
+
+def _get_checkmk_client():
+    """Helper function to create CheckMK client from settings"""
+    from settings_manager import settings_manager
+    from checkmk.client import CheckMKClient
+    from urllib.parse import urlparse
+    
+    db_settings = settings_manager.get_checkmk_settings()
+    if not db_settings or not all(key in db_settings for key in ["url", "site", "username", "password"]):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="CheckMK settings not configured. Please configure CheckMK settings first."
+        )
+    
+    # Parse URL
+    url = db_settings["url"].rstrip('/')
+    if url.startswith(('http://', 'https://')):
+        parsed_url = urlparse(url)
+        protocol = parsed_url.scheme
+        host = parsed_url.netloc
+    else:
+        protocol = 'https'
+        host = url
+    
+    return CheckMKClient(
+        host=host,
+        site_name=db_settings["site"],
+        username=db_settings["username"],
+        password=db_settings["password"],
+        protocol=protocol,
+        verify_ssl=db_settings.get("verify_ssl", True),
+        timeout=30
+    )
+
+
+# System Information Endpoints
+
+@router.get("/version", response_model=CheckMKVersionResponse)
+async def get_version(current_user: dict = Depends(verify_admin_token)):
+    """Get CheckMK version information"""
+    try:
+        client = _get_checkmk_client()
+        version_data = client.get_version()
+        
+        return CheckMKVersionResponse(
+            version=version_data.get("version", "unknown"),
+            edition=version_data.get("edition"),
+            demo=version_data.get("demo", False)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting CheckMK version: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get CheckMK version: {str(e)}",
+        )
+
+
+# Host Management Endpoints
+
+@router.get("/hosts", response_model=CheckMKHostListResponse)
+async def get_all_hosts(
+    effective_attributes: bool = False,
+    include_links: bool = False,
+    site: str = None,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get all hosts from CheckMK"""
+    try:
+        client = _get_checkmk_client()
+        result = client.get_all_hosts(
+            effective_attributes=effective_attributes,
+            include_links=include_links,
+            site=site
+        )
+        
+        hosts = []
+        for host_data in result.get("value", []):
+            hosts.append({
+                "host_name": host_data.get("id"),
+                "folder": host_data.get("extensions", {}).get("folder", "/"),
+                "attributes": host_data.get("extensions", {}).get("attributes", {}),
+                "effective_attributes": host_data.get("extensions", {}).get("effective_attributes") if effective_attributes else None
+            })
+        
+        return CheckMKHostListResponse(hosts=hosts, total=len(hosts))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting hosts: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get hosts: {str(e)}",
+        )
+
+
+@router.get("/hosts/{hostname}", response_model=CheckMKOperationResponse)
+async def get_host(
+    hostname: str,
+    effective_attributes: bool = False,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get specific host configuration"""
+    try:
+        client = _get_checkmk_client()
+        result = client.get_host(hostname, effective_attributes)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Host {hostname} retrieved successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting host {hostname}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get host {hostname}: {str(e)}",
+        )
+
+
+@router.post("/hosts", response_model=CheckMKOperationResponse)
+async def create_host(
+    request: CheckMKHostCreateRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Create new host in CheckMK"""
+    try:
+        client = _get_checkmk_client()
+        result = client.create_host(
+            hostname=request.host_name,
+            folder=request.folder,
+            attributes=request.attributes,
+            bake_agent=request.bake_agent
+        )
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Host {request.host_name} created successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating host {request.host_name}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create host {request.host_name}: {str(e)}",
+        )
+
+
+@router.put("/hosts/{hostname}", response_model=CheckMKOperationResponse)
+async def update_host(
+    hostname: str,
+    request: CheckMKHostUpdateRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Update existing host configuration"""
+    try:
+        client = _get_checkmk_client()
+        result = client.update_host(hostname, request.attributes)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Host {hostname} updated successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating host {hostname}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update host {hostname}: {str(e)}",
+        )
+
+
+@router.delete("/hosts/{hostname}", response_model=CheckMKOperationResponse)
+async def delete_host(
+    hostname: str,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Delete host from CheckMK"""
+    try:
+        client = _get_checkmk_client()
+        client.delete_host(hostname)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Host {hostname} deleted successfully"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting host {hostname}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete host {hostname}: {str(e)}",
+        )
+
+
+@router.post("/hosts/{hostname}/move", response_model=CheckMKOperationResponse)
+async def move_host(
+    hostname: str,
+    request: CheckMKHostMoveRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Move host to different folder"""
+    try:
+        client = _get_checkmk_client()
+        result = client.move_host(hostname, request.target_folder)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Host {hostname} moved to {request.target_folder} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error moving host {hostname}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to move host {hostname}: {str(e)}",
+        )
+
+
+@router.post("/hosts/{hostname}/rename", response_model=CheckMKOperationResponse)
+async def rename_host(
+    hostname: str,
+    request: CheckMKHostRenameRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Rename host"""
+    try:
+        client = _get_checkmk_client()
+        result = client.rename_host(hostname, request.new_name)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Host {hostname} renamed to {request.new_name} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error renaming host {hostname}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to rename host {hostname}: {str(e)}",
+        )
+
+
+# Bulk Host Operations
+
+@router.post("/hosts/bulk-create", response_model=CheckMKOperationResponse)
+async def bulk_create_hosts(
+    request: CheckMKBulkHostCreateRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Create multiple hosts in one request"""
+    try:
+        client = _get_checkmk_client()
+        
+        # Convert request to format expected by CheckMK client
+        hosts = []
+        for host_req in request.entries:
+            hosts.append({
+                "host_name": host_req.host_name,
+                "folder": host_req.folder,
+                "attributes": host_req.attributes
+            })
+        
+        result = client.bulk_create_hosts(hosts)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Created {len(request.entries)} hosts successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error bulk creating hosts: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to bulk create hosts: {str(e)}",
+        )
+
+
+@router.post("/hosts/bulk-update", response_model=CheckMKOperationResponse)
+async def bulk_update_hosts(
+    request: CheckMKBulkHostUpdateRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Update multiple hosts in one request"""
+    try:
+        client = _get_checkmk_client()
+        
+        # Convert request to format expected by CheckMK client
+        hosts = {}
+        for hostname, update_req in request.entries.items():
+            hosts[hostname] = {"attributes": update_req.attributes}
+        
+        result = client.bulk_update_hosts(hosts)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Updated {len(request.entries)} hosts successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error bulk updating hosts: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to bulk update hosts: {str(e)}",
+        )
+
+
+@router.post("/hosts/bulk-delete", response_model=CheckMKOperationResponse)
+async def bulk_delete_hosts(
+    request: CheckMKBulkHostDeleteRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Delete multiple hosts in one request"""
+    try:
+        client = _get_checkmk_client()
+        result = client.bulk_delete_hosts(request.entries)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Deleted {len(request.entries)} hosts successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error bulk deleting hosts: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to bulk delete hosts: {str(e)}",
+        )
+
+
+# Host Monitoring & Status Endpoints
+
+@router.get("/monitoring/hosts", response_model=CheckMKOperationResponse)
+async def get_all_monitored_hosts(
+    request: CheckMKServiceQueryRequest = None,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get all monitored hosts with status information"""
+    try:
+        client = _get_checkmk_client()
+        
+        columns = request.columns if request else None
+        query = request.query if request else None
+        
+        result = client.get_all_monitored_hosts(columns=columns, query=query)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message="Retrieved monitored hosts successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting monitored hosts: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get monitored hosts: {str(e)}",
+        )
+
+
+@router.get("/monitoring/hosts/{hostname}", response_model=CheckMKOperationResponse)
+async def get_monitored_host(
+    hostname: str,
+    request: CheckMKServiceQueryRequest = None,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get monitored host with status information"""
+    try:
+        client = _get_checkmk_client()
+        
+        columns = request.columns if request else None
+        result = client.get_monitored_host(hostname, columns=columns)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Retrieved monitoring data for host {hostname} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting monitored host {hostname}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get monitored host {hostname}: {str(e)}",
+        )
+
+
+@router.get("/hosts/{hostname}/services", response_model=CheckMKOperationResponse)
+async def get_host_services(
+    hostname: str,
+    request: CheckMKServiceQueryRequest = None,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get services for a specific host"""
+    try:
+        client = _get_checkmk_client()
+        
+        columns = request.columns if request else None
+        query = request.query if request else None
+        
+        result = client.get_host_services(hostname, columns=columns, query=query)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Retrieved services for host {hostname} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting services for host {hostname}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get services for host {hostname}: {str(e)}",
+        )
+
+
+@router.post("/hosts/{hostname}/services/{service}/show", response_model=CheckMKOperationResponse)
+async def show_service(
+    hostname: str,
+    service: str,
+    request: CheckMKServiceQueryRequest = None,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Show specific service details"""
+    try:
+        client = _get_checkmk_client()
+        
+        columns = request.columns if request else None
+        result = client.show_service(hostname, service, columns=columns)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Retrieved service {service} details for host {hostname} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error showing service {service} for host {hostname}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to show service {service} for host {hostname}: {str(e)}",
+        )
+
+
+# Service Discovery Endpoints
+
+@router.get("/hosts/{hostname}/discovery", response_model=CheckMKOperationResponse)
+async def get_service_discovery(
+    hostname: str,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get service discovery status for a host"""
+    try:
+        client = _get_checkmk_client()
+        result = client.get_service_discovery(hostname)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Retrieved service discovery status for host {hostname} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting service discovery for host {hostname}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get service discovery for host {hostname}: {str(e)}",
+        )
+
+
+@router.post("/hosts/{hostname}/discovery/start", response_model=CheckMKOperationResponse)
+async def start_service_discovery(
+    hostname: str,
+    request: CheckMKServiceDiscoveryRequest = CheckMKServiceDiscoveryRequest(),
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Start service discovery for a host"""
+    try:
+        client = _get_checkmk_client()
+        result = client.start_service_discovery(hostname, request.mode)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Started service discovery for host {hostname} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting service discovery for host {hostname}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to start service discovery for host {hostname}: {str(e)}",
+        )
+
+
+@router.post("/hosts/{hostname}/discovery/wait", response_model=CheckMKOperationResponse)
+async def wait_for_service_discovery(
+    hostname: str,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Wait for service discovery completion"""
+    try:
+        client = _get_checkmk_client()
+        result = client.wait_for_service_discovery(hostname)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Service discovery completed for host {hostname}",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error waiting for service discovery for host {hostname}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to wait for service discovery for host {hostname}: {str(e)}",
+        )
+
+
+@router.post("/hosts/{hostname}/discovery/update-phase", response_model=CheckMKOperationResponse)
+async def update_discovery_phase(
+    hostname: str,
+    request: CheckMKDiscoveryPhaseUpdateRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Update discovery phase for a host"""
+    try:
+        client = _get_checkmk_client()
+        
+        kwargs = {"phase": request.phase}
+        if request.services:
+            kwargs["services"] = request.services
+            
+        result = client.update_discovery_phase(hostname, **kwargs)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Updated discovery phase for host {hostname} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating discovery phase for host {hostname}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update discovery phase for host {hostname}: {str(e)}",
+        )
+
+
+# Problem Management Endpoints
+
+@router.post("/acknowledge/host", response_model=CheckMKOperationResponse)
+async def acknowledge_host_problem(
+    request: CheckMKAcknowledgeHostRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Acknowledge host problem"""
+    try:
+        client = _get_checkmk_client()
+        result = client.acknowledge_host_problem(
+            hostname=request.host_name,
+            comment=request.comment,
+            sticky=request.sticky,
+            persistent=request.persistent,
+            notify=request.notify
+        )
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Acknowledged problem for host {request.host_name} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error acknowledging problem for host {request.host_name}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to acknowledge problem for host {request.host_name}: {str(e)}",
+        )
+
+
+@router.post("/acknowledge/service", response_model=CheckMKOperationResponse)
+async def acknowledge_service_problem(
+    request: CheckMKAcknowledgeServiceRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Acknowledge service problem"""
+    try:
+        client = _get_checkmk_client()
+        result = client.acknowledge_service_problem(
+            hostname=request.host_name,
+            service_description=request.service_description,
+            comment=request.comment,
+            sticky=request.sticky,
+            persistent=request.persistent,
+            notify=request.notify
+        )
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Acknowledged problem for service {request.service_description} on host {request.host_name} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error acknowledging service problem: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to acknowledge service problem: {str(e)}",
+        )
+
+
+@router.delete("/acknowledge/{ack_id}", response_model=CheckMKOperationResponse)
+async def delete_acknowledgment(
+    ack_id: str,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Delete acknowledgment"""
+    try:
+        client = _get_checkmk_client()
+        client.delete_acknowledgment(ack_id)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Deleted acknowledgment {ack_id} successfully"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting acknowledgment {ack_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete acknowledgment {ack_id}: {str(e)}",
+        )
+
+
+@router.post("/downtime/host", response_model=CheckMKOperationResponse)
+async def create_host_downtime(
+    request: CheckMKDowntimeRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Create downtime for host"""
+    try:
+        client = _get_checkmk_client()
+        result = client.create_host_downtime(
+            hostname=request.host_name,
+            start_time=request.start_time,
+            end_time=request.end_time,
+            comment=request.comment,
+            downtime_type=request.downtime_type
+        )
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Created downtime for host {request.host_name} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating downtime for host {request.host_name}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create downtime for host {request.host_name}: {str(e)}",
+        )
+
+
+@router.post("/comments/host", response_model=CheckMKOperationResponse)
+async def add_host_comment(
+    request: CheckMKCommentRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Add comment to host"""
+    try:
+        client = _get_checkmk_client()
+        result = client.add_host_comment(
+            hostname=request.host_name,
+            comment=request.comment,
+            persistent=request.persistent
+        )
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Added comment to host {request.host_name} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adding comment to host {request.host_name}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to add comment to host {request.host_name}: {str(e)}",
+        )
+
+
+@router.post("/comments/service", response_model=CheckMKOperationResponse)
+async def add_service_comment(
+    request: CheckMKCommentRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Add comment to service"""
+    try:
+        client = _get_checkmk_client()
+        result = client.add_service_comment(
+            hostname=request.host_name,
+            service_description=request.service_description,
+            comment=request.comment,
+            persistent=request.persistent
+        )
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Added comment to service {request.service_description} on host {request.host_name} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adding comment to service: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to add comment to service: {str(e)}",
+        )
+
+
+# Configuration Management Endpoints
+
+@router.get("/changes/pending", response_model=CheckMKOperationResponse)
+async def get_pending_changes(
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get pending configuration changes"""
+    try:
+        client = _get_checkmk_client()
+        result = client.get_pending_changes()
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message="Retrieved pending changes successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting pending changes: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get pending changes: {str(e)}",
+        )
+
+
+@router.post("/changes/activate", response_model=CheckMKOperationResponse)
+async def activate_changes(
+    request: CheckMKActivateChangesRequest = CheckMKActivateChangesRequest(),
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Activate pending configuration changes"""
+    try:
+        client = _get_checkmk_client()
+        result = client.activate_changes(
+            sites=request.sites,
+            force_foreign_changes=request.force_foreign_changes,
+            redirect=request.redirect
+        )
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message="Activated configuration changes successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error activating changes: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to activate changes: {str(e)}",
+        )
+
+
+@router.get("/activation/{activation_id}", response_model=CheckMKOperationResponse)
+async def get_activation_status(
+    activation_id: str,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get activation status"""
+    try:
+        client = _get_checkmk_client()
+        result = client.get_activation_status(activation_id)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Retrieved activation status for {activation_id} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting activation status for {activation_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get activation status for {activation_id}: {str(e)}",
+        )
+
+
+@router.post("/activation/{activation_id}/wait", response_model=CheckMKOperationResponse)
+async def wait_for_activation_completion(
+    activation_id: str,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Wait for activation completion"""
+    try:
+        client = _get_checkmk_client()
+        result = client.wait_for_activation_completion(activation_id)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Activation {activation_id} completed successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error waiting for activation {activation_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to wait for activation {activation_id}: {str(e)}",
+        )
+
+
+@router.get("/activation/running", response_model=CheckMKOperationResponse)
+async def get_running_activations(
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get currently running activations"""
+    try:
+        client = _get_checkmk_client()
+        result = client.get_running_activations()
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message="Retrieved running activations successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting running activations: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get running activations: {str(e)}",
+        )
+
+
+# Host Groups Endpoints
+
+@router.get("/host-groups", response_model=CheckMKOperationResponse)
+async def get_host_groups(
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get all host groups"""
+    try:
+        client = _get_checkmk_client()
+        result = client.get_host_groups()
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message="Retrieved host groups successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting host groups: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get host groups: {str(e)}",
+        )
+
+
+@router.get("/host-groups/{group_name}", response_model=CheckMKOperationResponse)
+async def get_host_group(
+    group_name: str,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get specific host group"""
+    try:
+        client = _get_checkmk_client()
+        result = client.get_host_group(group_name)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Retrieved host group {group_name} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting host group {group_name}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get host group {group_name}: {str(e)}",
+        )
+
+
+@router.post("/host-groups", response_model=CheckMKOperationResponse)
+async def create_host_group(
+    request: CheckMKHostGroupCreateRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Create host group"""
+    try:
+        client = _get_checkmk_client()
+        result = client.create_host_group(request.name, request.alias)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Created host group {request.name} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating host group {request.name}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create host group {request.name}: {str(e)}",
+        )
+
+
+# Folder Management Endpoints
+
+@router.get("/folders", response_model=CheckMKFolderListResponse)
+async def get_all_folders(
+    parent: str = None,
+    recursive: bool = False,
+    show_hosts: bool = False,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get all folders"""
+    try:
+        client = _get_checkmk_client()
+        result = client.get_all_folders(
+            parent=parent,
+            recursive=recursive,
+            show_hosts=show_hosts
+        )
+        
+        folders = []
+        for folder_data in result.get("value", []):
+            folder_info = folder_data.get("extensions", {})
+            folders.append({
+                "name": folder_data.get("id", ""),
+                "title": folder_data.get("title", ""),
+                "parent": folder_info.get("parent", "/"),
+                "path": folder_info.get("path", "/"),
+                "attributes": folder_info.get("attributes", {}),
+                "hosts": folder_info.get("hosts", []) if show_hosts else None
+            })
+        
+        return CheckMKFolderListResponse(folders=folders, total=len(folders))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting folders: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get folders: {str(e)}",
+        )
+
+
+@router.get("/folders/{folder_path}", response_model=CheckMKOperationResponse)
+async def get_folder(
+    folder_path: str,
+    show_hosts: bool = False,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get specific folder"""
+    try:
+        client = _get_checkmk_client()
+        result = client.get_folder(folder_path, show_hosts=show_hosts)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Retrieved folder {folder_path} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting folder {folder_path}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get folder {folder_path}: {str(e)}",
+        )
+
+
+@router.post("/folders", response_model=CheckMKOperationResponse)
+async def create_folder(
+    request: CheckMKFolderCreateRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Create new folder"""
+    try:
+        client = _get_checkmk_client()
+        result = client.create_folder(
+            name=request.name,
+            title=request.title,
+            parent=request.parent,
+            attributes=request.attributes
+        )
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Created folder {request.name} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating folder {request.name}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create folder {request.name}: {str(e)}",
+        )
+
+
+@router.put("/folders/{folder_path}", response_model=CheckMKOperationResponse)
+async def update_folder(
+    folder_path: str,
+    request: CheckMKFolderUpdateRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Update existing folder"""
+    try:
+        client = _get_checkmk_client()
+        result = client.update_folder(
+            folder_path=folder_path,
+            title=request.title,
+            attributes=request.attributes,
+            remove_attributes=request.remove_attributes
+        )
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Updated folder {folder_path} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating folder {folder_path}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update folder {folder_path}: {str(e)}",
+        )
+
+
+@router.delete("/folders/{folder_path}", response_model=CheckMKOperationResponse)
+async def delete_folder(
+    folder_path: str,
+    delete_mode: str = "recursive",
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Delete folder"""
+    try:
+        client = _get_checkmk_client()
+        client.delete_folder(folder_path, delete_mode=delete_mode)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Deleted folder {folder_path} successfully"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting folder {folder_path}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete folder {folder_path}: {str(e)}",
+        )
+
+
+@router.post("/folders/{folder_path}/move", response_model=CheckMKOperationResponse)
+async def move_folder(
+    folder_path: str,
+    request: CheckMKFolderMoveRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Move folder to different location"""
+    try:
+        client = _get_checkmk_client()
+        result = client.move_folder(folder_path, request.destination)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Moved folder {folder_path} to {request.destination} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error moving folder {folder_path}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to move folder {folder_path}: {str(e)}",
+        )
+
+
+@router.put("/folders/bulk-update", response_model=CheckMKOperationResponse)
+async def bulk_update_folders(
+    request: CheckMKFolderBulkUpdateRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Update multiple folders in one request"""
+    try:
+        client = _get_checkmk_client()
+        result = client.bulk_update_folders(request.entries)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Updated {len(request.entries)} folders successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error bulk updating folders: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to bulk update folders: {str(e)}",
+        )
+
+
+@router.get("/folders/{folder_path}/hosts", response_model=CheckMKOperationResponse)
+async def get_hosts_in_folder(
+    folder_path: str,
+    effective_attributes: bool = False,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get all hosts in a specific folder"""
+    try:
+        client = _get_checkmk_client()
+        result = client.get_hosts_in_folder(folder_path, effective_attributes=effective_attributes)
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Retrieved hosts in folder {folder_path} successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting hosts in folder {folder_path}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get hosts in folder {folder_path}: {str(e)}",
         )
 

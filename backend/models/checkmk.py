@@ -3,7 +3,8 @@ CheckMK models for API requests and responses.
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
+from datetime import datetime
 
 
 class CheckMKSettings(BaseModel):
@@ -30,3 +31,258 @@ class CheckMKTestConnectionResponse(BaseModel):
     message: str = Field(..., description="Connection result message")
     checkmk_url: Optional[str] = Field(None, description="CheckMK server URL")
     connection_source: Optional[str] = Field(None, description="Source of connection settings")
+
+
+# Host Management Models
+
+class CheckMKHost(BaseModel):
+    """CheckMK host representation"""
+    host_name: str = Field(..., description="Host name")
+    folder: str = Field(default="/", description="Folder path")
+    attributes: Dict[str, Any] = Field(default_factory=dict, description="Host attributes")
+    effective_attributes: Optional[Dict[str, Any]] = Field(None, description="Effective attributes")
+
+
+class CheckMKHostCreateRequest(BaseModel):
+    """Request model for creating a host"""
+    host_name: str = Field(..., description="Host name")
+    folder: str = Field(default="/", description="Folder path")
+    attributes: Dict[str, Any] = Field(default_factory=dict, description="Host attributes")
+    bake_agent: bool = Field(default=False, description="Bake agent after creation")
+
+
+class CheckMKHostUpdateRequest(BaseModel):
+    """Request model for updating a host"""
+    attributes: Dict[str, Any] = Field(..., description="Host attributes to update")
+
+
+class CheckMKHostMoveRequest(BaseModel):
+    """Request model for moving a host"""
+    target_folder: str = Field(..., description="Target folder path")
+
+
+class CheckMKHostRenameRequest(BaseModel):
+    """Request model for renaming a host"""
+    new_name: str = Field(..., description="New host name")
+
+
+class CheckMKBulkHostCreateRequest(BaseModel):
+    """Request model for bulk host creation"""
+    entries: List[CheckMKHostCreateRequest] = Field(..., description="List of hosts to create")
+
+
+class CheckMKBulkHostUpdateRequest(BaseModel):
+    """Request model for bulk host updates"""
+    entries: Dict[str, CheckMKHostUpdateRequest] = Field(..., description="Hosts to update (hostname -> update data)")
+
+
+class CheckMKBulkHostDeleteRequest(BaseModel):
+    """Request model for bulk host deletion"""
+    entries: List[str] = Field(..., description="List of hostnames to delete")
+
+
+# Monitoring Models
+
+class CheckMKHostStatus(BaseModel):
+    """CheckMK host status"""
+    host_name: str = Field(..., description="Host name")
+    state: int = Field(..., description="Host state (0=UP, 1=DOWN, 2=UNREACHABLE)")
+    state_type: int = Field(..., description="State type (0=SOFT, 1=HARD)")
+    plugin_output: str = Field(..., description="Plugin output")
+    perf_data: Optional[str] = Field(None, description="Performance data")
+    last_check: Optional[datetime] = Field(None, description="Last check time")
+
+
+class CheckMKService(BaseModel):
+    """CheckMK service representation"""
+    host_name: str = Field(..., description="Host name")
+    service_description: str = Field(..., description="Service description")
+    state: int = Field(..., description="Service state")
+    plugin_output: str = Field(..., description="Plugin output")
+    perf_data: Optional[str] = Field(None, description="Performance data")
+
+
+class CheckMKServiceQueryRequest(BaseModel):
+    """Request model for service queries"""
+    columns: Optional[List[str]] = Field(None, description="Columns to return")
+    query: Optional[str] = Field(None, description="Query filter")
+
+
+# Service Discovery Models
+
+class CheckMKServiceDiscoveryRequest(BaseModel):
+    """Request model for service discovery"""
+    mode: str = Field(default="new", description="Discovery mode (new, remove, fixall, refresh)")
+
+
+class CheckMKDiscoveryPhaseUpdateRequest(BaseModel):
+    """Request model for discovery phase updates"""
+    phase: str = Field(..., description="Discovery phase")
+    services: Optional[List[str]] = Field(None, description="Services to update")
+
+
+# Problem Management Models
+
+class CheckMKAcknowledgeHostRequest(BaseModel):
+    """Request model for host problem acknowledgment"""
+    host_name: str = Field(..., description="Host name")
+    comment: str = Field(..., description="Acknowledgment comment")
+    sticky: bool = Field(default=False, description="Sticky acknowledgment")
+    persistent: bool = Field(default=False, description="Persistent acknowledgment")
+    notify: bool = Field(default=False, description="Send notifications")
+
+
+class CheckMKAcknowledgeServiceRequest(BaseModel):
+    """Request model for service problem acknowledgment"""
+    host_name: str = Field(..., description="Host name")
+    service_description: str = Field(..., description="Service description")
+    comment: str = Field(..., description="Acknowledgment comment")
+    sticky: bool = Field(default=False, description="Sticky acknowledgment")
+    persistent: bool = Field(default=False, description="Persistent acknowledgment")
+    notify: bool = Field(default=False, description="Send notifications")
+
+
+class CheckMKDowntimeRequest(BaseModel):
+    """Request model for downtime creation"""
+    host_name: str = Field(..., description="Host name")
+    start_time: str = Field(..., description="Start time (ISO format)")
+    end_time: str = Field(..., description="End time (ISO format)")
+    comment: str = Field(default="Scheduled downtime", description="Downtime comment")
+    downtime_type: str = Field(default="fixed", description="Downtime type")
+
+
+class CheckMKCommentRequest(BaseModel):
+    """Request model for adding comments"""
+    host_name: str = Field(..., description="Host name")
+    service_description: Optional[str] = Field(None, description="Service description (for service comments)")
+    comment: str = Field(..., description="Comment text")
+    persistent: bool = Field(default=False, description="Persistent comment")
+
+
+# Configuration Management Models
+
+class CheckMKActivateChangesRequest(BaseModel):
+    """Request model for activating changes"""
+    sites: Optional[List[str]] = Field(None, description="Sites to activate changes on")
+    force_foreign_changes: bool = Field(default=False, description="Force foreign changes")
+    redirect: bool = Field(default=False, description="Redirect after activation")
+
+
+class CheckMKPendingChange(BaseModel):
+    """Pending configuration change"""
+    change_id: str = Field(..., description="Change ID")
+    user_id: str = Field(..., description="User who made the change")
+    action_name: str = Field(..., description="Action name")
+    text: str = Field(..., description="Change description")
+    time: datetime = Field(..., description="Change timestamp")
+
+
+class CheckMKActivationRun(BaseModel):
+    """Activation run status"""
+    activation_id: str = Field(..., description="Activation ID")
+    state: str = Field(..., description="Activation state")
+    time_started: datetime = Field(..., description="Start time")
+    time_finished: Optional[datetime] = Field(None, description="Finish time")
+
+
+# Host Groups Models
+
+class CheckMKHostGroup(BaseModel):
+    """CheckMK host group"""
+    name: str = Field(..., description="Group name")
+    alias: Optional[str] = Field(None, description="Group alias")
+
+
+class CheckMKHostGroupCreateRequest(BaseModel):
+    """Request model for creating host groups"""
+    name: str = Field(..., description="Group name")
+    alias: Optional[str] = Field(None, description="Group alias")
+
+
+# Response Models
+
+class CheckMKHostListResponse(BaseModel):
+    """Response model for host list"""
+    hosts: List[CheckMKHost] = Field(..., description="List of hosts")
+    total: int = Field(..., description="Total number of hosts")
+
+
+class CheckMKHostStatusListResponse(BaseModel):
+    """Response model for host status list"""
+    hosts: List[CheckMKHostStatus] = Field(..., description="List of host statuses")
+    total: int = Field(..., description="Total number of hosts")
+
+
+class CheckMKServiceListResponse(BaseModel):
+    """Response model for service list"""
+    services: List[CheckMKService] = Field(..., description="List of services")
+    total: int = Field(..., description="Total number of services")
+
+
+class CheckMKPendingChangesResponse(BaseModel):
+    """Response model for pending changes"""
+    changes: List[CheckMKPendingChange] = Field(..., description="Pending changes")
+    total: int = Field(..., description="Total number of changes")
+
+
+class CheckMKHostGroupListResponse(BaseModel):
+    """Response model for host group list"""
+    groups: List[CheckMKHostGroup] = Field(..., description="List of host groups")
+    total: int = Field(..., description="Total number of groups")
+
+
+class CheckMKVersionResponse(BaseModel):
+    """Response model for CheckMK version"""
+    version: str = Field(..., description="CheckMK version")
+    edition: Optional[str] = Field(None, description="CheckMK edition")
+    demo: Optional[bool] = Field(None, description="Demo version flag")
+
+
+class CheckMKOperationResponse(BaseModel):
+    """Generic response model for CheckMK operations"""
+    success: bool = Field(..., description="Operation success status")
+    message: Optional[str] = Field(None, description="Operation message")
+    data: Optional[Dict[str, Any]] = Field(None, description="Operation result data")
+
+
+# Folder Management Models
+
+class CheckMKFolder(BaseModel):
+    """CheckMK folder representation"""
+    name: str = Field(..., description="Folder name")
+    title: str = Field(..., description="Folder title")
+    parent: str = Field(..., description="Parent folder path")
+    path: str = Field(..., description="Full folder path")
+    attributes: Dict[str, Any] = Field(default_factory=dict, description="Folder attributes")
+    hosts: Optional[List[str]] = Field(None, description="List of host names in folder")
+
+
+class CheckMKFolderCreateRequest(BaseModel):
+    """Request model for creating a folder"""
+    name: str = Field(..., description="Folder name")
+    title: str = Field(..., description="Folder title")
+    parent: str = Field(default="/", description="Parent folder path")
+    attributes: Dict[str, Any] = Field(default_factory=dict, description="Folder attributes")
+
+
+class CheckMKFolderUpdateRequest(BaseModel):
+    """Request model for updating a folder"""
+    title: Optional[str] = Field(None, description="Folder title")
+    attributes: Optional[Dict[str, Any]] = Field(None, description="Folder attributes to update")
+    remove_attributes: Optional[List[str]] = Field(None, description="Attributes to remove")
+
+
+class CheckMKFolderMoveRequest(BaseModel):
+    """Request model for moving a folder"""
+    destination: str = Field(..., description="Destination folder path")
+
+
+class CheckMKFolderBulkUpdateRequest(BaseModel):
+    """Request model for bulk folder updates"""
+    entries: List[Dict[str, Any]] = Field(..., description="Folder updates")
+
+
+class CheckMKFolderListResponse(BaseModel):
+    """Response model for folder list"""
+    folders: List[CheckMKFolder] = Field(..., description="List of folders")
+    total: int = Field(..., description="Total number of folders")
