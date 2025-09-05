@@ -19,7 +19,7 @@ if (authData) {
 }
 
 // Test API endpoint
-fetch('/api/proxy/git-repositories')
+fetch('/api/proxy/git/repositories')
   .then(response => {
     console.log('API test response status:', response.status);
     if (response.status === 401) {

@@ -5,50 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// API Configuration - All requests go through Next.js API routes
-export const API_CONFIG = {
-  baseUrl: '', // Always use relative URLs - Next.js handles the proxying
-  endpoints: {
-    auth: {
-      login: '/api/auth/login',
-      refresh: '/api/auth/refresh',
-      logout: '/api/auth/logout',
-    },
-    nautobot: {
-      locations: '/api/proxy/nautobot/locations',
-      devices: '/api/proxy/nautobot/devices',
-      onboardDevice: '/api/proxy/nautobot/devices/onboard',
-    },
-    settings: {
-      nautobot: '/api/proxy/settings/nautobot',
-      git: '/api/proxy/settings/git',
-      cache: '/api/proxy/settings/cache',
-      credentials: '/api/proxy/settings/credentials',
-    },
-    templates: {
-      list: '/api/proxy/templates',
-      create: '/api/proxy/templates',
-      render: '/api/proxy/templates/render',
-      import: '/api/proxy/templates/import',
-    },
-    git: {
-      status: '/api/proxy/git/status',
-      sync: '/api/proxy/git/sync',
-      repositories: '/api/proxy/git/repositories',
-    },
-    ansible: {
-      inventory: '/api/proxy/ansible/inventory',
-    },
-    configs: {
-      backup: '/api/proxy/configs/backup',
-      compare: '/api/proxy/configs/compare',
-    },
-    scan: {
-      devices: '/api/proxy/scan/devices',
-      add: '/api/proxy/scan/add',
-    },
-  },
-}
 
 // API Request Helper - Always use Next.js API routes
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
