@@ -152,7 +152,7 @@ export default function GitCompare() {
   const loadRepositories = async () => {
     try {
       console.log('Loading repositories...')
-      const response = await apiCall<{repositories: GitRepository[]}>('git/repositories')
+      const response = await apiCall<{repositories: GitRepository[]}>('git-repositories')
       console.log('Repositories loaded:', response)
       setRepositories(response.repositories || [])
       
@@ -172,7 +172,7 @@ export default function GitCompare() {
     
     try {
       console.log('Loading branches for repo:', selectedRepo.name)
-      const response = await apiCall<Branch[]>(`git/repositories/${selectedRepo.id}/branches`)
+      const response = await apiCall<Branch[]>(`git/${selectedRepo.id}/branches`)
       console.log('Branches loaded:', response)
       setBranches(response)
       
@@ -210,7 +210,7 @@ export default function GitCompare() {
     
     try {
       console.log('Loading commits for branch:', branch, 'in repo:', selectedRepo.name)
-      const response = await apiCall<Commit[]>(`git/repositories/${selectedRepo.id}/commits/${encodeURIComponent(branch)}`)
+      const response = await apiCall<Commit[]>(`git/${selectedRepo.id}/commits/${encodeURIComponent(branch)}`)
       console.log('Commits loaded:', response.length, 'commits')
       setCommits(response)
       
@@ -254,7 +254,7 @@ export default function GitCompare() {
 
     setLoading(true)
     try {
-      const response = await apiCall<ComparisonResult>(`git/repositories/${selectedRepo.id}/diff`, {
+      const response = await apiCall<ComparisonResult>(`git/${selectedRepo.id}/diff`, {
         method: 'POST',
         body: JSON.stringify({
           commit1: leftCommit,

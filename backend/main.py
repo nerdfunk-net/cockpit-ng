@@ -25,6 +25,7 @@ from routers.scan_and_add import router as scan_and_add_router
 from routers.cache import router as cache_router
 from routers.profile import router as profile_router
 from routers.user_management import router as user_management_router
+from routers.git_repositories import router as git_repositories_router
 from health import router as health_router
 
 # Import auth dependency
@@ -41,7 +42,7 @@ app = FastAPI(
     version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    redirect_slashes=False,
+    redirect_slashes=True,
 )
 
 # Include routers
@@ -58,6 +59,7 @@ app.include_router(scan_and_add_router)
 app.include_router(cache_router)
 app.include_router(profile_router)
 app.include_router(user_management_router)
+app.include_router(git_repositories_router)
 app.include_router(health_router)
 
 
@@ -184,7 +186,7 @@ async def startup_prefetch_cache():
         logger.info("Startup cache: hook invoked")
         # Local imports to avoid circular dependencies at import time
         from settings_manager import settings_manager
-        from routers.git import get_git_repo_by_id
+        from services.git_shared_utils import get_git_repo_by_id
         from services.cache_service import cache_service
 
         cache_cfg = settings_manager.get_cache_settings()

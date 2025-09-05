@@ -293,7 +293,7 @@ export function ScanAndAddPage() {
     try {
       const response = await apiCall<{ 
         repositories: GitRepository[];
-      }>('git/repositories')
+      }>('git-repositories')
       
       // Extract repositories from the response
       const repos = response.repositories || []

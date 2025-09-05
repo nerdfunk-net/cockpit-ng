@@ -188,11 +188,38 @@ Authorization: Bearer <token>
 ### **Git Management**
 ```http
 # List repositories
-GET /api/git-repositories
+GET /api/git-repositories/
+Authorization: Bearer <token>
+
+# Create repository
+POST /api/git-repositories/
+Authorization: Bearer <token>
+
+# Update repository
+PUT /api/git-repositories/{id}
+Authorization: Bearer <token>
+
+# Test repository connection
+POST /api/git-repositories/test-connection
 Authorization: Bearer <token>
 
 # Sync repository
-POST /api/git-repositories/{id}/sync
+POST /api/git/{id}/sync
+Authorization: Bearer <token>
+```
+
+### **File Operations**
+```http
+# List files in repository
+GET /api/files/list?repo_id={id}
+Authorization: Bearer <token>
+
+# Compare files
+POST /api/files/compare
+Authorization: Bearer <token>
+
+# Export file comparison
+POST /api/files/export
 Authorization: Bearer <token>
 ```
 

@@ -177,7 +177,7 @@ export default function FileHistoryCompare() {
   const loadRepositories = async () => {
     try {
       console.log('Loading repositories...')
-      const response = await apiCall<{repositories: GitRepository[]}>('git/repositories')
+      const response = await apiCall<{repositories: GitRepository[]}>('git-repositories')
       console.log('Repositories loaded:', response)
       setRepositories(response.repositories || [])
       
@@ -197,7 +197,7 @@ export default function FileHistoryCompare() {
     
     try {
       console.log('Loading branches for repo:', selectedRepo.name)
-      const response = await apiCall<Branch[]>(`git/repositories/${selectedRepo.id}/branches`)
+      const response = await apiCall<Branch[]>(`git/${selectedRepo.id}/branches`)
       console.log('Branches loaded:', response)
       setBranches(response)
       
@@ -235,7 +235,7 @@ export default function FileHistoryCompare() {
     
     try {
       console.log('Loading commits for branch:', branch, 'in repo:', selectedRepo.name)
-      const response = await apiCall<Commit[]>(`git/repositories/${selectedRepo.id}/commits/${encodeURIComponent(branch)}`)
+      const response = await apiCall<Commit[]>(`git/${selectedRepo.id}/commits/${encodeURIComponent(branch)}`)
       console.log('Commits loaded:', response.length, 'commits')
       setCommits(response)
       
@@ -279,7 +279,7 @@ export default function FileHistoryCompare() {
     setHistoryLoading(true)
     try {
       // Get file history for the selected file starting from the selected source commit
-      const response = await apiCall<{commits: FileHistoryCommit[]}>(`git/repositories/${selectedRepo.id}/files/${encodeURIComponent(selectedGitFile.path)}/complete-history?from_commit=${encodeURIComponent(leftCommit)}`)
+      const response = await apiCall<{commits: FileHistoryCommit[]}>(`git/${selectedRepo.id}/files/${encodeURIComponent(selectedGitFile.path)}/complete-history?from_commit=${encodeURIComponent(leftCommit)}`)
       setFileHistory(response.commits)
       setShowHistory(true)
       setSelectedCommits([])
@@ -309,7 +309,7 @@ export default function FileHistoryCompare() {
     setLoading(true)
     try {
       // Get changes for this specific commit
-      const response = await apiCall<ComparisonResult>(`git/repositories/${selectedRepo.id}/diff`, {
+      const response = await apiCall<ComparisonResult>(`git/${selectedRepo.id}/diff`, {
         method: 'POST',
         body: JSON.stringify({
           commit1: `${commitHash}^`, // Parent commit
@@ -344,7 +344,7 @@ export default function FileHistoryCompare() {
 
     setLoading(true)
     try {
-      const response = await apiCall<ComparisonResult>(`git/repositories/${selectedRepo.id}/diff`, {
+      const response = await apiCall<ComparisonResult>(`git/${selectedRepo.id}/diff`, {
         method: 'POST',
         body: JSON.stringify({
           commit1: selectedCommits[0], // First selected (Selected 1) - left side
@@ -368,7 +368,7 @@ export default function FileHistoryCompare() {
 
     try {
       // Get file content from the specific commit
-      const response = await apiCall<{content: string}>(`git/repositories/${selectedRepo.id}/files/${commitHash}?file_path=${encodeURIComponent(selectedGitFile.path)}`)
+      const response = await apiCall<{content: string}>(`git/${selectedRepo.id}/files/${commitHash}?file_path=${encodeURIComponent(selectedGitFile.path)}`)
       
       // Create blob and download
       const blob = new Blob([response.content], { type: 'text/plain' })
@@ -391,7 +391,7 @@ export default function FileHistoryCompare() {
     setLoading(true)
     try {
       // Get file content from the specific commit
-      const response = await apiCall<{content: string}>(`git/repositories/${selectedRepo.id}/files/${commitHash}?file_path=${encodeURIComponent(selectedGitFile.path)}`)
+      const response = await apiCall<{content: string}>(`git/${selectedRepo.id}/files/${commitHash}?file_path=${encodeURIComponent(selectedGitFile.path)}`)
       
       // Find the commit info for the header
       const commit = fileHistory.find(c => c.hash === commitHash)

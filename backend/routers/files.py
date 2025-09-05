@@ -33,7 +33,7 @@ async def list_files(
             return {"files": []}
 
         # Use the repository-specific Git function
-        from routers.git import get_git_repo_by_id
+        from services.git_shared_utils import get_git_repo_by_id
 
         try:
             repo = get_git_repo_by_id(repo_id)
@@ -108,7 +108,7 @@ async def compare_files(
                 status_code=400, detail="Repository ID is required for file comparison"
             )
 
-        from routers.git import get_git_repo_by_id
+        from services.git_shared_utils import get_git_repo_by_id
 
         # Get the Git repository
         try:
@@ -277,7 +277,7 @@ async def export_diff(
                 status_code=400, detail="Repository ID is required for file export"
             )
 
-        from routers.git import get_git_repo_by_id
+        from services.git_shared_utils import get_git_repo_by_id
 
         # Get the Git repository
         try:
@@ -368,7 +368,7 @@ async def get_file_config(
             }
 
         # Use the repository-specific Git function
-        from routers.git import get_git_repo_by_id
+        from services.git_shared_utils import get_git_repo_by_id
 
         try:
             repo = get_git_repo_by_id(repo_id)

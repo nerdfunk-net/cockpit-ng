@@ -175,7 +175,7 @@ export default function FileCompare() {
   const loadRepositories = async () => {
     try {
       console.log('Loading repositories...')
-      const response = await apiCall<{repositories: GitRepository[]}>('git/repositories')
+      const response = await apiCall<{repositories: GitRepository[]}>('git-repositories')
       console.log('Repositories loaded:', response)
       setRepositories(response.repositories || [])
       

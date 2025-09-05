@@ -100,6 +100,8 @@ Key API endpoints:
 - `/api/settings/*` - Settings management
 - `/api/templates/*` - Template management
 - `/api/git/*` - Git operations
+- `/api/git-repositories/*` - Git repository management
+- `/api/files/*` - File operations and comparison
 
 ## Design System
 
@@ -109,7 +111,7 @@ The application uses an Apple-inspired design system with:
 - **Typography**: System fonts (-apple-system, BlinkMacSystemFont)
 - **Shadows**: Subtle Apple-style shadows
 - **Animations**: Smooth transitions and hover effects
-- **Glass morphism**: Backdrop blur effects for modern UI
+- **Glassmorphism**: Backdrop blur effects for modern UI
 
 ## Authentication Flow
 
