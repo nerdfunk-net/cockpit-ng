@@ -191,3 +191,4 @@ backend/data/cache/nautobot_stats.json
 /docker/airgap-artifacts
 /data/settings
 /node_modules
+/data/git
