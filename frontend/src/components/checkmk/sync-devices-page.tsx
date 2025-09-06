@@ -17,10 +17,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { RefreshCw, Search, Eye, GitCompare, RotateCw, Filter, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X, CheckCircle, AlertCircle, Info, Plus } from 'lucide-react'
+import { RefreshCw, Search, Eye, GitCompare, RotateCw, Filter, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X, CheckCircle, AlertCircle, Info, Plus, ChevronDown } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator
+} from '@/components/ui/dropdown-menu'
 
 interface Device {
   id: string
@@ -49,6 +57,11 @@ export function CheckMKSyncDevicesPage() {
     status: '',
     location: '',
     checkmk_status: ''
+  })
+  const [checkmkStatusFilters, setCheckmkStatusFilters] = useState({
+    equal: true,
+    diff: true,
+    missing: true
   })
   const [selectedDeviceForView, setSelectedDeviceForView] = useState<Device | null>(null)
   const [selectedDeviceForDiff, setSelectedDeviceForDiff] = useState<Device | null>(null)
@@ -271,15 +284,23 @@ export function CheckMKSyncDevicesPage() {
   // Filter devices based on column filters
   const filteredDevices = useMemo(() => {
     return devices.filter(device => {
+      // Check CheckMK status checkbox filters
+      const statusMatch = 
+        (checkmkStatusFilters.equal && device.checkmk_status === 'equal') ||
+        (checkmkStatusFilters.diff && device.checkmk_status === 'diff') ||
+        (checkmkStatusFilters.missing && device.checkmk_status === 'missing') ||
+        (!checkmkStatusFilters.equal && !checkmkStatusFilters.diff && !checkmkStatusFilters.missing) ||
+        (device.checkmk_status !== 'equal' && device.checkmk_status !== 'diff' && device.checkmk_status !== 'missing')
+      
       return (
         device.name.toLowerCase().includes(filters.name.toLowerCase()) &&
         device.role.toLowerCase().includes(filters.role.toLowerCase()) &&
         device.status.toLowerCase().includes(filters.status.toLowerCase()) &&
         device.location.toLowerCase().includes(filters.location.toLowerCase()) &&
-        device.checkmk_status.toLowerCase().includes(filters.checkmk_status.toLowerCase())
+        statusMatch
       )
     })
-  }, [devices, filters])
+  }, [devices, filters, checkmkStatusFilters])
 
   // Pagination logic (use filtered devices)
   const totalPages = Math.ceil(filteredDevices.length / itemsPerPage)
@@ -300,6 +321,11 @@ export function CheckMKSyncDevicesPage() {
       status: '',
       location: '',
       checkmk_status: ''
+    })
+    setCheckmkStatusFilters({
+      equal: true,
+      diff: true,
+      missing: true
     })
     setCurrentPage(1)
   }
@@ -476,12 +502,47 @@ export function CheckMKSyncDevicesPage() {
               {/* CheckMK Status Filter */}
               <div className="space-y-1">
                 <Label className="text-xs font-medium text-gray-600">CheckMK Status</Label>
-                <Input
-                  placeholder="Filter CheckMK status..."
-                  value={filters.checkmk_status}
-                  onChange={(e) => handleFilterChange('checkmk_status', e.target.value)}
-                  className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
-                />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 text-xs justify-between min-w-[120px]">
+                      Status Filter
+                      {Object.values(checkmkStatusFilters).filter(Boolean).length < 3 && (
+                        <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                          {Object.values(checkmkStatusFilters).filter(Boolean).length}
+                        </Badge>
+                      )}
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-40">
+                    <DropdownMenuLabel className="text-xs">Filter by Status</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuCheckboxItem
+                      checked={checkmkStatusFilters.equal}
+                      onCheckedChange={(checked) => 
+                        setCheckmkStatusFilters(prev => ({ ...prev, equal: !!checked }))
+                      }
+                    >
+                      Equal
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                      checked={checkmkStatusFilters.diff}
+                      onCheckedChange={(checked) => 
+                        setCheckmkStatusFilters(prev => ({ ...prev, diff: !!checked }))
+                      }
+                    >
+                      Diff
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                      checked={checkmkStatusFilters.missing}
+                      onCheckedChange={(checked) => 
+                        setCheckmkStatusFilters(prev => ({ ...prev, missing: !!checked }))
+                      }
+                    >
+                      Missing
+                    </DropdownMenuCheckboxItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               {/* Actions */}
