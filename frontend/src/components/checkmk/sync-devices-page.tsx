@@ -20,6 +20,7 @@ import {
 import { RefreshCw, Search, Eye, GitCompare, RotateCw, Filter, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X, CheckCircle, AlertCircle, Info } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Progress } from '@/components/ui/progress'
 
 interface Device {
   id: string
@@ -50,6 +51,8 @@ export function CheckMKSyncDevicesPage() {
   const [selectedDeviceForView, setSelectedDeviceForView] = useState<Device | null>(null)
   const [selectedDeviceForDiff, setSelectedDeviceForDiff] = useState<Device | null>(null)
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'warning' | 'info', message: string } | null>(null)
+  const [totalDeviceCount, setTotalDeviceCount] = useState<number>(0)
+  const [progressVisible, setProgressVisible] = useState(false)
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -71,7 +74,40 @@ export function CheckMKSyncDevicesPage() {
 
   const handleCheck = async () => {
     setIsLoading(true)
-    setStatusMessage({ type: 'info', message: 'Loading devices and comparing with CheckMK...' })
+    setProgressVisible(true)
+    
+    // First, get device count for progress indication (only if we don't have devices yet)
+    let deviceCount = totalDeviceCount
+    if (devices.length === 0) {
+      try {
+        const countResponse = await fetch('/api/proxy/nb2cmk/devices', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (countResponse.ok) {
+          const countData = await countResponse.json()
+          deviceCount = countData.devices?.length || 0
+          setTotalDeviceCount(deviceCount)
+        }
+      } catch (error) {
+        console.error('Error getting device count:', error)
+      }
+    } else {
+      // Use existing device count for subsequent checks
+      deviceCount = devices.length
+      setTotalDeviceCount(deviceCount)
+    }
+
+    // Set status message with device count
+    setStatusMessage({ 
+      type: 'info', 
+      message: deviceCount > 0 
+        ? `Comparing ${deviceCount.toLocaleString()} devices with CheckMK - this may take a moment...`
+        : 'Loading devices and comparing with CheckMK...'
+    })
     
     try {
       const response = await fetch('/api/proxy/nb2cmk/get_diff', {
@@ -83,9 +119,10 @@ export function CheckMKSyncDevicesPage() {
       if (response.ok) {
         const data = await response.json()
         setDevices(data.devices || [])
+        setTotalDeviceCount(data.devices?.length || 0)
         setStatusMessage({
           type: 'success',
-          message: `Successfully loaded ${data.devices?.length || 0} devices with CheckMK comparison`
+          message: `Successfully compared ${data.devices?.length || 0} devices with CheckMK`
         })
         // Auto-hide success message after 3 seconds
         setTimeout(() => setStatusMessage(null), 3000)
@@ -97,6 +134,7 @@ export function CheckMKSyncDevicesPage() {
       setStatusMessage({ type: 'error', message: 'Error fetching device differences' })
     } finally {
       setIsLoading(false)
+      setProgressVisible(false)
     }
   }
 
@@ -182,16 +220,7 @@ export function CheckMKSyncDevicesPage() {
     }
   }
 
-  if (isLoading && devices.length === 0) {
-    return (
-      <div className="p-6">
-        <div className="flex items-center justify-center space-x-2">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
-          <span>Loading CheckMK sync devices...</span>
-        </div>
-      </div>
-    )
-  }
+  // Always render the full interface - don't show separate loading page
 
   return (
     <div className="p-6 space-y-6">
@@ -203,35 +232,54 @@ export function CheckMKSyncDevicesPage() {
         </div>
       </div>
 
-      {/* Status Messages */}
-      {statusMessage && (
-        <Alert className={`${
-          statusMessage.type === 'error' ? 'border-red-500 bg-red-50' :
-          statusMessage.type === 'success' ? 'border-green-500 bg-green-50' :
-          statusMessage.type === 'warning' ? 'border-yellow-500 bg-yellow-50' :
-          'border-blue-500 bg-blue-50'
-        }`}>
-          <div className="flex items-start justify-between">
-            <div className="flex items-start space-x-2">
-              {statusMessage.type === 'error' && <AlertCircle className="h-4 w-4 text-red-500 mt-0.5" />}
-              {statusMessage.type === 'success' && <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />}
-              {statusMessage.type === 'warning' && <AlertCircle className="h-4 w-4 text-yellow-500 mt-0.5" />}
-              {statusMessage.type === 'info' && <Info className="h-4 w-4 text-blue-500 mt-0.5" />}
-              <AlertDescription className="text-sm">
-                {statusMessage.message}
-              </AlertDescription>
+      {/* Status Messages - Reserve space to prevent layout shift */}
+      <div className="min-h-[60px]">
+        {statusMessage && (
+          <Alert className={`${
+            statusMessage.type === 'error' ? 'border-red-500 bg-red-50' :
+            statusMessage.type === 'success' ? 'border-green-500 bg-green-50' :
+            statusMessage.type === 'warning' ? 'border-yellow-500 bg-yellow-50' :
+            'border-blue-500 bg-blue-50'
+          }`}>
+            <div className="flex items-start justify-between">
+              <div className="flex items-start space-x-2">
+                {statusMessage.type === 'error' && <AlertCircle className="h-4 w-4 text-red-500 mt-0.5" />}
+                {statusMessage.type === 'success' && <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />}
+                {statusMessage.type === 'warning' && <AlertCircle className="h-4 w-4 text-yellow-500 mt-0.5" />}
+                {statusMessage.type === 'info' && <Info className="h-4 w-4 text-blue-500 mt-0.5" />}
+                <div className="flex-1">
+                  <AlertDescription className="text-sm">
+                    {statusMessage.message}
+                  </AlertDescription>
+                  {/* Progress Bar */}
+                  {progressVisible && (
+                    <div className="mt-3">
+                      <Progress 
+                        value={undefined}
+                        className="w-full h-2"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>Processing devices...</span>
+                        {totalDeviceCount > 0 && (
+                          <span>{totalDeviceCount.toLocaleString()} devices</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setStatusMessage(null)}
+                className="h-6 w-6 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setStatusMessage(null)}
-              className="h-6 w-6 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </Alert>
-      )}
+          </Alert>
+        )}
+      </div>
 
       {/* Main Content */}
       <div className="rounded-xl border shadow-sm overflow-hidden">
