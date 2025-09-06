@@ -76,7 +76,7 @@ async def get_devices_for_sync(
         )
 
 
-@router.get("/devices/{device_id}/normalized")
+@router.get("/device/{device_id}/normalized")
 async def get_device_normalized(device_id: str, current_user: dict = Depends(verify_token)):
     """Get normalized device config from Nautobot for CheckMK comparison."""
     try:
@@ -531,7 +531,7 @@ async def get_devices_diff(
         )
 
 
-@router.get("/devices/{device_id}/compare")
+@router.get("/device/{device_id}/compare")
 async def compare_device_config(device_id: str, current_user: dict = Depends(verify_token)):
     """Compare normalized Nautobot device config with CheckMK host config."""
     try:
@@ -677,3 +677,302 @@ async def compare_device_config(device_id: str, current_user: dict = Depends(ver
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to compare device configs: {str(e)}",
         )
+
+
+@router.post("/device/{device_id}/add")
+async def add_device_to_checkmk(device_id: str, current_user: dict = Depends(verify_token)):
+    """Add a device from Nautobot to CheckMK using normalized config."""
+    try:
+        # Get normalized config using internal function call (same as compare function)
+        normalized_data = await get_device_normalized(device_id, current_user)
+        
+        # Get hostname from internal dict
+        internal_data = normalized_data.get("internal", {})
+        hostname = internal_data.get("hostname")
+        
+        if not hostname:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Device has no hostname configured"
+            )
+        
+        # Extract necessary data for CheckMK host creation
+        # The data is directly in normalized_data, not nested under "normalized_config"
+        folder = normalized_data.get("folder", "/")
+        attributes = normalized_data.get("attributes", {})
+        
+        # Debug logging for add device operation
+        logger.info(f"DEBUG: Adding device {device_id} ({hostname}) to CheckMK")
+        logger.info(f"DEBUG: Normalized data keys: {list(normalized_data.keys())}")
+        logger.info(f"DEBUG: Folder: '{folder}'")
+        logger.info(f"DEBUG: Attributes: {attributes}")
+        logger.info(f"DEBUG: Attributes type: {type(attributes)}")
+        logger.info(f"DEBUG: Attributes keys: {list(attributes.keys()) if isinstance(attributes, dict) else 'Not a dict'}")
+        
+        # Create host in CheckMK using internal API call (same pattern as compare function)
+        from routers.checkmk import create_host_v2
+        from models.checkmk import CheckMKHostCreateRequest
+        
+        # Create the request object for CheckMK host creation
+        create_request = CheckMKHostCreateRequest(
+            host_name=hostname,
+            folder=folder,
+            attributes=attributes,
+            bake_agent=False
+        )
+        
+        logger.info(f"DEBUG: CheckMK create request - host_name: '{create_request.host_name}', folder: '{create_request.folder}', attributes: {create_request.attributes}")
+        
+        # Call internal CheckMK API to create host
+        create_result = await create_host_v2(create_request, False, current_user)
+        
+        logger.info(f"Successfully added device {device_id} ({hostname}) to CheckMK")
+        
+        return {
+            "success": True,
+            "message": f"Device {hostname} successfully added to CheckMK",
+            "device_id": device_id,
+            "hostname": hostname,
+            "folder": folder,
+            "checkmk_response": create_result.dict() if hasattr(create_result, 'dict') else create_result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adding device {device_id} to CheckMK: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to add device {device_id} to CheckMK: {str(e)}",
+        )
+
+
+@router.post("/device/{device_id}/update")
+async def update_device_in_checkmk(device_id: str, current_user: dict = Depends(verify_token)):
+    """Update/sync a device from Nautobot to CheckMK using normalized config."""
+    try:
+        # Get normalized config using internal function call
+        normalized_data = await get_device_normalized(device_id, current_user)
+        
+        # Get hostname from internal dict
+        internal_data = normalized_data.get("internal", {})
+        hostname = internal_data.get("hostname")
+        
+        if not hostname:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Device has no hostname configured"
+            )
+        
+        # Extract necessary data for CheckMK host update
+        new_folder = normalized_data.get("folder", "/")
+        new_attributes = normalized_data.get("attributes", {})
+        
+        # Debug logging for update device operation
+        logger.info(f"DEBUG: Updating device {device_id} ({hostname}) in CheckMK")
+        logger.info(f"DEBUG: New folder: '{new_folder}'")
+        logger.info(f"DEBUG: New attributes: {new_attributes}")
+        logger.info(f"DEBUG: New attributes keys: {list(new_attributes.keys()) if isinstance(new_attributes, dict) else 'Not a dict'}")
+        
+        # Get current CheckMK host config to compare folder
+        from routers.checkmk import get_host
+        
+        # Create admin user context for CheckMK call (since CheckMK endpoints require admin)
+        admin_user = {**current_user, "permissions": 15}  # Admin permissions
+        
+        try:
+            checkmk_response = await get_host(hostname, False, admin_user)
+            
+            # Extract the actual data from the CheckMKOperationResponse
+            checkmk_data = checkmk_response.data if hasattr(checkmk_response, 'data') else checkmk_response
+            
+            # The folder is in extensions.folder, not at the top level
+            extensions = checkmk_data.get("extensions", {})
+            current_folder = extensions.get("folder", "/")
+            logger.info(f"DEBUG: Extracted current_folder from extensions: '{current_folder}'")
+        except HTTPException as e:
+            if e.status_code == 404:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Host '{hostname}' not found in CheckMK - cannot update non-existent host",
+                )
+            else:
+                raise
+        
+        logger.info(f"DEBUG: Current folder in CheckMK: '{current_folder}'")
+        
+        # Normalize folder paths for comparison (remove trailing slashes)
+        current_folder_normalized = current_folder.rstrip('/') if current_folder != '/' else '/'
+        new_folder_normalized = new_folder.rstrip('/') if new_folder != '/' else '/'
+        
+        # Check if folder has changed
+        folder_changed = current_folder_normalized != new_folder_normalized
+        
+        logger.info(f"DEBUG: Folder comparison - Current: '{current_folder_normalized}' vs New: '{new_folder_normalized}'")
+        logger.info(f"DEBUG: Folder changed: {folder_changed}")
+        
+        if folder_changed:
+            logger.info(f"DEBUG: Folder change detected: '{current_folder_normalized}' → '{new_folder_normalized}'")
+            
+            # Ensure the new folder path exists by creating it if necessary
+            logger.info(f"DEBUG: Ensuring folder path '{new_folder_normalized}' exists in CheckMK")
+            path_created = await create_path(new_folder_normalized, current_user)
+            
+            if not path_created:
+                logger.error(f"DEBUG: Failed to create/ensure folder path '{new_folder_normalized}'")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Cannot create or ensure folder path '{new_folder_normalized}' exists in CheckMK"
+                )
+            
+            logger.info(f"DEBUG: Folder path '{new_folder_normalized}' is confirmed to exist")
+            
+            # Move the host to the new folder using the move endpoint
+            from routers.checkmk import move_host
+            from models.checkmk import CheckMKHostMoveRequest
+            
+            move_request = CheckMKHostMoveRequest(
+                target_folder=new_folder_normalized
+            )
+            
+            logger.info(f"DEBUG: Moving host '{hostname}' from '{current_folder_normalized}' to '{new_folder_normalized}' using move endpoint")
+            try:
+                move_result = await move_host(hostname, move_request, admin_user)
+                logger.info(f"DEBUG: Host move successful: {move_result}")
+            except HTTPException as move_error:
+                logger.error(f"DEBUG: Host move failed with status {move_error.status_code}: {move_error.detail}")
+                if move_error.status_code == 428:
+                    logger.error("DEBUG: Move failed - CheckMK might require changes to be activated first")
+                    raise HTTPException(
+                        status_code=status.HTTP_428_PRECONDITION_REQUIRED,
+                        detail=f"Cannot move host '{hostname}' - CheckMK changes may need to be activated first. Please activate pending changes in CheckMK and try again.",
+                    )
+                else:
+                    # Re-raise the original error
+                    raise HTTPException(
+                        status_code=move_error.status_code,
+                        detail=f"Failed to move host '{hostname}' to folder '{new_folder_normalized}': {move_error.detail}",
+                    )
+            except Exception as e:
+                logger.error(f"DEBUG: Unexpected error during host move: {str(e)}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Failed to move host '{hostname}' to folder '{new_folder_normalized}': {str(e)}",
+                )
+        
+        # Update host attributes using internal API
+        from routers.checkmk import update_host
+        from models.checkmk import CheckMKHostUpdateRequest
+        
+        # Create the request object for CheckMK host update
+        update_request = CheckMKHostUpdateRequest(
+            attributes=new_attributes
+        )
+        
+        logger.info(f"DEBUG: Updating host attributes for '{hostname}' with: {new_attributes}")
+        update_result = await update_host(hostname, update_request, admin_user)
+        
+        logger.info(f"Successfully updated device {device_id} ({hostname}) in CheckMK")
+        
+        return {
+            "success": True,
+            "message": f"Device {hostname} successfully updated in CheckMK",
+            "device_id": device_id,
+            "hostname": hostname,
+            "folder": new_folder,
+            "folder_changed": folder_changed,
+            "checkmk_response": update_result.dict() if hasattr(update_result, 'dict') else update_result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating device {device_id} in CheckMK: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update device {device_id} in CheckMK: {str(e)}",
+        )
+
+
+async def create_path(folder_path: str, current_user: dict) -> bool:
+    """
+    Create a complete folder path in CheckMK by creating folders incrementally.
+    
+    Args:
+        folder_path: CheckMK folder path like "~subfolder1~subfolder2~subfolder3"
+        current_user: User context for authentication
+        
+    Returns:
+        bool: True if path creation was successful, False otherwise
+    """
+    try:
+        # Handle root path case
+        if not folder_path or folder_path == "/" or folder_path == "~":
+            logger.info("DEBUG: Root path requested, nothing to create")
+            return True
+        
+        # Remove leading ~ if present and split by ~
+        path_parts = folder_path.lstrip('~').split('~') if folder_path.startswith('~') else folder_path.lstrip('/').split('/')
+        path_parts = [part for part in path_parts if part]  # Remove empty parts
+        
+        if not path_parts:
+            logger.info("DEBUG: No path parts to create")
+            return True
+        
+        logger.info(f"DEBUG: Creating CheckMK folder path '{folder_path}'")
+        logger.info(f"DEBUG: Path parts: {path_parts}")
+        
+        # Import CheckMK functions
+        from routers.checkmk import create_folder
+        from models.checkmk import CheckMKFolderCreateRequest
+        
+        # Create admin user context for CheckMK calls
+        admin_user = {**current_user, "permissions": 15}  # Admin permissions
+        
+        # Build and create each path incrementally
+        for i in range(len(path_parts)):
+            # Build current path: ~part1~part2~...~partN
+            current_path_parts = path_parts[:i+1]
+            current_folder_path = '~' + '~'.join(current_path_parts)
+            
+            # Determine parent folder
+            if i == 0:
+                parent_folder = "/"  # First folder goes under root
+            else:
+                parent_folder = '~' + '~'.join(path_parts[:i])
+            
+            folder_name = path_parts[i]
+            
+            logger.info(f"DEBUG: Creating folder '{folder_name}' at path '{current_folder_path}' with parent '{parent_folder}'")
+            
+            try:
+                # Create folder request
+                create_request = CheckMKFolderCreateRequest(
+                    name=folder_name,
+                    title=folder_name,  # Use same as name for title
+                    parent=parent_folder,
+                    attributes={}
+                )
+                
+                # Try to create the folder
+                result = await create_folder(create_request, admin_user)
+                logger.info(f"DEBUG: Successfully created folder '{folder_name}' at path '{current_folder_path}'")
+                
+            except HTTPException as e:
+                # Check if this is a "folder already exists" error
+                if e.status_code == 400 and "already exists" in str(e.detail).lower():
+                    logger.info(f"DEBUG: Folder '{folder_name}' already exists at path '{current_folder_path}' - continuing")
+                    continue
+                else:
+                    logger.error(f"DEBUG: Failed to create folder '{folder_name}' at path '{current_folder_path}': {e.detail}")
+                    return False
+            except Exception as e:
+                logger.error(f"DEBUG: Unexpected error creating folder '{folder_name}' at path '{current_folder_path}': {str(e)}")
+                return False
+        
+        logger.info(f"DEBUG: Successfully ensured complete path '{folder_path}' exists")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error creating CheckMK path '{folder_path}': {str(e)}")
+        return False

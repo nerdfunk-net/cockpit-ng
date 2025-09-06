@@ -256,13 +256,21 @@ class CheckMKClient:
         Move host to different folder
 
         Endpoint: POST /objects/host_config/{host_name}/actions/move/invoke
+        Requires ETag in If-Match header to prevent concurrent modifications
         """
+        # First get the current ETag for the host
+        etag = self.get_host_etag(hostname)
+        
         json_data = {"target_folder": target_folder}
+        
+        # Add If-Match header with the ETag
+        headers = {"If-Match": etag}
 
         response = self._make_request(
             "POST",
             f"objects/host_config/{hostname}/actions/move/invoke",
             json_data=json_data,
+            headers=headers,
         )
         return self._handle_response(response)
 

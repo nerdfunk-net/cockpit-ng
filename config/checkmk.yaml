@@ -18,7 +18,7 @@ folders:
     office: /testfolder
   by_ip:
     # the order is first match!
-    192.168.178.0/24: /testfolder
+    192.168.178.0/24: /testfolder/subfolder
     0.0.0.0/0: "/network/{_custom_field_data.net}/"
   by_name:
     lab-2: /testfolder

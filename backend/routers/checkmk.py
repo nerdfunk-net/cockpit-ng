@@ -396,6 +396,41 @@ async def create_host(
         )
 
 
+@router.post("/hosts/create", response_model=CheckMKOperationResponse)
+async def create_host_v2(
+    request: CheckMKHostCreateRequest,
+    bake_agent: bool = False,
+    current_user: dict = Depends(verify_token),
+):
+    """Create new host in CheckMK (v2 endpoint with query parameter support)"""
+    try:
+        client = _get_checkmk_client()
+        
+        # Override bake_agent from query parameter if provided
+        final_bake_agent = bake_agent if bake_agent is not None else request.bake_agent
+        
+        result = client.create_host(
+            hostname=request.host_name,
+            folder=request.folder,
+            attributes=request.attributes,
+            bake_agent=final_bake_agent
+        )
+        
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Host {request.host_name} created successfully",
+            data=result
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating host {request.host_name}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create host {request.host_name}: {str(e)}",
+        )
+
+
 @router.put("/hosts/{hostname}", response_model=CheckMKOperationResponse)
 async def update_host(
     hostname: str,
@@ -454,18 +489,54 @@ async def move_host(
 ):
     """Move host to different folder"""
     try:
+        from checkmk.client import CheckMKAPIError
+        
+        # Debug logging for host move request
+        logger.info(f"DEBUG: Moving CheckMK host '{hostname}'")
+        logger.info(f"DEBUG: - Target folder: '{request.target_folder}'")
+        
         client = _get_checkmk_client()
+        
+        logger.info(f"DEBUG: Calling CheckMK client.move_host()")
         result = client.move_host(hostname, request.target_folder)
+        
+        logger.info(f"DEBUG: Host move successful: {result}")
         
         return CheckMKOperationResponse(
             success=True,
             message=f"Host {hostname} moved to {request.target_folder} successfully",
             data=result
         )
+    except CheckMKAPIError as e:
+        # Debug logging for CheckMK API error
+        logger.error(f"DEBUG: CheckMK API Error moving host '{hostname}':")
+        logger.error(f"DEBUG: - Status Code: {e.status_code}")
+        logger.error(f"DEBUG: - Error Message: {str(e)}")
+        logger.error(f"DEBUG: - Error Type: {type(e)}")
+        if hasattr(e, 'response_data') and e.response_data:
+            logger.error(f"DEBUG: - Response Data: {e.response_data}")
+        if hasattr(e, 'args'):
+            logger.error(f"DEBUG: - Args: {e.args}")
+        
+        # Handle specific CheckMK API errors
+        if e.status_code == 428:
+            logger.error("DEBUG: CheckMK returned 428 - Precondition Required (changes need activation)")
+            raise HTTPException(
+                status_code=status.HTTP_428_PRECONDITION_REQUIRED,
+                detail=f"Cannot move host '{hostname}' - CheckMK changes need to be activated first",
+            )
+        else:
+            logger.error(f"CheckMK move host failed: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST if e.status_code == 400 else status.HTTP_502_BAD_GATEWAY,
+                detail=f"Failed to move host '{hostname}': {str(e)}",
+            )
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error moving host {hostname}: {str(e)}")
+        logger.error(f"DEBUG: Unexpected error type: {type(e)}")
+        logger.error(f"DEBUG: Unexpected error args: {getattr(e, 'args', 'No args')}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to move host {hostname}: {str(e)}",
@@ -1313,12 +1384,22 @@ async def get_all_folders(
 ):
     """Get all folders"""
     try:
+        from checkmk.client import CheckMKAPIError
+        
+        # Debug logging for folder request
+        logger.info(f"DEBUG: CheckMK folders request - parent: '{parent}', recursive: {recursive}, show_hosts: {show_hosts}")
+        
         client = _get_checkmk_client()
+        
+        logger.info(f"DEBUG: Calling CheckMK client.get_all_folders() with parent='{parent}'")
         result = client.get_all_folders(
             parent=parent,
             recursive=recursive,
             show_hosts=show_hosts
         )
+        
+        logger.info(f"DEBUG: CheckMK folders response successful, result type: {type(result)}")
+        logger.info(f"DEBUG: CheckMK folders response keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
         
         folders = []
         for folder_data in result.get("value", []):
@@ -1333,6 +1414,50 @@ async def get_all_folders(
             })
         
         return CheckMKFolderListResponse(folders=folders, total=len(folders))
+    except CheckMKAPIError as e:
+        # Log CheckMK API error for debugging
+        logger.error(f"CheckMK API error getting folders: status={e.status_code}, parent={parent}")
+        if hasattr(e, 'response_data') and e.response_data:
+            logger.error(f"CheckMK error details: {e.response_data}")
+        
+        if e.status_code == 400:
+            # Extract the specific CheckMK error message
+            checkmk_error_detail = "Invalid folder request"
+            if hasattr(e, 'response_data') and e.response_data:
+                response_data = e.response_data
+                if 'fields' in response_data and 'parent' in response_data['fields']:
+                    # Get the specific error message for the parent field
+                    parent_errors = response_data['fields']['parent']
+                    if parent_errors:
+                        checkmk_error_detail = parent_errors[0]  # Use the first error message
+                elif 'detail' in response_data:
+                    checkmk_error_detail = response_data['detail']
+            
+            # Check if this is actually a "not found" error disguised as 400
+            if "could not be found" in checkmk_error_detail.lower():
+                logger.info(f"Folder not found (CheckMK returned 400 but message indicates not found): {checkmk_error_detail}")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=checkmk_error_detail,
+                )
+            else:
+                logger.info(f"Bad request for folders query (parent: {parent}): {checkmk_error_detail}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=checkmk_error_detail,
+                )
+        elif e.status_code == 404:
+            logger.info(f"Parent folder {parent} not found in CheckMK")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Parent folder '{parent}' not found in CheckMK",
+            )
+        else:
+            logger.error(f"CheckMK API error getting folders: {str(e)} (status: {e.status_code})")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"CheckMK API error: {str(e)}",
+            )
     except HTTPException:
         raise
     except Exception as e:
@@ -1351,6 +1476,8 @@ async def get_folder(
 ):
     """Get specific folder"""
     try:
+        from checkmk.client import CheckMKAPIError
+        
         client = _get_checkmk_client()
         result = client.get_folder(folder_path, show_hosts=show_hosts)
         
@@ -1359,6 +1486,19 @@ async def get_folder(
             message=f"Retrieved folder {folder_path} successfully",
             data=result
         )
+    except CheckMKAPIError as e:
+        if e.status_code == 404:
+            logger.info(f"Folder {folder_path} not found in CheckMK")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Folder '{folder_path}' not found in CheckMK",
+            )
+        else:
+            logger.error(f"CheckMK API error getting folder {folder_path}: {str(e)} (status: {e.status_code})")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"CheckMK API error: {str(e)}",
+            )
     except HTTPException:
         raise
     except Exception as e:
@@ -1376,7 +1516,27 @@ async def create_folder(
 ):
     """Create new folder"""
     try:
+        from checkmk.client import CheckMKAPIError
+        
+        # Debug logging for folder creation request
+        logger.info(f"DEBUG: Creating CheckMK folder")
+        logger.info(f"DEBUG: - Name: '{request.name}'")
+        logger.info(f"DEBUG: - Title: '{request.title}'")
+        logger.info(f"DEBUG: - Parent: '{request.parent}'")
+        logger.info(f"DEBUG: - Attributes: {request.attributes}")
+        
         client = _get_checkmk_client()
+        
+        # Show the exact payload that will be sent to CheckMK
+        payload = {
+            "name": request.name,
+            "title": request.title,
+            "parent": request.parent,
+            "attributes": request.attributes
+        }
+        logger.info(f"DEBUG: JSON payload being sent to CheckMK: {payload}")
+        
+        logger.info(f"DEBUG: Calling CheckMK client.create_folder()")
         result = client.create_folder(
             name=request.name,
             title=request.title,
@@ -1384,15 +1544,73 @@ async def create_folder(
             attributes=request.attributes
         )
         
+        logger.info(f"DEBUG: CheckMK folder creation successful")
+        logger.info(f"DEBUG: - Result type: {type(result)}")
+        logger.info(f"DEBUG: - Result: {result}")
+        
         return CheckMKOperationResponse(
             success=True,
             message=f"Created folder {request.name} successfully",
             data=result
         )
+    except CheckMKAPIError as e:
+        # Verbose debug logging for CheckMK API error
+        logger.error(f"DEBUG: CheckMK API Error creating folder '{request.name}':")
+        logger.error(f"DEBUG: - Status Code: {e.status_code}")
+        logger.error(f"DEBUG: - Error Message: {str(e)}")
+        logger.error(f"DEBUG: - Error Type: {type(e)}")
+        if hasattr(e, 'response_data') and e.response_data:
+            logger.error(f"DEBUG: - Response Data: {e.response_data}")
+        if hasattr(e, 'args'):
+            logger.error(f"DEBUG: - Args: {e.args}")
+        
+        # Extract specific error message from CheckMK response
+        checkmk_error_detail = str(e)
+        validation_errors = []
+        
+        if hasattr(e, 'response_data') and e.response_data:
+            response_data = e.response_data
+            logger.error(f"DEBUG: Full CheckMK response structure: {response_data}")
+            
+            if isinstance(response_data, dict):
+                # Handle the specific CheckMK 400 response format
+                if 'detail' in response_data:
+                    checkmk_error_detail = response_data['detail']
+                    logger.error(f"DEBUG: CheckMK detail: {response_data['detail']}")
+                
+                if 'fields' in response_data and response_data['fields']:
+                    # Handle field-specific validation errors
+                    logger.error(f"DEBUG: CheckMK field errors: {response_data['fields']}")
+                    for field, errors in response_data['fields'].items():
+                        if errors is not None:
+                            if isinstance(errors, list):
+                                for error in errors:
+                                    validation_errors.append(f"{field}: {error}")
+                            else:
+                                validation_errors.append(f"{field}: {errors}")
+                
+                if 'ext' in response_data and response_data['ext']:
+                    # Handle extended error information
+                    logger.error(f"DEBUG: CheckMK ext errors: {response_data['ext']}")
+                    for field, error in response_data['ext'].items():
+                        if error is not None:
+                            validation_errors.append(f"ext.{field}: {error}")
+        
+        # Combine all error information
+        if validation_errors:
+            checkmk_error_detail = f"{checkmk_error_detail} - {'; '.join(validation_errors)}"
+        
+        logger.error(f"CheckMK folder creation failed: {checkmk_error_detail}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST if e.status_code == 400 else status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to create folder: {checkmk_error_detail}",
+        )
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error creating folder {request.name}: {str(e)}")
+        logger.error(f"DEBUG: Unexpected error type: {type(e)}")
+        logger.error(f"DEBUG: Unexpected error args: {getattr(e, 'args', 'No args')}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create folder {request.name}: {str(e)}",
