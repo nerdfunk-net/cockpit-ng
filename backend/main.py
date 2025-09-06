@@ -15,6 +15,7 @@ import asyncio
 from routers.auth import router as auth_router
 from routers.nautobot import router as nautobot_router
 from routers.checkmk import router as checkmk_router
+from routers.nb2cmk import router as nb2cmk_router
 from routers.git import router as git_router
 from routers.files import router as files_router
 from routers.settings import router as settings_router
@@ -49,6 +50,7 @@ app = FastAPI(
 app.include_router(auth_router)
 app.include_router(nautobot_router)
 app.include_router(checkmk_router)
+app.include_router(nb2cmk_router)
 app.include_router(git_router)
 app.include_router(files_router)
 app.include_router(settings_router)

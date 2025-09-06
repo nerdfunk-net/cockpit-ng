@@ -63,6 +63,12 @@ const navigationSections: NavSection[] = [
     ],
   },
   {
+    title: 'CheckMK',
+    items: [
+      { label: 'Sync Devices', href: '/checkmk/sync-devices', icon: Shield },
+    ],
+  },
+  {
     title: 'Configs',
     items: [
       { label: 'Backup', href: '/backup', icon: Save },

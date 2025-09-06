@@ -9,7 +9,7 @@ import os
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from core.auth import verify_admin_token
+from core.auth import verify_admin_token, verify_token
 from models.checkmk import (
     CheckMKTestConnectionRequest, 
     CheckMKTestConnectionResponse,

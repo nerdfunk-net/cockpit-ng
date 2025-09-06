@@ -11,14 +11,17 @@ site:
     none: cmk
 
 folders:
+  default: "/network/{_custom_field_data.net}/"
+
   # use folders to statically map folders to a checkmk device
   by_location:
-    lab: /test/
+    office: /testfolder
   by_ip:
-    0.0.0.0/0: /test/
-    192.168.1.0/24: /test/
+    # the order is first match!
+    192.168.178.0/24: /testfolder
+    0.0.0.0/0: "/network/{_custom_field_data.net}/"
   by_name:
-    0.0.0.0: /test/
+    lab-2: /testfolder
 
 cf2htg:
   # use cf2htg to map custom fields to checkmk host tag groups
@@ -47,3 +50,10 @@ mapping:
   # the value is the name in checkmk
   hostname: alias
 
+compare:
+  # only compare the following attributes
+  - attributes
+  - folder
+
+ignore_attributes:
+  - tag_address_family
