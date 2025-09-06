@@ -2,24 +2,14 @@
 
 import { useState, useMemo } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { RefreshCw, Search, Eye, GitCompare, RotateCw, Filter, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X, CheckCircle, AlertCircle, Info, Plus, ChevronDown } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { RefreshCw, Search, Eye, GitCompare, RotateCw, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown } from 'lucide-react'
 import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { 
   DropdownMenu,
@@ -38,8 +28,8 @@ interface Device {
   location: string
   checkmk_status: string
   diff?: string
-  normalized_config?: any
-  checkmk_config?: any
+  normalized_config?: Record<string, unknown>
+  checkmk_config?: Record<string, unknown>
 }
 
 export function CheckMKSyncDevicesPage() {
@@ -68,6 +58,7 @@ export function CheckMKSyncDevicesPage() {
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'warning' | 'info', message: string } | null>(null)
   const [totalDeviceCount, setTotalDeviceCount] = useState<number>(0)
   const [progressVisible, setProgressVisible] = useState(false)
+  const [showStatusModal, setShowStatusModal] = useState(false)
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -123,6 +114,7 @@ export function CheckMKSyncDevicesPage() {
         ? `Comparing ${deviceCount.toLocaleString()} devices with CheckMK - this may take a moment...`
         : 'Loading devices and comparing with CheckMK...'
     })
+    setShowStatusModal(true)
     
     try {
       const response = await fetch('/api/proxy/nb2cmk/get_diff', {
@@ -139,14 +131,20 @@ export function CheckMKSyncDevicesPage() {
           type: 'success',
           message: `Successfully compared ${data.devices?.length || 0} devices with CheckMK`
         })
+        setShowStatusModal(true)
         // Auto-hide success message after 3 seconds
-        setTimeout(() => setStatusMessage(null), 3000)
+        setTimeout(() => {
+          setStatusMessage(null)
+          setShowStatusModal(false)
+        }, 3000)
       } else {
         setStatusMessage({ type: 'error', message: 'Failed to fetch device differences' })
+        setShowStatusModal(true)
       }
     } catch (error) {
       console.error('Error fetching device differences:', error)
       setStatusMessage({ type: 'error', message: 'Error fetching device differences' })
+      setShowStatusModal(true)
     } finally {
       setIsLoading(false)
       setProgressVisible(false)
@@ -166,6 +164,7 @@ export function CheckMKSyncDevicesPage() {
   const handleAddDevice = async (device: Device) => {
     if (!token) {
       setStatusMessage({ type: 'error', message: 'Authentication required' })
+      setShowStatusModal(true)
       return
     }
 
@@ -187,6 +186,7 @@ export function CheckMKSyncDevicesPage() {
           type: 'success', 
           message: `Successfully added ${result.hostname} to CheckMK`
         })
+        setShowStatusModal(true)
         
         // Update device status to 'equal' since it's now added
         setDevices(prevDevices => 
@@ -198,13 +198,17 @@ export function CheckMKSyncDevicesPage() {
         )
         
         // Auto-hide success message after 3 seconds
-        setTimeout(() => setStatusMessage(null), 3000)
+        setTimeout(() => {
+          setStatusMessage(null)
+          setShowStatusModal(false)
+        }, 3000)
       } else {
         const errorData = await response.json()
         setStatusMessage({ 
           type: 'error', 
           message: `Failed to add device: ${errorData.detail || 'Unknown error'}`
         })
+        setShowStatusModal(true)
       }
     } catch (error) {
       console.error('Error adding device:', error)
@@ -212,6 +216,7 @@ export function CheckMKSyncDevicesPage() {
         type: 'error', 
         message: 'Error adding device to CheckMK'
       })
+      setShowStatusModal(true)
     } finally {
       // Remove device from loading set
       setAddingDevices(prev => {
@@ -225,6 +230,7 @@ export function CheckMKSyncDevicesPage() {
   const handleSyncDevice = async (device: Device) => {
     if (!token) {
       setStatusMessage({ type: 'error', message: 'Authentication required' })
+      setShowStatusModal(true)
       return
     }
 
@@ -246,6 +252,7 @@ export function CheckMKSyncDevicesPage() {
           type: 'success', 
           message: `Successfully synced ${result.hostname} in CheckMK${result.folder_changed ? ' (moved to new folder)' : ''}`
         })
+        setShowStatusModal(true)
         
         // Update device status to 'equal' since it's now synced
         setDevices(prevDevices => 
@@ -257,13 +264,17 @@ export function CheckMKSyncDevicesPage() {
         )
         
         // Auto-hide success message after 3 seconds
-        setTimeout(() => setStatusMessage(null), 3000)
+        setTimeout(() => {
+          setStatusMessage(null)
+          setShowStatusModal(false)
+        }, 3000)
       } else {
         const errorData = await response.json()
         setStatusMessage({ 
           type: 'error', 
           message: `Failed to sync device: ${errorData.detail || 'Unknown error'}`
         })
+        setShowStatusModal(true)
       }
     } catch (error) {
       console.error('Error syncing device:', error)
@@ -271,6 +282,7 @@ export function CheckMKSyncDevicesPage() {
         type: 'error', 
         message: 'Error syncing device in CheckMK'
       })
+      setShowStatusModal(true)
     } finally {
       // Remove device from syncing set
       setSyncingDevices(prev => {
@@ -378,54 +390,6 @@ export function CheckMKSyncDevicesPage() {
         </div>
       </div>
 
-      {/* Status Messages - Reserve space to prevent layout shift */}
-      <div className="min-h-[60px]">
-        {statusMessage && (
-          <Alert className={`${
-            statusMessage.type === 'error' ? 'border-red-500 bg-red-50' :
-            statusMessage.type === 'success' ? 'border-green-500 bg-green-50' :
-            statusMessage.type === 'warning' ? 'border-yellow-500 bg-yellow-50' :
-            'border-blue-500 bg-blue-50'
-          }`}>
-            <div className="flex items-start justify-between">
-              <div className="flex items-start space-x-2">
-                {statusMessage.type === 'error' && <AlertCircle className="h-4 w-4 text-red-500 mt-0.5" />}
-                {statusMessage.type === 'success' && <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />}
-                {statusMessage.type === 'warning' && <AlertCircle className="h-4 w-4 text-yellow-500 mt-0.5" />}
-                {statusMessage.type === 'info' && <Info className="h-4 w-4 text-blue-500 mt-0.5" />}
-                <div className="flex-1">
-                  <AlertDescription className="text-sm">
-                    {statusMessage.message}
-                  </AlertDescription>
-                  {/* Progress Bar */}
-                  {progressVisible && (
-                    <div className="mt-3">
-                      <Progress 
-                        value={undefined}
-                        className="w-full h-2"
-                      />
-                      <div className="flex justify-between text-xs text-gray-500 mt-1">
-                        <span>Processing devices...</span>
-                        {totalDeviceCount > 0 && (
-                          <span>{totalDeviceCount.toLocaleString()} devices</span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setStatusMessage(null)}
-                className="h-6 w-6 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </Alert>
-        )}
-      </div>
 
       {/* Main Content */}
       <div className="rounded-xl border shadow-sm overflow-hidden">
@@ -588,7 +552,7 @@ export function CheckMKSyncDevicesPage() {
               <tbody className="divide-y divide-gray-200">{devices.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                      No devices found. Click the search button to load devices from Nautobot.
+                      No devices found. Click the check button to load devices from Nautobot.
                     </td>
                   </tr>
                 ) : filteredDevices.length === 0 ? (
@@ -842,6 +806,45 @@ export function CheckMKSyncDevicesPage() {
                 <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto">
                   {JSON.stringify(selectedDeviceForView.checkmk_config, null, 2)}
                 </pre>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Status Message Modal */}
+      <Dialog open={showStatusModal} onOpenChange={setShowStatusModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              {statusMessage?.type === 'error' && <AlertCircle className="h-5 w-5 text-red-500" />}
+              {statusMessage?.type === 'success' && <CheckCircle className="h-5 w-5 text-green-500" />}
+              {statusMessage?.type === 'warning' && <AlertCircle className="h-5 w-5 text-yellow-500" />}
+              {statusMessage?.type === 'info' && <Info className="h-5 w-5 text-blue-500" />}
+              <span>
+                {statusMessage?.type === 'error' ? 'Error' :
+                 statusMessage?.type === 'success' ? 'Success' :
+                 statusMessage?.type === 'warning' ? 'Warning' :
+                 'Information'}
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">{statusMessage?.message}</p>
+            
+            {/* Progress Bar */}
+            {progressVisible && (
+              <div className="space-y-2">
+                <Progress 
+                  value={undefined}
+                  className="w-full h-2"
+                />
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Processing devices...</span>
+                  {totalDeviceCount > 0 && (
+                    <span>{totalDeviceCount.toLocaleString()} devices</span>
+                  )}
+                </div>
               </div>
             )}
           </div>
