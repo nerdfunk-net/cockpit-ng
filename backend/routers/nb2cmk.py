@@ -701,14 +701,6 @@ async def add_device_to_checkmk(device_id: str, current_user: dict = Depends(ver
         folder = normalized_data.get("folder", "/")
         attributes = normalized_data.get("attributes", {})
         
-        # Debug logging for add device operation
-        logger.info(f"DEBUG: Adding device {device_id} ({hostname}) to CheckMK")
-        logger.info(f"DEBUG: Normalized data keys: {list(normalized_data.keys())}")
-        logger.info(f"DEBUG: Folder: '{folder}'")
-        logger.info(f"DEBUG: Attributes: {attributes}")
-        logger.info(f"DEBUG: Attributes type: {type(attributes)}")
-        logger.info(f"DEBUG: Attributes keys: {list(attributes.keys()) if isinstance(attributes, dict) else 'Not a dict'}")
-        
         # Create host in CheckMK using internal API call (same pattern as compare function)
         from routers.checkmk import create_host_v2
         from models.checkmk import CheckMKHostCreateRequest
@@ -720,8 +712,6 @@ async def add_device_to_checkmk(device_id: str, current_user: dict = Depends(ver
             attributes=attributes,
             bake_agent=False
         )
-        
-        logger.info(f"DEBUG: CheckMK create request - host_name: '{create_request.host_name}', folder: '{create_request.folder}', attributes: {create_request.attributes}")
         
         # Call internal CheckMK API to create host
         create_result = await create_host_v2(create_request, False, current_user)
@@ -768,12 +758,6 @@ async def update_device_in_checkmk(device_id: str, current_user: dict = Depends(
         new_folder = normalized_data.get("folder", "/")
         new_attributes = normalized_data.get("attributes", {})
         
-        # Debug logging for update device operation
-        logger.info(f"DEBUG: Updating device {device_id} ({hostname}) in CheckMK")
-        logger.info(f"DEBUG: New folder: '{new_folder}'")
-        logger.info(f"DEBUG: New attributes: {new_attributes}")
-        logger.info(f"DEBUG: New attributes keys: {list(new_attributes.keys()) if isinstance(new_attributes, dict) else 'Not a dict'}")
-        
         # Get current CheckMK host config to compare folder
         from routers.checkmk import get_host
         
@@ -789,7 +773,6 @@ async def update_device_in_checkmk(device_id: str, current_user: dict = Depends(
             # The folder is in extensions.folder, not at the top level
             extensions = checkmk_data.get("extensions", {})
             current_folder = extensions.get("folder", "/")
-            logger.info(f"DEBUG: Extracted current_folder from extensions: '{current_folder}'")
         except HTTPException as e:
             if e.status_code == 404:
                 raise HTTPException(
@@ -799,8 +782,6 @@ async def update_device_in_checkmk(device_id: str, current_user: dict = Depends(
             else:
                 raise
         
-        logger.info(f"DEBUG: Current folder in CheckMK: '{current_folder}'")
-        
         # Normalize folder paths for comparison (remove trailing slashes)
         current_folder_normalized = current_folder.rstrip('/') if current_folder != '/' else '/'
         new_folder_normalized = new_folder.rstrip('/') if new_folder != '/' else '/'
@@ -808,24 +789,15 @@ async def update_device_in_checkmk(device_id: str, current_user: dict = Depends(
         # Check if folder has changed
         folder_changed = current_folder_normalized != new_folder_normalized
         
-        logger.info(f"DEBUG: Folder comparison - Current: '{current_folder_normalized}' vs New: '{new_folder_normalized}'")
-        logger.info(f"DEBUG: Folder changed: {folder_changed}")
-        
         if folder_changed:
-            logger.info(f"DEBUG: Folder change detected: '{current_folder_normalized}' → '{new_folder_normalized}'")
-            
             # Ensure the new folder path exists by creating it if necessary
-            logger.info(f"DEBUG: Ensuring folder path '{new_folder_normalized}' exists in CheckMK")
             path_created = await create_path(new_folder_normalized, current_user)
             
             if not path_created:
-                logger.error(f"DEBUG: Failed to create/ensure folder path '{new_folder_normalized}'")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Cannot create or ensure folder path '{new_folder_normalized}' exists in CheckMK"
                 )
-            
-            logger.info(f"DEBUG: Folder path '{new_folder_normalized}' is confirmed to exist")
             
             # Move the host to the new folder using the move endpoint
             from routers.checkmk import move_host
@@ -835,14 +807,10 @@ async def update_device_in_checkmk(device_id: str, current_user: dict = Depends(
                 target_folder=new_folder_normalized
             )
             
-            logger.info(f"DEBUG: Moving host '{hostname}' from '{current_folder_normalized}' to '{new_folder_normalized}' using move endpoint")
             try:
                 move_result = await move_host(hostname, move_request, admin_user)
-                logger.info(f"DEBUG: Host move successful: {move_result}")
             except HTTPException as move_error:
-                logger.error(f"DEBUG: Host move failed with status {move_error.status_code}: {move_error.detail}")
                 if move_error.status_code == 428:
-                    logger.error("DEBUG: Move failed - CheckMK might require changes to be activated first")
                     raise HTTPException(
                         status_code=status.HTTP_428_PRECONDITION_REQUIRED,
                         detail=f"Cannot move host '{hostname}' - CheckMK changes may need to be activated first. Please activate pending changes in CheckMK and try again.",
@@ -854,7 +822,6 @@ async def update_device_in_checkmk(device_id: str, current_user: dict = Depends(
                         detail=f"Failed to move host '{hostname}' to folder '{new_folder_normalized}': {move_error.detail}",
                     )
             except Exception as e:
-                logger.error(f"DEBUG: Unexpected error during host move: {str(e)}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=f"Failed to move host '{hostname}' to folder '{new_folder_normalized}': {str(e)}",
@@ -869,7 +836,6 @@ async def update_device_in_checkmk(device_id: str, current_user: dict = Depends(
             attributes=new_attributes
         )
         
-        logger.info(f"DEBUG: Updating host attributes for '{hostname}' with: {new_attributes}")
         update_result = await update_host(hostname, update_request, admin_user)
         
         logger.info(f"Successfully updated device {device_id} ({hostname}) in CheckMK")
@@ -908,7 +874,6 @@ async def create_path(folder_path: str, current_user: dict) -> bool:
     try:
         # Handle root path case
         if not folder_path or folder_path == "/" or folder_path == "~":
-            logger.info("DEBUG: Root path requested, nothing to create")
             return True
         
         # Remove leading ~ if present and split by ~
@@ -916,11 +881,7 @@ async def create_path(folder_path: str, current_user: dict) -> bool:
         path_parts = [part for part in path_parts if part]  # Remove empty parts
         
         if not path_parts:
-            logger.info("DEBUG: No path parts to create")
             return True
-        
-        logger.info(f"DEBUG: Creating CheckMK folder path '{folder_path}'")
-        logger.info(f"DEBUG: Path parts: {path_parts}")
         
         # Import CheckMK functions
         from routers.checkmk import create_folder
@@ -943,8 +904,6 @@ async def create_path(folder_path: str, current_user: dict) -> bool:
             
             folder_name = path_parts[i]
             
-            logger.info(f"DEBUG: Creating folder '{folder_name}' at path '{current_folder_path}' with parent '{parent_folder}'")
-            
             try:
                 # Create folder request
                 create_request = CheckMKFolderCreateRequest(
@@ -955,22 +914,17 @@ async def create_path(folder_path: str, current_user: dict) -> bool:
                 )
                 
                 # Try to create the folder
-                result = await create_folder(create_request, admin_user)
-                logger.info(f"DEBUG: Successfully created folder '{folder_name}' at path '{current_folder_path}'")
+                await create_folder(create_request, admin_user)
                 
             except HTTPException as e:
                 # Check if this is a "folder already exists" error
                 if e.status_code == 400 and "already exists" in str(e.detail).lower():
-                    logger.info(f"DEBUG: Folder '{folder_name}' already exists at path '{current_folder_path}' - continuing")
                     continue
                 else:
-                    logger.error(f"DEBUG: Failed to create folder '{folder_name}' at path '{current_folder_path}': {e.detail}")
                     return False
             except Exception as e:
-                logger.error(f"DEBUG: Unexpected error creating folder '{folder_name}' at path '{current_folder_path}': {str(e)}")
                 return False
         
-        logger.info(f"DEBUG: Successfully ensured complete path '{folder_path}' exists")
         return True
         
     except Exception as e:
