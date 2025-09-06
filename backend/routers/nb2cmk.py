@@ -191,6 +191,145 @@ async def get_device_normalized(device_id: str, current_user: dict = Depends(ver
             # No SNMP credentials configured
             extensions["attributes"]["snmp_community"] = {}
 
+        # Load CheckMK configuration for additional attributes
+        try:
+            import yaml
+            import os
+            import ipaddress
+            
+            checkmk_config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "../config", "checkmk.yaml")
+            
+            with open(checkmk_config_path, 'r') as f:
+                checkmk_config = yaml.safe_load(f)
+            
+            additional_attributes_config = checkmk_config.get("additional_attributes", {})
+            
+            device_name = device_data.get("name", "")
+            device_ip = ""
+            
+            # Extract IP address from primary_ip4
+            if primary_ip4 and primary_ip4.get("address"):
+                ip_address = primary_ip4.get("address")
+                device_ip = ip_address.split('/')[0] if '/' in ip_address else ip_address
+            
+            # 1. Check by_name first (highest priority)
+            by_name_config = additional_attributes_config.get("by_name", {})
+            if device_name and device_name in by_name_config:
+                additional_attrs = by_name_config[device_name]
+                if isinstance(additional_attrs, dict):
+                    extensions["attributes"].update(additional_attrs)
+                    logger.info(f"Added additional attributes for device '{device_name}': {list(additional_attrs.keys())}")
+            
+            # 2. Check by_ip (second priority, can add more attributes)
+            by_ip_config = additional_attributes_config.get("by_ip", {})
+            if device_ip and by_ip_config:
+                try:
+                    device_ip_obj = ipaddress.ip_address(device_ip)
+                    
+                    # Check each IP/CIDR in by_ip config
+                    for ip_or_cidr, additional_attrs in by_ip_config.items():
+                        try:
+                            # Try to parse as network (CIDR) first
+                            try:
+                                network = ipaddress.ip_network(ip_or_cidr, strict=False)
+                                if device_ip_obj in network:
+                                    if isinstance(additional_attrs, dict):
+                                        extensions["attributes"].update(additional_attrs)
+                                        logger.info(f"Added additional attributes for device IP '{device_ip}' matching '{ip_or_cidr}': {list(additional_attrs.keys())}")
+                            except ipaddress.AddressValueError:
+                                # Not a valid network, try as single IP
+                                try:
+                                    single_ip = ipaddress.ip_address(ip_or_cidr)
+                                    if device_ip_obj == single_ip:
+                                        if isinstance(additional_attrs, dict):
+                                            extensions["attributes"].update(additional_attrs)
+                                            logger.info(f"Added additional attributes for device IP '{device_ip}' matching '{ip_or_cidr}': {list(additional_attrs.keys())}")
+                                except ipaddress.AddressValueError:
+                                    logger.warning(f"Invalid IP address or CIDR in additional_attributes config: {ip_or_cidr}")
+                        except Exception as e:
+                            logger.warning(f"Error processing additional_attributes IP rule '{ip_or_cidr}': {str(e)}")
+                            continue
+                        
+                except ipaddress.AddressValueError:
+                    logger.warning(f"Invalid device IP address for additional_attributes: {device_ip}")
+                    
+        except Exception as e:
+            logger.error(f"Error processing additional_attributes for device: {str(e)}")
+            # Don't fail the whole process, just log the error
+
+        # Process cf2htg (Custom Field to Host Tag Group) mappings
+        try:
+            cf2htg_config = checkmk_config.get("cf2htg", {})
+            
+            if cf2htg_config and custom_field_data:
+                for custom_field_name, host_tag_group_name in cf2htg_config.items():
+                    if custom_field_name in custom_field_data:
+                        custom_field_value = custom_field_data[custom_field_name]
+                        if custom_field_value:  # Only add if value is not empty/None
+                            tag_key = f"tag_{host_tag_group_name}"
+                            extensions["attributes"][tag_key] = str(custom_field_value)
+                            logger.info(f"Added host tag group for device '{device_name}': {tag_key} = {custom_field_value}")
+                            
+        except Exception as e:
+            logger.error(f"Error processing cf2htg mappings for device: {str(e)}")
+            # Don't fail the whole process, just log the error
+
+        # Process mapping (field mappings from Nautobot to CheckMK attributes)
+        try:
+            mapping_config = checkmk_config.get("mapping", {})
+            logger.info(f"Processing mapping config for device '{device_name}': {mapping_config}")
+            
+            # Log device data structure for debugging
+            logger.info(f"Device data keys: {list(device_data.keys())}")
+            if '_custom_field_data' in device_data:
+                logger.info(f"_custom_field_data content: {device_data['_custom_field_data']}")
+            else:
+                logger.info("No _custom_field_data found in device data")
+            
+            if mapping_config:
+                for nautobot_field, checkmk_attribute in mapping_config.items():
+                    try:
+                        # Handle nested field access with dot notation
+                        value = None
+                        logger.info(f"Processing mapping: {nautobot_field} → {checkmk_attribute}")
+                        
+                        if '.' in nautobot_field:
+                            # Handle nested field access (e.g., "location.name")
+                            field_parts = nautobot_field.split('.')
+                            current_data = device_data
+                            
+                            for part in field_parts:
+                                if isinstance(current_data, dict) and part in current_data:
+                                    current_data = current_data[part]
+                                else:
+                                    logger.info(f"Nested field '{nautobot_field}' failed at part '{part}' - not found or not dict")
+                                    current_data = None
+                                    break
+                            value = current_data
+                        else:
+                            # Simple field access
+                            value = device_data.get(nautobot_field)
+                        
+                        # Add the mapped attribute if value exists and is not empty
+                        if value is not None and value != "":
+                            # Handle nested objects (e.g., role.name, location.name)
+                            if isinstance(value, dict) and 'name' in value:
+                                logger.info(f"Extracting 'name' from nested object for '{nautobot_field}'")
+                                value = value['name']
+                            
+                            extensions["attributes"][checkmk_attribute] = str(value)
+                            logger.info(f"Added mapping for device '{device_name}': {nautobot_field} → {checkmk_attribute} = {value}")
+                        else:
+                            logger.info(f"Skipping mapping '{nautobot_field}' - no value found")
+                            
+                    except Exception as e:
+                        logger.warning(f"Error processing mapping '{nautobot_field}' → '{checkmk_attribute}': {str(e)}")
+                        continue
+                        
+        except Exception as e:
+            logger.error(f"Error processing field mappings for device: {str(e)}")
+            # Don't fail the whole process, just log the error
+
         return extensions
         
     except HTTPException:
@@ -356,7 +495,21 @@ async def get_devices_diff(
                     device_info["diff"] = comparison_result.get("diff", "")
                     device_info["normalized_config"] = comparison_result.get("normalized_config", {})
                     device_info["checkmk_config"] = comparison_result.get("checkmk_config", {})
+                    
+                    # Map host_not_found to missing for frontend consistency
+                    if device_info["checkmk_status"] == "host_not_found":
+                        device_info["checkmk_status"] = "missing"
                 else:
+                    device_info["checkmk_status"] = "error"
+            except HTTPException as http_exc:
+                if http_exc.status_code == 404:
+                    logger.info(f"Device {device.get('name', 'unknown')} not found in CheckMK")
+                    device_info["checkmk_status"] = "missing"
+                    device_info["diff"] = f"Host '{device.get('name', 'unknown')}' not found in CheckMK"
+                    device_info["normalized_config"] = {}
+                    device_info["checkmk_config"] = None
+                else:
+                    logger.warning(f"HTTP error comparing device {device.get('name', 'unknown')}: {str(http_exc)}")
                     device_info["checkmk_status"] = "error"
             except Exception as e:
                 logger.warning(f"Error comparing device {device.get('name', 'unknown')}: {str(e)}")
@@ -384,7 +537,7 @@ async def compare_device_config(device_id: str, current_user: dict = Depends(ver
     try:
         # Get normalized config from our own endpoint
         normalized_config = await get_device_normalized(device_id, current_user)
-        
+
         # Get hostname from internal dict
         internal_data = normalized_config.get("internal", {})
         hostname = internal_data.get("hostname")
@@ -410,6 +563,7 @@ async def compare_device_config(device_id: str, current_user: dict = Depends(ver
                 checkmk_data = checkmk_response.data if hasattr(checkmk_response, 'data') else checkmk_response
             except HTTPException as e:
                 if e.status_code == 404:
+                    logger.info(f"Host '{hostname}' not found in CheckMK during comparison")
                     return {
                         "result": "host_not_found",
                         "diff": f"Host '{hostname}' not found in CheckMK",
@@ -417,7 +571,11 @@ async def compare_device_config(device_id: str, current_user: dict = Depends(ver
                         "checkmk_config": None
                     }
                 else:
-                    raise e
+                    logger.error(f"CheckMK API error for host {hostname}: {e.detail}")
+                    raise HTTPException(
+                        status_code=e.status_code,
+                        detail=f"CheckMK API error for host {hostname}: {e.detail}",
+                    )
                 
         except HTTPException:
             raise
@@ -427,7 +585,7 @@ async def compare_device_config(device_id: str, current_user: dict = Depends(ver
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to get CheckMK host data: {str(e)}",
             )
-        
+
         # Extract attributes from CheckMK data
         checkmk_extensions = checkmk_data.get("extensions", {})
         

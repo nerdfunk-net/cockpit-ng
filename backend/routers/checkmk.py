@@ -333,6 +333,8 @@ async def get_host(
 ):
     """Get specific host configuration"""
     try:
+        from checkmk.client import CheckMKAPIError
+        
         client = _get_checkmk_client()
         result = client.get_host(hostname, effective_attributes)
         
@@ -341,6 +343,19 @@ async def get_host(
             message=f"Host {hostname} retrieved successfully",
             data=result
         )
+    except CheckMKAPIError as e:
+        if e.status_code == 404:
+            logger.info(f"Host {hostname} not found in CheckMK")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Host '{hostname}' not found in CheckMK",
+            )
+        else:
+            logger.error(f"CheckMK API error getting host {hostname}: {str(e)} (status: {e.status_code})")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"CheckMK API error: {str(e)}",
+            )
     except HTTPException:
         raise
     except Exception as e:

@@ -17,7 +17,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { RefreshCw, Search, Eye, GitCompare, RotateCw } from 'lucide-react'
+import { RefreshCw, Search, Eye, GitCompare, RotateCw, Filter, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X, CheckCircle, AlertCircle, Info } from 'lucide-react'
+import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface Device {
   id: string
@@ -47,6 +49,7 @@ export function CheckMKSyncDevicesPage() {
   })
   const [selectedDeviceForView, setSelectedDeviceForView] = useState<Device | null>(null)
   const [selectedDeviceForDiff, setSelectedDeviceForDiff] = useState<Device | null>(null)
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'warning' | 'info', message: string } | null>(null)
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -68,6 +71,8 @@ export function CheckMKSyncDevicesPage() {
 
   const handleCheck = async () => {
     setIsLoading(true)
+    setStatusMessage({ type: 'info', message: 'Loading devices and comparing with CheckMK...' })
+    
     try {
       const response = await fetch('/api/proxy/nb2cmk/get_diff', {
         headers: {
@@ -78,11 +83,18 @@ export function CheckMKSyncDevicesPage() {
       if (response.ok) {
         const data = await response.json()
         setDevices(data.devices || [])
+        setStatusMessage({
+          type: 'success',
+          message: `Successfully loaded ${data.devices?.length || 0} devices with CheckMK comparison`
+        })
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => setStatusMessage(null), 3000)
       } else {
-        console.error('Failed to fetch device differences')
+        setStatusMessage({ type: 'error', message: 'Failed to fetch device differences' })
       }
     } catch (error) {
       console.error('Error fetching device differences:', error)
+      setStatusMessage({ type: 'error', message: 'Error fetching device differences' })
     } finally {
       setIsLoading(false)
     }
@@ -123,6 +135,17 @@ export function CheckMKSyncDevicesPage() {
     setCurrentPage(1)
   }
 
+  const clearAllFilters = () => {
+    setFilters({
+      name: '',
+      role: '',
+      status: '',
+      location: '',
+      checkmk_status: ''
+    })
+    setCurrentPage(1)
+  }
+
   const handlePageSizeChange = (newSize: string) => {
     setItemsPerPage(parseInt(newSize))
     setCurrentPage(1)
@@ -148,6 +171,7 @@ export function CheckMKSyncDevicesPage() {
       case 'diff':
         return <Badge variant="default" className="bg-yellow-100 text-yellow-800">Different</Badge>
       case 'host_not_found':
+      case 'missing':
         return <Badge variant="destructive">Missing</Badge>
       case 'error':
         return <Badge variant="secondary">Error</Badge>
@@ -158,236 +182,374 @@ export function CheckMKSyncDevicesPage() {
     }
   }
 
+  if (isLoading && devices.length === 0) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-center space-x-2">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
+          <span>Loading CheckMK sync devices...</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">CheckMK Sync Devices</h1>
-        <p className="mt-2 text-gray-600">
-          Synchronize devices between Nautobot and CheckMK
-        </p>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">CheckMK Sync Devices</h1>
+          <p className="text-gray-600 mt-1">Compare and synchronize devices between Nautobot and CheckMK</p>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Devices in Nautobot
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Table */}
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={filteredDevices.length > 0 && selectedDevices.size === filteredDevices.length}
-                        onCheckedChange={handleSelectAll}
-                        indeterminate={selectedDevices.size > 0 && selectedDevices.size < filteredDevices.length ? true : undefined}
-                      />
-                    </TableHead>
-                    <TableHead>
-                      <div className="space-y-2">
-                        <div>Name</div>
-                        <Input
-                          placeholder="Filter names..."
-                          value={filters.name}
-                          onChange={(e) => handleFilterChange('name', e.target.value)}
-                          className="h-8"
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead>
-                      <div className="space-y-2">
-                        <div>Role</div>
-                        <Input
-                          placeholder="Filter roles..."
-                          value={filters.role}
-                          onChange={(e) => handleFilterChange('role', e.target.value)}
-                          className="h-8"
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead>
-                      <div className="space-y-2">
-                        <div>Status</div>
-                        <Input
-                          placeholder="Filter status..."
-                          value={filters.status}
-                          onChange={(e) => handleFilterChange('status', e.target.value)}
-                          className="h-8"
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead>
-                      <div className="space-y-2">
-                        <div>Location</div>
-                        <Input
-                          placeholder="Filter locations..."
-                          value={filters.location}
-                          onChange={(e) => handleFilterChange('location', e.target.value)}
-                          className="h-8"
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead>
-                      <div className="space-y-2">
-                        <div>CheckMK</div>
-                        <Input
-                          placeholder="Filter CheckMK status..."
-                          value={filters.checkmk_status}
-                          onChange={(e) => handleFilterChange('checkmk_status', e.target.value)}
-                          className="h-8"
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead>Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {devices.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                        No devices found. Click "Check" to load devices from Nautobot.
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredDevices.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                        No devices match the current filters.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    currentDevices.map((device) => (
-                      <TableRow key={device.id}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedDevices.has(device.id)}
-                            onCheckedChange={(checked) => 
-                              handleSelectDevice(device.id, checked as boolean)
-                            }
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">{device.name}</TableCell>
-                        <TableCell>{device.role}</TableCell>
-                        <TableCell>{getStatusBadge(device.status)}</TableCell>
-                        <TableCell>{device.location}</TableCell>
-                        <TableCell>{getCheckMKStatusBadge(device.checkmk_status)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => setSelectedDeviceForView(device)}
-                              title="View complete backend output"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              disabled={device.checkmk_status !== 'diff'}
-                              onClick={() => setSelectedDeviceForDiff(device)}
-                              title="Show differences"
-                            >
-                              <GitCompare className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              disabled={device.checkmk_status !== 'diff'}
-                              title="Sync device (coming soon)"
-                            >
-                              <RotateCw className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+      {/* Status Messages */}
+      {statusMessage && (
+        <Alert className={`${
+          statusMessage.type === 'error' ? 'border-red-500 bg-red-50' :
+          statusMessage.type === 'success' ? 'border-green-500 bg-green-50' :
+          statusMessage.type === 'warning' ? 'border-yellow-500 bg-yellow-50' :
+          'border-blue-500 bg-blue-50'
+        }`}>
+          <div className="flex items-start justify-between">
+            <div className="flex items-start space-x-2">
+              {statusMessage.type === 'error' && <AlertCircle className="h-4 w-4 text-red-500 mt-0.5" />}
+              {statusMessage.type === 'success' && <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />}
+              {statusMessage.type === 'warning' && <AlertCircle className="h-4 w-4 text-yellow-500 mt-0.5" />}
+              {statusMessage.type === 'info' && <Info className="h-4 w-4 text-blue-500 mt-0.5" />}
+              <AlertDescription className="text-sm">
+                {statusMessage.message}
+              </AlertDescription>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStatusMessage(null)}
+              className="h-6 w-6 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </Alert>
+      )}
 
-            {/* Pagination */}
-            {filteredDevices.length > 0 && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="text-sm text-gray-700">
-                    Showing {startIndex + 1} to {Math.min(endIndex, filteredDevices.length)} of {filteredDevices.length} entries
-                    {filteredDevices.length !== devices.length && (
-                      <span className="text-gray-500"> (filtered from {devices.length} total)</span>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-700">Show:</span>
-                    <Select value={itemsPerPage.toString()} onValueChange={handlePageSizeChange}>
-                      <SelectTrigger className="w-20">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="25">25</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
-                        <SelectItem value="200">200</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    Previous
-                  </Button>
-                  <span className="text-sm">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                  </Button>
-                </div>
+      {/* Main Content */}
+      <div className="rounded-xl border shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Search className="h-4 w-4" />
+              <div>
+                <h3 className="text-sm font-semibold">CheckMK Device Comparison</h3>
+                <p className="text-blue-100 text-xs">Compare Nautobot devices with CheckMK hosts</p>
               </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex space-x-4 pt-4 border-t">
-              <Button 
-                onClick={handleCheck} 
-                disabled={isLoading}
-                className="flex items-center gap-2"
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearAllFilters}
+                className="text-white hover:bg-white/20 text-xs h-6"
               >
-                {isLoading ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Search className="h-4 w-4" />
-                )}
-                {isLoading ? 'Checking...' : 'Check'}
-              </Button>
-              <Button 
-                onClick={handleSyncDevices}
-                disabled={selectedDevices.size === 0}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Sync Devices ({selectedDevices.size})
+                <RotateCcw className="h-3 w-3 mr-1" />
+                Clear Filters
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="p-0">
+          {/* Filters Row */}
+          <div className="bg-gray-50 border-b p-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {/* Device Name Filter */}
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-gray-600">Device Name</Label>
+                <Input
+                  placeholder="Filter by name..."
+                  value={filters.name}
+                  onChange={(e) => handleFilterChange('name', e.target.value)}
+                  className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                />
+              </div>
+
+              {/* Role Filter */}
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-gray-600">Role</Label>
+                <Input
+                  placeholder="Filter by role..."
+                  value={filters.role}
+                  onChange={(e) => handleFilterChange('role', e.target.value)}
+                  className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                />
+              </div>
+
+              {/* Status Filter */}
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-gray-600">Status</Label>
+                <Input
+                  placeholder="Filter by status..."
+                  value={filters.status}
+                  onChange={(e) => handleFilterChange('status', e.target.value)}
+                  className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                />
+              </div>
+
+              {/* Location Filter */}
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-gray-600">Location</Label>
+                <Input
+                  placeholder="Filter by location..."
+                  value={filters.location}
+                  onChange={(e) => handleFilterChange('location', e.target.value)}
+                  className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                />
+              </div>
+
+              {/* CheckMK Status Filter */}
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-gray-600">CheckMK Status</Label>
+                <Input
+                  placeholder="Filter CheckMK status..."
+                  value={filters.checkmk_status}
+                  onChange={(e) => handleFilterChange('checkmk_status', e.target.value)}
+                  className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-gray-600">Actions</Label>
+                <div className="flex space-x-2">
+                  <Button 
+                    onClick={handleCheck} 
+                    disabled={isLoading}
+                    size="sm"
+                    className="h-8 bg-blue-600 hover:bg-blue-700"
+                  >
+                    {isLoading ? (
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Search className="h-3 w-3" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-100 border-b">
+                <tr>
+                  <th className="px-4 py-3 text-left">
+                    <Checkbox
+                      checked={currentDevices.length > 0 && currentDevices.every(device => selectedDevices.has(device.id))}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Device Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Role</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Location</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">CheckMK</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">{devices.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                      No devices found. Click the search button to load devices from Nautobot.
+                    </td>
+                  </tr>
+                ) : filteredDevices.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                      No devices match the current filters.
+                    </td>
+                  </tr>
+                ) : (
+                  currentDevices.map((device, index) => (
+                    <tr key={device.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="px-4 py-3">
+                        <Checkbox
+                          checked={selectedDevices.has(device.id)}
+                          onCheckedChange={(checked) => 
+                            handleSelectDevice(device.id, checked as boolean)
+                          }
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                        {device.name}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {device.role}
+                      </td>
+                      <td className="px-4 py-3">
+                        {getStatusBadge(device.status)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {device.location}
+                      </td>
+                      <td className="px-4 py-3">
+                        {getCheckMKStatusBadge(device.checkmk_status)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setSelectedDeviceForView(device)}
+                            title="View complete backend output"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            disabled={device.checkmk_status !== 'diff'}
+                            onClick={() => setSelectedDeviceForDiff(device)}
+                            title="Show differences"
+                            className="h-8 w-8 p-0"
+                          >
+                            <GitCompare className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            disabled={device.checkmk_status !== 'diff'}
+                            title="Sync device (coming soon)"
+                            className="h-8 w-8 p-0"
+                          >
+                            <RotateCw className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <div className="bg-gray-50 px-4 py-3 border-t flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">
+                Showing {startIndex + 1} to {Math.min(endIndex, filteredDevices.length)} of {filteredDevices.length} devices
+                {filteredDevices.length !== devices.length && (
+                  <span className="text-gray-500"> (filtered from {devices.length} total)</span>
+                )}
+              </span>
+              <Select value={itemsPerPage.toString()} onValueChange={handlePageSizeChange}>
+                <SelectTrigger className="w-20 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="200">200</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-gray-600">per page</span>
+            </div>
+
+            <div className="flex items-center space-x-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              
+              {/* Page numbers */}
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const startPage = Math.max(1, currentPage - 2)
+                const pageNum = startPage + i
+                if (pageNum > totalPages) return null
+                
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className="w-8"
+                  >
+                    {pageNum}
+                  </Button>
+                )
+              })}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="bg-white p-4 border-t">
+            <div className="flex justify-between items-center">
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={handleCheck} 
+                  disabled={isLoading}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                >
+                  {isLoading ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                  {isLoading ? 'Checking...' : 'Check'}
+                </Button>
+                <div className="text-sm text-gray-600 flex items-center">
+                  {selectedDevices.size > 0 && (
+                    <span>{selectedDevices.size} device(s) selected</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={handleSyncDevices}
+                  disabled={selectedDevices.size === 0}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Sync Devices ({selectedDevices.size})
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* View Device Dialog */}
       <Dialog open={!!selectedDeviceForView} onOpenChange={(open) => !open && setSelectedDeviceForView(null)}>
@@ -447,3 +609,4 @@ export function CheckMKSyncDevicesPage() {
     </div>
   )
 }
+

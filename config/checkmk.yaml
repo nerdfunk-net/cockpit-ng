@@ -26,8 +26,8 @@ folders:
 cf2htg:
   # use cf2htg to map custom fields to checkmk host tag groups
   # name_of_custom_field: name_of_checkmk_host_tag_group
-  cf_net: net
-  cf_latency: latency
+  net: net
+  latency: latency
 
 tags2htg:
   # use tags2htg to map custom tags to checkmk host tag groups
@@ -38,17 +38,18 @@ additional_attributes:
   # use additional_attributes to set additional attributes for checkmk hosts
   # these settings will be added to the internal dictionary of the checkmk host
   by_ip:
-    192.168.1.20:
+    192.168.178.101:
       alias: test
   by_name:
-    localhost:
-      alias: test
+    unknown-hostname:
+      xxx: test
 
 mapping:
   # use mappings to map a value from nautobot to a value in checkmk
   # this is a simple key value mapping. The key is the name of the nautobot attribute
   # the value is the name in checkmk
-  hostname: alias
+  name: alias
+  location.name: location
 
 compare:
   # only compare the following attributes
