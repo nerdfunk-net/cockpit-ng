@@ -28,24 +28,24 @@ async def preview_inventory(
     Preview inventory by executing logical operations and returning matching devices.
     """
     try:
-        logger.info(f"Preview inventory request received from user: {current_user}")
-        logger.info(f"Request operations: {request.operations}")
+        logger.debug(f"Preview inventory request received from user: {current_user}")
+        logger.debug(f"Request operations: {request.operations}")
 
         if not request.operations:
-            logger.info("No operations provided, returning empty result")
+            logger.debug("No operations provided, returning empty result")
             return InventoryPreviewResponse(
                 devices=[], total_count=0, operations_executed=0
             )
 
         # Log each operation for debugging
         for i, operation in enumerate(request.operations):
-            logger.info(
+            logger.debug(
                 f"Operation {i}: type={operation.operation_type}, "
                 f"conditions={len(operation.conditions)}, "
                 f"nested={len(operation.nested_operations)}"
             )
             for j, condition in enumerate(operation.conditions):
-                logger.info(
+                logger.debug(
                     f"  Condition {j}: field={condition.field}, "
                     f"operator={condition.operator}, value='{condition.value}'"
                 )
@@ -54,7 +54,7 @@ async def preview_inventory(
             request.operations
         )
 
-        logger.info(
+        logger.debug(
             f"Preview completed: {len(devices)} devices found, {operations_count} operations executed"
         )
 

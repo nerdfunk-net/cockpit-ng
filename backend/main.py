@@ -187,21 +187,21 @@ async def startup_prefetch_cache():
     {"git": true, "locations": false}
     """
     try:
-        logger.info("Startup cache: hook invoked")
+        logger.debug("Startup cache: hook invoked")
         # Local imports to avoid circular dependencies at import time
         from settings_manager import settings_manager
         from services.git_shared_utils import get_git_repo_by_id
         from services.cache_service import cache_service
 
         cache_cfg = settings_manager.get_cache_settings()
-        logger.info(f"Startup cache: settings loaded: {cache_cfg}")
+        logger.debug(f"Startup cache: settings loaded: {cache_cfg}")
         if not cache_cfg.get("enabled", True):
-            logger.info("Startup cache: disabled; skipping startup prefetch")
+            logger.debug("Startup cache: disabled; skipping startup prefetch")
             return
 
         async def prefetch_commits_once():
             try:
-                logger.info("Startup cache: prefetch_commits_once() starting")
+                logger.debug("Startup cache: prefetch_commits_once() starting")
                 selected_id = settings_manager.get_selected_git_repository()
                 if not selected_id:
                     logger.warning(
@@ -222,12 +222,12 @@ async def startup_prefetch_cache():
                 # Skip if repo has no valid HEAD
                 try:
                     if not repo.head.is_valid():
-                        logger.info(
+                        logger.debug(
                             "Startup cache: Repository has no commits yet; nothing to prefetch"
                         )
                         return
                 except Exception:
-                    logger.info(
+                    logger.debug(
                         "Startup cache: Unable to validate HEAD; skipping prefetch"
                     )
                     return
@@ -254,7 +254,7 @@ async def startup_prefetch_cache():
                 repo_scope = f"repo:{selected_id}" if selected_id else "repo:default"
                 cache_key = f"{repo_scope}:commits:{branch_name}"
                 cache_service.set(cache_key, commits, ttl)
-                logger.info(
+                logger.debug(
                     f"Startup cache: Prefetched {len(commits)} commits for branch '{branch_name}' (ttl={ttl}s)"
                 )
             except Exception as e:
@@ -263,7 +263,7 @@ async def startup_prefetch_cache():
         async def prefetch_locations_once():
             """Prefetch Nautobot locations list (GraphQL) and store in cache with endpoint-compatible shape."""
             try:
-                logger.info("Startup cache: prefetch_locations_once() starting")
+                logger.debug("Startup cache: prefetch_locations_once() starting")
                 from services.nautobot import nautobot_service
 
                 # Use the same GraphQL query shape as /api/nautobot/locations endpoint
@@ -292,7 +292,7 @@ async def startup_prefetch_cache():
                 locations = result["data"]["locations"]
                 ttl = int(cache_cfg.get("ttl_seconds", 600))
                 cache_service.set("nautobot:locations:list", locations, ttl)
-                logger.info(
+                logger.debug(
                     f"Startup cache: Prefetched locations ({len(locations)} items) (ttl={ttl}s)"
                 )
             except Exception as e:
@@ -323,14 +323,14 @@ async def startup_prefetch_cache():
             # Launch tasks for all enabled items that we know how to prefetch
             for key, enabled in prefetch_items.items():
                 if enabled and key in prefetch_map:
-                    logger.info(
+                    logger.debug(
                         f"Startup cache: prefetch enabled for '{key}' — scheduling task"
                     )
                     asyncio.create_task(prefetch_map[key]())
                 elif not enabled:
-                    logger.info(f"Startup cache: prefetch disabled for '{key}'")
+                    logger.debug(f"Startup cache: prefetch disabled for '{key}'")
                 else:
-                    logger.info(f"Startup cache: no prefetch handler for '{key}'")
+                    logger.debug(f"Startup cache: no prefetch handler for '{key}'")
         # Start background refresh if requested (applies to git commits only)
         if int(cache_cfg.get("refresh_interval_minutes", 0)) > 0:
             # Only refresh commits if git prefetch is enabled
@@ -339,10 +339,10 @@ async def startup_prefetch_cache():
                 "locations": False,
             }
             if p_items.get("git", True):
-                logger.info("Startup cache: starting commits refresh loop task")
+                logger.debug("Startup cache: starting commits refresh loop task")
                 asyncio.create_task(refresh_loop())
             else:
-                logger.info(
+                logger.debug(
                     "Startup cache: refresh loop disabled because git prefetch is off"
                 )
     except Exception as e:
