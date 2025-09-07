@@ -97,6 +97,14 @@ class CheckMKClient:
         if etag:
             request_headers["If-Match"] = etag
 
+        # Enhanced debug logging for troubleshooting
+        self.logger.info(f"DEBUG: Making CheckMK API request:")
+        self.logger.info(f"DEBUG: Method: {method}")
+        self.logger.info(f"DEBUG: URL: {url}")
+        self.logger.info(f"DEBUG: Params: {params}")
+        self.logger.info(f"DEBUG: JSON Data: {json_data}")
+        self.logger.info(f"DEBUG: Headers: {dict(request_headers)}")
+
         try:
             response = self.session.request(
                 method=method,
@@ -107,10 +115,19 @@ class CheckMKClient:
                 timeout=self.timeout,
             )
 
-            self.logger.debug(f"{method} {url} - Status: {response.status_code}")
+            self.logger.info(f"DEBUG: Response Status: {response.status_code}")
+            self.logger.info(f"DEBUG: Response Headers: {dict(response.headers)}")
+            if response.content:
+                try:
+                    response_json = response.json()
+                    self.logger.info(f"DEBUG: Response Body: {response_json}")
+                except:
+                    self.logger.info(f"DEBUG: Response Text: {response.text}")
+            
             return response
 
         except requests.exceptions.RequestException as e:
+            self.logger.error(f"DEBUG: Request exception: {str(e)}")
             raise CheckMKAPIError(f"Request failed: {str(e)}")
 
     def _handle_response(self, response: requests.Response) -> Dict:
@@ -127,12 +144,34 @@ class CheckMKClient:
                 }
             else:
                 error_data = response.json() if response.content else {}
+                
+                # Enhanced error logging
+                self.logger.error(f"DEBUG: API Error Details:")
+                self.logger.error(f"DEBUG: Status Code: {response.status_code}")
+                self.logger.error(f"DEBUG: Response Text: {response.text}")
+                self.logger.error(f"DEBUG: Response Headers: {dict(response.headers)}")
+                self.logger.error(f"DEBUG: Error Data: {error_data}")
+                
+                error_msg = f"API request failed: {response.status_code}"
+                if error_data:
+                    # Try to extract more meaningful error information
+                    if 'detail' in error_data:
+                        error_msg += f" - {error_data['detail']}"
+                    elif 'message' in error_data:
+                        error_msg += f" - {error_data['message']}"
+                    elif 'title' in error_data:
+                        error_msg += f" - {error_data['title']}"
+                    else:
+                        error_msg += f" - {error_data}"
+                
                 raise CheckMKAPIError(
-                    f"API request failed: {response.status_code}",
+                    error_msg,
                     status_code=response.status_code,
                     response_data=error_data,
                 )
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            self.logger.error(f"DEBUG: JSON decode error: {str(e)}")
+            self.logger.error(f"DEBUG: Raw response: {response.text}")
             raise CheckMKAPIError(
                 f"Invalid JSON response: {response.text}",
                 status_code=response.status_code,

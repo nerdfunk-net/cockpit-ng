@@ -259,6 +259,14 @@ def _get_checkmk_client(site_name: str = None):
     # Use provided site_name or fall back to configured site
     effective_site = site_name or db_settings["site"]
     
+    # Log client initialization details for debugging
+    logger.info(f"Initializing CheckMK client:")
+    logger.info(f"  host: {host}")
+    logger.info(f"  site_name: {effective_site}")
+    logger.info(f"  username: {db_settings['username']}")
+    logger.info(f"  protocol: {protocol}")
+    logger.info(f"  verify_ssl: {db_settings.get('verify_ssl', True)}")
+    
     return CheckMKClient(
         host=host,
         site_name=effective_site,

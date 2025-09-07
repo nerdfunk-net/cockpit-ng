@@ -189,14 +189,15 @@ async def get_device_normalized(device_id: str, current_user: dict = Depends(ver
                         extensions["attributes"]["tag_snmp_ds"] = "snmp-v2"
                 else:
                     logger.warning(f"SNMP credentials key '{snmp_credentials}' not found in mapping")
-                    extensions["attributes"]["snmp_community"] = {}
+                    # Don't add snmp_community key if no valid SNMP config found
 
             except Exception as e:
                 logger.error(f"Error reading SNMP mapping file: {str(e)}")
-                extensions["attributes"]["snmp_community"] = {}
+                # Don't add snmp_community key if there's an error reading SNMP config
+                pass
         else:
-            # No SNMP credentials configured
-            extensions["attributes"]["snmp_community"] = {}
+            # No SNMP credentials configured - don't add snmp_community key
+            pass
 
         # Load CheckMK configuration for additional attributes
         try:
@@ -858,6 +859,32 @@ async def add_device_to_checkmk(device_id: str, current_user: dict = Depends(ver
             # Create CheckMK client with device-specific site
             client = _get_checkmk_client(site_name=device_site)
             
+            # Log detailed information for debugging
+            logger.info(f"Creating host with parameters:")
+            logger.info(f"  hostname: {hostname}")
+            logger.info(f"  folder: {folder}")
+            logger.info(f"  site: {device_site}")
+            logger.info(f"  attributes: {attributes}")
+            
+            # Ensure folder exists before creating host
+            if folder and folder != "/":
+                logger.info(f"Ensuring folder '{folder}' exists before creating host")
+                try:
+                    folder_created = await create_path(folder, device_site, current_user)
+                    if not folder_created:
+                        logger.error(f"Failed to ensure folder '{folder}' exists")
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Cannot create or ensure folder path '{folder}' exists in CheckMK"
+                        )
+                    logger.info(f"Folder '{folder}' is ready")
+                except Exception as folder_error:
+                    logger.error(f"Error ensuring folder exists: {str(folder_error)}")
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Failed to ensure folder exists: {str(folder_error)}"
+                    )
+            
             # Create host in CheckMK
             result = client.create_host(
                 hostname=hostname,
@@ -873,7 +900,13 @@ async def add_device_to_checkmk(device_id: str, current_user: dict = Depends(ver
             }
             
         except CheckMKAPIError as e:
-            logger.error(f"CheckMK API error creating host {hostname}: {str(e)}")
+            logger.error(f"CheckMK API error creating host {hostname}:")
+            logger.error(f"  Error message: {str(e)}")
+            logger.error(f"  Error type: {type(e)}")
+            if hasattr(e, 'response'):
+                logger.error(f"  Response: {getattr(e, 'response', 'No response')}")
+            if hasattr(e, 'status_code'):
+                logger.error(f"  Status code: {getattr(e, 'status_code', 'No status code')}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"CheckMK API error: {str(e)}",
@@ -1076,6 +1109,7 @@ async def create_path(folder_path: str, site_name: str, current_user: dict) -> b
         
         client = _get_checkmk_client(site_name=site_name)
         logger.info(f"Creating folder path '{folder_path}' in site '{site_name}'")
+        logger.info(f"Path parts to create: {path_parts}")
         
         # Build and create each path incrementally
         for i in range(len(path_parts)):
@@ -1092,6 +1126,9 @@ async def create_path(folder_path: str, site_name: str, current_user: dict) -> b
             folder_name = path_parts[i]
             
             try:
+                # Log folder creation attempt
+                logger.info(f"Attempting to create folder '{folder_name}' in parent '{parent_folder}'")
+                
                 # Try to create the folder using direct client call
                 result = client.create_folder(
                     name=folder_name,
@@ -1099,15 +1136,18 @@ async def create_path(folder_path: str, site_name: str, current_user: dict) -> b
                     parent=parent_folder,
                     attributes={}
                 )
-                logger.debug(f"Created folder '{folder_name}' in parent '{parent_folder}'")
+                logger.info(f"Successfully created folder '{folder_name}' in parent '{parent_folder}'")
                 
             except CheckMKAPIError as e:
                 # Check if this is a "folder already exists" error
                 if "already exists" in str(e).lower() or "400" in str(e):
+                    logger.info(f"Folder '{folder_name}' already exists in parent '{parent_folder}' - continuing")
                     continue
                 else:
+                    logger.error(f"CheckMK API error creating folder '{folder_name}': {str(e)}")
                     return False
             except Exception as e:
+                logger.error(f"General error creating folder '{folder_name}': {str(e)}")
                 return False
         
         return True
