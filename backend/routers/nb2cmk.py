@@ -104,6 +104,9 @@ async def get_device_normalized(device_id: str, current_user: dict = Depends(ver
               name
             }
             _custom_field_data
+            tags {
+              name
+            }
           }
         }
         """
@@ -133,6 +136,10 @@ async def get_device_normalized(device_id: str, current_user: dict = Depends(ver
         
         # Set hostname in internal dict (needed for CheckMK queries but not for comparison)
         extensions["internal"]["hostname"] = device_data.get("name", "")
+
+        # Set site using get_site function
+        extensions["attributes"]["site"] = get_site(device_data)
+        logger.info(f"Determined site for device {device_data.get('name', '')}: {extensions['attributes']['site']}")
 
         # Set folder using get_folder function
         extensions["folder"] = get_folder(device_data)
@@ -274,6 +281,28 @@ async def get_device_normalized(device_id: str, current_user: dict = Depends(ver
             logger.error(f"Error processing cf2htg mappings for device: {str(e)}")
             # Don't fail the whole process, just log the error
 
+        # Process tags2htg (Tags to Host Tag Group) mappings
+        try:
+            tags2htg_config = checkmk_config.get("tags2htg", {})
+            
+            if tags2htg_config and device_data.get("tags"):
+                device_tags = device_data.get("tags", [])
+                # Convert tags list to set of tag names for efficient lookup
+                device_tag_names = {tag.get("name") for tag in device_tags if isinstance(tag, dict) and tag.get("name")}
+                
+                for tag_name, host_tag_group_name in tags2htg_config.items():
+                    tag_key = f"tag_{host_tag_group_name}"
+                    if tag_name in device_tag_names:
+                        extensions["attributes"][tag_key] = "true"
+                        logger.info(f"Added host tag group for device '{device_name}': {tag_key} = true (tag '{tag_name}' found)")
+                    else:
+                        extensions["attributes"][tag_key] = "false"
+                        logger.info(f"Added host tag group for device '{device_name}': {tag_key} = false (tag '{tag_name}' not found)")
+                            
+        except Exception as e:
+            logger.error(f"Error processing tags2htg mappings for device: {str(e)}")
+            # Don't fail the whole process, just log the error
+
         # Process mapping (field mappings from Nautobot to CheckMK attributes)
         try:
             mapping_config = checkmk_config.get("mapping", {})
@@ -342,6 +371,57 @@ async def get_device_normalized(device_id: str, current_user: dict = Depends(ver
         )
 
 
+@router.get("/get_default_site")
+async def get_default_site(current_user: dict = Depends(verify_token)):
+    """Get the default site from CheckMK configuration."""
+    try:
+        import yaml
+        import os
+        
+        # Load CheckMK configuration
+        checkmk_config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "../config", "checkmk.yaml")
+        
+        with open(checkmk_config_path, 'r') as f:
+            checkmk_config = yaml.safe_load(f)
+        
+        site_config = checkmk_config.get("site", {})
+        default_site = site_config.get("default", "cmk")
+        
+        return {"default_site": default_site}
+        
+    except Exception as e:
+        logger.error(f"Error getting default site: {str(e)}")
+        # Return default value even if config reading fails
+        return {"default_site": "cmk"}
+
+
+def get_device_site(normalized_data: dict) -> str:
+    """Extract site from normalized device data, falling back to default site."""
+    try:
+        # check if site is in the attributes
+        attributes = normalized_data.get("attributes", {})
+        if "site" in attributes and attributes["site"]:
+            return attributes["site"]
+        
+        # Fall back to getting the default site from config
+        import yaml
+        import os
+        
+        checkmk_config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "../config", "checkmk.yaml")
+        
+        with open(checkmk_config_path, 'r') as f:
+            checkmk_config = yaml.safe_load(f)
+        
+        site_config = checkmk_config.get("site", {})
+        default_site = site_config.get("default", "cmk")
+        
+        return default_site
+        
+    except Exception as e:
+        logger.error(f"Error getting device site: {str(e)}")
+        return "cmk"
+
+
 def parse_folder_value(folder_template: str, device_data: dict) -> str:
     """Parse folder template variables and return the processed folder path.
     
@@ -367,6 +447,71 @@ def parse_folder_value(folder_template: str, device_data: dict) -> str:
             folder_path = folder_path.replace(f"{{{var}}}", str(device_value))
     
     return folder_path
+
+
+def get_site(device_data: dict) -> str:
+    """Get the correct CheckMK site for a device based on configuration rules.
+    
+    Priority order: by_location > by_ip > by_name
+    """
+    try:
+        import yaml
+        import os
+        import ipaddress
+        
+        # Load CheckMK configuration
+        checkmk_config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "../config", "checkmk.yaml")
+        
+        with open(checkmk_config_path, 'r') as f:
+            checkmk_config = yaml.safe_load(f)
+        
+        site_config = checkmk_config.get("site", {})
+        
+        device_name = device_data.get("name", "")
+        device_location = device_data.get("location", {}).get("name", "") if device_data.get("location") else ""
+        primary_ip4 = device_data.get("primary_ip4")
+        device_ip = ""
+        
+        # Extract IP address from primary_ip4
+        if primary_ip4 and primary_ip4.get("address"):
+            ip_address = primary_ip4.get("address")
+            device_ip = ip_address.split('/')[0] if '/' in ip_address else ip_address
+
+        # 1. Check by_name (highest priority)
+        by_name_config = site_config.get("by_name", {})
+        if device_name and device_name in by_name_config:
+            return by_name_config[device_name]
+        
+        # 2. Check by_ip (second priority)
+        by_ip_config = site_config.get("by_ip", {})
+        if device_ip and by_ip_config:
+            try:
+                device_ip_obj = ipaddress.ip_address(device_ip)
+                
+                # Check each CIDR network in by_ip config
+                for cidr_network, site_value in by_ip_config.items():
+                    try:
+                        network = ipaddress.ip_network(cidr_network, strict=False)
+                        if device_ip_obj in network:
+                            return site_value
+                    except ipaddress.AddressValueError:
+                        logger.warning(f"Invalid CIDR network in site config: {cidr_network}")
+                        continue
+                        
+            except ipaddress.AddressValueError:
+                logger.warning(f"Invalid device IP address for site: {device_ip}")
+
+        # 3. Check by_location first (lowest priority)
+        by_location_config = site_config.get("by_location", {})
+        if device_location and by_location_config and device_location in by_location_config:
+            return by_location_config[device_location]
+
+        # No site found - return empty string or default
+        return ""
+        
+    except Exception as e:
+        logger.error(f"Error determining site for device: {str(e)}")
+        return ""
 
 
 def get_folder(device_data: dict) -> str:
@@ -701,30 +846,55 @@ async def add_device_to_checkmk(device_id: str, current_user: dict = Depends(ver
         folder = normalized_data.get("folder", "/")
         attributes = normalized_data.get("attributes", {})
         
-        # Create host in CheckMK using internal API call (same pattern as compare function)
-        from routers.checkmk import create_host_v2
-        from models.checkmk import CheckMKHostCreateRequest
+        # Get the device site for CheckMK client initialization
+        device_site = get_device_site(normalized_data)
+        logger.info(f"Using site '{device_site}' for device {hostname}")
         
-        # Create the request object for CheckMK host creation
-        create_request = CheckMKHostCreateRequest(
-            host_name=hostname,
-            folder=folder,
-            attributes=attributes,
-            bake_agent=False
-        )
+        # Create host in CheckMK using site-aware client
+        from routers.checkmk import _get_checkmk_client
+        from checkmk.client import CheckMKAPIError
         
-        # Call internal CheckMK API to create host
-        create_result = await create_host_v2(create_request, False, current_user)
+        try:
+            # Create CheckMK client with device-specific site
+            client = _get_checkmk_client(site_name=device_site)
+            
+            # Create host in CheckMK
+            result = client.create_host(
+                hostname=hostname,
+                folder=folder,
+                attributes=attributes,
+                bake_agent=False
+            )
+            
+            create_result = {
+                "success": True,
+                "message": f"Host {hostname} created successfully",
+                "data": result
+            }
+            
+        except CheckMKAPIError as e:
+            logger.error(f"CheckMK API error creating host {hostname}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"CheckMK API error: {str(e)}",
+            )
+        except Exception as e:
+            logger.error(f"Error creating host {hostname}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to create host: {str(e)}",
+            )
         
         logger.info(f"Successfully added device {device_id} ({hostname}) to CheckMK")
         
         return {
             "success": True,
-            "message": f"Device {hostname} successfully added to CheckMK",
+            "message": f"Device {hostname} successfully added to CheckMK site '{device_site}'",
             "device_id": device_id,
             "hostname": hostname,
+            "site": device_site,
             "folder": folder,
-            "checkmk_response": create_result.dict() if hasattr(create_result, 'dict') else create_result
+            "checkmk_response": create_result
         }
         
     except HTTPException:
@@ -758,29 +928,43 @@ async def update_device_in_checkmk(device_id: str, current_user: dict = Depends(
         new_folder = normalized_data.get("folder", "/")
         new_attributes = normalized_data.get("attributes", {})
         
-        # Get current CheckMK host config to compare folder
-        from routers.checkmk import get_host
+        # Get the device site for CheckMK client initialization
+        device_site = get_device_site(normalized_data)
+        logger.info(f"Using site '{device_site}' for device {hostname} update")
         
-        # Create admin user context for CheckMK call (since CheckMK endpoints require admin)
-        admin_user = {**current_user, "permissions": 15}  # Admin permissions
+        # Get current CheckMK host config to compare folder using site-aware client
+        from routers.checkmk import _get_checkmk_client
+        from checkmk.client import CheckMKAPIError
         
         try:
-            checkmk_response = await get_host(hostname, False, admin_user)
+            # Create CheckMK client with device-specific site
+            client = _get_checkmk_client(site_name=device_site)
             
-            # Extract the actual data from the CheckMKOperationResponse
-            checkmk_data = checkmk_response.data if hasattr(checkmk_response, 'data') else checkmk_response
+            # Get current host data
+            checkmk_data = client.get_host(hostname)
             
-            # The folder is in extensions.folder, not at the top level
+            # The folder is in extensions.folder
             extensions = checkmk_data.get("extensions", {})
             current_folder = extensions.get("folder", "/")
-        except HTTPException as e:
-            if e.status_code == 404:
+            
+        except CheckMKAPIError as e:
+            if "404" in str(e) or "not found" in str(e).lower():
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Host '{hostname}' not found in CheckMK - cannot update non-existent host",
+                    detail=f"Host '{hostname}' not found in CheckMK site '{device_site}' - cannot update non-existent host",
                 )
             else:
-                raise
+                logger.error(f"CheckMK API error getting host {hostname}: {str(e)}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"CheckMK API error: {str(e)}",
+                )
+        except Exception as e:
+            logger.error(f"Error getting host {hostname}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to get host: {str(e)}",
+            )
         
         # Normalize folder paths for comparison (remove trailing slashes)
         current_folder_normalized = current_folder.rstrip('/') if current_folder != '/' else '/'
@@ -791,7 +975,7 @@ async def update_device_in_checkmk(device_id: str, current_user: dict = Depends(
         
         if folder_changed:
             # Ensure the new folder path exists by creating it if necessary
-            path_created = await create_path(new_folder_normalized, current_user)
+            path_created = await create_path(new_folder_normalized, device_site, current_user)
             
             if not path_created:
                 raise HTTPException(
@@ -799,55 +983,57 @@ async def update_device_in_checkmk(device_id: str, current_user: dict = Depends(
                     detail=f"Cannot create or ensure folder path '{new_folder_normalized}' exists in CheckMK"
                 )
             
-            # Move the host to the new folder using the move endpoint
-            from routers.checkmk import move_host
-            from models.checkmk import CheckMKHostMoveRequest
-            
-            move_request = CheckMKHostMoveRequest(
-                target_folder=new_folder_normalized
-            )
-            
+            # Move the host to the new folder using direct client call
             try:
-                move_result = await move_host(hostname, move_request, admin_user)
-            except HTTPException as move_error:
-                if move_error.status_code == 428:
+                move_result = client.move_host(hostname, new_folder_normalized)
+                logger.info(f"Moved host {hostname} from {current_folder_normalized} to {new_folder_normalized}")
+            except CheckMKAPIError as e:
+                if "428" in str(e) or "precondition" in str(e).lower():
                     raise HTTPException(
                         status_code=status.HTTP_428_PRECONDITION_REQUIRED,
                         detail=f"Cannot move host '{hostname}' - CheckMK changes may need to be activated first. Please activate pending changes in CheckMK and try again.",
                     )
                 else:
-                    # Re-raise the original error
+                    logger.error(f"CheckMK API error moving host {hostname}: {str(e)}")
                     raise HTTPException(
-                        status_code=move_error.status_code,
-                        detail=f"Failed to move host '{hostname}' to folder '{new_folder_normalized}': {move_error.detail}",
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail=f"CheckMK API error moving host: {str(e)}",
                     )
             except Exception as e:
+                logger.error(f"Error moving host {hostname}: {str(e)}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=f"Failed to move host '{hostname}' to folder '{new_folder_normalized}': {str(e)}",
                 )
         
-        # Update host attributes using internal API
-        from routers.checkmk import update_host
-        from models.checkmk import CheckMKHostUpdateRequest
-        
-        # Create the request object for CheckMK host update
-        update_request = CheckMKHostUpdateRequest(
-            attributes=new_attributes
-        )
-        
-        update_result = await update_host(hostname, update_request, admin_user)
+        # Update host attributes using direct client call
+        try:
+            update_result = client.update_host(hostname, new_attributes)
+            logger.info(f"Updated host {hostname} attributes")
+        except CheckMKAPIError as e:
+            logger.error(f"CheckMK API error updating host {hostname}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"CheckMK API error updating host: {str(e)}",
+            )
+        except Exception as e:
+            logger.error(f"Error updating host {hostname}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to update host: {str(e)}",
+            )
         
         logger.info(f"Successfully updated device {device_id} ({hostname}) in CheckMK")
         
         return {
             "success": True,
-            "message": f"Device {hostname} successfully updated in CheckMK",
+            "message": f"Device {hostname} successfully updated in CheckMK site '{device_site}'",
             "device_id": device_id,
             "hostname": hostname,
+            "site": device_site,
             "folder": new_folder,
             "folder_changed": folder_changed,
-            "checkmk_response": update_result.dict() if hasattr(update_result, 'dict') else update_result
+            "checkmk_response": update_result
         }
         
     except HTTPException:
@@ -860,12 +1046,13 @@ async def update_device_in_checkmk(device_id: str, current_user: dict = Depends(
         )
 
 
-async def create_path(folder_path: str, current_user: dict) -> bool:
+async def create_path(folder_path: str, site_name: str, current_user: dict) -> bool:
     """
     Create a complete folder path in CheckMK by creating folders incrementally.
     
     Args:
         folder_path: CheckMK folder path like "~subfolder1~subfolder2~subfolder3"
+        site_name: CheckMK site name to use
         current_user: User context for authentication
         
     Returns:
@@ -883,12 +1070,12 @@ async def create_path(folder_path: str, current_user: dict) -> bool:
         if not path_parts:
             return True
         
-        # Import CheckMK functions
-        from routers.checkmk import create_folder
-        from models.checkmk import CheckMKFolderCreateRequest
+        # Use site-aware CheckMK client
+        from routers.checkmk import _get_checkmk_client
+        from checkmk.client import CheckMKAPIError
         
-        # Create admin user context for CheckMK calls
-        admin_user = {**current_user, "permissions": 15}  # Admin permissions
+        client = _get_checkmk_client(site_name=site_name)
+        logger.info(f"Creating folder path '{folder_path}' in site '{site_name}'")
         
         # Build and create each path incrementally
         for i in range(len(path_parts)):
@@ -905,20 +1092,18 @@ async def create_path(folder_path: str, current_user: dict) -> bool:
             folder_name = path_parts[i]
             
             try:
-                # Create folder request
-                create_request = CheckMKFolderCreateRequest(
+                # Try to create the folder using direct client call
+                result = client.create_folder(
                     name=folder_name,
                     title=folder_name,  # Use same as name for title
                     parent=parent_folder,
                     attributes={}
                 )
+                logger.debug(f"Created folder '{folder_name}' in parent '{parent_folder}'")
                 
-                # Try to create the folder
-                await create_folder(create_request, admin_user)
-                
-            except HTTPException as e:
+            except CheckMKAPIError as e:
                 # Check if this is a "folder already exists" error
-                if e.status_code == 400 and "already exists" in str(e.detail).lower():
+                if "already exists" in str(e).lower() or "400" in str(e):
                     continue
                 else:
                     return False

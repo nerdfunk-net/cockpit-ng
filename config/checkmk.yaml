@@ -1,14 +1,15 @@
 ---
 site:
+  default: cmk
   # use folders to statically map sites to a checkmk device
   # use 0.0.0.0/0 to set a default site
   by_location:
     building: site
   by_ip:
-    0.0.0.0/0: cmk
     192.168.1.0/24: cmk
+    0.0.0.0/0: cmk
   by_name:
-    none: cmk
+    lab-1: cmk
 
 folders:
   default: "/network/{_custom_field_data.net}/"
@@ -32,7 +33,9 @@ cf2htg:
 tags2htg:
   # use tags2htg to map custom tags to checkmk host tag groups
   # name_of_tag: name_of_checkmk_host_tag_group
-  cmktag: my_nb_tag
+  # teh value is set to true if the tag is present on the nautobot device
+  # otherwise it is set to false
+  tag-1: nb_tag
 
 additional_attributes:
   # use additional_attributes to set additional attributes for checkmk hosts

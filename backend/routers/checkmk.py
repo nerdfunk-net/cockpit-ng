@@ -229,8 +229,12 @@ async def get_checkmk_stats(current_user: dict = Depends(verify_admin_token)):
         )
 
 
-def _get_checkmk_client():
-    """Helper function to create CheckMK client from settings"""
+def _get_checkmk_client(site_name: str = None):
+    """Helper function to create CheckMK client from settings
+    
+    Args:
+        site_name: Optional site name to use. If None, uses the configured default site.
+    """
     from settings_manager import settings_manager
     from checkmk.client import CheckMKClient
     from urllib.parse import urlparse
@@ -252,9 +256,12 @@ def _get_checkmk_client():
         protocol = 'https'
         host = url
     
+    # Use provided site_name or fall back to configured site
+    effective_site = site_name or db_settings["site"]
+    
     return CheckMKClient(
         host=host,
-        site_name=db_settings["site"],
+        site_name=effective_site,
         username=db_settings["username"],
         password=db_settings["password"],
         protocol=protocol,

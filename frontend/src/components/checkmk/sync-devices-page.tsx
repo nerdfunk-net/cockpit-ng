@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -32,6 +32,24 @@ interface Device {
   checkmk_config?: Record<string, unknown>
 }
 
+// Helper function to extract site value from device configuration
+const getSiteFromDevice = (device: Device, defaultSite: string = 'cmk'): string => {
+  // First try to get site from normalized_config.attributes.site
+  const normalizedSite = device.normalized_config?.attributes?.site as string
+  if (normalizedSite) {
+    return normalizedSite
+  }
+  
+  // Then try checkmk_config.attributes.site
+  const checkmkSite = device.checkmk_config?.attributes?.site as string
+  if (checkmkSite) {
+    return checkmkSite
+  }
+  
+  // If no site found, return the default site
+  return defaultSite
+}
+
 export function CheckMKSyncDevicesPage() {
   const { token } = useAuthStore()
   const [devices, setDevices] = useState<Device[]>([])
@@ -46,6 +64,7 @@ export function CheckMKSyncDevicesPage() {
     role: '',
     status: '',
     location: '',
+    site: '',
     checkmk_status: ''
   })
   const [checkmkStatusFilters, setCheckmkStatusFilters] = useState({
@@ -53,12 +72,121 @@ export function CheckMKSyncDevicesPage() {
     diff: true,
     missing: true
   })
+  const [roleFilters, setRoleFilters] = useState<Record<string, boolean>>({})
+  const [statusFilters, setStatusFilters] = useState<Record<string, boolean>>({})
+  const [locationFilters, setLocationFilters] = useState<Record<string, boolean>>({})
+  const [siteFilters, setSiteFilters] = useState<Record<string, boolean>>({})
+  const [defaultSite, setDefaultSite] = useState<string>('cmk')
   const [selectedDeviceForView, setSelectedDeviceForView] = useState<Device | null>(null)
   const [selectedDeviceForDiff, setSelectedDeviceForDiff] = useState<Device | null>(null)
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'warning' | 'info', message: string } | null>(null)
   const [totalDeviceCount, setTotalDeviceCount] = useState<number>(0)
   const [progressVisible, setProgressVisible] = useState(false)
   const [showStatusModal, setShowStatusModal] = useState(false)
+
+  // Fetch default site from backend
+  const fetchDefaultSite = async () => {
+    try {
+      const response = await fetch('/api/proxy/nb2cmk/get_default_site', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setDefaultSite(data.default_site || 'cmk')
+      }
+    } catch (error) {
+      console.error('Error fetching default site:', error)
+      // Keep default value 'cmk' if fetch fails
+    }
+  }
+
+  // Load default site when component mounts
+  useEffect(() => {
+    if (token) {
+      fetchDefaultSite()
+    }
+  }, [token])
+
+  // Extract unique roles and statuses from the current device data
+  const availableRoles = useMemo(() => {
+    const roles = new Set(devices.map(device => device.role).filter(Boolean))
+    return Array.from(roles).sort()
+  }, [devices])
+
+  const availableStatuses = useMemo(() => {
+    const statuses = new Set(devices.map(device => device.status).filter(Boolean))
+    return Array.from(statuses).sort()
+  }, [devices])
+
+  const availableLocations = useMemo(() => {
+    const locations = new Set(devices.map(device => device.location).filter(Boolean))
+    return Array.from(locations).sort()
+  }, [devices])
+
+  const availableSites = useMemo(() => {
+    const sites = new Set(devices.map(device => getSiteFromDevice(device, defaultSite)).filter(Boolean))
+    return Array.from(sites).sort()
+  }, [devices, defaultSite])
+
+  // Initialize filters when available roles/statuses change
+  useEffect(() => {
+    if (availableRoles.length > 0) {
+      setRoleFilters(prev => {
+        const newFilters = { ...prev }
+        availableRoles.forEach(role => {
+          if (!(role in newFilters)) {
+            newFilters[role] = true // Default to selected
+          }
+        })
+        return newFilters
+      })
+    }
+  }, [availableRoles])
+
+  useEffect(() => {
+    if (availableStatuses.length > 0) {
+      setStatusFilters(prev => {
+        const newFilters = { ...prev }
+        availableStatuses.forEach(status => {
+          if (!(status in newFilters)) {
+            newFilters[status] = true // Default to selected
+          }
+        })
+        return newFilters
+      })
+    }
+  }, [availableStatuses])
+
+  useEffect(() => {
+    if (availableLocations.length > 0) {
+      setLocationFilters(prev => {
+        const newFilters = { ...prev }
+        availableLocations.forEach(location => {
+          if (!(location in newFilters)) {
+            newFilters[location] = true // Default to selected
+          }
+        })
+        return newFilters
+      })
+    }
+  }, [availableLocations])
+
+  useEffect(() => {
+    if (availableSites.length > 0) {
+      setSiteFilters(prev => {
+        const newFilters = { ...prev }
+        availableSites.forEach(site => {
+          if (!(site in newFilters)) {
+            newFilters[site] = true // Default to selected
+          }
+        })
+        return newFilters
+      })
+    }
+  }, [availableSites])
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -297,22 +425,36 @@ export function CheckMKSyncDevicesPage() {
   const filteredDevices = useMemo(() => {
     return devices.filter(device => {
       // Check CheckMK status checkbox filters
-      const statusMatch = 
+      const checkmkStatusMatch = 
         (checkmkStatusFilters.equal && device.checkmk_status === 'equal') ||
         (checkmkStatusFilters.diff && device.checkmk_status === 'diff') ||
         (checkmkStatusFilters.missing && device.checkmk_status === 'missing') ||
         (!checkmkStatusFilters.equal && !checkmkStatusFilters.diff && !checkmkStatusFilters.missing) ||
         (device.checkmk_status !== 'equal' && device.checkmk_status !== 'diff' && device.checkmk_status !== 'missing')
       
+      // Check role checkbox filters
+      const roleMatch = Object.keys(roleFilters).length === 0 || roleFilters[device.role] === true
+      
+      // Check status checkbox filters
+      const statusMatch = Object.keys(statusFilters).length === 0 || statusFilters[device.status] === true
+      
+      // Check location checkbox filters
+      const locationMatch = Object.keys(locationFilters).length === 0 || locationFilters[device.location] === true
+      
+      // Check site checkbox filters
+      const deviceSite = getSiteFromDevice(device, defaultSite)
+      const siteMatch = Object.keys(siteFilters).length === 0 || siteFilters[deviceSite] === true
+      
       return (
         device.name.toLowerCase().includes(filters.name.toLowerCase()) &&
-        device.role.toLowerCase().includes(filters.role.toLowerCase()) &&
-        device.status.toLowerCase().includes(filters.status.toLowerCase()) &&
-        device.location.toLowerCase().includes(filters.location.toLowerCase()) &&
-        statusMatch
+        roleMatch &&
+        statusMatch &&
+        locationMatch &&
+        siteMatch &&
+        checkmkStatusMatch
       )
     })
-  }, [devices, filters, checkmkStatusFilters])
+  }, [devices, filters, checkmkStatusFilters, roleFilters, statusFilters, locationFilters, siteFilters, defaultSite])
 
   // Pagination logic (use filtered devices)
   const totalPages = Math.ceil(filteredDevices.length / itemsPerPage)
@@ -332,6 +474,7 @@ export function CheckMKSyncDevicesPage() {
       role: '',
       status: '',
       location: '',
+      site: '',
       checkmk_status: ''
     })
     setCheckmkStatusFilters({
@@ -339,6 +482,30 @@ export function CheckMKSyncDevicesPage() {
       diff: true,
       missing: true
     })
+    // Reset role filters to all true
+    const resetRoleFilters = availableRoles.reduce((acc: Record<string, boolean>, role: string) => {
+      acc[role] = true
+      return acc
+    }, {})
+    setRoleFilters(resetRoleFilters)
+    // Reset status filters to all true
+    const resetStatusFilters = availableStatuses.reduce((acc: Record<string, boolean>, status: string) => {
+      acc[status] = true
+      return acc
+    }, {})
+    setStatusFilters(resetStatusFilters)
+    // Reset location filters to all true
+    const resetLocationFilters = availableLocations.reduce((acc: Record<string, boolean>, location: string) => {
+      acc[location] = true
+      return acc
+    }, {})
+    setLocationFilters(resetLocationFilters)
+    // Reset site filters to all true
+    const resetSiteFilters = availableSites.reduce((acc: Record<string, boolean>, site: string) => {
+      acc[site] = true
+      return acc
+    }, {})
+    setSiteFilters(resetSiteFilters)
     setCurrentPage(1)
   }
 
@@ -418,7 +585,7 @@ export function CheckMKSyncDevicesPage() {
         <div className="p-0">
           {/* Filters Row */}
           <div className="bg-gray-50 border-b p-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
               {/* Device Name Filter */}
               <div className="space-y-1">
                 <Label className="text-xs font-medium text-gray-600">Device Name</Label>
@@ -433,34 +600,133 @@ export function CheckMKSyncDevicesPage() {
               {/* Role Filter */}
               <div className="space-y-1">
                 <Label className="text-xs font-medium text-gray-600">Role</Label>
-                <Input
-                  placeholder="Filter by role..."
-                  value={filters.role}
-                  onChange={(e) => handleFilterChange('role', e.target.value)}
-                  className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
-                />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 text-xs justify-between min-w-[120px]">
+                      Role Filter
+                      {Object.values(roleFilters).filter(Boolean).length < availableRoles.length && (
+                        <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                          {Object.values(roleFilters).filter(Boolean).length}
+                        </Badge>
+                      )}
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-40">
+                    <DropdownMenuLabel className="text-xs">Filter by Role</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {availableRoles.map((role) => (
+                      <DropdownMenuCheckboxItem
+                        key={role}
+                        checked={roleFilters[role] || false}
+                        onCheckedChange={(checked) => 
+                          setRoleFilters(prev => ({ ...prev, [role]: !!checked }))
+                        }
+                      >
+                        {role}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               {/* Status Filter */}
               <div className="space-y-1">
                 <Label className="text-xs font-medium text-gray-600">Status</Label>
-                <Input
-                  placeholder="Filter by status..."
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
-                  className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
-                />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 text-xs justify-between min-w-[120px]">
+                      Status Filter
+                      {Object.values(statusFilters).filter(Boolean).length < availableStatuses.length && (
+                        <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                          {Object.values(statusFilters).filter(Boolean).length}
+                        </Badge>
+                      )}
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-40">
+                    <DropdownMenuLabel className="text-xs">Filter by Status</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {availableStatuses.map((status) => (
+                      <DropdownMenuCheckboxItem
+                        key={status}
+                        checked={statusFilters[status] || false}
+                        onCheckedChange={(checked) => 
+                          setStatusFilters(prev => ({ ...prev, [status]: !!checked }))
+                        }
+                      >
+                        {status}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               {/* Location Filter */}
               <div className="space-y-1">
                 <Label className="text-xs font-medium text-gray-600">Location</Label>
-                <Input
-                  placeholder="Filter by location..."
-                  value={filters.location}
-                  onChange={(e) => handleFilterChange('location', e.target.value)}
-                  className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
-                />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 text-xs justify-between min-w-[120px]">
+                      Location Filter
+                      {Object.values(locationFilters).filter(Boolean).length < availableLocations.length && (
+                        <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                          {Object.values(locationFilters).filter(Boolean).length}
+                        </Badge>
+                      )}
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-40">
+                    <DropdownMenuLabel className="text-xs">Filter by Location</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {availableLocations.map((location) => (
+                      <DropdownMenuCheckboxItem
+                        key={location}
+                        checked={locationFilters[location] || false}
+                        onCheckedChange={(checked) => 
+                          setLocationFilters(prev => ({ ...prev, [location]: !!checked }))
+                        }
+                      >
+                        {location}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Site Filter */}
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-gray-600">Site</Label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 text-xs justify-between min-w-[120px]">
+                      Site Filter
+                      {Object.values(siteFilters).filter(Boolean).length < availableSites.length && (
+                        <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                          {Object.values(siteFilters).filter(Boolean).length}
+                        </Badge>
+                      )}
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-40">
+                    <DropdownMenuLabel className="text-xs">Filter by Site</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {availableSites.map((site) => (
+                      <DropdownMenuCheckboxItem
+                        key={site}
+                        checked={siteFilters[site] || false}
+                        onCheckedChange={(checked) => 
+                          setSiteFilters(prev => ({ ...prev, [site]: !!checked }))
+                        }
+                      >
+                        {site}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               {/* CheckMK Status Filter */}
@@ -545,19 +811,20 @@ export function CheckMKSyncDevicesPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Role</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Status</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Location</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Site</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">CheckMK</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">{devices.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                       No devices found. Click the check button to load devices from Nautobot.
                     </td>
                   </tr>
                 ) : filteredDevices.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                       No devices match the current filters.
                     </td>
                   </tr>
@@ -583,6 +850,9 @@ export function CheckMKSyncDevicesPage() {
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {device.location}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {getSiteFromDevice(device, defaultSite)}
                       </td>
                       <td className="px-4 py-3">
                         {getCheckMKStatusBadge(device.checkmk_status)}
@@ -787,6 +1057,7 @@ export function CheckMKSyncDevicesPage() {
                 <div><strong>Role:</strong> {selectedDeviceForView?.role}</div>
                 <div><strong>Status:</strong> {selectedDeviceForView?.status}</div>
                 <div><strong>Location:</strong> {selectedDeviceForView?.location}</div>
+                <div><strong>Site:</strong> {selectedDeviceForView ? getSiteFromDevice(selectedDeviceForView, defaultSite) : ''}</div>
                 <div><strong>CheckMK Status:</strong> {selectedDeviceForView && getCheckMKStatusBadge(selectedDeviceForView.checkmk_status)}</div>
               </div>
             </div>
