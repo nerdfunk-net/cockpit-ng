@@ -98,12 +98,12 @@ class CheckMKClient:
             request_headers["If-Match"] = etag
 
         # Enhanced debug logging for troubleshooting
-        self.logger.info("DEBUG: Making CheckMK API request:")
-        self.logger.info(f"DEBUG: Method: {method}")
-        self.logger.info(f"DEBUG: URL: {url}")
-        self.logger.info(f"DEBUG: Params: {params}")
-        self.logger.info(f"DEBUG: JSON Data: {json_data}")
-        self.logger.info(f"DEBUG: Headers: {dict(request_headers)}")
+        self.logger.debug("DEBUG: Making CheckMK API request:")
+        self.logger.debug(f"DEBUG: Method: {method}")
+        self.logger.debug(f"DEBUG: URL: {url}")
+        self.logger.debug(f"DEBUG: Params: {params}")
+        self.logger.debug(f"DEBUG: JSON Data: {json_data}")
+        self.logger.debug(f"DEBUG: Headers: {dict(request_headers)}")
 
         try:
             response = self.session.request(
@@ -115,14 +115,14 @@ class CheckMKClient:
                 timeout=self.timeout,
             )
 
-            self.logger.info(f"DEBUG: Response Status: {response.status_code}")
-            self.logger.info(f"DEBUG: Response Headers: {dict(response.headers)}")
+            self.logger.debug(f"DEBUG: Response Status: {response.status_code}")
+            self.logger.debug(f"DEBUG: Response Headers: {dict(response.headers)}")
             if response.content:
                 try:
                     response_json = response.json()
-                    self.logger.info(f"DEBUG: Response Body: {response_json}")
+                    self.logger.debug(f"DEBUG: Response Body: {response_json}")
                 except (json.JSONDecodeError, ValueError):
-                    self.logger.info(f"DEBUG: Response Text: {response.text}")
+                    self.logger.debug(f"DEBUG: Response Text: {response.text}")
 
             return response
 

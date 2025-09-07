@@ -14,3 +14,4 @@ textfsm
 netmiko
 ntc-templates
 napalm
+pyyaml
