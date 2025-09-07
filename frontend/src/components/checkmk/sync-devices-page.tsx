@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { RefreshCw, Search, Eye, GitCompare, RotateCw, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown } from 'lucide-react'
+import { RefreshCw, Search, Eye, GitCompare, RotateCw, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown, Zap } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { 
@@ -83,6 +83,7 @@ export function CheckMKSyncDevicesPage() {
   const [totalDeviceCount, setTotalDeviceCount] = useState<number>(0)
   const [progressVisible, setProgressVisible] = useState(false)
   const [showStatusModal, setShowStatusModal] = useState(false)
+  const [isActivating, setIsActivating] = useState(false)
 
   // Fetch default site from backend
   const fetchDefaultSite = async () => {
@@ -100,6 +101,31 @@ export function CheckMKSyncDevicesPage() {
     } catch (error) {
       console.error('Error fetching default site:', error)
       // Keep default value 'cmk' if fetch fails
+    }
+  }
+
+  // Check for pending changes
+  const checkPendingChanges = async (): Promise<boolean> => {
+    if (!token) return false
+    
+    try {
+      const response = await fetch('/api/proxy/checkmk/changes/pending', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        // Check if there are any pending changes (non-empty list)
+        // The response structure is: { data: { value: [...] } }
+        return data.data && data.data.value && data.data.value.length > 0
+      }
+      return false
+    } catch (error) {
+      console.error('Error checking pending changes:', error)
+      return false
     }
   }
 
@@ -287,6 +313,80 @@ export function CheckMKSyncDevicesPage() {
     
     // Placeholder for sync functionality
     console.log('Syncing devices:', Array.from(selectedDevices))
+  }
+
+  const handleActivateChanges = async () => {
+    if (!token) {
+      setStatusMessage({ type: 'error', message: 'Authentication required' })
+      setShowStatusModal(true)
+      return
+    }
+
+    setIsActivating(true)
+    setStatusMessage({ 
+      type: 'info', 
+      message: 'Checking for pending changes...' 
+    })
+    setShowStatusModal(true)
+    
+    try {
+      // First check if there are pending changes
+      const hasPendingChanges = await checkPendingChanges()
+      
+      if (!hasPendingChanges) {
+        setStatusMessage({ 
+          type: 'info', 
+          message: 'No pending changes to activate in CheckMK' 
+        })
+        setShowStatusModal(true)
+        setIsActivating(false)
+        return
+      }
+
+      // If there are pending changes, proceed with activation
+      setStatusMessage({ 
+        type: 'info', 
+        message: 'Activating pending changes in CheckMK...' 
+      })
+      
+      const response = await fetch('/api/proxy/checkmk/changes/activate', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        setStatusMessage({ 
+          type: 'success', 
+          message: 'Successfully activated pending changes in CheckMK' 
+        })
+        setShowStatusModal(true)
+        
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+          setStatusMessage(null)
+          setShowStatusModal(false)
+        }, 3000)
+      } else {
+        const errorData = await response.json()
+        setStatusMessage({ 
+          type: 'error', 
+          message: `Failed to activate changes: ${errorData.detail || 'Unknown error'}` 
+        })
+        setShowStatusModal(true)
+      }
+    } catch (error) {
+      console.error('Error activating changes:', error)
+      setStatusMessage({ 
+        type: 'error', 
+        message: 'Error activating changes in CheckMK' 
+      })
+      setShowStatusModal(true)
+    } finally {
+      setIsActivating(false)
+    }
   }
 
   const handleAddDevice = async (device: Device) => {
@@ -791,6 +891,18 @@ export function CheckMKSyncDevicesPage() {
                       <Search className="h-3 w-3" />
                     )}
                   </Button>
+                  <Button 
+                    onClick={handleActivateChanges} 
+                    disabled={isActivating}
+                    size="sm"
+                    className="h-8 bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
+                  >
+                    {isActivating ? (
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Zap className="h-3 w-3" />
+                    )}
+                  </Button>
                 </div>
               </div>
             </div>
@@ -1020,6 +1132,18 @@ export function CheckMKSyncDevicesPage() {
                     <Search className="h-4 w-4" />
                   )}
                   {isLoading ? 'Checking...' : 'Check'}
+                </Button>
+                <Button 
+                  onClick={handleActivateChanges} 
+                  disabled={isActivating}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
+                >
+                  {isActivating ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Zap className="h-4 w-4" />
+                  )}
+                  {isActivating ? 'Activating...' : 'Activate'}
                 </Button>
                 <div className="text-sm text-gray-600 flex items-center">
                   {selectedDevices.size > 0 && (
