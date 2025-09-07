@@ -29,6 +29,14 @@ Cockpit-NG is a next-generation network management dashboard designed for networ
 - **Workflow Orchestration**: Multi-device operation support
 - **API-First Design**: RESTful API for external integration
 
+### 📊 **CheckMK Integration**
+- **Device Synchronization**: Bidirectional sync between Nautobot and CheckMK
+- **Site Management**: Automatic site assignment based on location, IP, or name
+- **Folder Organization**: Dynamic folder creation and device placement
+- **Tag Mapping**: Custom field and tag mapping to CheckMK host tag groups
+- **SNMP Configuration**: Automated SNMP community and credential setup
+- **Bulk Operations**: Mass device addition and updates to CheckMK
+
 ### 📊 **Analytics Dashboard**
 - **Real-time Statistics**: Network infrastructure metrics
 - **Activity Monitoring**: Recent operations and status updates
@@ -45,9 +53,10 @@ Cockpit-NG follows a modern microservices architecture:
 │   (Next.js)     │◄──►│   (FastAPI)     │◄──►│   Services      │
 │                 │    │                 │    │                 │
 │ • Dashboard     │    │ • REST API      │    │ • Nautobot      │
-│ • Auth System   │    │ • Auth Service  │    │ • Git Repos     │
-│ • Settings UI   │    │ • Git Manager   │    │ • LDAP/AD       │
-│ • Device Mgmt   │    │ • Cache Layer   │    │ • SSH Devices   │
+│ • Auth System   │    │ • Auth Service  │    │ • CheckMK       │
+│ • Settings UI   │    │ • Git Manager   │    │ • Git Repos     │
+│ • Device Mgmt   │    │ • Cache Layer   │    │ • LDAP/AD       │
+│ • CheckMK Sync  │    │ • CheckMK API   │    │ • SSH Devices   │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -127,8 +136,16 @@ npm run dev
 - Device status monitoring
 - Configuration management
 
+### **CheckMK Synchronization**
+- Device comparison between Nautobot and CheckMK
+- Real-time sync status monitoring
+- Bulk device operations (add, update, delete)
+- Site and folder management interface
+- Configuration validation and error handling
+
 ### **Settings & Configuration**
 - Nautobot integration settings
+- CheckMK connection and site configuration
 - Git repository management
 - Template configuration
 - Credential management
@@ -143,6 +160,13 @@ npm run dev
 NAUTOBOT_URL=http://your-nautobot-instance:8080
 NAUTOBOT_TOKEN=your_api_token_here
 NAUTOBOT_TIMEOUT=30
+
+# CheckMK Integration
+CHECKMK_URL=http://your-checkmk-instance:5000
+CHECKMK_USERNAME=automation
+CHECKMK_PASSWORD=your_password
+CHECKMK_SITE=cmk
+CHECKMK_VERIFY_SSL=true
 
 # Security
 SECRET_KEY=your-secret-key-change-in-production
@@ -160,6 +184,15 @@ Cockpit-NG requires a Nautobot instance with:
 - Valid API token
 - Device and location data
 - Platform definitions
+
+### **CheckMK Requirements**
+
+CheckMK integration requires:
+- CheckMK Raw or Enterprise edition
+- REST API access (enabled by default)
+- Automation user credentials
+- Site configuration access
+- Host management permissions
 
 ## 📋 API Reference
 
@@ -220,6 +253,29 @@ Authorization: Bearer <token>
 
 # Export file comparison
 POST /api/files/export
+Authorization: Bearer <token>
+```
+
+### **CheckMK Operations**
+```http
+# Get device comparison
+GET /api/nb2cmk/devices
+Authorization: Bearer <token>
+
+# Add device to CheckMK
+POST /api/nb2cmk/device/{device_id}/add
+Authorization: Bearer <token>
+
+# Update device in CheckMK
+POST /api/nb2cmk/device/{device_id}/update
+Authorization: Bearer <token>
+
+# Get normalized device data
+GET /api/nb2cmk/device/{device_id}/normalized
+Authorization: Bearer <token>
+
+# Get default site configuration
+GET /api/nb2cmk/get_default_site
 Authorization: Bearer <token>
 ```
 
@@ -297,6 +353,14 @@ cockpit-ng/
 - Change tracking
 - Multi-repository support
 
+### **CheckMK Integration**
+- Bidirectional device synchronization
+- Site-aware device management
+- Folder organization and hierarchy
+- Tag and custom field mapping
+- SNMP credential management
+- Bulk operations and batch processing
+
 ### **Ansible Integration**
 - Dynamic inventory generation
 - Playbook execution
@@ -327,6 +391,13 @@ cockpit-ng/
    - Clear browser cache and localStorage
    - Check JWT token expiry
    - Verify SECRET_KEY configuration
+
+4. **CheckMK sync issues**:
+   - Verify CheckMK URL and credentials
+   - Check site configuration in `config/checkmk.yaml`
+   - Validate SNMP mapping files
+   - Review device attributes and tags
+   - Check network connectivity to CheckMK instance
 
 ## 📄 License
 

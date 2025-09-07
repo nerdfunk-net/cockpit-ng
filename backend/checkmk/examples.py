@@ -94,7 +94,7 @@ def host_management_example():
 
         # Update the host
         logger.info(f"Updating host: {test_hostname}")
-        updated_host = client.update_host(
+        client.update_host(
             hostname=test_hostname,
             attributes={
                 "ipaddress": "192.168.1.201",
@@ -185,7 +185,7 @@ def service_monitoring_example():
         # Try service discovery
         try:
             logger.info(f"Running service discovery on {hostname}")
-            discovery = client.start_service_discovery(hostname, mode="new")
+            client.start_service_discovery(hostname, mode="new")
             logger.info("✓ Service discovery started")
 
         except CheckMKAPIError as e:
@@ -224,7 +224,7 @@ def bulk_operations_example():
     try:
         # Execute bulk host creation
         logger.info("Executing bulk host creation...")
-        result = client.bulk_create_hosts(hosts_to_create)
+        client.bulk_create_hosts(hosts_to_create)
         logger.info("✓ Bulk host creation completed")
 
         # Activate changes

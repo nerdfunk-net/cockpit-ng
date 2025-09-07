@@ -98,7 +98,7 @@ class CheckMKClient:
             request_headers["If-Match"] = etag
 
         # Enhanced debug logging for troubleshooting
-        self.logger.info(f"DEBUG: Making CheckMK API request:")
+        self.logger.info("DEBUG: Making CheckMK API request:")
         self.logger.info(f"DEBUG: Method: {method}")
         self.logger.info(f"DEBUG: URL: {url}")
         self.logger.info(f"DEBUG: Params: {params}")
@@ -121,9 +121,9 @@ class CheckMKClient:
                 try:
                     response_json = response.json()
                     self.logger.info(f"DEBUG: Response Body: {response_json}")
-                except:
+                except (json.JSONDecodeError, ValueError):
                     self.logger.info(f"DEBUG: Response Text: {response.text}")
-            
+
             return response
 
         except requests.exceptions.RequestException as e:
@@ -144,26 +144,26 @@ class CheckMKClient:
                 }
             else:
                 error_data = response.json() if response.content else {}
-                
+
                 # Enhanced error logging
-                self.logger.error(f"DEBUG: API Error Details:")
+                self.logger.error("DEBUG: API Error Details:")
                 self.logger.error(f"DEBUG: Status Code: {response.status_code}")
                 self.logger.error(f"DEBUG: Response Text: {response.text}")
                 self.logger.error(f"DEBUG: Response Headers: {dict(response.headers)}")
                 self.logger.error(f"DEBUG: Error Data: {error_data}")
-                
+
                 error_msg = f"API request failed: {response.status_code}"
                 if error_data:
                     # Try to extract more meaningful error information
-                    if 'detail' in error_data:
+                    if "detail" in error_data:
                         error_msg += f" - {error_data['detail']}"
-                    elif 'message' in error_data:
+                    elif "message" in error_data:
                         error_msg += f" - {error_data['message']}"
-                    elif 'title' in error_data:
+                    elif "title" in error_data:
                         error_msg += f" - {error_data['title']}"
                     else:
                         error_msg += f" - {error_data}"
-                
+
                 raise CheckMKAPIError(
                     error_msg,
                     status_code=response.status_code,
@@ -299,9 +299,9 @@ class CheckMKClient:
         """
         # First get the current ETag for the host
         etag = self.get_host_etag(hostname)
-        
+
         json_data = {"target_folder": target_folder}
-        
+
         # Add If-Match header with the ETag
         headers = {"If-Match": etag}
 
@@ -409,7 +409,9 @@ class CheckMKClient:
             json_data["columns"] = columns
 
         response = self._make_request(
-            "POST", f"objects/host/{hostname}/actions/show_service/invoke", json_data=json_data
+            "POST",
+            f"objects/host/{hostname}/actions/show_service/invoke",
+            json_data=json_data,
         )
         return self._handle_response(response)
 
@@ -721,26 +723,20 @@ class CheckMKClient:
     # Folder Management Methods
 
     def get_all_folders(
-        self,
-        parent: str = None,
-        recursive: bool = False,
-        show_hosts: bool = False
+        self, parent: str = None, recursive: bool = False, show_hosts: bool = False
     ) -> Dict:
         """
         Get all folders
 
         Endpoint: GET /domain-types/folder_config/collections/all
         """
-        params = {
-            "recursive": recursive,
-            "show_hosts": show_hosts
-        }
+        params = {"recursive": recursive, "show_hosts": show_hosts}
         if parent:
             params["parent"] = parent
-        
+
         # Remove None values
         params = {k: v for k, v in params.items() if v is not None}
-        
+
         response = self._make_request(
             "GET", "domain-types/folder_config/collections/all", params=params
         )
@@ -755,18 +751,14 @@ class CheckMKClient:
         # Convert path separators to tildes for URL
         folder_url = folder_path.replace("/", "~").replace("\\", "~")
         params = {"show_hosts": show_hosts}
-        
+
         response = self._make_request(
             "GET", f"objects/folder_config/{folder_url}", params=params
         )
         return self._handle_response(response)
 
     def create_folder(
-        self,
-        name: str,
-        title: str,
-        parent: str = "/",
-        attributes: Dict = None
+        self, name: str, title: str, parent: str = "/", attributes: Dict = None
     ) -> Dict:
         """
         Create new folder
@@ -780,7 +772,7 @@ class CheckMKClient:
             "name": name,
             "title": title,
             "parent": parent,
-            "attributes": attributes
+            "attributes": attributes,
         }
 
         response = self._make_request(
@@ -794,7 +786,7 @@ class CheckMKClient:
         title: str = None,
         attributes: Dict = None,
         remove_attributes: List[str] = None,
-        etag: str = None
+        etag: str = None,
     ) -> Dict:
         """
         Update existing folder
@@ -803,7 +795,7 @@ class CheckMKClient:
         """
         # Convert path separators to tildes for URL
         folder_url = folder_path.replace("/", "~").replace("\\", "~")
-        
+
         if etag is None:
             etag = self.get_folder_etag(folder_path)
 
@@ -820,11 +812,7 @@ class CheckMKClient:
         )
         return self._handle_response(response)
 
-    def delete_folder(
-        self,
-        folder_path: str,
-        delete_mode: str = "recursive"
-    ) -> bool:
+    def delete_folder(self, folder_path: str, delete_mode: str = "recursive") -> bool:
         """
         Delete folder
 
@@ -840,12 +828,7 @@ class CheckMKClient:
         self._handle_response(response)
         return True
 
-    def move_folder(
-        self,
-        folder_path: str,
-        destination: str,
-        etag: str = None
-    ) -> Dict:
+    def move_folder(self, folder_path: str, destination: str, etag: str = None) -> Dict:
         """
         Move folder to different location
 
@@ -853,7 +836,7 @@ class CheckMKClient:
         """
         # Convert path separators to tildes for URL
         folder_url = folder_path.replace("/", "~").replace("\\", "~")
-        
+
         if etag is None:
             etag = self.get_folder_etag(folder_path)
 
@@ -863,7 +846,7 @@ class CheckMKClient:
             "POST",
             f"objects/folder_config/{folder_url}/actions/move/invoke",
             json_data=json_data,
-            etag=etag
+            etag=etag,
         )
         return self._handle_response(response)
 
@@ -878,11 +861,13 @@ class CheckMKClient:
         response = self._make_request(
             "PUT",
             "domain-types/folder_config/actions/bulk-update/invoke",
-            json_data=json_data
+            json_data=json_data,
         )
         return self._handle_response(response)
 
-    def get_hosts_in_folder(self, folder_path: str, effective_attributes: bool = False) -> Dict:
+    def get_hosts_in_folder(
+        self, folder_path: str, effective_attributes: bool = False
+    ) -> Dict:
         """
         Get all hosts in a specific folder
 
@@ -891,9 +876,11 @@ class CheckMKClient:
         # Convert path separators to tildes for URL
         folder_url = folder_path.replace("/", "~").replace("\\", "~")
         params = {"effective_attributes": effective_attributes}
-        
+
         response = self._make_request(
-            "GET", f"objects/folder_config/{folder_url}/collections/hosts", params=params
+            "GET",
+            f"objects/folder_config/{folder_url}/collections/hosts",
+            params=params,
         )
         return self._handle_response(response)
 
@@ -901,9 +888,9 @@ class CheckMKClient:
         """Get ETag for a folder (used for updates)"""
         # Convert path separators to tildes for URL
         folder_url = folder_path.replace("/", "~").replace("\\", "~")
-        
+
         response = self._make_request("GET", f"objects/folder_config/{folder_url}")
-        
+
         if response.status_code == 200:
             return response.headers.get("ETag", "*")
         else:
@@ -917,7 +904,9 @@ class CheckMKClient:
 
         Endpoint: GET /domain-types/host_tag_group/collections/all
         """
-        response = self._make_request("GET", "domain-types/host_tag_group/collections/all")
+        response = self._make_request(
+            "GET", "domain-types/host_tag_group/collections/all"
+        )
         return self._handle_response(response)
 
     def get_host_tag_group(self, name: str) -> Dict:
@@ -930,23 +919,14 @@ class CheckMKClient:
         return self._handle_response(response)
 
     def create_host_tag_group(
-        self,
-        id: str,
-        title: str,
-        tags: List[Dict],
-        topic: str = None,
-        help: str = None
+        self, id: str, title: str, tags: List[Dict], topic: str = None, help: str = None
     ) -> Dict:
         """
         Create new host tag group
 
         Endpoint: POST /domain-types/host_tag_group/collections/all
         """
-        json_data = {
-            "id": id,
-            "title": title,
-            "tags": tags
-        }
+        json_data = {"id": id, "title": title, "tags": tags}
         if topic is not None:
             json_data["topic"] = topic
         if help is not None:
@@ -965,7 +945,7 @@ class CheckMKClient:
         topic: str = None,
         help: str = None,
         repair: bool = False,
-        etag: str = None
+        etag: str = None,
     ) -> Dict:
         """
         Update existing host tag group
@@ -991,10 +971,7 @@ class CheckMKClient:
         return self._handle_response(response)
 
     def delete_host_tag_group(
-        self,
-        name: str,
-        repair: bool = False,
-        mode: str = None
+        self, name: str, repair: bool = False, mode: str = None
     ) -> bool:
         """
         Delete host tag group
@@ -1014,7 +991,7 @@ class CheckMKClient:
     def get_host_tag_group_etag(self, name: str) -> str:
         """Get ETag for a host tag group (used for updates)"""
         response = self._make_request("GET", f"objects/host_tag_group/{name}")
-        
+
         if response.status_code == 200:
             return response.headers.get("ETag", "*")
         else:
@@ -1059,12 +1036,7 @@ class CheckMKClient:
         )
         return self._handle_response(response)
 
-    def update_host_group(
-        self,
-        name: str,
-        alias: str = None,
-        etag: str = None
-    ) -> Dict:
+    def update_host_group(self, name: str, alias: str = None, etag: str = None) -> Dict:
         """
         Update existing host group
 
@@ -1103,7 +1075,7 @@ class CheckMKClient:
         response = self._make_request(
             "PUT",
             "domain-types/host_group_config/actions/bulk-update/invoke",
-            json_data=json_data
+            json_data=json_data,
         )
         return self._handle_response(response)
 
@@ -1118,14 +1090,14 @@ class CheckMKClient:
         response = self._make_request(
             "DELETE",
             "domain-types/host_group_config/actions/bulk-delete/invoke",
-            json_data=json_data
+            json_data=json_data,
         )
         return self._handle_response(response)
 
     def get_host_group_etag(self, name: str) -> str:
         """Get ETag for a host group (used for updates)"""
         response = self._make_request("GET", f"objects/host_group_config/{name}")
-        
+
         if response.status_code == 200:
             return response.headers.get("ETag", "*")
         else:
