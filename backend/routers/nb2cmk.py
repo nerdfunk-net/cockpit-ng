@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import verify_token
 from services.cmk_nb2cmk_service import nb2cmk_service
+from services.nb2cmk_background_service import nb2cmk_background_service
 from models.nb2cmk import (
     DeviceList,
     DeviceListWithStatus, 
@@ -15,10 +16,96 @@ from models.nb2cmk import (
     DeviceOperationResult,
     DeviceUpdateResult,
     DefaultSiteResponse,
+    JobStartResponse,
+    JobProgressResponse,
+    JobResultsResponse,
 )
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/nb2cmk", tags=["nb2cmk"])
+
+
+# Background Job Endpoints
+
+
+@router.post("/start-diff-job", response_model=JobStartResponse)
+async def start_devices_diff_job(
+    current_user: dict = Depends(verify_token),
+):
+    """Start a background job to get all devices from Nautobot with CheckMK comparison status"""
+    try:
+        user_id = current_user.get("sub")  # Extract user ID from JWT token
+        result = await nb2cmk_background_service.start_devices_diff_job(user_id)
+        return result
+    except Exception as e:
+        logger.error(f"Error starting devices diff job: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to start devices diff job: {str(e)}",
+        )
+
+
+@router.get("/job/{job_id}/progress", response_model=JobProgressResponse)
+async def get_job_progress(
+    job_id: str,
+    current_user: dict = Depends(verify_token),
+):
+    """Get progress information for a background job"""
+    try:
+        result = await nb2cmk_background_service.get_job_progress(job_id)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting job progress for {job_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get job progress: {str(e)}",
+        )
+
+
+@router.get("/job/{job_id}/results", response_model=JobResultsResponse)
+async def get_job_results(
+    job_id: str,
+    current_user: dict = Depends(verify_token),
+):
+    """Get complete results for a completed background job"""
+    try:
+        result = await nb2cmk_background_service.get_job_results(job_id)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting job results for {job_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get job results: {str(e)}",
+        )
+
+
+@router.post("/job/{job_id}/cancel")
+async def cancel_job(
+    job_id: str,
+    current_user: dict = Depends(verify_token),
+):
+    """Cancel a running background job"""
+    try:
+        success = await nb2cmk_background_service.cancel_job(job_id)
+        if success:
+            return {"message": f"Job {job_id} cancelled successfully"}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Failed to cancel job {job_id}",
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling job {job_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to cancel job: {str(e)}",
+        )
 
 
 # Device Sync Endpoints

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Job Persistence</title>
+</head>
+<body>
+    <h1>Test NB2CMK Job Persistence</h1>
+    
+    <div>
+        <h2>Current State</h2>
+        <div id="current-state"></div>
+    </div>
+    
+    <div>
+        <h2>Actions</h2>
+        <button onclick="setJobState()">Set Test Job State</button>
+        <button onclick="loadJobState()">Load Job State</button>
+        <button onclick="clearJobState()">Clear Job State</button>
+    </div>
+    
+    <script>
+        function updateDisplay() {
+            const jobId = localStorage.getItem('nb2cmk_current_job_id');
+            const isRunning = localStorage.getItem('nb2cmk_is_job_running');
+            
+            document.getElementById('current-state').innerHTML = `
+                <p><strong>Job ID:</strong> ${jobId || 'None'}</p>
+                <p><strong>Is Running:</strong> ${isRunning || 'false'}</p>
+            `;
+        }
+        
+        function setJobState() {
+            const testJobId = 'test-job-' + Math.random().toString(36).substr(2, 8);
+            localStorage.setItem('nb2cmk_current_job_id', testJobId);
+            localStorage.setItem('nb2cmk_is_job_running', 'true');
+            console.log('Set test job state:', testJobId);
+            updateDisplay();
+        }
+        
+        function loadJobState() {
+            const jobId = localStorage.getItem('nb2cmk_current_job_id');
+            const isRunning = localStorage.getItem('nb2cmk_is_job_running');
+            console.log('Loaded job state:', { jobId, isRunning });
+            updateDisplay();
+        }
+        
+        function clearJobState() {
+            localStorage.removeItem('nb2cmk_current_job_id');
+            localStorage.removeItem('nb2cmk_is_job_running');
+            console.log('Cleared job state');
+            updateDisplay();
+        }
+        
+        // Initial load
+        updateDisplay();
+    </script>
+</body>
+</html>

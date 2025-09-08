@@ -4,7 +4,18 @@ Pydantic models for Nautobot to CheckMK device synchronization.
 
 from __future__ import annotations
 from typing import Dict, Any, Optional, List
+from datetime import datetime
 from pydantic import BaseModel, Field
+from enum import Enum
+
+
+class JobStatus(str, Enum):
+    """Background job status enumeration."""
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 class DeviceExtensions(BaseModel):
@@ -62,3 +73,37 @@ class DefaultSiteResponse(BaseModel):
     """Response containing the default CheckMK site."""
     
     default_site: str = Field(description="Default CheckMK site name")
+
+
+# Background Job Models
+
+class JobStartResponse(BaseModel):
+    """Response when starting a background job."""
+    
+    job_id: str = Field(description="Unique job identifier")
+    status: JobStatus = Field(description="Current job status")
+    message: str = Field(description="Status message")
+
+
+class JobProgressResponse(BaseModel):
+    """Progress information for a background job."""
+    
+    job_id: str = Field(description="Job identifier")
+    status: JobStatus = Field(description="Current job status")
+    processed_devices: int = Field(description="Number of devices processed")
+    total_devices: int = Field(description="Total number of devices to process")
+    progress_message: str = Field(description="Current progress message")
+    created_at: datetime = Field(description="Job creation timestamp")
+    started_at: Optional[datetime] = Field(default=None, description="Job start timestamp")
+    completed_at: Optional[datetime] = Field(default=None, description="Job completion timestamp")
+    error_message: Optional[str] = Field(default=None, description="Error message if job failed")
+
+
+class JobResultsResponse(BaseModel):
+    """Complete job results in the same format as DeviceListWithStatus."""
+    
+    job_id: str = Field(description="Job identifier")
+    status: JobStatus = Field(description="Job status when results were retrieved")
+    devices: List[Dict[str, Any]] = Field(description="List of device data with CheckMK status")
+    total: int = Field(description="Total number of devices")
+    message: str = Field(description="Status message")

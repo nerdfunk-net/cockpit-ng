@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { RefreshCw, Search, Eye, GitCompare, RotateCw, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown, Zap } from 'lucide-react'
+import { RefreshCw, Search, Eye, GitCompare, RotateCw, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown, Zap, Play, BarChart3, Trash2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { 
@@ -35,13 +35,13 @@ interface Device {
 // Helper function to extract site value from device configuration
 const getSiteFromDevice = (device: Device, defaultSite: string = 'cmk'): string => {
   // First try to get site from normalized_config.attributes.site
-  const normalizedSite = device.normalized_config?.attributes?.site as string
+  const normalizedSite = (device.normalized_config?.attributes as any)?.site as string
   if (normalizedSite) {
     return normalizedSite
   }
   
   // Then try checkmk_config.attributes.site
-  const checkmkSite = device.checkmk_config?.attributes?.site as string
+  const checkmkSite = (device.checkmk_config?.attributes as any)?.site as string
   if (checkmkSite) {
     return checkmkSite
   }
@@ -54,7 +54,6 @@ export function CheckMKSyncDevicesPage() {
   const { token } = useAuthStore()
   const [devices, setDevices] = useState<Device[]>([])
   const [selectedDevices, setSelectedDevices] = useState<Set<string>>(new Set())
-  const [isLoading, setIsLoading] = useState(false)
   const [addingDevices, setAddingDevices] = useState<Set<string>>(new Set())
   const [syncingDevices, setSyncingDevices] = useState<Set<string>>(new Set())
   const [currentPage, setCurrentPage] = useState(1)
@@ -80,10 +79,53 @@ export function CheckMKSyncDevicesPage() {
   const [selectedDeviceForView, setSelectedDeviceForView] = useState<Device | null>(null)
   const [selectedDeviceForDiff, setSelectedDeviceForDiff] = useState<Device | null>(null)
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'warning' | 'info', message: string } | null>(null)
-  const [totalDeviceCount, setTotalDeviceCount] = useState<number>(0)
-  const [progressVisible, setProgressVisible] = useState(false)
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [isActivating, setIsActivating] = useState(false)
+
+  // Background job state
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null)
+  const [isJobRunning, setIsJobRunning] = useState(false)
+  const [jobProgress, setJobProgress] = useState<{
+    processed: number
+    total: number
+    message: string
+    status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+  } | null>(null)
+  const [showProgressModal, setShowProgressModal] = useState(false)
+
+  // Job persistence functions
+  const saveJobStateToStorage = (jobId: string | null, isRunning: boolean) => {
+    if (jobId) {
+      localStorage.setItem('nb2cmk_current_job_id', jobId)
+      localStorage.setItem('nb2cmk_is_job_running', isRunning.toString())
+    } else {
+      localStorage.removeItem('nb2cmk_current_job_id')
+      localStorage.removeItem('nb2cmk_is_job_running')
+    }
+  }
+
+  const loadJobStateFromStorage = () => {
+    const savedJobId = localStorage.getItem('nb2cmk_current_job_id')
+    const savedIsRunning = localStorage.getItem('nb2cmk_is_job_running') === 'true'
+    return { savedJobId, savedIsRunning }
+  }
+
+  const clearJobState = () => {
+    setCurrentJobId(null)
+    setIsJobRunning(false)
+    setJobProgress(null)
+    setDevices([])
+    saveJobStateToStorage(null, false)
+    setStatusMessage({
+      type: 'info',
+      message: 'Job state cleared. You can start a new comparison job.'
+    })
+    setShowStatusModal(true)
+    setTimeout(() => {
+      setStatusMessage(null)
+      setShowStatusModal(false)
+    }, 3000)
+  }
 
   // Fetch default site from backend
   const fetchDefaultSite = async () => {
@@ -129,12 +171,82 @@ export function CheckMKSyncDevicesPage() {
     }
   }
 
-  // Load default site when component mounts
+  // Load job state and default site when component mounts
   useEffect(() => {
     if (token) {
       fetchDefaultSite()
+      
+      // Load previous job state from localStorage
+      const { savedJobId, savedIsRunning } = loadJobStateFromStorage()
+      if (savedJobId) {
+        setCurrentJobId(savedJobId)
+        setIsJobRunning(savedIsRunning)
+        
+        // Check if the job is still actually running by getting its current status
+        // Do this after a short delay to ensure the component is fully loaded
+        const checkJobStatus = async () => {
+          try {
+            const response = await fetch(`/api/proxy/nb2cmk/job/${savedJobId}/progress`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            })
+            
+            if (response.ok) {
+              const data = await response.json()
+              const jobStillRunning = data.status === 'running' || data.status === 'pending'
+              setIsJobRunning(jobStillRunning)
+              saveJobStateToStorage(savedJobId, jobStillRunning)
+              
+              setJobProgress({
+                processed: data.processed_devices,
+                total: data.total_devices,
+                message: data.progress_message,
+                status: data.status
+              })
+              
+              // If completed, silently load results
+              if (data.status === 'completed') {
+                const resultResponse = await fetch(`/api/proxy/nb2cmk/job/${savedJobId}/results`, {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  }
+                })
+                
+                if (resultResponse.ok) {
+                  const resultData = await resultResponse.json()
+                  setDevices(resultData.devices || [])
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error checking restored job status:', error)
+          }
+        }
+        
+        setTimeout(checkJobStatus, 100)
+      }
     }
   }, [token])
+
+  // Auto-check progress for running jobs every 5 seconds
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+    
+    if (currentJobId && isJobRunning) {
+      interval = setInterval(() => {
+        handleGetProgress(currentJobId, true) // Silent check
+      }, 5000)
+    }
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval)
+      }
+    }
+  }, [currentJobId, isJobRunning])
 
   // Extract unique roles and statuses from the current device data
   const availableRoles = useMemo(() => {
@@ -232,76 +344,184 @@ export function CheckMKSyncDevicesPage() {
     setSelectedDevices(newSelected)
   }
 
-  const handleCheck = async () => {
-    setIsLoading(true)
-    setProgressVisible(true)
-    
-    // First, get device count for progress indication (only if we don't have devices yet)
-    let deviceCount = totalDeviceCount
-    if (devices.length === 0) {
-      try {
-        const countResponse = await fetch('/api/proxy/nb2cmk/devices', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
-        
-        if (countResponse.ok) {
-          const countData = await countResponse.json()
-          deviceCount = countData.devices?.length || 0
-          setTotalDeviceCount(deviceCount)
-        }
-      } catch (error) {
-        console.error('Error getting device count:', error)
-      }
-    } else {
-      // Use existing device count for subsequent checks
-      deviceCount = devices.length
-      setTotalDeviceCount(deviceCount)
+  // Background job functions
+  const handleStartCheck = async () => {
+    if (!token) {
+      setStatusMessage({ type: 'error', message: 'Authentication required' })
+      setShowStatusModal(true)
+      return
     }
 
-    // Set status message with device count
-    setStatusMessage({ 
-      type: 'info', 
-      message: deviceCount > 0 
-        ? `Comparing ${deviceCount.toLocaleString()} devices with CheckMK - this may take a moment...`
-        : 'Loading devices and comparing with CheckMK...'
-    })
-    setShowStatusModal(true)
-    
     try {
-      const response = await fetch('/api/proxy/nb2cmk/get_diff', {
+      setIsJobRunning(true)
+      const response = await fetch('/api/proxy/nb2cmk/start-diff-job', {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
+
       if (response.ok) {
         const data = await response.json()
-        setDevices(data.devices || [])
-        setTotalDeviceCount(data.devices?.length || 0)
+        setCurrentJobId(data.job_id)
+        setIsJobRunning(true)
+        saveJobStateToStorage(data.job_id, true)
         setStatusMessage({
           type: 'success',
-          message: `Successfully compared ${data.devices?.length || 0} devices with CheckMK`
+          message: `Background job started with ID: ${data.job_id}`
         })
         setShowStatusModal(true)
+        
         // Auto-hide success message after 3 seconds
         setTimeout(() => {
           setStatusMessage(null)
           setShowStatusModal(false)
         }, 3000)
       } else {
-        setStatusMessage({ type: 'error', message: 'Failed to fetch device differences' })
+        const errorData = await response.json()
+        setStatusMessage({
+          type: 'error',
+          message: `Failed to start background job: ${errorData.detail || 'Unknown error'}`
+        })
         setShowStatusModal(true)
+        setIsJobRunning(false)
       }
     } catch (error) {
-      console.error('Error fetching device differences:', error)
-      setStatusMessage({ type: 'error', message: 'Error fetching device differences' })
+      console.error('Error starting background job:', error)
+      setStatusMessage({
+        type: 'error',
+        message: 'Error starting background job'
+      })
       setShowStatusModal(true)
-    } finally {
-      setIsLoading(false)
-      setProgressVisible(false)
+      setIsJobRunning(false)
+    }
+  }
+
+  const handleGetProgress = async (jobId?: string, silent = false) => {
+    const targetJobId = jobId || currentJobId
+    
+    if (!targetJobId || !token) {
+      if (!silent) {
+        setStatusMessage({ type: 'error', message: 'No active job found' })
+        setShowStatusModal(true)
+      }
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/proxy/nb2cmk/job/${targetJobId}/progress`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const newProgress = {
+          processed: data.processed_devices,
+          total: data.total_devices,
+          message: data.progress_message,
+          status: data.status as 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+        }
+        
+        setJobProgress(newProgress)
+        
+        // Update job running state and save to storage
+        const jobFinished = data.status === 'completed' || data.status === 'failed' || data.status === 'cancelled'
+        const jobStillRunning = data.status === 'running' || data.status === 'pending'
+        
+        setIsJobRunning(jobStillRunning)
+        saveJobStateToStorage(targetJobId, jobStillRunning)
+        
+        // If this is not a silent check, show the modal
+        if (!silent) {
+          setShowProgressModal(true)
+        }
+        
+        // If job is completed and we have results, we can automatically load them
+        if (data.status === 'completed' && devices.length === 0) {
+          // Silently load the results
+          handleViewDiff(targetJobId, true)
+        }
+      } else {
+        const errorData = await response.json()
+        if (!silent) {
+          setStatusMessage({
+            type: 'error',
+            message: `Failed to get job progress: ${errorData.detail || 'Unknown error'}`
+          })
+          setShowStatusModal(true)
+        }
+      }
+    } catch (error) {
+      console.error('Error getting job progress:', error)
+      if (!silent) {
+        setStatusMessage({
+          type: 'error',
+          message: 'Error getting job progress'
+        })
+        setShowStatusModal(true)
+      }
+    }
+  }
+
+  const handleViewDiff = async (jobId?: string, silent = false) => {
+    const targetJobId = jobId || currentJobId
+    
+    if (!targetJobId || !token) {
+      if (!silent) {
+        setStatusMessage({ type: 'error', message: 'No completed job found' })
+        setShowStatusModal(true)
+      }
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/proxy/nb2cmk/job/${targetJobId}/results`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setDevices(data.devices || [])
+        
+        if (!silent) {
+          setStatusMessage({
+            type: 'success',
+            message: `Loaded ${data.devices?.length || 0} device comparison results`
+          })
+          setShowStatusModal(true)
+          
+          // Auto-hide success message after 3 seconds
+          setTimeout(() => {
+            setStatusMessage(null)
+            setShowStatusModal(false)
+          }, 3000)
+        }
+      } else {
+        const errorData = await response.json()
+        if (!silent) {
+          setStatusMessage({
+            type: 'error',
+            message: `Failed to get job results: ${errorData.detail || 'Unknown error'}`
+          })
+          setShowStatusModal(true)
+        }
+      }
+    } catch (error) {
+      console.error('Error getting job results:', error)
+      if (!silent) {
+        setStatusMessage({
+          type: 'error',
+          message: 'Error getting job results'
+        })
+        setShowStatusModal(true)
+      }
     }
   }
 
@@ -877,31 +1097,60 @@ export function CheckMKSyncDevicesPage() {
 
               {/* Actions */}
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">Actions</Label>
-                <div className="flex space-x-2">
+                <Label className="text-xs font-medium text-gray-600">Background Jobs</Label>
+                <div className="flex space-x-1">
                   <Button 
-                    onClick={handleCheck} 
-                    disabled={isLoading}
+                    onClick={handleStartCheck} 
+                    disabled={isJobRunning}
                     size="sm"
-                    className="h-8 bg-blue-600 hover:bg-blue-700"
+                    className="h-8 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-xs px-2"
+                    title="Start Check"
                   >
-                    {isLoading ? (
+                    {isJobRunning ? (
                       <RefreshCw className="h-3 w-3 animate-spin" />
                     ) : (
-                      <Search className="h-3 w-3" />
+                      <Play className="h-3 w-3" />
                     )}
+                  </Button>
+                  <Button 
+                    onClick={() => handleGetProgress()} 
+                    disabled={!currentJobId}
+                    size="sm"
+                    className="h-8 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-xs px-2"
+                    title="Get Progress"
+                  >
+                    <BarChart3 className="h-3 w-3" />
+                  </Button>
+                  <Button 
+                    onClick={() => handleViewDiff()} 
+                    disabled={!currentJobId || isJobRunning}
+                    size="sm"
+                    className="h-8 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-xs px-2"
+                    title="View Diff"
+                  >
+                    <Eye className="h-3 w-3" />
                   </Button>
                   <Button 
                     onClick={handleActivateChanges} 
                     disabled={isActivating}
                     size="sm"
-                    className="h-8 bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
+                    className="h-8 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 text-xs px-2"
+                    title="Activate"
                   >
                     {isActivating ? (
                       <RefreshCw className="h-3 w-3 animate-spin" />
                     ) : (
                       <Zap className="h-3 w-3" />
                     )}
+                  </Button>
+                  <Button 
+                    onClick={clearJobState} 
+                    disabled={!currentJobId}
+                    size="sm"
+                    className="h-8 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-xs px-2"
+                    title="Clear Job"
+                  >
+                    <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
@@ -1120,23 +1369,39 @@ export function CheckMKSyncDevicesPage() {
           {/* Action Buttons */}
           <div className="bg-white p-4 border-t">
             <div className="flex justify-between items-center">
-              <div className="flex space-x-2">
+              <div className="flex space-x-2 items-center">
                 <Button 
-                  onClick={handleCheck} 
-                  disabled={isLoading}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                  onClick={handleStartCheck} 
+                  disabled={isJobRunning}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300"
                 >
-                  {isLoading ? (
+                  {isJobRunning ? (
                     <RefreshCw className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Search className="h-4 w-4" />
+                    <Play className="h-4 w-4" />
                   )}
-                  {isLoading ? 'Checking...' : 'Check'}
+                  {isJobRunning ? 'Job Running...' : 'Start Check'}
+                </Button>
+                <Button 
+                  onClick={() => handleGetProgress()} 
+                  disabled={!currentJobId}
+                  className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  Get Progress
+                </Button>
+                <Button 
+                  onClick={() => handleViewDiff()} 
+                  disabled={!currentJobId || isJobRunning}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
+                >
+                  <Eye className="h-4 w-4" />
+                  View Diff
                 </Button>
                 <Button 
                   onClick={handleActivateChanges} 
                   disabled={isActivating}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
+                  className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300"
                 >
                   {isActivating ? (
                     <RefreshCw className="h-4 w-4 animate-spin" />
@@ -1145,9 +1410,20 @@ export function CheckMKSyncDevicesPage() {
                   )}
                   {isActivating ? 'Activating...' : 'Activate'}
                 </Button>
-                <div className="text-sm text-gray-600 flex items-center">
+                <Button 
+                  onClick={clearJobState} 
+                  disabled={!currentJobId}
+                  className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-300"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Clear Job
+                </Button>
+                <div className="text-sm text-gray-600 flex items-center ml-4">
+                  {currentJobId && (
+                    <span className="text-blue-600 font-mono text-xs">Job: {currentJobId.slice(0, 8)}...</span>
+                  )}
                   {selectedDevices.size > 0 && (
-                    <span>{selectedDevices.size} device(s) selected</span>
+                    <span className="ml-4">{selectedDevices.size} device(s) selected</span>
                   )}
                 </div>
               </div>
@@ -1226,22 +1502,6 @@ export function CheckMKSyncDevicesPage() {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-gray-600">{statusMessage?.message}</p>
-            
-            {/* Progress Bar */}
-            {progressVisible && (
-              <div className="space-y-2">
-                <Progress 
-                  value={undefined}
-                  className="w-full h-2"
-                />
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>Processing devices...</span>
-                  {totalDeviceCount > 0 && (
-                    <span>{totalDeviceCount.toLocaleString()} devices</span>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -1259,6 +1519,93 @@ export function CheckMKSyncDevicesPage() {
                 <p className="text-sm whitespace-pre-wrap">{selectedDeviceForDiff?.diff || 'No differences found'}</p>
               </div>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Progress Modal */}
+      <Dialog open={showProgressModal} onOpenChange={setShowProgressModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <BarChart3 className="h-5 w-5 text-blue-500" />
+              <span>Job Progress</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {jobProgress && (
+              <>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Status:</span>
+                    <Badge 
+                      variant={
+                        jobProgress.status === 'completed' ? 'default' : 
+                        jobProgress.status === 'running' ? 'secondary' :
+                        jobProgress.status === 'failed' ? 'destructive' :
+                        'outline'
+                      }
+                    >
+                      {jobProgress.status.charAt(0).toUpperCase() + jobProgress.status.slice(1)}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Progress:</span>
+                    <span>{jobProgress.processed} of {jobProgress.total} devices</span>
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  {jobProgress.total > 0 && (
+                    <div className="space-y-1">
+                      <Progress 
+                        value={(jobProgress.processed / jobProgress.total) * 100}
+                        className="w-full"
+                      />
+                      <div className="text-xs text-center text-gray-500">
+                        {Math.round((jobProgress.processed / jobProgress.total) * 100)}%
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Progress Message */}
+                  {jobProgress.message && (
+                    <div className="bg-gray-50 p-3 rounded text-sm">
+                      {jobProgress.message}
+                    </div>
+                  )}
+                  
+                  {/* Job ID */}
+                  {currentJobId && (
+                    <div className="text-xs text-gray-500 font-mono">
+                      Job ID: {currentJobId}
+                    </div>
+                  )}
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex space-x-2 pt-2">
+                  {jobProgress.status === 'completed' && (
+                    <Button 
+                      onClick={() => {
+                        setShowProgressModal(false)
+                        handleViewDiff()
+                      }}
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Results
+                    </Button>
+                  )}
+                  <Button 
+                    onClick={() => setShowProgressModal(false)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
