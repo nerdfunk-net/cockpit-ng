@@ -27,6 +27,7 @@ import {
   ChevronDown,
   ChevronRight,
   LogOut,
+  Activity,
 } from 'lucide-react'
 
 interface NavItem {
@@ -60,6 +61,7 @@ const navigationSections: NavSection[] = [
     title: 'CheckMK',
     items: [
       { label: 'Sync Devices', href: '/checkmk/sync-devices', icon: Shield },
+      { label: 'Jobs', href: '/checkmk/jobs', icon: Activity },
     ],
   },
   {

@@ -127,7 +127,7 @@ class NB2CMKDatabaseService:
             logger.error(f"NB2CMK database initialization failed: {e}")
             return False
 
-    def create_job(self, user_id: Optional[str] = None) -> str:
+    def create_job(self, username: Optional[str] = None) -> str:
         """Create a new background job and return job_id."""
         job_id = str(uuid.uuid4())
         now = datetime.now()
@@ -139,7 +139,7 @@ class NB2CMKDatabaseService:
                     INSERT INTO nb2cmk_jobs 
                     (job_id, status, created_at, user_id)
                     VALUES (?, ?, ?, ?)
-                """, (job_id, JobStatus.PENDING.value, now, user_id))
+                """, (job_id, JobStatus.PENDING.value, now, username))
                 conn.commit()
                 
             logger.info(f"Created NB2CMK job {job_id}")
@@ -394,6 +394,30 @@ class NB2CMKDatabaseService:
         except sqlite3.Error as e:
             logger.error(f"Error getting active job: {e}")
             return None
+
+    def delete_job(self, job_id: str) -> bool:
+        """Delete a specific job and its results."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                # Delete job results first
+                cursor.execute("""
+                    DELETE FROM nb2cmk_job_results WHERE job_id = ?
+                """, (job_id,))
+                
+                # Delete the job
+                cursor.execute("""
+                    DELETE FROM nb2cmk_jobs WHERE job_id = ?
+                """, (job_id,))
+                
+                conn.commit()
+                logger.info(f"Deleted NB2CMK job {job_id}")
+                return True
+                
+        except sqlite3.Error as e:
+            logger.error(f"Error deleting job {job_id}: {e}")
+            return False
 
 
 # Global instance

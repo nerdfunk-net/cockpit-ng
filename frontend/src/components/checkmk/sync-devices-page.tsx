@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { RefreshCw, Search, Eye, GitCompare, RotateCw, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown, Zap, Play, BarChart3, Trash2 } from 'lucide-react'
+import { RefreshCw, Search, Eye, GitCompare, RotateCw, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown, Zap, Play, BarChart3, Trash2, Download } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { 
@@ -81,6 +81,11 @@ export function CheckMKSyncDevicesPage() {
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'warning' | 'info', message: string } | null>(null)
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [isActivating, setIsActivating] = useState(false)
+  
+  // Job results state
+  const [availableJobs, setAvailableJobs] = useState<Array<{id: string, status: string, created_at: string, processed_devices: number}>>([])
+  const [selectedJobId, setSelectedJobId] = useState<string>('')
+  const [loadingResults, setLoadingResults] = useState(false)
 
   // Background job state
   const [currentJobId, setCurrentJobId] = useState<string | null>(null)
@@ -125,6 +130,79 @@ export function CheckMKSyncDevicesPage() {
       setStatusMessage(null)
       setShowStatusModal(false)
     }, 3000)
+  }
+
+  // Fetch available completed jobs from backend
+  const fetchAvailableJobs = async () => {
+    try {
+      const response = await fetch('/api/proxy/nb2cmk/jobs', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        // Filter only completed jobs with device results
+        const completedJobs = data.jobs.filter((job: any) => 
+          job.status === 'completed' && job.progress && job.progress.processed > 0
+        ).map((job: any) => ({
+          id: job.id,
+          status: job.status,
+          created_at: job.started_at,
+          processed_devices: job.progress?.processed || 0
+        }))
+        setAvailableJobs(completedJobs)
+      }
+    } catch (error) {
+      console.error('Error fetching available jobs:', error)
+    }
+  }
+
+  const loadJobResults = async () => {
+    if (!selectedJobId || !token || selectedJobId === 'no-jobs') return
+    
+    setLoadingResults(true)
+    try {
+      const response = await fetch(`/api/proxy/nb2cmk/job/${selectedJobId}/results`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setDevices(data.devices || [])
+        setStatusMessage({
+          type: 'success',
+          message: `Loaded ${data.devices?.length || 0} device comparison results from job ${selectedJobId.slice(0, 8)}...`
+        })
+        setShowStatusModal(true)
+        
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+          setStatusMessage(null)
+          setShowStatusModal(false)
+        }, 3000)
+      } else {
+        const errorData = await response.json()
+        setStatusMessage({
+          type: 'error',
+          message: `Failed to load job results: ${errorData.detail || 'Unknown error'}`
+        })
+        setShowStatusModal(true)
+      }
+    } catch (error) {
+      console.error('Error loading job results:', error)
+      setStatusMessage({
+        type: 'error',
+        message: 'Error loading job results'
+      })
+      setShowStatusModal(true)
+    } finally {
+      setLoadingResults(false)
+    }
   }
 
   // Fetch default site from backend
@@ -175,6 +253,7 @@ export function CheckMKSyncDevicesPage() {
   useEffect(() => {
     if (token) {
       fetchDefaultSite()
+      fetchAvailableJobs() // Fetch available job results
       
       // Load previous job state from localStorage
       const { savedJobId, savedIsRunning } = loadJobStateFromStorage()
@@ -1095,65 +1174,6 @@ export function CheckMKSyncDevicesPage() {
                 </DropdownMenu>
               </div>
 
-              {/* Actions */}
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">Background Jobs</Label>
-                <div className="flex space-x-1">
-                  <Button 
-                    onClick={handleStartCheck} 
-                    disabled={isJobRunning}
-                    size="sm"
-                    className="h-8 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-xs px-2"
-                    title="Start Check"
-                  >
-                    {isJobRunning ? (
-                      <RefreshCw className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Play className="h-3 w-3" />
-                    )}
-                  </Button>
-                  <Button 
-                    onClick={() => handleGetProgress()} 
-                    disabled={!currentJobId}
-                    size="sm"
-                    className="h-8 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-xs px-2"
-                    title="Get Progress"
-                  >
-                    <BarChart3 className="h-3 w-3" />
-                  </Button>
-                  <Button 
-                    onClick={() => handleViewDiff()} 
-                    disabled={!currentJobId || isJobRunning}
-                    size="sm"
-                    className="h-8 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-xs px-2"
-                    title="View Diff"
-                  >
-                    <Eye className="h-3 w-3" />
-                  </Button>
-                  <Button 
-                    onClick={handleActivateChanges} 
-                    disabled={isActivating}
-                    size="sm"
-                    className="h-8 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 text-xs px-2"
-                    title="Activate"
-                  >
-                    {isActivating ? (
-                      <RefreshCw className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Zap className="h-3 w-3" />
-                    )}
-                  </Button>
-                  <Button 
-                    onClick={clearJobState} 
-                    disabled={!currentJobId}
-                    size="sm"
-                    className="h-8 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-xs px-2"
-                    title="Clear Job"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -1180,7 +1200,7 @@ export function CheckMKSyncDevicesPage() {
               <tbody className="divide-y divide-gray-200">{devices.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                      No devices found. Click the check button to load devices from Nautobot.
+                      No devices found. Select a job from the dropdown above and click "Load" to view comparison results.
                     </td>
                   </tr>
                 ) : filteredDevices.length === 0 ? (
@@ -1366,66 +1386,66 @@ export function CheckMKSyncDevicesPage() {
             </div>
           </div>
 
-          {/* Action Buttons */}
+          {/* Job Results Selection */}
+          <div className="bg-gray-50 p-4 border-t">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Label className="text-sm font-medium text-gray-700">Load Job Results:</Label>
+                <Select value={selectedJobId} onValueChange={setSelectedJobId}>
+                  <SelectTrigger className="h-10 text-sm min-w-[300px]">
+                    <SelectValue placeholder="Select a completed job to load results..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableJobs.map((job) => (
+                      <SelectItem key={job.id} value={job.id}>
+                        {new Date(job.created_at).toLocaleDateString()} - {job.processed_devices} devices ({job.id.slice(0, 8)}...)
+                      </SelectItem>
+                    ))}
+                    {availableJobs.length === 0 && (
+                      <SelectItem value="no-jobs" disabled>No completed jobs found</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={loadJobResults} 
+                  disabled={!selectedJobId || selectedJobId === 'no-jobs' || loadingResults}
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
+                >
+                  {loadingResults ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
+                  Load Results
+                </Button>
+                <Button 
+                  onClick={fetchAvailableJobs} 
+                  variant="outline"
+                  size="sm"
+                  title="Refresh Job List"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh Jobs
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Device Actions */}
           <div className="bg-white p-4 border-t">
             <div className="flex justify-between items-center">
-              <div className="flex space-x-2 items-center">
-                <Button 
-                  onClick={handleStartCheck} 
-                  disabled={isJobRunning}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300"
-                >
-                  {isJobRunning ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Play className="h-4 w-4" />
-                  )}
-                  {isJobRunning ? 'Job Running...' : 'Start Check'}
-                </Button>
-                <Button 
-                  onClick={() => handleGetProgress()} 
-                  disabled={!currentJobId}
-                  className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                  Get Progress
-                </Button>
-                <Button 
-                  onClick={() => handleViewDiff()} 
-                  disabled={!currentJobId || isJobRunning}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
-                >
-                  <Eye className="h-4 w-4" />
-                  View Diff
-                </Button>
-                <Button 
-                  onClick={handleActivateChanges} 
-                  disabled={isActivating}
-                  className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300"
-                >
-                  {isActivating ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Zap className="h-4 w-4" />
-                  )}
-                  {isActivating ? 'Activating...' : 'Activate'}
-                </Button>
-                <Button 
-                  onClick={clearJobState} 
-                  disabled={!currentJobId}
-                  className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-300"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Clear Job
-                </Button>
-                <div className="text-sm text-gray-600 flex items-center ml-4">
-                  {currentJobId && (
-                    <span className="text-blue-600 font-mono text-xs">Job: {currentJobId.slice(0, 8)}...</span>
-                  )}
-                  {selectedDevices.size > 0 && (
-                    <span className="ml-4">{selectedDevices.size} device(s) selected</span>
-                  )}
-                </div>
+              <div className="text-sm text-gray-600">
+                {selectedDevices.size > 0 && (
+                  <span>{selectedDevices.size} device(s) selected</span>
+                )}
+                {selectedJobId && devices.length > 0 && (
+                  <span className="ml-4 text-blue-600">
+                    Showing results from job: {selectedJobId.slice(0, 8)}...
+                  </span>
+                )}
               </div>
               <div className="flex space-x-2">
                 <Button 

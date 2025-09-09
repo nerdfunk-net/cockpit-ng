@@ -27,7 +27,7 @@ class NB2CMKBackgroundService:
         self._running_jobs: Dict[str, asyncio.Task] = {}
         self._shutdown = False
 
-    async def start_devices_diff_job(self, user_id: Optional[str] = None) -> JobStartResponse:
+    async def start_devices_diff_job(self, username: Optional[str] = None) -> JobStartResponse:
         """Start a background job to get device differences."""
         
         # Check if there's already an active job
@@ -40,7 +40,7 @@ class NB2CMKBackgroundService:
             )
 
         # Create new job
-        job_id = nb2cmk_db_service.create_job(user_id)
+        job_id = nb2cmk_db_service.create_job(username)
         
         # Start background task
         task = asyncio.create_task(self._process_devices_diff(job_id))

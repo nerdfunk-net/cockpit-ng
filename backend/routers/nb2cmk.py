@@ -28,14 +28,58 @@ router = APIRouter(prefix="/api/nb2cmk", tags=["nb2cmk"])
 # Background Job Endpoints
 
 
+@router.get("/jobs")
+async def get_jobs_list(
+    limit: int = 100,
+    current_user: dict = Depends(verify_token),
+):
+    """Get list of recent background jobs"""
+    try:
+        from services.nb2cmk_database_service import nb2cmk_db_service
+        
+        jobs = nb2cmk_db_service.get_recent_jobs(limit)
+        
+        # Convert to frontend format
+        jobs_data = []
+        for job in jobs:
+            job_data = {
+                "id": job.job_id,
+                "type": "device-comparison",  # All current jobs are device comparisons
+                "status": job.status.value,
+                "started_at": job.created_at.isoformat(),
+                "completed_at": job.completed_at.isoformat() if job.completed_at else None,
+                "started_by": job.user_id or "unknown",
+                "progress": {
+                    "processed": job.processed_devices,
+                    "total": job.total_devices,
+                    "message": job.progress_message
+                } if job.total_devices > 0 else None,
+                "results": {
+                    "devices_processed": job.processed_devices,
+                    "devices_added": 0,  # Would need tracking for this
+                    "devices_updated": 0,  # Would need tracking for this
+                    "errors": [job.error_message] if job.error_message else []
+                } if job.status.value in ["completed", "failed"] else None
+            }
+            jobs_data.append(job_data)
+        
+        return {"jobs": jobs_data}
+    except Exception as e:
+        logger.error(f"Error getting jobs list: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get jobs list: {str(e)}",
+        )
+
+
 @router.post("/start-diff-job", response_model=JobStartResponse)
 async def start_devices_diff_job(
     current_user: dict = Depends(verify_token),
 ):
     """Start a background job to get all devices from Nautobot with CheckMK comparison status"""
     try:
-        user_id = current_user.get("sub")  # Extract user ID from JWT token
-        result = await nb2cmk_background_service.start_devices_diff_job(user_id)
+        username = current_user.get("username")  # Extract username from JWT token
+        result = await nb2cmk_background_service.start_devices_diff_job(username)
         return result
     except Exception as e:
         logger.error(f"Error starting devices diff job: {str(e)}")
@@ -105,6 +149,67 @@ async def cancel_job(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to cancel job: {str(e)}",
+        )
+
+
+@router.delete("/job/{job_id}")
+async def delete_job(
+    job_id: str,
+    current_user: dict = Depends(verify_token),
+):
+    """Delete a completed background job and its results"""
+    try:
+        from services.nb2cmk_database_service import nb2cmk_db_service
+        
+        # Check if job exists and is in a deletable state
+        job = nb2cmk_db_service.get_job(job_id)
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Job {job_id} not found"
+            )
+        
+        if job.status.value in ["running", "pending"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot delete {job.status.value} job. Cancel it first."
+            )
+        
+        # Delete job and its results
+        success = nb2cmk_db_service.delete_job(job_id)
+        if success:
+            return {"message": f"Job {job_id} deleted successfully"}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to delete job {job_id}"
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting job {job_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete job: {str(e)}",
+        )
+
+
+@router.post("/jobs/clear-completed")
+async def clear_completed_jobs(
+    current_user: dict = Depends(verify_token),
+):
+    """Clear all completed and failed jobs"""
+    try:
+        from services.nb2cmk_database_service import nb2cmk_db_service
+        
+        # Use cleanup method with 0 days to clear all completed jobs
+        deleted_count = nb2cmk_db_service.cleanup_old_jobs(0)
+        return {"message": f"Cleared {deleted_count} completed jobs"}
+    except Exception as e:
+        logger.error(f"Error clearing completed jobs: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to clear completed jobs: {str(e)}",
         )
 
 
