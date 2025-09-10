@@ -109,6 +109,7 @@ def get_device_folder(device_data: Dict[str, Any], checkmk_config: Optional[Dict
     Returns:
         CheckMK folder path
     """
+
     try:
         config = config_service.load_checkmk_config()
         folders_config = config.get("folders", {})
@@ -125,14 +126,16 @@ def get_device_folder(device_data: Dict[str, Any], checkmk_config: Optional[Dict
         by_name_config = folders_config.get("by_name", {})
         if device_name and device_name in by_name_config:
             folder_template = by_name_config[device_name]
-            return parse_folder_value(folder_template, device_data)
+            folder = parse_folder_value(folder_template, device_data)
+            return folder.replace("//", "/")
 
         # 2. Check by_ip (second priority)
         by_ip_config = folders_config.get("by_ip", {})
         if device_ip and by_ip_config:
             folder_template = _match_ip_to_folder(device_ip, by_ip_config)
             if folder_template:
-                return parse_folder_value(folder_template, device_data)
+                folder = parse_folder_value(folder_template, device_data)
+                return folder.replace("//", "/")
 
         # 3. Check by_location (third priority)
         by_location_config = folders_config.get("by_location", {})
@@ -142,11 +145,13 @@ def get_device_folder(device_data: Dict[str, Any], checkmk_config: Optional[Dict
             and device_location in by_location_config
         ):
             folder_template = by_location_config[device_location]
-            return parse_folder_value(folder_template, device_data)
+            folder = parse_folder_value(folder_template, device_data)
+            return folder.replace("//", "/")
 
         # 4. Use default folder (lowest priority) with template processing
         default_folder_template = folders_config.get("default", "/")
-        return parse_folder_value(default_folder_template, device_data)
+        folder = parse_folder_value(default_folder_template, device_data)
+        return folder.replace("//", "/")
 
     except Exception as e:
         logger.error(f"Error determining folder for device: {e}")
