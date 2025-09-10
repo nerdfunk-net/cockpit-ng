@@ -64,5 +64,4 @@ compare:
   - folder
 
 ignore_attributes:
-  # ignore the following attributes in checkmk
   - tag_address_family

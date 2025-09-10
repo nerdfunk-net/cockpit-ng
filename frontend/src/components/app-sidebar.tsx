@@ -28,6 +28,7 @@ import {
   ChevronRight,
   LogOut,
   Activity,
+  Eye,
 } from 'lucide-react'
 
 interface NavItem {
@@ -68,6 +69,7 @@ const navigationSections: NavSection[] = [
   {
     title: 'Configs',
     items: [
+      { label: 'View', href: '/configs', icon: Eye },
       { label: 'Backup', href: '/backup', icon: Save },
       { label: 'Compare', href: '/compare', icon: GitCompare },
     ],

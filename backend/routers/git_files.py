@@ -24,58 +24,6 @@ router = APIRouter(prefix="/api/git/{repo_id}", tags=["git-files"])
 
 
 
-@router.get("/files/{commit_hash}")
-async def get_files(
-    repo_id: int,
-    commit_hash: str,
-    file_path: str = None,
-    current_user: str = Depends(get_current_username),
-):
-    """Get list of files in a specific commit or file content if file_path is provided."""
-    try:
-        repo = get_git_repo_by_id(repo_id)
-
-        # Get the commit
-        commit = repo.commit(commit_hash)
-
-        # If file_path is provided, return file content
-        if file_path:
-            try:
-                file_content = (
-                    (commit.tree / file_path).data_stream.read().decode("utf-8")
-                )
-                return {
-                    "file_path": file_path,
-                    "content": file_content,
-                    "commit": commit_hash[:8],
-                }
-            except KeyError:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"File '{file_path}' not found in commit {commit_hash[:8]}",
-                )
-
-        # Otherwise, return list of files
-        files = []
-        for item in commit.tree.traverse():
-            if item.type == "blob":  # Only files, not directories
-                files.append(item.path)
-
-        # Filter for configuration files based on allowed extensions
-        from config import settings
-
-        config_extensions = settings.allowed_file_extensions
-        config_files = [
-            f for f in files if any(f.endswith(ext) for ext in config_extensions)
-        ]
-        return sorted(config_files)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get files: {str(e)}",
-        )
-
-
 @router.get("/files/search")
 async def search_repository_files(
     repo_id: int,
@@ -200,6 +148,58 @@ async def search_repository_files(
         return {"success": False, "message": f"File search failed: {str(e)}"}
 
 
+@router.get("/files/{commit_hash}")
+async def get_files(
+    repo_id: int,
+    commit_hash: str,
+    file_path: str = None,
+    current_user: str = Depends(get_current_username),
+):
+    """Get list of files in a specific commit or file content if file_path is provided."""
+    try:
+        repo = get_git_repo_by_id(repo_id)
+
+        # Get the commit
+        commit = repo.commit(commit_hash)
+
+        # If file_path is provided, return file content
+        if file_path:
+            try:
+                file_content = (
+                    (commit.tree / file_path).data_stream.read().decode("utf-8")
+                )
+                return {
+                    "file_path": file_path,
+                    "content": file_content,
+                    "commit": commit_hash[:8],
+                }
+            except KeyError:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"File '{file_path}' not found in commit {commit_hash[:8]}",
+                )
+
+        # Otherwise, return list of files
+        files = []
+        for item in commit.tree.traverse():
+            if item.type == "blob":  # Only files, not directories
+                files.append(item.path)
+
+        # Filter for configuration files based on allowed extensions
+        from config import settings
+
+        config_extensions = settings.allowed_file_extensions
+        config_files = [
+            f for f in files if any(f.endswith(ext) for ext in config_extensions)
+        ]
+        return sorted(config_files)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get files: {str(e)}",
+        )
+
+
 @router.get("/files/{file_path:path}/history")
 async def get_file_history(
     repo_id: int, file_path: str, current_user: str = Depends(get_current_username)
@@ -284,10 +284,24 @@ async def get_file_complete_history(
         commits = list(repo.iter_commits(start_commit, paths=file_path))
 
         if not commits:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No commits found for file: {file_path}",
-            )
+            # Check if file exists in the latest commit (HEAD)
+            try:
+                head_commit = repo.head.commit
+                head_commit.tree[file_path]
+                # File exists in HEAD but not in the specified start_commit
+                # This means it's a new file - get its history from HEAD instead
+                commits = list(repo.iter_commits("HEAD", paths=file_path))
+                if not commits:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail=f"No commits found for file: {file_path}",
+                    )
+            except (KeyError, AttributeError):
+                # File doesn't exist in HEAD either
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"File not found: {file_path}",
+                )
 
         history_commits = []
 
