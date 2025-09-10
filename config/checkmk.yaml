@@ -1,8 +1,13 @@
 ---
-site:
+monitored_site:
   default: cmk
   # use folders to statically map sites to a checkmk device
   # use 0.0.0.0/0 to set a default site
+  # if by_nautobot is not none, we use this value. But only when it is not "default"
+  #
+  # Priority order: by_name > by_nautobot (if not dflt) > by_ip > by_location > default
+  #
+  by_nautobot: checkmk_site
   by_location:
     building: site
   by_ip:
@@ -12,15 +17,15 @@ site:
     lab-1: cmk
 
 folders:
-  default: "/network/{_custom_field_data.net}/"
+  default: "/network/{_custom_field_data.net}/{location.name}"
 
   # use folders to statically map folders to a checkmk device
   by_location:
     office: /testfolder
   by_ip:
     # the order is first match!
-    192.168.178.0/24: /testfolder/subfolder
-    0.0.0.0/0: "/network/{_custom_field_data.net}/"
+    192.168.179.0/24: /testfolder/subfolder
+    0.0.0.0/0: "/network/{_custom_field_data.net}/{location.name}"
   by_name:
     lab-2: /testfolder
 

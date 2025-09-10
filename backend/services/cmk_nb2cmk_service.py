@@ -476,8 +476,7 @@ class NautobotToCheckMKService:
             from checkmk.client import CheckMKAPIError
 
             try:
-                # Create CheckMK client with device-specific site
-                client = _get_checkmk_client(site_name=device_site)
+                client = _get_checkmk_client()
 
                 # Log detailed information for debugging
                 logger.info("Creating host with parameters:")
@@ -499,10 +498,16 @@ class NautobotToCheckMKService:
                         )
                     logger.info(f"Folder '{folder}' is ready")
 
+                # Convert folder path format: CheckMK uses ~ instead of /
+                # First normalize double slashes, then convert / to ~
+                normalized_folder = folder.replace("//", "/") if folder else "/"
+                checkmk_folder = normalized_folder.replace("/", "~") if normalized_folder else "~"
+                logger.info(f"Converted folder path from '{folder}' to '{checkmk_folder}' for CheckMK client")
+
                 # Create host in CheckMK
                 result = client.create_host(
                     hostname=hostname,
-                    folder=folder,
+                    folder=checkmk_folder,
                     attributes=attributes,
                     bake_agent=False,
                 )
@@ -581,7 +586,7 @@ class NautobotToCheckMKService:
 
             try:
                 # Create CheckMK client with device-specific site
-                client = _get_checkmk_client(site_name=device_site)
+                client = _get_checkmk_client()
 
                 # Get current host data
                 checkmk_data = client.get_host(hostname)
@@ -622,9 +627,15 @@ class NautobotToCheckMKService:
                         detail=f"Cannot create or ensure folder path '{new_folder_normalized}' exists in CheckMK",
                     )
 
+                # Convert folder path format: CheckMK uses ~ instead of /
+                # First normalize double slashes, then convert / to ~
+                normalized_new_folder = new_folder_normalized.replace("//", "/") if new_folder_normalized else "/"
+                checkmk_new_folder = normalized_new_folder.replace("/", "~") if normalized_new_folder else "~"
+                logger.info(f"Converted new folder path from '{new_folder_normalized}' to '{checkmk_new_folder}' for CheckMK client")
+
                 # Move the host to the new folder
                 try:
-                    client.move_host(hostname, new_folder_normalized)
+                    client.move_host(hostname, checkmk_new_folder)
                     logger.info(f"Moved host {hostname} from {current_folder_normalized} to {new_folder_normalized}")
                 except CheckMKAPIError as e:
                     if "428" in str(e) or "precondition" in str(e).lower():

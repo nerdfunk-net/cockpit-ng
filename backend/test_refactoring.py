@@ -27,7 +27,7 @@ async def test_basic_functionality():
         print("✓ Device normalization service import successful")
         
         # Test utils
-        from utils.cmk_site_utils import get_device_site, get_device_folder
+        from utils.cmk_site_utils import get_monitored_site, get_device_folder
         from utils.cmk_folder_utils import parse_folder_value, normalize_folder_path
         print("✓ Utility functions import successful")
         

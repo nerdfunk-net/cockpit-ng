@@ -34,12 +34,12 @@ def test_complete_refactoring():
     # Test 2: Utility Functions
     print("\n2. Testing Utility Functions:")
     try:
-        from utils.cmk_site_utils import get_device_site, get_device_folder
+        from utils.cmk_site_utils import get_monitored_site, get_device_folder
         from utils.cmk_folder_utils import parse_folder_value, normalize_folder_path
         
         # Test site utils
         device_data = {"name": "test-device", "primary_ip4": {"address": "192.168.1.100/24"}}
-        site = get_device_site(device_data, {})
+        site = get_monitored_site(device_data, {})
         print(f"   ✓ Device site determination: {site}")
         
         folder = get_device_folder(device_data, {})

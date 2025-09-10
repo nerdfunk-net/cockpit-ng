@@ -13,10 +13,10 @@ from utils.cmk_folder_utils import parse_folder_value
 logger = logging.getLogger(__name__)
 
 
-def get_device_site(device_data: Dict[str, Any], checkmk_config: Optional[Dict[str, Any]] = None) -> str:
+def get_monitored_site(device_data: Dict[str, Any], checkmk_config: Optional[Dict[str, Any]] = None) -> str:
     """Get the correct CheckMK site for a device based on configuration rules.
 
-    Priority order: by_name > by_ip > by_location > default
+    Priority order: by_name > by_nautobot > by_ip > by_location > default
     
     Args:
         device_data: Device data from Nautobot
@@ -26,7 +26,7 @@ def get_device_site(device_data: Dict[str, Any], checkmk_config: Optional[Dict[s
     """
     try:
         config = config_service.load_checkmk_config()
-        site_config = config.get("site", {})
+        site_config = config.get("monitored_site", {})
 
         device_name = device_data.get("name", "")
         device_location = (
@@ -41,14 +41,23 @@ def get_device_site(device_data: Dict[str, Any], checkmk_config: Optional[Dict[s
         if device_name and device_name in by_name_config:
             return by_name_config[device_name]
 
-        # 2. Check by_ip (second priority)
+        # 2. Check by_nautobot (second priority)
+        by_nautobot_config = site_config.get("by_nautobot")
+        if by_nautobot_config:
+            custom_field_data = device_data.get("_custom_field_data", {})
+            if by_nautobot_config in custom_field_data:
+                site_value = custom_field_data[by_nautobot_config]
+                if site_value and site_value != "default":
+                    return site_value
+
+        # 3. Check by_ip (third priority)
         by_ip_config = site_config.get("by_ip", {})
         if device_ip and by_ip_config:
             site = _match_ip_to_site(device_ip, by_ip_config)
             if site:
                 return site
 
-        # 3. Check by_location (third priority)
+        # 4. Check by_location (fourth priority)
         by_location_config = site_config.get("by_location", {})
         if (
             device_location
@@ -57,7 +66,7 @@ def get_device_site(device_data: Dict[str, Any], checkmk_config: Optional[Dict[s
         ):
             return by_location_config[device_location]
 
-        # 4. Return default site
+        # 5. Return default site
         return config_service.get_default_site()
 
     except Exception as e:

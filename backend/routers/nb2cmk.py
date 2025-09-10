@@ -331,35 +331,3 @@ async def update_device_in_checkmk(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update device {device_id} in CheckMK: {str(e)}",
         )
-
-
-# Legacy functions kept for backward compatibility (but now using utility functions)
-def get_device_site(normalized_data: dict) -> str:
-    """Extract site from normalized device data, falling back to default site."""
-    from utils.cmk_site_utils import get_device_site_from_normalized_data
-    return get_device_site_from_normalized_data(normalized_data)
-
-
-def parse_folder_value(folder_template: str, device_data: dict) -> str:
-    """Parse folder template variables and return the processed folder path."""
-    from utils.cmk_folder_utils import parse_folder_value as parse_folder
-    return parse_folder(folder_template, device_data)
-
-
-def get_site(device_data: dict) -> str:
-    """Get the correct CheckMK site for a device based on configuration rules."""
-    from utils.cmk_site_utils import get_device_site
-    return get_device_site(device_data)
-
-
-def get_folder(device_data: dict) -> str:
-    """Get the correct CheckMK folder for a device based on configuration rules."""
-    from utils.cmk_site_utils import get_device_folder
-    return get_device_folder(device_data, None)
-
-
-async def create_path(folder_path: str, site_name: str, current_user: dict) -> bool:
-    """Create a complete folder path in CheckMK by creating folders incrementally."""
-    from services.cmk_folder_service import checkmk_folder_service
-    return await checkmk_folder_service.create_path(folder_path, site_name, current_user)
-

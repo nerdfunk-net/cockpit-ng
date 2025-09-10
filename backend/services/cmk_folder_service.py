@@ -41,7 +41,7 @@ class CheckMKFolderService:
             from routers.checkmk import _get_checkmk_client
             from checkmk.client import CheckMKAPIError
 
-            client = _get_checkmk_client(site_name=site_name)
+            client = _get_checkmk_client()
             logger.info(f"Creating folder path '{folder_path}' in site '{site_name}'")
             logger.info(f"Path parts to create: {path_parts}")
 
@@ -62,10 +62,14 @@ class CheckMKFolderService:
                     )
 
                     # Try to create the folder using direct client call
+                    # Convert folder path format: CheckMK uses ~ instead of /
+                    # First normalize double slashes, then convert / to ~
+                    normalized_parent_folder = parent_folder.replace("//", "/") if parent_folder else "/"
+                    checkmk_parent_folder = normalized_parent_folder.replace("/", "~") if normalized_parent_folder else "~"
                     client.create_folder(
                         name=folder_name,
                         title=folder_name,  # Use same as name for title
-                        parent=parent_folder,
+                        parent=checkmk_parent_folder,
                         attributes={},
                     )
                     logger.info(

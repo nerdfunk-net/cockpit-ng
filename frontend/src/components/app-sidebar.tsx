@@ -61,6 +61,7 @@ const navigationSections: NavSection[] = [
     title: 'CheckMK',
     items: [
       { label: 'Sync Devices', href: '/checkmk/sync-devices', icon: Shield },
+      { label: 'Live Update', href: '/checkmk/live-update', icon: RefreshCw },
       { label: 'Jobs', href: '/checkmk/jobs', icon: Activity },
     ],
   },

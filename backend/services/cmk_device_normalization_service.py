@@ -8,7 +8,7 @@ import logging
 from typing import Dict, Any
 
 from services.cmk_config_service import config_service
-from utils.cmk_site_utils import get_device_site, get_device_folder
+from utils.cmk_site_utils import get_monitored_site, get_device_folder
 from models.nb2cmk import DeviceExtensions
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class DeviceNormalizationService:
         extensions.internal["hostname"] = device_data.get("name", "")
 
         # Set site using utility function
-        extensions.attributes["site"] = get_device_site(device_data, None)
+        extensions.attributes["site"] = get_monitored_site(device_data, None)
         logger.info(
             f"Determined site for device {device_data.get('name', '')}: {extensions.attributes['site']}"
         )
