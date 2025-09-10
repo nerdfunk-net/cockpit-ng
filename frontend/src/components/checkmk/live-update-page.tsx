@@ -62,12 +62,13 @@ interface DiffResult {
       is_offline: boolean
       cluster_nodes: any[] | null
     } | null
+    ignored_attributes: string[]
   }
   timestamp: string
 }
 
 // Helper function to render config comparison
-const renderConfigComparison = (nautobot: any, checkmk: any) => {
+const renderConfigComparison = (nautobot: any, checkmk: any, ignoredAttributes: string[] = []) => {
   const allKeys = new Set([
     ...Object.keys(nautobot?.attributes || {}),
     ...Object.keys(checkmk?.attributes || {})
@@ -79,6 +80,7 @@ const renderConfigComparison = (nautobot: any, checkmk: any) => {
     const isDifferent = JSON.stringify(nautobotValue) !== JSON.stringify(checkmkValue)
     const nautobotMissing = nautobotValue === undefined
     const checkmkMissing = checkmkValue === undefined
+    const isIgnored = ignoredAttributes.includes(key)
 
     return {
       key,
@@ -86,7 +88,8 @@ const renderConfigComparison = (nautobot: any, checkmk: any) => {
       checkmkValue,
       isDifferent,
       nautobotMissing,
-      checkmkMissing
+      checkmkMissing,
+      isIgnored
     }
   })
 }
@@ -977,14 +980,17 @@ export default function LiveUpdatePage() {
                       <tbody>
                         {renderConfigComparison(
                           diffResult.differences.normalized_config,
-                          diffResult.differences.checkmk_config
-                        ).map(({ key, nautobotValue, checkmkValue, isDifferent, nautobotMissing, checkmkMissing }) => (
+                          diffResult.differences.checkmk_config,
+                          diffResult.differences.ignored_attributes
+                        ).map(({ key, nautobotValue, checkmkValue, isDifferent, nautobotMissing, checkmkMissing, isIgnored }) => (
                           <tr 
                             key={key} 
                             className={`border-b transition-colors ${
-                              nautobotMissing || checkmkMissing || isDifferent 
-                                ? 'bg-red-50 hover:bg-red-100 border-red-200' 
-                                : 'bg-green-50 hover:bg-green-100 border-green-200'
+                              isIgnored
+                                ? 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200'
+                                : nautobotMissing || checkmkMissing || isDifferent 
+                                  ? 'bg-red-50 hover:bg-red-100 border-red-200' 
+                                  : 'bg-green-50 hover:bg-green-100 border-green-200'
                             }`}
                           >
                             <td className="p-3 font-mono text-sm font-medium w-48">{key}</td>
@@ -1003,7 +1009,9 @@ export default function LiveUpdatePage() {
                               </div>
                             </td>
                             <td className="p-3 text-xs">
-                              {nautobotMissing ? (
+                              {isIgnored ? (
+                                <Badge variant="outline" className="text-yellow-700 border-yellow-400 bg-yellow-100">Ignored</Badge>
+                              ) : nautobotMissing ? (
                                 <Badge variant="outline" className="text-red-700 border-red-400 bg-red-100">Only in CheckMK</Badge>
                               ) : checkmkMissing ? (
                                 <Badge variant="outline" className="text-red-700 border-red-400 bg-red-100">Missing in CheckMK</Badge>

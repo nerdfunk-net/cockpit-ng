@@ -32,6 +32,9 @@ class DeviceNormalizationService:
         if not device_data:
             raise ValueError("Device data cannot be empty")
 
+        # Force load the configuration on service initialization
+        config_service.load_checkmk_config(force_reload=True)
+
         # Create the root extension dictionary
         extensions = DeviceExtensions(folder="", attributes={}, internal={})
 
@@ -108,6 +111,11 @@ class DeviceNormalizationService:
                     "privacy_protocol": snmp_config.get("privacy_protocol_long", ""),
                     "privacy_password": snmp_config.get("privacy_password", ""),
                 }
+
+                if snmp_config.get("type","") == "v3_auth_no_privacy":
+                    # we have to remove the keys privacy_protocol and privacy_password
+                    snmp_community.pop("privacy_protocol", None)
+                    snmp_community.pop("privacy_password", None)
 
                 extensions.attributes["snmp_community"] = snmp_community
 
@@ -269,11 +277,11 @@ class DeviceNormalizationService:
                         logger.info(
                             f"Added host tag group for device '{device_name}': {tag_key} = true (tag '{tag_name}' found)"
                         )
-                    else:
-                        extensions.attributes[tag_key] = "false"
-                        logger.info(
-                            f"Added host tag group for device '{device_name}': {tag_key} = false (tag '{tag_name}' not found)"
-                        )
+                    # else:
+                    #     extensions.attributes[tag_key] = "false"
+                    #     logger.info(
+                    #         f"Added host tag group for device '{device_name}': {tag_key} = false (tag '{tag_name}' not found)"
+                    #     )
 
         except Exception as e:
             logger.error(f"Error processing tags2htg mappings for device: {e}")

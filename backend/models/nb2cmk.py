@@ -33,6 +33,7 @@ class DeviceComparison(BaseModel):
     diff: str = Field(default="", description="Description of differences found")
     normalized_config: Dict[str, Any] = Field(default_factory=dict, description="Normalized Nautobot configuration")
     checkmk_config: Optional[Dict[str, Any]] = Field(default=None, description="CheckMK configuration")
+    ignored_attributes: List[str] = Field(default_factory=list, description="List of ignored attributes during comparison")
 
 
 class DeviceList(BaseModel):
@@ -47,7 +48,8 @@ class DeviceListWithStatus(BaseModel):
     """List of devices with CheckMK comparison status."""
     
     devices: List[Dict[str, Any]] = Field(description="List of device data with CheckMK status")
-    total: int = Field(description="Total number of devices") 
+    total: int = Field(description="Total number of devices")
+    ignored_attributes: List[str] = Field(description="List of ignored attributes during comparison")
     message: str = Field(description="Status message")
 
 

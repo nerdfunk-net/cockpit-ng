@@ -21,8 +21,11 @@ class ConfigService:
         self._snmp_mapping: Optional[Dict[str, Any]] = None
         self._config_dir = Path(__file__).parent.parent.parent / "config"
 
-    def load_checkmk_config(self) -> Dict[str, Any]:
+    def load_checkmk_config(self, force_reload: bool = False) -> Dict[str, Any]:
         """Load CheckMK configuration from YAML file.
+
+        Args:
+            force_reload: If True, forces reading from file even if cached
 
         Returns:
             Dictionary containing CheckMK configuration
@@ -31,7 +34,7 @@ class ConfigService:
             FileNotFoundError: If configuration file is not found
             yaml.YAMLError: If YAML parsing fails
         """
-        if self._checkmk_config is None:
+        if self._checkmk_config is None or force_reload:
             config_path = self._config_dir / "checkmk.yaml"
 
             try:
@@ -83,7 +86,7 @@ class ConfigService:
         """
         try:
             config = self.load_checkmk_config()
-            site_config = config.get("site", {})
+            site_config = config.get("monitored_site", {})
             return site_config.get("default", "cmk")
         except Exception as e:
             logger.error(f"Error getting default site: {e}")

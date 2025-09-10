@@ -12,9 +12,8 @@ monitored_site:
     building: site
   by_ip:
     192.168.1.0/24: cmk
-    0.0.0.0/0: cmk
   by_name:
-    lab-1: cmk
+    lab-2: cmk
 
 folders:
   default: "/network/{_custom_field_data.net}/{location.name}"
@@ -66,3 +65,4 @@ compare:
 
 ignore_attributes:
   - tag_address_family
+  - tag_snmp_ds
