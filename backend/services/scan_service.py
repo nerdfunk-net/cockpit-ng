@@ -55,7 +55,9 @@ class ScanResult:
     device_type: str  # 'cisco' | 'linux'
     hostname: Optional[str] = None
     platform: Optional[str] = None
-    debug_info: Optional[Dict[str, Any]] = None  # Debug information when debug mode enabled
+    debug_info: Optional[Dict[str, Any]] = (
+        None  # Debug information when debug mode enabled
+    )
 
 
 @dataclass
@@ -247,7 +249,12 @@ class ScanService:
 
             # Try authentication based on discovery mode
             result = await self._try_authentication(
-                job.discovery_mode, ip, username, password, parser_templates, job.debug_enabled
+                job.discovery_mode,
+                ip,
+                username,
+                password,
+                parser_templates,
+                job.debug_enabled,
             )
             if result:
                 job.results.append(
@@ -649,8 +656,10 @@ class ScanService:
         """Try netmiko-based device detection and authentication."""
         if ConnectHandler is None:
             logger.warning("Netmiko is not installed, falling back to basic SSH")
-            return await self._try_basic_ssh_login(ip, username, password, parser_templates)
-        
+            return await self._try_basic_ssh_login(
+                ip, username, password, parser_templates
+            )
+
         # List of device types to try in priority order
         device_types = [
             "cisco_ios",
@@ -662,7 +671,7 @@ class ScanService:
             "hp_procurve",
             "linux",
         ]
-        
+
         for device_type in device_types:
             try:
                 # Configure connection parameters for netmiko
@@ -676,113 +685,142 @@ class ScanService:
                     "banner_timeout": SSH_LOGIN_TIMEOUT,
                     "auth_timeout": SSH_LOGIN_TIMEOUT,
                 }
-                
-                logger.debug(f"Trying netmiko connection to {ip} with device_type: {device_type}")
-                
+
+                logger.debug(
+                    f"Trying netmiko connection to {ip} with device_type: {device_type}"
+                )
+
                 # Establish connection using netmiko
                 connection = await asyncio.to_thread(ConnectHandler, **device_config)
-                
+
                 try:
                     # Get device info based on device type
                     hostname = None
                     platform = device_type
                     detected_device_type = "cisco"  # Default
-                    
+
                     if device_type.startswith("linux"):
                         detected_device_type = "linux"
                         # Try to get hostname for Linux systems
                         try:
-                            hostname_output = connection.send_command("hostname", read_timeout=3)
+                            hostname_output = connection.send_command(
+                                "hostname", read_timeout=3
+                            )
                             hostname = hostname_output.strip() or ip
                         except Exception:
                             hostname = ip
                         platform = "linux"
-                        
+
                     else:
                         # For network devices, try show commands
                         detected_device_type = "cisco"
                         debug_data = {}
                         try:
                             # Get raw show version output first (for debug purposes)
-                            show_version_raw = connection.send_command("show version", read_timeout=10)
-                            
+                            show_version_raw = connection.send_command(
+                                "show version", read_timeout=10
+                            )
+
                             # Use netmiko's built-in TextFSM parsing with ntc-templates
                             # This automatically uses the appropriate template based on device type
-                            show_version_structured = connection.send_command("show version", use_textfsm=True, read_timeout=10)
-                            
+                            show_version_structured = connection.send_command(
+                                "show version", use_textfsm=True, read_timeout=10
+                            )
+
                             # Store debug information if debug mode is enabled
                             if debug_enabled:
                                 debug_data = {
                                     "device_type_tried": device_type,
                                     "show_version_raw": show_version_raw,
                                     "show_version_structured": show_version_structured,
-                                    "parsing_method": "netmiko_ntc_templates"
+                                    "parsing_method": "netmiko_ntc_templates",
                                 }
-                            
+
                             # If structured parsing worked, extract hostname
-                            if show_version_structured and isinstance(show_version_structured, list) and len(show_version_structured) > 0:
+                            if (
+                                show_version_structured
+                                and isinstance(show_version_structured, list)
+                                and len(show_version_structured) > 0
+                            ):
                                 parsed_data = show_version_structured[0]
                                 if isinstance(parsed_data, dict):
                                     # Try common hostname fields from ntc-templates
                                     hostname = (
-                                        parsed_data.get('hostname') or 
-                                        parsed_data.get('device_name') or 
-                                        parsed_data.get('system_name') or 
-                                        parsed_data.get('name')
+                                        parsed_data.get("hostname")
+                                        or parsed_data.get("device_name")
+                                        or parsed_data.get("system_name")
+                                        or parsed_data.get("name")
                                     )
                                     if debug_data:
                                         debug_data["hostname_extracted"] = hostname
-                                        debug_data["parsed_fields"] = list(parsed_data.keys()) if isinstance(parsed_data, dict) else "Not a dict"
-                                    logger.info(f"Netmiko TextFSM parsing successful for {ip}, hostname: {hostname}")
-                            
+                                        debug_data["parsed_fields"] = (
+                                            list(parsed_data.keys())
+                                            if isinstance(parsed_data, dict)
+                                            else "Not a dict"
+                                        )
+                                    logger.info(
+                                        f"Netmiko TextFSM parsing successful for {ip}, hostname: {hostname}"
+                                    )
+
                             # Fallback: try raw show version if structured parsing failed
                             if not hostname and show_version_raw:
                                 # Look for common hostname patterns in show version output
-                                lines = show_version_raw.split('\n')
+                                lines = show_version_raw.split("\n")
                                 for line in lines:
                                     line = line.strip()
-                                    if 'hostname' in line.lower() or 'system name' in line.lower():
+                                    if (
+                                        "hostname" in line.lower()
+                                        or "system name" in line.lower()
+                                    ):
                                         parts = line.split()
                                         if len(parts) >= 2:
                                             hostname = parts[-1]
                                             break
                                     # Cisco prompt format
-                                    if line.endswith('#') and not line.startswith('#'):
-                                        hostname = line.rstrip('#').strip()
+                                    if line.endswith("#") and not line.startswith("#"):
+                                        hostname = line.rstrip("#").strip()
                                         break
                                 if debug_data and hostname:
-                                    debug_data["hostname_extraction_method"] = "fallback_raw_parsing"
-                                            
+                                    debug_data["hostname_extraction_method"] = (
+                                        "fallback_raw_parsing"
+                                    )
+
                         except Exception as e:
-                            logger.debug(f"Show version failed for {ip} with {device_type}: {e}")
+                            logger.debug(
+                                f"Show version failed for {ip} with {device_type}: {e}"
+                            )
                             if debug_data:
                                 debug_data["error"] = str(e)
-                    
+
                     # If we got here, connection was successful
-                    logger.info(f"Netmiko connection successful to {ip} as {device_type}")
-                    
+                    logger.info(
+                        f"Netmiko connection successful to {ip} as {device_type}"
+                    )
+
                     result = {
                         "device_type": detected_device_type,
                         "hostname": hostname or ip,
                         "platform": platform,
                     }
-                    
+
                     # Add debug data if available
                     if debug_data:
                         result["debug_info"] = debug_data
-                        
+
                     return result
-                    
+
                 finally:
                     try:
                         connection.disconnect()
                     except Exception:
                         pass
-                        
+
             except Exception as e:
-                logger.debug(f"Netmiko connection failed for {ip} with {device_type}: {e}")
+                logger.debug(
+                    f"Netmiko connection failed for {ip} with {device_type}: {e}"
+                )
                 continue
-        
+
         # All device types failed
         logger.debug(f"All netmiko device types failed for {ip}")
         return None

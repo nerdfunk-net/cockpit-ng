@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 class CheckMKFolderService:
     """Service for managing CheckMK folder operations."""
 
-    async def create_path(self, folder_path: str, site_name: str, current_user: Dict[str, Any]) -> bool:
+    async def create_path(
+        self, folder_path: str, site_name: str, current_user: Dict[str, Any]
+    ) -> bool:
         """Create a complete folder path in CheckMK by creating folders incrementally.
 
         Args:
@@ -64,8 +66,14 @@ class CheckMKFolderService:
                     # Try to create the folder using direct client call
                     # Convert folder path format: CheckMK uses ~ instead of /
                     # First normalize double slashes, then convert / to ~
-                    normalized_parent_folder = parent_folder.replace("//", "/") if parent_folder else "/"
-                    checkmk_parent_folder = normalized_parent_folder.replace("/", "~") if normalized_parent_folder else "~"
+                    normalized_parent_folder = (
+                        parent_folder.replace("//", "/") if parent_folder else "/"
+                    )
+                    checkmk_parent_folder = (
+                        normalized_parent_folder.replace("/", "~")
+                        if normalized_parent_folder
+                        else "~"
+                    )
                     client.create_folder(
                         name=folder_name,
                         title=folder_name,  # Use same as name for title

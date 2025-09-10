@@ -19,13 +19,13 @@ class DeviceNormalizationService:
 
     def normalize_device(self, device_data: Dict[str, Any]) -> DeviceExtensions:
         """Normalize device data from Nautobot for CheckMK comparison.
-        
+
         Args:
             device_data: Device data from Nautobot GraphQL query
-            
+
         Returns:
             DeviceExtensions object with normalized configuration
-            
+
         Raises:
             ValueError: If device data is invalid or missing required fields
         """
@@ -33,11 +33,7 @@ class DeviceNormalizationService:
             raise ValueError("Device data cannot be empty")
 
         # Create the root extension dictionary
-        extensions = DeviceExtensions(
-            folder="",
-            attributes={},
-            internal={}
-        )
+        extensions = DeviceExtensions(folder="", attributes={}, internal={})
 
         # Set hostname in internal dict (needed for CheckMK queries but not for comparison)
         extensions.internal["hostname"] = device_data.get("name", "")
@@ -63,9 +59,11 @@ class DeviceNormalizationService:
 
         return extensions
 
-    def _process_ip_address(self, device_data: Dict[str, Any], extensions: DeviceExtensions) -> None:
+    def _process_ip_address(
+        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+    ) -> None:
         """Process and set IP address attribute.
-        
+
         Args:
             device_data: Device data from Nautobot
             extensions: Extensions object to update
@@ -80,9 +78,11 @@ class DeviceNormalizationService:
         else:
             extensions.attributes["ipaddress"] = ""
 
-    def _process_snmp_config(self, device_data: Dict[str, Any], extensions: DeviceExtensions) -> None:
+    def _process_snmp_config(
+        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+    ) -> None:
         """Process SNMP community mapping from custom fields.
-        
+
         Args:
             device_data: Device data from Nautobot
             extensions: Extensions object to update
@@ -124,9 +124,11 @@ class DeviceNormalizationService:
             logger.error(f"Error processing SNMP configuration: {e}")
             # Don't fail the whole process, just log the error
 
-    def _process_additional_attributes(self, device_data: Dict[str, Any], extensions: DeviceExtensions) -> None:
+    def _process_additional_attributes(
+        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+    ) -> None:
         """Process additional attributes configuration.
-        
+
         Args:
             device_data: Device data from Nautobot
             extensions: Extensions object to update
@@ -157,9 +159,11 @@ class DeviceNormalizationService:
             logger.error(f"Error processing additional_attributes for device: {e}")
             # Don't fail the whole process, just log the error
 
-    def _process_ip_based_attributes(self, device_ip: str, by_ip_config: Dict[str, Any], extensions: DeviceExtensions) -> None:
+    def _process_ip_based_attributes(
+        self, device_ip: str, by_ip_config: Dict[str, Any], extensions: DeviceExtensions
+    ) -> None:
         """Process IP-based additional attributes.
-        
+
         Args:
             device_ip: Device IP address
             by_ip_config: IP-based configuration
@@ -201,11 +205,15 @@ class DeviceNormalizationService:
                     continue
 
         except ipaddress.AddressValueError:
-            logger.warning(f"Invalid device IP address for additional_attributes: {device_ip}")
+            logger.warning(
+                f"Invalid device IP address for additional_attributes: {device_ip}"
+            )
 
-    def _process_cf2htg_mappings(self, device_data: Dict[str, Any], extensions: DeviceExtensions) -> None:
+    def _process_cf2htg_mappings(
+        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+    ) -> None:
         """Process Custom Field to Host Tag Group mappings.
-        
+
         Args:
             device_data: Device data from Nautobot
             extensions: Extensions object to update
@@ -231,9 +239,11 @@ class DeviceNormalizationService:
             logger.error(f"Error processing cf2htg mappings for device: {e}")
             # Don't fail the whole process, just log the error
 
-    def _process_tags2htg_mappings(self, device_data: Dict[str, Any], extensions: DeviceExtensions) -> None:
+    def _process_tags2htg_mappings(
+        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+    ) -> None:
         """Process Tags to Host Tag Group mappings.
-        
+
         Args:
             device_data: Device data from Nautobot
             extensions: Extensions object to update
@@ -269,9 +279,11 @@ class DeviceNormalizationService:
             logger.error(f"Error processing tags2htg mappings for device: {e}")
             # Don't fail the whole process, just log the error
 
-    def _process_field_mappings(self, device_data: Dict[str, Any], extensions: DeviceExtensions) -> None:
+    def _process_field_mappings(
+        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+    ) -> None:
         """Process field mappings from Nautobot to CheckMK attributes.
-        
+
         Args:
             device_data: Device data from Nautobot
             extensions: Extensions object to update
@@ -281,12 +293,16 @@ class DeviceNormalizationService:
             mapping_config = config.get("mapping", {})
             device_name = device_data.get("name", "")
 
-            logger.info(f"Processing mapping config for device '{device_name}': {mapping_config}")
+            logger.info(
+                f"Processing mapping config for device '{device_name}': {mapping_config}"
+            )
 
             # Log device data structure for debugging
             logger.info(f"Device data keys: {list(device_data.keys())}")
             if "_custom_field_data" in device_data:
-                logger.info(f"_custom_field_data content: {device_data['_custom_field_data']}")
+                logger.info(
+                    f"_custom_field_data content: {device_data['_custom_field_data']}"
+                )
             else:
                 logger.info("No _custom_field_data found in device data")
 
@@ -299,7 +315,9 @@ class DeviceNormalizationService:
                         if value is not None and value != "":
                             # Handle nested objects (e.g., role.name, location.name)
                             if isinstance(value, dict) and "name" in value:
-                                logger.info(f"Extracting 'name' from nested object for '{nautobot_field}'")
+                                logger.info(
+                                    f"Extracting 'name' from nested object for '{nautobot_field}'"
+                                )
                                 value = value["name"]
 
                             extensions.attributes[checkmk_attribute] = str(value)
@@ -307,10 +325,14 @@ class DeviceNormalizationService:
                                 f"Added mapping for device '{device_name}': {nautobot_field} → {checkmk_attribute} = {value}"
                             )
                         else:
-                            logger.info(f"Skipping mapping '{nautobot_field}' - no value found")
+                            logger.info(
+                                f"Skipping mapping '{nautobot_field}' - no value found"
+                            )
 
                     except Exception as e:
-                        logger.warning(f"Error processing mapping '{nautobot_field}' → '{checkmk_attribute}': {e}")
+                        logger.warning(
+                            f"Error processing mapping '{nautobot_field}' → '{checkmk_attribute}': {e}"
+                        )
                         continue
 
         except Exception as e:
@@ -319,11 +341,11 @@ class DeviceNormalizationService:
 
     def _extract_field_value(self, device_data: Dict[str, Any], field_path: str) -> Any:
         """Extract field value from device data using dot notation.
-        
+
         Args:
             device_data: Device data from Nautobot
             field_path: Field path with dot notation (e.g., "location.name")
-            
+
         Returns:
             Field value or None if not found
         """
@@ -338,7 +360,9 @@ class DeviceNormalizationService:
                 if isinstance(current_data, dict) and part in current_data:
                     current_data = current_data[part]
                 else:
-                    logger.info(f"Nested field '{field_path}' failed at part '{part}' - not found or not dict")
+                    logger.info(
+                        f"Nested field '{field_path}' failed at part '{part}' - not found or not dict"
+                    )
                     return None
             return current_data
         else:
@@ -347,10 +371,10 @@ class DeviceNormalizationService:
 
     def _extract_device_ip(self, device_data: Dict[str, Any]) -> str:
         """Extract IP address from device data.
-        
+
         Args:
             device_data: Device data from Nautobot
-            
+
         Returns:
             IP address string without CIDR notation
         """

@@ -29,10 +29,10 @@ class NautobotToCheckMKService:
 
     async def get_devices_for_sync(self) -> DeviceList:
         """Get all devices from Nautobot for CheckMK sync.
-        
+
         Returns:
             DeviceList with device data
-            
+
         Raises:
             HTTPException: If GraphQL query fails or other errors occur
         """
@@ -71,18 +71,26 @@ class NautobotToCheckMKService:
             # Transform the data to match frontend expectations
             devices = []
             for device in nautobot_devices:
-                devices.append({
-                    "id": str(device.get("id", "")),
-                    "name": device.get("name", ""),
-                    "role": device.get("role", {}).get("name", "") if device.get("role") else "",
-                    "status": device.get("status", {}).get("name", "") if device.get("status") else "",
-                    "location": device.get("location", {}).get("name", "") if device.get("location") else "",
-                })
+                devices.append(
+                    {
+                        "id": str(device.get("id", "")),
+                        "name": device.get("name", ""),
+                        "role": device.get("role", {}).get("name", "")
+                        if device.get("role")
+                        else "",
+                        "status": device.get("status", {}).get("name", "")
+                        if device.get("status")
+                        else "",
+                        "location": device.get("location", {}).get("name", "")
+                        if device.get("location")
+                        else "",
+                    }
+                )
 
             return DeviceList(
                 devices=devices,
                 total=len(devices),
-                message=f"Retrieved {len(devices)} devices from Nautobot"
+                message=f"Retrieved {len(devices)} devices from Nautobot",
             )
 
         except HTTPException:
@@ -96,13 +104,13 @@ class NautobotToCheckMKService:
 
     async def get_device_normalized(self, device_id: str) -> Dict[str, Any]:
         """Get normalized device config from Nautobot for CheckMK comparison.
-        
+
         Args:
             device_id: Nautobot device ID
-            
+
         Returns:
             Normalized device configuration dictionary
-            
+
         Raises:
             HTTPException: If device not found or normalization fails
         """
@@ -156,7 +164,7 @@ class NautobotToCheckMKService:
 
             # Normalize the device data
             extensions = device_normalization_service.normalize_device(device_data)
-            
+
             # Convert to dictionary for API response
             return extensions.model_dump()
 
@@ -171,10 +179,10 @@ class NautobotToCheckMKService:
 
     async def get_devices_diff(self) -> DeviceListWithStatus:
         """Get all devices from Nautobot with CheckMK comparison status.
-        
+
         Returns:
             DeviceListWithStatus with comparison information
-            
+
         Raises:
             HTTPException: If operation fails
         """
@@ -216,9 +224,15 @@ class NautobotToCheckMKService:
                 device_info = {
                     "id": str(device.get("id", "")),
                     "name": device.get("name", ""),
-                    "role": device.get("role", {}).get("name", "") if device.get("role") else "",
-                    "status": device.get("status", {}).get("name", "") if device.get("status") else "",
-                    "location": device.get("location", {}).get("name", "") if device.get("location") else "",
+                    "role": device.get("role", {}).get("name", "")
+                    if device.get("role")
+                    else "",
+                    "status": device.get("status", {}).get("name", "")
+                    if device.get("status")
+                    else "",
+                    "location": device.get("location", {}).get("name", "")
+                    if device.get("location")
+                    else "",
                     "checkmk_status": "unknown",
                 }
 
@@ -229,7 +243,9 @@ class NautobotToCheckMKService:
                         comparison_result = await self.compare_device_config(device_id)
                         device_info["checkmk_status"] = comparison_result.result
                         device_info["diff"] = comparison_result.diff
-                        device_info["normalized_config"] = comparison_result.normalized_config
+                        device_info["normalized_config"] = (
+                            comparison_result.normalized_config
+                        )
                         device_info["checkmk_config"] = comparison_result.checkmk_config
 
                         # Map host_not_found to missing for frontend consistency
@@ -239,16 +255,24 @@ class NautobotToCheckMKService:
                         device_info["checkmk_status"] = "error"
                 except HTTPException as http_exc:
                     if http_exc.status_code == 404:
-                        logger.info(f"Device {device.get('name', 'unknown')} not found in CheckMK")
+                        logger.info(
+                            f"Device {device.get('name', 'unknown')} not found in CheckMK"
+                        )
                         device_info["checkmk_status"] = "missing"
-                        device_info["diff"] = f"Host '{device.get('name', 'unknown')}' not found in CheckMK"
+                        device_info["diff"] = (
+                            f"Host '{device.get('name', 'unknown')}' not found in CheckMK"
+                        )
                         device_info["normalized_config"] = {}
                         device_info["checkmk_config"] = None
                     else:
-                        logger.warning(f"HTTP error comparing device {device.get('name', 'unknown')}: {http_exc}")
+                        logger.warning(
+                            f"HTTP error comparing device {device.get('name', 'unknown')}: {http_exc}"
+                        )
                         device_info["checkmk_status"] = "error"
                 except Exception as e:
-                    logger.warning(f"Error comparing device {device.get('name', 'unknown')}: {e}")
+                    logger.warning(
+                        f"Error comparing device {device.get('name', 'unknown')}: {e}"
+                    )
                     device_info["checkmk_status"] = "error"
 
                 devices_with_status.append(device_info)
@@ -256,7 +280,7 @@ class NautobotToCheckMKService:
             return DeviceListWithStatus(
                 devices=devices_with_status,
                 total=len(devices_with_status),
-                message=f"Retrieved {len(devices_with_status)} devices with CheckMK comparison status"
+                message=f"Retrieved {len(devices_with_status)} devices with CheckMK comparison status",
             )
 
         except HTTPException:
@@ -270,13 +294,13 @@ class NautobotToCheckMKService:
 
     async def compare_device_config(self, device_id: str) -> DeviceComparison:
         """Compare normalized Nautobot device config with CheckMK host config.
-        
+
         Args:
             device_id: Nautobot device ID
-            
+
         Returns:
             DeviceComparison with comparison results
-            
+
         Raises:
             HTTPException: If comparison fails
         """
@@ -312,15 +336,19 @@ class NautobotToCheckMKService:
                     )
                 except HTTPException as e:
                     if e.status_code == 404:
-                        logger.info(f"Host '{hostname}' not found in CheckMK during comparison")
+                        logger.info(
+                            f"Host '{hostname}' not found in CheckMK during comparison"
+                        )
                         return DeviceComparison(
                             result="host_not_found",
                             diff=f"Host '{hostname}' not found in CheckMK",
                             normalized_config=normalized_config,
-                            checkmk_config=None
+                            checkmk_config=None,
                         )
                     else:
-                        logger.error(f"CheckMK API error for host {hostname}: {e.detail}")
+                        logger.error(
+                            f"CheckMK API error for host {hostname}: {e.detail}"
+                        )
                         raise HTTPException(
                             status_code=e.status_code,
                             detail=f"CheckMK API error for host {hostname}: {e.detail}",
@@ -351,7 +379,9 @@ class NautobotToCheckMKService:
             }
 
             # Compare the configurations
-            differences = self._compare_configurations(nb_config_for_comparison, cmk_config_for_comparison)
+            differences = self._compare_configurations(
+                nb_config_for_comparison, cmk_config_for_comparison
+            )
 
             # Determine result
             if differences:
@@ -365,7 +395,7 @@ class NautobotToCheckMKService:
                 result=result,
                 diff=diff_text,
                 normalized_config=nb_config_for_comparison,
-                checkmk_config=cmk_config_for_comparison
+                checkmk_config=cmk_config_for_comparison,
             )
 
         except HTTPException:
@@ -377,13 +407,15 @@ class NautobotToCheckMKService:
                 detail=f"Failed to compare device configs: {e}",
             )
 
-    def _compare_configurations(self, nb_config: Dict[str, Any], cmk_config: Dict[str, Any]) -> List[str]:
+    def _compare_configurations(
+        self, nb_config: Dict[str, Any], cmk_config: Dict[str, Any]
+    ) -> List[str]:
         """Compare Nautobot and CheckMK configurations and return differences.
-        
+
         Args:
             nb_config: Normalized Nautobot configuration
             cmk_config: CheckMK configuration
-            
+
         Returns:
             List of difference descriptions
         """
@@ -402,7 +434,9 @@ class NautobotToCheckMKService:
                     k: v for k, v in nb_attributes.items() if k not in ignore_attributes
                 }
                 cmk_attributes_filtered = {
-                    k: v for k, v in cmk_attributes.items() if k not in ignore_attributes
+                    k: v
+                    for k, v in cmk_attributes.items()
+                    if k not in ignore_attributes
                 }
 
                 # Compare attributes (only non-ignored ones)
@@ -439,13 +473,13 @@ class NautobotToCheckMKService:
 
     async def add_device_to_checkmk(self, device_id: str) -> DeviceOperationResult:
         """Add a device from Nautobot to CheckMK using normalized config.
-        
+
         Args:
             device_id: Nautobot device ID
-            
+
         Returns:
             DeviceOperationResult with operation details
-            
+
         Raises:
             HTTPException: If operation fails
         """
@@ -487,7 +521,9 @@ class NautobotToCheckMKService:
 
                 # Ensure folder exists before creating host
                 if folder and folder != "/":
-                    logger.info(f"Ensuring folder '{folder}' exists before creating host")
+                    logger.info(
+                        f"Ensuring folder '{folder}' exists before creating host"
+                    )
                     folder_created = await checkmk_folder_service.create_path(
                         folder, device_site, {}
                     )
@@ -501,8 +537,12 @@ class NautobotToCheckMKService:
                 # Convert folder path format: CheckMK uses ~ instead of /
                 # First normalize double slashes, then convert / to ~
                 normalized_folder = folder.replace("//", "/") if folder else "/"
-                checkmk_folder = normalized_folder.replace("/", "~") if normalized_folder else "~"
-                logger.info(f"Converted folder path from '{folder}' to '{checkmk_folder}' for CheckMK client")
+                checkmk_folder = (
+                    normalized_folder.replace("/", "~") if normalized_folder else "~"
+                )
+                logger.info(
+                    f"Converted folder path from '{folder}' to '{checkmk_folder}' for CheckMK client"
+                )
 
                 # Create host in CheckMK
                 result = client.create_host(
@@ -525,7 +565,9 @@ class NautobotToCheckMKService:
                     detail=f"CheckMK API error: {e}",
                 )
 
-            logger.info(f"Successfully added device {device_id} ({hostname}) to CheckMK")
+            logger.info(
+                f"Successfully added device {device_id} ({hostname}) to CheckMK"
+            )
 
             return DeviceOperationResult(
                 success=True,
@@ -534,7 +576,7 @@ class NautobotToCheckMKService:
                 hostname=hostname,
                 site=device_site,
                 folder=folder,
-                checkmk_response=create_result
+                checkmk_response=create_result,
             )
 
         except HTTPException:
@@ -548,13 +590,13 @@ class NautobotToCheckMKService:
 
     async def update_device_in_checkmk(self, device_id: str) -> DeviceUpdateResult:
         """Update/sync a device from Nautobot to CheckMK using normalized config.
-        
+
         Args:
             device_id: Nautobot device ID
-            
+
         Returns:
             DeviceUpdateResult with operation details
-            
+
         Raises:
             HTTPException: If operation fails
         """
@@ -629,14 +671,26 @@ class NautobotToCheckMKService:
 
                 # Convert folder path format: CheckMK uses ~ instead of /
                 # First normalize double slashes, then convert / to ~
-                normalized_new_folder = new_folder_normalized.replace("//", "/") if new_folder_normalized else "/"
-                checkmk_new_folder = normalized_new_folder.replace("/", "~") if normalized_new_folder else "~"
-                logger.info(f"Converted new folder path from '{new_folder_normalized}' to '{checkmk_new_folder}' for CheckMK client")
+                normalized_new_folder = (
+                    new_folder_normalized.replace("//", "/")
+                    if new_folder_normalized
+                    else "/"
+                )
+                checkmk_new_folder = (
+                    normalized_new_folder.replace("/", "~")
+                    if normalized_new_folder
+                    else "~"
+                )
+                logger.info(
+                    f"Converted new folder path from '{new_folder_normalized}' to '{checkmk_new_folder}' for CheckMK client"
+                )
 
                 # Move the host to the new folder
                 try:
                     client.move_host(hostname, checkmk_new_folder)
-                    logger.info(f"Moved host {hostname} from {current_folder_normalized} to {new_folder_normalized}")
+                    logger.info(
+                        f"Moved host {hostname} from {current_folder_normalized} to {new_folder_normalized}"
+                    )
                 except CheckMKAPIError as e:
                     if "428" in str(e) or "precondition" in str(e).lower():
                         raise HTTPException(
@@ -661,7 +715,9 @@ class NautobotToCheckMKService:
                     detail=f"CheckMK API error updating host: {e}",
                 )
 
-            logger.info(f"Successfully updated device {device_id} ({hostname}) in CheckMK")
+            logger.info(
+                f"Successfully updated device {device_id} ({hostname}) in CheckMK"
+            )
 
             return DeviceUpdateResult(
                 success=True,
@@ -671,7 +727,7 @@ class NautobotToCheckMKService:
                 site=device_site,
                 folder=new_folder,
                 folder_changed=folder_changed,
-                checkmk_response=update_result
+                checkmk_response=update_result,
             )
 
         except HTTPException:
@@ -685,7 +741,7 @@ class NautobotToCheckMKService:
 
     def get_default_site(self) -> DefaultSiteResponse:
         """Get the default site from CheckMK configuration.
-        
+
         Returns:
             DefaultSiteResponse with default site name
         """

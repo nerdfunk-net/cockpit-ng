@@ -19,8 +19,9 @@ logger = logging.getLogger(__name__)
 
 class JobStatus(str, Enum):
     """Job status enumeration."""
+
     PENDING = "pending"
-    RUNNING = "running" 
+    RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
@@ -29,6 +30,7 @@ class JobStatus(str, Enum):
 @dataclass
 class NB2CMKJob:
     """NB2CMK background job data."""
+
     job_id: str
     status: JobStatus
     created_at: datetime
@@ -44,6 +46,7 @@ class NB2CMKJob:
 @dataclass
 class DeviceJobResult:
     """Individual device comparison result within a job."""
+
     job_id: str
     device_id: str
     device_name: str
@@ -61,12 +64,13 @@ class NB2CMKDatabaseService:
         if db_path is None:
             # Use data directory from configuration
             from config import settings as config_settings
+
             settings_dir = os.path.join(config_settings.data_directory, "settings")
             os.makedirs(settings_dir, exist_ok=True)
             self.db_path = os.path.join(settings_dir, "nb2cmk.db")
         else:
             self.db_path = db_path
-        
+
         # Initialize database
         self.init_database()
 
@@ -75,7 +79,7 @@ class NB2CMKDatabaseService:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                
+
                 # Create jobs table
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS nb2cmk_jobs (
@@ -91,7 +95,7 @@ class NB2CMKDatabaseService:
                         error_message TEXT
                     )
                 """)
-                
+
                 # Create job results table
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS nb2cmk_job_results (
@@ -107,22 +111,22 @@ class NB2CMKDatabaseService:
                         FOREIGN KEY (job_id) REFERENCES nb2cmk_jobs (job_id)
                     )
                 """)
-                
+
                 # Create indexes for better performance
                 cursor.execute("""
                     CREATE INDEX IF NOT EXISTS idx_job_results_job_id 
                     ON nb2cmk_job_results(job_id)
                 """)
-                
+
                 cursor.execute("""
                     CREATE INDEX IF NOT EXISTS idx_jobs_created_at 
                     ON nb2cmk_jobs(created_at)
                 """)
-                
+
                 conn.commit()
                 logger.info(f"NB2CMK database initialized at {self.db_path}")
                 return True
-                
+
         except sqlite3.Error as e:
             logger.error(f"NB2CMK database initialization failed: {e}")
             return False
@@ -131,20 +135,23 @@ class NB2CMKDatabaseService:
         """Create a new background job and return job_id."""
         job_id = str(uuid.uuid4())
         now = datetime.now()
-        
+
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO nb2cmk_jobs 
                     (job_id, status, created_at, user_id)
                     VALUES (?, ?, ?, ?)
-                """, (job_id, JobStatus.PENDING.value, now, username))
+                """,
+                    (job_id, JobStatus.PENDING.value, now, username),
+                )
                 conn.commit()
-                
+
             logger.info(f"Created NB2CMK job {job_id}")
             return job_id
-            
+
         except sqlite3.Error as e:
             logger.error(f"Error creating NB2CMK job: {e}")
             raise
@@ -155,104 +162,142 @@ class NB2CMKDatabaseService:
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT * FROM nb2cmk_jobs WHERE job_id = ?
-                """, (job_id,))
+                """,
+                    (job_id,),
+                )
                 row = cursor.fetchone()
-                
+
                 if row:
                     return NB2CMKJob(
                         job_id=row["job_id"],
                         status=JobStatus(row["status"]),
                         created_at=datetime.fromisoformat(row["created_at"]),
-                        started_at=datetime.fromisoformat(row["started_at"]) if row["started_at"] else None,
-                        completed_at=datetime.fromisoformat(row["completed_at"]) if row["completed_at"] else None,
+                        started_at=datetime.fromisoformat(row["started_at"])
+                        if row["started_at"]
+                        else None,
+                        completed_at=datetime.fromisoformat(row["completed_at"])
+                        if row["completed_at"]
+                        else None,
                         total_devices=row["total_devices"],
                         processed_devices=row["processed_devices"],
                         progress_message=row["progress_message"],
                         user_id=row["user_id"],
-                        error_message=row["error_message"]
+                        error_message=row["error_message"],
                     )
                 return None
-                
+
         except sqlite3.Error as e:
             logger.error(f"Error getting job {job_id}: {e}")
             return None
 
-    def update_job_status(self, job_id: str, status: JobStatus, 
-                         error_message: Optional[str] = None) -> bool:
+    def update_job_status(
+        self, job_id: str, status: JobStatus, error_message: Optional[str] = None
+    ) -> bool:
         """Update job status."""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 now = datetime.now()
-                
+
                 if status == JobStatus.RUNNING:
-                    cursor.execute("""
+                    cursor.execute(
+                        """
                         UPDATE nb2cmk_jobs 
                         SET status = ?, started_at = ?, error_message = ?
                         WHERE job_id = ?
-                    """, (status.value, now, error_message, job_id))
-                elif status in [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED]:
-                    cursor.execute("""
+                    """,
+                        (status.value, now, error_message, job_id),
+                    )
+                elif status in [
+                    JobStatus.COMPLETED,
+                    JobStatus.FAILED,
+                    JobStatus.CANCELLED,
+                ]:
+                    cursor.execute(
+                        """
                         UPDATE nb2cmk_jobs 
                         SET status = ?, completed_at = ?, error_message = ?
                         WHERE job_id = ?
-                    """, (status.value, now, error_message, job_id))
+                    """,
+                        (status.value, now, error_message, job_id),
+                    )
                 else:
-                    cursor.execute("""
+                    cursor.execute(
+                        """
                         UPDATE nb2cmk_jobs 
                         SET status = ?, error_message = ?
                         WHERE job_id = ?
-                    """, (status.value, error_message, job_id))
-                    
+                    """,
+                        (status.value, error_message, job_id),
+                    )
+
                 conn.commit()
                 return True
-                
+
         except sqlite3.Error as e:
             logger.error(f"Error updating job {job_id} status: {e}")
             return False
 
-    def update_job_progress(self, job_id: str, processed_devices: int, 
-                           total_devices: int, message: str = "") -> bool:
+    def update_job_progress(
+        self, job_id: str, processed_devices: int, total_devices: int, message: str = ""
+    ) -> bool:
         """Update job progress."""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     UPDATE nb2cmk_jobs 
                     SET processed_devices = ?, total_devices = ?, progress_message = ?
                     WHERE job_id = ?
-                """, (processed_devices, total_devices, message, job_id))
+                """,
+                    (processed_devices, total_devices, message, job_id),
+                )
                 conn.commit()
                 return True
-                
+
         except sqlite3.Error as e:
             logger.error(f"Error updating job {job_id} progress: {e}")
             return False
 
-    def add_device_result(self, job_id: str, device_id: str, device_name: str,
-                         checkmk_status: str, diff: str,
-                         normalized_config: Dict[str, Any],
-                         checkmk_config: Optional[Dict[str, Any]]) -> bool:
+    def add_device_result(
+        self,
+        job_id: str,
+        device_id: str,
+        device_name: str,
+        checkmk_status: str,
+        diff: str,
+        normalized_config: Dict[str, Any],
+        checkmk_config: Optional[Dict[str, Any]],
+    ) -> bool:
         """Add a device result to the job."""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO nb2cmk_job_results 
                     (job_id, device_id, device_name, checkmk_status, diff,
                      normalized_config, checkmk_config, processed_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    job_id, device_id, device_name, checkmk_status, diff,
-                    json.dumps(normalized_config),
-                    json.dumps(checkmk_config) if checkmk_config else None,
-                    datetime.now()
-                ))
+                """,
+                    (
+                        job_id,
+                        device_id,
+                        device_name,
+                        checkmk_status,
+                        diff,
+                        json.dumps(normalized_config),
+                        json.dumps(checkmk_config) if checkmk_config else None,
+                        datetime.now(),
+                    ),
+                )
                 conn.commit()
                 return True
-                
+
         except sqlite3.Error as e:
             logger.error(f"Error adding device result for job {job_id}: {e}")
             return False
@@ -263,27 +308,36 @@ class NB2CMKDatabaseService:
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT * FROM nb2cmk_job_results 
                     WHERE job_id = ? 
                     ORDER BY processed_at
-                """, (job_id,))
+                """,
+                    (job_id,),
+                )
                 rows = cursor.fetchall()
-                
+
                 results = []
                 for row in rows:
-                    results.append(DeviceJobResult(
-                        job_id=row["job_id"],
-                        device_id=row["device_id"],
-                        device_name=row["device_name"],
-                        checkmk_status=row["checkmk_status"],
-                        diff=row["diff"] or "",
-                        normalized_config=json.loads(row["normalized_config"]) if row["normalized_config"] else {},
-                        checkmk_config=json.loads(row["checkmk_config"]) if row["checkmk_config"] else None,
-                        processed_at=datetime.fromisoformat(row["processed_at"])
-                    ))
+                    results.append(
+                        DeviceJobResult(
+                            job_id=row["job_id"],
+                            device_id=row["device_id"],
+                            device_name=row["device_name"],
+                            checkmk_status=row["checkmk_status"],
+                            diff=row["diff"] or "",
+                            normalized_config=json.loads(row["normalized_config"])
+                            if row["normalized_config"]
+                            else {},
+                            checkmk_config=json.loads(row["checkmk_config"])
+                            if row["checkmk_config"]
+                            else None,
+                            processed_at=datetime.fromisoformat(row["processed_at"]),
+                        )
+                    )
                 return results
-                
+
         except sqlite3.Error as e:
             logger.error(f"Error getting job results for {job_id}: {e}")
             return []
@@ -294,29 +348,38 @@ class NB2CMKDatabaseService:
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT * FROM nb2cmk_jobs 
                     ORDER BY created_at DESC 
                     LIMIT ?
-                """, (limit,))
+                """,
+                    (limit,),
+                )
                 rows = cursor.fetchall()
-                
+
                 jobs = []
                 for row in rows:
-                    jobs.append(NB2CMKJob(
-                        job_id=row["job_id"],
-                        status=JobStatus(row["status"]),
-                        created_at=datetime.fromisoformat(row["created_at"]),
-                        started_at=datetime.fromisoformat(row["started_at"]) if row["started_at"] else None,
-                        completed_at=datetime.fromisoformat(row["completed_at"]) if row["completed_at"] else None,
-                        total_devices=row["total_devices"],
-                        processed_devices=row["processed_devices"],
-                        progress_message=row["progress_message"],
-                        user_id=row["user_id"],
-                        error_message=row["error_message"]
-                    ))
+                    jobs.append(
+                        NB2CMKJob(
+                            job_id=row["job_id"],
+                            status=JobStatus(row["status"]),
+                            created_at=datetime.fromisoformat(row["created_at"]),
+                            started_at=datetime.fromisoformat(row["started_at"])
+                            if row["started_at"]
+                            else None,
+                            completed_at=datetime.fromisoformat(row["completed_at"])
+                            if row["completed_at"]
+                            else None,
+                            total_devices=row["total_devices"],
+                            processed_devices=row["processed_devices"],
+                            progress_message=row["progress_message"],
+                            user_id=row["user_id"],
+                            error_message=row["error_message"],
+                        )
+                    )
                 return jobs
-                
+
         except sqlite3.Error as e:
             logger.error(f"Error getting recent jobs: {e}")
             return []
@@ -325,39 +388,53 @@ class NB2CMKDatabaseService:
         """Clean up old completed jobs and their results."""
         try:
             cutoff_date = datetime.now() - timedelta(days=days_old)
-            
+
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                
+
                 # Get job IDs to clean up
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT job_id FROM nb2cmk_jobs 
                     WHERE completed_at < ? 
                     AND status IN (?, ?, ?)
-                """, (cutoff_date, JobStatus.COMPLETED.value, JobStatus.FAILED.value, JobStatus.CANCELLED.value))
-                
+                """,
+                    (
+                        cutoff_date,
+                        JobStatus.COMPLETED.value,
+                        JobStatus.FAILED.value,
+                        JobStatus.CANCELLED.value,
+                    ),
+                )
+
                 job_ids = [row[0] for row in cursor.fetchall()]
-                
+
                 if job_ids:
                     # Delete job results
-                    placeholders = ','.join('?' * len(job_ids))
-                    cursor.execute(f"""
+                    placeholders = ",".join("?" * len(job_ids))
+                    cursor.execute(
+                        f"""
                         DELETE FROM nb2cmk_job_results 
                         WHERE job_id IN ({placeholders})
-                    """, job_ids)
-                    
+                    """,
+                        job_ids,
+                    )
+
                     # Delete jobs
-                    cursor.execute(f"""
+                    cursor.execute(
+                        f"""
                         DELETE FROM nb2cmk_jobs 
                         WHERE job_id IN ({placeholders})
-                    """, job_ids)
-                    
+                    """,
+                        job_ids,
+                    )
+
                     conn.commit()
                     logger.info(f"Cleaned up {len(job_ids)} old NB2CMK jobs")
                     return len(job_ids)
-                
+
                 return 0
-                
+
         except sqlite3.Error as e:
             logger.error(f"Error cleaning up old jobs: {e}")
             return 0
@@ -368,29 +445,36 @@ class NB2CMKDatabaseService:
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT * FROM nb2cmk_jobs 
                     WHERE status IN (?, ?) 
                     ORDER BY created_at DESC 
                     LIMIT 1
-                """, (JobStatus.PENDING.value, JobStatus.RUNNING.value))
+                """,
+                    (JobStatus.PENDING.value, JobStatus.RUNNING.value),
+                )
                 row = cursor.fetchone()
-                
+
                 if row:
                     return NB2CMKJob(
                         job_id=row["job_id"],
                         status=JobStatus(row["status"]),
                         created_at=datetime.fromisoformat(row["created_at"]),
-                        started_at=datetime.fromisoformat(row["started_at"]) if row["started_at"] else None,
-                        completed_at=datetime.fromisoformat(row["completed_at"]) if row["completed_at"] else None,
+                        started_at=datetime.fromisoformat(row["started_at"])
+                        if row["started_at"]
+                        else None,
+                        completed_at=datetime.fromisoformat(row["completed_at"])
+                        if row["completed_at"]
+                        else None,
                         total_devices=row["total_devices"],
                         processed_devices=row["processed_devices"],
                         progress_message=row["progress_message"],
                         user_id=row["user_id"],
-                        error_message=row["error_message"]
+                        error_message=row["error_message"],
                     )
                 return None
-                
+
         except sqlite3.Error as e:
             logger.error(f"Error getting active job: {e}")
             return None
@@ -400,21 +484,27 @@ class NB2CMKDatabaseService:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                
+
                 # Delete job results first
-                cursor.execute("""
+                cursor.execute(
+                    """
                     DELETE FROM nb2cmk_job_results WHERE job_id = ?
-                """, (job_id,))
-                
+                """,
+                    (job_id,),
+                )
+
                 # Delete the job
-                cursor.execute("""
+                cursor.execute(
+                    """
                     DELETE FROM nb2cmk_jobs WHERE job_id = ?
-                """, (job_id,))
-                
+                """,
+                    (job_id,),
+                )
+
                 conn.commit()
                 logger.info(f"Deleted NB2CMK job {job_id}")
                 return True
-                
+
         except sqlite3.Error as e:
             logger.error(f"Error deleting job {job_id}: {e}")
             return False
