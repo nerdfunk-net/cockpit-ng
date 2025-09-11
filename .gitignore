@@ -192,3 +192,4 @@ backend/data/cache/nautobot_stats.json
 /data/settings
 /node_modules
 /data/git
+apscheduler_jobs.db
