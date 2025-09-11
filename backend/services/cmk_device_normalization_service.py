@@ -121,7 +121,7 @@ class DeviceNormalizationService:
 
                 # Add tag_snmp_ds for SNMP version 2 or 3
                 snmp_version = snmp_config.get("version")
-                if snmp_version in [2, 3]:
+                if snmp_version in [2, 3, "v2", "v3"]:
                     extensions.attributes["tag_snmp_ds"] = "snmp-v2"
             else:
                 logger.warning(

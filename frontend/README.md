@@ -101,7 +101,7 @@ Key API endpoints:
 - `/api/templates/*` - Template management
 - `/api/git/*` - Git operations
 - `/api/git-repositories/*` - Git repository management
-- `/api/files/*` - File operations and comparison
+- `/api/file-compare/*` - File operations and comparison
 
 ## Design System
 

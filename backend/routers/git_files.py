@@ -148,7 +148,7 @@ async def search_repository_files(
         return {"success": False, "message": f"File search failed: {str(e)}"}
 
 
-@router.get("/files/{commit_hash}")
+@router.get("/files/{commit_hash}/commit")
 async def get_files(
     repo_id: int,
     commit_hash: str,

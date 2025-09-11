@@ -220,7 +220,7 @@ export default function FileHistoryCompare() {
     }
 
     try {
-      const response = await apiCall<{files: FileItem[]}>(`files/list?repo_id=${selectedRepo.id}`)
+      const response = await apiCall<{files: FileItem[]}>(`file-compare/list?repo_id=${selectedRepo.id}`)
       const files = Array.isArray(response?.files) ? response.files : []
       setGitFiles(files)
     } catch (error) {
@@ -368,7 +368,7 @@ export default function FileHistoryCompare() {
 
     try {
       // Get file content from the specific commit
-      const response = await apiCall<{content: string}>(`git/${selectedRepo.id}/files/${commitHash}?file_path=${encodeURIComponent(selectedGitFile.path)}`)
+      const response = await apiCall<{content: string}>(`git/${selectedRepo.id}/files/${commitHash}/commit?file_path=${encodeURIComponent(selectedGitFile.path)}`)
       
       // Create blob and download
       const blob = new Blob([response.content], { type: 'text/plain' })
@@ -391,7 +391,7 @@ export default function FileHistoryCompare() {
     setLoading(true)
     try {
       // Get file content from the specific commit
-      const response = await apiCall<{content: string}>(`git/${selectedRepo.id}/files/${commitHash}?file_path=${encodeURIComponent(selectedGitFile.path)}`)
+      const response = await apiCall<{content: string}>(`git/${selectedRepo.id}/files/${commitHash}/commit?file_path=${encodeURIComponent(selectedGitFile.path)}`)
       
       // Find the commit info for the header
       const commit = fileHistory.find(c => c.hash === commitHash)

@@ -121,7 +121,7 @@ def test_complete_refactoring():
     # Test 5: Main NB2CMK Service
     print("\n5. Testing Main NB2CMK Service:")
     try:
-        from services.cmk_nb2cmk_service import NautobotToCheckMKService
+        from services.nb2cmk_base_service import NautobotToCheckMKService
         
         nb2cmk_service = NautobotToCheckMKService()
         print(f"   ✓ NB2CMK service instantiated")

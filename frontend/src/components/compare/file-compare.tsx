@@ -198,7 +198,7 @@ export default function FileCompare() {
     }
 
     try {
-      const response = await apiCall<{files: FileItem[]}>(`files/list?repo_id=${selectedRepo.id}`)
+      const response = await apiCall<{files: FileItem[]}>(`file-compare/list?repo_id=${selectedRepo.id}`)
       const files = Array.isArray(response?.files) ? response.files : []
       setLeftFiles(files)
       setRightFiles(files)
@@ -244,7 +244,7 @@ export default function FileCompare() {
 
     setLoading(true)
     try {
-      const response = await apiCall<ComparisonResult>('files/compare', {
+      const response = await apiCall<ComparisonResult>('file-compare/compare', {
         method: 'POST',
         body: JSON.stringify({
           left_file: selectedLeftFile!.path,

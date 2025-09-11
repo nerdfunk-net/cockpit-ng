@@ -419,7 +419,7 @@ export default function ConfigsViewPage() {
 
       // Get file content using the files endpoint with commit hash and file_path
       const contentResponse = await apiCall<ConfigContent>(
-        `git/${selectedRepository}/files/${latestCommit}?file_path=${encodeURIComponent(configFile.path)}`
+        `git/${selectedRepository}/files/${latestCommit}/commit?file_path=${encodeURIComponent(configFile.path)}`
       )
 
       if (contentResponse) {

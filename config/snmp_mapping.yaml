@@ -1,6 +1,6 @@
 ---
 snmp-id-1:
-  version: 3
+  version: v3
   type: v3_auth_privacy
   username: user
   group: group
@@ -12,7 +12,7 @@ snmp-id-1:
   privacy_password: privpass
   privacy_option: 128
 snmp-id-2:
-  version: 3
+  version: v3
   type: v3_auth_no_privacy
   username: user2
   group: group

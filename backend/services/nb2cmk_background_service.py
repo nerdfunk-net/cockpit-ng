@@ -10,7 +10,7 @@ from typing import Dict, Any, Optional, List
 from fastapi import HTTPException, status
 
 from services.nb2cmk_database_service import nb2cmk_db_service, JobStatus
-from services.cmk_nb2cmk_service import nb2cmk_service
+from services.nb2cmk_base_service import nb2cmk_service
 from models.nb2cmk import JobStartResponse, JobProgressResponse, JobResultsResponse
 
 logger = logging.getLogger(__name__)

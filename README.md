@@ -244,15 +244,15 @@ Authorization: Bearer <token>
 ### **File Operations**
 ```http
 # List files in repository
-GET /api/files/list?repo_id={id}
+GET /api/file-compare/list?repo_id={id}
 Authorization: Bearer <token>
 
 # Compare files
-POST /api/files/compare
+POST /api/file-compare/compare
 Authorization: Bearer <token>
 
 # Export file comparison
-POST /api/files/export
+POST /api/file-compare/export
 Authorization: Bearer <token>
 ```
 

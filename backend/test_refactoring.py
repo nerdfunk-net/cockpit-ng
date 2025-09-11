@@ -44,7 +44,7 @@ async def test_basic_functionality():
         print("✓ Pydantic models import successful")
         
         # Test main service
-        from services.cmk_nb2cmk_service import nb2cmk_service
+        from services.nb2cmk_base_service import nb2cmk_service
         print("✓ Main NB2CMK service import successful")
         
         # Test default site endpoint

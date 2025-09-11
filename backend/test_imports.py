@@ -31,7 +31,7 @@ def main():
     test_import("routers.auth", "auth router")
     test_import("routers.nautobot", "nautobot router")
     test_import("routers.git", "git router")
-    test_import("routers.files", "files router")
+    test_import("routers.file_compare", "file-compare router")
     test_import("routers.settings", "settings router")
 
     # Test config

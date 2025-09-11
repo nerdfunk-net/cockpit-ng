@@ -17,7 +17,7 @@ from routers.nautobot import router as nautobot_router
 from routers.checkmk import router as checkmk_router
 from routers.nb2cmk import router as nb2cmk_router
 from routers.git import router as git_router
-from routers.files import router as files_router
+from routers.file_compare import router as file_compare_router
 from routers.config import router as config_router
 from routers.settings import router as settings_router
 from routers.templates import router as templates_router
@@ -53,7 +53,7 @@ app.include_router(nautobot_router)
 app.include_router(checkmk_router)
 app.include_router(nb2cmk_router)
 app.include_router(git_router)
-app.include_router(files_router)
+app.include_router(file_compare_router)
 app.include_router(config_router)
 app.include_router(settings_router)
 app.include_router(templates_router)

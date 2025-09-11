@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 class ConfigService:
-    """Service for managing configuration files used in Nautobot to CheckMK integration."""
+    """Service for managing configuration files that are used to compare devices in nautobot
+    with devices in checkmk."""
 
     def __init__(self):
         self._checkmk_config: Optional[Dict[str, Any]] = None

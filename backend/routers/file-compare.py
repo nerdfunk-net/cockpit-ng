@@ -15,7 +15,7 @@ from core.auth import get_current_username
 from models.files import FileCompareRequest, FileExportRequest
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/files", tags=["files"])
+router = APIRouter(prefix="/api/file-compare", tags=["file-compare"])
 
 
 @router.get("/list")

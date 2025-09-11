@@ -7,7 +7,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import verify_token
-from services.cmk_nb2cmk_service import nb2cmk_service
+from services.nb2cmk_base_service import nb2cmk_service
 from services.nb2cmk_background_service import nb2cmk_background_service
 from models.nb2cmk import (
     DeviceList,

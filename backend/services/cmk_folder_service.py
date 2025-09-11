@@ -6,7 +6,6 @@ from __future__ import annotations
 import logging
 from typing import Dict, Any, List, Optional, Tuple
 
-from services.checkmk import checkmk_service
 from services.nautobot import nautobot_service
 from utils.cmk_folder_utils import split_checkmk_folder_path
 

@@ -37,9 +37,9 @@ POST /api/git/{repo_id}/branch             # Create/switch branch
 File operations require `repo_id` as query parameter or in request body:
 
 ```
-GET /api/files/list?repo_id={repo_id}      # List files
-POST /api/files/compare                    # Compare files (repo_id in body)
-GET /api/files/config?repo_id={repo_id}    # Get file config
+GET /api/file-compare/list?repo_id={repo_id}      # List files
+POST /api/file-compare/compare                    # Compare files (repo_id in body)
+GET /api/file-compare/config?repo_id={repo_id}    # Get file config
 ```
 
 ## Implementation Guide

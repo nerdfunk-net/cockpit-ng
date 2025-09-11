@@ -195,7 +195,7 @@ export default function GitCompare() {
     }
 
     try {
-      const response = await apiCall<{files: FileItem[]}>(`files/list?repo_id=${selectedRepo.id}`)
+      const response = await apiCall<{files: FileItem[]}>(`file-compare/list?repo_id=${selectedRepo.id}`)
       const files = Array.isArray(response?.files) ? response.files : []
       setGitFiles(files)
     } catch (error) {
