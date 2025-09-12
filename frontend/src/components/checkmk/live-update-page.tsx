@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useApi } from '@/hooks/use-api'
 import { useAuthStore } from '@/lib/auth-store'
 
@@ -124,6 +125,10 @@ export default function LiveUpdatePage() {
   const [showAddDeviceModal, setShowAddDeviceModal] = useState(false)
   const [deviceToAdd, setDeviceToAdd] = useState<Device | null>(null)
   const [isAddingDevice, setIsAddingDevice] = useState(false)
+
+  // Selection state
+  const [selectedDevices, setSelectedDevices] = useState<Set<string>>(new Set())
+  const [isSyncingSelected, setIsSyncingSelected] = useState(false)
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(0)
@@ -437,6 +442,89 @@ export default function LiveUpdatePage() {
     return filteredDevices.slice(start, end)
   }, [filteredDevices, currentPage, pageSize])
 
+  // Selection handlers
+  const handleSelectDevice = useCallback((deviceId: string, checked: boolean) => {
+    setSelectedDevices(prev => {
+      const newSet = new Set(prev)
+      if (checked) {
+        newSet.add(deviceId)
+      } else {
+        newSet.delete(deviceId)
+      }
+      return newSet
+    })
+  }, [])
+
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (checked) {
+      setSelectedDevices(new Set(paginatedDevices.map(device => device.id)))
+    } else {
+      setSelectedDevices(new Set())
+    }
+  }, [paginatedDevices])
+
+  const handleSyncSelected = useCallback(async () => {
+    if (selectedDevices.size === 0) {
+      showMessage('No devices selected', 'error')
+      return
+    }
+
+    try {
+      setIsSyncingSelected(true)
+      const selectedDeviceList = Array.from(selectedDevices)
+      const deviceNames = devices
+        .filter(device => selectedDeviceList.includes(device.id))
+        .map(device => device.name)
+
+      showMessage(`Syncing ${selectedDevices.size} devices: ${deviceNames.join(', ')}...`, 'info')
+
+      let hasDevicesSynced = false
+
+      // Sync each device using the same endpoint as individual sync
+      for (const deviceId of selectedDeviceList) {
+        const device = devices.find(d => d.id === deviceId)
+        if (!device) continue
+
+        try {
+          const response = await apiCall(`nb2cmk/device/${device.id}/update`, {
+            method: 'POST'
+          })
+
+          if (response) {
+            showMessage(`Successfully synced ${device.name} in CheckMK`, 'success')
+            hasDevicesSynced = true
+          } else {
+            showMessage(`Failed to sync ${device.name}`, 'error')
+          }
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to sync device'
+          
+          // Check if it's a 404 error (device not found in CheckMK)
+          if (message.includes('404') || message.includes('Not Found') || message.includes('not found')) {
+            showMessage(`Device ${device.name} not found in CheckMK. Use individual sync to add it.`, 'error')
+          } else {
+            showMessage(`Failed to sync ${device.name}: ${message}`, 'error')
+          }
+        }
+      }
+
+      // Enable activate button if any devices were synced
+      if (hasDevicesSynced) {
+        setHasDevicesSynced(true)
+      }
+
+      // Clear selection after sync
+      setSelectedDevices(new Set())
+      showMessage(`Completed syncing ${selectedDevices.size} devices`, 'info')
+
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to sync selected devices'
+      showMessage(message, 'error')
+    } finally {
+      setIsSyncingSelected(false)
+    }
+  }, [selectedDevices, devices, apiCall, showMessage])
+
   const handlePageChange = useCallback((newPage: number) => {
     setCurrentPage(Math.max(0, Math.min(newPage, totalPages - 1)))
   }, [totalPages])
@@ -634,6 +722,13 @@ export default function LiveUpdatePage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
+                  <th className="text-left p-2 font-medium w-12">
+                    <Checkbox
+                      checked={paginatedDevices.length > 0 && paginatedDevices.every(device => selectedDevices.has(device.id))}
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all devices"
+                    />
+                  </th>
                   <th className="text-left p-2 font-medium">
                     <div className="space-y-1">
                       <div>Device Name</div>
@@ -708,7 +803,7 @@ export default function LiveUpdatePage() {
               <tbody>
                 {paginatedDevices.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center p-8 text-muted-foreground">
+                    <td colSpan={7} className="text-center p-8 text-muted-foreground">
                       No devices found
                     </td>
                   </tr>
@@ -721,6 +816,13 @@ export default function LiveUpdatePage() {
                         key={`live-update-device-${device.id}`} 
                         className={`border-b transition-colors ${getRowColorClass(device.id) || 'hover:bg-muted/50'}`}
                       >
+                        <td className="p-2 w-12">
+                          <Checkbox
+                            checked={selectedDevices.has(device.id)}
+                            onCheckedChange={(checked) => handleSelectDevice(device.id, !!checked)}
+                            aria-label={`Select ${device.name}`}
+                          />
+                        </td>
                         <td className="p-2 font-medium">{device.name}</td>
                         <td className="p-2">{device.primary_ip4?.address || 'N/A'}</td>
                         <td className="p-2">{device.role?.name || 'Unknown'}</td>
@@ -844,7 +946,7 @@ export default function LiveUpdatePage() {
             </div>
           </div>
 
-          {/* Activate Button */}
+          {/* Action Buttons */}
           <div className="bg-gray-50 px-4 py-3 border-t flex items-center justify-between">
             <div className="text-sm text-gray-600">
               {hasDevicesSynced ? (
@@ -853,23 +955,42 @@ export default function LiveUpdatePage() {
                 <span>Sync one or more devices to enable activation.</span>
               )}
             </div>
-            <Button
-              onClick={handleActivate}
-              disabled={!hasDevicesSynced || isActivating}
-              className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400"
-            >
-              {isActivating ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Activating...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Activate Changes
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleSyncSelected}
+                disabled={selectedDevices.size === 0 || isSyncingSelected}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
+              >
+                {isSyncingSelected ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Syncing {selectedDevices.size} device{selectedDevices.size === 1 ? '' : 's'}...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Sync Selected ({selectedDevices.size})
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={handleActivate}
+                disabled={!hasDevicesSynced || isActivating}
+                className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400"
+              >
+                {isActivating ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Activating...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Activate Changes
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

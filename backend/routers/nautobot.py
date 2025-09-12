@@ -58,12 +58,11 @@ def _get_cached_device(device_id: str) -> Optional[dict]:
 
 def _cache_device_list(cache_key: str, devices: list) -> None:
     """Cache device list and individual devices."""
-    # Cache the list
-    cache_service.set(cache_key, devices, DEVICE_CACHE_TTL)
-    
-    # Cache individual devices
+    # Don't cache the full response data, that's handled elsewhere
+    # Just cache individual devices
     for device in devices:
-        _cache_device(device)
+        if isinstance(device, dict):
+            _cache_device(device)
 
 
 def _get_cached_device_list(cache_key: str) -> Optional[list]:
@@ -242,7 +241,8 @@ async def get_devices(
                 
                 # Cache the result and individual devices
                 logger.debug(f"Caching devices list: {cache_key}")
-                _cache_device_list(cache_key, response_data)
+                cache_service.set(cache_key, response_data, DEVICE_CACHE_TTL)  # Cache the full response
+                _cache_device_list(cache_key, response_data["devices"])  # Cache individual devices
                 
                 return response_data
 
@@ -319,7 +319,8 @@ async def get_devices(
                 
                 # Cache the result and individual devices
                 logger.debug(f"Caching devices list: {cache_key}")
-                _cache_device_list(cache_key, response_data)
+                cache_service.set(cache_key, response_data, DEVICE_CACHE_TTL)  # Cache the full response
+                _cache_device_list(cache_key, response_data["devices"])  # Cache individual devices
                 
                 return response_data
 
@@ -401,7 +402,8 @@ async def get_devices(
                 
                 # Cache the result and individual devices
                 logger.debug(f"Caching devices list: {cache_key}")
-                _cache_device_list(cache_key, response_data)
+                cache_service.set(cache_key, response_data, DEVICE_CACHE_TTL)  # Cache the full response
+                _cache_device_list(cache_key, response_data["devices"])  # Cache individual devices
                 
                 return response_data
 
@@ -485,7 +487,8 @@ async def get_devices(
             
             # Cache the result and individual devices
             logger.debug(f"Caching devices list: {cache_key}")
-            _cache_device_list(cache_key, response_data)
+            cache_service.set(cache_key, response_data, DEVICE_CACHE_TTL)  # Cache the full response
+            _cache_device_list(cache_key, response_data["devices"])  # Cache individual devices
             
             return response_data
         else:
@@ -503,7 +506,8 @@ async def get_devices(
             
             # Cache the result and individual devices
             logger.debug(f"Caching devices list: {cache_key}")
-            _cache_device_list(cache_key, response_data)
+            cache_service.set(cache_key, response_data, DEVICE_CACHE_TTL)  # Cache the full response
+            _cache_device_list(cache_key, response_data["devices"])  # Cache individual devices
             
             return response_data
 
