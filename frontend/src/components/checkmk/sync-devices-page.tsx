@@ -135,7 +135,7 @@ export function CheckMKSyncDevicesPage() {
   // Fetch available completed jobs from backend
   const fetchAvailableJobs = async () => {
     try {
-      const response = await fetch('/api/proxy/nb2cmk/jobs', {
+      const response = await fetch('/api/proxy/jobs/', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -164,7 +164,7 @@ export function CheckMKSyncDevicesPage() {
     
     setLoadingResults(true)
     try {
-      const response = await fetch(`/api/proxy/nb2cmk/job/${selectedJobId}/results`, {
+      const response = await fetch(`/api/proxy/jobs/${selectedJobId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -173,10 +173,53 @@ export function CheckMKSyncDevicesPage() {
       
       if (response.ok) {
         const data = await response.json()
-        setDevices(data.devices || [])
+        
+        console.log('=== CHECKMK JOB RESULT DEBUG ===')
+        console.log('RAW API RESPONSE:', data)
+        console.log('Full job result:', data.job)
+        console.log('Device results count:', data.job?.device_results?.length || 0)
+        if (data.job?.device_results && data.job.device_results.length > 0) {
+          console.log('First device result sample:', data.job.device_results[0])
+          console.log('Device result keys:', Object.keys(data.job.device_results[0]))
+          
+          // Check for enhanced data
+          const firstDevice = data.job.device_results[0]
+          console.log('Enhanced data check:')
+          console.log('  - role:', firstDevice.role, typeof firstDevice.role)
+          console.log('  - location:', firstDevice.location, typeof firstDevice.location) 
+          console.log('  - device_status:', firstDevice.device_status, typeof firstDevice.device_status)
+          console.log('  - primary_ip4:', firstDevice.primary_ip4, typeof firstDevice.primary_ip4)
+          console.log('  - result_data:', firstDevice.result_data, typeof firstDevice.result_data)
+          if (firstDevice.result_data) {
+            console.log('  - result_data keys:', Object.keys(firstDevice.result_data))
+            console.log('  - result_data.data?.result:', firstDevice.result_data.data?.result)
+            console.log('  - result_data.comparison_result:', firstDevice.result_data.comparison_result)
+            console.log('  - result_data.status:', firstDevice.result_data.status)
+          }
+        }
+        console.log('=== END DEBUG ===')
+        
+        // Extract device results from the new job format
+        const deviceResults = data.job?.device_results || []
+        // Convert device results to the expected devices format
+        const devices = deviceResults.map((result: any, index: number) => ({
+          id: result.device_name || result.device || `device_${index}`, // Use device name as ID, fallback to device UUID or index
+          name: result.device_name || result.device || `device_${index}`, // Use device name for display, fallback to device UUID
+          role: result.role?.name || result.role || 'Unknown', // Extract name from object or use string directly
+          status: result.device_status?.name || result.status || 'Unknown', // Use device_status for device status, fallback to job status
+          location: result.location?.name || result.location || 'Unknown', // Extract name from object or use string directly
+          result_data: result.result_data,
+          error_message: result.error_message,
+          processed_at: result.processed_at,
+          checkmk_status: result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown' // Extract result from data.result
+        }))
+        
+        console.log('Converted devices sample:', devices[0])
+        console.log('Converted device keys:', devices.length > 0 ? Object.keys(devices[0]) : 'No devices')
+        setDevices(devices)
         setStatusMessage({
           type: 'success',
-          message: `Loaded ${data.devices?.length || 0} device comparison results from job ${selectedJobId.slice(0, 8)}...`
+          message: `Loaded ${devices.length} device comparison results from job ${selectedJobId.slice(0, 8)}...`
         })
         setShowStatusModal(true)
         
@@ -287,7 +330,7 @@ export function CheckMKSyncDevicesPage() {
               
               // If completed, silently load results
               if (data.status === 'completed') {
-                const resultResponse = await fetch(`/api/proxy/nb2cmk/job/${savedJobId}/results`, {
+                const resultResponse = await fetch(`/api/proxy/jobs/${savedJobId}`, {
                   headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -296,7 +339,34 @@ export function CheckMKSyncDevicesPage() {
                 
                 if (resultResponse.ok) {
                   const resultData = await resultResponse.json()
-                  setDevices(resultData.devices || [])
+                  
+                  console.log('=== CHECKMK useEffect storage load DEBUG ===')
+                  if (resultData.job?.device_results && resultData.job.device_results.length > 0) {
+                    console.log('First device result from storage load:', resultData.job.device_results[0])
+                    const firstDevice = resultData.job.device_results[0]
+                    console.log('Enhanced data in useEffect storage load:')
+                    console.log('  - role:', firstDevice.role, typeof firstDevice.role)
+                    console.log('  - location:', firstDevice.location, typeof firstDevice.location) 
+                    console.log('  - device_status:', firstDevice.device_status, typeof firstDevice.device_status)
+                  }
+                  console.log('=== END useEffect storage load DEBUG ===')
+                  
+                  // Extract device results from the new job format and convert to expected format
+                  const deviceResults = resultData.job?.device_results || []
+                  const devices = deviceResults.map((result: any, index: number) => ({
+                    id: result.device_name || `device_${index}`, // Use device name as ID, fallback to index
+                    name: result.device_name,
+                    role: result.role?.name || result.role || 'Unknown', // Extract name from object or use string directly
+                    status: result.device_status?.name || result.status || 'Unknown', // Use device_status for device status
+                    location: result.location?.name || result.location || 'Unknown', // Extract name from object or use string directly
+                    result_data: result.result_data,
+                    error_message: result.error_message,
+                    processed_at: result.processed_at,
+                    checkmk_status: result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown' // Extract result from data.result
+                  }))
+                  
+                  console.log('Converted devices in useEffect storage load sample:', devices[0])
+                  setDevices(devices)
                 }
               }
             }
@@ -558,7 +628,7 @@ export function CheckMKSyncDevicesPage() {
     }
 
     try {
-      const response = await fetch(`/api/proxy/nb2cmk/job/${targetJobId}/results`, {
+      const response = await fetch(`/api/proxy/jobs/${targetJobId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -567,7 +637,35 @@ export function CheckMKSyncDevicesPage() {
 
       if (response.ok) {
         const data = await response.json()
-        setDevices(data.devices || [])
+        
+        console.log('=== CHECKMK handleViewDiff DEBUG ===')
+        console.log('Full job result:', data.job)
+        if (data.job?.device_results && data.job.device_results.length > 0) {
+          console.log('First device result sample:', data.job.device_results[0])
+          const firstDevice = data.job.device_results[0]
+          console.log('Enhanced data in handleViewDiff:')
+          console.log('  - role:', firstDevice.role, typeof firstDevice.role)
+          console.log('  - location:', firstDevice.location, typeof firstDevice.location) 
+          console.log('  - device_status:', firstDevice.device_status, typeof firstDevice.device_status)
+        }
+        console.log('=== END handleViewDiff DEBUG ===')
+        
+        // Extract device results from the new job format and convert to expected format
+        const deviceResults = data.job?.device_results || []
+        const devices = deviceResults.map((result: any, index: number) => ({
+          id: result.device_name || `device_${index}`, // Use device name as ID, fallback to index
+          name: result.device_name,
+          role: result.role?.name || result.role || 'Unknown', // Extract name from object or use string directly
+          status: result.device_status?.name || result.status || 'Unknown', // Use device_status for device status
+          location: result.location?.name || result.location || 'Unknown', // Extract name from object or use string directly
+          result_data: result.result_data,
+          error_message: result.error_message,
+          processed_at: result.processed_at,
+          checkmk_status: result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown' // Extract result from data.result
+        }))
+        
+        console.log('Converted devices in handleViewDiff sample:', devices[0])
+        setDevices(devices)
         
         if (!silent) {
           setStatusMessage({
@@ -926,7 +1024,10 @@ export function CheckMKSyncDevicesPage() {
     }
   }
 
-  const getCheckMKStatusBadge = (checkmkStatus: string) => {
+  const getCheckMKStatusBadge = (checkmkStatus: string | undefined) => {
+    if (!checkmkStatus) {
+      return <Badge variant="outline" className="bg-gray-100 text-gray-800">Unknown</Badge>
+    }
     switch (checkmkStatus.toLowerCase()) {
       case 'equal':
         return <Badge variant="default" className="bg-green-100 text-green-800">Synced</Badge>
@@ -1095,38 +1196,6 @@ export function CheckMKSyncDevicesPage() {
                 </DropdownMenu>
               </div>
 
-              {/* Site Filter */}
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">Site</Label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 text-xs justify-between min-w-[120px]">
-                      Site Filter
-                      {Object.values(siteFilters).filter(Boolean).length < availableSites.length && (
-                        <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
-                          {Object.values(siteFilters).filter(Boolean).length}
-                        </Badge>
-                      )}
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-40">
-                    <DropdownMenuLabel className="text-xs">Filter by Site</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {availableSites.map((site) => (
-                      <DropdownMenuCheckboxItem
-                        key={site}
-                        checked={siteFilters[site] || false}
-                        onCheckedChange={(checked) => 
-                          setSiteFilters(prev => ({ ...prev, [site]: !!checked }))
-                        }
-                      >
-                        {site}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
 
               {/* CheckMK Status Filter */}
               <div className="space-y-1">
@@ -1192,20 +1261,19 @@ export function CheckMKSyncDevicesPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Role</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Status</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Location</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Site</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">CheckMK</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">{devices.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                       No devices found. Select a job from the dropdown above and click "Load" to view comparison results.
                     </td>
                   </tr>
                 ) : filteredDevices.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                       No devices match the current filters.
                     </td>
                   </tr>
@@ -1231,9 +1299,6 @@ export function CheckMKSyncDevicesPage() {
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {device.location}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {getSiteFromDevice(device, defaultSite)}
                       </td>
                       <td className="px-4 py-3">
                         {getCheckMKStatusBadge(device.checkmk_status)}
@@ -1471,31 +1536,31 @@ export function CheckMKSyncDevicesPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <h3 className="font-semibold mb-2">Basic Information</h3>
+              <h3 className="font-semibold mb-2">Device Information</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div><strong>Name:</strong> {selectedDeviceForView?.name}</div>
                 <div><strong>Role:</strong> {selectedDeviceForView?.role}</div>
                 <div><strong>Status:</strong> {selectedDeviceForView?.status}</div>
                 <div><strong>Location:</strong> {selectedDeviceForView?.location}</div>
-                <div><strong>Site:</strong> {selectedDeviceForView ? getSiteFromDevice(selectedDeviceForView, defaultSite) : ''}</div>
                 <div><strong>CheckMK Status:</strong> {selectedDeviceForView && getCheckMKStatusBadge(selectedDeviceForView.checkmk_status)}</div>
+                <div><strong>Processed At:</strong> {selectedDeviceForView?.processed_at ? new Date(selectedDeviceForView.processed_at).toLocaleString() : 'N/A'}</div>
               </div>
             </div>
             
-            {selectedDeviceForView?.normalized_config && (
+            {selectedDeviceForView?.error_message && (
               <div>
-                <h3 className="font-semibold mb-2">Normalized Config (Nautobot)</h3>
-                <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto">
-                  {JSON.stringify(selectedDeviceForView.normalized_config, null, 2)}
-                </pre>
+                <h3 className="font-semibold mb-2 text-red-600">Error Message</h3>
+                <div className="bg-red-50 border border-red-200 p-4 rounded text-sm text-red-800">
+                  {selectedDeviceForView.error_message}
+                </div>
               </div>
             )}
             
-            {selectedDeviceForView?.checkmk_config && (
+            {selectedDeviceForView?.result_data && (
               <div>
-                <h3 className="font-semibold mb-2">CheckMK Config</h3>
-                <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto">
-                  {JSON.stringify(selectedDeviceForView.checkmk_config, null, 2)}
+                <h3 className="font-semibold mb-2">Job Result Details</h3>
+                <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-96">
+                  {JSON.stringify(selectedDeviceForView.result_data, null, 2)}
                 </pre>
               </div>
             )}

@@ -112,7 +112,7 @@ class DeviceNormalizationService:
                     "privacy_password": snmp_config.get("privacy_password", ""),
                 }
 
-                if snmp_config.get("type","") == "v3_auth_no_privacy":
+                if snmp_config.get("type", "") == "v3_auth_no_privacy":
                     # we have to remove the keys privacy_protocol and privacy_password
                     snmp_community.pop("privacy_protocol", None)
                     snmp_community.pop("privacy_password", None)

@@ -38,14 +38,31 @@ interface BackgroundJob {
   progress?: {
     processed: number
     total: number
-    message: string
+    message?: string
   }
-  results?: {
-    devices_processed: number
-    devices_added: number
-    devices_updated: number
-    errors: string[]
-  }
+  result_summary?: string
+  error_message?: string
+  metadata?: Record<string, any>
+  device_results?: Array<{
+    id: number
+    job_id: string
+    device_name: string
+    status: string
+    result_data: Record<string, any>
+    error_message?: string
+    processed_at: string
+  }>
+}
+
+interface SchedulerStatus {
+  scheduler_running: boolean
+  total_jobs: number
+  jobs: Array<{
+    id: string
+    name: string
+    next_run: string | null
+    trigger: string
+  }>
 }
 
 export function CheckMKJobsPage() {
@@ -59,10 +76,17 @@ export function CheckMKJobsPage() {
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [searchFilter, setSearchFilter] = useState<string>('')
   
-  // Auto-refresh jobs every 10 seconds
+  // APScheduler-specific state
+  const [schedulerStatus, setSchedulerStatus] = useState<SchedulerStatus | null>(null)
+  
+  // Auto-refresh jobs and scheduler status every 10 seconds
   useEffect(() => {
     fetchJobs()
-    const interval = setInterval(fetchJobs, 10000)
+    fetchSchedulerStatus()
+    const interval = setInterval(() => {
+      fetchJobs()
+      fetchSchedulerStatus()
+    }, 10000)
     return () => clearInterval(interval)
   }, [])
 
@@ -71,7 +95,8 @@ export function CheckMKJobsPage() {
     
     setLoading(true)
     try {
-      const response = await fetch('/api/proxy/nb2cmk/jobs', {
+      // Fetch jobs from the new independent job database
+      const response = await fetch('/api/proxy/jobs/', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -89,14 +114,11 @@ export function CheckMKJobsPage() {
     }
   }
 
-  const startNewJob = async (jobType: string) => {
+  const fetchSchedulerStatus = async () => {
     if (!token) return
     
     try {
-      // For now, all job types start device comparison jobs
-      // In the future, we could add different endpoints for different job types
-      const response = await fetch('/api/proxy/nb2cmk/start-diff-job', {
-        method: 'POST',
+      const response = await fetch('/api/proxy/jobs/scheduler-status', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -104,10 +126,44 @@ export function CheckMKJobsPage() {
       })
       
       if (response.ok) {
+        const data = await response.json()
+        setSchedulerStatus(data)
+      }
+    } catch (error) {
+      console.error('Error fetching scheduler status:', error)
+    }
+  }
+
+  const startNewJob = async (jobType: string) => {
+    if (!token) return
+    
+    try {
+      // Start a complete device comparison job that processes ALL devices
+      const response = await fetch('/api/proxy/jobs/compare-devices', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          // Empty devices list means "process all devices"
+          devices: [],
+          max_concurrent: 3  // Default concurrency for device processing
+        })
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Job started:', result)
         fetchJobs() // Refresh the job list
+      } else {
+        const error = await response.json()
+        console.error('Error starting job:', error)
+        alert(`Failed to start job: ${error.detail || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Error starting job:', error)
+      alert('Failed to start job: Network error')
     }
   }
 
@@ -115,8 +171,8 @@ export function CheckMKJobsPage() {
     if (!token) return
     
     try {
-      const response = await fetch(`/api/proxy/nb2cmk/job/${jobId}/cancel`, {
-        method: 'POST',
+      const response = await fetch(`/api/proxy/jobs/${jobId}/cancel`, {
+        method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -135,7 +191,7 @@ export function CheckMKJobsPage() {
     if (!token) return
     
     try {
-      const response = await fetch(`/api/proxy/nb2cmk/job/${jobId}`, {
+      const response = await fetch(`/api/proxy/jobs/${jobId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -155,7 +211,7 @@ export function CheckMKJobsPage() {
     if (!token) return
     
     try {
-      const response = await fetch('/api/proxy/nb2cmk/jobs/clear-completed', {
+      const response = await fetch('/api/proxy/jobs/cleanup', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -164,6 +220,8 @@ export function CheckMKJobsPage() {
       })
       
       if (response.ok) {
+        const result = await response.json()
+        console.log('Cleanup result:', result)
         fetchJobs() // Refresh the job list
       }
     } catch (error) {
@@ -275,10 +333,27 @@ export function CheckMKJobsPage() {
           </div>
         </div>
         <div className="p-4">
+          {/* Scheduler Status */}
+          {schedulerStatus && (
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Activity className={`h-4 w-4 ${schedulerStatus.scheduler_running ? 'text-green-600' : 'text-red-600'}`} />
+                  <span className="text-sm font-medium">
+                    Scheduler Status: {schedulerStatus.scheduler_running ? 'Running' : 'Stopped'}
+                  </span>
+                  <Badge variant="outline" className="ml-2">
+                    {schedulerStatus.total_jobs} active jobs
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="flex items-center gap-4 mb-4">
             <Button onClick={() => startNewJob('device-comparison')} className="bg-purple-600 hover:bg-purple-700">
               <Play className="h-4 w-4 mr-2" />
-              Start Device Comparison
+              Start Device Comparison Job
             </Button>
             <Button onClick={clearAllCompletedJobs} variant="outline" className="text-red-600 hover:bg-red-50">
               <Trash2 className="h-4 w-4 mr-2" />
@@ -525,6 +600,7 @@ export function CheckMKJobsPage() {
         </div>
       </div>
 
+
       {/* Job Details Dialog */}
       <Dialog open={!!selectedJob} onOpenChange={(open) => !open && setSelectedJob(null)}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
@@ -562,26 +638,51 @@ export function CheckMKJobsPage() {
               </div>
             )}
             
-            {selectedJob?.results && (
+            {selectedJob?.result_summary && (
               <div>
-                <h3 className="font-semibold mb-2">Results</h3>
-                <div className="bg-gray-50 p-4 rounded">
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>Devices Processed: {selectedJob.results.devices_processed}</div>
-                    <div>Devices Added: {selectedJob.results.devices_added}</div>
-                    <div>Devices Updated: {selectedJob.results.devices_updated}</div>
-                    <div>Errors: {selectedJob.results.errors.length}</div>
+                <h3 className="font-semibold mb-2">Result Summary</h3>
+                <div className="bg-gray-50 p-3 rounded text-sm">
+                  {selectedJob.result_summary}
+                </div>
+              </div>
+            )}
+
+            {selectedJob?.error_message && (
+              <div>
+                <h3 className="font-semibold mb-2 text-red-600">Error</h3>
+                <div className="bg-red-50 p-3 rounded text-sm text-red-700 border border-red-200">
+                  {selectedJob.error_message}
+                </div>
+              </div>
+            )}
+            
+            {selectedJob?.device_results && selectedJob.device_results.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-2">Device Results ({selectedJob.device_results.length})</h3>
+                <div className="bg-gray-50 p-4 rounded max-h-60 overflow-y-auto">
+                  <div className="space-y-2">
+                    {selectedJob.device_results.map((result, idx) => (
+                      <div key={idx} className="border border-gray-200 rounded p-3 bg-white">
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="font-medium text-sm">{result.device_name}</span>
+                          <Badge 
+                            variant={result.status === 'completed' ? 'default' : 'destructive'}
+                            className="text-xs"
+                          >
+                            {result.status}
+                          </Badge>
+                        </div>
+                        {result.error_message && (
+                          <div className="text-red-600 text-xs mt-1">
+                            Error: {result.error_message}
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-500 mt-1">
+                          Processed: {new Date(result.processed_at).toLocaleString()}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  {selectedJob.results.errors.length > 0 && (
-                    <div className="mt-3">
-                      <h4 className="font-medium text-red-600 mb-2">Errors:</h4>
-                      <ul className="list-disc list-inside text-sm text-red-600 space-y-1">
-                        {selectedJob.results.errors.map((error, idx) => (
-                          <li key={idx}>{error}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
                 </div>
               </div>
             )}

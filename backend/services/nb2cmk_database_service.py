@@ -131,9 +131,12 @@ class NB2CMKDatabaseService:
             logger.error(f"NB2CMK database initialization failed: {e}")
             return False
 
-    def create_job(self, username: Optional[str] = None) -> str:
+    def create_job(
+        self, username: Optional[str] = None, job_id: Optional[str] = None
+    ) -> str:
         """Create a new background job and return job_id."""
-        job_id = str(uuid.uuid4())
+        if job_id is None:
+            job_id = str(uuid.uuid4())
         now = datetime.now()
 
         try:

@@ -15,9 +15,62 @@ from models.nautobot import (
     DeviceFilter,
 )
 from services.nautobot import nautobot_service
+from services.cache_service import cache_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/nautobot", tags=["nautobot"])
+
+# Cache configuration
+DEVICE_CACHE_TTL = 30 * 60  # 30 minutes in seconds
+
+
+def _get_device_cache_key(device_id: str) -> str:
+    """Generate cache key for individual device."""
+    return f"nautobot:devices:{device_id}"
+
+
+def _get_device_list_cache_key(filter_type: str = None, filter_value: str = None, 
+                               limit: int = None, offset: int = None) -> str:
+    """Generate cache key for device list."""
+    if filter_type and filter_value:
+        key = f"nautobot:devices:list:{filter_type}:{filter_value}"
+    else:
+        key = "nautobot:devices:list:all"
+    
+    if limit is not None and offset is not None:
+        key += f":limit_{limit}:offset_{offset}"
+    
+    return key
+
+
+def _cache_device(device: dict) -> None:
+    """Cache individual device data."""
+    if device and device.get("id"):
+        cache_key = _get_device_cache_key(device["id"])
+        cache_service.set(cache_key, device, DEVICE_CACHE_TTL)
+
+
+def _get_cached_device(device_id: str) -> Optional[dict]:
+    """Get cached device data."""
+    cache_key = _get_device_cache_key(device_id)
+    return cache_service.get(cache_key)
+
+
+def _cache_device_list(cache_key: str, devices: list) -> None:
+    """Cache device list and individual devices."""
+    # Cache the list
+    cache_service.set(cache_key, devices, DEVICE_CACHE_TTL)
+    
+    # Cache individual devices
+    for device in devices:
+        _cache_device(device)
+
+
+def _get_cached_device_list(cache_key: str) -> Optional[list]:
+    """Get cached device list."""
+    return cache_service.get(cache_key)
+
+
 
 
 @router.get("/test")
@@ -92,6 +145,13 @@ async def get_devices(
         filter_value: Value to filter by
     """
     try:
+        # Check cache first
+        cache_key = _get_device_list_cache_key(filter_type, filter_value, limit, offset)
+        cached_result = _get_cached_device_list(cache_key)
+        
+        if cached_result is not None:
+            logger.debug(f"Cache hit for devices list: {cache_key}")
+            return cached_result
         # Build GraphQL query based on filters
         variables = {}
 
@@ -165,7 +225,7 @@ async def get_devices(
                 # Calculate if there are more pages
                 has_more = (offset or 0) + len(devices) < total_count
 
-                return {
+                response_data = {
                     "devices": devices,
                     "count": total_count,  # Return actual total count
                     "has_more": has_more,
@@ -179,6 +239,12 @@ async def get_devices(
                     if (offset or 0) == 0
                     else f"/api/nautobot/devices?limit={limit}&offset={max(0, (offset or 0) - limit)}&filter_type={filter_type}&filter_value={filter_value}",
                 }
+                
+                # Cache the result and individual devices
+                logger.debug(f"Caching devices list: {cache_key}")
+                _cache_device_list(cache_key, response_data)
+                
+                return response_data
 
             elif filter_type == "location":
                 query = """
@@ -236,7 +302,7 @@ async def get_devices(
 
                 has_more = len(devices) == limit if limit else False
 
-                return {
+                response_data = {
                     "devices": devices,
                     "count": len(devices),
                     "has_more": has_more,
@@ -250,6 +316,12 @@ async def get_devices(
                     if (offset or 0) == 0
                     else f"/api/nautobot/devices?limit={limit}&offset={max(0, (offset or 0) - limit)}&filter_type={filter_type}&filter_value={filter_value}",
                 }
+                
+                # Cache the result and individual devices
+                logger.debug(f"Caching devices list: {cache_key}")
+                _cache_device_list(cache_key, response_data)
+                
+                return response_data
 
             elif filter_type == "prefix":
                 # Use prefix filtering - correct Nautobot syntax
@@ -312,7 +384,7 @@ async def get_devices(
                 devices = list(devices_dict.values())
                 has_more = len(devices) == limit if limit else False
 
-                return {
+                response_data = {
                     "devices": devices,
                     "count": len(devices),
                     "has_more": has_more,
@@ -326,6 +398,12 @@ async def get_devices(
                     if (offset or 0) == 0
                     else f"/api/nautobot/devices?limit={limit}&offset={max(0, (offset or 0) - limit)}&filter_type={filter_type}&filter_value={filter_value}",
                 }
+                
+                # Cache the result and individual devices
+                logger.debug(f"Caching devices list: {cache_key}")
+                _cache_device_list(cache_key, response_data)
+                
+                return response_data
 
         # Standard device query when no filters are provided
         query = """
@@ -390,7 +468,7 @@ async def get_devices(
             # Calculate if there are more pages
             has_more = (offset or 0) + len(devices) < total_count
 
-            return {
+            response_data = {
                 "devices": devices,
                 "count": total_count,  # Return actual total count
                 "has_more": has_more,
@@ -404,9 +482,15 @@ async def get_devices(
                 if (offset or 0) == 0
                 else f"/api/nautobot/devices?limit={limit}&offset={max(0, (offset or 0) - limit)}",
             }
+            
+            # Cache the result and individual devices
+            logger.debug(f"Caching devices list: {cache_key}")
+            _cache_device_list(cache_key, response_data)
+            
+            return response_data
         else:
             # No pagination - return all devices (legacy behavior)
-            return {
+            response_data = {
                 "devices": devices,
                 "count": len(devices),
                 "has_more": False,
@@ -416,6 +500,12 @@ async def get_devices(
                 "next": None,
                 "previous": None,
             }
+            
+            # Cache the result and individual devices
+            logger.debug(f"Caching devices list: {cache_key}")
+            _cache_device_list(cache_key, response_data)
+            
+            return response_data
 
     except Exception as e:
         logger.error(f"Error fetching devices: {str(e)}")
@@ -429,6 +519,13 @@ async def get_devices(
 async def get_device(device_id: str, current_user: dict = Depends(verify_admin_token)):
     """Get specific device details from Nautobot."""
     try:
+        # Check cache first
+        cached_device = _get_cached_device(device_id)
+        if cached_device is not None:
+            logger.debug(f"Cache hit for device: {device_id}")
+            return cached_device
+        
+        logger.debug(f"Cache miss for device: {device_id}")
         query = """
         query getDevice($deviceId: ID!) {
           device(id: $deviceId) {
@@ -461,7 +558,14 @@ async def get_device(device_id: str, current_user: dict = Depends(verify_admin_t
                 detail=f"GraphQL errors: {result['errors']}",
             )
 
-        return result["data"]["device"]
+        device = result["data"]["device"]
+        
+        # Cache the device
+        if device:
+            logger.debug(f"Caching device: {device_id}")
+            _cache_device(device)
+        
+        return device
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -1135,3 +1239,5 @@ async def get_nautobot_device_custom_fields(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch device custom fields: {str(e)}",
         )
+
+

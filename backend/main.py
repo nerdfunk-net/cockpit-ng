@@ -8,6 +8,7 @@ for better code organization and maintainability.
 from __future__ import annotations
 import logging
 from datetime import datetime
+from typing import Optional
 from fastapi import FastAPI, Depends
 import asyncio
 
@@ -28,7 +29,11 @@ from routers.cache import router as cache_router
 from routers.profile import router as profile_router
 from routers.user_management import router as user_management_router
 from routers.git_repositories import router as git_repositories_router
+from routers.jobs import router as jobs_router
 from health import router as health_router
+
+# APScheduler service (optional for testing)
+from services.apscheduler_job_service import APSchedulerJobService
 
 # Import auth dependency
 from core.auth import verify_token
@@ -47,6 +52,9 @@ app = FastAPI(
     redirect_slashes=True,
 )
 
+# Global APScheduler service instance
+apscheduler_service: Optional[APSchedulerJobService] = None
+
 # Include routers
 app.include_router(auth_router)
 app.include_router(nautobot_router)
@@ -64,6 +72,7 @@ app.include_router(cache_router)
 app.include_router(profile_router)
 app.include_router(user_management_router)
 app.include_router(git_repositories_router)
+app.include_router(jobs_router)
 app.include_router(health_router)
 
 
@@ -179,13 +188,32 @@ if __name__ == "__main__":
 
 
 # Startup prefetch for Git cache (commits, optionally refresh loop)
-@app.on_event("startup")
-async def startup_prefetch_cache():
-    """Warm up in-memory cache for selected items on startup, and optionally refresh.
+@app.on_event("startup") 
+async def startup_services():
+    """Initialize all services on startup."""
+    logger.info("=== Application startup - initializing services ===")
+    
+    # Initialize APScheduler service first
+    try:
+        global apscheduler_service
+        if apscheduler_service is None:
+            logger.info("Initializing APScheduler service...")
+            apscheduler_service = APSchedulerJobService(
+                max_workers=10,
+                max_parallel_jobs=5,
+                data_dir="./data/jobs",
+                cleanup_after_days=7
+            )
+            await apscheduler_service.start()
+            logger.info("APScheduler service initialized and started successfully")
+        else:
+            logger.info("APScheduler service already initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize APScheduler service: {e}")
+        logger.exception("Full APScheduler initialization error:")
+        apscheduler_service = None
 
-    Items are controlled by cache settings 'prefetch_items' map, e.g.:
-    {"git": true, "locations": false}
-    """
+    # Initialize cache prefetch
     try:
         logger.debug("Startup cache: hook invoked")
         # Local imports to avoid circular dependencies at import time
@@ -345,5 +373,23 @@ async def startup_prefetch_cache():
                 logger.debug(
                     "Startup cache: refresh loop disabled because git prefetch is off"
                 )
+
     except Exception as e:
         logger.warning(f"Startup cache: Failed to initialize cache prefetch: {e}")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup on application shutdown."""
+    try:
+        global apscheduler_service
+        if apscheduler_service:
+            await apscheduler_service.shutdown()
+            logger.info("APScheduler service shutdown completed")
+    except Exception as e:
+        logger.warning(f"Error during APScheduler shutdown: {e}")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

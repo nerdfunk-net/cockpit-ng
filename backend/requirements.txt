@@ -15,3 +15,5 @@ netmiko
 ntc-templates
 napalm
 pyyaml
+apscheduler
+sqlalchemy

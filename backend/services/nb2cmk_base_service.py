@@ -454,24 +454,32 @@ class NautobotToCheckMKService:
                     logger.debug(f"Nautobot attributes filtered out: {nb_filtered_out}")
                 if cmk_filtered_out:
                     logger.debug(f"CheckMK attributes filtered out: {cmk_filtered_out}")
-                
+
                 logger.debug(f"Ignore attributes list: {ignore_attributes}")
-                logger.debug(f"Nautobot attributes after filtering: {list(nb_attributes_filtered.keys())}")
-                logger.debug(f"CheckMK attributes after filtering: {list(cmk_attributes_filtered.keys())}")
+                logger.debug(
+                    f"Nautobot attributes after filtering: {list(nb_attributes_filtered.keys())}"
+                )
+                logger.debug(
+                    f"CheckMK attributes after filtering: {list(cmk_attributes_filtered.keys())}"
+                )
 
                 # Compare attributes (only non-ignored ones)
                 for key, nb_value in nb_attributes_filtered.items():
                     if key in cmk_attributes_filtered:
                         cmk_value = cmk_attributes_filtered[key]
                         if nb_value != cmk_value:
-                            logger.debug(f"Attribute '{key}' differs: Nautobot='{nb_value}' vs CheckMK='{cmk_value}'")
+                            logger.debug(
+                                f"Attribute '{key}' differs: Nautobot='{nb_value}' vs CheckMK='{cmk_value}'"
+                            )
                             differences.append(
                                 f"attributes.'{key}': Nautobot='{nb_value}' vs CheckMK='{cmk_value}'"
                             )
                         # else:
                         #     logger.debug(f"Attribute '{key}' matches: '{nb_value}'")
                     else:
-                        logger.debug(f"Attribute '{key}' present in Nautobot but missing in CheckMK")
+                        logger.debug(
+                            f"Attribute '{key}' present in Nautobot but missing in CheckMK"
+                        )
                         differences.append(
                             f"attributes.'{key}': Present in Nautobot ('{nb_value}') but missing in CheckMK"
                         )
@@ -479,7 +487,9 @@ class NautobotToCheckMKService:
                 # Check for attributes in CheckMK that are not in normalized config (only non-ignored ones)
                 for key, cmk_value in cmk_attributes_filtered.items():
                     if key not in nb_attributes_filtered:
-                        logger.debug(f"Attribute '{key}' present in CheckMK but missing in Nautobot")
+                        logger.debug(
+                            f"Attribute '{key}' present in CheckMK but missing in Nautobot"
+                        )
                         differences.append(
                             f"attributes.'{key}': Present in CheckMK ('{cmk_value}') but missing in Nautobot"
                         )
@@ -780,11 +790,10 @@ class NautobotToCheckMKService:
             List of attribute names
         """
         ignore_attributes = config_service.get_ignore_attributes()
-        return [
-            key for key in nb_attributes.keys() if key not in ignore_attributes
-        ] + [
+        return [key for key in nb_attributes.keys() if key not in ignore_attributes] + [
             key for key in cmk_attributes.keys() if key not in ignore_attributes
         ]
+
 
 # Global instance for dependency injection
 nb2cmk_service = NautobotToCheckMKService()

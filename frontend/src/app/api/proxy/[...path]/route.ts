@@ -48,15 +48,22 @@ async function handleRequest(
   pathSegments: string[]
 ) {
   try {
-    const path = pathSegments.join('/')
+    const originalPath = request.nextUrl.pathname
+    const proxyPrefix = '/api/proxy/'
+    
+    // Extract the path after /api/proxy/
+    const pathAfterProxy = originalPath.startsWith(proxyPrefix) 
+      ? originalPath.slice(proxyPrefix.length)
+      : pathSegments.join('/')
+    
     const searchParams = request.nextUrl.searchParams.toString()
     
     // Handle auth, profile, and user-management endpoints differently - they don't use /api/ prefix
     let url: string
-    if (path.startsWith('auth/') || path.startsWith('profile') || path.startsWith('user-management')) {
-      url = `${BACKEND_URL}/${path}${searchParams ? `?${searchParams}` : ''}`
+    if (pathAfterProxy.startsWith('auth/') || pathAfterProxy.startsWith('profile') || pathAfterProxy.startsWith('user-management')) {
+      url = `${BACKEND_URL}/${pathAfterProxy}${searchParams ? `?${searchParams}` : ''}`
     } else {
-      url = `${BACKEND_URL}/api/${path}${searchParams ? `?${searchParams}` : ''}`
+      url = `${BACKEND_URL}/api/${pathAfterProxy}${searchParams ? `?${searchParams}` : ''}`
     }
     
     console.log(`Frontend API: Proxying ${method} request to:`, url)

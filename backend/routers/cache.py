@@ -7,11 +7,33 @@ and management operations. All endpoints are protected by token authentication.
 
 from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
+from typing import Optional
 
 from core.auth import verify_admin_token
 from services.cache_service import cache_service
 
 router = APIRouter(prefix="/api/cache", tags=["cache"])
+
+
+# Device cache management functions
+def _get_device_cache_key(device_id: str) -> str:
+    """Generate cache key for individual device."""
+    return f"nautobot:devices:{device_id}"
+
+
+def _clear_device_cache(device_id: str = None) -> int:
+    """Clear device cache. If device_id is provided, clear only that device. Otherwise clear all device cache."""
+    if device_id:
+        # Clear specific device
+        cache_key = _get_device_cache_key(device_id)
+        if cache_service.get(cache_key):
+            # Since we can't clear individual keys, we'll clear the namespace
+            # This will clear all device cache, but it's the best we can do
+            return cache_service.clear_namespace("nautobot:devices")
+        return 0
+    else:
+        # Clear all device-related cache
+        return cache_service.clear_namespace("nautobot:devices")
 
 
 @router.get("/stats")
@@ -102,6 +124,57 @@ async def cleanup_expired(current_user: dict = Depends(verify_admin_token)):
             "success": True,
             "message": f"Removed {removed_count} expired entries",
             "removed_count": removed_count,
+        }
+    except Exception as exc:
+        return {"success": False, "message": str(exc)}
+
+
+@router.post("/devices/clear")
+async def clear_devices_cache(
+    payload: dict = None, 
+    current_user: dict = Depends(verify_admin_token)
+):
+    """Clear device cache. Accepts optional JSON { "device_id": "123" }.
+    
+    If device_id is provided, clears cache for that specific device.
+    If device_id is omitted, clears all device cache entries.
+    """
+    try:
+        device_id = None
+        if payload and isinstance(payload, dict):
+            device_id = payload.get("device_id")
+        
+        cleared_count = _clear_device_cache(device_id)
+        
+        if device_id:
+            message = f"Cleared cache for device {device_id}" if cleared_count > 0 else f"No cache found for device {device_id}"
+        else:
+            message = f"Cleared {cleared_count} device cache entries"
+        
+        return {
+            "success": True,
+            "message": message,
+            "cleared_count": cleared_count
+        }
+    except Exception as exc:
+        return {"success": False, "message": str(exc)}
+
+
+@router.get("/devices/stats")
+async def get_devices_cache_stats(current_user: dict = Depends(verify_admin_token)):
+    """Get device cache statistics and information."""
+    try:
+        # Get namespace stats for device cache
+        namespace_info = cache_service.get_namespace_info("nautobot:devices")
+        
+        return {
+            "success": True,
+            "data": {
+                "namespace": "nautobot:devices",
+                "cache_info": namespace_info,
+                "cache_ttl_seconds": 1800,  # 30 minutes
+                "cache_ttl_minutes": 30
+            }
         }
     except Exception as exc:
         return {"success": False, "message": str(exc)}
