@@ -258,6 +258,153 @@ async def execute_devices_compare_standalone(
         raise
 
 
+# Standalone function to fetch and cache all devices
+async def execute_get_all_devices_standalone(job_id: str, username: str):
+    """
+    Standalone function to fetch all device properties from Nautobot and cache them.
+    This function runs outside the class to avoid serialization issues.
+    """
+    try:
+        logger.info(f"Starting device caching job {job_id}")
+        
+        # Get fresh service instances
+        from services.job_database_service import job_db_service
+        from services.nautobot import nautobot_service
+        from services.cache_service import cache_service
+        
+        # Update job status to running
+        job_db_service.update_job_status(job_id, JobStatus.RUNNING)
+        
+        # GraphQL query to fetch all devices with essential properties
+        query = """
+        query getAllDevices {
+          devices {
+            id
+            name
+            role {
+              name
+            }
+            location {
+              name
+            }
+            primary_ip4 {
+              address
+            }
+            status {
+              name
+            }
+            device_type {
+              model
+              manufacturer {
+                name
+              }
+            }
+            platform {
+              name
+            }
+            serial
+            asset_tag
+            comments
+          }
+        }
+        """
+        
+        # Execute the GraphQL query
+        logger.info(f"Job {job_id}: Fetching all devices from Nautobot...")
+        result = await nautobot_service.graphql_query(query, {})
+        
+        if "errors" in result:
+            error_msg = f"GraphQL errors: {result['errors']}"
+            logger.error(f"Job {job_id}: {error_msg}")
+            job_db_service.update_job_status(job_id, JobStatus.FAILED, error_msg)
+            return
+            
+        devices = result.get("data", {}).get("devices", [])
+        total_devices = len(devices)
+        
+        if total_devices == 0:
+            logger.warning(f"Job {job_id}: No devices found in Nautobot")
+            job_db_service.update_job_status(job_id, JobStatus.COMPLETED, "No devices found to cache")
+            return
+            
+        logger.info(f"Job {job_id}: Processing {total_devices} devices for caching")
+        
+        # Update job progress
+        job_db_service.update_job_progress(job_id, 0, total_devices, "Starting device caching...")
+        
+        # Cache each device individually with a unique key
+        cached_count = 0
+        failed_count = 0
+        
+        for i, device in enumerate(devices):
+            try:
+                device_id = device.get("id")
+                device_name = device.get("name", f"device_{i}")
+                
+                if not device_id:
+                    logger.warning(f"Job {job_id}: Device {device_name} has no ID, skipping")
+                    failed_count += 1
+                    continue
+                
+                # Cache the device with a 1-hour TTL (3600 seconds)
+                cache_key = f"nautobot:devices:{device_id}"
+                cache_service.set(cache_key, device, 3600)
+                cached_count += 1
+                
+                # Update progress periodically
+                if (i + 1) % 50 == 0 or i == total_devices - 1:
+                    progress_msg = f"Cached {cached_count} devices, failed {failed_count}"
+                    job_db_service.update_job_progress(job_id, i + 1, total_devices, progress_msg)
+                    logger.info(f"Job {job_id}: {progress_msg} ({i + 1}/{total_devices})")
+                    
+            except Exception as e:
+                failed_count += 1
+                logger.error(f"Job {job_id}: Failed to cache device {device.get('name', 'unknown')}: {e}")
+        
+        # Also cache devices as a bulk collection for quick access
+        try:
+            bulk_cache_key = "nautobot:devices:all"
+            # Store a lightweight version with just essential info
+            lightweight_devices = [
+                {
+                    "id": device.get("id"),
+                    "name": device.get("name"),
+                    "role": device.get("role", {}).get("name") if device.get("role") else None,
+                    "location": device.get("location", {}).get("name") if device.get("location") else None,
+                    "status": device.get("status", {}).get("name") if device.get("status") else None,
+                    "primary_ip4": device.get("primary_ip4", {}).get("address") if device.get("primary_ip4") else None,
+                    "device_type": device.get("device_type", {}).get("model") if device.get("device_type") else None
+                }
+                for device in devices
+            ]
+            cache_service.set(bulk_cache_key, lightweight_devices, 3600)
+            logger.info(f"Job {job_id}: Cached bulk device collection with {len(lightweight_devices)} devices")
+        except Exception as e:
+            logger.error(f"Job {job_id}: Failed to cache bulk device collection: {e}")
+        
+        # Determine final status
+        if failed_count == 0:
+            final_status = JobStatus.COMPLETED
+            summary = f"Successfully cached all {cached_count} devices"
+        elif cached_count > 0:
+            final_status = JobStatus.COMPLETED  # Partial success
+            summary = f"Cached {cached_count} devices, {failed_count} failed"
+        else:
+            final_status = JobStatus.FAILED
+            summary = f"Failed to cache any devices ({failed_count} failures)"
+        
+        # Final progress update
+        job_db_service.update_job_progress(job_id, total_devices, total_devices, summary)
+        job_db_service.update_job_status(job_id, final_status, None if final_status == JobStatus.COMPLETED else f"{failed_count} devices failed to cache")
+        
+        logger.info(f"Job {job_id} completed: {summary}")
+        
+    except Exception as e:
+        logger.error(f"Job {job_id} failed with exception: {e}")
+        job_db_service.update_job_status(job_id, JobStatus.FAILED, str(e))
+        raise
+
+
 class APSchedulerJobService:
     """APScheduler-based job service for parallel job execution."""
 
@@ -432,6 +579,55 @@ class APSchedulerJobService:
             job_id=job_id,
             status=JobStatus.PENDING,
             message=f"APScheduler job started with ID {job_id} for {len(devices)} devices",
+        )
+
+    async def start_get_all_devices_job(
+        self,
+        username: Optional[str] = None,
+        job_prefix: str = "dev_cache",
+    ) -> JobStartResponse:
+        """Start a background job to fetch and cache all device properties from Nautobot."""
+        
+        # Check if there's already a device caching job running
+        running_jobs = [
+            job for job in self.scheduler.get_jobs() 
+            if job.id.startswith(job_prefix) or job.id.startswith("device_cache")
+        ]
+        
+        if running_jobs:
+            return JobStartResponse(
+                job_id="",
+                status=JobStatus.FAILED,
+                message=f"Device caching job already running. Please wait for it to complete.",
+            )
+        
+        # Create job ID
+        job_id = f"{job_prefix}_{uuid.uuid4().hex[:8]}"
+        
+        # Create job in database
+        job_db_service.create_job(
+            job_id=job_id,
+            job_type=JobType.DEVICE_CACHE,
+            started_by=username,
+            metadata={"operation": "cache_all_devices"},
+        )
+        
+        # Schedule the job
+        self.scheduler.add_job(
+            execute_get_all_devices_standalone,
+            "date",
+            run_date=datetime.now(),
+            id=job_id,
+            args=[job_id, username],
+            max_instances=1,
+        )
+        
+        logger.info(f"Started device caching job {job_id}")
+        
+        return JobStartResponse(
+            job_id=job_id,
+            status=JobStatus.PENDING,
+            message=f"Device caching job started with ID {job_id}",
         )
 
     def cleanup_jobs_now(self) -> Dict[str, Any]:

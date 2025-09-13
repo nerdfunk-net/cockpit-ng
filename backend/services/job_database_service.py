@@ -30,6 +30,7 @@ class JobType(str, Enum):
 
     DEVICE_COMPARISON = "device-comparison"
     DEVICE_SYNC = "device-sync"
+    DEVICE_CACHE = "device-cache"
     BACKUP = "backup"
 
 

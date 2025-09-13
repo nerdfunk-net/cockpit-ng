@@ -33,6 +33,7 @@ interface CacheSettings {
   prefetch_items?: {
     git?: boolean
     locations?: boolean
+    devices?: boolean
   }
 }
 
@@ -96,7 +97,8 @@ export default function CacheManagement() {
     max_commits: 500,
     prefetch_items: {
       git: true,
-      locations: false
+      locations: false,
+      devices: false
     }
   })
   const [originalSettings, setOriginalSettings] = useState<CacheSettings | null>(null)
@@ -127,7 +129,7 @@ export default function CacheManagement() {
       if (response?.success && response.data) {
         const loadedSettings = {
           ...response.data,
-          prefetch_items: response.data.prefetch_items || { git: true, locations: false }
+          prefetch_items: response.data.prefetch_items || { git: true, locations: false, devices: false }
         }
         setSettings(loadedSettings)
         setOriginalSettings(loadedSettings)
@@ -446,6 +448,19 @@ export default function CacheManagement() {
                     />
                     <Label htmlFor="prefetch-locations" className="text-sm font-normal">
                       Locations
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="prefetch-devices"
+                      checked={settings.prefetch_items?.devices || false}
+                      onCheckedChange={(checked: boolean) => setSettings(prev => ({
+                        ...prev,
+                        prefetch_items: { ...prev.prefetch_items, devices: checked }
+                      }))}
+                    />
+                    <Label htmlFor="prefetch-devices" className="text-sm font-normal">
+                      Devices
                     </Label>
                   </div>
                 </div>

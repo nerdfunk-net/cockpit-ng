@@ -403,3 +403,23 @@ async def delete_job(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete job {job_id}: {str(e)}",
         )
+
+
+@router.post("/get-all-devices", response_model=JobStartResponse)
+async def start_get_all_devices_job(
+    current_user: dict = Depends(verify_token),
+    scheduler_service: APSchedulerJobService = Depends(get_scheduler_service),
+):
+    """Start a background job to fetch and cache all device properties from Nautobot"""
+    try:
+        username = current_user.get("sub", "unknown")
+        result = await scheduler_service.start_get_all_devices_job(username=username)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting get-all-devices job: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to start get-all-devices job: {str(e)}",
+        )

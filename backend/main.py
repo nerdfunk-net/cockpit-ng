@@ -326,6 +326,27 @@ async def startup_services():
             except Exception as e:
                 logger.warning(f"Startup cache: locations prefetch failed: {e}")
 
+        async def prefetch_devices_once():
+            """Prefetch all device properties from Nautobot using the background job system."""
+            try:
+                logger.debug("Startup cache: prefetch_devices_once() starting")
+                from main import apscheduler_service
+                
+                if not apscheduler_service:
+                    logger.warning("Startup cache: APScheduler service not available for device prefetch")
+                    return
+                
+                # Start the device caching job
+                result = await apscheduler_service.start_get_all_devices_job(username="system")
+                
+                if result.status == "pending":
+                    logger.debug(f"Startup cache: Device prefetch job started with ID {result.job_id}")
+                else:
+                    logger.warning(f"Startup cache: Device prefetch failed to start: {result.message}")
+                    
+            except Exception as e:
+                logger.warning(f"Startup cache: device prefetch failed: {e}")
+
         async def refresh_loop():
             # Periodically refresh cache if configured
             interval_min = int(cache_cfg.get("refresh_interval_minutes", 0))
@@ -334,7 +355,21 @@ async def startup_services():
             # Small initial delay to let app finish bootstrapping
             await asyncio.sleep(2)
             while True:
-                await prefetch_commits_once()
+                # Get current prefetch settings to determine what to refresh
+                current_cfg = settings_manager.get_cache_settings()
+                current_items = current_cfg.get("prefetch_items") or {
+                    "git": True,
+                    "locations": False,
+                    "devices": False,
+                }
+                
+                # Refresh enabled items
+                if current_items.get("git", True):
+                    await prefetch_commits_once()
+                if current_items.get("devices", False):
+                    await prefetch_devices_once()
+                # Note: locations don't typically need frequent refresh
+                
                 await asyncio.sleep(interval_min * 60)
 
         # Kick off a one-time prefetch without blocking startup (if enabled)
@@ -342,11 +377,13 @@ async def startup_services():
             prefetch_items = cache_cfg.get("prefetch_items") or {
                 "git": True,
                 "locations": False,
+                "devices": False,
             }
             # Map item keys to their prefetch coroutine
             prefetch_map = {
                 "git": prefetch_commits_once,
                 "locations": prefetch_locations_once,
+                "devices": prefetch_devices_once,
             }
             # Launch tasks for all enabled items that we know how to prefetch
             for key, enabled in prefetch_items.items():
@@ -359,19 +396,20 @@ async def startup_services():
                     logger.debug(f"Startup cache: prefetch disabled for '{key}'")
                 else:
                     logger.debug(f"Startup cache: no prefetch handler for '{key}'")
-        # Start background refresh if requested (applies to git commits only)
+        # Start background refresh if requested (applies to git commits and devices)
         if int(cache_cfg.get("refresh_interval_minutes", 0)) > 0:
-            # Only refresh commits if git prefetch is enabled
+            # Start refresh loop if git or devices prefetch is enabled
             p_items = cache_cfg.get("prefetch_items") or {
                 "git": True,
                 "locations": False,
+                "devices": False,
             }
-            if p_items.get("git", True):
-                logger.debug("Startup cache: starting commits refresh loop task")
+            if p_items.get("git", True) or p_items.get("devices", False):
+                logger.debug("Startup cache: starting refresh loop task")
                 asyncio.create_task(refresh_loop())
             else:
                 logger.debug(
-                    "Startup cache: refresh loop disabled because git prefetch is off"
+                    "Startup cache: refresh loop disabled because both git and devices prefetch are off"
                 )
 
     except Exception as e:

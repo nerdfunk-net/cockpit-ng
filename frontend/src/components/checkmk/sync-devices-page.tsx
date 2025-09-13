@@ -203,7 +203,7 @@ export function CheckMKSyncDevicesPage() {
         const deviceResults = data.job?.device_results || []
         // Convert device results to the expected devices format
         const devices = deviceResults.map((result: any, index: number) => ({
-          id: result.device_name || result.device || `device_${index}`, // Use device name as ID, fallback to device UUID or index
+          id: result.device_id || result.device_name || `device_${index}`, // Use device UUID as ID, fallback to device name or index
           name: result.device_name || result.device || `device_${index}`, // Use device name for display, fallback to device UUID
           role: result.role?.name || result.role || 'Unknown', // Extract name from object or use string directly
           status: result.device_status?.name || result.status || 'Unknown', // Use device_status for device status, fallback to job status
@@ -354,7 +354,7 @@ export function CheckMKSyncDevicesPage() {
                   // Extract device results from the new job format and convert to expected format
                   const deviceResults = resultData.job?.device_results || []
                   const devices = deviceResults.map((result: any, index: number) => ({
-                    id: result.device_name || `device_${index}`, // Use device name as ID, fallback to index
+                    id: result.device_id || result.device_name || `device_${index}`, // Use device UUID as ID, fallback to device name or index
                     name: result.device_name,
                     role: result.role?.name || result.role || 'Unknown', // Extract name from object or use string directly
                     status: result.device_status?.name || result.status || 'Unknown', // Use device_status for device status
@@ -653,7 +653,7 @@ export function CheckMKSyncDevicesPage() {
         // Extract device results from the new job format and convert to expected format
         const deviceResults = data.job?.device_results || []
         const devices = deviceResults.map((result: any, index: number) => ({
-          id: result.device_name || `device_${index}`, // Use device name as ID, fallback to index
+          id: result.device_id || result.device_name || `device_${index}`, // Use device UUID as ID, fallback to device name or index
           name: result.device_name,
           role: result.role?.name || result.role || 'Unknown', // Extract name from object or use string directly
           status: result.device_status?.name || result.status || 'Unknown', // Use device_status for device status
@@ -704,12 +704,119 @@ export function CheckMKSyncDevicesPage() {
 
   const handleSyncDevices = async () => {
     if (selectedDevices.size === 0) {
-      alert('Please select devices to sync')
+      setStatusMessage({
+        type: 'error',
+        message: 'Please select devices to sync'
+      })
+      setShowStatusModal(true)
       return
     }
-    
-    // Placeholder for sync functionality
-    console.log('Syncing devices:', Array.from(selectedDevices))
+
+    if (!token) {
+      setStatusMessage({
+        type: 'error',
+        message: 'Authentication required'
+      })
+      setShowStatusModal(true)
+      return
+    }
+
+    try {
+      const selectedDeviceList = Array.from(selectedDevices)
+      const selectedDeviceData = devices.filter(device => selectedDeviceList.includes(device.id))
+      const deviceNames = selectedDeviceData.map(device => device.name)
+
+      setStatusMessage({
+        type: 'info',
+        message: `Syncing ${selectedDevices.size} devices: ${deviceNames.join(', ')}...`
+      })
+      setShowStatusModal(true)
+
+      let syncedCount = 0
+      let errorCount = 0
+      const syncErrors: string[] = []
+
+      // Sync each device individually
+      for (const deviceId of selectedDeviceList) {
+        const device = devices.find(d => d.id === deviceId)
+        if (!device) continue
+
+
+        try {
+          const response = await fetch(`/api/proxy/nb2cmk/device/${device.id}/update`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          })
+
+          if (response.ok) {
+            syncedCount++
+            // Update device status to 'equal' since it's now synced
+            setDevices(prevDevices => 
+              prevDevices.map(d => 
+                d.id === device.id 
+                  ? { ...d, checkmk_status: 'equal' }
+                  : d
+              )
+            )
+          } else {
+            const errorData = await response.json()
+            errorCount++
+            syncErrors.push(`${device.name}: ${errorData.detail || 'Unknown error'}`)
+          }
+        } catch (error) {
+          errorCount++
+          const message = error instanceof Error ? error.message : 'Unknown error'
+          
+          // Check if it's a 404 error (device not found in CheckMK)
+          if (message.includes('404') || message.includes('Not Found') || message.includes('not found')) {
+            syncErrors.push(`${device.name}: Device not found in CheckMK (use Add instead of Sync)`)
+          } else {
+            syncErrors.push(`${device.name}: ${message}`)
+          }
+        }
+      }
+
+      // Clear selection after sync attempt
+      setSelectedDevices(new Set())
+
+      // Show final result
+      if (syncedCount > 0 && errorCount === 0) {
+        setStatusMessage({
+          type: 'success',
+          message: `Successfully synced all ${syncedCount} selected devices`
+        })
+      } else if (syncedCount > 0 && errorCount > 0) {
+        setStatusMessage({
+          type: 'warning',
+          message: `Synced ${syncedCount} devices, ${errorCount} failed. Errors: ${syncErrors.join('; ')}`
+        })
+      } else {
+        setStatusMessage({
+          type: 'error',
+          message: `Failed to sync devices. Errors: ${syncErrors.join('; ')}`
+        })
+      }
+      setShowStatusModal(true)
+
+      // Auto-hide success message after 5 seconds
+      if (syncedCount > 0) {
+        setTimeout(() => {
+          setStatusMessage(null)
+          setShowStatusModal(false)
+        }, 5000)
+      }
+
+    } catch (error) {
+      console.error('Error syncing devices:', error)
+      setStatusMessage({
+        type: 'error',
+        message: 'Error syncing devices'
+      })
+      setShowStatusModal(true)
+    }
   }
 
   const handleActivateChanges = async () => {
