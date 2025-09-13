@@ -3,7 +3,7 @@ Pydantic models for the new job system.
 """
 
 from __future__ import annotations
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from services.job_database_service import JobStatus, JobType

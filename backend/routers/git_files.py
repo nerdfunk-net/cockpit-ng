@@ -4,11 +4,9 @@ Handles file content, history, and comparison operations across Git repositories
 """
 
 from __future__ import annotations
-import difflib
 import logging
 import os
 import fnmatch
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from git import InvalidGitRepositoryError, GitCommandError

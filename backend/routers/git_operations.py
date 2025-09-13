@@ -10,15 +10,13 @@ import shutil
 import subprocess
 import time
 from urllib.parse import urlparse
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from git import InvalidGitRepositoryError, GitCommandError, Repo
+from git import GitCommandError, Repo
 
 from core.auth import get_current_username, verify_admin_token
 from services.cache_service import cache_service
 from services.git_utils import (
-    open_or_clone,
     repo_path as git_repo_path,
     add_auth_to_url,
     set_ssl_env,

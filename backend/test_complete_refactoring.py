@@ -74,7 +74,7 @@ def test_complete_refactoring():
         
         normalization_service = DeviceNormalizationService()
         normalized = normalization_service.normalize_device(device_data)
-        print(f"   ✓ Device normalization completed")
+        print("   ✓ Device normalization completed")
         print(f"   ✓ Normalized device type: {type(normalized)}")
         print(f"   ✓ Normalized device folder: {normalized.folder}")
         print(f"   ✓ Normalized device attributes: {list(normalized.attributes.keys())}")
@@ -124,7 +124,7 @@ def test_complete_refactoring():
         from services.nb2cmk_base_service import NautobotToCheckMKService
         
         nb2cmk_service = NautobotToCheckMKService()
-        print(f"   ✓ NB2CMK service instantiated")
+        print("   ✓ NB2CMK service instantiated")
         
         # Test get_default_site method
         default_site = nb2cmk_service.get_default_site()
@@ -137,7 +137,7 @@ def test_complete_refactoring():
     print("\n6. Testing Router Integration:")
     try:
         from routers.nb2cmk import router
-        print(f"   ✓ Router imported successfully")
+        print("   ✓ Router imported successfully")
         print(f"   ✓ Router has {len(router.routes)} endpoints")
         
         # Test that router endpoints use the service

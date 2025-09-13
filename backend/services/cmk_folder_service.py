@@ -4,9 +4,8 @@ Service for managing CheckMK folder operations.
 
 from __future__ import annotations
 import logging
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any
 
-from services.nautobot import nautobot_service
 from utils.cmk_folder_utils import split_checkmk_folder_path
 
 logger = logging.getLogger(__name__)

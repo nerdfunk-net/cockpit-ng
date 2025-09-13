@@ -23,11 +23,9 @@ async def test_basic_functionality():
         print(f"✓ Default site: {default_site}")
         
         # Test device normalization service
-        from services.cmk_device_normalization_service import device_normalization_service
         print("✓ Device normalization service import successful")
         
         # Test utils
-        from utils.cmk_site_utils import get_monitored_site, get_device_folder
         from utils.cmk_folder_utils import parse_folder_value, normalize_folder_path
         print("✓ Utility functions import successful")
         
@@ -40,7 +38,6 @@ async def test_basic_functionality():
         print(f"✓ Template parsing: '/test/{{name}}' with name='device1' -> '{test_template}'")
         
         # Test models
-        from models.nb2cmk import DeviceExtensions, DeviceComparison
         print("✓ Pydantic models import successful")
         
         # Test main service

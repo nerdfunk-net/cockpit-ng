@@ -6,7 +6,7 @@ Handles async processing of device comparisons to prevent HTTP timeouts.
 from __future__ import annotations
 import asyncio
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Optional
 from fastapi import HTTPException, status
 
 from services.nb2cmk_database_service import nb2cmk_db_service, JobStatus
@@ -349,7 +349,7 @@ class NB2CMKBackgroundService:
                         total_devices,
                         f"Failed after processing {processed_count} devices: {error_msg}",
                     )
-            except:
+            except Exception:
                 pass  # Don't let progress update failures mask the original error
             nb2cmk_db_service.update_job_status(job_id, JobStatus.FAILED, error_msg)
 

@@ -5,8 +5,7 @@ This demonstrates the new background job API endpoints.
 """
 
 import asyncio
-import json
-from services.nb2cmk_database_service import nb2cmk_db_service, JobStatus
+from services.nb2cmk_database_service import JobStatus
 from services.nb2cmk_background_service import nb2cmk_background_service
 
 
@@ -52,7 +51,7 @@ async def test_background_jobs():
         print(f"   Status: {results.status}")
         print(f"   Total devices: {results.total}")
         print(f"   Message: {results.message}")
-        print(f"   Sample results (first 3):")
+        print("   Sample results (first 3):")
         for device in results.devices[:3]:
             print(f"     - {device['name']}: {device['checkmk_status']}")
     else:
@@ -94,7 +93,7 @@ async def demo_api_workflow():
         print("\n3. [View Diff Button] - GET /api/nb2cmk/job/{job_id}/results")
         results = await nb2cmk_background_service.get_job_results(job_id)
         print(f"   → Returns {results.total} device comparisons")
-        print(f"   → Same format as existing /get_diff endpoint")
+        print("   → Same format as existing /get_diff endpoint")
     else:
         print("\n3. [View Diff Button] - Not available yet (job still running)")
 

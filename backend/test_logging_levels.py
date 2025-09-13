@@ -20,7 +20,7 @@ def test_logging_levels():
     # Get current settings
     settings = Settings()
     
-    print(f"📋 Current Configuration:")
+    print("📋 Current Configuration:")
     print(f"   • LOG_LEVEL from env: {os.getenv('LOG_LEVEL', 'not set')}")
     print(f"   • Settings log_level: {settings.log_level}")
     print(f"   • Numeric level: {getattr(logging, settings.log_level, 'UNKNOWN')}")

@@ -6,7 +6,6 @@ Handles Git-specific version control functionality.
 from __future__ import annotations
 import difflib
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from git import InvalidGitRepositoryError, GitCommandError

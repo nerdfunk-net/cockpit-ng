@@ -4,9 +4,7 @@ Configuration file management router for editing YAML config files.
 
 from __future__ import annotations
 import logging
-import os
 from pathlib import Path
-from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 

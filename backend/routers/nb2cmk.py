@@ -10,12 +10,6 @@ from core.auth import verify_token
 from services.nb2cmk_base_service import nb2cmk_service
 from services.nb2cmk_background_service import nb2cmk_background_service
 from models.nb2cmk import (
-    DeviceList,
-    DeviceListWithStatus, 
-    DeviceComparison,
-    DeviceOperationResult,
-    DeviceUpdateResult,
-    DefaultSiteResponse,
     JobStartResponse,
     JobProgressResponse,
     JobResultsResponse,

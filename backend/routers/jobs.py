@@ -342,7 +342,7 @@ async def get_job_details(
         logger.info(f"=== STARTING ENRICHMENT: {len(basic_device_results)} device results ===")
         logger.info(f"Basic device results sample: {basic_device_results[0] if basic_device_results else 'No results'}")
         enriched_device_results = await _enrich_device_results_with_nautobot_data(basic_device_results)
-        logger.info(f"=== ENRICHMENT COMPLETED ===")
+        logger.info("=== ENRICHMENT COMPLETED ===")
         logger.info(f"Enriched device results sample: {enriched_device_results[0] if enriched_device_results else 'No results'}")
         logger.info(f"Enhanced fields added: {set(enriched_device_results[0].keys()) - set(basic_device_results[0].keys()) if enriched_device_results and basic_device_results else 'No comparison'}")
         

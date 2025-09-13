@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import verify_admin_token
 from models.git_repositories import (

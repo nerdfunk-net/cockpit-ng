@@ -45,7 +45,7 @@ async def test_job_progress():
         
         # Test 4: Final progress check
         final_progress = await nb2cmk_background_service.get_job_progress(job_id)
-        print(f"\n4. Final progress:")
+        print("\n4. Final progress:")
         print(f"   Status: {final_progress.status}")
         print(f"   Total processed: {final_progress.processed_devices}/{final_progress.total_devices}")
         print(f"   Final message: {final_progress.progress_message}")

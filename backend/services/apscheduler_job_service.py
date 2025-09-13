@@ -8,7 +8,7 @@ import asyncio
 import logging
 import uuid
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, Any, Optional, List
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
@@ -35,7 +35,6 @@ async def cleanup_old_jobs_standalone(service_id: str, cleanup_after_days: int):
             logger.warning("APScheduler service not available for cleanup")
             return
 
-        cutoff_date = datetime.now() - timedelta(days=cleanup_after_days)
 
         # Get all jobs from scheduler
         all_jobs = apscheduler_service.scheduler.get_jobs()
@@ -74,6 +73,10 @@ async def execute_devices_compare_standalone(
     Standalone function to execute parallel device diff jobs.
     This function runs outside the class to avoid serialization issues.
     """
+    # Get fresh service instances
+    from services.job_database_service import job_db_service
+    from services.nb2cmk_base_service import nb2cmk_service
+
     # Validate and sanitize inputs
     max_concurrent = max(1, min(max_concurrent, 10))  # Limit between 1-10
     devices = devices or []
@@ -90,10 +93,6 @@ async def execute_devices_compare_standalone(
         logger.info(
             f"Starting parallel device diff job {job_id} with {len(devices)} devices, max_concurrent={max_concurrent}"
         )
-
-        # Get fresh service instances
-        from services.job_database_service import job_db_service
-        from services.nb2cmk_base_service import nb2cmk_service
 
         # Update job status to running
         job_db_service.update_job_status(job_id, JobStatus.RUNNING)
@@ -598,7 +597,7 @@ class APSchedulerJobService:
             return JobStartResponse(
                 job_id="",
                 status=JobStatus.FAILED,
-                message=f"Device caching job already running. Please wait for it to complete.",
+                message="Device caching job already running. Please wait for it to complete.",
             )
         
         # Create job ID
