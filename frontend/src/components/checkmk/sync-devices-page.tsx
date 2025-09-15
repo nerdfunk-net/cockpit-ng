@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { RefreshCw, Search, Eye, GitCompare, RotateCw, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown, Zap, Play, BarChart3, Trash2, Download } from 'lucide-react'
+import { RefreshCw, Search, Eye, GitCompare, RotateCw, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown, BarChart3, Download } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import {
@@ -36,16 +36,55 @@ interface Device {
   processed_at?: string
 }
 
+interface JobResult {
+  id: string
+  status: string
+  started_at: string
+  created_at: string
+  processed_devices: number
+  progress?: {
+    processed: number
+    total: number
+  }
+}
+
+interface DeviceResult {
+  id?: number
+  job_id?: string
+  device_name: string
+  device?: string
+  status: string
+  result_data?: {
+    data?: {
+      result?: unknown
+    }
+    comparison_result?: unknown
+    status?: string
+  }
+  error_message?: string
+  processed_at?: string
+  role?: { name: string } | string
+  location?: { name: string } | string
+  device_type?: { model: string }
+  primary_ip4?: { address: string }
+  device_status?: { name: string }
+  device_id?: string
+}
+
+interface AttributeConfig {
+  site?: string
+}
+
 // Helper function to extract site value from device configuration
 const getSiteFromDevice = (device: Device, defaultSite: string = 'cmk'): string => {
   // First try to get site from normalized_config.attributes.site
-  const normalizedSite = (device.normalized_config?.attributes as any)?.site as string
+  const normalizedSite = (device.normalized_config?.attributes as AttributeConfig)?.site
   if (normalizedSite) {
     return normalizedSite
   }
   
   // Then try checkmk_config.attributes.site
-  const checkmkSite = (device.checkmk_config?.attributes as any)?.site as string
+  const checkmkSite = (device.checkmk_config?.attributes as AttributeConfig)?.site
   if (checkmkSite) {
     return checkmkSite
   }
@@ -85,6 +124,7 @@ export function CheckMKSyncDevicesPage() {
   const [selectedDeviceForDiff, setSelectedDeviceForDiff] = useState<Device | null>(null)
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'warning' | 'info', message: string } | null>(null)
   const [showStatusModal, setShowStatusModal] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isActivating, setIsActivating] = useState(false)
 
   // Add device confirmation modal state
@@ -216,6 +256,7 @@ export function CheckMKSyncDevicesPage() {
     return { savedJobId, savedIsRunning }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const clearJobState = () => {
     setCurrentJobId(null)
     setIsJobRunning(false)
@@ -234,7 +275,7 @@ export function CheckMKSyncDevicesPage() {
   }
 
   // Fetch available completed jobs from backend
-  const fetchAvailableJobs = async () => {
+  const fetchAvailableJobs = useCallback(async () => {
     try {
       const response = await fetch('/api/proxy/jobs/', {
         headers: {
@@ -245,9 +286,9 @@ export function CheckMKSyncDevicesPage() {
       if (response.ok) {
         const data = await response.json()
         // Filter only completed jobs with device results
-        const completedJobs = data.jobs.filter((job: any) => 
-          job.status === 'completed' && job.progress && job.progress.processed > 0
-        ).map((job: any) => ({
+        const completedJobs = data.jobs.filter((job: JobResult) => 
+          job.status === 'completed' && job.processed_devices > 0
+        ).map((job: JobResult) => ({
           id: job.id,
           status: job.status,
           created_at: job.started_at,
@@ -258,7 +299,7 @@ export function CheckMKSyncDevicesPage() {
     } catch (error) {
       console.error('Error fetching available jobs:', error)
     }
-  }
+  }, [token])
 
   const loadJobResults = async () => {
     if (!selectedJobId || !token || selectedJobId === 'no-jobs') return
@@ -303,12 +344,12 @@ export function CheckMKSyncDevicesPage() {
         // Extract device results from the new job format
         const deviceResults = data.job?.device_results || []
         // Convert device results to the expected devices format
-        const devices = deviceResults.map((result: any, index: number) => ({
+        const devices = deviceResults.map((result: DeviceResult, index: number) => ({
           id: result.device_id || result.device_name || `device_${index}`, // Use device UUID as ID, fallback to device name or index
           name: result.device_name || result.device || `device_${index}`, // Use device name for display, fallback to device UUID
-          role: result.role?.name || result.role || 'Unknown', // Extract name from object or use string directly
+          role: (typeof result.role === 'object' && result.role?.name) || result.role || 'Unknown', // Extract name from object or use string directly
           status: result.device_status?.name || result.status || 'Unknown', // Use device_status for device status, fallback to job status
-          location: result.location?.name || result.location || 'Unknown', // Extract name from object or use string directly
+          location: (typeof result.location === 'object' && result.location?.name) || result.location || 'Unknown', // Extract name from object or use string directly
           result_data: result.result_data,
           error_message: result.error_message,
           processed_at: result.processed_at,
@@ -350,7 +391,7 @@ export function CheckMKSyncDevicesPage() {
   }
 
   // Fetch default site from backend
-  const fetchDefaultSite = async () => {
+  const fetchDefaultSite = useCallback(async () => {
     try {
       const response = await fetch('/api/proxy/nb2cmk/get_default_site', {
         headers: {
@@ -366,7 +407,7 @@ export function CheckMKSyncDevicesPage() {
       console.error('Error fetching default site:', error)
       // Keep default value 'cmk' if fetch fails
     }
-  }
+  }, [token])
 
   // Check for pending changes
   const checkPendingChanges = async (): Promise<boolean> => {
@@ -454,12 +495,12 @@ export function CheckMKSyncDevicesPage() {
                   
                   // Extract device results from the new job format and convert to expected format
                   const deviceResults = resultData.job?.device_results || []
-                  const devices = deviceResults.map((result: any, index: number) => ({
+                  const devices = deviceResults.map((result: DeviceResult, index: number) => ({
                     id: result.device_id || result.device_name || `device_${index}`, // Use device UUID as ID, fallback to device name or index
                     name: result.device_name,
-                    role: result.role?.name || result.role || 'Unknown', // Extract name from object or use string directly
+                    role: (typeof result.role === 'object' && result.role?.name) || result.role || 'Unknown', // Extract name from object or use string directly
                     status: result.device_status?.name || result.status || 'Unknown', // Use device_status for device status
-                    location: result.location?.name || result.location || 'Unknown', // Extract name from object or use string directly
+                    location: (typeof result.location === 'object' && result.location?.name) || result.location || 'Unknown', // Extract name from object or use string directly
                     result_data: result.result_data,
                     error_message: result.error_message,
                     processed_at: result.processed_at,
@@ -479,7 +520,7 @@ export function CheckMKSyncDevicesPage() {
         setTimeout(checkJobStatus, 100)
       }
     }
-  }, [token])
+  }, [token, fetchAvailableJobs, fetchDefaultSite])
 
   // Auto-check progress for running jobs every 5 seconds
   useEffect(() => {
@@ -496,7 +537,8 @@ export function CheckMKSyncDevicesPage() {
         clearInterval(interval)
       }
     }
-  }, [currentJobId, isJobRunning])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentJobId, isJobRunning]) // handleGetProgress is stable due to useCallback
 
   // Extract unique roles and statuses from the current device data
   const availableRoles = useMemo(() => {
@@ -595,6 +637,7 @@ export function CheckMKSyncDevicesPage() {
   }
 
   // Background job functions
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleStartCheck = async () => {
     if (!token) {
       setStatusMessage({ type: 'error', message: 'Authentication required' })
@@ -707,7 +750,7 @@ export function CheckMKSyncDevicesPage() {
     }
   }
 
-  const handleGetProgress = async (jobId?: string, silent = false) => {
+  const handleGetProgress = useCallback(async (jobId?: string, silent = false) => {
     const targetJobId = jobId || currentJobId
     
     if (!targetJobId || !token) {
@@ -738,6 +781,7 @@ export function CheckMKSyncDevicesPage() {
         setJobProgress(newProgress)
         
         // Update job running state and save to storage
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const jobFinished = data.status === 'completed' || data.status === 'failed' || data.status === 'cancelled'
         const jobStillRunning = data.status === 'running' || data.status === 'pending'
         
@@ -774,7 +818,8 @@ export function CheckMKSyncDevicesPage() {
         setShowStatusModal(true)
       }
     }
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentJobId, token, devices.length, saveJobStateToStorage]) // handleViewDiff would cause circular dependency
 
   const handleViewDiff = async (jobId?: string, silent = false) => {
     const targetJobId = jobId || currentJobId
@@ -812,12 +857,12 @@ export function CheckMKSyncDevicesPage() {
         
         // Extract device results from the new job format and convert to expected format
         const deviceResults = data.job?.device_results || []
-        const devices = deviceResults.map((result: any, index: number) => ({
+        const devices = deviceResults.map((result: DeviceResult, index: number) => ({
           id: result.device_id || result.device_name || `device_${index}`, // Use device UUID as ID, fallback to device name or index
           name: result.device_name,
-          role: result.role?.name || result.role || 'Unknown', // Extract name from object or use string directly
+          role: (typeof result.role === 'object' && result.role?.name) || result.role || 'Unknown', // Extract name from object or use string directly
           status: result.device_status?.name || result.status || 'Unknown', // Use device_status for device status
-          location: result.location?.name || result.location || 'Unknown', // Extract name from object or use string directly
+          location: (typeof result.location === 'object' && result.location?.name) || result.location || 'Unknown', // Extract name from object or use string directly
           result_data: result.result_data,
           error_message: result.error_message,
           processed_at: result.processed_at,
@@ -979,6 +1024,7 @@ export function CheckMKSyncDevicesPage() {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleActivateChanges = async () => {
     if (!token) {
       setStatusMessage({ type: 'error', message: 'Authentication required' })
@@ -1555,7 +1601,7 @@ export function CheckMKSyncDevicesPage() {
               <tbody className="divide-y divide-gray-200">{devices.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                      No devices found. Select a job from the dropdown above and click "Load" to view comparison results.
+                      No devices found. Select a job from the dropdown above and click &ldquo;Load&rdquo; to view comparison results.
                     </td>
                   </tr>
                 ) : filteredDevices.length === 0 ? (

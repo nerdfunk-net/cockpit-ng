@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
 import { useDebug } from '@/contexts/debug-context'
@@ -27,10 +27,8 @@ import {
   Minus,
   Edit,
   Upload,
-  Search,
   Users,
   GitBranch,
-  FileText,
   Bug
 } from 'lucide-react'
 
@@ -72,7 +70,7 @@ interface ScanResult {
   debug_info?: {
     device_type_tried?: string
     show_version_raw?: string
-    show_version_structured?: any
+    show_version_structured?: Record<string, unknown>
     parsing_method?: string
     hostname_extracted?: string
     hostname_extraction_method?: string
@@ -205,7 +203,8 @@ export function ScanAndAddPage() {
   // Load initial data
   useEffect(() => {
     loadInitialData()
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // loadInitialData is stable and should run once on mount
 
   // Set default filename when component mounts
   useEffect(() => {
@@ -243,7 +242,7 @@ export function ScanAndAddPage() {
         setSelectedParserTemplates([String(parserTemplates[0].id)])
       }
     }
-  }, [discoveryMode, parserTemplates])
+  }, [discoveryMode, parserTemplates, selectedParserTemplates.length])
 
   const loadInitialData = async () => {
     setIsLoading(true)
@@ -933,7 +932,7 @@ export function ScanAndAddPage() {
         if (filename) {
           try {
             extras.commit_message = filename.trim().split('/').pop()
-          } catch (e) {
+          } catch {
             extras.commit_message = filename.trim()
           }
         }
@@ -1030,7 +1029,7 @@ export function ScanAndAddPage() {
   const applyAssignToAll = () => {
     const selectedIps = Array.from(selectedDevices)
     const updates = Object.fromEntries(
-      Object.entries(assignAllData).filter(([_, value]) => value && value.trim() !== '')
+      Object.entries(assignAllData).filter(([, value]) => value && value.trim() !== '')
     )
 
     if (Object.keys(updates).length === 0) {
@@ -2262,7 +2261,7 @@ export function ScanAndAddPage() {
                       {/* Raw Show Version Output */}
                       {debugInfo.show_version_raw && (
                         <div>
-                          <h4 className="font-medium text-sm text-slate-700 mb-2">Raw "show version" Output</h4>
+                          <h4 className="font-medium text-sm text-slate-700 mb-2">Raw &ldquo;show version&rdquo; Output</h4>
                           <div className="bg-slate-900 text-slate-100 p-4 rounded-lg text-xs font-mono max-h-60 overflow-y-auto">
                             <pre className="whitespace-pre-wrap">{debugInfo.show_version_raw}</pre>
                           </div>

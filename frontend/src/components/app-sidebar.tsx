@@ -178,16 +178,16 @@ export function AppSidebar({ className }: AppSidebarProps) {
 
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto py-6">
-          <nav className="space-y-8">
+          <nav className="space-y-4">
             {visibleSections.map((section) => {
               const isSectionCollapsed = collapsedSections.has(section.title)
               
               return (
                 <div key={section.title} className="px-6">
-                  {!isCollapsed && (
+                    {!isCollapsed && (
                     <button
                       onClick={() => toggleSection(section.title)}
-                      className="flex items-center justify-between w-full text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 hover:text-slate-700 transition-colors group"
+                      className="flex items-center justify-between w-full text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-700 transition-colors group"
                     >
                       <span>{section.title}</span>
                       {isSectionCollapsed ? (
@@ -199,7 +199,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
                   )}
                   <div 
                     className={cn(
-                      "space-y-2 transition-all duration-300 overflow-hidden",
+                      "space-y-1 transition-all duration-300 overflow-hidden",
                       !isCollapsed && isSectionCollapsed ? "max-h-0 opacity-0" : "max-h-none opacity-100"
                     )}
                   >
@@ -212,14 +212,14 @@ export function AppSidebar({ className }: AppSidebarProps) {
                           <Button
                             variant={isActive ? 'default' : 'ghost'}
                             className={cn(
-                              'w-full justify-start h-11 transition-all duration-200 button-analytics',
-                              isCollapsed ? 'px-3' : 'px-4',
+                              'w-full justify-start h-9 transition-all duration-200 button-analytics',
+                              isCollapsed ? 'px-3' : 'px-3',
                               isActive
                                 ? 'bg-blue-600 text-white shadow-analytics hover:bg-blue-700'
                                 : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                             )}
                           >
-                            <Icon className={cn('h-5 w-5', isCollapsed ? '' : 'mr-3')} />
+                            <Icon className={cn('h-4 w-4', isCollapsed ? '' : 'mr-2')} />
                             {!isCollapsed && (
                               <>
                                 <span key="nav-label" className="flex-1 text-left font-medium">{item.label}</span>
