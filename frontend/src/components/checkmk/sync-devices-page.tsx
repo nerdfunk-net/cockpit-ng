@@ -648,6 +648,65 @@ export function CheckMKSyncDevicesPage() {
     }
   }
 
+  // Start new device comparison job using the APScheduler service
+  const startNewJob = async () => {
+    if (!token) {
+      setStatusMessage({ type: 'error', message: 'Authentication required' })
+      setShowStatusModal(true)
+      return
+    }
+    
+    try {
+      // Start a complete device comparison job that processes ALL devices
+      const response = await fetch('/api/proxy/jobs/compare-devices', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          // Empty devices list means "process all devices"
+          devices: [],
+          max_concurrent: 3  // Default concurrency for device processing
+        })
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Job started:', result)
+        setStatusMessage({
+          type: 'success',
+          message: `Device comparison job started with ID: ${result.job_id}`
+        })
+        setShowStatusModal(true)
+        
+        // Refresh available jobs list
+        fetchAvailableJobs()
+        
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+          setStatusMessage(null)
+          setShowStatusModal(false)
+        }, 3000)
+      } else {
+        const error = await response.json()
+        console.error('Error starting job:', error)
+        setStatusMessage({
+          type: 'error',
+          message: `Failed to start job: ${error.detail || 'Unknown error'}`
+        })
+        setShowStatusModal(true)
+      }
+    } catch (error) {
+      console.error('Error starting job:', error)
+      setStatusMessage({
+        type: 'error',
+        message: 'Failed to start job: Network error'
+      })
+      setShowStatusModal(true)
+    }
+  }
+
   const handleGetProgress = async (jobId?: string, silent = false) => {
     const targetJobId = jobId || currentJobId
     
@@ -1687,6 +1746,21 @@ export function CheckMKSyncDevicesPage() {
               >
                 <ChevronsRight className="h-4 w-4" />
               </Button>
+            </div>
+          </div>
+
+          {/* Device Comparison Job Controls */}
+          <div className="bg-blue-50 p-4 border-t border-blue-200">
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={startNewJob}
+                className="bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              >
+                Start Device Comparison Job
+              </Button>
+              <p className="text-sm text-gray-600">
+                Start a new comprehensive device comparison job that processes all devices
+              </p>
             </div>
           </div>
 

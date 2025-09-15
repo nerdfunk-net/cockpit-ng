@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -10,8 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { 
-  Activity, 
-  Play, 
   Square, 
   Trash2, 
   Clock, 
@@ -54,18 +52,7 @@ interface BackgroundJob {
   }>
 }
 
-interface SchedulerStatus {
-  scheduler_running: boolean
-  total_jobs: number
-  jobs: Array<{
-    id: string
-    name: string
-    next_run: string | null
-    trigger: string
-  }>
-}
-
-export function CheckMKJobsPage() {
+export function JobsManagementPage() {
   const { token } = useAuthStore()
   const [jobs, setJobs] = useState<BackgroundJob[]>([])
   const [loading, setLoading] = useState(false)
@@ -76,21 +63,7 @@ export function CheckMKJobsPage() {
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [searchFilter, setSearchFilter] = useState<string>('')
   
-  // APScheduler-specific state
-  const [schedulerStatus, setSchedulerStatus] = useState<SchedulerStatus | null>(null)
-  
-  // Auto-refresh jobs and scheduler status every 10 seconds
-  useEffect(() => {
-    fetchJobs()
-    fetchSchedulerStatus()
-    const interval = setInterval(() => {
-      fetchJobs()
-      fetchSchedulerStatus()
-    }, 10000)
-    return () => clearInterval(interval)
-  }, [])
-
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     if (!token) return
     
     setLoading(true)
@@ -112,60 +85,16 @@ export function CheckMKJobsPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const fetchSchedulerStatus = async () => {
-    if (!token) return
-    
-    try {
-      const response = await fetch('/api/proxy/jobs/scheduler-status', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setSchedulerStatus(data)
-      }
-    } catch (error) {
-      console.error('Error fetching scheduler status:', error)
-    }
-  }
-
-  const startNewJob = async (jobType: string) => {
-    if (!token) return
-    
-    try {
-      // Start a complete device comparison job that processes ALL devices
-      const response = await fetch('/api/proxy/jobs/compare-devices', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          // Empty devices list means "process all devices"
-          devices: [],
-          max_concurrent: 3  // Default concurrency for device processing
-        })
-      })
-      
-      if (response.ok) {
-        const result = await response.json()
-        console.log('Job started:', result)
-        fetchJobs() // Refresh the job list
-      } else {
-        const error = await response.json()
-        console.error('Error starting job:', error)
-        alert(`Failed to start job: ${error.detail || 'Unknown error'}`)
-      }
-    } catch (error) {
-      console.error('Error starting job:', error)
-      alert('Failed to start job: Network error')
-    }
-  }
+  }, [token])
+  
+  // Auto-refresh jobs every 10 seconds
+  useEffect(() => {
+    fetchJobs()
+    const interval = setInterval(() => {
+      fetchJobs()
+    }, 10000)
+    return () => clearInterval(interval)
+  }, [fetchJobs])
 
   const stopJob = async (jobId: string) => {
     if (!token) return
@@ -303,8 +232,8 @@ export function CheckMKJobsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">CheckMK Jobs</h1>
-          <p className="text-gray-600 mt-1">Manage and monitor background job execution</p>
+          <h1 className="text-3xl font-bold text-gray-900">Background Jobs</h1>
+          <p className="text-gray-600 mt-1">Manage and monitor background job execution across all applications</p>
         </div>
         <div className="flex items-center gap-2">
           <Button 
@@ -319,104 +248,60 @@ export function CheckMKJobsPage() {
         </div>
       </div>
 
-      {/* Job Management Actions */}
-      <div className="rounded-xl border shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Activity className="h-4 w-4" />
-              <div>
-                <h3 className="text-sm font-semibold">Job Management</h3>
-                <p className="text-blue-100 text-xs">Start new background jobs and manage existing ones</p>
-              </div>
-            </div>
-          </div>
+      {/* Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-white rounded-lg border">
+        <div className="space-y-1">
+          <Label className="text-xs font-medium text-gray-600">Search</Label>
+          <Input
+            placeholder="Search jobs..."
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            className="h-8 text-xs"
+          />
         </div>
-        <div className="p-4">
-          {/* Scheduler Status */}
-          {schedulerStatus && (
-            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Activity className={`h-4 w-4 ${schedulerStatus.scheduler_running ? 'text-green-600' : 'text-red-600'}`} />
-                  <span className="text-sm font-medium">
-                    Scheduler Status: {schedulerStatus.scheduler_running ? 'Running' : 'Stopped'}
-                  </span>
-                  <Badge variant="outline" className="ml-2">
-                    {schedulerStatus.total_jobs} active jobs
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <div className="flex items-center gap-4 mb-4">
-            <Button onClick={() => startNewJob('device-comparison')} className="bg-purple-600 hover:bg-purple-700">
-              <Play className="h-4 w-4 mr-2" />
-              Start Device Comparison Job
-            </Button>
-            <Button onClick={clearAllCompletedJobs} variant="outline" className="text-red-600 hover:bg-red-50">
-              <Trash2 className="h-4 w-4 mr-2" />
-              Clear Completed
-            </Button>
-          </div>
-          
-          {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-600">Search</Label>
-              <Input
-                placeholder="Search jobs..."
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                className="h-8 text-xs"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-600">Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="running">Running</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-600">Type</Label>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="device-comparison">Device Comparison</SelectItem>
-                  <SelectItem value="sync-devices">Device Sync</SelectItem>
-                  <SelectItem value="backup">Backup</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-600">Per Page</Label>
-              <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(parseInt(value))}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="25">25</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-medium text-gray-600">Status</Label>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="running">Running</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="failed">Failed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-medium text-gray-600">Type</Label>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="device-comparison">Device Comparison</SelectItem>
+              <SelectItem value="sync-devices">Device Sync</SelectItem>
+              <SelectItem value="backup">Backup</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-medium text-gray-600">Per Page</Label>
+          <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(parseInt(value))}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -598,6 +483,14 @@ export function CheckMKJobsPage() {
             </Button>
           </div>
         </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex justify-end">
+        <Button onClick={clearAllCompletedJobs} variant="outline" className="text-red-600 hover:bg-red-50">
+          <Trash2 className="h-4 w-4 mr-2" />
+          Clear Completed Jobs
+        </Button>
       </div>
 
 

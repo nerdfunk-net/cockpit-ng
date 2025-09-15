@@ -8,6 +8,7 @@ import sqlite3
 import logging
 import json
 import os
+from datetime import datetime
 from typing import List, Dict, Any, Optional
 from enum import Enum
 
@@ -310,6 +311,52 @@ class JobDatabaseService:
         except Exception as e:
             logger.error(f"Error cleaning up old jobs: {e}")
             return 0
+
+    def clear_completed_jobs(self) -> Dict[str, Any]:
+        """Clear ALL completed, failed, and cancelled jobs regardless of age"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                # First delete the device results for completed jobs
+                cursor = conn.execute(
+                    """
+                    DELETE FROM job_results 
+                    WHERE job_id IN (
+                        SELECT id FROM jobs 
+                        WHERE status IN ('completed', 'failed', 'cancelled')
+                    )
+                    """
+                )
+                device_results_deleted = cursor.rowcount
+
+                # Then delete the completed jobs themselves
+                cursor = conn.execute(
+                    """
+                    DELETE FROM jobs 
+                    WHERE status IN ('completed', 'failed', 'cancelled')
+                    """
+                )
+                jobs_deleted = cursor.rowcount
+                
+                conn.commit()
+                
+                result = {
+                    "jobs_deleted": jobs_deleted,
+                    "device_results_deleted": device_results_deleted,
+                    "cleanup_date": datetime.now().isoformat(),
+                    "message": f"Successfully cleared {jobs_deleted} completed jobs and {device_results_deleted} device results"
+                }
+                
+                logger.info(f"Cleared {jobs_deleted} completed jobs and {device_results_deleted} device results")
+                return result
+                
+        except Exception as e:
+            logger.error(f"Error clearing completed jobs: {e}")
+            return {
+                "error": str(e),
+                "cleanup_date": datetime.now().isoformat(),
+                "jobs_deleted": 0,
+                "device_results_deleted": 0
+            }
 
 
 # Global instance

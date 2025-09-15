@@ -253,11 +253,10 @@ async def cancel_scheduler_job(
 @router.post("/cleanup")
 async def cleanup_old_jobs(
     _: dict = Depends(verify_token),
-    scheduler_service: APSchedulerJobService = Depends(get_scheduler_service),
 ):
-    """Manually trigger cleanup of old completed jobs"""
+    """Clear all completed, failed, and cancelled jobs from the database"""
     try:
-        result = scheduler_service.cleanup_jobs_now()
+        result = job_db_service.clear_completed_jobs()
         return result
     except Exception as e:
         logger.error(f"Error during manual cleanup: {str(e)}")

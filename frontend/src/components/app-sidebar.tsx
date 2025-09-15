@@ -63,7 +63,6 @@ const navigationSections: NavSection[] = [
     items: [
       { label: 'Sync Devices', href: '/checkmk/sync-devices', icon: Shield },
       { label: 'Live Update', href: '/checkmk/live-update', icon: RefreshCw },
-      { label: 'Jobs', href: '/checkmk/jobs', icon: Activity },
     ],
   },
   {
@@ -90,6 +89,7 @@ const navigationSections: NavSection[] = [
       { label: 'Cache', href: '/settings/cache', icon: Zap },
       { label: 'Credentials', href: '/settings/credentials', icon: Key },
       { label: 'User Management', href: '/settings/users', icon: Users },
+      { label: 'Jobs', href: '/settings/jobs', icon: Activity },
     ],
   },
 ]
