@@ -5,7 +5,7 @@ Authentication router for login and token management.
 from __future__ import annotations
 import logging
 from datetime import timedelta
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Request
 from models.auth import UserLogin, LoginResponse
 from core.auth import create_access_token, get_current_username, get_api_key_user
 
@@ -65,17 +65,54 @@ async def login(user_data: UserLogin):
 
 
 @router.post("/refresh", response_model=LoginResponse)
-async def refresh_token(current_user: str = Depends(get_current_username)):
+async def refresh_token(request: Request):
     """Issue a new access token for the currently authenticated user.
 
-    Uses the same expiration policy as login and fetches current user data.
+    Accept expired access tokens for the purpose of refreshing, but always
+    verify the token signature. This prevents race conditions where a token
+    expires just before the refresh call.
     """
     from config import settings
     from services.user_management import get_user_by_username
+    import jwt as pyjwt
+
+    # Extract Authorization header
+    auth_header = request.headers.get('authorization') or request.headers.get('Authorization')
+    if not auth_header or not auth_header.lower().startswith('bearer '):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    token = auth_header.split(' ', 1)[1].strip()
 
     try:
+        # Decode token but do NOT verify expiration here; still verify signature.
+        payload = pyjwt.decode(token, settings.secret_key, algorithms=[settings.algorithm], options={"verify_exp": False})
+        username = payload.get('sub')
+        if not username:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    except pyjwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    try:
+        # Optional: enforce a small grace window (uncomment if desired)
+        # exp = payload.get('exp', 0)
+        # from time import time
+        # if time() - exp > 3600:  # token expired more than 1 hour ago
+        #     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Token too old to refresh')
+
         # Get current user data from database
-        user = get_user_by_username(current_user)
+        user = get_user_by_username(username)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -109,7 +146,7 @@ async def refresh_token(current_user: str = Depends(get_current_username)):
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error(f"Token refresh failed for user {current_user}: {exc}")
+        logger.error(f"Token refresh failed for user {username}: {exc}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token refresh failed",
