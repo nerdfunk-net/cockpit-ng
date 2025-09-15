@@ -155,7 +155,7 @@ export default function UserManagement() {
   const handleRoleChange = (role: string) => {
     setFormData(prev => ({
       ...prev,
-      role: role as any
+      role: role as 'admin' | 'user' | 'viewer' | 'custom'
     }))
   }
 

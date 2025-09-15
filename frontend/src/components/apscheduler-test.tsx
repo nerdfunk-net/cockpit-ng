@@ -26,7 +26,7 @@ export default function APSchedulerTest() {
   const [isStarting, setIsStarting] = useState(false)
   const [schedulerStatus, setSchedulerStatus] = useState<SchedulerStatus | null>(null)
   const [loading, setLoading] = useState(false)
-  const [lastResult, setLastResult] = useState<any>(null)
+  const [lastResult, setLastResult] = useState<unknown>(null)
 
   // Auto-refresh scheduler status every 5 seconds
   useEffect(() => {

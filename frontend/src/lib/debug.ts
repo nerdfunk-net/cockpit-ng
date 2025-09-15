@@ -6,25 +6,25 @@ let debugEnabled = false;
 
 // Debug logger that only logs when debug mode is enabled
 export const debug = {
-  log: (...args: any[]) => {
+  log: (...args: unknown[]) => {
     if (debugEnabled) {
       console.log('🐛 [DEBUG]', ...args);
     }
   },
   
-  info: (...args: any[]) => {
+  info: (...args: unknown[]) => {
     if (debugEnabled) {
       console.info('ℹ️ [DEBUG]', ...args);
     }
   },
   
-  warn: (...args: any[]) => {
+  warn: (...args: unknown[]) => {
     if (debugEnabled) {
       console.warn('⚠️ [DEBUG]', ...args);
     }
   },
   
-  error: (...args: any[]) => {
+  error: (...args: unknown[]) => {
     if (debugEnabled) {
       console.error('❌ [DEBUG]', ...args);
     }
@@ -42,7 +42,7 @@ export const debug = {
     }
   },
   
-  table: (data: any) => {
+  table: (data: unknown) => {
     if (debugEnabled) {
       console.table(data);
     }
@@ -122,11 +122,11 @@ export const debugComponent = {
     debug.log(`🔄 Component unmounted: ${componentName}`);
   },
   
-  render: (componentName: string, props?: any) => {
+  render: (componentName: string, props?: unknown) => {
     debug.log(`🎨 Component rendering: ${componentName}`, props ? { props } : '');
   },
   
-  stateChange: (componentName: string, oldState: any, newState: any) => {
+  stateChange: (componentName: string, oldState: unknown, newState: unknown) => {
     debug.group(`🔄 State change in ${componentName}`);
     debug.log('Old state:', oldState);
     debug.log('New state:', newState);

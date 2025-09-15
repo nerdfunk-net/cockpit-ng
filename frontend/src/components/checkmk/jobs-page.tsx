@@ -42,13 +42,13 @@ interface BackgroundJob {
   }
   result_summary?: string
   error_message?: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
   device_results?: Array<{
     id: number
     job_id: string
     device_name: string
     status: string
-    result_data: Record<string, any>
+    result_data: Record<string, unknown>
     error_message?: string
     processed_at: string
   }>

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
+import { useApi } from '@/hooks/use-api'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
@@ -11,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { RefreshCw, Search, Eye, GitCompare, RotateCw, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown, Zap, Play, BarChart3, Trash2, Download } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
@@ -30,6 +31,9 @@ interface Device {
   diff?: string
   normalized_config?: Record<string, unknown>
   checkmk_config?: Record<string, unknown>
+  result_data?: Record<string, unknown>
+  error_message?: string
+  processed_at?: string
 }
 
 // Helper function to extract site value from device configuration
@@ -52,6 +56,7 @@ const getSiteFromDevice = (device: Device, defaultSite: string = 'cmk'): string 
 
 export function CheckMKSyncDevicesPage() {
   const { token } = useAuthStore()
+  const { apiCall } = useApi()
   const [devices, setDevices] = useState<Device[]>([])
   const [selectedDevices, setSelectedDevices] = useState<Set<string>>(new Set())
   const [addingDevices, setAddingDevices] = useState<Set<string>>(new Set())
@@ -81,6 +86,11 @@ export function CheckMKSyncDevicesPage() {
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'warning' | 'info', message: string } | null>(null)
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [isActivating, setIsActivating] = useState(false)
+
+  // Add device confirmation modal state
+  const [showAddDeviceModal, setShowAddDeviceModal] = useState(false)
+  const [deviceToAdd, setDeviceToAdd] = useState<Device | null>(null)
+  const [isAddingDevice, setIsAddingDevice] = useState(false)
   
   // Job results state
   const [availableJobs, setAvailableJobs] = useState<Array<{id: string, status: string, created_at: string, processed_devices: number}>>([])
@@ -97,6 +107,97 @@ export function CheckMKSyncDevicesPage() {
     status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
   } | null>(null)
   const [showProgressModal, setShowProgressModal] = useState(false)
+
+  // Show status message helper
+  const showMessage = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setStatusMessage({ type, message: text })
+    setShowStatusModal(true)
+    // Auto-hide after 3 seconds for success and info
+    if (type === 'success' || type === 'info') {
+      setTimeout(() => {
+        setStatusMessage(null)
+        setShowStatusModal(false)
+      }, 3000)
+    }
+  }
+
+  // Add device confirmation handlers
+  const handleAddDeviceConfirmation = (device: Device) => {
+    setDeviceToAdd(device)
+    setShowAddDeviceModal(true)
+  }
+
+  const handleAddDeviceCancel = () => {
+    setShowAddDeviceModal(false)
+    setDeviceToAdd(null)
+  }
+
+  // Sync device function from live-update-page.tsx
+  const handleSync = async (device: Device) => {
+    try {
+      showMessage(`Syncing ${device.name}...`, 'info')
+
+      const response = await apiCall(`nb2cmk/device/${device.id}/update`, {
+        method: 'POST'
+      })
+
+      if (response) {
+        showMessage(`Successfully synced ${device.name} in CheckMK`, 'success')
+        // Update device status to 'equal' since it's now synced
+        setDevices(prevDevices =>
+          prevDevices.map(d =>
+            d.id === device.id
+              ? { ...d, checkmk_status: 'equal' }
+              : d
+          )
+        )
+      } else {
+        showMessage(`Failed to sync ${device.name}`, 'error')
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to sync device'
+
+      // Check if it's a 404 error (device not found in CheckMK)
+      if (message.includes('404') || message.includes('Not Found') || message.includes('not found')) {
+        // Ask user if they want to add the device to CheckMK
+        handleAddDeviceConfirmation(device)
+      } else {
+        showMessage(`Failed to sync ${device.name}: ${message}`, 'error')
+      }
+    }
+  }
+
+  const handleAddDeviceFromModal = async (device: Device) => {
+    try {
+      setIsAddingDevice(true)
+      showMessage(`Adding ${device.name} to CheckMK...`, 'info')
+
+      const response = await apiCall(`nb2cmk/device/${device.id}/add`, {
+        method: 'POST'
+      })
+
+      if (response) {
+        showMessage(`Successfully added ${device.name} to CheckMK`, 'success')
+        setShowAddDeviceModal(false) // Close the modal
+        setDeviceToAdd(null)
+        // Update device status to 'equal' since it's now added
+        setDevices(prevDevices =>
+          prevDevices.map(d =>
+            d.id === device.id
+              ? { ...d, checkmk_status: 'equal' }
+              : d
+          )
+        )
+      } else {
+        showMessage(`Failed to add ${device.name} to CheckMK`, 'error')
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to add device'
+      showMessage(`Failed to add ${device.name}: ${message}`, 'error')
+    } finally {
+      setIsAddingDevice(false)
+    }
+  }
 
   // Job persistence functions
   const saveJobStateToStorage = (jobId: string | null, isRunning: boolean) => {
@@ -1191,165 +1292,185 @@ export function CheckMKSyncDevicesPage() {
         </div>
         <div className="p-0">
           {/* Filters Row */}
-          <div className="bg-gray-50 border-b p-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
-              {/* Device Name Filter */}
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">Device Name</Label>
-                <Input
-                  placeholder="Filter by name..."
-                  value={filters.name}
-                  onChange={(e) => handleFilterChange('name', e.target.value)}
-                  className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
-                />
-              </div>
+          <div className="bg-gray-50 border-b">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <tbody>
+                  <tr>
+                    {/* Empty cell for checkbox column */}
+                    <td className="px-4 py-3 w-12"></td>
 
-              {/* Role Filter */}
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">Role</Label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 text-xs justify-between min-w-[120px]">
-                      Role Filter
-                      {Object.values(roleFilters).filter(Boolean).length < availableRoles.length && (
-                        <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
-                          {Object.values(roleFilters).filter(Boolean).length}
-                        </Badge>
-                      )}
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-40">
-                    <DropdownMenuLabel className="text-xs">Filter by Role</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {availableRoles.map((role) => (
-                      <DropdownMenuCheckboxItem
-                        key={role}
-                        checked={roleFilters[role] || false}
-                        onCheckedChange={(checked) => 
-                          setRoleFilters(prev => ({ ...prev, [role]: !!checked }))
-                        }
-                      >
-                        {role}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                    {/* Device Name Filter */}
+                    <td className="px-4 py-3 w-48">
+                      <div className="space-y-1">
+                        <Label className="text-xs font-medium text-gray-600">Device Name</Label>
+                        <Input
+                          placeholder="Filter by name..."
+                          value={filters.name}
+                          onChange={(e) => handleFilterChange('name', e.target.value)}
+                          className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                        />
+                      </div>
+                    </td>
 
-              {/* Status Filter */}
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">Status</Label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 text-xs justify-between min-w-[120px]">
-                      Status Filter
-                      {Object.values(statusFilters).filter(Boolean).length < availableStatuses.length && (
-                        <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
-                          {Object.values(statusFilters).filter(Boolean).length}
-                        </Badge>
-                      )}
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-40">
-                    <DropdownMenuLabel className="text-xs">Filter by Status</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {availableStatuses.map((status) => (
-                      <DropdownMenuCheckboxItem
-                        key={status}
-                        checked={statusFilters[status] || false}
-                        onCheckedChange={(checked) => 
-                          setStatusFilters(prev => ({ ...prev, [status]: !!checked }))
-                        }
-                      >
-                        {status}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                    {/* Role Filter */}
+                    <td className="px-4 py-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs font-medium text-gray-600">Role</Label>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-8 text-xs justify-between w-full">
+                              Role Filter
+                              {Object.values(roleFilters).filter(Boolean).length < availableRoles.length && (
+                                <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                                  {Object.values(roleFilters).filter(Boolean).length}
+                                </Badge>
+                              )}
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="w-40">
+                            <DropdownMenuLabel className="text-xs">Filter by Role</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {availableRoles.map((role) => (
+                              <DropdownMenuCheckboxItem
+                                key={role}
+                                checked={roleFilters[role] || false}
+                                onCheckedChange={(checked) =>
+                                  setRoleFilters(prev => ({ ...prev, [role]: !!checked }))
+                                }
+                              >
+                                {role}
+                              </DropdownMenuCheckboxItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </td>
 
-              {/* Location Filter */}
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">Location</Label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 text-xs justify-between min-w-[120px]">
-                      Location Filter
-                      {Object.values(locationFilters).filter(Boolean).length < availableLocations.length && (
-                        <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
-                          {Object.values(locationFilters).filter(Boolean).length}
-                        </Badge>
-                      )}
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-40">
-                    <DropdownMenuLabel className="text-xs">Filter by Location</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {availableLocations.map((location) => (
-                      <DropdownMenuCheckboxItem
-                        key={location}
-                        checked={locationFilters[location] || false}
-                        onCheckedChange={(checked) => 
-                          setLocationFilters(prev => ({ ...prev, [location]: !!checked }))
-                        }
-                      >
-                        {location}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                    {/* Status Filter */}
+                    <td className="px-4 py-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs font-medium text-gray-600">Status</Label>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-8 text-xs justify-between w-full">
+                              Status Filter
+                              {Object.values(statusFilters).filter(Boolean).length < availableStatuses.length && (
+                                <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                                  {Object.values(statusFilters).filter(Boolean).length}
+                                </Badge>
+                              )}
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="w-40">
+                            <DropdownMenuLabel className="text-xs">Filter by Status</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {availableStatuses.map((status) => (
+                              <DropdownMenuCheckboxItem
+                                key={status}
+                                checked={statusFilters[status] || false}
+                                onCheckedChange={(checked) =>
+                                  setStatusFilters(prev => ({ ...prev, [status]: !!checked }))
+                                }
+                              >
+                                {status}
+                              </DropdownMenuCheckboxItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </td>
 
+                    {/* Location Filter */}
+                    <td className="px-4 py-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs font-medium text-gray-600">Location</Label>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-8 text-xs justify-between w-full">
+                              Location Filter
+                              {Object.values(locationFilters).filter(Boolean).length < availableLocations.length && (
+                                <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                                  {Object.values(locationFilters).filter(Boolean).length}
+                                </Badge>
+                              )}
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="w-40">
+                            <DropdownMenuLabel className="text-xs">Filter by Location</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {availableLocations.map((location) => (
+                              <DropdownMenuCheckboxItem
+                                key={location}
+                                checked={locationFilters[location] || false}
+                                onCheckedChange={(checked) =>
+                                  setLocationFilters(prev => ({ ...prev, [location]: !!checked }))
+                                }
+                              >
+                                {location}
+                              </DropdownMenuCheckboxItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </td>
 
-              {/* CheckMK Status Filter */}
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">CheckMK Status</Label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 text-xs justify-between min-w-[120px]">
-                      Status Filter
-                      {Object.values(checkmkStatusFilters).filter(Boolean).length < 3 && (
-                        <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
-                          {Object.values(checkmkStatusFilters).filter(Boolean).length}
-                        </Badge>
-                      )}
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-40">
-                    <DropdownMenuLabel className="text-xs">Filter by Status</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuCheckboxItem
-                      checked={checkmkStatusFilters.equal}
-                      onCheckedChange={(checked) => 
-                        setCheckmkStatusFilters(prev => ({ ...prev, equal: !!checked }))
-                      }
-                    >
-                      Equal
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={checkmkStatusFilters.diff}
-                      onCheckedChange={(checked) => 
-                        setCheckmkStatusFilters(prev => ({ ...prev, diff: !!checked }))
-                      }
-                    >
-                      Diff
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={checkmkStatusFilters.missing}
-                      onCheckedChange={(checked) => 
-                        setCheckmkStatusFilters(prev => ({ ...prev, missing: !!checked }))
-                      }
-                    >
-                      Missing
-                    </DropdownMenuCheckboxItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                    {/* CheckMK Status Filter */}
+                    <td className="px-4 py-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs font-medium text-gray-600">CheckMK Status</Label>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-8 text-xs justify-between w-full">
+                              Status Filter
+                              {Object.values(checkmkStatusFilters).filter(Boolean).length < 3 && (
+                                <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                                  {Object.values(checkmkStatusFilters).filter(Boolean).length}
+                                </Badge>
+                              )}
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="w-40">
+                            <DropdownMenuLabel className="text-xs">Filter by Status</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuCheckboxItem
+                              checked={checkmkStatusFilters.equal}
+                              onCheckedChange={(checked) =>
+                                setCheckmkStatusFilters(prev => ({ ...prev, equal: !!checked }))
+                              }
+                            >
+                              Equal
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                              checked={checkmkStatusFilters.diff}
+                              onCheckedChange={(checked) =>
+                                setCheckmkStatusFilters(prev => ({ ...prev, diff: !!checked }))
+                              }
+                            >
+                              Diff
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                              checked={checkmkStatusFilters.missing}
+                              onCheckedChange={(checked) =>
+                                setCheckmkStatusFilters(prev => ({ ...prev, missing: !!checked }))
+                              }
+                            >
+                              Missing
+                            </DropdownMenuCheckboxItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </td>
 
+                    {/* Empty cell for actions column */}
+                    <td className="px-4 py-3"></td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -1413,8 +1534,8 @@ export function CheckMKSyncDevicesPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           {/* View Button - Always visible and enabled */}
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             onClick={() => setSelectedDeviceForView(device)}
                             title="View device details"
@@ -1422,11 +1543,22 @@ export function CheckMKSyncDevicesPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          
+
+                          {/* Sync Device Button - Always visible next to View button */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSync(device)}
+                            title="Sync Device"
+                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                          </Button>
+
                           {/* Add Button - Only for missing devices */}
                           {device.checkmk_status === 'missing' && (
-                            <Button 
-                              variant="ghost" 
+                            <Button
+                              variant="ghost"
                               size="sm"
                               onClick={() => handleAddDevice(device)}
                               disabled={addingDevices.has(device.id)}
@@ -1440,12 +1572,12 @@ export function CheckMKSyncDevicesPage() {
                               )}
                             </Button>
                           )}
-                          
-                          {/* Compare and Sync Buttons - Only for diff devices */}
+
+                          {/* Compare and old Sync Buttons - Only for diff devices */}
                           {device.checkmk_status === 'diff' && (
                             <>
-                              <Button 
-                                variant="ghost" 
+                              <Button
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => setSelectedDeviceForDiff(device)}
                                 title="Show differences"
@@ -1453,8 +1585,8 @@ export function CheckMKSyncDevicesPage() {
                               >
                                 <GitCompare className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                variant="ghost" 
+                              <Button
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => handleSyncDevice(device)}
                                 disabled={syncingDevices.has(device.id)}
@@ -1798,6 +1930,44 @@ export function CheckMKSyncDevicesPage() {
                 </div>
               </>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Device Confirmation Modal */}
+      <Dialog open={showAddDeviceModal} onOpenChange={(open) => !open && handleAddDeviceCancel()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Device Not Found in CheckMK</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              The device <strong>{deviceToAdd?.name}</strong> was not found in CheckMK.
+              Would you like to add it to CheckMK?
+            </p>
+            <div className="flex items-center justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={handleAddDeviceCancel}
+                disabled={isAddingDevice}
+              >
+                No
+              </Button>
+              <Button
+                onClick={() => deviceToAdd && handleAddDeviceFromModal(deviceToAdd)}
+                disabled={isAddingDevice}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {isAddingDevice ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  'Yes, Add Device'
+                )}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

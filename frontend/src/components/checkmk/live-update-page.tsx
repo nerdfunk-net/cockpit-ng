@@ -53,15 +53,15 @@ interface DiffResult {
     diff: string
     normalized_config: {
       folder: string
-      attributes: Record<string, any>
+      attributes: Record<string, unknown>
     }
     checkmk_config: {
       folder: string
-      attributes: Record<string, any>
-      effective_attributes: Record<string, any> | null
+      attributes: Record<string, unknown>
+      effective_attributes: Record<string, unknown> | null
       is_cluster: boolean
       is_offline: boolean
-      cluster_nodes: any[] | null
+      cluster_nodes: unknown[] | null
     } | null
     ignored_attributes: string[]
   }
@@ -69,7 +69,7 @@ interface DiffResult {
 }
 
 // Helper function to render config comparison
-const renderConfigComparison = (nautobot: any, checkmk: any, ignoredAttributes: string[] = []) => {
+const renderConfigComparison = (nautobot: { attributes?: Record<string, unknown> }, checkmk: { attributes?: Record<string, unknown> }, ignoredAttributes: string[] = []) => {
   const allKeys = new Set([
     ...Object.keys(nautobot?.attributes || {}),
     ...Object.keys(checkmk?.attributes || {})
@@ -96,7 +96,7 @@ const renderConfigComparison = (nautobot: any, checkmk: any, ignoredAttributes: 
 }
 
 // Helper to format value for display
-const formatValue = (value: any): string => {
+const formatValue = (value: unknown): string => {
   if (value === undefined) return '(missing)'
   if (value === null) return '(null)'
   if (typeof value === 'object') return JSON.stringify(value, null, 2)
