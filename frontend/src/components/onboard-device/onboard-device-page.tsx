@@ -646,7 +646,7 @@ export function OnboardDevicePage() {
               <Select value={formData.namespace_id} onValueChange={(value) => 
                 setFormData(prev => ({ ...prev, namespace_id: value }))
               }>
-                <SelectTrigger className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                <SelectTrigger className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select namespace..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -667,7 +667,7 @@ export function OnboardDevicePage() {
               <Select value={formData.role_id} onValueChange={(value) => 
                 setFormData(prev => ({ ...prev, role_id: value }))
               }>
-                <SelectTrigger className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                <SelectTrigger className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select device role..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -686,7 +686,7 @@ export function OnboardDevicePage() {
               <Select value={formData.platform_id} onValueChange={(value) => 
                 setFormData(prev => ({ ...prev, platform_id: value }))
               }>
-                <SelectTrigger className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                <SelectTrigger className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select platform..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -708,7 +708,7 @@ export function OnboardDevicePage() {
               <Select value={formData.status_id} onValueChange={(value) => 
                 setFormData(prev => ({ ...prev, status_id: value }))
               }>
-                <SelectTrigger className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                <SelectTrigger className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select device status..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -729,7 +729,7 @@ export function OnboardDevicePage() {
               <Select value={formData.secret_groups_id} onValueChange={(value) => 
                 setFormData(prev => ({ ...prev, secret_groups_id: value }))
               }>
-                <SelectTrigger className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                <SelectTrigger className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select secret group..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -750,7 +750,7 @@ export function OnboardDevicePage() {
               <Select value={formData.interface_status_id} onValueChange={(value) => 
                 setFormData(prev => ({ ...prev, interface_status_id: value }))
               }>
-                <SelectTrigger className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                <SelectTrigger className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select interface status..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -771,7 +771,7 @@ export function OnboardDevicePage() {
               <Select value={formData.ip_address_status_id} onValueChange={(value) => 
                 setFormData(prev => ({ ...prev, ip_address_status_id: value }))
               }>
-                <SelectTrigger className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                <SelectTrigger className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select IP address status..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -796,7 +796,7 @@ export function OnboardDevicePage() {
                   ...prev, 
                   port: parseInt(e.target.value) || 22 
                 }))}
-                className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
               />
             </div>
 
@@ -812,7 +812,7 @@ export function OnboardDevicePage() {
                   ...prev, 
                   timeout: parseInt(e.target.value) || 30 
                 }))}
-                className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
               />
             </div>
           </div>

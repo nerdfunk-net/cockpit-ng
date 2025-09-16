@@ -145,7 +145,8 @@ export function ScanAndAddPage() {
 
   // Phase 2: Properties
   const [selectedCredentials, setSelectedCredentials] = useState<string[]>([''])
-  const [discoveryMode, setDiscoveryMode] = useState<string>('netmiko')
+  const [pingMode, setPingMode] = useState<string>('fping')
+  const [discoveryMode, setDiscoveryMode] = useState<string>('ssh-login')
   const [selectedParserTemplates, setSelectedParserTemplates] = useState<(string | number)[]>([])
   const [gitRepository, setGitRepository] = useState<string>('')
   const [inventoryTemplate, setInventoryTemplate] = useState<string>('')
@@ -691,6 +692,7 @@ export function ScanAndAddPage() {
         cidrs: normalizedCidrs,
         credential_ids: validCredentials,
         discovery_mode: discoveryMode,
+        ping_mode: pingMode,
         parser_template_ids: showParserTemplates 
           ? selectedParserTemplates.map(id => parseInt(String(id), 10)).filter(id => !isNaN(id))
           : []
@@ -701,6 +703,7 @@ export function ScanAndAddPage() {
       console.log('Show parser templates:', showParserTemplates)
       console.log('Selected parser templates (raw):', selectedParserTemplates)
       console.log('Converted parser template IDs:', scanPayload.parser_template_ids)
+      console.log('Ping mode:', pingMode)
       console.log('Complete scan payload:', scanPayload)
       console.log('=== END SCAN PAYLOAD DEBUG ===')
 
@@ -1255,6 +1258,20 @@ export function ScanAndAddPage() {
                     )}
                   </div>
                 ))}
+              </div>
+
+              {/* Ping Mode */}
+              <div className="space-y-2">
+                <Label htmlFor="ping-mode">Ping Mode <span className="text-red-500">*</span></Label>
+                <Select value={pingMode} onValueChange={setPingMode}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select ping mode..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fping">fping</SelectItem>
+                    <SelectItem value="ping">ping</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Discovery Mode */}

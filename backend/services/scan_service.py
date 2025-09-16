@@ -67,6 +67,7 @@ class ScanJob:
     cidrs: List[str]
     credential_ids: List[int]
     discovery_mode: str
+    ping_mode: str  # 'ping' | 'fping'
     total_targets: int
     debug_enabled: bool = False
     scanned: int = 0
@@ -104,6 +105,7 @@ class ScanService:
         cidrs: List[str],
         credential_ids: List[int],
         discovery_mode: str = "netmiko",
+        ping_mode: str = "fping",
         parser_template_ids: Optional[List[int]] = None,
         debug_enabled: bool = False,
     ) -> ScanJob:
@@ -135,6 +137,7 @@ class ScanService:
             cidrs=cidrs,
             credential_ids=credential_ids,
             discovery_mode=discovery_mode,
+            ping_mode=ping_mode,
             total_targets=len(targets),
             debug_enabled=debug_enabled,
         )
@@ -191,9 +194,20 @@ class ScanService:
         elif textfsm is None:
             logger.warning("TextFSM not available, parser templates will be ignored")
 
+        # Handle ping operations based on ping mode
+        alive_ips: Set[str] = set()
+        
+        if job.ping_mode == "fping":
+            # Use fping for bulk ping operations with original CIDRs
+            alive_ips = await asyncio.to_thread(self._fping_networks, job.cidrs)
+            logger.info(f"fping found {len(alive_ips)} alive hosts out of {len(targets)} targets")
+        else:
+            # Use individual ping operations (original behavior)
+            logger.info("Using individual ping mode for host discovery")
+
         async def worker(ip: str):
             async with semaphore:
-                await self._process_ip(job, ip, credentials, parser_templates)
+                await self._process_ip(job, ip, credentials, parser_templates, alive_ips)
 
         try:
             await asyncio.gather(*[worker(ip) for ip in targets])
@@ -212,17 +226,26 @@ class ScanService:
         ip: str,
         credentials: Dict[int, Dict[str, Any]],
         parser_templates: List[Tuple[int, str]],
+        alive_ips: Set[str],
     ):
         """Process a single IP address: ping test + credential trials."""
         # Step 1: Liveness check with retries
         alive = False
-        for attempt in range(RETRY_ATTEMPTS):
-            try:
-                if await asyncio.to_thread(self._ping_host, ip):
-                    alive = True
-                    break
-            except Exception as e:
-                logger.debug(f"Ping attempt {attempt + 1} failed for {ip}: {e}")
+        
+        if job.ping_mode == "fping":
+            # Use pre-computed alive_ips from fping
+            alive = ip in alive_ips
+            if alive:
+                logger.debug(f"Host {ip} is alive (from fping results)")
+        else:
+            # Use individual ping operations (original behavior)
+            for attempt in range(RETRY_ATTEMPTS):
+                try:
+                    if await asyncio.to_thread(self._ping_host, ip):
+                        alive = True
+                        break
+                except Exception as e:
+                    logger.debug(f"Ping attempt {attempt + 1} failed for {ip}: {e}")
 
         if not alive:
             job.unreachable += 1
@@ -551,6 +574,58 @@ class ScanService:
         except subprocess.TimeoutExpired:
             return False
         except Exception:
+            return False
+
+    def _fping_networks(self, cidrs: List[str]) -> Set[str]:
+        """Use fping to ping multiple networks efficiently."""
+        if not cidrs:
+            return set()
+            
+        alive_ips: Set[str] = set()
+        
+        try:
+            # Build fping command with all CIDRs
+            cmd = ["fping", "-a", "-g"]  # -a: show alive hosts, -g: generate target list
+            cmd.extend(cidrs)
+            
+            logger.info(f"Running fping command: {' '.join(cmd)}")
+            
+            result = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=PING_TIMEOUT_SECONDS * 10,  # Allow more time for network scanning
+                text=True
+            )
+            
+            # fping outputs alive IPs to stdout (when using -a flag)
+            if result.stdout:
+                for line in result.stdout.strip().split('\n'):
+                    ip = line.strip()
+                    if ip and self._is_valid_ip(ip):
+                        alive_ips.add(ip)
+                        
+            logger.info(f"fping discovered {len(alive_ips)} alive hosts")
+            
+            # Log stderr for debugging (fping sends some info to stderr even on success)
+            if result.stderr:
+                logger.debug(f"fping stderr: {result.stderr}")
+                
+        except subprocess.TimeoutExpired:
+            logger.warning("fping command timed out")
+        except FileNotFoundError:
+            logger.error("fping command not found. Please install fping or use 'ping' mode instead")
+        except Exception as e:
+            logger.error(f"fping command failed: {e}")
+            
+        return alive_ips
+
+    def _is_valid_ip(self, ip_str: str) -> bool:
+        """Validate if string is a valid IP address."""
+        try:
+            ipaddress.ip_address(ip_str)
+            return True
+        except ValueError:
             return False
 
     async def _try_cisco_devices(

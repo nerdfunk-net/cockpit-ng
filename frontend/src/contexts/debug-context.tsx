@@ -83,23 +83,21 @@ export function DebugProvider({ children }: { children: React.ReactNode }) {
   // Load debug state when user changes or component mounts
   useEffect(() => {
     refreshDebugState()
-  }, [user, token])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, token]) // refreshDebugState is stable and depends on user, token
 
   // Monitor for changes to debug mode via other means (like profile page)
   useEffect(() => {
     const checkDebugState = () => refreshDebugState()
     
-    // Check debug state periodically (every 30 seconds)
-    const interval = setInterval(checkDebugState, 30000)
-    
-    // Listen for focus events to refresh state when user comes back to the tab
+    // Only check when user focuses the tab (no periodic polling)
     window.addEventListener('focus', checkDebugState)
     
     return () => {
-      clearInterval(interval)
       window.removeEventListener('focus', checkDebugState)
     }
-  }, [user, token])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, token]) // refreshDebugState is stable and depends on user, token
 
   const contextValue: DebugContextType = {
     isDebugEnabled,

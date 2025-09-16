@@ -33,6 +33,9 @@ class ScanStartRequest(BaseModel):
     discovery_mode: str = Field(
         default="netmiko", description="Discovery mode: napalm, ssh-login, or netmiko"
     )
+    ping_mode: str = Field(
+        default="fping", description="Ping mode: ping or fping"
+    )
     parser_template_ids: Optional[List[int]] = Field(
         default=None,
         description="Template IDs to use for parsing 'show version' output (textfsm)",
@@ -42,6 +45,12 @@ class ScanStartRequest(BaseModel):
     def validate_discovery_mode(cls, v: str):
         if v not in ["napalm", "ssh-login", "netmiko"]:
             raise ValueError("discovery_mode must be 'napalm', 'ssh-login', or 'netmiko'")
+        return v
+
+    @validator("ping_mode")
+    def validate_ping_mode(cls, v: str):
+        if v not in ["ping", "fping"]:
+            raise ValueError("ping_mode must be 'ping' or 'fping'")
         return v
 
     @validator("cidrs")
@@ -147,12 +156,13 @@ async def start_scan(request: ScanStartRequest, current_user: str = Depends(get_
         debug_enabled = user.get("debug", False) if user else False
         
         logger.info(
-            f"Starting scan job with CIDRs: {request.cidrs}, credentials: {request.credential_ids}, mode: {request.discovery_mode} template id: {request.parser_template_ids}, debug: {debug_enabled}"
+            f"Starting scan job with CIDRs: {request.cidrs}, credentials: {request.credential_ids}, mode: {request.discovery_mode}, ping_mode: {request.ping_mode}, template id: {request.parser_template_ids}, debug: {debug_enabled}"
         )
         job = await scan_service.start_job(
             request.cidrs,
             request.credential_ids,
             request.discovery_mode,
+            request.ping_mode,
             parser_template_ids=request.parser_template_ids,
             debug_enabled=debug_enabled,
         )
