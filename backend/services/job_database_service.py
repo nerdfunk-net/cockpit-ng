@@ -336,26 +336,28 @@ class JobDatabaseService:
                     """
                 )
                 jobs_deleted = cursor.rowcount
-                
+
                 conn.commit()
-                
+
                 result = {
                     "jobs_deleted": jobs_deleted,
                     "device_results_deleted": device_results_deleted,
                     "cleanup_date": datetime.now().isoformat(),
-                    "message": f"Successfully cleared {jobs_deleted} completed jobs and {device_results_deleted} device results"
+                    "message": f"Successfully cleared {jobs_deleted} completed jobs and {device_results_deleted} device results",
                 }
-                
-                logger.info(f"Cleared {jobs_deleted} completed jobs and {device_results_deleted} device results")
+
+                logger.info(
+                    f"Cleared {jobs_deleted} completed jobs and {device_results_deleted} device results"
+                )
                 return result
-                
+
         except Exception as e:
             logger.error(f"Error clearing completed jobs: {e}")
             return {
                 "error": str(e),
                 "cleanup_date": datetime.now().isoformat(),
                 "jobs_deleted": 0,
-                "device_results_deleted": 0
+                "device_results_deleted": 0,
             }
 
 

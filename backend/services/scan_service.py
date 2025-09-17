@@ -196,18 +196,22 @@ class ScanService:
 
         # Handle ping operations based on ping mode
         alive_ips: Set[str] = set()
-        
+
         if job.ping_mode == "fping":
             # Use fping for bulk ping operations with original CIDRs
             alive_ips = await asyncio.to_thread(self._fping_networks, job.cidrs)
-            logger.info(f"fping found {len(alive_ips)} alive hosts out of {len(targets)} targets")
+            logger.info(
+                f"fping found {len(alive_ips)} alive hosts out of {len(targets)} targets"
+            )
         else:
             # Use individual ping operations (original behavior)
             logger.info("Using individual ping mode for host discovery")
 
         async def worker(ip: str):
             async with semaphore:
-                await self._process_ip(job, ip, credentials, parser_templates, alive_ips)
+                await self._process_ip(
+                    job, ip, credentials, parser_templates, alive_ips
+                )
 
         try:
             await asyncio.gather(*[worker(ip) for ip in targets])
@@ -231,7 +235,7 @@ class ScanService:
         """Process a single IP address: ping test + credential trials."""
         # Step 1: Liveness check with retries
         alive = False
-        
+
         if job.ping_mode == "fping":
             # Use pre-computed alive_ips from fping
             alive = ip in alive_ips
@@ -580,44 +584,51 @@ class ScanService:
         """Use fping to ping multiple networks efficiently."""
         if not cidrs:
             return set()
-            
+
         alive_ips: Set[str] = set()
-        
+
         try:
             # Build fping command with all CIDRs
-            cmd = ["fping", "-a", "-g"]  # -a: show alive hosts, -g: generate target list
+            cmd = [
+                "fping",
+                "-a",
+                "-g",
+            ]  # -a: show alive hosts, -g: generate target list
             cmd.extend(cidrs)
-            
+
             logger.info(f"Running fping command: {' '.join(cmd)}")
-            
+
             result = subprocess.run(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                timeout=PING_TIMEOUT_SECONDS * 10,  # Allow more time for network scanning
-                text=True
+                timeout=PING_TIMEOUT_SECONDS
+                * 10,  # Allow more time for network scanning
+                text=True,
             )
-            
+
             # fping outputs alive IPs to stdout (when using -a flag)
             if result.stdout:
-                for line in result.stdout.strip().split('\n'):
+                for line in result.stdout.strip().split("\n"):
                     ip = line.strip()
                     if ip and self._is_valid_ip(ip):
                         alive_ips.add(ip)
-                        
+
             logger.info(f"fping discovered {len(alive_ips)} alive hosts")
-            
+
             # Log stderr for debugging (fping sends some info to stderr even on success)
             if result.stderr:
                 logger.debug(f"fping stderr: {result.stderr}")
-                
+
         except subprocess.TimeoutExpired:
             logger.warning("fping command timed out")
         except FileNotFoundError:
-            logger.error("fping command not found. Please install fping or use 'ping' mode instead")
+            logger.error(
+                "fping command not found. Please install fping or use 'ping' mode instead"
+            )
         except Exception as e:
             logger.error(f"fping command failed: {e}")
-            
+
         return alive_ips
 
     def _is_valid_ip(self, ip_str: str) -> bool:
