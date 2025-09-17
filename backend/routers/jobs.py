@@ -10,10 +10,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, validator
 
 from core.auth import verify_token
-from models.job_models import JobStartResponse, Job, JobListResponse, JobDetailResponse
+from models.job_models import JobStartResponse, Job, JobListResponse, JobDetailResponse, NetworkScanRequest, NetworkScanResponse
 from services.apscheduler_job_service import APSchedulerJobService
-from services.job_database_service import job_db_service
+from services.job_database_service import job_db_service, JobType, JobStatus
 from services.cache_service import cache_service
+from services.network_scan_service import network_scan_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
@@ -421,4 +422,145 @@ async def start_get_all_devices_job(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to start get-all-devices job: {str(e)}",
+        )
+
+
+@router.post("/scan-network/{cidr:path}", response_model=JobStartResponse)
+async def start_network_scan_job(
+    cidr: str,
+    request: NetworkScanRequest,
+    current_user: dict = Depends(verify_token),
+    scheduler_service: APSchedulerJobService = Depends(get_scheduler_service),
+):
+    """Start a network scan job using ping or fping"""
+    try:
+        # Decode URL-encoded CIDR (e.g., %2F becomes /)
+        import urllib.parse
+        decoded_cidr = urllib.parse.unquote(cidr)
+        
+        # Validate CIDR format
+        import ipaddress
+        try:
+            ipaddress.ip_network(decoded_cidr, strict=False)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid CIDR notation: {str(e)}"
+            )
+        
+        username = current_user.get("sub", "unknown")
+        
+        logger.info(
+            f"Starting network scan job for {decoded_cidr} with ping_mode={request.ping_mode}, "
+            f"timeout={request.timeout}, max_concurrent={request.max_concurrent}"
+        )
+        
+        # Create job in database
+        job_id = f"network_scan_{int(time.time() * 1000)}"
+        
+        import time
+        job_db_service.create_job(
+            job_id=job_id,
+            job_type=JobType.NETWORK_SCAN,
+            started_by=username,
+            metadata={
+                "cidr": decoded_cidr,
+                "ping_mode": request.ping_mode,
+                "timeout": request.timeout,
+                "max_concurrent": request.max_concurrent
+            }
+        )
+        
+        # Start the scan job
+        scheduler_service._scheduler.add_job(
+            func=_execute_network_scan,
+            args=[job_id, decoded_cidr, request, username],
+            id=job_id,
+            name=f"Network Scan: {decoded_cidr}",
+            misfire_grace_time=30
+        )
+        
+        return JobStartResponse(
+            job_id=job_id,
+            status="started",
+            message=f"Network scan started for {decoded_cidr}"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting network scan job: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to start network scan job: {str(e)}",
+        )
+
+
+async def _execute_network_scan(job_id: str, cidr: str, request: NetworkScanRequest, username: str):
+    """Execute the network scan job"""
+    try:
+        logger.info(f"Executing network scan job {job_id} for {cidr}")
+        
+        # Update job status to running
+        job_db_service.update_job_status(job_id, JobStatus.RUNNING)
+        
+        # Progress callback to update job progress
+        async def progress_callback(progress):
+            job_db_service.update_job_progress(
+                job_id, 
+                processed=progress.scanned, 
+                total=progress.total,
+                message=f"Scanning... {progress.alive} alive, {progress.unreachable} unreachable"
+            )
+        
+        # Execute the network scan
+        result = await network_scan_service.scan_network(
+            cidr=cidr,
+            ping_mode=request.ping_mode,
+            max_concurrent=request.max_concurrent,
+            timeout=request.timeout,
+            progress_callback=progress_callback,
+            scan_id=job_id
+        )
+        
+        # Prepare result data
+        result_data = {
+            "cidr": result.cidr,
+            "ping_mode": result.ping_mode,
+            "total_targets": result.total_targets,
+            "alive_hosts": result.alive_hosts,
+            "unreachable_count": len(result.unreachable_hosts),
+            "scan_duration": result.scan_duration,
+            "started_at": result.started_at.isoformat(),
+            "completed_at": result.completed_at.isoformat() if result.completed_at else None
+        }
+        
+        if result.error_message:
+            # Job failed
+            job_db_service.complete_job(
+                job_id, 
+                JobStatus.FAILED, 
+                error_message=result.error_message,
+                result_data=result_data
+            )
+            logger.error(f"Network scan job {job_id} failed: {result.error_message}")
+        else:
+            # Job completed successfully
+            job_db_service.complete_job(
+                job_id, 
+                JobStatus.COMPLETED,
+                result_summary=f"Found {len(result.alive_hosts)} alive hosts out of {result.total_targets} targets",
+                result_data=result_data
+            )
+            logger.info(
+                f"Network scan job {job_id} completed: {len(result.alive_hosts)} alive, "
+                f"{len(result.unreachable_hosts)} unreachable, {result.scan_duration:.2f}s"
+            )
+            
+    except Exception as e:
+        logger.error(f"Network scan job {job_id} failed with exception: {e}")
+        job_db_service.complete_job(
+            job_id, 
+            JobStatus.FAILED, 
+            error_message=str(e)
         )

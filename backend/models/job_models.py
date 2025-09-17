@@ -3,7 +3,7 @@ Pydantic models for the new job system.
 """
 
 from __future__ import annotations
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, validator
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from services.job_database_service import JobStatus, JobType
@@ -66,3 +66,28 @@ class JobListResponse(BaseModel):
 class JobDetailResponse(BaseModel):
     """Response for job details"""
     job: Job
+
+
+class NetworkScanRequest(BaseModel):
+    """Request model for network scan job"""
+    ping_mode: str = Field(default="fping", description="Ping mode: 'ping' or 'fping'")
+    timeout: float = Field(default=1.5, ge=0.1, le=10.0, description="Ping timeout in seconds")
+    max_concurrent: int = Field(default=10, ge=1, le=100, description="Maximum concurrent ping operations")
+    
+    @validator('ping_mode')
+    def validate_ping_mode(cls, v):
+        if v not in ['ping', 'fping']:
+            raise ValueError("ping_mode must be either 'ping' or 'fping'")
+        return v
+
+
+class NetworkScanResponse(BaseModel):
+    """Response model for network scan results"""
+    cidr: str
+    ping_mode: str
+    total_targets: int
+    alive_hosts: List[str]
+    unreachable_count: int
+    scan_duration: float
+    started_at: datetime
+    completed_at: Optional[datetime] = None

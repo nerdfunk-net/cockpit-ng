@@ -32,6 +32,7 @@ class JobType(str, Enum):
     DEVICE_SYNC = "device-sync"
     DEVICE_CACHE = "device-cache"
     BACKUP = "backup"
+    NETWORK_SCAN = "network-scan"
 
 
 class JobDatabaseService:
