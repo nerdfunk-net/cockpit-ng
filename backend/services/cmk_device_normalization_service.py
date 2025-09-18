@@ -123,6 +123,7 @@ class DeviceNormalizationService:
                 snmp_version = snmp_config.get("version")
                 if snmp_version in [2, 3, "v2", "v3"]:
                     extensions.attributes["tag_snmp_ds"] = "snmp-v2"
+                    extensions.attributes["tag_agent"] = "no-agent"
             else:
                 logger.warning(
                     f"SNMP credentials key '{snmp_credentials}' not found in mapping"

@@ -38,6 +38,7 @@ interface Device {
 
 interface JobResult {
   id: string
+  type: string
   status: string
   started_at: string
   created_at: string
@@ -285,9 +286,11 @@ export function CheckMKSyncDevicesPage() {
       })
       if (response.ok) {
         const data = await response.json()
-        // Filter only completed jobs with device results
+        // Filter only completed Device Comparison jobs with device results
         const completedJobs = data.jobs.filter((job: JobResult) =>
-          job.status === 'completed' && (job.progress?.processed || 0) > 0
+          job.status === 'completed' && 
+          job.type === 'device-comparison' &&
+          (job.progress?.processed || 0) > 0
         ).map((job: JobResult) => ({
           id: job.id,
           status: job.status,

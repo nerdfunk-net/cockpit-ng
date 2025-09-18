@@ -14,7 +14,7 @@ from cryptography.fernet import Fernet, InvalidToken
 from config import settings as config_settings
 
 DB_PATH = os.path.join(
-    config_settings.data_directory, "settings", "cockpit_settings.db"
+    config_settings.data_directory, "settings", "credentials.db"
 )
 
 
