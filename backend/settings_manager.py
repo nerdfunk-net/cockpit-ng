@@ -48,7 +48,7 @@ class CheckMKSettings:
 
     url: str = ""  # Must be configured by user
     site: str = ""  # Must be configured by user
-    username: str = ""  # Must be configured by user  
+    username: str = ""  # Must be configured by user
     password: str = ""  # Must be configured by user
     verify_ssl: bool = True
 
@@ -634,9 +634,7 @@ class SettingsManager:
                             settings.get("site", self.default_checkmk.site),
                             settings.get("username", self.default_checkmk.username),
                             settings.get("password", self.default_checkmk.password),
-                            settings.get(
-                                "verify_ssl", self.default_checkmk.verify_ssl
-                            ),
+                            settings.get("verify_ssl", self.default_checkmk.verify_ssl),
                         ),
                     )
                 else:
@@ -657,9 +655,7 @@ class SettingsManager:
                             settings.get("site", self.default_checkmk.site),
                             settings.get("username", self.default_checkmk.username),
                             settings.get("password", self.default_checkmk.password),
-                            settings.get(
-                                "verify_ssl", self.default_checkmk.verify_ssl
-                            ),
+                            settings.get("verify_ssl", self.default_checkmk.verify_ssl),
                         ),
                     )
 

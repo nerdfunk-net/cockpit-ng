@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, validator
 
 ALLOWED_TYPES = {"ssh", "tacacs", "generic", "token"}
 
+
 class CredentialCreate(BaseModel):
     name: str = Field(min_length=1, max_length=128)
     username: str = Field(min_length=1, max_length=128)
@@ -18,6 +19,7 @@ class CredentialCreate(BaseModel):
         if v not in ALLOWED_TYPES:
             raise ValueError("Invalid credential type")
         return v
+
 
 class CredentialUpdate(BaseModel):
     name: Optional[str] = None

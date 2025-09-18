@@ -351,12 +351,16 @@ async def get_checkmk_settings(current_user: dict = Depends(verify_admin_token))
 
     except Exception as e:
         logger.error(f"Error getting CheckMK settings: {e}")
-        return {"success": False, "message": f"Failed to get CheckMK settings: {str(e)}"}
+        return {
+            "success": False,
+            "message": f"Failed to get CheckMK settings: {str(e)}",
+        }
 
 
 @router.post("/checkmk")
 async def create_checkmk_settings(
-    checkmk_request: CheckMKSettingsRequest, current_user: dict = Depends(verify_admin_token)
+    checkmk_request: CheckMKSettingsRequest,
+    current_user: dict = Depends(verify_admin_token),
 ):
     """Create/Update CheckMK settings via POST."""
     try:
@@ -375,7 +379,10 @@ async def create_checkmk_settings(
 
     except Exception as e:
         logger.error(f"Error updating CheckMK settings: {e}")
-        return {"success": False, "message": f"Failed to update CheckMK settings: {str(e)}"}
+        return {
+            "success": False,
+            "message": f"Failed to update CheckMK settings: {str(e)}",
+        }
 
 
 @router.post("/test/checkmk")
@@ -392,7 +399,7 @@ async def test_checkmk_connection(
             test_request.site,
             test_request.username,
             test_request.password,
-            test_request.verify_ssl
+            test_request.verify_ssl,
         )
 
         return {

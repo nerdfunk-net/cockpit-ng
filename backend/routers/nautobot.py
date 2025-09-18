@@ -29,17 +29,21 @@ def _get_device_cache_key(device_id: str) -> str:
     return f"nautobot:devices:{device_id}"
 
 
-def _get_device_list_cache_key(filter_type: str = None, filter_value: str = None, 
-                               limit: int = None, offset: int = None) -> str:
+def _get_device_list_cache_key(
+    filter_type: str = None,
+    filter_value: str = None,
+    limit: int = None,
+    offset: int = None,
+) -> str:
     """Generate cache key for device list."""
     if filter_type and filter_value:
         key = f"nautobot:devices:list:{filter_type}:{filter_value}"
     else:
         key = "nautobot:devices:list:all"
-    
+
     if limit is not None and offset is not None:
         key += f":limit_{limit}:offset_{offset}"
-    
+
     return key
 
 
@@ -68,8 +72,6 @@ def _cache_device_list(cache_key: str, devices: list) -> None:
 def _get_cached_device_list(cache_key: str) -> Optional[list]:
     """Get cached device list."""
     return cache_service.get(cache_key)
-
-
 
 
 @router.get("/test")
@@ -147,7 +149,7 @@ async def get_devices(
         # Check cache first
         cache_key = _get_device_list_cache_key(filter_type, filter_value, limit, offset)
         cached_result = _get_cached_device_list(cache_key)
-        
+
         if cached_result is not None:
             logger.debug(f"Cache hit for devices list: {cache_key}")
             return cached_result
@@ -238,12 +240,16 @@ async def get_devices(
                     if (offset or 0) == 0
                     else f"/api/nautobot/devices?limit={limit}&offset={max(0, (offset or 0) - limit)}&filter_type={filter_type}&filter_value={filter_value}",
                 }
-                
+
                 # Cache the result and individual devices
                 logger.debug(f"Caching devices list: {cache_key}")
-                cache_service.set(cache_key, response_data, DEVICE_CACHE_TTL)  # Cache the full response
-                _cache_device_list(cache_key, response_data["devices"])  # Cache individual devices
-                
+                cache_service.set(
+                    cache_key, response_data, DEVICE_CACHE_TTL
+                )  # Cache the full response
+                _cache_device_list(
+                    cache_key, response_data["devices"]
+                )  # Cache individual devices
+
                 return response_data
 
             elif filter_type == "location":
@@ -316,12 +322,16 @@ async def get_devices(
                     if (offset or 0) == 0
                     else f"/api/nautobot/devices?limit={limit}&offset={max(0, (offset or 0) - limit)}&filter_type={filter_type}&filter_value={filter_value}",
                 }
-                
+
                 # Cache the result and individual devices
                 logger.debug(f"Caching devices list: {cache_key}")
-                cache_service.set(cache_key, response_data, DEVICE_CACHE_TTL)  # Cache the full response
-                _cache_device_list(cache_key, response_data["devices"])  # Cache individual devices
-                
+                cache_service.set(
+                    cache_key, response_data, DEVICE_CACHE_TTL
+                )  # Cache the full response
+                _cache_device_list(
+                    cache_key, response_data["devices"]
+                )  # Cache individual devices
+
                 return response_data
 
             elif filter_type == "prefix":
@@ -399,12 +409,16 @@ async def get_devices(
                     if (offset or 0) == 0
                     else f"/api/nautobot/devices?limit={limit}&offset={max(0, (offset or 0) - limit)}&filter_type={filter_type}&filter_value={filter_value}",
                 }
-                
+
                 # Cache the result and individual devices
                 logger.debug(f"Caching devices list: {cache_key}")
-                cache_service.set(cache_key, response_data, DEVICE_CACHE_TTL)  # Cache the full response
-                _cache_device_list(cache_key, response_data["devices"])  # Cache individual devices
-                
+                cache_service.set(
+                    cache_key, response_data, DEVICE_CACHE_TTL
+                )  # Cache the full response
+                _cache_device_list(
+                    cache_key, response_data["devices"]
+                )  # Cache individual devices
+
                 return response_data
 
         # Standard device query when no filters are provided
@@ -484,12 +498,16 @@ async def get_devices(
                 if (offset or 0) == 0
                 else f"/api/nautobot/devices?limit={limit}&offset={max(0, (offset or 0) - limit)}",
             }
-            
+
             # Cache the result and individual devices
             logger.debug(f"Caching devices list: {cache_key}")
-            cache_service.set(cache_key, response_data, DEVICE_CACHE_TTL)  # Cache the full response
-            _cache_device_list(cache_key, response_data["devices"])  # Cache individual devices
-            
+            cache_service.set(
+                cache_key, response_data, DEVICE_CACHE_TTL
+            )  # Cache the full response
+            _cache_device_list(
+                cache_key, response_data["devices"]
+            )  # Cache individual devices
+
             return response_data
         else:
             # No pagination - return all devices (legacy behavior)
@@ -503,12 +521,16 @@ async def get_devices(
                 "next": None,
                 "previous": None,
             }
-            
+
             # Cache the result and individual devices
             logger.debug(f"Caching devices list: {cache_key}")
-            cache_service.set(cache_key, response_data, DEVICE_CACHE_TTL)  # Cache the full response
-            _cache_device_list(cache_key, response_data["devices"])  # Cache individual devices
-            
+            cache_service.set(
+                cache_key, response_data, DEVICE_CACHE_TTL
+            )  # Cache the full response
+            _cache_device_list(
+                cache_key, response_data["devices"]
+            )  # Cache individual devices
+
             return response_data
 
     except Exception as e:
@@ -528,7 +550,7 @@ async def get_device(device_id: str, current_user: dict = Depends(verify_admin_t
         if cached_device is not None:
             logger.debug(f"Cache hit for device: {device_id}")
             return cached_device
-        
+
         logger.debug(f"Cache miss for device: {device_id}")
         query = """
         query getDevice($deviceId: ID!) {
@@ -563,12 +585,12 @@ async def get_device(device_id: str, current_user: dict = Depends(verify_admin_t
             )
 
         device = result["data"]["device"]
-        
+
         # Cache the device
         if device:
             logger.debug(f"Caching device: {device_id}")
             _cache_device(device)
-        
+
         return device
     except Exception as e:
         raise HTTPException(
@@ -1254,23 +1276,22 @@ async def nautobot_health_check(current_user: dict = Depends(verify_token)):
         return {
             "status": "connected",
             "message": "Nautobot is accessible",
-            "devices_count": result.get("count", 0)
+            "devices_count": result.get("count", 0),
         }
     except Exception as e:
         error_msg = str(e)
         if "403" in error_msg or "Invalid token" in error_msg:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Nautobot connection failed: Invalid or missing API token. Please check Nautobot settings."
+                detail="Nautobot connection failed: Invalid or missing API token. Please check Nautobot settings.",
             )
         elif "ConnectionError" in error_msg or "timeout" in error_msg.lower():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Nautobot connection failed: Cannot reach Nautobot server. Please check Nautobot URL and connectivity."
+                detail="Nautobot connection failed: Cannot reach Nautobot server. Please check Nautobot URL and connectivity.",
             )
         else:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"Nautobot connection failed: {error_msg}"
+                detail=f"Nautobot connection failed: {error_msg}",
             )
-

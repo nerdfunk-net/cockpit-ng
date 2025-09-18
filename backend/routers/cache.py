@@ -130,11 +130,10 @@ async def cleanup_expired(current_user: dict = Depends(verify_admin_token)):
 
 @router.post("/devices/clear")
 async def clear_devices_cache(
-    payload: dict = None, 
-    current_user: dict = Depends(verify_admin_token)
+    payload: dict = None, current_user: dict = Depends(verify_admin_token)
 ):
     """Clear device cache. Accepts optional JSON { "device_id": "123" }.
-    
+
     If device_id is provided, clears cache for that specific device.
     If device_id is omitted, clears all device cache entries.
     """
@@ -142,19 +141,19 @@ async def clear_devices_cache(
         device_id = None
         if payload and isinstance(payload, dict):
             device_id = payload.get("device_id")
-        
+
         cleared_count = _clear_device_cache(device_id)
-        
+
         if device_id:
-            message = f"Cleared cache for device {device_id}" if cleared_count > 0 else f"No cache found for device {device_id}"
+            message = (
+                f"Cleared cache for device {device_id}"
+                if cleared_count > 0
+                else f"No cache found for device {device_id}"
+            )
         else:
             message = f"Cleared {cleared_count} device cache entries"
-        
-        return {
-            "success": True,
-            "message": message,
-            "cleared_count": cleared_count
-        }
+
+        return {"success": True, "message": message, "cleared_count": cleared_count}
     except Exception as exc:
         return {"success": False, "message": str(exc)}
 
@@ -165,15 +164,15 @@ async def get_devices_cache_stats(current_user: dict = Depends(verify_admin_toke
     try:
         # Get namespace stats for device cache
         namespace_info = cache_service.get_namespace_info("nautobot:devices")
-        
+
         return {
             "success": True,
             "data": {
                 "namespace": "nautobot:devices",
                 "cache_info": namespace_info,
                 "cache_ttl_seconds": 1800,  # 30 minutes
-                "cache_ttl_minutes": 30
-            }
+                "cache_ttl_minutes": 30,
+            },
         }
     except Exception as exc:
         return {"success": False, "message": str(exc)}

@@ -156,6 +156,10 @@ async def get_checkmk_stats(current_user: dict = Depends(verify_admin_token)):
     logger.info("CheckMK cache expired or missing, fetching fresh stats")
 
     try:
+        # Import CheckMK client
+        from checkmk.client import CheckMKClient, CheckMKAPIError
+        from urllib.parse import urlparse
+
         # Get CheckMK settings from database
         from settings_manager import settings_manager
 
@@ -170,10 +174,6 @@ async def get_checkmk_stats(current_user: dict = Depends(verify_admin_token)):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="CheckMK settings not configured. Please configure CheckMK settings first.",
             )
-
-        # Import CheckMK client
-        from checkmk.client import CheckMKClient, CheckMKAPIError
-        from urllib.parse import urlparse
 
         # Parse URL
         url = db_settings["url"].rstrip("/")
@@ -524,8 +524,12 @@ async def move_host(
         client = _get_checkmk_client()
         # Convert folder path format: CheckMK uses ~ instead of /
         # First normalize double slashes, then convert / to ~
-        normalized_folder = request.target_folder.replace("//", "/") if request.target_folder else "/"
-        checkmk_folder = normalized_folder.replace("/", "~") if normalized_folder else "~"
+        normalized_folder = (
+            request.target_folder.replace("//", "/") if request.target_folder else "/"
+        )
+        checkmk_folder = (
+            normalized_folder.replace("/", "~") if normalized_folder else "~"
+        )
         result = client.move_host(hostname, checkmk_folder)
 
         return CheckMKOperationResponse(
@@ -1504,7 +1508,9 @@ async def get_folder(
         # Convert folder path format: CheckMK uses ~ instead of /
         # First normalize double slashes, then convert / to ~
         normalized_folder_path = folder_path.replace("//", "/") if folder_path else "/"
-        checkmk_folder_path = normalized_folder_path.replace("/", "~") if normalized_folder_path else "~"
+        checkmk_folder_path = (
+            normalized_folder_path.replace("/", "~") if normalized_folder_path else "~"
+        )
         result = client.get_folder(checkmk_folder_path, show_hosts=show_hosts)
 
         return CheckMKOperationResponse(
@@ -1550,7 +1556,9 @@ async def create_folder(
         # Convert folder path format: CheckMK uses ~ instead of /
         # First normalize double slashes, then convert / to ~
         normalized_parent = request.parent.replace("//", "/") if request.parent else "/"
-        checkmk_parent = normalized_parent.replace("/", "~") if normalized_parent else "~"
+        checkmk_parent = (
+            normalized_parent.replace("/", "~") if normalized_parent else "~"
+        )
         result = client.create_folder(
             name=request.name,
             title=request.title,
@@ -1627,7 +1635,9 @@ async def update_folder(
         # Convert folder path format: CheckMK uses ~ instead of /
         # First normalize double slashes, then convert / to ~
         normalized_folder_path = folder_path.replace("//", "/") if folder_path else "/"
-        checkmk_folder_path = normalized_folder_path.replace("/", "~") if normalized_folder_path else "~"
+        checkmk_folder_path = (
+            normalized_folder_path.replace("/", "~") if normalized_folder_path else "~"
+        )
         result = client.update_folder(
             folder_path=checkmk_folder_path,
             title=request.title,
@@ -1662,7 +1672,9 @@ async def delete_folder(
         # Convert folder path format: CheckMK uses ~ instead of /
         # First normalize double slashes, then convert / to ~
         normalized_folder_path = folder_path.replace("//", "/") if folder_path else "/"
-        checkmk_folder_path = normalized_folder_path.replace("/", "~") if normalized_folder_path else "~"
+        checkmk_folder_path = (
+            normalized_folder_path.replace("/", "~") if normalized_folder_path else "~"
+        )
         client.delete_folder(checkmk_folder_path, delete_mode=delete_mode)
 
         return CheckMKOperationResponse(
@@ -1690,9 +1702,15 @@ async def move_folder(
         # Convert folder path format: CheckMK uses ~ instead of /
         # First normalize double slashes, then convert / to ~
         normalized_folder_path = folder_path.replace("//", "/") if folder_path else "/"
-        normalized_destination = request.destination.replace("//", "/") if request.destination else "/"
-        checkmk_folder_path = normalized_folder_path.replace("/", "~") if normalized_folder_path else "~"
-        checkmk_destination = normalized_destination.replace("/", "~") if normalized_destination else "~"
+        normalized_destination = (
+            request.destination.replace("//", "/") if request.destination else "/"
+        )
+        checkmk_folder_path = (
+            normalized_folder_path.replace("/", "~") if normalized_folder_path else "~"
+        )
+        checkmk_destination = (
+            normalized_destination.replace("/", "~") if normalized_destination else "~"
+        )
         result = client.move_folder(checkmk_folder_path, checkmk_destination)
 
         return CheckMKOperationResponse(
@@ -1747,7 +1765,9 @@ async def get_hosts_in_folder(
         # Convert folder path format: CheckMK uses ~ instead of /
         # First normalize double slashes, then convert / to ~
         normalized_folder_path = folder_path.replace("//", "/") if folder_path else "/"
-        checkmk_folder_path = normalized_folder_path.replace("/", "~") if normalized_folder_path else "~"
+        checkmk_folder_path = (
+            normalized_folder_path.replace("/", "~") if normalized_folder_path else "~"
+        )
         result = client.get_hosts_in_folder(
             checkmk_folder_path, effective_attributes=effective_attributes
         )

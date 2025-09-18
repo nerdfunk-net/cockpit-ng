@@ -33,9 +33,7 @@ class ScanStartRequest(BaseModel):
     discovery_mode: str = Field(
         default="netmiko", description="Discovery mode: napalm, ssh-login, or netmiko"
     )
-    ping_mode: str = Field(
-        default="fping", description="Ping mode: ping or fping"
-    )
+    ping_mode: str = Field(default="fping", description="Ping mode: ping or fping")
     parser_template_ids: Optional[List[int]] = Field(
         default=None,
         description="Template IDs to use for parsing 'show version' output (textfsm)",
@@ -44,7 +42,9 @@ class ScanStartRequest(BaseModel):
     @validator("discovery_mode")
     def validate_discovery_mode(cls, v: str):
         if v not in ["napalm", "ssh-login", "netmiko"]:
-            raise ValueError("discovery_mode must be 'napalm', 'ssh-login', or 'netmiko'")
+            raise ValueError(
+                "discovery_mode must be 'napalm', 'ssh-login', or 'netmiko'"
+            )
         return v
 
     @validator("ping_mode")
@@ -148,14 +148,17 @@ class OnboardResponse(BaseModel):
 
 # API Endpoints
 @router.post("/start", response_model=ScanStartResponse)
-async def start_scan(request: ScanStartRequest, current_user: str = Depends(get_current_username)):
+async def start_scan(
+    request: ScanStartRequest, current_user: str = Depends(get_current_username)
+):
     """Start a new network scan job."""
     try:
         # Get user's debug setting
         from services.user_management import get_user_by_username
+
         user = get_user_by_username(current_user)
         debug_enabled = user.get("debug", False) if user else False
-        
+
         logger.info(
             f"Starting scan job with CIDRs: {request.cidrs}, credentials: {request.credential_ids}, mode: {request.discovery_mode}, ping_mode: {request.ping_mode}, template id: {request.parser_template_ids}, debug: {debug_enabled}"
         )
@@ -218,14 +221,14 @@ async def get_scan_status(job_id: str):
 @router.post("/{job_id}/onboard", response_model=OnboardResponse)
 async def onboard_devices(job_id: str, request: OnboardRequest):
     """Onboard selected devices from scan results."""
-    
+
     # Debug: Log the raw request from frontend
-    logger.debug(f"=== RAW FRONTEND REQUEST DEBUG ===")
+    logger.debug("=== RAW FRONTEND REQUEST DEBUG ===")
     logger.debug(f"job_id: {job_id}")
     logger.debug(f"request object: {request}")
     logger.debug(f"request.devices: {request.devices}")
     logger.debug(f"Number of devices: {len(request.devices)}")
-    
+
     for i, device in enumerate(request.devices):
         logger.debug(f"Device {i}:")
         logger.debug(f"  Raw device object: {device}")
@@ -241,9 +244,9 @@ async def onboard_devices(job_id: str, request: OnboardRequest):
         logger.debug(f"  device.interface_status: '{device.interface_status}'")
         logger.debug(f"  device.ip_status: '{device.ip_status}'")
         logger.debug(f"  device.secret_group_id: '{device.secret_group_id}'")
-    
-    logger.debug(f"=== END RAW FRONTEND REQUEST DEBUG ===")
-    
+
+    logger.debug("=== END RAW FRONTEND REQUEST DEBUG ===")
+
     # Verify job exists
     job = await scan_service.get_job(job_id)
     if not job:
@@ -318,9 +321,9 @@ async def _onboard_cisco_devices(
 
     for device in cisco_devices:
         try:
-            logger.debug(f"=== CISCO DEVICE ONBOARD DEBUG ===")
+            logger.debug("=== CISCO DEVICE ONBOARD DEBUG ===")
             logger.debug(f"Processing device object: {device}")
-            logger.debug(f"Device fields:")
+            logger.debug("Device fields:")
             logger.debug(f"  ip: '{device.ip}'")
             logger.debug(f"  hostname: '{device.hostname}'")
             logger.debug(f"  platform: '{device.platform}'")
@@ -331,7 +334,7 @@ async def _onboard_cisco_devices(
             logger.debug(f"  status: '{device.status}'")
             logger.debug(f"  interface_status: '{device.interface_status}'")
             logger.debug(f"  ip_status: '{device.ip_status}'")
-            
+
             # Prepare device data for Nautobot onboarding
             device_data = {
                 "ip_address": device.ip,
@@ -347,7 +350,7 @@ async def _onboard_cisco_devices(
             }
 
             logger.debug(f"Prepared device_data for Nautobot: {device_data}")
-            logger.debug(f"=== END CISCO DEVICE ONBOARD DEBUG ===")
+            logger.debug("=== END CISCO DEVICE ONBOARD DEBUG ===")
 
             # Call Nautobot onboarding API
             response = await nautobot_service.onboard_device(device_data)

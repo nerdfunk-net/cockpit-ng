@@ -36,33 +36,38 @@ def get_cached_commits(repo_id: int, branch_name: str, repo_path: str, limit: in
     try:
         # Get cache configuration
         from settings_manager import settings_manager
+
         cache_cfg = settings_manager.get_cache_settings()
-        
+
         # Try cache first if enabled
         repo_scope = f"repo:{repo_id}"
         cache_key = f"{repo_scope}:commits:{branch_name}"
-        
+
         if cache_cfg.get("enabled", True):
             cached_commits = cache_service.get(cache_key)
             if cached_commits is not None:
                 # Return limited commits from cache
-                logger.debug(f"Using cached commits for repo {repo_id}, branch {branch_name}")
+                logger.debug(
+                    f"Using cached commits for repo {repo_id}, branch {branch_name}"
+                )
                 return cached_commits[:limit]
-        
+
         # Cache miss or disabled - fetch using GitPython for consistency
         try:
             repo = Repo(repo_path)
-            
+
             commits = []
             for commit in repo.iter_commits(branch_name, max_count=limit):
-                commits.append({
-                    "hash": commit.hexsha,
-                    "short_hash": commit.hexsha[:8],
-                    "message": commit.message.strip(),
-                    "author": commit.author.name,
-                    "date": commit.committed_datetime.isoformat(),
-                })
-            
+                commits.append(
+                    {
+                        "hash": commit.hexsha,
+                        "short_hash": commit.hexsha[:8],
+                        "message": commit.message.strip(),
+                        "author": commit.author.name,
+                        "date": commit.committed_datetime.isoformat(),
+                    }
+                )
+
             # Store in cache if enabled
             if cache_cfg.get("enabled", True):
                 # Use max_commits from config for full cache entry
@@ -71,24 +76,30 @@ def get_cached_commits(repo_id: int, branch_name: str, repo_path: str, limit: in
                     # Fetch full commit list for cache
                     full_commits = []
                     for commit in repo.iter_commits(branch_name, max_count=max_commits):
-                        full_commits.append({
-                            "hash": commit.hexsha,
-                            "short_hash": commit.hexsha[:8],
-                            "message": commit.message.strip(),
-                            "author": commit.author.name,
-                            "date": commit.committed_datetime.isoformat(),
-                        })
-                    
+                        full_commits.append(
+                            {
+                                "hash": commit.hexsha,
+                                "short_hash": commit.hexsha[:8],
+                                "message": commit.message.strip(),
+                                "author": commit.author.name,
+                                "date": commit.committed_datetime.isoformat(),
+                            }
+                        )
+
                     ttl = int(cache_cfg.get("ttl_seconds", 600))
                     cache_service.set(cache_key, full_commits, ttl)
-                    logger.debug(f"Cached {len(full_commits)} commits for repo {repo_id}, branch {branch_name}")
-            
+                    logger.debug(
+                        f"Cached {len(full_commits)} commits for repo {repo_id}, branch {branch_name}"
+                    )
+
             return commits
-            
+
         except Exception as git_error:
             # Fallback to subprocess if GitPython fails
-            logger.warning(f"GitPython failed for repo {repo_id}, falling back to subprocess: {git_error}")
-            
+            logger.warning(
+                f"GitPython failed for repo {repo_id}, falling back to subprocess: {git_error}"
+            )
+
             log = subprocess.run(
                 [
                     "git",
@@ -103,27 +114,27 @@ def get_cached_commits(repo_id: int, branch_name: str, repo_path: str, limit: in
                 text=True,
                 timeout=10,
             )
-            
+
             commits = []
             if log.returncode == 0 and log.stdout:
                 for line in log.stdout.splitlines():
                     parts = line.split("|", 3)
                     if len(parts) == 4:
-                        commits.append({
-                            "hash": parts[0],
-                            "short_hash": parts[0][:8],
-                            "message": parts[1],
-                            "author": parts[2],
-                            "date": parts[3],
-                        })
-            
+                        commits.append(
+                            {
+                                "hash": parts[0],
+                                "short_hash": parts[0][:8],
+                                "message": parts[1],
+                                "author": parts[2],
+                                "date": parts[3],
+                            }
+                        )
+
             return commits
-            
+
     except Exception as e:
         logger.error(f"Failed to get commits for repo {repo_id}: {e}")
         return []
-
-
 
 
 @router.get("/status")
@@ -171,7 +182,7 @@ async def get_repository_status(
                 )
                 if result.returncode == 0:
                     status_info["is_git_repo"] = True
-                    
+
                     # Get current branch name
                     try:
                         br = subprocess.run(
@@ -195,10 +206,15 @@ async def get_repository_status(
                             text=True,
                             timeout=10,
                         )
-                        if commit_result.returncode == 0 and commit_result.stdout.strip():
+                        if (
+                            commit_result.returncode == 0
+                            and commit_result.stdout.strip()
+                        ):
                             commit_info = commit_result.stdout.strip().split("|", 4)
                             if len(commit_info) >= 5:
-                                status_info["current_commit"] = commit_info[0][:8]  # Short hash
+                                status_info["current_commit"] = commit_info[0][
+                                    :8
+                                ]  # Short hash
                                 status_info["last_commit_message"] = commit_info[1]
                                 status_info["last_commit_date"] = commit_info[2]
                                 status_info["last_commit_author"] = commit_info[3]
@@ -478,15 +494,21 @@ async def remove_and_sync_repository(
         # Resolve repository working directory
         repo_path = str(git_repo_path(repository))
 
-        logger.info(f"Remove and sync repository '{repository['name']}' at path: {repo_path}")
-        
+        logger.info(
+            f"Remove and sync repository '{repository['name']}' at path: {repo_path}"
+        )
+
         # Remove existing directory if it exists
         if os.path.exists(repo_path):
             # Create backup with timestamp
-            parent_dir = os.path.dirname(repo_path.rstrip(os.sep)) or os.path.dirname(repo_path)
+            parent_dir = os.path.dirname(repo_path.rstrip(os.sep)) or os.path.dirname(
+                repo_path
+            )
             base_name = os.path.basename(os.path.normpath(repo_path))
-            backup_path = os.path.join(parent_dir, f"{base_name}_removed_{int(time.time())}")
-            
+            backup_path = os.path.join(
+                parent_dir, f"{base_name}_removed_{int(time.time())}"
+            )
+
             try:
                 shutil.move(repo_path, backup_path)
                 logger.info(f"Existing repository backed up to {backup_path}")
@@ -506,7 +528,9 @@ async def remove_and_sync_repository(
         clone_url = repository["url"]
         parsed = urlparse(repository["url"]) if repository.get("url") else None
         if parsed and parsed.scheme in ["http", "https"] and resolved_token:
-            clone_url = add_auth_to_url(repository["url"], resolved_username, resolved_token)
+            clone_url = add_auth_to_url(
+                repository["url"], resolved_username, resolved_token
+            )
 
         # Clone fresh copy
         success = False
@@ -514,17 +538,23 @@ async def remove_and_sync_repository(
 
         try:
             if not repository.get("verify_ssl", True):
-                logger.warning("Git SSL verification disabled - not recommended for production")
-            
+                logger.warning(
+                    "Git SSL verification disabled - not recommended for production"
+                )
+
             with set_ssl_env(repository):
-                logger.info(f"Cloning fresh copy of branch {repository['branch']} into {repo_path}")
+                logger.info(
+                    f"Cloning fresh copy of branch {repository['branch']} into {repo_path}"
+                )
                 Repo.clone_from(clone_url, repo_path, branch=repository["branch"])
 
             if not os.path.isdir(os.path.join(repo_path, ".git")):
                 raise GitCommandError("clone", 1, b"", b".git not found after clone")
 
             success = True
-            message = f"Repository '{repository['name']}' removed and re-cloned successfully"
+            message = (
+                f"Repository '{repository['name']}' removed and re-cloned successfully"
+            )
             logger.info(message)
 
         except GitCommandError as gce:
@@ -542,9 +572,15 @@ async def remove_and_sync_repository(
         finally:
             # Cleanup empty directory after failed clone
             try:
-                if not success and os.path.isdir(repo_path) and not os.listdir(repo_path):
+                if (
+                    not success
+                    and os.path.isdir(repo_path)
+                    and not os.listdir(repo_path)
+                ):
                     shutil.rmtree(repo_path)
-                    logger.info(f"Removed empty directory after failed clone: {repo_path}")
+                    logger.info(
+                        f"Removed empty directory after failed clone: {repo_path}"
+                    )
             except Exception as ce:
                 logger.warning(f"Cleanup after failed clone skipped: {ce}")
 

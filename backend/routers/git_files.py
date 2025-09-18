@@ -20,8 +20,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/git/{repo_id}", tags=["git-files"])
 
 
-
-
 @router.get("/files/search")
 async def search_repository_files(
     repo_id: int,
@@ -266,7 +264,7 @@ async def get_file_complete_history(
 
         cache_cfg = settings_manager.get_cache_settings()
         repo = get_git_repo_by_id(repo_id)
-        
+
         # Cache key per file and starting point
         repo_scope = f"repo:{repo_id}"
         cache_key = f"{repo_scope}:filehistory:{from_commit or 'HEAD'}:{file_path}"
@@ -394,5 +392,3 @@ async def get_file_complete_history(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Git file complete history error: {str(e)}",
         )
-
-

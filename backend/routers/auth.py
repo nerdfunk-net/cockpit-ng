@@ -7,7 +7,7 @@ import logging
 from datetime import timedelta
 from fastapi import APIRouter, HTTPException, status, Depends, Request
 from models.auth import UserLogin, LoginResponse
-from core.auth import create_access_token, get_current_username, get_api_key_user
+from core.auth import create_access_token, get_api_key_user
 
 logger = logging.getLogger(__name__)
 
@@ -77,20 +77,27 @@ async def refresh_token(request: Request):
     import jwt as pyjwt
 
     # Extract Authorization header
-    auth_header = request.headers.get('authorization') or request.headers.get('Authorization')
-    if not auth_header or not auth_header.lower().startswith('bearer '):
+    auth_header = request.headers.get("authorization") or request.headers.get(
+        "Authorization"
+    )
+    if not auth_header or not auth_header.lower().startswith("bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authorization header required",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    token = auth_header.split(' ', 1)[1].strip()
+    token = auth_header.split(" ", 1)[1].strip()
 
     try:
         # Decode token but do NOT verify expiration here; still verify signature.
-        payload = pyjwt.decode(token, settings.secret_key, algorithms=[settings.algorithm], options={"verify_exp": False})
-        username = payload.get('sub')
+        payload = pyjwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=[settings.algorithm],
+            options={"verify_exp": False},
+        )
+        username = payload.get("sub")
         if not username:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

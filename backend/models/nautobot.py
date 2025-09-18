@@ -9,11 +9,13 @@ from typing import Dict, Any, Optional
 
 class CheckIPRequest(BaseModel):
     """Request to check if IP address exists in Nautobot."""
+
     ip_address: str
 
 
 class DeviceOnboardRequest(BaseModel):
     """Device onboarding request model."""
+
     ip_address: str
     location_id: str
     namespace_id: str
@@ -29,11 +31,13 @@ class DeviceOnboardRequest(BaseModel):
 
 class SyncNetworkDataRequest(BaseModel):
     """Network data synchronization request model."""
+
     data: Dict[str, Any]
 
 
 class DeviceFilter(BaseModel):
     """Device filtering model."""
+
     location: Optional[str] = None
     device_type: Optional[str] = None
     status: Optional[str] = None

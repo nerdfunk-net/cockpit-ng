@@ -7,7 +7,7 @@ from .nautobot import (
     CheckIPRequest,
     DeviceOnboardRequest,
     SyncNetworkDataRequest,
-    DeviceFilter
+    DeviceFilter,
 )
 from .files import FileCompareRequest, FileExportRequest
 from .git import GitCommitRequest, GitBranchRequest
@@ -16,35 +16,31 @@ from .settings import (
     GitSettingsRequest,
     AllSettingsRequest,
     ConnectionTestRequest,
-    GitTestRequest
+    GitTestRequest,
 )
 
 __all__ = [
     # Auth models
     "UserLogin",
-    "UserCreate", 
+    "UserCreate",
     "LoginResponse",
-    "Token", 
+    "Token",
     "TokenData",
-
     # Nautobot models
     "CheckIPRequest",
-    "DeviceOnboardRequest", 
+    "DeviceOnboardRequest",
     "SyncNetworkDataRequest",
     "DeviceFilter",
-
     # File models
     "FileCompareRequest",
     "FileExportRequest",
-
     # Git models
     "GitCommitRequest",
     "GitBranchRequest",
-
     # Settings models
     "NautobotSettingsRequest",
     "GitSettingsRequest",
-    "AllSettingsRequest", 
+    "AllSettingsRequest",
     "ConnectionTestRequest",
-    "GitTestRequest"
+    "GitTestRequest",
 ]

@@ -57,14 +57,16 @@ async def get_profile(current_user: str = Depends(get_current_username)):
         profile = profile_manager.get_user_profile(current_user)
 
         # Get personal credentials for this user
-        all_credentials = credentials_manager.list_credentials(include_expired=True, source="private")
+        all_credentials = credentials_manager.list_credentials(
+            include_expired=True, source="private"
+        )
         personal_credentials = [
             PersonalCredentialData(
                 id=str(cred["id"]),
                 name=cred["name"],
                 username=cred["username"],
                 type=cred["type"],
-                password=""  # Never return actual passwords for security
+                password="",  # Never return actual passwords for security
             )
             for cred in all_credentials
             if cred.get("owner") == current_user
@@ -104,7 +106,11 @@ async def update_profile(
             )
 
         # Validate API key length if provided (allow empty string for no API key)
-        if update_data.api_key is not None and update_data.api_key != "" and len(update_data.api_key) != 42:
+        if (
+            update_data.api_key is not None
+            and update_data.api_key != ""
+            and len(update_data.api_key) != 42
+        ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="API key must be exactly 42 characters long",
@@ -137,21 +143,22 @@ async def update_profile(
         # Handle personal credentials
         if update_data.personal_credentials is not None:
             # Get existing personal credentials for this user
-            all_credentials = credentials_manager.list_credentials(include_expired=True, source="private")
+            all_credentials = credentials_manager.list_credentials(
+                include_expired=True, source="private"
+            )
             existing_personal = [
-                cred for cred in all_credentials
-                if cred.get("owner") == current_user
+                cred for cred in all_credentials if cred.get("owner") == current_user
             ]
             existing_ids = {str(cred["id"]) for cred in existing_personal}
-            
+
             # Track which credentials we're keeping/updating
             processed_ids = set()
-            
+
             # Process each credential from the frontend
             for cred_data in update_data.personal_credentials:
                 # Check if this is an update to existing credential (must be numeric ID that exists)
-                is_existing = (cred_data.id.isdigit() and cred_data.id in existing_ids)
-                
+                is_existing = cred_data.id.isdigit() and cred_data.id in existing_ids
+
                 if is_existing:
                     processed_ids.add(cred_data.id)
                     # Update existing credential - only if password is provided
@@ -163,7 +170,7 @@ async def update_profile(
                             cred_type=cred_data.type.lower(),
                             password=cred_data.password,
                             source="private",
-                            owner=current_user
+                            owner=current_user,
                         )
                     else:
                         # Update everything except password
@@ -173,7 +180,7 @@ async def update_profile(
                             username=cred_data.username,  # Use the username provided by the user
                             cred_type=cred_data.type.lower(),
                             source="private",
-                            owner=current_user
+                            owner=current_user,
                         )
                 else:
                     # Create new credential - password is required
@@ -182,7 +189,7 @@ async def update_profile(
                             status_code=status.HTTP_400_BAD_REQUEST,
                             detail="Password is required for new personal credentials",
                         )
-                    
+
                     new_cred = credentials_manager.create_credential(
                         name=cred_data.name,
                         username=cred_data.username,  # Use the username provided by the user
@@ -190,11 +197,11 @@ async def update_profile(
                         password=cred_data.password,
                         valid_until=None,  # Personal credentials don't expire by default
                         source="private",
-                        owner=current_user
+                        owner=current_user,
                     )
                     # Track the new ID for existing credentials cleanup
                     processed_ids.add(str(new_cred["id"]))
-            
+
             # Delete credentials that were removed (not in the processed list)
             for cred in existing_personal:
                 if str(cred["id"]) not in processed_ids:
@@ -204,16 +211,18 @@ async def update_profile(
 
         # Get updated profile data including API key and personal credentials
         profile = profile_manager.get_user_profile(current_user)
-        
+
         # Get updated personal credentials for this user
-        all_credentials = credentials_manager.list_credentials(include_expired=True, source="private")
+        all_credentials = credentials_manager.list_credentials(
+            include_expired=True, source="private"
+        )
         personal_credentials = [
             PersonalCredentialData(
                 id=str(cred["id"]),
                 name=cred["name"],
                 username=cred["username"],
                 type=cred["type"],
-                password=""  # Never return actual passwords for security
+                password="",  # Never return actual passwords for security
             )
             for cred in all_credentials
             if cred.get("owner") == current_user

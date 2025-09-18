@@ -7,7 +7,7 @@ from fastapi import APIRouter
 
 # Import all Git sub-routers
 from routers.git_repositories import router as repositories_router
-from routers.git_operations import router as operations_router  
+from routers.git_operations import router as operations_router
 from routers.git_version_control import router as version_control_router
 from routers.git_files import router as files_router
 

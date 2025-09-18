@@ -26,7 +26,7 @@ def create_credential(payload: CredentialCreate) -> dict:
             valid_until=payload.valid_until.isoformat()
             if payload.valid_until
             else None,
-            source="general"  # Force general source for admin credentials interface
+            source="general",  # Force general source for admin credentials interface
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -44,7 +44,7 @@ def update_credential(cred_id: int, payload: CredentialUpdate) -> dict:
             valid_until=payload.valid_until.isoformat()
             if payload.valid_until
             else None,
-            source="general"  # Force general source for admin credentials interface
+            source="general",  # Force general source for admin credentials interface
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

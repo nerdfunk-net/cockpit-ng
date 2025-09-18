@@ -19,8 +19,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/git/{repo_id}", tags=["git-version-control"])
 
 
-
-
 @router.get("/branches")
 async def get_branches(repo_id: int, current_user: str = Depends(get_current_username)):
     """Get list of Git branches."""

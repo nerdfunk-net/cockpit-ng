@@ -16,8 +16,10 @@ router = APIRouter(prefix="/api/config", tags=["config"])
 # Base path for config files
 CONFIG_BASE_PATH = Path(__file__).parent.parent.parent / "config"
 
+
 class ConfigFileContent(BaseModel):
     content: str
+
 
 @router.get("/{filename}")
 async def read_config_file(
@@ -27,48 +29,51 @@ async def read_config_file(
     """Read a configuration file."""
     try:
         # Validate filename to prevent path traversal
-        if not filename.endswith('.yaml') or '/' in filename or '\\' in filename:
+        if not filename.endswith(".yaml") or "/" in filename or "\\" in filename:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid filename. Only .yaml files in config directory are allowed."
+                detail="Invalid filename. Only .yaml files in config directory are allowed.",
             )
-        
+
         config_file = CONFIG_BASE_PATH / filename
-        
+
         # Check if file exists
         if not config_file.exists():
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Configuration file {filename} not found"
+                detail=f"Configuration file {filename} not found",
             )
-        
+
         # Read file content
         try:
-            with open(config_file, 'r', encoding='utf-8') as f:
+            with open(config_file, "r", encoding="utf-8") as f:
                 content = f.read()
-            
-            logger.info(f"Successfully read config file: {filename} by user: {current_user}")
+
+            logger.info(
+                f"Successfully read config file: {filename} by user: {current_user}"
+            )
             return {
                 "success": True,
                 "data": content,
-                "message": f"Successfully read {filename}"
+                "message": f"Successfully read {filename}",
             }
-            
+
         except Exception as e:
             logger.error(f"Error reading config file {filename}: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Error reading configuration file: {str(e)}"
+                detail=f"Error reading configuration file: {str(e)}",
             )
-            
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Unexpected error reading config file {filename}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error: {str(e)}"
+            detail=f"Unexpected error: {str(e)}",
         )
+
 
 @router.post("/{filename}")
 async def write_config_file(
@@ -79,43 +84,43 @@ async def write_config_file(
     """Write a configuration file."""
     try:
         # Validate filename to prevent path traversal
-        if not filename.endswith('.yaml') or '/' in filename or '\\' in filename:
+        if not filename.endswith(".yaml") or "/" in filename or "\\" in filename:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid filename. Only .yaml files in config directory are allowed."
+                detail="Invalid filename. Only .yaml files in config directory are allowed.",
             )
-        
+
         config_file = CONFIG_BASE_PATH / filename
-        
+
         # Ensure config directory exists
         CONFIG_BASE_PATH.mkdir(parents=True, exist_ok=True)
-        
+
         # Write file content
         try:
-            with open(config_file, 'w', encoding='utf-8') as f:
+            with open(config_file, "w", encoding="utf-8") as f:
                 f.write(file_content.content)
-            
-            logger.info(f"Successfully wrote config file: {filename} by user: {current_user}")
-            return {
-                "success": True,
-                "message": f"Successfully saved {filename}"
-            }
-            
+
+            logger.info(
+                f"Successfully wrote config file: {filename} by user: {current_user}"
+            )
+            return {"success": True, "message": f"Successfully saved {filename}"}
+
         except Exception as e:
             logger.error(f"Error writing config file {filename}: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Error writing configuration file: {str(e)}"
+                detail=f"Error writing configuration file: {str(e)}",
             )
-            
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Unexpected error writing config file {filename}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error: {str(e)}"
+            detail=f"Unexpected error: {str(e)}",
         )
+
 
 @router.get("/")
 async def list_config_files(
@@ -128,29 +133,33 @@ async def list_config_files(
             return {
                 "success": True,
                 "data": [],
-                "message": "No configuration files found"
+                "message": "No configuration files found",
             }
-        
+
         # List only .yaml files
         yaml_files = []
         for file_path in CONFIG_BASE_PATH.glob("*.yaml"):
             if file_path.is_file():
-                yaml_files.append({
-                    "name": file_path.name,
-                    "size": file_path.stat().st_size,
-                    "modified": file_path.stat().st_mtime
-                })
-        
-        logger.info(f"Successfully listed {len(yaml_files)} config files for user: {current_user}")
+                yaml_files.append(
+                    {
+                        "name": file_path.name,
+                        "size": file_path.stat().st_size,
+                        "modified": file_path.stat().st_mtime,
+                    }
+                )
+
+        logger.info(
+            f"Successfully listed {len(yaml_files)} config files for user: {current_user}"
+        )
         return {
             "success": True,
             "data": yaml_files,
-            "message": f"Found {len(yaml_files)} configuration files"
+            "message": f"Found {len(yaml_files)} configuration files",
         }
-        
+
     except Exception as e:
         logger.error(f"Error listing config files: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error listing configuration files: {str(e)}"
+            detail=f"Error listing configuration files: {str(e)}",
         )

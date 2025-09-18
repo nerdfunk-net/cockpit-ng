@@ -188,11 +188,11 @@ if __name__ == "__main__":
 
 
 # Startup prefetch for Git cache (commits, optionally refresh loop)
-@app.on_event("startup") 
+@app.on_event("startup")
 async def startup_services():
     """Initialize all services on startup."""
     logger.info("=== Application startup - initializing services ===")
-    
+
     # Initialize APScheduler service first
     try:
         global apscheduler_service
@@ -202,7 +202,7 @@ async def startup_services():
                 max_workers=10,
                 max_parallel_jobs=5,
                 data_dir="./data/jobs",
-                cleanup_after_days=7
+                cleanup_after_days=7,
             )
             await apscheduler_service.start()
             logger.info("APScheduler service initialized and started successfully")
@@ -331,19 +331,27 @@ async def startup_services():
             try:
                 logger.debug("Startup cache: prefetch_devices_once() starting")
                 from main import apscheduler_service
-                
+
                 if not apscheduler_service:
-                    logger.warning("Startup cache: APScheduler service not available for device prefetch")
+                    logger.warning(
+                        "Startup cache: APScheduler service not available for device prefetch"
+                    )
                     return
-                
+
                 # Start the device caching job
-                result = await apscheduler_service.start_get_all_devices_job(username="system")
-                
+                result = await apscheduler_service.start_get_all_devices_job(
+                    username="system"
+                )
+
                 if result.status == "pending":
-                    logger.debug(f"Startup cache: Device prefetch job started with ID {result.job_id}")
+                    logger.debug(
+                        f"Startup cache: Device prefetch job started with ID {result.job_id}"
+                    )
                 else:
-                    logger.warning(f"Startup cache: Device prefetch failed to start: {result.message}")
-                    
+                    logger.warning(
+                        f"Startup cache: Device prefetch failed to start: {result.message}"
+                    )
+
             except Exception as e:
                 logger.warning(f"Startup cache: device prefetch failed: {e}")
 
@@ -362,14 +370,14 @@ async def startup_services():
                     "locations": False,
                     "devices": False,
                 }
-                
+
                 # Refresh enabled items
                 if current_items.get("git", True):
                     await prefetch_commits_once()
                 if current_items.get("devices", False):
                     await prefetch_devices_once()
                 # Note: locations don't typically need frequent refresh
-                
+
                 await asyncio.sleep(interval_min * 60)
 
         # Kick off a one-time prefetch without blocking startup (if enabled)
@@ -430,4 +438,5 @@ async def shutdown_event():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

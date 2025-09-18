@@ -11,6 +11,7 @@ from services.job_database_service import JobStatus, JobType
 
 class JobProgress(BaseModel):
     """Job progress information"""
+
     processed: int
     total: int
     message: Optional[str] = None
@@ -18,6 +19,7 @@ class JobProgress(BaseModel):
 
 class DeviceResult(BaseModel):
     """Device processing result"""
+
     id: int
     job_id: str
     device_name: str
@@ -25,7 +27,7 @@ class DeviceResult(BaseModel):
     result_data: Dict[str, Any] = {}
     error_message: Optional[str] = None
     processed_at: datetime
-    
+
     # Enhanced device data from Nautobot (added for device enrichment)
     device_id: Optional[str] = None
     role: Optional[Dict[str, Any]] = None
@@ -37,6 +39,7 @@ class DeviceResult(BaseModel):
 
 class Job(BaseModel):
     """Job information"""
+
     id: str
     type: JobType
     status: JobStatus
@@ -52,6 +55,7 @@ class Job(BaseModel):
 
 class JobStartResponse(BaseModel):
     """Response when starting a job"""
+
     job_id: str
     status: JobStatus
     message: str
@@ -59,30 +63,38 @@ class JobStartResponse(BaseModel):
 
 class JobListResponse(BaseModel):
     """Response for job list"""
+
     jobs: List[Job]
     total: int
 
 
 class JobDetailResponse(BaseModel):
     """Response for job details"""
+
     job: Job
 
 
 class NetworkScanRequest(BaseModel):
     """Request model for network scan job"""
+
     ping_mode: str = Field(default="fping", description="Ping mode: 'ping' or 'fping'")
-    timeout: float = Field(default=1.5, ge=0.1, le=10.0, description="Ping timeout in seconds")
-    max_concurrent: int = Field(default=10, ge=1, le=100, description="Maximum concurrent ping operations")
-    
-    @validator('ping_mode')
+    timeout: float = Field(
+        default=1.5, ge=0.1, le=10.0, description="Ping timeout in seconds"
+    )
+    max_concurrent: int = Field(
+        default=10, ge=1, le=100, description="Maximum concurrent ping operations"
+    )
+
+    @validator("ping_mode")
     def validate_ping_mode(cls, v):
-        if v not in ['ping', 'fping']:
+        if v not in ["ping", "fping"]:
             raise ValueError("ping_mode must be either 'ping' or 'fping'")
         return v
 
 
 class NetworkScanResponse(BaseModel):
     """Response model for network scan results"""
+
     cidr: str
     ping_mode: str
     total_targets: int

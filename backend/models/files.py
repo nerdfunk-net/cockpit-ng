@@ -9,6 +9,7 @@ from typing import Optional
 
 class FileCompareRequest(BaseModel):
     """File comparison request model."""
+
     left_file: str
     right_file: str
     repo_id: Optional[int] = None
@@ -16,6 +17,7 @@ class FileCompareRequest(BaseModel):
 
 class FileExportRequest(BaseModel):
     """File export request model."""
+
     left_file: str
     right_file: str
     format: str = "unified"

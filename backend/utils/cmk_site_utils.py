@@ -13,14 +13,16 @@ from utils.cmk_folder_utils import parse_folder_value
 logger = logging.getLogger(__name__)
 
 
-def get_monitored_site(device_data: Dict[str, Any], checkmk_config: Optional[Dict[str, Any]] = None) -> str:
+def get_monitored_site(
+    device_data: Dict[str, Any], checkmk_config: Optional[Dict[str, Any]] = None
+) -> str:
     """Get the correct CheckMK site for a device based on configuration rules.
 
     Priority order: by_name > by_nautobot > by_ip > by_location > default
-    
+
     Args:
         device_data: Device data from Nautobot
-        
+
     Returns:
         CheckMK site name
     """
@@ -39,7 +41,9 @@ def get_monitored_site(device_data: Dict[str, Any], checkmk_config: Optional[Dic
         # 1. Check by_name (highest priority)
         by_name_config = site_config.get("by_name", {})
         if device_name and device_name in by_name_config:
-            logger.debug(f"Found site for device '{device_name}' by name: {by_name_config[device_name]}")
+            logger.debug(
+                f"Found site for device '{device_name}' by name: {by_name_config[device_name]}"
+            )
             return by_name_config[device_name]
 
         # 2. Check by_nautobot (second priority)
@@ -49,7 +53,9 @@ def get_monitored_site(device_data: Dict[str, Any], checkmk_config: Optional[Dic
             if by_nautobot_config in custom_field_data:
                 site_value = custom_field_data[by_nautobot_config]
                 if site_value and site_value != "default":
-                    logger.debug(f"Found site for device '{device_name}' by Nautobot field '{by_nautobot_config}': {site_value}")
+                    logger.debug(
+                        f"Found site for device '{device_name}' by Nautobot field '{by_nautobot_config}': {site_value}"
+                    )
                     return site_value
 
         # 3. Check by_ip (third priority)
@@ -57,7 +63,9 @@ def get_monitored_site(device_data: Dict[str, Any], checkmk_config: Optional[Dic
         if device_ip and by_ip_config:
             site = _match_ip_to_site(device_ip, by_ip_config)
             if site:
-                logger.debug(f"Found site for device '{device_name}' by IP '{device_ip}': {site}")
+                logger.debug(
+                    f"Found site for device '{device_name}' by IP '{device_ip}': {site}"
+                )
                 return site
 
         # 4. Check by_location (fourth priority)
@@ -67,7 +75,9 @@ def get_monitored_site(device_data: Dict[str, Any], checkmk_config: Optional[Dic
             and by_location_config
             and device_location in by_location_config
         ):
-            logger.debug(f"Found site for device '{device_name}' by location '{device_location}': {by_location_config[device_location]}")
+            logger.debug(
+                f"Found site for device '{device_name}' by location '{device_location}': {by_location_config[device_location]}"
+            )
             return by_location_config[device_location]
 
         # 5. Return default site
@@ -81,10 +91,10 @@ def get_monitored_site(device_data: Dict[str, Any], checkmk_config: Optional[Dic
 
 def get_device_site_from_normalized_data(normalized_data: Dict[str, Any]) -> str:
     """Extract site from normalized device data, falling back to default site.
-    
+
     Args:
         normalized_data: Normalized device data with attributes
-        
+
     Returns:
         CheckMK site name
     """
@@ -102,15 +112,17 @@ def get_device_site_from_normalized_data(normalized_data: Dict[str, Any]) -> str
         return config_service.get_default_site()
 
 
-def get_device_folder(device_data: Dict[str, Any], checkmk_config: Optional[Dict[str, Any]] = None) -> str:
+def get_device_folder(
+    device_data: Dict[str, Any], checkmk_config: Optional[Dict[str, Any]] = None
+) -> str:
     """Get the correct CheckMK folder for a device based on configuration rules.
 
     Priority order: by_name > by_ip > by_location > default
-    
+
     Args:
         device_data: Device data from Nautobot
         checkmk_config: Optional CheckMK configuration (unused, for compatibility)
-        
+
     Returns:
         CheckMK folder path
     """
@@ -165,10 +177,10 @@ def get_device_folder(device_data: Dict[str, Any], checkmk_config: Optional[Dict
 
 def _extract_device_ip(device_data: Dict[str, Any]) -> str:
     """Extract IP address from device data.
-    
+
     Args:
         device_data: Device data from Nautobot
-        
+
     Returns:
         IP address string without CIDR notation
     """
@@ -181,11 +193,11 @@ def _extract_device_ip(device_data: Dict[str, Any]) -> str:
 
 def _match_ip_to_site(device_ip: str, by_ip_config: Dict[str, str]) -> Optional[str]:
     """Match device IP to a site based on IP/CIDR configuration.
-    
+
     Args:
         device_ip: Device IP address
         by_ip_config: IP to site mapping configuration
-        
+
     Returns:
         Site name if matched, None otherwise
     """
@@ -210,11 +222,11 @@ def _match_ip_to_site(device_ip: str, by_ip_config: Dict[str, str]) -> Optional[
 
 def _match_ip_to_folder(device_ip: str, by_ip_config: Dict[str, str]) -> Optional[str]:
     """Match device IP to a folder template based on IP/CIDR configuration.
-    
+
     Args:
         device_ip: Device IP address
         by_ip_config: IP to folder mapping configuration
-        
+
     Returns:
         Folder template if matched, None otherwise
     """

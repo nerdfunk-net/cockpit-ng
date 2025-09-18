@@ -148,10 +148,14 @@ def _row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
     }
 
 
-def list_credentials(include_expired: bool = False, source: Optional[str] = None) -> List[Dict[str, Any]]:
+def list_credentials(
+    include_expired: bool = False, source: Optional[str] = None
+) -> List[Dict[str, Any]]:
     with _get_conn() as conn:
         if source:
-            rows = conn.execute("SELECT * FROM credentials WHERE source = ? ORDER BY name", (source,)).fetchall()
+            rows = conn.execute(
+                "SELECT * FROM credentials WHERE source = ? ORDER BY name", (source,)
+            ).fetchall()
         else:
             rows = conn.execute("SELECT * FROM credentials ORDER BY name").fetchall()
     items = [_row_to_dict(r) for r in rows]
@@ -161,7 +165,13 @@ def list_credentials(include_expired: bool = False, source: Optional[str] = None
 
 
 def create_credential(
-    name: str, username: str, cred_type: str, password: str, valid_until: Optional[str], source: str = "general", owner: Optional[str] = None
+    name: str,
+    username: str,
+    cred_type: str,
+    password: str,
+    valid_until: Optional[str],
+    source: str = "general",
+    owner: Optional[str] = None,
 ) -> Dict[str, Any]:
     encrypted = encryption_service.encrypt(password)
     now = datetime.utcnow().isoformat()
@@ -171,7 +181,17 @@ def create_credential(
             INSERT INTO credentials (name, username, type, password_encrypted, valid_until, source, owner, created_at, updated_at)
             VALUES (?,?,?,?,?,?,?,?,?)
             """,
-            (name, username, cred_type, encrypted, valid_until, source, owner, now, now),
+            (
+                name,
+                username,
+                cred_type,
+                encrypted,
+                valid_until,
+                source,
+                owner,
+                now,
+                now,
+            ),
         )
         conn.commit()
         new_id = cur.lastrowid
@@ -211,7 +231,17 @@ def update_credential(
             """
             UPDATE credentials SET name=?, username=?, type=?, password_encrypted=?, valid_until=?, source=?, owner=?, updated_at=? WHERE id=?
             """,
-            (new_name, new_user, new_type, encrypted, new_valid, new_source, new_owner, now, cred_id),
+            (
+                new_name,
+                new_user,
+                new_type,
+                encrypted,
+                new_valid,
+                new_source,
+                new_owner,
+                now,
+                cred_id,
+            ),
         )
         conn.commit()
         new_row = conn.execute(
