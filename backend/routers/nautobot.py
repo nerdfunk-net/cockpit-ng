@@ -1249,11 +1249,12 @@ async def get_nautobot_device_custom_fields(
 async def nautobot_health_check(current_user: dict = Depends(verify_token)):
     """Simple health check to verify Nautobot connectivity."""
     try:
-        # Try a simple API call that should work with any valid token
-        result = await nautobot_service.rest_request("users/users/", timeout=5)
+        # Use the same test approach as the nautobot service - query devices with limit 1
+        result = await nautobot_service.rest_request("dcim/devices/?limit=1", timeout=5)
         return {
             "status": "connected",
-            "message": "Nautobot is accessible"
+            "message": "Nautobot is accessible",
+            "devices_count": result.get("count", 0)
         }
     except Exception as e:
         error_msg = str(e)
