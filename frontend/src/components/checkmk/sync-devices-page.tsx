@@ -286,8 +286,8 @@ export function CheckMKSyncDevicesPage() {
       if (response.ok) {
         const data = await response.json()
         // Filter only completed jobs with device results
-        const completedJobs = data.jobs.filter((job: JobResult) => 
-          job.status === 'completed' && job.processed_devices > 0
+        const completedJobs = data.jobs.filter((job: JobResult) =>
+          job.status === 'completed' && (job.progress?.processed || 0) > 0
         ).map((job: JobResult) => ({
           id: job.id,
           status: job.status,

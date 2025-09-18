@@ -280,8 +280,8 @@ export default function CredentialsManagement() {
               <Key className="h-6 w-6 text-blue-600 animate-pulse" />
             </div>
             <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Credentials</h1>
-              <p className="text-gray-600">Loading stored credentials...</p>
+              <h1 className="text-2xl font-semibold text-gray-900">System Credentials</h1>
+              <p className="text-gray-600">Loading shared system credentials...</p>
             </div>
           </div>
         </div>
@@ -300,8 +300,8 @@ export default function CredentialsManagement() {
             <div className="flex items-center space-x-2">
               <Key className="h-5 w-5" />
               <div>
-                <h1 className="text-lg font-semibold">Credentials Management</h1>
-                <p className="text-blue-100 text-xs">Manage stored credentials for device access</p>
+                <h1 className="text-lg font-semibold">System Credentials Management</h1>
+                <p className="text-blue-100 text-xs">Manage shared system credentials for device access</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -321,7 +321,7 @@ export default function CredentialsManagement() {
                 className="flex items-center gap-2 bg-white text-blue-600 hover:bg-blue-50"
               >
                 <Plus className="h-4 w-4" />
-                Add Credential
+                Add System Credential
               </Button>
             </div>
           </div>
@@ -352,9 +352,9 @@ export default function CredentialsManagement() {
             <div className="flex items-center gap-2">
               <Lock className="h-5 w-5" />
               <div>
-                <CardTitle>Stored Credentials</CardTitle>
+                <CardTitle>System Credentials</CardTitle>
                 <CardDescription>
-                  Passwords are encrypted and never displayed for security
+                  Shared system credentials. Passwords are encrypted and never displayed for security. Personal credentials are managed separately in your profile.
                 </CardDescription>
               </div>
             </div>
@@ -376,8 +376,8 @@ export default function CredentialsManagement() {
           {credentials.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Key className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-              <p className="text-lg font-medium">No credentials found</p>
-              <p className="text-sm">Add your first credential to get started</p>
+              <p className="text-lg font-medium">No system credentials found</p>
+              <p className="text-sm">Add your first system credential to get started</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -454,7 +454,7 @@ export default function CredentialsManagement() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingCredential ? 'Edit Credential' : 'New Credential'}
+              {editingCredential ? 'Edit System Credential' : 'New System Credential'}
             </DialogTitle>
           </DialogHeader>
           

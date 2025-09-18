@@ -36,6 +36,7 @@ import {
 interface Credential {
   id: string
   name: string
+  source?: string // Add source field to distinguish general vs personal
 }
 
 interface GitRepository {
@@ -245,9 +246,50 @@ export function ScanAndAddPage() {
     }
   }, [discoveryMode, parserTemplates, selectedParserTemplates.length])
 
+  const checkNautobotConnectivity = async () => {
+    try {
+      await apiCall('nautobot/health-check')
+      return true
+    } catch (error) {
+      console.error('Nautobot connectivity check failed:', error)
+      // Check if it's a 503 error with specific Nautobot connectivity message
+      if (error instanceof Error && error.message.includes('503')) {
+        const errorMsg = error.message
+        if (errorMsg.includes('Invalid or missing API token')) {
+          setStatusMessage({
+            type: 'error',
+            message: 'Nautobot connection failed: Invalid or missing API token. Please check Nautobot settings in the administration panel.'
+          })
+        } else if (errorMsg.includes('Cannot reach Nautobot server')) {
+          setStatusMessage({
+            type: 'error',
+            message: 'Nautobot connection failed: Cannot reach Nautobot server. Please check Nautobot URL and network connectivity.'
+          })
+        } else {
+          setStatusMessage({
+            type: 'error',
+            message: `Nautobot connection failed: ${errorMsg}`
+          })
+        }
+      } else {
+        setStatusMessage({
+          type: 'error',
+          message: 'Failed to connect to Nautobot. Please check your configuration.'
+        })
+      }
+      return false
+    }
+  }
+
   const loadInitialData = async () => {
     setIsLoading(true)
     try {
+      // First check Nautobot connectivity
+      const nautobotConnected = await checkNautobotConnectivity()
+      if (!nautobotConnected) {
+        return // Stop loading if Nautobot is not accessible
+      }
+
       await Promise.all([
         loadCredentials(),
         loadGitRepositories(),
@@ -275,13 +317,45 @@ export function ScanAndAddPage() {
 
   const loadCredentials = async () => {
     try {
-      const data = await apiCall<Credential[]>('credentials/')
-      const validCredentials = Array.isArray(data) ? data : []
-      setCredentials(validCredentials)
+      // Load general credentials
+      const generalData = await apiCall<Credential[]>('credentials/')
+      const validGeneralCredentials = Array.isArray(generalData) ? generalData.map(cred => ({
+        ...cred,
+        source: 'general',
+        name: `${cred.name} (System)`
+      })) : []
+
+      // Load personal credentials from profile
+      let personalCredentials: Credential[] = []
+      try {
+        const profileData = await apiCall<{
+          personal_credentials: Array<{
+            id: string
+            name: string
+            username: string
+            type: string
+          }>
+        }>('profile')
+        
+        if (profileData.personal_credentials && Array.isArray(profileData.personal_credentials)) {
+          personalCredentials = profileData.personal_credentials.map(cred => ({
+            id: cred.id,
+            name: `${cred.name} (Personal)`,
+            source: 'personal'
+          }))
+        }
+      } catch (error) {
+        console.warn('Could not load personal credentials:', error)
+        // Continue without personal credentials if profile endpoint fails
+      }
+
+      // Combine both types of credentials
+      const allCredentials = [...validGeneralCredentials, ...personalCredentials]
+      setCredentials(allCredentials)
       
       // Auto-select if only one credential is available and no credential is selected
-      if (validCredentials.length === 1 && selectedCredentials.length === 1 && selectedCredentials[0] === '') {
-        setSelectedCredentials([String(validCredentials[0].id)])
+      if (allCredentials.length === 1 && selectedCredentials.length === 1 && selectedCredentials[0] === '') {
+        setSelectedCredentials([String(allCredentials[0].id)])
       }
     } catch (error) {
       console.error('Error loading credentials:', error)
@@ -1218,7 +1292,10 @@ export function ScanAndAddPage() {
             <CardContent className="space-y-4">
               {/* Credentials */}
               <div className="space-y-2">
-                <Label>Credentials <span className="text-red-500">*</span></Label>
+                <Label>System & Personal Credentials <span className="text-red-500">*</span></Label>
+                <p className="text-sm text-gray-600 mb-2">
+                  Choose from system-wide credentials or your personal credentials for device authentication
+                </p>
                 {selectedCredentials.map((credentialId, index) => (
                   <div key={index} className="flex items-center space-x-2">
                     <Select 
@@ -1231,7 +1308,16 @@ export function ScanAndAddPage() {
                       <SelectContent>
                         {Array.isArray(credentials) && credentials.map(credential => (
                           <SelectItem key={credential.id} value={String(credential.id)}>
-                            {credential.name}
+                            <div className="flex items-center space-x-2 w-full">
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                credential.source === 'personal' 
+                                  ? 'bg-blue-100 text-blue-800' 
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {credential.source === 'personal' ? 'Personal' : 'System'}
+                              </span>
+                              <span className="flex-1">{credential.name.replace(' (System)', '').replace(' (Personal)', '')}</span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>

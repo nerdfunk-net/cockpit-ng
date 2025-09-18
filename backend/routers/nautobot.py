@@ -7,7 +7,7 @@ import logging
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from core.auth import verify_admin_token
+from core.auth import verify_admin_token, verify_token
 from models.nautobot import (
     CheckIPRequest,
     DeviceOnboardRequest,
@@ -1244,4 +1244,32 @@ async def get_nautobot_device_custom_fields(
             detail=f"Failed to fetch device custom fields: {str(e)}",
         )
 
+
+@router.get("/health-check")
+async def nautobot_health_check(current_user: dict = Depends(verify_token)):
+    """Simple health check to verify Nautobot connectivity."""
+    try:
+        # Try a simple API call that should work with any valid token
+        result = await nautobot_service.rest_request("users/users/", timeout=5)
+        return {
+            "status": "connected",
+            "message": "Nautobot is accessible"
+        }
+    except Exception as e:
+        error_msg = str(e)
+        if "403" in error_msg or "Invalid token" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Nautobot connection failed: Invalid or missing API token. Please check Nautobot settings."
+            )
+        elif "ConnectionError" in error_msg or "timeout" in error_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Nautobot connection failed: Cannot reach Nautobot server. Please check Nautobot URL and connectivity."
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Nautobot connection failed: {error_msg}"
+            )
 

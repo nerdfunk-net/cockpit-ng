@@ -37,6 +37,8 @@ def _ensure_table() -> None:
                 password_encrypted BLOB NOT NULL,
                 valid_until TEXT,
                 is_active INTEGER NOT NULL DEFAULT 1,
+                source TEXT NOT NULL DEFAULT 'general' CHECK(source IN ('general','private')),
+                owner TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
@@ -64,8 +66,8 @@ def _create_initial_credential() -> None:
 
                     conn.execute(
                         """
-                        INSERT INTO credentials (name, username, type, password_encrypted, valid_until, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO credentials (name, username, type, password_encrypted, valid_until, source, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                         (
                             "Initial Admin Credential",
@@ -73,6 +75,7 @@ def _create_initial_credential() -> None:
                             "generic",
                             encrypted,
                             None,  # No expiration
+                            "general",  # Default source
                             now,
                             now,
                         ),
@@ -136,6 +139,8 @@ def _row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
         "type": row["type"],
         "valid_until": row["valid_until"],
         "is_active": bool(row["is_active"]),
+        "source": row["source"],
+        "owner": row["owner"],
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
         "status": status,
@@ -143,9 +148,12 @@ def _row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
     }
 
 
-def list_credentials(include_expired: bool = False) -> List[Dict[str, Any]]:
+def list_credentials(include_expired: bool = False, source: Optional[str] = None) -> List[Dict[str, Any]]:
     with _get_conn() as conn:
-        rows = conn.execute("SELECT * FROM credentials ORDER BY name").fetchall()
+        if source:
+            rows = conn.execute("SELECT * FROM credentials WHERE source = ? ORDER BY name", (source,)).fetchall()
+        else:
+            rows = conn.execute("SELECT * FROM credentials ORDER BY name").fetchall()
     items = [_row_to_dict(r) for r in rows]
     if not include_expired:
         items = [i for i in items if i["status"] != "expired"]
@@ -153,17 +161,17 @@ def list_credentials(include_expired: bool = False) -> List[Dict[str, Any]]:
 
 
 def create_credential(
-    name: str, username: str, cred_type: str, password: str, valid_until: Optional[str]
+    name: str, username: str, cred_type: str, password: str, valid_until: Optional[str], source: str = "general", owner: Optional[str] = None
 ) -> Dict[str, Any]:
     encrypted = encryption_service.encrypt(password)
     now = datetime.utcnow().isoformat()
     with _get_conn() as conn:
         cur = conn.execute(
             """
-            INSERT INTO credentials (name, username, type, password_encrypted, valid_until, created_at, updated_at)
-            VALUES (?,?,?,?,?,?,?)
+            INSERT INTO credentials (name, username, type, password_encrypted, valid_until, source, owner, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?)
             """,
-            (name, username, cred_type, encrypted, valid_until, now, now),
+            (name, username, cred_type, encrypted, valid_until, source, owner, now, now),
         )
         conn.commit()
         new_id = cur.lastrowid
@@ -180,6 +188,8 @@ def update_credential(
     cred_type: Optional[str] = None,
     password: Optional[str] = None,
     valid_until: Optional[str] = None,
+    source: Optional[str] = None,
+    owner: Optional[str] = None,
 ) -> Dict[str, Any]:
     with _get_conn() as conn:
         row = conn.execute(
@@ -191,15 +201,17 @@ def update_credential(
         new_user = username if username is not None else row["username"]
         new_type = cred_type if cred_type is not None else row["type"]
         new_valid = valid_until if valid_until is not None else row["valid_until"]
+        new_source = source if source is not None else row["source"]
+        new_owner = owner if owner is not None else row.get("owner")
         encrypted = row["password_encrypted"]
         if password:
             encrypted = encryption_service.encrypt(password)
         now = datetime.utcnow().isoformat()
         conn.execute(
             """
-            UPDATE credentials SET name=?, username=?, type=?, password_encrypted=?, valid_until=?, updated_at=? WHERE id=?
+            UPDATE credentials SET name=?, username=?, type=?, password_encrypted=?, valid_until=?, source=?, owner=?, updated_at=? WHERE id=?
             """,
-            (new_name, new_user, new_type, encrypted, new_valid, now, cred_id),
+            (new_name, new_user, new_type, encrypted, new_valid, new_source, new_owner, now, cred_id),
         )
         conn.commit()
         new_row = conn.execute(

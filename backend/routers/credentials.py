@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/credentials", tags=["credentials"])
 
 @router.get("", dependencies=[Depends(verify_admin_token)])
 def list_credentials(include_expired: bool = Query(False)) -> List[dict]:
-    return cred_mgr.list_credentials(include_expired=include_expired)
+    return cred_mgr.list_credentials(include_expired=include_expired, source="general")
 
 
 @router.post("", dependencies=[Depends(verify_admin_token)])
@@ -26,6 +26,7 @@ def create_credential(payload: CredentialCreate) -> dict:
             valid_until=payload.valid_until.isoformat()
             if payload.valid_until
             else None,
+            source="general"  # Force general source for admin credentials interface
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -43,6 +44,7 @@ def update_credential(cred_id: int, payload: CredentialUpdate) -> dict:
             valid_until=payload.valid_until.isoformat()
             if payload.valid_until
             else None,
+            source="general"  # Force general source for admin credentials interface
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

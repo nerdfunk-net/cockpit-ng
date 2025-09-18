@@ -6,12 +6,21 @@ from __future__ import annotations
 import logging
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from core.auth import get_current_username
 import profile_manager
+import credentials_manager
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/profile", tags=["profile"])
+
+
+class PersonalCredentialData(BaseModel):
+    id: str
+    name: str
+    username: str
+    type: str
+    password: str
 
 
 class ProfileResponse(BaseModel):
@@ -20,6 +29,7 @@ class ProfileResponse(BaseModel):
     email: str
     debug: bool
     api_key: Optional[str]
+    personal_credentials: Optional[List[PersonalCredentialData]] = []
 
 
 class ProfileUpdateRequest(BaseModel):
@@ -28,6 +38,7 @@ class ProfileUpdateRequest(BaseModel):
     debug: Optional[bool] = None
     password: Optional[str] = None
     api_key: Optional[str] = None
+    personal_credentials: Optional[List[PersonalCredentialData]] = []
 
 
 @router.get("", response_model=ProfileResponse)
@@ -45,12 +56,27 @@ async def get_profile(current_user: str = Depends(get_current_username)):
         # Get profile data including API key
         profile = profile_manager.get_user_profile(current_user)
 
+        # Get personal credentials for this user
+        all_credentials = credentials_manager.list_credentials(include_expired=True, source="private")
+        personal_credentials = [
+            PersonalCredentialData(
+                id=str(cred["id"]),
+                name=cred["name"],
+                username=cred["username"],
+                type=cred["type"],
+                password=""  # Never return actual passwords for security
+            )
+            for cred in all_credentials
+            if cred.get("owner") == current_user
+        ]
+
         return ProfileResponse(
             username=user["username"],
             realname=user["realname"],
             email=user["email"] or "",
             debug=user["debug"],
             api_key=profile.get("api_key"),
+            personal_credentials=personal_credentials,
         )
     except HTTPException:
         raise
@@ -108,10 +134,90 @@ async def update_profile(
             api_key=update_data.api_key,
         )
 
+        # Handle personal credentials
+        if update_data.personal_credentials is not None:
+            # Get existing personal credentials for this user
+            all_credentials = credentials_manager.list_credentials(include_expired=True, source="private")
+            existing_personal = [
+                cred for cred in all_credentials
+                if cred.get("owner") == current_user
+            ]
+            existing_ids = {str(cred["id"]) for cred in existing_personal}
+            
+            # Track which credentials we're keeping/updating
+            processed_ids = set()
+            
+            # Process each credential from the frontend
+            for cred_data in update_data.personal_credentials:
+                # Check if this is an update to existing credential (must be numeric ID that exists)
+                is_existing = (cred_data.id.isdigit() and cred_data.id in existing_ids)
+                
+                if is_existing:
+                    processed_ids.add(cred_data.id)
+                    # Update existing credential - only if password is provided
+                    if cred_data.password:  # Only update if new password provided
+                        credentials_manager.update_credential(
+                            cred_id=int(cred_data.id),
+                            name=cred_data.name,
+                            username=cred_data.username,  # Use the username provided by the user
+                            cred_type=cred_data.type.lower(),
+                            password=cred_data.password,
+                            source="private",
+                            owner=current_user
+                        )
+                    else:
+                        # Update everything except password
+                        credentials_manager.update_credential(
+                            cred_id=int(cred_data.id),
+                            name=cred_data.name,
+                            username=cred_data.username,  # Use the username provided by the user
+                            cred_type=cred_data.type.lower(),
+                            source="private",
+                            owner=current_user
+                        )
+                else:
+                    # Create new credential - password is required
+                    if not cred_data.password:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Password is required for new personal credentials",
+                        )
+                    
+                    new_cred = credentials_manager.create_credential(
+                        name=cred_data.name,
+                        username=cred_data.username,  # Use the username provided by the user
+                        cred_type=cred_data.type.lower(),
+                        password=cred_data.password,
+                        valid_until=None,  # Personal credentials don't expire by default
+                        source="private",
+                        owner=current_user
+                    )
+                    # Track the new ID for existing credentials cleanup
+                    processed_ids.add(str(new_cred["id"]))
+            
+            # Delete credentials that were removed (not in the processed list)
+            for cred in existing_personal:
+                if str(cred["id"]) not in processed_ids:
+                    credentials_manager.delete_credential(cred["id"])
+
         logger.info(f"Profile updated for user: {current_user}")
 
-        # Get updated profile data including API key
+        # Get updated profile data including API key and personal credentials
         profile = profile_manager.get_user_profile(current_user)
+        
+        # Get updated personal credentials for this user
+        all_credentials = credentials_manager.list_credentials(include_expired=True, source="private")
+        personal_credentials = [
+            PersonalCredentialData(
+                id=str(cred["id"]),
+                name=cred["name"],
+                username=cred["username"],
+                type=cred["type"],
+                password=""  # Never return actual passwords for security
+            )
+            for cred in all_credentials
+            if cred.get("owner") == current_user
+        ]
 
         return ProfileResponse(
             username=updated_user["username"],
@@ -119,6 +225,7 @@ async def update_profile(
             email=updated_user["email"] or "",
             debug=updated_user["debug"],
             api_key=profile.get("api_key"),
+            personal_credentials=personal_credentials,
         )
 
     except HTTPException:
