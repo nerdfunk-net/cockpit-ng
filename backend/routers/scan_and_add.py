@@ -122,6 +122,7 @@ class OnboardDevice(BaseModel):
     status: Optional[str] = "Active"
     interface_status: Optional[str] = "Active"
     ip_status: Optional[str] = "Active"
+    secret_group_id: Optional[str] = None  # UUID for Nautobot secrets group
 
 
 class OnboardRequest(BaseModel):
@@ -217,6 +218,32 @@ async def get_scan_status(job_id: str):
 @router.post("/{job_id}/onboard", response_model=OnboardResponse)
 async def onboard_devices(job_id: str, request: OnboardRequest):
     """Onboard selected devices from scan results."""
+    
+    # Debug: Log the raw request from frontend
+    logger.debug(f"=== RAW FRONTEND REQUEST DEBUG ===")
+    logger.debug(f"job_id: {job_id}")
+    logger.debug(f"request object: {request}")
+    logger.debug(f"request.devices: {request.devices}")
+    logger.debug(f"Number of devices: {len(request.devices)}")
+    
+    for i, device in enumerate(request.devices):
+        logger.debug(f"Device {i}:")
+        logger.debug(f"  Raw device object: {device}")
+        logger.debug(f"  device.ip: '{device.ip}'")
+        logger.debug(f"  device.credential_id: '{device.credential_id}'")
+        logger.debug(f"  device.device_type: '{device.device_type}'")
+        logger.debug(f"  device.hostname: '{device.hostname}'")
+        logger.debug(f"  device.platform: '{device.platform}'")
+        logger.debug(f"  device.location: '{device.location}'")
+        logger.debug(f"  device.namespace: '{device.namespace}'")
+        logger.debug(f"  device.role: '{device.role}'")
+        logger.debug(f"  device.status: '{device.status}'")
+        logger.debug(f"  device.interface_status: '{device.interface_status}'")
+        logger.debug(f"  device.ip_status: '{device.ip_status}'")
+        logger.debug(f"  device.secret_group_id: '{device.secret_group_id}'")
+    
+    logger.debug(f"=== END RAW FRONTEND REQUEST DEBUG ===")
+    
     # Verify job exists
     job = await scan_service.get_job(job_id)
     if not job:
@@ -291,18 +318,36 @@ async def _onboard_cisco_devices(
 
     for device in cisco_devices:
         try:
+            logger.debug(f"=== CISCO DEVICE ONBOARD DEBUG ===")
+            logger.debug(f"Processing device object: {device}")
+            logger.debug(f"Device fields:")
+            logger.debug(f"  ip: '{device.ip}'")
+            logger.debug(f"  hostname: '{device.hostname}'")
+            logger.debug(f"  platform: '{device.platform}'")
+            logger.debug(f"  location: '{device.location}'")
+            logger.debug(f"  secret_group_id: '{device.secret_group_id}'")
+            logger.debug(f"  namespace: '{device.namespace}'")
+            logger.debug(f"  role: '{device.role}'")
+            logger.debug(f"  status: '{device.status}'")
+            logger.debug(f"  interface_status: '{device.interface_status}'")
+            logger.debug(f"  ip_status: '{device.ip_status}'")
+            
             # Prepare device data for Nautobot onboarding
             device_data = {
                 "ip_address": device.ip,
                 "hostname": device.hostname or device.ip,
-                "platform": device.platform or "cisco_ios",
+                "platform": device.platform,  # Use UUID from frontend, don't add fallback
                 "location": device.location,
-                "namespace": device.namespace or "Global",
-                "role": device.role or "network",
-                "status": device.status or "Active",
-                "interface_status": device.interface_status or "Active",
-                "ip_status": device.ip_status or "Active",
+                "secret_group_id": device.secret_group_id,
+                "namespace": device.namespace,  # Use UUID from frontend, don't add fallback
+                "role": device.role,  # Use UUID from frontend, don't add fallback
+                "status": device.status,  # Use UUID from frontend, don't add fallback
+                "interface_status": device.interface_status,  # Use UUID from frontend, don't add fallback
+                "ip_status": device.ip_status,  # Use UUID from frontend, don't add fallback
             }
+
+            logger.debug(f"Prepared device_data for Nautobot: {device_data}")
+            logger.debug(f"=== END CISCO DEVICE ONBOARD DEBUG ===")
 
             # Call Nautobot onboarding API
             response = await nautobot_service.onboard_device(device_data)

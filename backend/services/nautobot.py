@@ -209,17 +209,221 @@ class NautobotService:
             self.executor, self._sync_test_connection, url, token, timeout, verify_ssl
         )
 
-    async def onboard_device(self, device_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Onboard a device via Nautobot onboarding API."""
+    async def get_location_id_by_name(self, location_name: str) -> Optional[str]:
+        """Get location UUID by name using GraphQL."""
+        if not location_name:
+            return None
+            
+        query = """
+        query locations($location_filter: [String]) {
+            locations(name: $location_filter) {
+                id
+                name
+            }
+        }
+        """
         try:
-            # Call Nautobot onboarding endpoint
+            result = await self.graphql_query(query, {"location_filter": [location_name]})
+            locations = result.get("data", {}).get("locations", [])
+            if locations:
+                return locations[0]["id"]
+        except Exception as e:
+            logger.warning(f"Failed to look up location '{location_name}': {e}")
+        return None
+
+    async def get_role_id_by_name(self, role_name: str) -> Optional[str]:
+        """Get role UUID by name using GraphQL."""
+        if not role_name:
+            return None
+            
+        query = """
+        query roles($role_filter: [String]) {
+            roles(name: $role_filter) {
+                id
+                name
+            }
+        }
+        """
+        try:
+            result = await self.graphql_query(query, {"role_filter": [role_name]})
+            roles = result.get("data", {}).get("roles", [])
+            if roles:
+                return roles[0]["id"]
+        except Exception as e:
+            logger.warning(f"Failed to look up role '{role_name}': {e}")
+        return None
+
+    async def get_secrets_group_id_by_name(self, group_name: str) -> Optional[str]:
+        """Get secrets group UUID by name using GraphQL."""
+        if not group_name:
+            return None
+            
+        query = """
+        query secrets_groups($group_filter: [String]) {
+            secrets_groups(name: $group_filter) {
+                id
+                name
+            }
+        }
+        """
+        try:
+            result = await self.graphql_query(query, {"group_filter": [group_name]})
+            groups = result.get("data", {}).get("secrets_groups", [])
+            if groups:
+                return groups[0]["id"]
+        except Exception as e:
+            logger.warning(f"Failed to look up secrets group '{group_name}': {e}")
+        return None
+
+    async def get_namespace_id_by_name(self, namespace_name: str) -> Optional[str]:
+        """Get namespace UUID by name using GraphQL."""
+        if not namespace_name:
+            return None
+            
+        query = """
+        query namespaces($namespace_filter: [String]) {
+            namespaces(name: $namespace_filter) {
+                id
+                name
+            }
+        }
+        """
+        try:
+            result = await self.graphql_query(query, {"namespace_filter": [namespace_name]})
+            namespaces = result.get("data", {}).get("namespaces", [])
+            if namespaces:
+                return namespaces[0]["id"]
+        except Exception as e:
+            logger.warning(f"Failed to look up namespace '{namespace_name}': {e}")
+        return None
+
+    async def get_status_id_by_name(self, status_name: str, content_type: str = "dcim.device") -> Optional[str]:
+        """Get status UUID by name and content type using GraphQL."""
+        if not status_name:
+            return None
+            
+        query = """
+        query statuses($content_type: [String]) {
+            statuses(content_types: $content_type) {
+                id
+                name
+                content_types {
+                    model
+                }
+            }
+        }
+        """
+        try:
+            result = await self.graphql_query(query, {"content_type": [content_type]})
+            statuses = result.get("data", {}).get("statuses", [])
+            for status in statuses:
+                if status["name"].lower() == status_name.lower():
+                    return status["id"]
+        except Exception as e:
+            logger.warning(f"Failed to look up status '{status_name}' for {content_type}: {e}")
+        return None
+
+    async def get_platform_id_by_name(self, platform_name: str) -> Optional[str]:
+        """Get platform UUID by name using GraphQL."""
+        if not platform_name:
+            return None
+            
+        query = """
+        query platforms($platform_filter: [String]) {
+            platforms(name: $platform_filter) {
+                id
+                name
+            }
+        }
+        """
+        try:
+            result = await self.graphql_query(query, {"platform_filter": [platform_name]})
+            platforms = result.get("data", {}).get("platforms", [])
+            if platforms:
+                return platforms[0]["id"]
+        except Exception as e:
+            logger.warning(f"Failed to look up platform '{platform_name}': {e}")
+        return None
+
+    async def onboard_device(self, device_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Onboard a device via Nautobot 'Sync Devices From Network' job."""
+        try:
+            # Debug: Log the input device data
+            logger.debug(f"=== NAUTOBOT ONBOARD DEBUG ===")
+            logger.debug(f"Input device_data: {device_data}")
+
+            # Convert string names to UUIDs where needed
+            # Location and secret_group_id should already be UUIDs from frontend
+            location_id = device_data.get("location", "")
+            secret_group_id = device_data.get("secret_group_id", "")
+
+            # Convert string names to UUIDs for these fields
+            role_name = device_data.get("role", "")
+            role_id = await self.get_role_id_by_name(role_name) if role_name else ""
+
+            namespace_name = device_data.get("namespace", "")
+            namespace_id = await self.get_namespace_id_by_name(namespace_name) if namespace_name else ""
+
+            device_status_name = device_data.get("status", "")
+            device_status_id = await self.get_status_id_by_name(device_status_name, "dcim.device") if device_status_name else ""
+
+            interface_status_name = device_data.get("interface_status", "")
+            interface_status_id = await self.get_status_id_by_name(interface_status_name, "dcim.interface") if interface_status_name else ""
+
+            ip_status_name = device_data.get("ip_status", "")
+            ip_status_id = await self.get_status_id_by_name(ip_status_name, "ipam.ipaddress") if ip_status_name else ""
+
+            platform_name = device_data.get("platform", "")
+            # Handle special case for "auto-detect" platform or when UUID lookup fails
+            if platform_name == "auto-detect":
+                platform_id = None  # Use None for auto-detect
+            elif platform_name:
+                platform_id = await self.get_platform_id_by_name(platform_name)
+                logger.debug(f"Platform '{platform_name}' resolved to ID: {platform_id}")
+                # If UUID lookup fails, use None instead of the platform name
+                if not platform_id:
+                    platform_id = None
+            else:
+                platform_id = None
+
+            # Map the input data to the expected Nautobot API format
+            # Now using UUIDs instead of string names
+            job_data = {
+                "data": {
+                    "location": location_id,
+                    "ip_addresses": device_data.get("ip_address", ""),
+                    "secrets_group": secret_group_id,
+                    "device_role": role_id or role_name,  # Fallback to original name if UUID lookup fails
+                    "namespace": namespace_id or namespace_name,  # Fallback to original name if UUID lookup fails
+                    "device_status": device_status_id or device_status_name,  # Fallback to original name if UUID lookup fails
+                    "interface_status": interface_status_id or interface_status_name,  # Fallback to original name if UUID lookup fails
+                    "ip_address_status": ip_status_id or ip_status_name,  # Fallback to original name if UUID lookup fails
+                    "platform": platform_id,
+                    "port": device_data.get("port", 22),
+                    "timeout": device_data.get("timeout", 30),
+                    "update_devices_without_primary_ip": device_data.get("update_devices_without_primary_ip", False)
+                }
+            }
+
+            # Debug: Log the job data being sent to Nautobot
+            logger.debug(f"Job data being sent to Nautobot:")
+            logger.debug(f"  Original names -> UUIDs:")
+            logger.debug(f"    role: '{role_name}' -> '{role_id}'")
+            logger.debug(f"    namespace: '{namespace_name}' -> '{namespace_id}'")
+            logger.debug(f"    device_status: '{device_status_name}' -> '{device_status_id}'")
+            logger.debug(f"    interface_status: '{interface_status_name}' -> '{interface_status_id}'")
+            logger.debug(f"    ip_status: '{ip_status_name}' -> '{ip_status_id}'")
+            logger.debug(f"    platform: '{platform_name}' -> '{platform_id}'")
+            for key, value in job_data["data"].items():
+                logger.debug(f"  {key}: '{value}' (type: {type(value).__name__})")
+            logger.debug(f"Complete job_data: {job_data}")
+            logger.debug(f"=== END NAUTOBOT ONBOARD DEBUG ===")
+
+            # Call the correct Nautobot 'Sync Devices From Network' job endpoint
             response = await self.rest_request(
-                "api/extras/jobs/nautobot_golden_config.jobs.OnboardingJob/run/",
+                "extras/jobs/Sync%20Devices%20From%20Network/run/",
                 method="POST",
-                data={
-                    "class_path": "nautobot_golden_config.jobs.OnboardingJob",
-                    "data": device_data,
-                },
+                data=job_data
             )
 
             return response

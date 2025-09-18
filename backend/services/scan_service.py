@@ -7,6 +7,8 @@ import time
 import platform
 import subprocess
 import logging
+import tempfile
+import os
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Any, Tuple
 
@@ -198,8 +200,17 @@ class ScanService:
         alive_ips: Set[str] = set()
 
         if job.ping_mode == "fping":
-            # Use fping for bulk ping operations with original CIDRs
-            alive_ips = await asyncio.to_thread(self._fping_networks, job.cidrs)
+            # Use fping for bulk ping operations - expand CIDRs to individual IPs
+            all_ips: List[str] = []
+            for cidr in job.cidrs:
+                try:
+                    cidr_ips = self._expand_cidr_to_ips(cidr)
+                    all_ips.extend(cidr_ips)
+                except Exception as e:
+                    logger.error(f"Invalid CIDR {cidr}: {e}")
+                    continue
+            
+            alive_ips = await asyncio.to_thread(self._fping_networks, all_ips)
             logger.info(
                 f"fping found {len(alive_ips)} alive hosts out of {len(targets)} targets"
             )
@@ -580,56 +591,106 @@ class ScanService:
         except Exception:
             return False
 
-    def _fping_networks(self, cidrs: List[str]) -> Set[str]:
-        """Use fping to ping multiple networks efficiently."""
-        if not cidrs:
+    def _fping_networks(self, ip_list: List[str]) -> Set[str]:
+        """Use fping to ping multiple IP addresses efficiently using a temporary file."""
+        if not ip_list:
             return set()
 
         alive_ips: Set[str] = set()
+        temp_file_path = None
 
         try:
-            # Build fping command with all CIDRs
-            cmd = [
-                "fping",
-                "-a",
-                "-g",
-            ]  # -a: show alive hosts, -g: generate target list
-            cmd.extend(cidrs)
+            # Create temporary file with all IP addresses
+            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt', prefix='fping_targets_') as temp_file:
+                temp_file_path = temp_file.name
+                for ip in ip_list:
+                    temp_file.write(f"{ip}\n")
 
-            logger.info(f"Running fping command: {' '.join(cmd)}")
+            logger.info(f"Created temporary file {temp_file_path} with {len(ip_list)} IP addresses")
 
+            # Run fping command reading from the temporary file
+            cmd = ["fping"]
+            
+            logger.info(f"Running fping command: {' '.join(cmd)} < {temp_file_path}")
+
+            # Use shell=True to support input redirection
             result = subprocess.run(
-                cmd,
+                f"fping < {temp_file_path}",
+                shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                timeout=PING_TIMEOUT_SECONDS
-                * 10,  # Allow more time for network scanning
+                timeout=PING_TIMEOUT_SECONDS * 10,  # Allow more time for network scanning
                 text=True,
             )
 
-            # fping outputs alive IPs to stdout (when using -a flag)
+            # Parse fping output
+            # Format examples:
+            # "8.8.8.8 is alive"
+            # "8.8.8.8 : duplicate for [0], 64 bytes, 538 ms"  
+            # "100.113.172.23 is unreachable"
+            
+            # Process both stdout and stderr as fping can output to both
+            all_output = ""
             if result.stdout:
-                for line in result.stdout.strip().split("\n"):
-                    ip = line.strip()
-                    if ip and self._is_valid_ip(ip):
-                        alive_ips.add(ip)
-
-            logger.info(f"fping discovered {len(alive_ips)} alive hosts")
-
-            # Log stderr for debugging (fping sends some info to stderr even on success)
+                all_output += result.stdout
             if result.stderr:
-                logger.debug(f"fping stderr: {result.stderr}")
+                all_output += result.stderr
+
+            if all_output:
+                for line in all_output.strip().split("\n"):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    
+                    # Extract IP address from the beginning of the line
+                    parts = line.split()
+                    if len(parts) >= 3:
+                        ip = parts[0]
+                        status_indicator = parts[1] + " " + parts[2]  # "is alive" or "is unreachable"
+                        
+                        if self._is_valid_ip(ip):
+                            if "is alive" in status_indicator:
+                                alive_ips.add(ip)
+                            # We ignore "is unreachable" and other statuses (like duplicates)
+
+            logger.info(f"fping discovered {len(alive_ips)} alive hosts out of {len(ip_list)} targets")
 
         except subprocess.TimeoutExpired:
             logger.warning("fping command timed out")
         except FileNotFoundError:
-            logger.error(
-                "fping command not found. Please install fping or use 'ping' mode instead"
-            )
+            logger.error("fping command not found. Please install fping or use 'ping' mode instead")
         except Exception as e:
             logger.error(f"fping command failed: {e}")
+        finally:
+            # Clean up temporary file
+            if temp_file_path and os.path.exists(temp_file_path):
+                try:
+                    os.unlink(temp_file_path)
+                    logger.debug(f"Cleaned up temporary file {temp_file_path}")
+                except Exception as e:
+                    logger.warning(f"Failed to clean up temporary file {temp_file_path}: {e}")
 
         return alive_ips
+
+    def _expand_cidr_to_ips(self, cidr: str) -> List[str]:
+        """Convert CIDR notation to list of IP addresses."""
+        try:
+            network = ipaddress.ip_network(cidr, strict=False)
+            
+            # Safety check: enforce reasonable network sizes
+            if network.prefixlen < 16:  # Larger than /16 might be too big
+                raise ValueError(f"Network too large: {cidr}. Minimum prefix length is /16")
+            
+            # Convert to list of IP strings
+            if network.prefixlen == 32:
+                # Single host
+                return [str(network.network_address)]
+            else:
+                # Network range - get all hosts
+                return [str(ip) for ip in network.hosts()]
+                
+        except Exception as e:
+            raise ValueError(f"Invalid CIDR notation {cidr}: {e}")
 
     def _is_valid_ip(self, ip_str: str) -> bool:
         """Validate if string is a valid IP address."""

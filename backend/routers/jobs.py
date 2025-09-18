@@ -5,6 +5,7 @@ Provides endpoints for creating, monitoring, and managing background jobs.
 
 from __future__ import annotations
 import logging
+import time
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, validator
@@ -233,13 +234,31 @@ async def cancel_scheduler_job(
 ):
     """Cancel an APScheduler job"""
     try:
+        # First check if job exists in database and its current status
+        job = job_db_service.get_job(job_id)
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Job {job_id} not found"
+            )
+        
+        # Check if job can be cancelled (must be running or pending)
+        job_status = JobStatus(job["status"])
+        if job_status not in [JobStatus.PENDING, JobStatus.RUNNING]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot cancel job {job_id} - job is {job_status.value}. Only pending or running jobs can be cancelled."
+            )
+        
+        # Attempt to cancel in scheduler
         success = scheduler_service.cancel_job(job_id)
         if success:
             return {"message": f"APScheduler job {job_id} cancelled successfully"}
         else:
+            # Job exists in database but not in scheduler - this is an orphaned job
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Job {job_id} not found or could not be cancelled"
+                detail=f"Job {job_id} not found in scheduler. This job appears to be orphaned - it exists in the database but not in the scheduler. Something may have gone wrong in the background."
             )
     except HTTPException:
         raise
@@ -458,7 +477,6 @@ async def start_network_scan_job(
         # Create job in database
         job_id = f"network_scan_{int(time.time() * 1000)}"
         
-        import time
         job_db_service.create_job(
             job_id=job_id,
             job_type=JobType.NETWORK_SCAN,
@@ -472,7 +490,7 @@ async def start_network_scan_job(
         )
         
         # Start the scan job
-        scheduler_service._scheduler.add_job(
+        scheduler_service.scheduler.add_job(
             func=_execute_network_scan,
             args=[job_id, decoded_cidr, request, username],
             id=job_id,
@@ -482,7 +500,7 @@ async def start_network_scan_job(
         
         return JobStartResponse(
             job_id=job_id,
-            status="started",
+            status=JobStatus.PENDING,
             message=f"Network scan started for {decoded_cidr}"
         )
         
@@ -537,20 +555,17 @@ async def _execute_network_scan(job_id: str, cidr: str, request: NetworkScanRequ
         
         if result.error_message:
             # Job failed
-            job_db_service.complete_job(
+            job_db_service.update_job_status(
                 job_id, 
                 JobStatus.FAILED, 
-                error_message=result.error_message,
-                result_data=result_data
+                error_message=result.error_message
             )
             logger.error(f"Network scan job {job_id} failed: {result.error_message}")
         else:
             # Job completed successfully
-            job_db_service.complete_job(
+            job_db_service.update_job_status(
                 job_id, 
-                JobStatus.COMPLETED,
-                result_summary=f"Found {len(result.alive_hosts)} alive hosts out of {result.total_targets} targets",
-                result_data=result_data
+                JobStatus.COMPLETED
             )
             logger.info(
                 f"Network scan job {job_id} completed: {len(result.alive_hosts)} alive, "
@@ -559,7 +574,7 @@ async def _execute_network_scan(job_id: str, cidr: str, request: NetworkScanRequ
             
     except Exception as e:
         logger.error(f"Network scan job {job_id} failed with exception: {e}")
-        job_db_service.complete_job(
+        job_db_service.update_job_status(
             job_id, 
             JobStatus.FAILED, 
             error_message=str(e)

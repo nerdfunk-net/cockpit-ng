@@ -98,7 +98,7 @@ export function JobsManagementPage() {
 
   const stopJob = async (jobId: string) => {
     if (!token) return
-    
+
     try {
       const response = await fetch(`/api/proxy/jobs/${jobId}/cancel`, {
         method: 'DELETE',
@@ -107,12 +107,32 @@ export function JobsManagementPage() {
           'Content-Type': 'application/json'
         }
       })
-      
+
       if (response.ok) {
         fetchJobs() // Refresh the job list
+      } else if (response.status === 404) {
+        // Job not found in scheduler - it's an orphaned job
+        const errorData = await response.json().catch(() => ({}))
+        const message = errorData.detail || 'Job not found in scheduler'
+
+        const shouldRemove = confirm(
+          `This job appears to be orphaned (${message}). ` +
+          'The job exists in the database but not in the scheduler. ' +
+          'Would you like to remove it from the list?'
+        )
+
+        if (shouldRemove) {
+          await clearJob(jobId)
+        }
+      } else {
+        // Other error responses
+        const errorData = await response.json().catch(() => ({}))
+        const message = errorData.detail || `Failed to stop job (${response.status})`
+        alert(`Error stopping job: ${message}`)
       }
     } catch (error) {
       console.error('Error stopping job:', error)
+      alert('Network error while trying to stop job. Please try again.')
     }
   }
 
