@@ -93,12 +93,14 @@ export function ProfilePage() {
             personal_credentials: (data.personal_credentials || []).map((cred: {id: string, name: string, username: string, type: string, password?: string}) => {
               // If ID is numeric, it's an existing credential with stored password
               const hasStoredPassword = cred.id && /^\d+$/.test(cred.id)
+              // Check if password is a length-matched token (all bullet characters)
+              const isPasswordToken = cred.password && /^•+$/.test(cred.password)
               return {
                 id: cred.id,
                 name: cred.name,
                 username: cred.username,
                 type: cred.type.toUpperCase() as PersonalCredential['type'], // Convert from backend lowercase to frontend uppercase
-                password: cred.password || '', // Load actual password from backend
+                password: isPasswordToken ? cred.password : (cred.password || ''), // Load token or actual password from backend
                 isOpen: false,
                 showPassword: false,
                 hasStoredPassword,
@@ -271,7 +273,7 @@ export function ProfilePage() {
           name: cred.name,
           username: cred.username,
           type: cred.type,
-          password: cred.passwordChanged || !cred.hasStoredPassword ? cred.password : '' // Only send password if changed or new credential
+          password: (cred.passwordChanged || !cred.hasStoredPassword) && !/^•+$/.test(cred.password) ? cred.password : '' // Only send password if changed and not a token
         }))
       }
 
@@ -303,12 +305,14 @@ export function ProfilePage() {
             personal_credentials: responseData.personal_credentials.map((cred: {id: string, name: string, username: string, type: string, password?: string}) => {
               // If ID is numeric, it's an existing credential with stored password
               const hasStoredPassword = cred.id && /^\d+$/.test(cred.id)
+              // Check if password is a length-matched token (all bullet characters)
+              const isPasswordToken = cred.password && /^•+$/.test(cred.password)
               return {
                 id: cred.id,
                 name: cred.name,
                 username: cred.username,
                 type: cred.type.toUpperCase() as PersonalCredential['type'], // Convert back to frontend format
-                password: cred.password || '', // Load actual password from backend response
+                password: isPasswordToken ? cred.password : (cred.password || ''), // Load token or actual password from backend response
                 isOpen: false, // Collapse all after save
                 showPassword: false, // Hide passwords after save
                 hasStoredPassword,
@@ -632,6 +636,12 @@ export function ProfilePage() {
                                         onChange={(e) => updatePersonalCredential(credential.id, 'password', e.target.value)}
                                         placeholder={credential.type === 'Token' ? 'Enter token' : 'Enter password'}
                                         className="pr-10"
+                                        onFocus={() => {
+                                          // Clear the token placeholder when focusing to allow editing
+                                          if (credential.password && /^•+$/.test(credential.password)) {
+                                            updatePersonalCredential(credential.id, 'password', '')
+                                          }
+                                        }}
                                       />
                                       <Button
                                         type="button"

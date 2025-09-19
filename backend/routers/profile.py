@@ -63,19 +63,21 @@ async def get_profile(current_user: str = Depends(get_current_username)):
         personal_credentials = []
         for cred in all_credentials:
             if cred.get("owner") == current_user:
-                # Get decrypted password for the credential
+                # Get decrypted password to determine length
                 try:
                     decrypted_password = credentials_manager.get_decrypted_password(cred["id"])
+                    # Create a token with the same length as the actual password
+                    password_token = "•" * len(decrypted_password) if decrypted_password else ""
                 except Exception as e:
                     logger.warning(f"Failed to decrypt password for credential {cred['id']}: {e}")
-                    decrypted_password = ""
+                    password_token = ""
                 
                 personal_credentials.append(PersonalCredentialData(
                     id=str(cred["id"]),
                     name=cred["name"],
                     username=cred["username"],
                     type=cred["type"],
-                    password=decrypted_password,  # Return actual decrypted password
+                    password=password_token,  # Return length-matched token instead of actual password
                 ))
 
         return ProfileResponse(
@@ -225,19 +227,21 @@ async def update_profile(
         personal_credentials = []
         for cred in all_credentials:
             if cred.get("owner") == current_user:
-                # Get decrypted password for the credential
+                # Get decrypted password to determine length
                 try:
                     decrypted_password = credentials_manager.get_decrypted_password(cred["id"])
+                    # Create a token with the same length as the actual password
+                    password_token = "•" * len(decrypted_password) if decrypted_password else ""
                 except Exception as e:
                     logger.warning(f"Failed to decrypt password for credential {cred['id']}: {e}")
-                    decrypted_password = ""
+                    password_token = ""
                 
                 personal_credentials.append(PersonalCredentialData(
                     id=str(cred["id"]),
                     name=cred["name"],
                     username=cred["username"],
                     type=cred["type"],
-                    password=decrypted_password,  # Return actual decrypted password
+                    password=password_token,  # Return length-matched token instead of actual password
                 ))
 
         return ProfileResponse(
