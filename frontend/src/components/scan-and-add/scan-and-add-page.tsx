@@ -678,6 +678,15 @@ export function ScanAndAddPage() {
   }
 
   const validatePropertiesPhase = (): boolean => {
+    // Check if any credentials are available
+    if (!Array.isArray(credentials) || credentials.length === 0) {
+      setStatusMessage({
+        type: 'error',
+        message: 'No credentials available. Please configure credentials first before proceeding.'
+      })
+      return false
+    }
+
     const validCredentials = selectedCredentials.filter(id => 
       id && String(id).trim() !== ''
     )
@@ -1327,25 +1336,32 @@ export function ScanAndAddPage() {
                     <Select 
                       value={String(credentialId)} 
                       onValueChange={(value) => updateCredential(index, value)}
+                      disabled={!Array.isArray(credentials) || credentials.length === 0}
                     >
                       <SelectTrigger className="flex-1">
                         <SelectValue placeholder="Select credentials..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {Array.isArray(credentials) && credentials.map(credential => (
-                          <SelectItem key={credential.id} value={String(credential.id)}>
-                            <div className="flex items-center space-x-2 w-full">
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                credential.source === 'personal' 
-                                  ? 'bg-blue-100 text-blue-800' 
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                {credential.source === 'personal' ? 'Personal' : 'System'}
-                              </span>
-                              <span className="flex-1">{credential.name.replace(' (System)', '').replace(' (Personal)', '')}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
+                        {Array.isArray(credentials) && credentials.length > 0 ? (
+                          credentials.map(credential => (
+                            <SelectItem key={credential.id} value={String(credential.id)}>
+                              <div className="flex items-center space-x-2 w-full">
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  credential.source === 'personal' 
+                                    ? 'bg-blue-100 text-blue-800' 
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {credential.source === 'personal' ? 'Personal' : 'System'}
+                                </span>
+                                <span className="flex-1">{credential.name.replace(' (System)', '').replace(' (Personal)', '')}</span>
+                              </div>
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-sm text-gray-500 italic">
+                            No credentials available. Please configure credentials first.
+                          </div>
+                        )}
                       </SelectContent>
                     </Select>
                     {selectedCredentials.length > 1 && (
