@@ -60,17 +60,23 @@ async def get_profile(current_user: str = Depends(get_current_username)):
         all_credentials = credentials_manager.list_credentials(
             include_expired=True, source="private"
         )
-        personal_credentials = [
-            PersonalCredentialData(
-                id=str(cred["id"]),
-                name=cred["name"],
-                username=cred["username"],
-                type=cred["type"],
-                password="",  # Never return actual passwords for security
-            )
-            for cred in all_credentials
-            if cred.get("owner") == current_user
-        ]
+        personal_credentials = []
+        for cred in all_credentials:
+            if cred.get("owner") == current_user:
+                # Get decrypted password for the credential
+                try:
+                    decrypted_password = credentials_manager.get_decrypted_password(cred["id"])
+                except Exception as e:
+                    logger.warning(f"Failed to decrypt password for credential {cred['id']}: {e}")
+                    decrypted_password = ""
+                
+                personal_credentials.append(PersonalCredentialData(
+                    id=str(cred["id"]),
+                    name=cred["name"],
+                    username=cred["username"],
+                    type=cred["type"],
+                    password=decrypted_password,  # Return actual decrypted password
+                ))
 
         return ProfileResponse(
             username=user["username"],
@@ -216,17 +222,23 @@ async def update_profile(
         all_credentials = credentials_manager.list_credentials(
             include_expired=True, source="private"
         )
-        personal_credentials = [
-            PersonalCredentialData(
-                id=str(cred["id"]),
-                name=cred["name"],
-                username=cred["username"],
-                type=cred["type"],
-                password="",  # Never return actual passwords for security
-            )
-            for cred in all_credentials
-            if cred.get("owner") == current_user
-        ]
+        personal_credentials = []
+        for cred in all_credentials:
+            if cred.get("owner") == current_user:
+                # Get decrypted password for the credential
+                try:
+                    decrypted_password = credentials_manager.get_decrypted_password(cred["id"])
+                except Exception as e:
+                    logger.warning(f"Failed to decrypt password for credential {cred['id']}: {e}")
+                    decrypted_password = ""
+                
+                personal_credentials.append(PersonalCredentialData(
+                    id=str(cred["id"]),
+                    name=cred["name"],
+                    username=cred["username"],
+                    type=cred["type"],
+                    password=decrypted_password,  # Return actual decrypted password
+                ))
 
         return ProfileResponse(
             username=updated_user["username"],

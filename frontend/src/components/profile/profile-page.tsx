@@ -25,6 +25,8 @@ interface PersonalCredential {
   password: string
   isOpen: boolean
   showPassword: boolean
+  hasStoredPassword: boolean // Track if there's a password stored in backend
+  passwordChanged: boolean // Track if password was modified
 }
 
 interface ProfileData {
@@ -88,15 +90,21 @@ export function ProfilePage() {
             email: data.email || '',
             debug: data.debug || false,
             api_key: data.api_key || '',
-            personal_credentials: (data.personal_credentials || []).map((cred: {id: string, name: string, username: string, type: string}) => ({
-              id: cred.id,
-              name: cred.name,
-              username: cred.username,
-              type: cred.type.toUpperCase() as PersonalCredential['type'], // Convert from backend lowercase to frontend uppercase
-              password: '', // Never populate password from backend
-              isOpen: false,
-              showPassword: false
-            }))
+            personal_credentials: (data.personal_credentials || []).map((cred: {id: string, name: string, username: string, type: string, password?: string}) => {
+              // If ID is numeric, it's an existing credential with stored password
+              const hasStoredPassword = cred.id && /^\d+$/.test(cred.id)
+              return {
+                id: cred.id,
+                name: cred.name,
+                username: cred.username,
+                type: cred.type.toUpperCase() as PersonalCredential['type'], // Convert from backend lowercase to frontend uppercase
+                password: cred.password || '', // Load actual password from backend
+                isOpen: false,
+                showPassword: false,
+                hasStoredPassword,
+                passwordChanged: false
+              }
+            })
           })
         } else {
           debug.warn('ProfilePage: Profile endpoint not found, using default values')
@@ -179,7 +187,9 @@ export function ProfilePage() {
       type: 'SSH',
       password: '',
       isOpen: true,
-      showPassword: false
+      showPassword: false,
+      hasStoredPassword: false,
+      passwordChanged: false
     }
     setFormData(prev => ({
       ...prev,
@@ -197,9 +207,17 @@ export function ProfilePage() {
   const updatePersonalCredential = (id: string, field: keyof PersonalCredential, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
-      personal_credentials: prev.personal_credentials.map(cred =>
-        cred.id === id ? { ...cred, [field]: value } : cred
-      )
+      personal_credentials: prev.personal_credentials.map(cred => {
+        if (cred.id === id) {
+          const updated = { ...cred, [field]: value }
+          // Mark password as changed when it's updated
+          if (field === 'password') {
+            updated.passwordChanged = true
+          }
+          return updated
+        }
+        return cred
+      })
     }))
   }
 
@@ -253,7 +271,7 @@ export function ProfilePage() {
           name: cred.name,
           username: cred.username,
           type: cred.type,
-          password: cred.password
+          password: cred.passwordChanged || !cred.hasStoredPassword ? cred.password : '' // Only send password if changed or new credential
         }))
       }
 
@@ -282,15 +300,21 @@ export function ProfilePage() {
         if (responseData.personal_credentials) {
           setFormData(prev => ({
             ...prev,
-            personal_credentials: responseData.personal_credentials.map((cred: {id: string, name: string, username: string, type: string}) => ({
-              id: cred.id,
-              name: cred.name,
-              username: cred.username,
-              type: cred.type.toUpperCase() as PersonalCredential['type'], // Convert back to frontend format
-              password: '', // Never store passwords in frontend state
-              isOpen: false, // Collapse all after save
-              showPassword: false
-            }))
+            personal_credentials: responseData.personal_credentials.map((cred: {id: string, name: string, username: string, type: string, password?: string}) => {
+              // If ID is numeric, it's an existing credential with stored password
+              const hasStoredPassword = cred.id && /^\d+$/.test(cred.id)
+              return {
+                id: cred.id,
+                name: cred.name,
+                username: cred.username,
+                type: cred.type.toUpperCase() as PersonalCredential['type'], // Convert back to frontend format
+                password: cred.password || '', // Load actual password from backend response
+                isOpen: false, // Collapse all after save
+                showPassword: false, // Hide passwords after save
+                hasStoredPassword,
+                passwordChanged: false // Reset changed flag after save
+              }
+            })
           }))
         }
         

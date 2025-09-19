@@ -1272,26 +1272,38 @@ async def nautobot_health_check(current_user: dict = Depends(verify_token)):
     """Simple health check to verify Nautobot connectivity."""
     try:
         # Use the same test approach as the nautobot service - query devices with limit 1
-        result = await nautobot_service.rest_request("dcim/devices/?limit=1", timeout=5)
+        result = await nautobot_service.rest_request("dcim/devices/?limit=1")
         return {
             "status": "connected",
             "message": "Nautobot is accessible",
             "devices_count": result.get("count", 0),
         }
     except Exception as e:
+        # Log the full exception details for debugging
+        logger.error(f"Nautobot health check failed: {str(e)}", exc_info=True)
+        
         error_msg = str(e)
+        error_type = type(e).__name__
+        
+        # Include detailed error information in the response
+        detailed_error = {
+            "error_message": error_msg,
+            "error_type": error_type,
+            "error_details": str(e.__dict__) if hasattr(e, '__dict__') else None,
+        }
+        
         if "403" in error_msg or "Invalid token" in error_msg:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Nautobot connection failed: Invalid or missing API token. Please check Nautobot settings.",
+                detail=f"Nautobot connection failed: Invalid or missing API token. Please check Nautobot settings. Details: {detailed_error}",
             )
         elif "ConnectionError" in error_msg or "timeout" in error_msg.lower():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Nautobot connection failed: Cannot reach Nautobot server. Please check Nautobot URL and connectivity.",
+                detail=f"Nautobot connection failed: Cannot reach Nautobot server. Please check Nautobot URL and connectivity. Details: {detailed_error}",
             )
         else:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"Nautobot connection failed: {error_msg}",
+                detail=f"Nautobot connection failed: {error_msg}. Error type: {error_type}. Details: {detailed_error}",
             )

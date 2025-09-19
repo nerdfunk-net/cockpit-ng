@@ -252,23 +252,49 @@ export function ScanAndAddPage() {
       return true
     } catch (error) {
       console.error('Nautobot connectivity check failed:', error)
-      // Check if it's a 503 error with specific Nautobot connectivity message
-      if (error instanceof Error && error.message.includes('503')) {
+      
+      // Parse the error message to extract the actual error details
+      let errorDetail = ''
+      if (error instanceof Error) {
         const errorMsg = error.message
-        if (errorMsg.includes('Invalid or missing API token')) {
-          setStatusMessage({
-            type: 'error',
-            message: 'Nautobot connection failed: Invalid or missing API token. Please check Nautobot settings in the administration panel.'
-          })
-        } else if (errorMsg.includes('Cannot reach Nautobot server')) {
-          setStatusMessage({
-            type: 'error',
-            message: 'Nautobot connection failed: Cannot reach Nautobot server. Please check Nautobot URL and network connectivity.'
-          })
+        
+        // Check if it's a 503 error with JSON error response
+        if (errorMsg.includes('503')) {
+          // Try to extract JSON from the error message
+          const jsonMatch = errorMsg.match(/API Error 503: (.+)$/)
+          if (jsonMatch) {
+            try {
+              const errorData = JSON.parse(jsonMatch[1])
+              errorDetail = errorData.detail || errorMsg
+            } catch {
+              // If JSON parsing fails, use the original message
+              errorDetail = errorMsg
+            }
+          } else {
+            errorDetail = errorMsg
+          }
+          
+          // Check for specific error types in the detail message
+          if (errorDetail.includes('Invalid or missing API token')) {
+            setStatusMessage({
+              type: 'error',
+              message: 'Nautobot connection failed: Invalid or missing API token. Please check Nautobot settings in the administration panel.'
+            })
+          } else if (errorDetail.includes('Cannot reach Nautobot server')) {
+            setStatusMessage({
+              type: 'error',
+              message: 'Nautobot connection failed: Cannot reach Nautobot server. Please check Nautobot URL and network connectivity.'
+            })
+          } else {
+            setStatusMessage({
+              type: 'error',
+              message: errorDetail.startsWith('Nautobot connection failed:') ? errorDetail : `Nautobot connection failed: ${errorDetail}`
+            })
+          }
         } else {
           setStatusMessage({
             type: 'error',
-            message: `Nautobot connection failed: ${errorMsg}`
+            message: `Failed to connect to Nautobot: ${errorMsg}`
           })
         }
       } else {
