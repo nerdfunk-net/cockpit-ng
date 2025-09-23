@@ -18,7 +18,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator
+  DropdownMenuSeparator,
+  DropdownMenuItem
 } from '@/components/ui/dropdown-menu'
 
 interface Device {
@@ -29,8 +30,18 @@ interface Device {
   location: string
   checkmk_status: string
   diff?: string
-  normalized_config?: Record<string, unknown>
-  checkmk_config?: Record<string, unknown>
+  normalized_config?: {
+    folder?: string
+    attributes?: Record<string, unknown>
+  }
+  checkmk_config?: {
+    folder?: string
+    attributes?: Record<string, unknown>
+    effective_attributes?: Record<string, unknown> | null
+    is_cluster?: boolean
+    is_offline?: boolean
+    cluster_nodes?: unknown[] | null
+  }
   result_data?: Record<string, unknown>
   error_message?: string
   processed_at?: string
@@ -58,9 +69,35 @@ interface DeviceResult {
   result_data?: {
     data?: {
       result?: unknown
+      normalized_config?: {
+        folder?: string
+        attributes?: Record<string, unknown>
+      }
+      checkmk_config?: {
+        folder?: string
+        attributes?: Record<string, unknown>
+        effective_attributes?: Record<string, unknown> | null
+        is_cluster?: boolean
+        is_offline?: boolean
+        cluster_nodes?: unknown[] | null
+      }
+      diff?: string
     }
     comparison_result?: unknown
     status?: string
+    normalized_config?: {
+      folder?: string
+      attributes?: Record<string, unknown>
+    }
+    checkmk_config?: {
+      folder?: string
+      attributes?: Record<string, unknown>
+      effective_attributes?: Record<string, unknown> | null
+      is_cluster?: boolean
+      is_offline?: boolean
+      cluster_nodes?: unknown[] | null
+    }
+    diff?: string
   }
   error_message?: string
   processed_at?: string
@@ -92,6 +129,41 @@ const getSiteFromDevice = (device: Device, defaultSite: string = 'cmk'): string 
   
   // If no site found, return the default site
   return defaultSite
+}
+
+// Helper function to render config comparison
+const renderConfigComparison = (nautobot: { attributes?: Record<string, unknown> }, checkmk: { attributes?: Record<string, unknown> }, ignoredAttributes: string[] = []) => {
+  const allKeys = new Set([
+    ...Object.keys(nautobot?.attributes || {}),
+    ...Object.keys(checkmk?.attributes || {})
+  ])
+
+  return Array.from(allKeys).map(key => {
+    const nautobotValue = nautobot?.attributes?.[key]
+    const checkmkValue = checkmk?.attributes?.[key]
+    const isDifferent = JSON.stringify(nautobotValue) !== JSON.stringify(checkmkValue)
+    const nautobotMissing = nautobotValue === undefined
+    const checkmkMissing = checkmkValue === undefined
+    const isIgnored = ignoredAttributes.includes(key)
+
+    return {
+      key,
+      nautobotValue,
+      checkmkValue,
+      isDifferent,
+      nautobotMissing,
+      checkmkMissing,
+      isIgnored
+    }
+  })
+}
+
+// Helper to format value for display
+const formatValue = (value: unknown): string => {
+  if (value === undefined) return '(missing)'
+  if (value === null) return '(null)'
+  if (typeof value === 'object') return JSON.stringify(value, null, 2)
+  return String(value)
 }
 
 export function CheckMKSyncDevicesPage() {
@@ -356,7 +428,11 @@ export function CheckMKSyncDevicesPage() {
           result_data: result.result_data,
           error_message: result.error_message,
           processed_at: result.processed_at,
-          checkmk_status: result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown' // Extract result from data.result
+          checkmk_status: result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown', // Extract result from data.result
+          // Extract normalized_config and checkmk_config from result_data
+          normalized_config: result.result_data?.data?.normalized_config || result.result_data?.normalized_config,
+          checkmk_config: result.result_data?.data?.checkmk_config || result.result_data?.checkmk_config,
+          diff: result.result_data?.data?.diff || result.result_data?.diff
         }))
         
         console.log('Converted devices sample:', devices[0])
@@ -869,7 +945,11 @@ export function CheckMKSyncDevicesPage() {
           result_data: result.result_data,
           error_message: result.error_message,
           processed_at: result.processed_at,
-          checkmk_status: result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown' // Extract result from data.result
+          checkmk_status: result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown', // Extract result from data.result
+          // Extract normalized_config and checkmk_config from result_data
+          normalized_config: result.result_data?.data?.normalized_config || result.result_data?.normalized_config,
+          checkmk_config: result.result_data?.data?.checkmk_config || result.result_data?.checkmk_config,
+          diff: result.result_data?.data?.diff || result.result_data?.diff
         }))
         
         console.log('Converted devices in handleViewDiff sample:', devices[0])
@@ -1437,8 +1517,22 @@ export function CheckMKSyncDevicesPage() {
                               <ChevronDown className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" className="w-40">
+                          <DropdownMenuContent align="start" className="w-32">
                             <DropdownMenuLabel className="text-xs">Filter by Role</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="cursor-pointer text-red-600 hover:bg-red-50"
+                              onSelect={() => {
+                                const resetRoleFilters = availableRoles.reduce((acc: Record<string, boolean>, role: string) => {
+                                  acc[role] = false
+                                  return acc
+                                }, {})
+                                setRoleFilters(resetRoleFilters)
+                                setCurrentPage(1)
+                              }}
+                            >
+                              Deselect all
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             {availableRoles.map((role) => (
                               <DropdownMenuCheckboxItem
@@ -1472,8 +1566,22 @@ export function CheckMKSyncDevicesPage() {
                               <ChevronDown className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" className="w-40">
+                          <DropdownMenuContent align="start" className="w-32">
                             <DropdownMenuLabel className="text-xs">Filter by Status</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="cursor-pointer text-red-600 hover:bg-red-50"
+                              onSelect={() => {
+                                const resetStatusFilters = availableStatuses.reduce((acc: Record<string, boolean>, status: string) => {
+                                  acc[status] = false
+                                  return acc
+                                }, {})
+                                setStatusFilters(resetStatusFilters)
+                                setCurrentPage(1)
+                              }}
+                            >
+                              Deselect all
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             {availableStatuses.map((status) => (
                               <DropdownMenuCheckboxItem
@@ -1509,6 +1617,20 @@ export function CheckMKSyncDevicesPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start" className="w-40">
                             <DropdownMenuLabel className="text-xs">Filter by Location</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="cursor-pointer text-red-600 hover:bg-red-50"
+                              onSelect={() => {
+                                const resetLocationFilters = availableLocations.reduce((acc: Record<string, boolean>, location: string) => {
+                                  acc[location] = false
+                                  return acc
+                                }, {})
+                                setLocationFilters(resetLocationFilters)
+                                setCurrentPage(1)
+                              }}
+                            >
+                              Deselect all
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             {availableLocations.map((location) => (
                               <DropdownMenuCheckboxItem
@@ -1954,18 +2076,225 @@ export function CheckMKSyncDevicesPage() {
       </Dialog>
 
       {/* Show Diff Dialog */}
-      <Dialog open={!!selectedDeviceForDiff} onOpenChange={(open) => !open && setSelectedDeviceForDiff(null)}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={!!selectedDeviceForDiff} onOpenChange={(open) => {
+        if (!open) setSelectedDeviceForDiff(null);
+        if (open && selectedDeviceForDiff) {
+          console.log('=== DIFF MODAL DEBUG ===', {
+            device: selectedDeviceForDiff,
+            normalized_config: selectedDeviceForDiff.normalized_config,
+            checkmk_config: selectedDeviceForDiff.checkmk_config,
+            diff: selectedDeviceForDiff.diff,
+            result_data: selectedDeviceForDiff.result_data
+          });
+        }
+      }}>
+        <DialogContent className="max-w-[95vw] w-[95vw] max-h-[90vh] overflow-hidden flex flex-col" style={{ resize: 'both', minWidth: '800px', minHeight: '500px' }}>
           <DialogHeader>
-            <DialogTitle>Configuration Differences: {selectedDeviceForDiff?.name}</DialogTitle>
+            <DialogTitle>
+              Device Comparison - {selectedDeviceForDiff?.name}
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-semibold mb-2">Differences Found</h3>
-              <div className="bg-yellow-50 border border-yellow-200 rounded p-4">
-                <p className="text-sm whitespace-pre-wrap">{selectedDeviceForDiff?.diff || 'No differences found'}</p>
+          
+          <div className="flex-1 overflow-y-auto">
+            {selectedDeviceForDiff ? (
+              <div className="space-y-4">
+                {/* Header with status */}
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    Generated: {selectedDeviceForDiff.processed_at ? new Date(selectedDeviceForDiff.processed_at).toLocaleString() : 'Now'}
+                  </div>
+                  <Badge 
+                    variant={selectedDeviceForDiff.checkmk_status === 'equal' ? 'default' : 'secondary'}
+                    className={
+                      selectedDeviceForDiff.checkmk_status === 'equal' ? 'bg-green-100 text-green-800' : 
+                      selectedDeviceForDiff.checkmk_status === 'missing' || selectedDeviceForDiff.checkmk_status === 'host_not_found' ? 'bg-red-100 text-red-800' :
+                      'bg-orange-100 text-orange-800'
+                    }
+                  >
+                    {selectedDeviceForDiff.checkmk_status === 'equal' ? '✓ Configs Match' : 
+                     selectedDeviceForDiff.checkmk_status === 'missing' || selectedDeviceForDiff.checkmk_status === 'host_not_found' ? '❌ Host Not Found in CheckMK' :
+                     '⚠ Differences Found'}
+                  </Badge>
+                </div>
+
+                {/* Handle host not found case */}
+                {(selectedDeviceForDiff.checkmk_status === 'missing' || selectedDeviceForDiff.checkmk_status === 'host_not_found') ? (
+                  <div className="bg-red-50 rounded-lg p-6 border border-red-200">
+                    <div className="text-center">
+                      <div className="text-red-600 text-lg mb-3">🚫 Host Not Found</div>
+                      <p className="text-red-800 mb-4">{selectedDeviceForDiff.error_message || 'This device exists in Nautobot but has not been synchronized to CheckMK yet.'}</p>
+                      
+                      <div className="bg-white rounded-lg p-4 border border-red-200 text-left">
+                        <h4 className="font-semibold mb-2 text-red-800">Expected Configuration (Nautobot)</h4>
+                        <div className="space-y-2 text-sm">
+                          {selectedDeviceForDiff.normalized_config && (
+                            <>
+                              <div><strong>Folder:</strong> <code className="bg-red-100 px-2 py-1 rounded">{selectedDeviceForDiff.normalized_config.folder || 'N/A'}</code></div>
+                              <div><strong>Attributes:</strong></div>
+                              <pre className="bg-red-100 p-3 rounded text-xs font-mono overflow-auto max-h-40">
+                                {JSON.stringify(selectedDeviceForDiff.normalized_config.attributes || {}, null, 2)}
+                              </pre>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <p className="text-red-700 text-sm mt-4">
+                        Use the Add button to create this host in CheckMK.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Folder Comparison */}
+                    {selectedDeviceForDiff.normalized_config && selectedDeviceForDiff.checkmk_config && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h4 className="font-semibold mb-3">Folder Configuration</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <div className="text-xs font-medium text-blue-600 mb-1">Nautobot (Expected)</div>
+                            <div className="bg-blue-50 p-2 rounded text-sm font-mono">
+                              {selectedDeviceForDiff.normalized_config?.folder || 'N/A'}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs font-medium text-purple-600 mb-1">CheckMK (Actual)</div>
+                            <div className="bg-purple-50 p-2 rounded text-sm font-mono">
+                              {selectedDeviceForDiff.checkmk_config?.folder || '(not found)'}
+                            </div>
+                          </div>
+                        </div>
+                        {selectedDeviceForDiff.normalized_config?.folder !== selectedDeviceForDiff.checkmk_config?.folder && (
+                          <div className="mt-2 text-xs text-orange-600">⚠ Folder paths differ</div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Attributes Comparison */}
+                    {selectedDeviceForDiff.normalized_config && selectedDeviceForDiff.checkmk_config && (
+                      <div className="bg-white border rounded-lg">
+                        <div className="bg-gray-50 px-4 py-3 border-b">
+                          <h4 className="font-semibold">Attributes Comparison</h4>
+                          <div className="text-xs text-gray-600 mt-1">Side-by-side comparison of device attributes</div>
+                        </div>
+                        
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b bg-gray-25">
+                                <th className="text-left p-3 font-medium text-gray-700 w-48">Attribute</th>
+                                <th className="text-left p-3 font-medium text-blue-600 w-1/3">Nautobot (Expected)</th>
+                                <th className="text-left p-3 font-medium text-purple-600 w-1/3">CheckMK (Actual)</th>
+                                <th className="text-left p-3 font-medium text-gray-700 w-32">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {renderConfigComparison(
+                                selectedDeviceForDiff.normalized_config,
+                                selectedDeviceForDiff.checkmk_config,
+                                [] // No ignored attributes available in this context
+                              ).map(({ key, nautobotValue, checkmkValue, isDifferent, nautobotMissing, checkmkMissing, isIgnored }) => (
+                                <tr 
+                                  key={key} 
+                                  className={`border-b transition-colors ${
+                                    isIgnored
+                                      ? 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200'
+                                      : nautobotMissing || checkmkMissing || isDifferent 
+                                        ? 'bg-red-50 hover:bg-red-100 border-red-200' 
+                                        : 'bg-green-50 hover:bg-green-100 border-green-200'
+                                  }`}
+                                >
+                                  <td className="p-3 font-mono text-sm font-medium w-48">{key}</td>
+                                  <td className={`p-3 text-sm w-1/3 ${nautobotMissing ? 'text-gray-400 italic' : ''}`}>
+                                    <div className="bg-blue-50 p-2 rounded font-mono text-xs overflow-auto max-h-32">
+                                      <pre className="whitespace-pre-wrap break-words">
+                                        {formatValue(nautobotValue)}
+                                      </pre>
+                                    </div>
+                                  </td>
+                                  <td className={`p-3 text-sm w-1/3 ${checkmkMissing ? 'text-gray-400 italic' : ''}`}>
+                                    <div className="bg-purple-50 p-2 rounded font-mono text-xs overflow-auto max-h-32">
+                                      <pre className="whitespace-pre-wrap break-words">
+                                        {formatValue(checkmkValue)}
+                                      </pre>
+                                    </div>
+                                  </td>
+                                  <td className="p-3 text-xs">
+                                    {isIgnored ? (
+                                      <Badge variant="outline" className="text-yellow-700 border-yellow-400 bg-yellow-100">Ignored</Badge>
+                                    ) : nautobotMissing ? (
+                                      <Badge variant="outline" className="text-red-700 border-red-400 bg-red-100">Only in CheckMK</Badge>
+                                    ) : checkmkMissing ? (
+                                      <Badge variant="outline" className="text-red-700 border-red-400 bg-red-100">Missing in CheckMK</Badge>
+                                    ) : isDifferent ? (
+                                      <Badge variant="outline" className="text-red-700 border-red-400 bg-red-100">Different</Badge>
+                                    ) : (
+                                      <Badge variant="outline" className="text-green-700 border-green-400 bg-green-100">Equal</Badge>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Fallback: Show raw data if structured comparison is not available */}
+                    {(!selectedDeviceForDiff.normalized_config || !selectedDeviceForDiff.checkmk_config) && (
+                      <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                        <h4 className="font-semibold mb-2 text-yellow-800">Raw Comparison Data</h4>
+                        <div className="space-y-2 text-sm">
+                          <div>
+                            <strong>Status:</strong> {selectedDeviceForDiff.checkmk_status}
+                          </div>
+                          {selectedDeviceForDiff.result_data && (
+                            <div>
+                              <strong>Result Data:</strong>
+                              <pre className="bg-white p-3 rounded text-xs font-mono overflow-auto max-h-40 mt-1">
+                                {JSON.stringify(selectedDeviceForDiff.result_data, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* CheckMK Additional Info */}
+                    {selectedDeviceForDiff.checkmk_config && (
+                      selectedDeviceForDiff.checkmk_config.is_cluster || 
+                      selectedDeviceForDiff.checkmk_config.is_offline || 
+                      selectedDeviceForDiff.checkmk_config.cluster_nodes
+                    ) && (
+                      <div className="bg-purple-50 rounded-lg p-4">
+                        <h4 className="font-semibold mb-2 text-purple-800">CheckMK Additional Information</h4>
+                        <div className="space-y-1 text-sm">
+                          <div>Is Cluster: {selectedDeviceForDiff.checkmk_config.is_cluster ? 'Yes' : 'No'}</div>
+                          <div>Is Offline: {selectedDeviceForDiff.checkmk_config.is_offline ? 'Yes' : 'No'}</div>
+                          {selectedDeviceForDiff.checkmk_config.cluster_nodes && (
+                            <div>Cluster Nodes: {JSON.stringify(selectedDeviceForDiff.checkmk_config.cluster_nodes)}</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Raw diff text fallback */}
+                    {selectedDeviceForDiff.diff && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h4 className="font-semibold mb-2 text-gray-800">Raw Differences</h4>
+                        <pre className="bg-white p-3 rounded text-xs font-mono overflow-auto max-h-40 border">
+                          {selectedDeviceForDiff.diff}
+                        </pre>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
-            </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No diff data available
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
