@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { RefreshCw, Search, Eye, GitCompare, RotateCw, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown, BarChart3, Download } from 'lucide-react'
+import { RefreshCw, Search, Eye, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown, BarChart3, Download } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import {
@@ -172,7 +172,6 @@ export function CheckMKSyncDevicesPage() {
   const [devices, setDevices] = useState<Device[]>([])
   const [selectedDevices, setSelectedDevices] = useState<Set<string>>(new Set())
   const [addingDevices, setAddingDevices] = useState<Set<string>>(new Set())
-  const [syncingDevices, setSyncingDevices] = useState<Set<string>>(new Set())
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(25)
   const [filters, setFilters] = useState({
@@ -1248,72 +1247,6 @@ export function CheckMKSyncDevicesPage() {
     }
   }
 
-  const handleSyncDevice = async (device: Device) => {
-    if (!token) {
-      setStatusMessage({ type: 'error', message: 'Authentication required' })
-      setShowStatusModal(true)
-      return
-    }
-
-    // Add device to syncing set
-    setSyncingDevices(prev => new Set(prev.add(device.id)))
-    
-    try {
-      const response = await fetch(`/api/proxy/nb2cmk/device/${device.id}/update`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        setStatusMessage({ 
-          type: 'success', 
-          message: `Successfully synced ${result.hostname} in CheckMK${result.folder_changed ? ' (moved to new folder)' : ''}`
-        })
-        setShowStatusModal(true)
-        
-        // Update device status to 'equal' since it's now synced
-        setDevices(prevDevices => 
-          prevDevices.map(d => 
-            d.id === device.id 
-              ? { ...d, checkmk_status: 'equal' }
-              : d
-          )
-        )
-        
-        // Auto-hide success message after 3 seconds
-        setTimeout(() => {
-          setStatusMessage(null)
-          setShowStatusModal(false)
-        }, 3000)
-      } else {
-        const errorData = await response.json()
-        setStatusMessage({ 
-          type: 'error', 
-          message: `Failed to sync device: ${errorData.detail || 'Unknown error'}`
-        })
-        setShowStatusModal(true)
-      }
-    } catch (error) {
-      console.error('Error syncing device:', error)
-      setStatusMessage({ 
-        type: 'error', 
-        message: 'Error syncing device in CheckMK'
-      })
-      setShowStatusModal(true)
-    } finally {
-      // Remove device from syncing set
-      setSyncingDevices(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(device.id)
-        return newSet
-      })
-    }
-  }
-
   // Filter devices based on column filters
   const filteredDevices = useMemo(() => {
     return devices.filter(device => {
@@ -1763,12 +1696,12 @@ export function CheckMKSyncDevicesPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          {/* View Button - Always visible and enabled */}
+                          {/* Eye Button - Always visible for diff comparison */}
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setSelectedDeviceForView(device)}
-                            title="View device details"
+                            onClick={() => setSelectedDeviceForDiff(device)}
+                            title="Show device comparison"
                             className="h-8 w-8 p-0"
                           >
                             <Eye className="h-4 w-4" />
@@ -1803,34 +1736,6 @@ export function CheckMKSyncDevicesPage() {
                             </Button>
                           )}
 
-                          {/* Compare and old Sync Buttons - Only for diff devices */}
-                          {device.checkmk_status === 'diff' && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setSelectedDeviceForDiff(device)}
-                                title="Show differences"
-                                className="h-8 w-8 p-0"
-                              >
-                                <GitCompare className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleSyncDevice(device)}
-                                disabled={syncingDevices.has(device.id)}
-                                title="Sync device changes"
-                                className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700"
-                              >
-                                {syncingDevices.has(device.id) ? (
-                                  <RefreshCw className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <RotateCw className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </>
-                          )}
                         </div>
                       </td>
                     </tr>
