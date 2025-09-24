@@ -1419,10 +1419,10 @@ export function CheckMKSyncDevicesPage() {
                 <tbody>
                   <tr>
                     {/* Empty cell for checkbox column */}
-                    <td className="px-4 py-3 w-12"></td>
+                    <td className="pl-4 pr-2 py-3 w-8 text-left"></td>
 
                     {/* Device Name Filter */}
-                    <td className="px-4 py-3 w-48">
+                    <td className="pl-4 pr-2 py-3 w-48">
                       <div className="space-y-1">
                         <Label className="text-xs font-medium text-gray-600">Device Name</Label>
                         <Input
@@ -1435,7 +1435,7 @@ export function CheckMKSyncDevicesPage() {
                     </td>
 
                     {/* Role Filter */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 w-32">
                       <div className="space-y-1">
                         <Label className="text-xs font-medium text-gray-600">Role</Label>
                         <DropdownMenu>
@@ -1484,7 +1484,7 @@ export function CheckMKSyncDevicesPage() {
                     </td>
 
                     {/* Status Filter */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 w-28">
                       <div className="space-y-1">
                         <Label className="text-xs font-medium text-gray-600">Status</Label>
                         <DropdownMenu>
@@ -1533,7 +1533,7 @@ export function CheckMKSyncDevicesPage() {
                     </td>
 
                     {/* Location Filter */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 w-40">
                       <div className="space-y-1">
                         <Label className="text-xs font-medium text-gray-600">Location</Label>
                         <DropdownMenu>
@@ -1582,7 +1582,7 @@ export function CheckMKSyncDevicesPage() {
                     </td>
 
                     {/* CheckMK Status Filter */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 w-32">
                       <div className="space-y-1">
                         <Label className="text-xs font-medium text-gray-600">CheckMK Status</Label>
                         <DropdownMenu>
@@ -1642,18 +1642,18 @@ export function CheckMKSyncDevicesPage() {
             <table className="w-full">
               <thead className="bg-gray-100 border-b">
                 <tr>
-                  <th className="px-4 py-3 text-left">
+                  <th className="pl-4 pr-2 py-3 w-8 text-left">
                     <Checkbox
                       checked={currentDevices.length > 0 && currentDevices.every(device => selectedDevices.has(device.id))}
                       onCheckedChange={handleSelectAll}
                     />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Device Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Role</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Location</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">CheckMK</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Actions</th>
+                  <th className="pl-4 pr-2 py-3 w-48 text-left text-xs font-medium text-gray-600 uppercase">Device Name</th>
+                  <th className="px-4 py-3 w-32 text-left text-xs font-medium text-gray-600 uppercase">Role</th>
+                  <th className="px-4 py-3 w-28 text-left text-xs font-medium text-gray-600 uppercase">Status</th>
+                  <th className="pl-12 pr-4 py-3 w-40 text-left text-xs font-medium text-gray-600 uppercase">Location</th>
+                  <th className="pl-12 pr-4 py-3 w-32 text-left text-xs font-medium text-gray-600 uppercase">CheckMK</th>
+                  <th className="pl-16 pr-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">{devices.length === 0 ? (
@@ -1671,7 +1671,7 @@ export function CheckMKSyncDevicesPage() {
                 ) : (
                   currentDevices.map((device, index) => (
                     <tr key={device.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="px-4 py-3">
+                      <td className="pl-4 pr-2 py-3 w-8 text-left">
                         <Checkbox
                           checked={selectedDevices.has(device.id)}
                           onCheckedChange={(checked) => 
@@ -1679,22 +1679,22 @@ export function CheckMKSyncDevicesPage() {
                           }
                         />
                       </td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                      <td className="pl-4 pr-2 py-3 w-48 text-sm font-medium text-gray-900">
                         {device.name}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
+                      <td className="px-4 py-3 w-32 text-sm text-gray-600">
                         {device.role}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 w-28 text-sm text-gray-600">
                         {getStatusBadge(device.status)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
+                      <td className="pl-12 pr-4 py-3 w-40 text-sm text-gray-600">
                         {device.location}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="pl-12 pr-4 py-3 w-32">
                         {getCheckMKStatusBadge(device.checkmk_status)}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="pl-16 pr-4 py-3">
                         <div className="flex items-center gap-1">
                           {/* Eye Button - Always visible for diff comparison */}
                           <Button
