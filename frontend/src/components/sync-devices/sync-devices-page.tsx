@@ -6,7 +6,7 @@ import { useApi } from '@/hooks/use-api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -23,7 +23,6 @@ import {
   AlertCircle, 
   Info, 
   X,
-  Filter,
   RotateCcw
 } from 'lucide-react'
 
@@ -85,7 +84,7 @@ interface TableFilters {
   deviceName: string
   role: string
   location: string
-  deviceType: string
+  ipAddress: string
   status: string
 }
 
@@ -117,7 +116,7 @@ export function SyncDevicesPage() {
     deviceName: '',
     role: 'all',
     location: 'all',
-    deviceType: 'all',
+    ipAddress: '',
     status: 'all'
   })
 
@@ -138,7 +137,6 @@ export function SyncDevicesPage() {
     ipAddressStatuses: [] as DropdownOption[],
     roles: [] as DropdownOption[],
     locations: [] as DropdownOption[],
-    deviceTypes: [] as DropdownOption[],
     statuses: [] as DropdownOption[]
   })
 
@@ -382,13 +380,11 @@ export function SyncDevicesPage() {
   const extractFilterOptions = (deviceList: Device[]) => {
     const roles = new Set<string>()
     const locations = new Set<string>()
-    const deviceTypes = new Set<string>()
     const statuses = new Set<string>()
 
     deviceList.forEach(device => {
       if (device.role?.name) roles.add(device.role.name)
       if (device.location?.name) locations.add(device.location.name)
-      if (device.device_type?.model) deviceTypes.add(device.device_type.model)
       if (device.status?.name) statuses.add(device.status.name)
     })
 
@@ -396,7 +392,6 @@ export function SyncDevicesPage() {
       ...prev,
       roles: Array.from(roles).map(name => ({ id: name, name })),
       locations: Array.from(locations).map(name => ({ id: name, name })),
-      deviceTypes: Array.from(deviceTypes).map(name => ({ id: name, name })),
       statuses: Array.from(statuses).map(name => ({ id: name, name }))
     }))
   }
@@ -416,8 +411,10 @@ export function SyncDevicesPage() {
     if (filters.location && filters.location !== 'all') {
       filtered = filtered.filter(device => device.location?.name === filters.location)
     }
-    if (filters.deviceType && filters.deviceType !== 'all') {
-      filtered = filtered.filter(device => device.device_type?.model === filters.deviceType)
+    if (filters.ipAddress) {
+      filtered = filtered.filter(device => 
+        device.primary_ip4?.address?.toLowerCase().includes(filters.ipAddress.toLowerCase())
+      )
     }
     if (filters.status && filters.status !== 'all') {
       filtered = filtered.filter(device => device.status?.name === filters.status)
@@ -444,7 +441,7 @@ export function SyncDevicesPage() {
       deviceName: '',
       role: 'all',
       location: 'all',
-      deviceType: 'all',
+      ipAddress: '',
       status: 'all'
     })
   }
@@ -793,154 +790,164 @@ export function SyncDevicesPage() {
             </div>
             <div className="p-0">
               {/* Filters Row */}
-              <div className="bg-gray-50 border-b p-4">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                  {/* Device Name Filter */}
-                  <div className="space-y-1">
-                    <Label className="text-xs font-medium text-gray-600">Device Name</Label>
-                    <Input
-                      placeholder="Filter by name..."
-                      value={filters.deviceName}
-                      onChange={(e) => handleFilterChange('deviceName', e.target.value)}
-                      className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
-                    />
-                  </div>
+              <div className="bg-gray-50 border-b">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <tbody>
+                      <tr>
+                        {/* Empty cell for checkbox column */}
+                        <td className="pl-4 pr-2 py-3 w-8 text-left"></td>
 
-                  {/* Role Filter */}
-                  <div className="space-y-1">
-                    <Label className="text-xs font-medium text-gray-600">Role</Label>
-                    <Select value={filters.role} onValueChange={(value) => handleFilterChange('role', value)}>
-                      <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                        <SelectValue placeholder="All Roles" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Roles</SelectItem>
-                        {dropdownOptions.roles.map(role => (
-                          <SelectItem key={role.id} value={role.name}>{role.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                        {/* Device Name Filter */}
+                        <td className="pl-4 pr-2 py-3 w-48">
+                          <div className="space-y-1">
+                            <Label className="text-xs font-medium text-gray-600">Device Name</Label>
+                            <Input
+                              placeholder="Filter by name..."
+                              value={filters.deviceName}
+                              onChange={(e) => handleFilterChange('deviceName', e.target.value)}
+                              className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                            />
+                          </div>
+                        </td>
 
-                  {/* Location Filter - hierarchical searchable dropdown (LOCATION_FILTER.md) */}
-                  <div className="space-y-1 relative" ref={locationContainerRef}>
-                    <Label className="text-xs font-medium text-gray-600">Location</Label>
-                    <div>
-                      <Input
-                        placeholder="Filter by location..."
-                        value={locationSearch || (selectedLocationId ? locationsList.find(l => l.id === selectedLocationId)?.hierarchicalPath || '' : '')}
-                        onChange={(e) => {
-                          const q = e.target.value
-                          setLocationSearch(q)
-                          if (!q.trim()) setLocationFiltered(locationsList)
-                          else setLocationFiltered(locationsList.filter(l => (l.hierarchicalPath || '').toLowerCase().includes(q.toLowerCase())))
-                          setShowLocationDropdown(true)
-                        }}
-                        onFocus={() => setShowLocationDropdown(true)}
-                        className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
-                      />
-                      {showLocationDropdown && (
-                        <div className="absolute z-50 mt-1 left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                          {locationFiltered.length > 0 ? (
-                            locationFiltered.map(loc => (
-                              <div
-                                key={loc.id}
-                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
-                                onClick={() => {
-                                  setSelectedLocationId(loc.id)
-                                  setLocationSearch(loc.hierarchicalPath || loc.name)
-                                  setShowLocationDropdown(false)
-                                  // Apply filter by location name to existing filters model
-                                  handleFilterChange('location', loc.name)
+                        {/* IP Address Filter */}
+                        <td className="px-4 py-3 w-32">
+                          <div className="space-y-1">
+                            <Label className="text-xs font-medium text-gray-600">IP Address</Label>
+                            <Input
+                              placeholder="Filter by IP..."
+                              value={filters.ipAddress}
+                              onChange={(e) => handleFilterChange('ipAddress', e.target.value)}
+                              className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                            />
+                          </div>
+                        </td>
+
+                        {/* Role Filter */}
+                        <td className="pl-8 pr-4 py-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs font-medium text-gray-600">Role</Label>
+                            <Select value={filters.role} onValueChange={(value) => handleFilterChange('role', value)}>
+                              <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                                <SelectValue placeholder="All Roles" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Roles</SelectItem>
+                                {dropdownOptions.roles.map(role => (
+                                  <SelectItem key={role.id} value={role.name}>{role.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </td>
+
+                        {/* Location Filter - hierarchical searchable dropdown (LOCATION_FILTER.md) */}
+                        <td className="pl-4 pr-2 py-3 w-40">
+                          <div className="space-y-1 relative" ref={locationContainerRef}>
+                            <Label className="text-xs font-medium text-gray-600">Location</Label>
+                            <div>
+                              <Input
+                                placeholder="Filter by location..."
+                                value={locationSearch || (selectedLocationId ? locationsList.find(l => l.id === selectedLocationId)?.hierarchicalPath || '' : '')}
+                                onChange={(e) => {
+                                  const q = e.target.value
+                                  setLocationSearch(q)
+                                  if (!q.trim()) setLocationFiltered(locationsList)
+                                  else setLocationFiltered(locationsList.filter(l => (l.hierarchicalPath || '').toLowerCase().includes(q.toLowerCase())))
+                                  setShowLocationDropdown(true)
                                 }}
-                              >
-                                {loc.hierarchicalPath}
-                              </div>
-                            ))
-                          ) : (
-                            <div className="px-3 py-2 text-sm text-gray-500 italic">No locations found</div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Device Type Filter */}
-                  <div className="space-y-1">
-                    <Label className="text-xs font-medium text-gray-600">Device Type</Label>
-                    <Select value={filters.deviceType} onValueChange={(value) => handleFilterChange('deviceType', value)}>
-                      <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                        <SelectValue placeholder="All Types" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        {dropdownOptions.deviceTypes.map(type => (
-                          <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                                onFocus={() => setShowLocationDropdown(true)}
+                                className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                              />
+                              {showLocationDropdown && (
+                                <div className="absolute z-50 mt-1 left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                  {locationFiltered.length > 0 ? (
+                                    locationFiltered.map(loc => (
+                                      <div
+                                        key={loc.id}
+                                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                                        onClick={() => {
+                                          setSelectedLocationId(loc.id)
+                                          setLocationSearch(loc.hierarchicalPath || loc.name)
+                                          setShowLocationDropdown(false)
+                                          // Apply filter by location name to existing filters model
+                                          handleFilterChange('location', loc.name)
+                                        }}
+                                      >
+                                        {loc.hierarchicalPath}
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="px-3 py-2 text-sm text-gray-500 italic">No locations found</div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
 
                   {/* Status Filter */}
-                  <div className="space-y-1">
-                    <Label className="text-xs font-medium text-gray-600">Status</Label>
-                    <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
-                      <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                        <SelectValue placeholder="All Statuses" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        {dropdownOptions.statuses.map(status => (
-                          <SelectItem key={status.id} value={status.name}>{status.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
+                  <td className="px-4 py-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-medium text-gray-600">Status</Label>
+                      <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
+                        <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                          <SelectValue placeholder="All Statuses" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Statuses</SelectItem>
+                          {dropdownOptions.statuses.map(status => (
+                            <SelectItem key={status.id} value={status.name}>{status.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-              {/* Table */}
+        {/* Table */}
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-100 border-b">
                     <tr>
-                      <th className="px-4 py-3 text-left">
+                      <th className="pl-4 pr-2 py-3 w-8 text-left">
                         <Checkbox
                           checked={currentPageDevices.length > 0 && currentPageDevices.every(device => selectedDevices.has(device.id))}
                           onCheckedChange={handleSelectAll}
                         />
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Device Name</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">IP Address</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Role</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Location</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Device Type</th>
+                      <th className="pl-4 pr-2 py-3 w-48 text-left text-xs font-medium text-gray-600 uppercase">Device Name</th>
+                      <th className="px-4 py-3 w-32 text-left text-xs font-medium text-gray-600 uppercase">IP Address</th>
+                      <th className="pl-8 pr-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Role</th>
+                      <th className="pl-4 pr-2 py-3 w-40 text-left text-xs font-medium text-gray-600 uppercase">Location</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {currentPageDevices.map((device, index) => (
                       <tr key={device.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-4 py-3">
+                        <td className="pl-4 pr-2 py-3 w-8 text-left">
                           <Checkbox
                             checked={selectedDevices.has(device.id)}
                             onCheckedChange={(checked) => handleDeviceSelection(device.id, checked as boolean)}
                           />
                         </td>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                        <td className="pl-4 pr-2 py-3 w-48 text-sm font-medium text-gray-900">
                           {device.name}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
+                        <td className="px-4 py-3 w-32 text-sm text-gray-600">
                           {device.primary_ip4?.address || 'N/A'}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
+                        <td className="pl-8 pr-4 py-3 text-sm text-gray-600">
                           {device.role?.name || 'Unknown'}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
+                        <td className="pl-4 pr-2 py-3 w-40 text-sm text-gray-600">
                           {device.location?.name || 'Unknown'}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
-                          {device.device_type?.model || 'Unknown'}
                         </td>
                         <td className="px-4 py-3">
                           <Badge className={`text-white ${getStatusBadgeClass(device.status?.name || 'unknown')}`}>

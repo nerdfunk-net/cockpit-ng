@@ -1251,12 +1251,12 @@ export function CheckMKSyncDevicesPage() {
   const filteredDevices = useMemo(() => {
     return devices.filter(device => {
       // Check CheckMK status checkbox filters
-      const checkmkStatusMatch = 
+      const hasAnyCheckmkStatusFilter = checkmkStatusFilters.equal || checkmkStatusFilters.diff || checkmkStatusFilters.missing
+      const checkmkStatusMatch = hasAnyCheckmkStatusFilter && (
         (checkmkStatusFilters.equal && device.checkmk_status === 'equal') ||
         (checkmkStatusFilters.diff && device.checkmk_status === 'diff') ||
-        (checkmkStatusFilters.missing && device.checkmk_status === 'missing') ||
-        (!checkmkStatusFilters.equal && !checkmkStatusFilters.diff && !checkmkStatusFilters.missing) ||
-        (device.checkmk_status !== 'equal' && device.checkmk_status !== 'diff' && device.checkmk_status !== 'missing')
+        (checkmkStatusFilters.missing && (device.checkmk_status === 'missing' || device.checkmk_status === 'host_not_found'))
+      )
       
       // Check role checkbox filters
       const roleMatch = Object.keys(roleFilters).length === 0 || roleFilters[device.role] === true
