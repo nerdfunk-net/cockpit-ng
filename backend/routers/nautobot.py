@@ -135,6 +135,7 @@ async def get_devices(
     offset: Optional[int] = None,
     filter_type: Optional[str] = None,
     filter_value: Optional[str] = None,
+    reload: bool = False,
     current_user: dict = Depends(verify_admin_token),
 ):
     """Get list of devices from Nautobot with optional filtering and pagination.
@@ -144,15 +145,19 @@ async def get_devices(
         offset: Number of devices to skip (default: 0)
         filter_type: Type of filter ('name', 'location', 'prefix')
         filter_value: Value to filter by
+        reload: If True, bypass cache and reload from Nautobot (default: False)
     """
     try:
-        # Check cache first
+        # Check cache first (unless reload is requested)
         cache_key = _get_device_list_cache_key(filter_type, filter_value, limit, offset)
-        cached_result = _get_cached_device_list(cache_key)
-
-        if cached_result is not None:
-            logger.debug(f"Cache hit for devices list: {cache_key}")
-            return cached_result
+        
+        if not reload:
+            cached_result = _get_cached_device_list(cache_key)
+            if cached_result is not None:
+                logger.debug(f"Cache hit for devices list: {cache_key}")
+                return cached_result
+        else:
+            logger.debug(f"Reload requested, bypassing cache for: {cache_key}")
         # Build GraphQL query based on filters
         variables = {}
 

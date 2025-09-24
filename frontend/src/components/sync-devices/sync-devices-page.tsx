@@ -341,6 +341,31 @@ export function SyncDevicesPage() {
     }
   }
 
+  const reloadDevices = async () => {
+    try {
+      setStatusMessage({ type: 'info', message: 'Reloading devices from Nautobot...' })
+      
+      const data = await apiCall<{ devices: Device[] }>('nautobot/devices?reload=true')
+      
+      if (data?.devices) {
+        setDevices(data.devices)
+        extractFilterOptions(data.devices)
+        setStatusMessage({
+          type: 'success',
+          message: `Reloaded ${data.devices.length} devices successfully from Nautobot`
+        })
+      } else {
+        throw new Error('Invalid response format')
+      }
+    } catch (error) {
+      console.error('Error reloading devices:', error)
+      setStatusMessage({
+        type: 'error',
+        message: `Failed to reload devices: ${error instanceof Error ? error.message : 'Unknown error'}`
+      })
+    }
+  }
+
   const loadNamespaces = async () => {
     try {
       const data = await apiCall<DropdownOption[]>('nautobot/namespaces')
@@ -784,6 +809,16 @@ export function SyncDevicesPage() {
                   >
                     <RotateCcw className="h-3 w-3 mr-1" />
                     Clear Filters
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={reloadDevices}
+                    className="text-white hover:bg-white/20 text-xs h-6"
+                    disabled={isLoading}
+                  >
+                    <Search className="h-3 w-3 mr-1" />
+                    Load Devices
                   </Button>
                 </div>
               </div>
