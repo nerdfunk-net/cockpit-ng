@@ -133,7 +133,10 @@ class NautobotService:
                 verify=config["verify_ssl"],
             )
 
-            if response.status_code in [200, 201]:
+            if response.status_code in [200, 201, 204]:
+                # 204 No Content for successful DELETE operations has no response body
+                if response.status_code == 204:
+                    return {"status": "success", "message": "Resource deleted successfully"}
                 return response.json()
             else:
                 raise Exception(

@@ -41,3 +41,11 @@ class DeviceFilter(BaseModel):
     location: Optional[str] = None
     device_type: Optional[str] = None
     status: Optional[str] = None
+
+
+class OffboardDeviceRequest(BaseModel):
+    """Device offboarding request model."""
+
+    remove_primary_ip: bool = True
+    remove_interface_ips: bool = True
+    remove_from_checkmk: bool = True

@@ -13,6 +13,7 @@ from models.nautobot import (
     DeviceOnboardRequest,
     SyncNetworkDataRequest,
     DeviceFilter,
+    OffboardDeviceRequest,
 )
 from services.nautobot import nautobot_service
 from services.cache_service import cache_service
@@ -1341,3 +1342,458 @@ async def nautobot_health_check(current_user: dict = Depends(verify_token)):
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"Nautobot connection failed: {error_msg}. Error type: {error_type}. Details: {detailed_error}",
             )
+
+
+@router.get("/devices/{device_id}/details")
+async def get_device_details(
+    device_id: str,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get detailed device information using the comprehensive devices.md query."""
+    try:
+        username = (
+            current_user.get("username")
+            if isinstance(current_user, dict)
+            else current_user.username
+        )
+
+        # Start with a simplified query based on the working get_device method, then add more fields
+        query = """
+        query DeviceDetails($deviceId: ID!) {
+            device(id: $deviceId) {
+                id
+                name
+                hostname: name
+                asset_tag
+                serial
+                position
+                face
+                config_context
+                local_config_context_data
+                _custom_field_data
+                primary_ip4 {
+                    id
+                    address
+                    description
+                    ip_version
+                    host
+                    mask_length
+                    dns_name
+                    status {
+                        id
+                        name
+                    }
+                    parent {
+                        id
+                        prefix
+                    }
+                }
+                role {
+                    id
+                    name
+                }
+                device_type {
+                    id
+                    model
+                    manufacturer {
+                        id
+                        name
+                    }
+                }
+                platform {
+                    id
+                    name
+                    network_driver
+                    manufacturer {
+                        id
+                        name
+                    }
+                }
+                location {
+                    id
+                    name
+                    description
+                    parent {
+                        id
+                        name
+                    }
+                }
+                status {
+                    id
+                    name
+                }
+                interfaces {
+                    id
+                    name
+                    type
+                    enabled
+                    mtu
+                    mac_address
+                    description
+                    status {
+                        id
+                        name
+                    }
+                    ip_addresses {
+                        id
+                        address
+                        ip_version
+                        status {
+                            id
+                            name
+                        }
+                    }
+                    connected_interface {
+                        id
+                        name
+                        device {
+                            id
+                            name
+                        }
+                    }
+                    cable {
+                        id
+                        status {
+                            id
+                            name
+                        }
+                    }
+                    tagged_vlans {
+                        id
+                        name
+                        vid
+                    }
+                    untagged_vlan {
+                        id
+                        name
+                        vid
+                    }
+                }
+                console_ports {
+                    id
+                    name
+                    type
+                    description
+                }
+                console_server_ports {
+                    id
+                    name
+                    type
+                    description
+                }
+                power_ports {
+                    id
+                    name
+                    type
+                    description
+                }
+                power_outlets {
+                    id
+                    name
+                    type
+                    description
+                }
+                secrets_group {
+                    id
+                    name
+                }
+                tags {
+                    id
+                    name
+                    color
+                }
+            }
+        }
+        """
+        variables = {"deviceId": device_id}
+        result = await nautobot_service.graphql_query(query, variables)
+
+        if "errors" in result:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"GraphQL errors: {result['errors']}",
+            )
+
+        device = result["data"]["device"]
+        if not device:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Device {device_id} not found",
+            )
+
+        # Cache the device details
+        cache_key = f"nautobot:device_details:{device_id}"
+        cache_service.set(cache_key, device, DEVICE_CACHE_TTL)
+
+        return device
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching device details for {device_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch device details: {str(e)}",
+        )
+
+
+@router.delete("/devices/{device_id}")
+async def delete_device(
+    device_id: str,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Delete a device from Nautobot."""
+    try:
+        # Use REST API to delete the device
+        result = await nautobot_service.rest_request(
+            f"dcim/devices/{device_id}/",
+            method="DELETE"
+        )
+
+        # Clear device from cache
+        cache_key = _get_device_cache_key(device_id)
+        cache_service.delete(cache_key)
+
+        # Clear device details cache
+        details_cache_key = f"nautobot:device_details:{device_id}"
+        cache_service.delete(details_cache_key)
+
+        # Clear device list caches to force refresh
+        cache_keys_to_clear = [
+            "nautobot:devices:list:all",
+        ]
+        for key in cache_keys_to_clear:
+            cache_service.delete(key)
+
+        return {
+            "success": True,
+            "message": f"Device {device_id} deleted successfully",
+            "device_id": device_id
+        }
+
+    except Exception as e:
+        logger.error(f"Error deleting device {device_id}: {str(e)}")
+        if "404" in str(e) or "Not Found" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Device {device_id} not found",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete device: {str(e)}",
+        )
+
+
+@router.delete("/ip-address/{ip_id}")
+async def delete_ip_address(
+    ip_id: str,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Delete an IP address from Nautobot."""
+    try:
+        # Use REST API to delete the IP address
+        result = await nautobot_service.rest_request(
+            f"ipam/ip-addresses/{ip_id}/",
+            method="DELETE"
+        )
+
+        # Clear related caches
+        cache_keys_to_clear = [
+            f"nautobot:ip_address:{ip_id}",
+            "nautobot:devices:list:all",  # Device list might contain IP address info
+        ]
+        for key in cache_keys_to_clear:
+            cache_service.delete(key)
+
+        return {
+            "success": True,
+            "message": f"IP address {ip_id} deleted successfully",
+            "ip_id": ip_id
+        }
+
+    except Exception as e:
+        logger.error(f"Error deleting IP address {ip_id}: {str(e)}")
+        if "404" in str(e) or "Not Found" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"IP address {ip_id} not found",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete IP address: {str(e)}",
+        )
+
+
+@router.post("/offboard/{device_id}")
+async def offboard_device(
+    device_id: str,
+    request: OffboardDeviceRequest,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Offboard a device by removing it and optionally its IP addresses from Nautobot."""
+    try:
+        results = {
+            "success": True,
+            "device_id": device_id,
+            "removed_items": [],
+            "skipped_items": [],
+            "errors": [],
+            "summary": ""
+        }
+
+        # Step 1: Get device details to understand what needs to be removed
+        logger.info(f"Starting offboard process for device {device_id}")
+        try:
+            device_details = await get_device_details(device_id, current_user)
+            if not device_details:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Device {device_id} not found"
+                )
+
+            logger.info(f"Found device: {device_details.get('name', device_id)}")
+            results["device_name"] = device_details.get("name", device_id)
+
+        except HTTPException as e:
+            if e.status_code == 404:
+                raise
+            logger.error(f"Error getting device details: {e.detail}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to get device details: {e.detail}"
+            )
+
+        # Step 2: Remove the device itself first
+        logger.info(f"Removing device {device_id}")
+        try:
+            device_deletion_result = await delete_device(device_id, current_user)
+            results["removed_items"].append(f"Device: {results['device_name']} ({device_id})")
+            logger.info(f"Successfully removed device {device_id}")
+        except Exception as e:
+            error_msg = f"Failed to remove device {device_id}: {str(e)}"
+            results["errors"].append(error_msg)
+            results["success"] = False
+            logger.error(error_msg)
+
+        # Step 3: Remove interface IP addresses if requested
+        interface_ips_removed = []
+        if request.remove_interface_ips:
+            logger.info("Processing interface IP removal")
+            interfaces = device_details.get("interfaces", [])
+
+            for interface in interfaces:
+                interface_name = interface.get("name", "unknown")
+                ip_addresses = interface.get("ip_addresses", [])
+
+                for ip_addr in ip_addresses:
+                    ip_id = ip_addr.get("id")
+                    ip_address = ip_addr.get("address", "unknown")
+
+                    if ip_id:
+                        try:
+                            await delete_ip_address(ip_id, current_user)
+                            interface_ips_removed.append({
+                                "ip_id": ip_id,
+                                "address": ip_address,
+                                "interface": interface_name
+                            })
+                            results["removed_items"].append(f"Interface IP: {ip_address} (interface: {interface_name})")
+                            logger.info(f"Removed interface IP {ip_address} from interface {interface_name}")
+                        except Exception as e:
+                            error_msg = f"Failed to remove interface IP {ip_address} from interface {interface_name}: {str(e)}"
+                            results["errors"].append(error_msg)
+                            logger.error(error_msg)
+
+            if not interface_ips_removed:
+                results["skipped_items"].append("No interface IPs found to remove")
+                logger.info("No interface IP addresses found for removal")
+        else:
+            results["skipped_items"].append("Interface IP removal was not requested")
+            logger.info("Interface IP removal skipped (not requested)")
+
+        # Step 4: Remove primary IP if requested and interface IPs were not removed
+        primary_ip_removed = False
+        if request.remove_primary_ip:
+            logger.info("Processing primary IP removal")
+            primary_ip4 = device_details.get("primary_ip4")
+
+            if primary_ip4:
+                primary_ip_id = primary_ip4.get("id")
+                primary_ip_address = primary_ip4.get("address", "unknown")
+
+                # Check if this IP was already removed as part of interface IPs
+                already_removed = any(
+                    ip["ip_id"] == primary_ip_id
+                    for ip in interface_ips_removed
+                )
+
+                if already_removed:
+                    results["skipped_items"].append(f"Primary IP {primary_ip_address} already removed with interface IPs")
+                    logger.info(f"Primary IP {primary_ip_address} was already removed as interface IP")
+                elif primary_ip_id:
+                    try:
+                        await delete_ip_address(primary_ip_id, current_user)
+                        primary_ip_removed = True
+                        results["removed_items"].append(f"Primary IP: {primary_ip_address}")
+                        logger.info(f"Removed primary IP {primary_ip_address}")
+                    except Exception as e:
+                        error_msg = f"Failed to remove primary IP {primary_ip_address}: {str(e)}"
+                        results["errors"].append(error_msg)
+                        logger.error(error_msg)
+                else:
+                    results["skipped_items"].append("Primary IP has no valid ID")
+                    logger.warning("Primary IP found but has no valid ID")
+            else:
+                results["skipped_items"].append("No primary IP found")
+                logger.info("No primary IP found for removal")
+        else:
+            results["skipped_items"].append("Primary IP removal was not requested")
+            logger.info("Primary IP removal skipped (not requested)")
+
+        # Step 5: Handle CheckMK removal
+        if request.remove_from_checkmk:
+            logger.info("Processing CheckMK removal")
+            device_name = device_details.get("name")
+
+            if device_name:
+                try:
+                    # Import CheckMK delete function directly
+                    from routers.checkmk import delete_host
+
+                    # Call the CheckMK delete_host function directly
+                    checkmk_result = await delete_host(device_name, current_user)
+
+                    results["removed_items"].append(f"CheckMK Host: {device_name}")
+                    logger.info(f"Successfully removed device {device_name} from CheckMK")
+                except Exception as e:
+                    error_msg = f"Failed to remove device {device_name} from CheckMK: {str(e)}"
+                    results["errors"].append(error_msg)
+                    logger.error(error_msg)
+            else:
+                results["skipped_items"].append("CheckMK removal skipped: No device name found")
+                logger.warning("CheckMK removal skipped: No device name found in device details")
+        else:
+            results["skipped_items"].append("CheckMK removal was not requested")
+            logger.info("CheckMK removal skipped (not requested)")
+
+        # Step 6: Generate summary
+        removed_count = len(results["removed_items"])
+        error_count = len(results["errors"])
+
+        if error_count > 0:
+            results["success"] = False
+            results["summary"] = f"Offboarding partially completed: {removed_count} items removed, {error_count} errors occurred"
+        else:
+            results["summary"] = f"Offboarding completed successfully: {removed_count} items removed"
+
+        logger.info(f"Offboard process completed for device {device_id}: {results['summary']}")
+
+        return results
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error during offboard process for device {device_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Offboarding failed: {str(e)}",
+        )

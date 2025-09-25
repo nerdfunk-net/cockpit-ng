@@ -81,6 +81,22 @@ class CacheService:
             )
             self._stats["created"] += 1
 
+    def delete(self, key: str) -> bool:
+        """Delete a specific cache entry by key.
+
+        Args:
+            key: The cache key to delete
+
+        Returns:
+            bool: True if the key existed and was deleted, False if key didn't exist
+        """
+        with self._lock:
+            if key in self._cache:
+                del self._cache[key]
+                self._stats["cleared"] += 1
+                return True
+            return False
+
     def clear_namespace(self, namespace: str) -> int:
         """Clear entries by namespace and return count of cleared items."""
         with self._lock:

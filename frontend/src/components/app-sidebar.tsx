@@ -29,6 +29,7 @@ import {
   LogOut,
   Activity,
   Eye,
+  Minus,
 } from 'lucide-react'
 
 interface NavItem {
@@ -51,11 +52,12 @@ const navigationSections: NavSection[] = [
     ],
   },
   {
-    title: 'Onboarding',
+    title: 'Nautobot',
     items: [
       { label: 'Onboard Device', href: '/onboard-device', icon: Plus },
       { label: 'Sync Devices', href: '/sync-devices', icon: RefreshCw },
       { label: 'Scan & Add', href: '/scan-and-add', icon: Search },
+      { label: 'Offboarding', href: '/offboard-device', icon: Minus },
     ],
   },
   {
