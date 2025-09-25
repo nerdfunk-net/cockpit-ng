@@ -1272,6 +1272,35 @@ async def get_nautobot_device_custom_fields(
         )
 
 
+@router.get("/jobs/{job_id}/results")
+async def get_job_results(
+    job_id: str, current_user: dict = Depends(verify_admin_token)
+):
+    """Get job results from Nautobot."""
+    try:
+        result = await nautobot_service.rest_request(f"extras/job-results/{job_id}/")
+
+        # Extract the status value from the response
+        status_value = result.get("status", {}).get("value")
+
+        return {"status": status_value}
+    except Exception as e:
+        error_msg = str(e)
+
+        # Check if it's a 404 Not Found error from Nautobot
+        if "404" in error_msg or "Not Found" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Job result not found: {job_id}",
+            )
+
+        logger.error(f"Error fetching job result {job_id}: {error_msg}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch job result: {error_msg}",
+        )
+
+
 @router.get("/health-check")
 async def nautobot_health_check(current_user: dict = Depends(verify_token)):
     """Simple health check to verify Nautobot connectivity."""
@@ -1286,17 +1315,17 @@ async def nautobot_health_check(current_user: dict = Depends(verify_token)):
     except Exception as e:
         # Log the full exception details for debugging
         logger.error(f"Nautobot health check failed: {str(e)}", exc_info=True)
-        
+
         error_msg = str(e)
         error_type = type(e).__name__
-        
+
         # Include detailed error information in the response
         detailed_error = {
             "error_message": error_msg,
             "error_type": error_type,
             "error_details": str(e.__dict__) if hasattr(e, '__dict__') else None,
         }
-        
+
         if "403" in error_msg or "Invalid token" in error_msg:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

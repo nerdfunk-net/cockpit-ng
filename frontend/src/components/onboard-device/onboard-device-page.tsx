@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
 import { Button } from '@/components/ui/button'
@@ -10,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Search, Plus, CheckCircle, AlertCircle, Info, X, Settings } from 'lucide-react'
+import { Search, Plus, CheckCircle, AlertCircle, Info, X, Settings, Eye, RefreshCw } from 'lucide-react'
 
 // Type definitions based on the original implementation
 interface DropdownOption {
@@ -53,6 +54,7 @@ interface StatusMessage {
 export function OnboardDevicePage() {
   const { isAuthenticated } = useAuthStore()
   const { apiCall } = useApi()
+  const router = useRouter()
 
   // Form state
   const [formData, setFormData] = useState<OnboardFormData>({
@@ -91,6 +93,12 @@ export function OnboardDevicePage() {
   const [isSearchingDevice, setIsSearchingDevice] = useState(false)
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null)
   const [deviceSearchQuery, setDeviceSearchQuery] = useState('')
+
+  // Job tracking state
+  const [jobId, setJobId] = useState<string | null>(null)
+  const [jobStatus, setJobStatus] = useState<string | null>(null)
+  const [isCheckingJob, setIsCheckingJob] = useState(false)
+  const [onboardedIPAddress, setOnboardedIPAddress] = useState<string>('')
 
   // Validation state
   const [ipValidation, setIpValidation] = useState<{
@@ -415,6 +423,11 @@ export function OnboardDevicePage() {
         body: formData
       })
 
+      // Save job information for tracking
+      setJobId(data.job_id)
+      setOnboardedIPAddress(formData.ip_address)
+      setJobStatus(null) // Reset job status
+
       setStatusMessage({
         type: 'success',
         message: `✅ Device onboarding initiated successfully! Job ID: ${data.job_id} - ${data.message}`
@@ -445,6 +458,53 @@ export function OnboardDevicePage() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleCheckJob = async () => {
+    if (!jobId) return
+
+    setIsCheckingJob(true)
+    try {
+      const data = await apiCall<{
+        status: string
+      }>(`nautobot/jobs/${jobId}/results`)
+
+      setJobStatus(data.status)
+
+      if (data.status === 'SUCCESS') {
+        setStatusMessage({
+          type: 'success',
+          message: `✅ Job completed successfully! The device has been onboarded.`
+        })
+      } else if (data.status === 'FAILURE') {
+        setStatusMessage({
+          type: 'error',
+          message: `❌ Job failed. Please check the job details in Nautobot.`
+        })
+      } else {
+        setStatusMessage({
+          type: 'info',
+          message: `ℹ️ Job status: ${data.status}. The job is still running or queued.`
+        })
+      }
+    } catch (error) {
+      console.error('Error checking job:', error)
+      setStatusMessage({
+        type: 'error',
+        message: `❌ Error checking job status: ${error instanceof Error ? error.message : 'Unknown error'}`
+      })
+    } finally {
+      setIsCheckingJob(false)
+    }
+  }
+
+  const handleGoToSyncDevices = () => {
+    // Navigate to sync devices page with the IP address filter
+    const ipAddresses = onboardedIPAddress.split(',').map(ip => ip.trim()).filter(ip => ip.length > 0)
+    const firstIP = ipAddresses[0]
+
+    // Navigate with query parameters to pre-fill the filter
+    router.push(`/sync-devices?ip_filter=${encodeURIComponent(firstIP)}`)
   }
 
   const isFormValid = ipValidation.isValid && 
@@ -838,6 +898,91 @@ export function OnboardDevicePage() {
             </Button>
           </div>
         </div>
+
+        {/* Job Status Panel */}
+        {jobId && (
+          <div className="rounded-xl border shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-400/80 to-purple-500/80 text-white py-2 px-4">
+              <div className="flex items-center space-x-2">
+                <Eye className="h-4 w-4" />
+                <div>
+                  <h3 className="text-sm font-semibold">Job Status Check</h3>
+                  <p className="text-purple-100 text-xs">Track the onboarding job progress</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 bg-white space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Job ID</Label>
+                  <p className="text-sm text-gray-600 font-mono bg-gray-50 p-2 rounded border">
+                    {jobId}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Onboarded IP Address</Label>
+                  <p className="text-sm text-gray-600 font-mono bg-gray-50 p-2 rounded border">
+                    {onboardedIPAddress}
+                  </p>
+                </div>
+              </div>
+
+              {jobStatus && (
+                <div>
+                  <Label className="text-sm font-medium">Current Status</Label>
+                  <div className="mt-1">
+                    <Badge
+                      variant={
+                        jobStatus === 'SUCCESS' ? 'default' :
+                        jobStatus === 'FAILURE' ? 'destructive' :
+                        'secondary'
+                      }
+                      className={
+                        jobStatus === 'SUCCESS' ? 'bg-green-100 text-green-800 border-green-300' :
+                        jobStatus === 'FAILURE' ? 'bg-red-100 text-red-800 border-red-300' :
+                        'bg-blue-100 text-blue-800 border-blue-300'
+                      }
+                    >
+                      {jobStatus}
+                    </Badge>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleCheckJob}
+                  disabled={isCheckingJob}
+                  variant="outline"
+                  size="sm"
+                >
+                  {isCheckingJob ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500 mr-2" />
+                      Checking...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-3 w-3 mr-2" />
+                      Check Job Status
+                    </>
+                  )}
+                </Button>
+
+                {jobStatus === 'SUCCESS' && (
+                  <Button
+                    onClick={handleGoToSyncDevices}
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                    size="sm"
+                  >
+                    <Settings className="h-3 w-3 mr-2" />
+                    Go to Sync Devices
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
 

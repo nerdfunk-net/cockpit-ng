@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
 import { Button } from '@/components/ui/button'
@@ -94,6 +95,7 @@ export function SyncDevicesPage() {
   // Auth and API
   const { isAuthenticated, logout } = useAuthStore()
   const { apiCall } = useApi()
+  const searchParams = useSearchParams()
 
   // State management
   const [devices, setDevices] = useState<Device[]>([])
@@ -111,13 +113,16 @@ export function SyncDevicesPage() {
     totalPages: 0
   })
 
-  // Filters state
-  const [filters, setFilters] = useState<TableFilters>({
-    deviceName: '',
-    role: 'all',
-    location: 'all',
-    ipAddress: '',
-    status: 'all'
+  // Filters state with URL parameter support
+  const [filters, setFilters] = useState<TableFilters>(() => {
+    const ipFilter = searchParams?.get('ip_filter') || ''
+    return {
+      deviceName: '',
+      role: 'all',
+      location: 'all',
+      ipAddress: ipFilter,
+      status: 'all'
+    }
   })
 
   // Sync properties state
@@ -160,10 +165,21 @@ export function SyncDevicesPage() {
     loadInitialData()
   }, [])
 
+  // Handle URL parameters
+  useEffect(() => {
+    const ipFilter = searchParams?.get('ip_filter')
+    if (ipFilter && ipFilter !== filters.ipAddress) {
+      setFilters(prev => ({
+        ...prev,
+        ipAddress: ipFilter
+      }))
+    }
+  }, [searchParams, filters.ipAddress])
+
   // Apply filters when they change
   useEffect(() => {
     applyFilters()
-  }, [filters, devices])
+  }, [filters, devices, pagination.pageSize])
 
   // Auto-hide success messages after 2 seconds
   useEffect(() => {
@@ -426,7 +442,7 @@ export function SyncDevicesPage() {
 
     // Apply filters
     if (filters.deviceName) {
-      filtered = filtered.filter(device => 
+      filtered = filtered.filter(device =>
         device.name.toLowerCase().includes(filters.deviceName.toLowerCase())
       )
     }
@@ -437,7 +453,7 @@ export function SyncDevicesPage() {
       filtered = filtered.filter(device => device.location?.name === filters.location)
     }
     if (filters.ipAddress) {
-      filtered = filtered.filter(device => 
+      filtered = filtered.filter(device =>
         device.primary_ip4?.address?.toLowerCase().includes(filters.ipAddress.toLowerCase())
       )
     }
