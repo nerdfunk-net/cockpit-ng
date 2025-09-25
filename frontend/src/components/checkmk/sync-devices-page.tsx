@@ -47,6 +47,16 @@ interface Device {
   processed_at?: string
 }
 
+interface NautobotDeviceRecord {
+  id?: string
+  name?: string
+  role?: { name?: string } | null
+  status?: { name?: string } | null
+  location?: { name?: string } | null
+  primary_ip4?: { address?: string } | null
+  device_type?: { model?: string } | null
+}
+
 interface JobResult {
   id: string
   type: string
@@ -208,6 +218,7 @@ export function CheckMKSyncDevicesPage() {
   const [availableJobs, setAvailableJobs] = useState<Array<{id: string, status: string, created_at: string, processed_devices: number}>>([])
   const [selectedJobId, setSelectedJobId] = useState<string>('')
   const [loadingResults, setLoadingResults] = useState(false)
+  const [isReloadingDevices, setIsReloadingDevices] = useState(false)
 
   // Background job state
   const [currentJobId, setCurrentJobId] = useState<string | null>(null)
@@ -465,6 +476,63 @@ export function CheckMKSyncDevicesPage() {
       setShowStatusModal(true)
     } finally {
       setLoadingResults(false)
+    }
+  }
+
+  const handleReloadDevices = async () => {
+    try {
+      setIsReloadingDevices(true)
+
+      const data = await apiCall<{ devices?: NautobotDeviceRecord[] }>('nautobot/devices?reload=true')
+
+      if (!data?.devices) {
+        throw new Error('Invalid response format')
+      }
+
+      const reloadedDevices: Device[] = data.devices.map((device, index) => ({
+        id: device.id || device.name || `device_${index}`,
+        name: device.name || device.id || `Device ${index + 1}`,
+        role: device.role?.name || 'Unknown',
+        status: device.status?.name || 'Unknown',
+        location: device.location?.name || 'Unknown',
+        checkmk_status: 'missing',
+        diff: undefined,
+        normalized_config: undefined,
+        checkmk_config: undefined,
+        result_data: undefined,
+        error_message: undefined,
+        processed_at: undefined
+      }))
+
+      setDevices(reloadedDevices)
+      setSelectedDevices(new Set())
+      setFilters({
+        name: '',
+        role: '',
+        status: '',
+        location: '',
+        site: '',
+        checkmk_status: ''
+      })
+      setCheckmkStatusFilters({ equal: true, diff: true, missing: true })
+      setRoleFilters({})
+      setStatusFilters({})
+      setLocationFilters({})
+      setSiteFilters({})
+      setSelectedDeviceForView(null)
+      setSelectedDeviceForDiff(null)
+      setCurrentJobId(null)
+      setIsJobRunning(false)
+      setJobProgress(null)
+      saveJobStateToStorage(null, false)
+      setSelectedJobId('')
+
+      showMessage(`Reloaded ${reloadedDevices.length} devices directly from Nautobot`, 'success')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to reload devices'
+      showMessage(`Failed to reload devices: ${message}`, 'error')
+    } finally {
+      setIsReloadingDevices(false)
     }
   }
 
@@ -1407,6 +1475,20 @@ export function CheckMKSyncDevicesPage() {
               >
                 <RotateCcw className="h-3 w-3 mr-1" />
                 Clear Filters
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleReloadDevices}
+                className="text-white hover:bg-white/20 text-xs h-6"
+                disabled={isReloadingDevices}
+              >
+                {isReloadingDevices ? (
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1" />
+                ) : (
+                  <Search className="h-3 w-3 mr-1" />
+                )}
+                Load Devices
               </Button>
             </div>
           </div>

@@ -183,7 +183,8 @@ export default function LiveUpdatePage() {
     deviceNameFilter = '',
     useBackendPagination = false,
     limit: number | null = null,
-    offset = 0
+    offset = 0,
+    reload = false
   ) => {
     try {
       setLoading(true)
@@ -197,6 +198,9 @@ export default function LiveUpdatePage() {
       if (deviceNameFilter) {
         params.append('filter_type', 'name')
         params.append('filter_value', deviceNameFilter)
+      }
+      if (reload) {
+        params.append('reload', 'true')
       }
 
       const endpoint = `nautobot/devices${params.toString() ? '?' + params.toString() : ''}`
@@ -253,7 +257,11 @@ export default function LiveUpdatePage() {
     } finally {
       setLoading(false)
     }
-  }, [apiCall])
+  }, [apiCall, showMessage])
+
+  const handleReloadDevices = useCallback(() => {
+    void loadDevices('', false, null, 0, true)
+  }, [loadDevices])
 
   // Apply filters and sorting
   const applyFilters = useCallback(() => {
@@ -550,11 +558,11 @@ export default function LiveUpdatePage() {
       setAuthReady(true)
       loadDevices()
     }
-  }, [isAuthenticated, token])
+  }, [isAuthenticated, loadDevices, token])
 
   useEffect(() => {
     applyFilters()
-  }, [devices, deviceNameFilter, roleFilter, locationFilter, statusFilter, sortColumn, sortOrder])
+  }, [applyFilters, devices, deviceNameFilter, locationFilter, roleFilter, sortColumn, sortOrder, statusFilter])
 
   // Helper functions
   const getStatusBadgeVariant = (status: string) => {
@@ -699,22 +707,39 @@ export default function LiveUpdatePage() {
                 )}
               </div>
             </div>
-            {activeFiltersCount > 0 && (
-              <div className="flex items-center space-x-2">
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                  {activeFiltersCount} active
-                </Badge>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={resetFilters}
-                  className="h-8 w-8 p-0 text-white hover:bg-white/20"
-                  title="Clear All Filters"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+            <div className="flex items-center space-x-2">
+              {activeFiltersCount > 0 && (
+                <>
+                  <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                    {activeFiltersCount} active
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={resetFilters}
+                    className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                    title="Clear All Filters"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleReloadDevices}
+                className="text-white hover:bg-white/20 text-xs h-7"
+                disabled={loading}
+                title="Reload devices from Nautobot"
+              >
+                {loading ? (
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1" />
+                ) : (
+                  <Search className="h-3 w-3 mr-1" />
+                )}
+                Load Devices
+              </Button>
+            </div>
           </div>
         </div>
         <div className="p-4 bg-white">

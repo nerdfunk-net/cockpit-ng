@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/lib/auth-store'
 import { useRouter } from 'next/navigation'
+import { useCallback } from 'react'
 
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
@@ -11,7 +12,7 @@ export function useApi() {
   const { token, logout } = useAuthStore()
   const router = useRouter()
 
-  const apiCall = async <T = unknown>(endpoint: string, options: ApiOptions = {}): Promise<T> => {
+  const apiCall = useCallback(async <T = unknown>(endpoint: string, options: ApiOptions = {}): Promise<T> => {
     const { method = 'GET', body, headers = {} } = options
     
     const defaultHeaders: Record<string, string> = {
@@ -70,7 +71,7 @@ export function useApi() {
     } else {
       return {} as T
     }
-  }
+  }, [logout, router, token])
 
   return { apiCall }
 }
