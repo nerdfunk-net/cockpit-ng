@@ -8,12 +8,11 @@ from typing import Optional
 from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
-from passlib.context import CryptContext
+from passlib.hash import pbkdf2_sha256
 
 
 # Security setup
 security = HTTPBearer()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -35,12 +34,12 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify password against hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    return pbkdf2_sha256.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
     """Get password hash."""
-    return pwd_context.hash(password)
+    return pbkdf2_sha256.hash(password)
 
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:

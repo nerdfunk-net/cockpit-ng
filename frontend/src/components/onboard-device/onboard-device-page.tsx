@@ -51,6 +51,17 @@ interface StatusMessage {
   message: string
 }
 
+interface NautobotDefaults {
+  location: string
+  platform: string
+  interface_status: string
+  device_status: string
+  ip_address_status: string
+  namespace: string
+  device_role: string
+  secret_group: string
+}
+
 export function OnboardDevicePage() {
   const { isAuthenticated } = useAuthStore()
   const { apiCall } = useApi()
@@ -80,6 +91,9 @@ export function OnboardDevicePage() {
   const [interfaceStatuses, setInterfaceStatuses] = useState<DropdownOption[]>([])
   const [ipAddressStatuses, setIpAddressStatuses] = useState<DropdownOption[]>([])
   const [secretGroups, setSecretGroups] = useState<DropdownOption[]>([])
+
+  // Default values from settings
+  const [nautobotDefaults, setNautobotDefaults] = useState<NautobotDefaults | null>(null)
 
   // Location selector state
   const [locationSearch, setLocationSearch] = useState('')
@@ -132,7 +146,7 @@ export function OnboardDevicePage() {
       setIsLoading(true)
       setStatusMessage({ type: 'info', message: 'Loading configuration options...' })
 
-      // Load all dropdown data in parallel
+      // Load all dropdown data and defaults in parallel
       const [
         locationsData,
         namespacesData,
@@ -141,7 +155,8 @@ export function OnboardDevicePage() {
         deviceStatusesData,
         interfaceStatusesData,
         ipAddressStatusesData,
-        secretGroupsData
+        secretGroupsData,
+        defaultsResponse
       ] = await Promise.all([
         apiCall<LocationItem[]>('nautobot/locations'),
         apiCall<DropdownOption[]>('nautobot/namespaces'),
@@ -150,7 +165,8 @@ export function OnboardDevicePage() {
         apiCall<DropdownOption[]>('nautobot/statuses/device'),
         apiCall<DropdownOption[]>('nautobot/statuses/interface'),
         apiCall<DropdownOption[]>('nautobot/statuses/ipaddress'),
-        apiCall<DropdownOption[]>('nautobot/secret-groups')
+        apiCall<DropdownOption[]>('nautobot/secret-groups'),
+        apiCall<{success: boolean, data: NautobotDefaults}>('settings/nautobot/defaults')
       ])
 
       // Build location hierarchy
@@ -166,15 +182,12 @@ export function OnboardDevicePage() {
       setIpAddressStatuses(ipAddressStatusesData)
       setSecretGroups(secretGroupsData)
 
-      // Set default values
-      setFormData(prev => ({
-        ...prev,
-        namespace_id: findDefaultOption(namespacesData, 'Global')?.id || '',
-        role_id: findDefaultOption(rolesData, 'network')?.id || '',
-        status_id: findDefaultOption(deviceStatusesData, 'Active')?.id || '',
-        interface_status_id: findDefaultOption(interfaceStatusesData, 'Active')?.id || '',
-        ip_address_status_id: findDefaultOption(ipAddressStatusesData, 'Active')?.id || ''
-      }))
+      // Store defaults for future use
+      const defaults = defaultsResponse?.success ? defaultsResponse.data : null
+      setNautobotDefaults(defaults)
+
+      // Apply default values to form
+      applyDefaultsToForm(defaults, processedLocations)
 
       setStatusMessage(null)
     } catch (error) {
@@ -237,6 +250,40 @@ export function OnboardDevicePage() {
 
   const findDefaultOption = (options: DropdownOption[], name: string): DropdownOption | undefined => {
     return options.find(option => option.name === name || option.display === name)
+  }
+
+  const applyDefaultsToForm = (defaults: NautobotDefaults | null, locations: LocationItem[]) => {
+    if (!defaults) {
+      // Fallback to hardcoded defaults if no settings defaults available
+      setFormData(prev => ({
+        ...prev,
+        namespace_id: findDefaultOption(namespaces, 'Global')?.id || '',
+        role_id: findDefaultOption(deviceRoles, 'network')?.id || '',
+        status_id: findDefaultOption(deviceStatuses, 'Active')?.id || '',
+        interface_status_id: findDefaultOption(interfaceStatuses, 'Active')?.id || '',
+        ip_address_status_id: findDefaultOption(ipAddressStatuses, 'Active')?.id || ''
+      }))
+      return
+    }
+
+    // Find location for setting location search
+    const defaultLocation = locations.find(loc => loc.id === defaults.location)
+    if (defaultLocation) {
+      setLocationSearch(defaultLocation.hierarchicalPath || defaultLocation.name)
+    }
+
+    // Apply defaults from settings
+    setFormData(prev => ({
+      ...prev,
+      location_id: defaults.location || '',
+      platform_id: defaults.platform || 'detect',
+      namespace_id: defaults.namespace || '',
+      role_id: defaults.device_role || '',
+      status_id: defaults.device_status || '',
+      interface_status_id: defaults.interface_status || '',
+      ip_address_status_id: defaults.ip_address_status || '',
+      secret_groups_id: defaults.secret_group || ''
+    }))
   }
 
   const validateIPAddress = (ip: string): boolean => {
@@ -433,22 +480,25 @@ export function OnboardDevicePage() {
         message: `✅ Device onboarding initiated successfully! Job ID: ${data.job_id} - ${data.message}`
       })
 
-      // Reset form
+      // Reset form with defaults
       setFormData({
         ip_address: '',
         location_id: '',
-        namespace_id: findDefaultOption(namespaces, 'Global')?.id || '',
-        role_id: findDefaultOption(deviceRoles, 'network')?.id || '',
-        status_id: findDefaultOption(deviceStatuses, 'Active')?.id || '',
+        namespace_id: '',
+        role_id: '',
+        status_id: '',
         platform_id: 'detect',
         secret_groups_id: '',
-        interface_status_id: findDefaultOption(interfaceStatuses, 'Active')?.id || '',
-        ip_address_status_id: findDefaultOption(ipAddressStatuses, 'Active')?.id || '',
+        interface_status_id: '',
+        ip_address_status_id: '',
         port: 22,
         timeout: 30
       })
       setLocationSearch('')
       setIpValidation({ isValid: false, message: '' })
+
+      // Reapply defaults
+      applyDefaultsToForm(nautobotDefaults, locations)
     } catch (error) {
       console.error('Error during onboarding:', error)
       setStatusMessage({

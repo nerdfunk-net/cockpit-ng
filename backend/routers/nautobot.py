@@ -1273,6 +1273,24 @@ async def get_nautobot_device_custom_fields(
         )
 
 
+@router.get("/custom-field-choices/{custom_field_name}")
+async def get_nautobot_custom_field_choices(
+    custom_field_name: str,
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Get Nautobot custom field choices for a specific custom field."""
+    try:
+        result = await nautobot_service.rest_request(
+            f"extras/custom-field-choices/?custom_field={custom_field_name}"
+        )
+        return result.get("results", [])
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch custom field choices for {custom_field_name}: {str(e)}",
+        )
+
+
 @router.get("/jobs/{job_id}/results")
 async def get_job_results(
     job_id: str, current_user: dict = Depends(verify_admin_token)

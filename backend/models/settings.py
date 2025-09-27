@@ -86,3 +86,26 @@ class GitTestRequest(BaseModel):
     username: Optional[str] = ""
     token: Optional[str] = ""
     verify_ssl: bool = True
+
+
+class NautobotDefaultsRequest(BaseModel):
+    """Nautobot defaults settings request model."""
+
+    location: Optional[str] = None
+    platform: Optional[str] = None
+    interface_status: Optional[str] = None
+    device_status: Optional[str] = None
+    ip_address_status: Optional[str] = None
+    ip_prefix_status: Optional[str] = None
+    namespace: Optional[str] = None
+    device_role: Optional[str] = None
+    secret_group: Optional[str] = None
+
+
+class DeviceReplacementRequest(BaseModel):
+    """Device replacement settings request model."""
+
+    remove_all_custom_fields: bool = False
+    clear_device_name: bool = False
+    keep_serial: bool = False
+    custom_field_settings: Optional[Dict[str, str]] = None  # custom_field_name -> value or "clear"

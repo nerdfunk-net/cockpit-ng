@@ -4,7 +4,7 @@ pydantic[dotenv]
 pydantic-settings
 requests
 pyjwt
-passlib[bcrypt]
+passlib
 python-multipart
 python-dotenv
 gitpython

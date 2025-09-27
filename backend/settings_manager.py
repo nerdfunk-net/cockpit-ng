@@ -7,7 +7,7 @@ import sqlite3
 import os
 import logging
 from typing import Dict, Any, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 import json
 
 # Import config to get environment variable defaults
@@ -66,6 +66,31 @@ class CacheSettings:
     prefetch_items: Dict[str, bool] = None
 
 
+@dataclass
+class NautobotDefaults:
+    """Default values for Nautobot device creation"""
+
+    location: str = ""
+    platform: str = ""
+    interface_status: str = ""
+    device_status: str = ""
+    ip_address_status: str = ""
+    ip_prefix_status: str = ""
+    namespace: str = ""
+    device_role: str = ""
+    secret_group: str = ""
+
+
+@dataclass
+class DeviceReplacementSettings:
+    """Device replacement settings"""
+
+    remove_all_custom_fields: bool = False
+    clear_device_name: bool = False
+    keep_serial: bool = False
+    custom_field_settings: Dict[str, str] = field(default_factory=dict)
+
+
 class SettingsManager:
     """Manages application settings in SQLite database"""
 
@@ -93,6 +118,7 @@ class SettingsManager:
 
         self.default_git = GitSettings()
         self.default_checkmk = CheckMKSettings()
+        self.default_nautobot_defaults = NautobotDefaults()
         self.default_cache = CacheSettings()
 
         # Initialize database
@@ -171,6 +197,35 @@ class SettingsManager:
                     )
                 """)
 
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS nautobot_defaults (
+                        id INTEGER PRIMARY KEY,
+                        location TEXT DEFAULT '',
+                        platform TEXT DEFAULT '',
+                        interface_status TEXT DEFAULT '',
+                        device_status TEXT DEFAULT '',
+                        ip_address_status TEXT DEFAULT '',
+                        ip_prefix_status TEXT DEFAULT '',
+                        namespace TEXT DEFAULT '',
+                        device_role TEXT DEFAULT '',
+                        secret_group TEXT DEFAULT '',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS device_replacement_settings (
+                        id INTEGER PRIMARY KEY,
+                        remove_all_custom_fields BOOLEAN DEFAULT FALSE,
+                        clear_device_name BOOLEAN DEFAULT FALSE,
+                        keep_serial BOOLEAN DEFAULT FALSE,
+                        custom_field_settings TEXT DEFAULT '{}',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+
                 # Check if we need to insert default values
                 cursor.execute("SELECT COUNT(*) FROM nautobot_settings")
                 if cursor.fetchone()[0] == 0:
@@ -191,6 +246,18 @@ class SettingsManager:
                 if cursor.fetchone()[0] == 0:
                     logger.info("Inserting default Cache settings")
                     self._insert_default_cache_settings(cursor)
+
+                # Check nautobot_defaults
+                cursor.execute("SELECT COUNT(*) FROM nautobot_defaults")
+                if cursor.fetchone()[0] == 0:
+                    logger.info("Inserting default Nautobot defaults")
+                    self._insert_default_nautobot_defaults(cursor)
+
+                # Check device_replacement_settings
+                cursor.execute("SELECT COUNT(*) FROM device_replacement_settings")
+                if cursor.fetchone()[0] == 0:
+                    logger.info("Inserting default device replacement settings")
+                    self._insert_default_device_replacement_settings(cursor)
 
                 # Set initial metadata
                 cursor.execute("""
@@ -270,6 +337,35 @@ class SettingsManager:
                 self.default_cache.max_commits,
                 json.dumps({"git": True, "locations": False}),
             ),
+        )
+
+    def _insert_default_nautobot_defaults(self, cursor):
+        """Insert default Nautobot defaults"""
+        cursor.execute(
+            """
+            INSERT INTO nautobot_defaults (location, platform, interface_status, device_status, ip_address_status, namespace, device_role, secret_group)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+            (
+                self.default_nautobot_defaults.location,
+                self.default_nautobot_defaults.platform,
+                self.default_nautobot_defaults.interface_status,
+                self.default_nautobot_defaults.device_status,
+                self.default_nautobot_defaults.ip_address_status,
+                self.default_nautobot_defaults.namespace,
+                self.default_nautobot_defaults.device_role,
+                self.default_nautobot_defaults.secret_group,
+            ),
+        )
+
+    def _insert_default_device_replacement_settings(self, cursor):
+        """Insert default device replacement settings"""
+        cursor.execute(
+            """
+            INSERT INTO device_replacement_settings (remove_all_custom_fields, clear_device_name, keep_serial, custom_field_settings)
+            VALUES (?, ?, ?, ?)
+        """,
+            (False, False, False, json.dumps({})),
         )
 
     def get_nautobot_settings(self) -> Optional[Dict[str, Any]]:
@@ -840,6 +936,194 @@ class SettingsManager:
 
         except Exception as e:
             logger.error(f"Error setting selected Git repository: {e}")
+            return False
+
+    def get_nautobot_defaults(self) -> Dict[str, Any]:
+        """Get current Nautobot defaults"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+
+                result = cursor.execute("SELECT * FROM nautobot_defaults LIMIT 1").fetchone()
+
+                if result:
+                    return {
+                        "location": result["location"],
+                        "platform": result["platform"],
+                        "interface_status": result["interface_status"],
+                        "device_status": result["device_status"],
+                        "ip_address_status": result["ip_address_status"],
+                        "ip_prefix_status": result["ip_prefix_status"],
+                        "namespace": result["namespace"],
+                        "device_role": result["device_role"],
+                        "secret_group": result["secret_group"],
+                    }
+                else:
+                    # Return default values if no record exists
+                    return asdict(self.default_nautobot_defaults)
+
+        except Exception as e:
+            logger.error(f"Error getting Nautobot defaults: {e}")
+            return asdict(self.default_nautobot_defaults)
+
+    def update_nautobot_defaults(self, defaults: Dict[str, Any]) -> bool:
+        """Update Nautobot defaults"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM nautobot_defaults")
+                count = cursor.fetchone()[0]
+
+                if count == 0:
+                    cursor.execute(
+                        """
+                        INSERT INTO nautobot_defaults (location, platform, interface_status, device_status, ip_address_status, ip_prefix_status, namespace, device_role, secret_group)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                        (
+                            defaults.get("location", ""),
+                            defaults.get("platform", ""),
+                            defaults.get("interface_status", ""),
+                            defaults.get("device_status", ""),
+                            defaults.get("ip_address_status", ""),
+                            defaults.get("ip_prefix_status", ""),
+                            defaults.get("namespace", ""),
+                            defaults.get("device_role", ""),
+                            defaults.get("secret_group", ""),
+                        ),
+                    )
+                else:
+                    cursor.execute(
+                        """
+                        UPDATE nautobot_defaults SET
+                            location = ?,
+                            platform = ?,
+                            interface_status = ?,
+                            device_status = ?,
+                            ip_address_status = ?,
+                            ip_prefix_status = ?,
+                            namespace = ?,
+                            device_role = ?,
+                            secret_group = ?,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = 1
+                    """,
+                        (
+                            defaults.get("location", ""),
+                            defaults.get("platform", ""),
+                            defaults.get("interface_status", ""),
+                            defaults.get("device_status", ""),
+                            defaults.get("ip_address_status", ""),
+                            defaults.get("ip_prefix_status", ""),
+                            defaults.get("namespace", ""),
+                            defaults.get("device_role", ""),
+                            defaults.get("secret_group", ""),
+                        ),
+                    )
+
+                conn.commit()
+                logger.info("Nautobot defaults updated successfully")
+                return True
+
+        except Exception as e:
+            logger.error(f"Error updating Nautobot defaults: {e}")
+            return False
+
+    def get_device_replacement_settings(self) -> Dict[str, Any]:
+        """Get device replacement settings"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM device_replacement_settings WHERE id = 1")
+                result = cursor.fetchone()
+
+                if result:
+                    logger.info(f"🔍 Raw database result: {dict(result)}")
+                    logger.info(f"🔍 remove_all_custom_fields raw: {result['remove_all_custom_fields']} (type: {type(result['remove_all_custom_fields'])})")
+                    logger.info(f"🔍 clear_device_name raw: {result['clear_device_name']} (type: {type(result['clear_device_name'])})")
+                    logger.info(f"🔍 keep_serial raw: {result['keep_serial']} (type: {type(result['keep_serial'])})")
+
+                    custom_field_settings = result["custom_field_settings"]
+                    try:
+                        custom_field_settings = json.loads(custom_field_settings) if custom_field_settings else {}
+                    except json.JSONDecodeError:
+                        custom_field_settings = {}
+
+                    response_data = {
+                        "remove_all_custom_fields": bool(result["remove_all_custom_fields"]),
+                        "clear_device_name": bool(result["clear_device_name"]) if "clear_device_name" in result.keys() else False,
+                        "keep_serial": bool(result["keep_serial"]) if "keep_serial" in result.keys() else False,
+                        "custom_field_settings": custom_field_settings,
+                    }
+                    logger.info(f"🎯 Final response data: {response_data}")
+                    return response_data
+                else:
+                    return {
+                        "remove_all_custom_fields": False,
+                        "clear_device_name": False,
+                        "keep_serial": False,
+                        "custom_field_settings": {},
+                    }
+
+        except Exception as e:
+            logger.error(f"Error getting device replacement settings: {e}")
+            return {
+                "remove_all_custom_fields": False,
+                "clear_device_name": False,
+                "keep_serial": False,
+                "custom_field_settings": {},
+            }
+
+    def update_device_replacement_settings(self, settings: Dict[str, Any]) -> bool:
+        """Update device replacement settings"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM device_replacement_settings")
+                count = cursor.fetchone()[0]
+
+                custom_field_settings_json = json.dumps(settings.get("custom_field_settings", {}))
+
+                if count == 0:
+                    cursor.execute(
+                        """
+                        INSERT INTO device_replacement_settings (remove_all_custom_fields, clear_device_name, keep_serial, custom_field_settings)
+                        VALUES (?, ?, ?, ?)
+                    """,
+                        (
+                            settings.get("remove_all_custom_fields", False),
+                            settings.get("clear_device_name", False),
+                            settings.get("keep_serial", False),
+                            custom_field_settings_json,
+                        ),
+                    )
+                else:
+                    cursor.execute(
+                        """
+                        UPDATE device_replacement_settings SET
+                            remove_all_custom_fields = ?,
+                            clear_device_name = ?,
+                            keep_serial = ?,
+                            custom_field_settings = ?,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = 1
+                    """,
+                        (
+                            settings.get("remove_all_custom_fields", False),
+                            settings.get("clear_device_name", False),
+                            settings.get("keep_serial", False),
+                            custom_field_settings_json,
+                        ),
+                    )
+
+                conn.commit()
+                logger.info("Device replacement settings updated successfully")
+                return True
+
+        except Exception as e:
+            logger.error(f"Error updating device replacement settings: {e}")
             return False
 
 

@@ -449,7 +449,7 @@ def create_default_admin() -> Optional[Dict[str, Any]]:
         admin_user = create_user(
             username="admin",
             realname="System Administrator",
-            password="admin123",  # Should be changed on first login
+            password=config_settings.initial_password,
             email="admin@localhost",
             permissions=PERMISSIONS_ADMIN,
             debug=True,
