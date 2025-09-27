@@ -82,8 +82,8 @@ class NautobotDefaults:
 
 
 @dataclass
-class DeviceReplacementSettings:
-    """Device replacement settings"""
+class DeviceOffboardingSettings:
+    """Device offboarding settings"""
 
     remove_all_custom_fields: bool = False
     clear_device_name: bool = False
@@ -215,7 +215,7 @@ class SettingsManager:
                 """)
 
                 cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS device_replacement_settings (
+                    CREATE TABLE IF NOT EXISTS offboarding_settings (
                         id INTEGER PRIMARY KEY,
                         remove_all_custom_fields BOOLEAN DEFAULT FALSE,
                         clear_device_name BOOLEAN DEFAULT FALSE,
@@ -253,11 +253,14 @@ class SettingsManager:
                     logger.info("Inserting default Nautobot defaults")
                     self._insert_default_nautobot_defaults(cursor)
 
-                # Check device_replacement_settings
-                cursor.execute("SELECT COUNT(*) FROM device_replacement_settings")
+                # Migrate offboarding_settings to offboarding_settings
+                self._migrate_device_replacement_to_offboarding(cursor)
+
+                # Check offboarding_settings
+                cursor.execute("SELECT COUNT(*) FROM offboarding_settings")
                 if cursor.fetchone()[0] == 0:
-                    logger.info("Inserting default device replacement settings")
-                    self._insert_default_device_replacement_settings(cursor)
+                    logger.info("Inserting default offboarding settings")
+                    self._insert_default_offboarding_settings(cursor)
 
                 # Set initial metadata
                 cursor.execute("""
@@ -358,15 +361,47 @@ class SettingsManager:
             ),
         )
 
-    def _insert_default_device_replacement_settings(self, cursor):
-        """Insert default device replacement settings"""
+    def _insert_default_offboarding_settings(self, cursor):
+        """Insert default offboarding settings"""
         cursor.execute(
             """
-            INSERT INTO device_replacement_settings (remove_all_custom_fields, clear_device_name, keep_serial, custom_field_settings)
+            INSERT INTO offboarding_settings (remove_all_custom_fields, clear_device_name, keep_serial, custom_field_settings)
             VALUES (?, ?, ?, ?)
         """,
             (False, False, False, json.dumps({})),
         )
+
+    def _migrate_device_replacement_to_offboarding(self, cursor):
+        """Migrate data from offboarding_settings to offboarding_settings"""
+        try:
+            # Check if old table exists and has data
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='offboarding_settings'")
+            if cursor.fetchone():
+                # Check if there's data to migrate
+                cursor.execute("SELECT COUNT(*) FROM offboarding_settings")
+                old_count = cursor.fetchone()[0]
+
+                if old_count > 0:
+                    # Check if new table is empty
+                    cursor.execute("SELECT COUNT(*) FROM offboarding_settings")
+                    new_count = cursor.fetchone()[0]
+
+                    if new_count == 0:
+                        logger.info("Migrating device replacement settings to offboarding settings")
+                        # Copy data from old table to new table
+                        cursor.execute("""
+                            INSERT INTO offboarding_settings (remove_all_custom_fields, clear_device_name, keep_serial, custom_field_settings, created_at, updated_at)
+                            SELECT remove_all_custom_fields, clear_device_name, keep_serial, custom_field_settings, created_at, updated_at
+                            FROM offboarding_settings
+                        """)
+                        logger.info(f"Migrated {old_count} records from offboarding_settings to offboarding_settings")
+
+                        # Drop the old table
+                        cursor.execute("DROP TABLE offboarding_settings")
+                        logger.info("Dropped old offboarding_settings table")
+        except Exception as e:
+            logger.error(f"Error during migration: {e}")
+            # Continue anyway - the new table will be created with defaults
 
     def get_nautobot_settings(self) -> Optional[Dict[str, Any]]:
         """Get current Nautobot settings"""
@@ -1030,35 +1065,28 @@ class SettingsManager:
             logger.error(f"Error updating Nautobot defaults: {e}")
             return False
 
-    def get_device_replacement_settings(self) -> Dict[str, Any]:
-        """Get device replacement settings"""
+    def get_device_offboarding_settings(self) -> Dict[str, Any]:
+        """Get device offboarding settings"""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                cursor.execute("SELECT * FROM device_replacement_settings WHERE id = 1")
+                cursor.execute("SELECT * FROM offboarding_settings WHERE id = 1")
                 result = cursor.fetchone()
 
                 if result:
-                    logger.info(f"🔍 Raw database result: {dict(result)}")
-                    logger.info(f"🔍 remove_all_custom_fields raw: {result['remove_all_custom_fields']} (type: {type(result['remove_all_custom_fields'])})")
-                    logger.info(f"🔍 clear_device_name raw: {result['clear_device_name']} (type: {type(result['clear_device_name'])})")
-                    logger.info(f"🔍 keep_serial raw: {result['keep_serial']} (type: {type(result['keep_serial'])})")
-
                     custom_field_settings = result["custom_field_settings"]
                     try:
                         custom_field_settings = json.loads(custom_field_settings) if custom_field_settings else {}
                     except json.JSONDecodeError:
                         custom_field_settings = {}
 
-                    response_data = {
+                    return {
                         "remove_all_custom_fields": bool(result["remove_all_custom_fields"]),
                         "clear_device_name": bool(result["clear_device_name"]) if "clear_device_name" in result.keys() else False,
                         "keep_serial": bool(result["keep_serial"]) if "keep_serial" in result.keys() else False,
                         "custom_field_settings": custom_field_settings,
                     }
-                    logger.info(f"🎯 Final response data: {response_data}")
-                    return response_data
                 else:
                     return {
                         "remove_all_custom_fields": False,
@@ -1068,7 +1096,7 @@ class SettingsManager:
                     }
 
         except Exception as e:
-            logger.error(f"Error getting device replacement settings: {e}")
+            logger.error(f"Error getting device offboarding settings: {e}")
             return {
                 "remove_all_custom_fields": False,
                 "clear_device_name": False,
@@ -1076,12 +1104,12 @@ class SettingsManager:
                 "custom_field_settings": {},
             }
 
-    def update_device_replacement_settings(self, settings: Dict[str, Any]) -> bool:
-        """Update device replacement settings"""
+    def update_device_offboarding_settings(self, settings: Dict[str, Any]) -> bool:
+        """Update device offboarding settings"""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM device_replacement_settings")
+                cursor.execute("SELECT COUNT(*) FROM offboarding_settings")
                 count = cursor.fetchone()[0]
 
                 custom_field_settings_json = json.dumps(settings.get("custom_field_settings", {}))
@@ -1089,7 +1117,7 @@ class SettingsManager:
                 if count == 0:
                     cursor.execute(
                         """
-                        INSERT INTO device_replacement_settings (remove_all_custom_fields, clear_device_name, keep_serial, custom_field_settings)
+                        INSERT INTO offboarding_settings (remove_all_custom_fields, clear_device_name, keep_serial, custom_field_settings)
                         VALUES (?, ?, ?, ?)
                     """,
                         (
@@ -1102,7 +1130,7 @@ class SettingsManager:
                 else:
                     cursor.execute(
                         """
-                        UPDATE device_replacement_settings SET
+                        UPDATE offboarding_settings SET
                             remove_all_custom_fields = ?,
                             clear_device_name = ?,
                             keep_serial = ?,

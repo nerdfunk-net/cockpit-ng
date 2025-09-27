@@ -18,7 +18,7 @@ from models.settings import (
     GitTestRequest,
     CacheSettingsRequest,
     NautobotDefaultsRequest,
-    DeviceReplacementRequest,
+    DeviceOffboardingRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -576,51 +576,45 @@ async def update_nautobot_defaults(
         }
 
 
-@router.get("/device-replacement")
-async def get_device_replacement_settings(current_user: dict = Depends(verify_admin_token)):
-    """Get device replacement settings."""
+@router.get("/offboarding")
+async def get_device_offboarding_settings(current_user: dict = Depends(verify_admin_token)):
+    """Get device offboarding settings."""
     try:
-        logger.info("📞 API endpoint called: get_device_replacement_settings")
         from settings_manager import settings_manager
-
-        replacement_settings = settings_manager.get_device_replacement_settings()
-        logger.info(f"📦 Settings from manager: {replacement_settings}")
-
-        response = {"success": True, "data": replacement_settings}
-        logger.info(f"🚀 Final API response: {response}")
-        return response
+        offboarding_settings = settings_manager.get_device_offboarding_settings()
+        return {"success": True, "data": offboarding_settings}
 
     except Exception as e:
-        logger.error(f"Error getting device replacement settings: {e}")
+        logger.error(f"Error getting device offboarding settings: {e}")
         return {
             "success": False,
-            "message": f"Failed to retrieve device replacement settings: {str(e)}",
+            "message": f"Failed to retrieve device offboarding settings: {str(e)}",
         }
 
 
-@router.post("/device-replacement")
-async def update_device_replacement_settings(
-    replacement_request: DeviceReplacementRequest,
+@router.post("/offboarding")
+async def update_device_offboarding_settings(
+    offboarding_request: DeviceOffboardingRequest,
     current_user: dict = Depends(verify_admin_token),
 ):
-    """Update device replacement settings."""
+    """Update device offboarding settings."""
     try:
         from settings_manager import settings_manager
 
-        success = settings_manager.update_device_replacement_settings(replacement_request.dict())
+        success = settings_manager.update_device_offboarding_settings(offboarding_request.dict())
 
         if success:
             return {
                 "success": True,
-                "message": "Device replacement settings updated successfully",
-                "data": settings_manager.get_device_replacement_settings(),
+                "message": "Device offboarding settings updated successfully",
+                "data": settings_manager.get_device_offboarding_settings(),
             }
         else:
-            return {"success": False, "message": "Failed to update device replacement settings"}
+            return {"success": False, "message": "Failed to update device offboarding settings"}
 
     except Exception as e:
-        logger.error(f"Error updating device replacement settings: {e}")
+        logger.error(f"Error updating device offboarding settings: {e}")
         return {
             "success": False,
-            "message": f"Failed to update device replacement settings: {str(e)}",
+            "message": f"Failed to update device offboarding settings: {str(e)}",
         }

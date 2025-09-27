@@ -62,7 +62,7 @@ interface CustomFieldChoice {
   }
 }
 
-interface DeviceReplacementSettings {
+interface DeviceOffboardingSettings {
   remove_all_custom_fields: boolean
   clear_device_name: boolean
   keep_serial: boolean
@@ -71,7 +71,7 @@ interface DeviceReplacementSettings {
 
 interface ApiResponse {
   success: boolean
-  data?: NautobotSettings | NautobotDefaults | DeviceReplacementSettings
+  data?: NautobotSettings | NautobotDefaults | DeviceOffboardingSettings
   message?: string
 }
 
@@ -115,8 +115,8 @@ export default function NautobotSettingsForm() {
   const [locations, setLocations] = useState<NautobotOption[]>([])
   const [secretGroups, setSecretGroups] = useState<NautobotOption[]>([])
 
-  // Device replacement settings
-  const [replacementSettings, setReplacementSettings] = useState<DeviceReplacementSettings>({
+  // Device offboarding settings
+  const [offboardingSettings, setOffboardingSettings] = useState<DeviceOffboardingSettings>({
     remove_all_custom_fields: false,
     clear_device_name: false,
     keep_serial: false,
@@ -124,26 +124,18 @@ export default function NautobotSettingsForm() {
   })
   const [customFields, setCustomFields] = useState<CustomField[]>([])
   const [customFieldChoices, setCustomFieldChoices] = useState<{ [key: string]: CustomFieldChoice[] }>({})
-  const [replacementLoading, setReplacementLoading] = useState(true)
+  const [offboardingLoading, setOffboardingLoading] = useState(true)
 
   // Load settings on component mount
   useEffect(() => {
     loadSettings()
     loadDefaults()
     loadNautobotOptions()
-    loadReplacementSettings()
+    loadOffboardingSettings()
     loadCustomFields()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Debug: Log when replacement settings change
-  useEffect(() => {
-    console.log('🔄 Replacement settings state changed:', replacementSettings)
-    console.log('🔄 Individual values:')
-    console.log('  - remove_all_custom_fields:', replacementSettings.remove_all_custom_fields, typeof replacementSettings.remove_all_custom_fields)
-    console.log('  - clear_device_name:', replacementSettings.clear_device_name, typeof replacementSettings.clear_device_name)
-    console.log('  - keep_serial:', replacementSettings.keep_serial, typeof replacementSettings.keep_serial)
-  }, [replacementSettings])
 
   const loadSettings = async () => {
     try {
@@ -293,24 +285,24 @@ export default function NautobotSettingsForm() {
     setDefaults(prev => ({ ...prev, [key]: value }))
   }
 
-  const saveReplacementSettings = async () => {
+  const saveOffboardingSettings = async () => {
     setStatus('saving')
     setMessage('')
 
     try {
-      const data: ApiResponse = await apiCall('settings/device-replacement', {
+      const data: ApiResponse = await apiCall('settings/offboarding', {
         method: 'POST',
-        body: replacementSettings
+        body: offboardingSettings
       })
 
       if ((data as any).success) {
-        showMessage('Device replacement settings saved successfully!', 'success')
+        showMessage('Device offboarding settings saved successfully!', 'success')
       } else {
-        showMessage((data as any).message || 'Failed to save replacement settings', 'error')
+        showMessage((data as any).message || 'Failed to save offboarding settings', 'error')
       }
     } catch (error) {
-      showMessage('Error saving replacement settings', 'error')
-      console.error('Error saving replacement settings:', error)
+      showMessage('Error saving offboarding settings', 'error')
+      console.error('Error saving offboarding settings:', error)
     } finally {
       setStatus('idle')
     }
@@ -349,35 +341,17 @@ export default function NautobotSettingsForm() {
     }
   }
 
-  const loadReplacementSettings = async () => {
+  const loadOffboardingSettings = async () => {
     try {
-      console.log('🔄 Starting to load replacement settings...')
-      setReplacementLoading(true)
-
-      const data: ApiResponse = await apiCall('settings/device-replacement')
-      console.log('📥 API response received:', JSON.stringify(data, null, 2))
-      console.log('✅ data.success:', data.success)
-      console.log('📦 data.data:', data.data)
-
+      setOffboardingLoading(true)
+      const data: ApiResponse = await apiCall('settings/offboarding')
       if (data.success && data.data) {
-        console.log('🎯 Setting replacement settings to:', data.data)
-        const newSettings = data.data as DeviceReplacementSettings
-        console.log('🎯 Parsed settings object:', newSettings)
-        setReplacementSettings(newSettings)
-        console.log('✅ Replacement settings updated in state')
-
-        // Log individual boolean values
-        console.log('🔵 remove_all_custom_fields:', newSettings.remove_all_custom_fields, typeof newSettings.remove_all_custom_fields)
-        console.log('🔵 clear_device_name:', newSettings.clear_device_name, typeof newSettings.clear_device_name)
-        console.log('🔵 keep_serial:', newSettings.keep_serial, typeof newSettings.keep_serial)
-      } else {
-        console.log('❌ No valid data received - data.success:', data.success, 'data.data:', data.data)
+        setOffboardingSettings(data.data as DeviceOffboardingSettings)
       }
     } catch (error) {
-      console.error('💥 Error loading device replacement settings:', error)
+      console.error('Error loading device offboarding settings:', error)
     } finally {
-      setReplacementLoading(false)
-      console.log('🏁 Finished loading replacement settings')
+      setOffboardingLoading(false)
     }
   }
 
@@ -418,7 +392,7 @@ export default function NautobotSettingsForm() {
     }
   }
 
-  if (isLoading || defaultsLoading || optionsLoading || replacementLoading) {
+  if (isLoading || defaultsLoading || optionsLoading || offboardingLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
@@ -466,9 +440,9 @@ export default function NautobotSettingsForm() {
             <Database className="h-4 w-4" />
             <span>Defaults</span>
           </TabsTrigger>
-          <TabsTrigger value="replacement" className="flex items-center space-x-2">
+          <TabsTrigger value="offboarding" className="flex items-center space-x-2">
             <RotateCcw className="h-4 w-4" />
-            <span>Replacement</span>
+            <span>Offboarding</span>
           </TabsTrigger>
         </TabsList>
 
@@ -899,32 +873,26 @@ export default function NautobotSettingsForm() {
           </div>
         </TabsContent>
 
-        {/* Replacement Tab */}
-        <TabsContent value="replacement" className="space-y-6">
+        {/* Offboarding Tab */}
+        <TabsContent value="offboarding" className="space-y-6">
           <Card className="shadow-lg border-0 overflow-hidden p-0">
             <CardHeader className="bg-gradient-to-r from-orange-400/80 to-orange-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
-              <CardTitle className="text-lg font-medium">Device Replacement Settings</CardTitle>
+              <CardTitle className="text-lg font-medium">Device Offboarding Settings</CardTitle>
               <CardDescription className="text-orange-100">
-                Configure settings for device replacement operations
+                Configure settings for device offboarding operations
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
               {/* Settings Panel */}
               <div className="bg-gray-50 rounded-lg p-4 space-y-4">
                 <h3 className="text-lg font-medium text-gray-900">General Settings</h3>
-                {/* Debug current state values */}
-                <div className="text-xs text-gray-500 bg-yellow-100 p-2 rounded">
-                  🐛 Current state: remove_all={String(replacementSettings.remove_all_custom_fields)},
-                  clear_name={String(replacementSettings.clear_device_name)},
-                  keep_serial={String(replacementSettings.keep_serial)}
-                </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="remove-all-custom-fields"
-                      checked={replacementSettings.remove_all_custom_fields}
+                      checked={offboardingSettings.remove_all_custom_fields}
                       onCheckedChange={(checked) =>
-                        setReplacementSettings(prev => ({
+                        setOffboardingSettings(prev => ({
                           ...prev,
                           remove_all_custom_fields: checked === true
                         }))
@@ -937,9 +905,9 @@ export default function NautobotSettingsForm() {
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="clear-device-name"
-                      checked={replacementSettings.clear_device_name}
+                      checked={offboardingSettings.clear_device_name}
                       onCheckedChange={(checked) =>
-                        setReplacementSettings(prev => ({
+                        setOffboardingSettings(prev => ({
                           ...prev,
                           clear_device_name: checked === true
                         }))
@@ -952,9 +920,9 @@ export default function NautobotSettingsForm() {
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="keep-serial"
-                      checked={replacementSettings.keep_serial}
+                      checked={offboardingSettings.keep_serial}
                       onCheckedChange={(checked) =>
-                        setReplacementSettings(prev => ({
+                        setOffboardingSettings(prev => ({
                           ...prev,
                           keep_serial: checked === true
                         }))
@@ -968,14 +936,14 @@ export default function NautobotSettingsForm() {
               </div>
 
               {/* Custom Fields Table */}
-              {!replacementSettings.remove_all_custom_fields && (
+              {!offboardingSettings.remove_all_custom_fields && (
                 <div className="rounded-xl border shadow-sm overflow-hidden">
                   <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
                     <div className="flex items-center space-x-2">
                       <Settings className="h-4 w-4" />
                       <div>
                         <h3 className="text-sm font-semibold">Custom Fields</h3>
-                        <p className="text-blue-100 text-xs">Configure custom field settings for device replacement</p>
+                        <p className="text-blue-100 text-xs">Configure custom field settings for device offboarding</p>
                       </div>
                     </div>
                   </div>
@@ -994,7 +962,7 @@ export default function NautobotSettingsForm() {
                             const fieldName = field.name || field.key || field.id
                             if (!fieldName) return null
 
-                            const isClearSelected = replacementSettings.custom_field_settings[fieldName] === 'clear'
+                            const isClearSelected = offboardingSettings.custom_field_settings[fieldName] === 'clear'
 
                             return (
                               <tr key={field.id} className="hover:bg-gray-50">
@@ -1012,9 +980,9 @@ export default function NautobotSettingsForm() {
                                 <td className="px-4 py-3">
                                   {field.type?.value === 'select' ? (
                                     <Select
-                                      value={isClearSelected ? '' : (replacementSettings.custom_field_settings[fieldName] || '')}
+                                      value={isClearSelected ? '' : (offboardingSettings.custom_field_settings[fieldName] || '')}
                                       onValueChange={(value) =>
-                                        setReplacementSettings(prev => ({
+                                        setOffboardingSettings(prev => ({
                                           ...prev,
                                           custom_field_settings: {
                                             ...prev.custom_field_settings,
@@ -1039,9 +1007,9 @@ export default function NautobotSettingsForm() {
                                     <Input
                                       type="text"
                                       placeholder={field.default || 'Enter value'}
-                                      value={isClearSelected ? '' : (replacementSettings.custom_field_settings[fieldName] || '')}
+                                      value={isClearSelected ? '' : (offboardingSettings.custom_field_settings[fieldName] || '')}
                                       onChange={(e) =>
-                                        setReplacementSettings(prev => ({
+                                        setOffboardingSettings(prev => ({
                                           ...prev,
                                           custom_field_settings: {
                                             ...prev.custom_field_settings,
@@ -1058,7 +1026,7 @@ export default function NautobotSettingsForm() {
                                   <Checkbox
                                     checked={isClearSelected}
                                     onCheckedChange={(checked) =>
-                                      setReplacementSettings(prev => ({
+                                      setOffboardingSettings(prev => ({
                                         ...prev,
                                         custom_field_settings: {
                                           ...prev.custom_field_settings,
@@ -1086,12 +1054,12 @@ export default function NautobotSettingsForm() {
               <div className="flex justify-end pt-4">
                 <Button
                   type="button"
-                  onClick={saveReplacementSettings}
+                  onClick={saveOffboardingSettings}
                   disabled={status === 'saving'}
                   className="flex items-center space-x-2 bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 text-base font-medium"
                 >
                   {status === 'saving' && <Loader2 className="h-4 w-4 animate-spin" />}
-                  <span>{status === 'saving' ? 'Saving...' : 'Save Replacement Settings'}</span>
+                  <span>{status === 'saving' ? 'Saving...' : 'Save Offboarding Settings'}</span>
                 </Button>
               </div>
             </CardContent>

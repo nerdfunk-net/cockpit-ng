@@ -102,8 +102,8 @@ class NautobotDefaultsRequest(BaseModel):
     secret_group: Optional[str] = None
 
 
-class DeviceReplacementRequest(BaseModel):
-    """Device replacement settings request model."""
+class DeviceOffboardingRequest(BaseModel):
+    """Device offboarding settings request model."""
 
     remove_all_custom_fields: bool = False
     clear_device_name: bool = False
