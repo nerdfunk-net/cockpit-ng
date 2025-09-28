@@ -29,8 +29,8 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Logout successful')
-    
-    // Return successful response
+
+    // Return successful response - client will handle cookie cleanup
     return NextResponse.json(
       { message: 'Logged out successfully' },
       { status: 200 }

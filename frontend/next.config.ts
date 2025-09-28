@@ -42,31 +42,78 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
 
-  // Headers for offline caching
+  // Security and caching headers
   async headers() {
-    if (process.env.NEXT_PUBLIC_AIR_GAPPED === "true") {
-      return [
-        {
-          source: '/fonts/:path*',
-          headers: [
-            {
-              key: 'Cache-Control',
-              value: 'public, max-age=31536000, immutable',
-            },
-          ],
-        },
-        {
-          source: '/_next/static/:path*',
-          headers: [
-            {
-              key: 'Cache-Control', 
-              value: 'public, max-age=31536000, immutable',
-            },
-          ],
-        },
-      ];
-    }
-    return [];
+    const securityHeaders = [
+      {
+        source: '/(.*)',
+        headers: [
+          // Prevent clickjacking attacks
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          // Prevent MIME type sniffing
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          // Referrer policy for better privacy
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          // Content Security Policy
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js requires unsafe-inline and unsafe-eval
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: blob:",
+              "font-src 'self' data:",
+              "connect-src 'self'",
+              "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join('; '),
+          },
+          // Prevent XSS attacks
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+          // Remove server information
+          {
+            key: 'Server',
+            value: 'Cockpit-NG',
+          },
+        ],
+      },
+    ];
+
+    const cacheHeaders = process.env.NEXT_PUBLIC_AIR_GAPPED === "true" ? [
+      {
+        source: '/fonts/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ] : [];
+
+    return [...securityHeaders, ...cacheHeaders];
   },
 };
 
