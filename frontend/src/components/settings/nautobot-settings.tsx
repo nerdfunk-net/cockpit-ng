@@ -38,6 +38,17 @@ interface NautobotOption {
   description?: string
 }
 
+interface LocationItem {
+  id: string
+  name: string
+  display?: string
+  parent?: {
+    id: string
+    name: string
+  }
+  hierarchicalPath?: string
+}
+
 interface CustomField {
   id: string
   name?: string
@@ -66,6 +77,9 @@ interface DeviceOffboardingSettings {
   remove_all_custom_fields: boolean
   clear_device_name: boolean
   keep_serial: boolean
+  location_id: string
+  status_id: string
+  role_id: string
   custom_field_settings: { [key: string]: string }
 }
 
@@ -112,7 +126,7 @@ export default function NautobotSettingsForm() {
   const [namespaces, setNamespaces] = useState<NautobotOption[]>([])
   const [deviceRoles, setDeviceRoles] = useState<NautobotOption[]>([])
   const [platforms, setPlatforms] = useState<NautobotOption[]>([])
-  const [locations, setLocations] = useState<NautobotOption[]>([])
+  const [locations, setLocations] = useState<LocationItem[]>([])
   const [secretGroups, setSecretGroups] = useState<NautobotOption[]>([])
 
   // Device offboarding settings
@@ -120,11 +134,19 @@ export default function NautobotSettingsForm() {
     remove_all_custom_fields: false,
     clear_device_name: false,
     keep_serial: false,
+    location_id: '',
+    status_id: '',
+    role_id: '',
     custom_field_settings: {}
   })
   const [customFields, setCustomFields] = useState<CustomField[]>([])
   const [customFieldChoices, setCustomFieldChoices] = useState<{ [key: string]: CustomFieldChoice[] }>({})
   const [offboardingLoading, setOffboardingLoading] = useState(true)
+
+  // Location search functionality for offboarding
+  const [offboardLocationSearch, setOffboardLocationSearch] = useState('')
+  const [showOffboardLocationDropdown, setShowOffboardLocationDropdown] = useState(false)
+  const [filteredOffboardLocations, setFilteredOffboardLocations] = useState<LocationItem[]>([])
 
   // Load settings on component mount
   useEffect(() => {
@@ -135,6 +157,44 @@ export default function NautobotSettingsForm() {
     loadCustomFields()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Location filtering effect for offboarding
+  useEffect(() => {
+    if (!offboardLocationSearch.trim()) {
+      setFilteredOffboardLocations(locations)
+    } else {
+      const searchLower = offboardLocationSearch.toLowerCase()
+      const filtered = locations.filter(location =>
+        location.hierarchicalPath?.toLowerCase().includes(searchLower)
+      )
+      setFilteredOffboardLocations(filtered)
+    }
+  }, [offboardLocationSearch, locations])
+
+  // Update location search display when locations are loaded and we have a location_id
+  useEffect(() => {
+    if (offboardingSettings.location_id && locations.length > 0) {
+      const selectedLocation = locations.find(loc => loc.id === offboardingSettings.location_id)
+      if (selectedLocation) {
+        setOffboardLocationSearch(selectedLocation.hierarchicalPath || selectedLocation.name)
+      }
+    }
+  }, [locations, offboardingSettings.location_id])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('.location-dropdown-container')) {
+        setShowOffboardLocationDropdown(false)
+      }
+    }
+
+    if (showOffboardLocationDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showOffboardLocationDropdown])
 
 
   const loadSettings = async () => {
@@ -285,6 +345,59 @@ export default function NautobotSettingsForm() {
     setDefaults(prev => ({ ...prev, [key]: value }))
   }
 
+  const buildLocationHierarchy = (locations: LocationItem[]): LocationItem[] => {
+    // Create a map for quick location lookup by ID
+    const locationMap = new Map()
+    locations.forEach(location => {
+      locationMap.set(location.id, location)
+    })
+
+    // Build hierarchical path for each location
+    const processedLocations = locations.map(location => {
+      const hierarchicalPath = buildLocationPath(location, locationMap)
+      return {
+        ...location,
+        hierarchicalPath
+      }
+    })
+
+    // Sort locations by their hierarchical path
+    return processedLocations.sort((a, b) =>
+      (a.hierarchicalPath || '').localeCompare(b.hierarchicalPath || '')
+    )
+  }
+
+  const buildLocationPath = (location: LocationItem, locationMap: Map<string, LocationItem>): string => {
+    const path: string[] = []
+    let current = location
+
+    // Traverse up the hierarchy to build the full path
+    while (current) {
+      path.unshift(current.name) // Add to beginning of array
+
+      // Move to parent if it exists
+      if (current.parent?.id) {
+        const parent = locationMap.get(current.parent.id)
+        if (parent && !path.includes(parent.name)) { // Prevent circular references
+          current = parent
+        } else {
+          break
+        }
+      } else {
+        break // No parent, we've reached the root
+      }
+    }
+
+    // Join path with arrows, or return just the name if it's a root location
+    return path.length > 1 ? path.join(' → ') : path[0]
+  }
+
+  const handleOffboardLocationSelect = (location: LocationItem) => {
+    setOffboardLocationSearch(location.hierarchicalPath || location.name)
+    setOffboardingSettings(prev => ({ ...prev, location_id: location.id }))
+    setShowOffboardLocationDropdown(false)
+  }
+
   const saveOffboardingSettings = async () => {
     setStatus('saving')
     setMessage('')
@@ -332,7 +445,12 @@ export default function NautobotSettingsForm() {
       setNamespaces(Array.isArray(namespacesRes) ? namespacesRes : [])
       setDeviceRoles(Array.isArray(deviceRolesRes) ? deviceRolesRes : [])
       setPlatforms(Array.isArray(platformsRes) ? platformsRes : [])
-      setLocations(Array.isArray(locationsRes) ? locationsRes : [])
+
+      // Build location hierarchy like in onboard-device page
+      const processedLocations = buildLocationHierarchy(Array.isArray(locationsRes) ? locationsRes : [])
+      setLocations(processedLocations)
+      setFilteredOffboardLocations(processedLocations)
+
       setSecretGroups(Array.isArray(secretGroupsRes) ? secretGroupsRes : [])
     } catch (error) {
       console.error('Error loading Nautobot options:', error)
@@ -346,7 +464,18 @@ export default function NautobotSettingsForm() {
       setOffboardingLoading(true)
       const data: ApiResponse = await apiCall('settings/offboarding')
       if (data.success && data.data) {
-        setOffboardingSettings(data.data as DeviceOffboardingSettings)
+        const settings = data.data as DeviceOffboardingSettings
+        setOffboardingSettings(settings)
+
+        // If there's a location_id, find the location and set the search display
+        if (settings.location_id && locations.length > 0) {
+          const selectedLocation = locations.find(loc => loc.id === settings.location_id)
+          if (selectedLocation) {
+            setOffboardLocationSearch(selectedLocation.hierarchicalPath || selectedLocation.name)
+          }
+        } else {
+          setOffboardLocationSearch('')
+        }
       }
     } catch (error) {
       console.error('Error loading device offboarding settings:', error)
@@ -610,12 +739,12 @@ export default function NautobotSettingsForm() {
         {/* Defaults Tab */}
         <TabsContent value="defaults" className="space-y-6">
           <Card className="shadow-lg border-0 overflow-hidden p-0">
-            <CardHeader className="bg-gradient-to-r from-green-400/80 to-green-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
+            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
               <CardTitle className="flex items-center space-x-2 text-sm font-medium">
                 <Database className="h-4 w-4" />
                 <span>Nautobot Default Values</span>
               </CardTitle>
-              <CardDescription className="text-green-100 text-xs mt-1">
+              <CardDescription className="text-blue-100 text-xs mt-1">
                 Configure default values used when creating devices in Nautobot
               </CardDescription>
             </CardHeader>
@@ -627,13 +756,13 @@ export default function NautobotSettingsForm() {
                     Location
                   </Label>
                   <Select value={defaults.location} onValueChange={(value) => updateDefault('location', value)}>
-                    <SelectTrigger className="w-full border-gray-200 focus:border-green-500 focus:ring-green-500">
+                    <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select a location" />
                     </SelectTrigger>
                     <SelectContent>
                       {locations.map((location) => (
                         <SelectItem key={location.id} value={location.id}>
-                          {location.name}
+                          {location.hierarchicalPath}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -649,7 +778,7 @@ export default function NautobotSettingsForm() {
                     Platform
                   </Label>
                   <Select value={defaults.platform} onValueChange={(value) => updateDefault('platform', value)}>
-                    <SelectTrigger className="w-full border-gray-200 focus:border-green-500 focus:ring-green-500">
+                    <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select a platform" />
                     </SelectTrigger>
                     <SelectContent>
@@ -671,7 +800,7 @@ export default function NautobotSettingsForm() {
                     Interface Status
                   </Label>
                   <Select value={defaults.interface_status} onValueChange={(value) => updateDefault('interface_status', value)}>
-                    <SelectTrigger className="w-full border-gray-200 focus:border-green-500 focus:ring-green-500">
+                    <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select interface status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -698,7 +827,7 @@ export default function NautobotSettingsForm() {
                     Device Status
                   </Label>
                   <Select value={defaults.device_status} onValueChange={(value) => updateDefault('device_status', value)}>
-                    <SelectTrigger className="w-full border-gray-200 focus:border-green-500 focus:ring-green-500">
+                    <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select device status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -725,7 +854,7 @@ export default function NautobotSettingsForm() {
                     IP Address Status
                   </Label>
                   <Select value={defaults.ip_address_status} onValueChange={(value) => updateDefault('ip_address_status', value)}>
-                    <SelectTrigger className="w-full border-gray-200 focus:border-green-500 focus:ring-green-500">
+                    <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select IP address status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -752,7 +881,7 @@ export default function NautobotSettingsForm() {
                     IP Prefix Status
                   </Label>
                   <Select value={defaults.ip_prefix_status} onValueChange={(value) => updateDefault('ip_prefix_status', value)}>
-                    <SelectTrigger className="w-full border-gray-200 focus:border-green-500 focus:ring-green-500">
+                    <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select IP prefix status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -779,7 +908,7 @@ export default function NautobotSettingsForm() {
                     Namespace
                   </Label>
                   <Select value={defaults.namespace} onValueChange={(value) => updateDefault('namespace', value)}>
-                    <SelectTrigger className="w-full border-gray-200 focus:border-green-500 focus:ring-green-500">
+                    <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select a namespace" />
                     </SelectTrigger>
                     <SelectContent>
@@ -801,7 +930,7 @@ export default function NautobotSettingsForm() {
                     Device Role
                   </Label>
                   <Select value={defaults.device_role} onValueChange={(value) => updateDefault('device_role', value)}>
-                    <SelectTrigger className="w-full border-gray-200 focus:border-green-500 focus:ring-green-500">
+                    <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select a device role" />
                     </SelectTrigger>
                     <SelectContent>
@@ -828,7 +957,7 @@ export default function NautobotSettingsForm() {
                     Secret Group
                   </Label>
                   <Select value={defaults.secret_group} onValueChange={(value) => updateDefault('secret_group', value)}>
-                    <SelectTrigger className="w-full border-gray-200 focus:border-green-500 focus:ring-green-500">
+                    <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select a secret group" />
                     </SelectTrigger>
                     <SelectContent>
@@ -864,7 +993,7 @@ export default function NautobotSettingsForm() {
                 type="button"
                 onClick={saveDefaults}
                 disabled={status === 'saving'}
-                className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2 text-base font-medium"
+                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 text-base font-medium"
               >
                 {status === 'saving' && <Loader2 className="h-4 w-4 animate-spin" />}
                 <span>{status === 'saving' ? 'Saving...' : 'Save Defaults'}</span>
@@ -876,18 +1005,111 @@ export default function NautobotSettingsForm() {
         {/* Offboarding Tab */}
         <TabsContent value="offboarding" className="space-y-6">
           <Card className="shadow-lg border-0 overflow-hidden p-0">
-            <CardHeader className="bg-gradient-to-r from-orange-400/80 to-orange-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
-              <CardTitle className="text-lg font-medium">Device Offboarding Settings</CardTitle>
-              <CardDescription className="text-orange-100">
+            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
+              <CardTitle className="text-sm font-medium">Device Offboarding Settings</CardTitle>
+              <CardDescription className="text-blue-100 text-xs">
                 Configure settings for device offboarding operations
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-6 space-y-6">
+            <CardContent className="p-4 space-y-4">
+              {/* Location, Status and Role Selection */}
+              <div className="bg-blue-50 rounded-lg p-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* Location Filter */}
+                  <div className="space-y-1 relative location-dropdown-container">
+                    <Label htmlFor="offboard_location_search" className="text-xs font-medium text-blue-800">
+                      Location
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="offboard_location_search"
+                        placeholder="Search locations..."
+                        value={offboardLocationSearch}
+                        onChange={(e) => setOffboardLocationSearch(e.target.value)}
+                        onFocus={() => setShowOffboardLocationDropdown(true)}
+                        className={`text-xs h-8 ${offboardingSettings.location_id ? 'bg-blue-50 border-blue-500' : 'bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500'}`}
+                      />
+                      {showOffboardLocationDropdown && (
+                        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                          {filteredOffboardLocations.length > 0 ? (
+                            filteredOffboardLocations.map(location => (
+                              <div
+                                key={location.id}
+                                className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-xs border-b border-gray-100 last:border-b-0"
+                                onClick={() => handleOffboardLocationSelect(location)}
+                              >
+                                {location.hierarchicalPath}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-2 py-1 text-xs text-gray-500 italic">
+                              No locations found
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div className="space-y-1">
+                    <Label htmlFor="offboard_status" className="text-xs font-medium text-blue-800">
+                      Status
+                    </Label>
+                    <Select value={offboardingSettings.status_id} onValueChange={(value) =>
+                      setOffboardingSettings(prev => ({ ...prev, status_id: value }))
+                    }>
+                      <SelectTrigger className="w-full h-8 text-xs bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                        <SelectValue placeholder="Select status..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {deviceStatuses.map((status) => (
+                          <SelectItem key={status.id} value={status.id}>
+                            <div className="flex items-center space-x-2">
+                              {status.color && (
+                                <div className={`w-2 h-2 rounded-full`} style={{ backgroundColor: `#${status.color}` }} />
+                              )}
+                              <span className="text-xs">{status.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Role Filter */}
+                  <div className="space-y-1">
+                    <Label htmlFor="offboard_role" className="text-xs font-medium text-blue-800">
+                      Role
+                    </Label>
+                    <Select value={offboardingSettings.role_id} onValueChange={(value) =>
+                      setOffboardingSettings(prev => ({ ...prev, role_id: value }))
+                    }>
+                      <SelectTrigger className="w-full h-8 text-xs bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                        <SelectValue placeholder="Select role..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {deviceRoles.map((role) => (
+                          <SelectItem key={role.id} value={role.id}>
+                            <div className="flex items-center space-x-2">
+                              {role.color && (
+                                <div className={`w-2 h-2 rounded-full`} style={{ backgroundColor: `#${role.color}` }} />
+                              )}
+                              <span className="text-xs">{role.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
               {/* Settings Panel */}
-              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                <h3 className="text-lg font-medium text-gray-900">General Settings</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="flex items-center space-x-2">
+              <div className="bg-gray-50 rounded-lg p-3 space-y-3">
+                <h3 className="text-sm font-medium text-gray-900">General Settings</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="flex items-center space-x-1">
                     <Checkbox
                       id="remove-all-custom-fields"
                       checked={offboardingSettings.remove_all_custom_fields}
@@ -898,11 +1120,11 @@ export default function NautobotSettingsForm() {
                         }))
                       }
                     />
-                    <Label htmlFor="remove-all-custom-fields" className="text-sm font-medium">
+                    <Label htmlFor="remove-all-custom-fields" className="text-xs font-medium">
                       Remove all custom fields
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1">
                     <Checkbox
                       id="clear-device-name"
                       checked={offboardingSettings.clear_device_name}
@@ -913,11 +1135,11 @@ export default function NautobotSettingsForm() {
                         }))
                       }
                     />
-                    <Label htmlFor="clear-device-name" className="text-sm font-medium">
+                    <Label htmlFor="clear-device-name" className="text-xs font-medium">
                       Clear device name
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1">
                     <Checkbox
                       id="keep-serial"
                       checked={offboardingSettings.keep_serial}
@@ -928,7 +1150,7 @@ export default function NautobotSettingsForm() {
                         }))
                       }
                     />
-                    <Label htmlFor="keep-serial" className="text-sm font-medium">
+                    <Label htmlFor="keep-serial" className="text-xs font-medium">
                       Keep serial
                     </Label>
                   </div>
@@ -937,12 +1159,12 @@ export default function NautobotSettingsForm() {
 
               {/* Custom Fields Table */}
               {!offboardingSettings.remove_all_custom_fields && (
-                <div className="rounded-xl border shadow-sm overflow-hidden">
-                  <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+                <div className="rounded-lg border shadow-sm overflow-hidden">
+                  <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-1 px-3">
                     <div className="flex items-center space-x-2">
-                      <Settings className="h-4 w-4" />
+                      <Settings className="h-3 w-3" />
                       <div>
-                        <h3 className="text-sm font-semibold">Custom Fields</h3>
+                        <h3 className="text-xs font-semibold">Custom Fields</h3>
                         <p className="text-blue-100 text-xs">Configure custom field settings for device offboarding</p>
                       </div>
                     </div>
@@ -952,9 +1174,9 @@ export default function NautobotSettingsForm() {
                       <table className="w-full">
                         <thead className="bg-gray-50">
                           <tr>
-                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Custom Field</th>
-                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Value</th>
-                            <th className="px-4 py-3 text-center text-sm font-medium text-gray-900">Clear Custom Field</th>
+                            <th className="px-2 py-2 text-left text-xs font-medium text-gray-900">Custom Field</th>
+                            <th className="px-2 py-2 text-left text-xs font-medium text-gray-900">Value</th>
+                            <th className="px-2 py-2 text-center text-xs font-medium text-gray-900">Clear Custom Field</th>
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -966,18 +1188,18 @@ export default function NautobotSettingsForm() {
 
                             return (
                               <tr key={field.id} className="hover:bg-gray-50">
-                                <td className="px-4 py-3">
+                                <td className="px-2 py-2">
                                   <div>
-                                    <div className="text-sm font-medium text-gray-900">
+                                    <div className="text-xs font-medium text-gray-900">
                                       {fieldName}
                                       {field.required && <span className="text-red-500 ml-1">*</span>}
                                     </div>
                                     {field.description && (
-                                      <div className="text-xs text-gray-500 mt-1">{field.description}</div>
+                                      <div className="text-xs text-gray-500">{field.description}</div>
                                     )}
                                   </div>
                                 </td>
-                                <td className="px-4 py-3">
+                                <td className="px-2 py-2">
                                   {field.type?.value === 'select' ? (
                                     <Select
                                       value={isClearSelected ? '' : (offboardingSettings.custom_field_settings[fieldName] || '')}
@@ -992,7 +1214,7 @@ export default function NautobotSettingsForm() {
                                       }
                                       disabled={isClearSelected}
                                     >
-                                      <SelectTrigger className="h-8">
+                                      <SelectTrigger className="h-6 text-xs">
                                         <SelectValue placeholder="Select a value" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -1018,11 +1240,11 @@ export default function NautobotSettingsForm() {
                                         }))
                                       }
                                       disabled={isClearSelected}
-                                      className="h-8"
+                                      className="h-6 text-xs"
                                     />
                                   )}
                                 </td>
-                                <td className="px-4 py-3 text-center">
+                                <td className="px-2 py-2 text-center">
                                   <Checkbox
                                     checked={isClearSelected}
                                     onCheckedChange={(checked) =>
@@ -1043,7 +1265,7 @@ export default function NautobotSettingsForm() {
                       </table>
                     </div>
                   ) : (
-                    <div className="text-sm text-gray-500 text-center py-8 bg-white">
+                    <div className="text-xs text-gray-500 text-center py-4 bg-white">
                       No custom fields available
                     </div>
                   )}
@@ -1051,14 +1273,14 @@ export default function NautobotSettingsForm() {
               )}
 
               {/* Save Button */}
-              <div className="flex justify-end pt-4">
+              <div className="flex justify-end pt-2">
                 <Button
                   type="button"
                   onClick={saveOffboardingSettings}
                   disabled={status === 'saving'}
-                  className="flex items-center space-x-2 bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 text-base font-medium"
+                  className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 text-sm font-medium"
                 >
-                  {status === 'saving' && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {status === 'saving' && <Loader2 className="h-3 w-3 animate-spin" />}
                   <span>{status === 'saving' ? 'Saving...' : 'Save Offboarding Settings'}</span>
                 </Button>
               </div>

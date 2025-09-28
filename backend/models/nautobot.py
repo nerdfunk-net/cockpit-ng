@@ -4,7 +4,7 @@ Nautobot-related Pydantic models.
 
 from __future__ import annotations
 from pydantic import BaseModel
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Literal, Optional
 
 
 class CheckIPRequest(BaseModel):
@@ -49,3 +49,4 @@ class OffboardDeviceRequest(BaseModel):
     remove_primary_ip: bool = True
     remove_interface_ips: bool = True
     remove_from_checkmk: bool = True
+    nautobot_integration_mode: Literal["remove", "set-offboarding"] = "remove"

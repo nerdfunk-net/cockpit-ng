@@ -4,7 +4,7 @@ Nautobot router for device management and API interactions.
 
 from __future__ import annotations
 import logging
-from typing import Optional
+from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import verify_admin_token, verify_token
@@ -15,7 +15,7 @@ from models.nautobot import (
     DeviceFilter,
     OffboardDeviceRequest,
 )
-from services.nautobot import nautobot_service
+from services import nautobot_service, offboarding_service
 from services.cache_service import cache_service
 
 logger = logging.getLogger(__name__)
@@ -602,6 +602,65 @@ async def get_device(device_id: str, current_user: dict = Depends(verify_admin_t
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch device {device_id}: {str(e)}",
+        )
+
+
+@router.put("/devices/{device_id}")
+async def update_device(
+    device_id: str,
+    payload: Dict[str, Any],
+    current_user: dict = Depends(verify_admin_token),
+):
+    """Update a device in Nautobot using REST API."""
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Request body cannot be empty.",
+        )
+
+    try:
+        updated_device = await nautobot_service.rest_request(
+            f"dcim/devices/{device_id}/",
+            method="PUT",
+            data=payload,
+        )
+
+        if isinstance(updated_device, dict):
+            _cache_device(updated_device)
+            details_cache_key = f"nautobot:device_details:{device_id}"
+            cache_service.set(details_cache_key, updated_device, DEVICE_CACHE_TTL)
+
+        cache_service.delete("nautobot:devices:list:all")
+
+        return {
+            "success": True,
+            "device_id": device_id,
+            "device": updated_device,
+        }
+
+    except Exception as e:
+        error_message = str(e)
+        logger.error(f"Error updating device {device_id}: {error_message}")
+
+        if "404" in error_message or "Not Found" in error_message:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Device {device_id} not found",
+            )
+        if "status 400" in error_message:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid request payload: {error_message}",
+            )
+        if "status 403" in error_message:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission denied updating device {device_id}",
+            )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update device: {error_message}",
         )
 
 
@@ -1647,170 +1706,21 @@ async def offboard_device(
     request: OffboardDeviceRequest,
     current_user: dict = Depends(verify_admin_token),
 ):
-    """Offboard a device by removing it and optionally its IP addresses from Nautobot."""
+    """Offboard a device by removing it or applying configured offboarding values."""
     try:
-        results = {
-            "success": True,
-            "device_id": device_id,
-            "removed_items": [],
-            "skipped_items": [],
-            "errors": [],
-            "summary": ""
-        }
-
-        # Step 1: Get device details to understand what needs to be removed
-        logger.info(f"Starting offboard process for device {device_id}")
-        try:
-            device_details = await get_device_details(device_id, current_user)
-            if not device_details:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Device {device_id} not found"
-                )
-
-            logger.info(f"Found device: {device_details.get('name', device_id)}")
-            results["device_name"] = device_details.get("name", device_id)
-
-        except HTTPException as e:
-            if e.status_code == 404:
-                raise
-            logger.error(f"Error getting device details: {e.detail}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to get device details: {e.detail}"
-            )
-
-        # Step 2: Remove the device itself first
-        logger.info(f"Removing device {device_id}")
-        try:
-            device_deletion_result = await delete_device(device_id, current_user)
-            results["removed_items"].append(f"Device: {results['device_name']} ({device_id})")
-            logger.info(f"Successfully removed device {device_id}")
-        except Exception as e:
-            error_msg = f"Failed to remove device {device_id}: {str(e)}"
-            results["errors"].append(error_msg)
-            results["success"] = False
-            logger.error(error_msg)
-
-        # Step 3: Remove interface IP addresses if requested
-        interface_ips_removed = []
-        if request.remove_interface_ips:
-            logger.info("Processing interface IP removal")
-            interfaces = device_details.get("interfaces", [])
-
-            for interface in interfaces:
-                interface_name = interface.get("name", "unknown")
-                ip_addresses = interface.get("ip_addresses", [])
-
-                for ip_addr in ip_addresses:
-                    ip_id = ip_addr.get("id")
-                    ip_address = ip_addr.get("address", "unknown")
-
-                    if ip_id:
-                        try:
-                            await delete_ip_address(ip_id, current_user)
-                            interface_ips_removed.append({
-                                "ip_id": ip_id,
-                                "address": ip_address,
-                                "interface": interface_name
-                            })
-                            results["removed_items"].append(f"Interface IP: {ip_address} (interface: {interface_name})")
-                            logger.info(f"Removed interface IP {ip_address} from interface {interface_name}")
-                        except Exception as e:
-                            error_msg = f"Failed to remove interface IP {ip_address} from interface {interface_name}: {str(e)}"
-                            results["errors"].append(error_msg)
-                            logger.error(error_msg)
-
-            if not interface_ips_removed:
-                results["skipped_items"].append("No interface IPs found to remove")
-                logger.info("No interface IP addresses found for removal")
-        else:
-            results["skipped_items"].append("Interface IP removal was not requested")
-            logger.info("Interface IP removal skipped (not requested)")
-
-        # Step 4: Remove primary IP if requested and interface IPs were not removed
-        primary_ip_removed = False
-        if request.remove_primary_ip:
-            logger.info("Processing primary IP removal")
-            primary_ip4 = device_details.get("primary_ip4")
-
-            if primary_ip4:
-                primary_ip_id = primary_ip4.get("id")
-                primary_ip_address = primary_ip4.get("address", "unknown")
-
-                # Check if this IP was already removed as part of interface IPs
-                already_removed = any(
-                    ip["ip_id"] == primary_ip_id
-                    for ip in interface_ips_removed
-                )
-
-                if already_removed:
-                    results["skipped_items"].append(f"Primary IP {primary_ip_address} already removed with interface IPs")
-                    logger.info(f"Primary IP {primary_ip_address} was already removed as interface IP")
-                elif primary_ip_id:
-                    try:
-                        await delete_ip_address(primary_ip_id, current_user)
-                        primary_ip_removed = True
-                        results["removed_items"].append(f"Primary IP: {primary_ip_address}")
-                        logger.info(f"Removed primary IP {primary_ip_address}")
-                    except Exception as e:
-                        error_msg = f"Failed to remove primary IP {primary_ip_address}: {str(e)}"
-                        results["errors"].append(error_msg)
-                        logger.error(error_msg)
-                else:
-                    results["skipped_items"].append("Primary IP has no valid ID")
-                    logger.warning("Primary IP found but has no valid ID")
-            else:
-                results["skipped_items"].append("No primary IP found")
-                logger.info("No primary IP found for removal")
-        else:
-            results["skipped_items"].append("Primary IP removal was not requested")
-            logger.info("Primary IP removal skipped (not requested)")
-
-        # Step 5: Handle CheckMK removal
-        if request.remove_from_checkmk:
-            logger.info("Processing CheckMK removal")
-            device_name = device_details.get("name")
-
-            if device_name:
-                try:
-                    # Import CheckMK delete function directly
-                    from routers.checkmk import delete_host
-
-                    # Call the CheckMK delete_host function directly
-                    checkmk_result = await delete_host(device_name, current_user)
-
-                    results["removed_items"].append(f"CheckMK Host: {device_name}")
-                    logger.info(f"Successfully removed device {device_name} from CheckMK")
-                except Exception as e:
-                    error_msg = f"Failed to remove device {device_name} from CheckMK: {str(e)}"
-                    results["errors"].append(error_msg)
-                    logger.error(error_msg)
-            else:
-                results["skipped_items"].append("CheckMK removal skipped: No device name found")
-                logger.warning("CheckMK removal skipped: No device name found in device details")
-        else:
-            results["skipped_items"].append("CheckMK removal was not requested")
-            logger.info("CheckMK removal skipped (not requested)")
-
-        # Step 6: Generate summary
-        removed_count = len(results["removed_items"])
-        error_count = len(results["errors"])
-
-        if error_count > 0:
-            results["success"] = False
-            results["summary"] = f"Offboarding partially completed: {removed_count} items removed, {error_count} errors occurred"
-        else:
-            results["summary"] = f"Offboarding completed successfully: {removed_count} items removed"
-
-        logger.info(f"Offboard process completed for device {device_id}: {results['summary']}")
-
-        return results
-
+        return await offboarding_service.offboard_device(
+            device_id=device_id,
+            request=request,
+            current_user=current_user,
+        )
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Unexpected error during offboard process for device {device_id}: {str(e)}")
+        logger.error(
+            "Unexpected error during offboard process for device %s: %s",
+            device_id,
+            str(e),
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Offboarding failed: {str(e)}",

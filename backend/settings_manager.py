@@ -88,6 +88,9 @@ class DeviceOffboardingSettings:
     remove_all_custom_fields: bool = False
     clear_device_name: bool = False
     keep_serial: bool = False
+    location_id: Optional[str] = None
+    status_id: Optional[str] = None
+    role_id: Optional[str] = None
     custom_field_settings: Dict[str, str] = field(default_factory=dict)
 
 
@@ -214,12 +217,16 @@ class SettingsManager:
                     )
                 """)
 
+                # Create offboarding_settings table
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS offboarding_settings (
                         id INTEGER PRIMARY KEY,
                         remove_all_custom_fields BOOLEAN DEFAULT FALSE,
                         clear_device_name BOOLEAN DEFAULT FALSE,
                         keep_serial BOOLEAN DEFAULT FALSE,
+                        location_id TEXT DEFAULT NULL,
+                        status_id TEXT DEFAULT NULL,
+                        role_id TEXT DEFAULT NULL,
                         custom_field_settings TEXT DEFAULT '{}',
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -253,8 +260,6 @@ class SettingsManager:
                     logger.info("Inserting default Nautobot defaults")
                     self._insert_default_nautobot_defaults(cursor)
 
-                # Migrate offboarding_settings to offboarding_settings
-                self._migrate_device_replacement_to_offboarding(cursor)
 
                 # Check offboarding_settings
                 cursor.execute("SELECT COUNT(*) FROM offboarding_settings")
@@ -361,47 +366,17 @@ class SettingsManager:
             ),
         )
 
+
     def _insert_default_offboarding_settings(self, cursor):
         """Insert default offboarding settings"""
         cursor.execute(
             """
-            INSERT INTO offboarding_settings (remove_all_custom_fields, clear_device_name, keep_serial, custom_field_settings)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO offboarding_settings (remove_all_custom_fields, clear_device_name, keep_serial, location_id, status_id, role_id, custom_field_settings)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
-            (False, False, False, json.dumps({})),
+            (False, False, False, None, None, None, json.dumps({})),
         )
 
-    def _migrate_device_replacement_to_offboarding(self, cursor):
-        """Migrate data from offboarding_settings to offboarding_settings"""
-        try:
-            # Check if old table exists and has data
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='offboarding_settings'")
-            if cursor.fetchone():
-                # Check if there's data to migrate
-                cursor.execute("SELECT COUNT(*) FROM offboarding_settings")
-                old_count = cursor.fetchone()[0]
-
-                if old_count > 0:
-                    # Check if new table is empty
-                    cursor.execute("SELECT COUNT(*) FROM offboarding_settings")
-                    new_count = cursor.fetchone()[0]
-
-                    if new_count == 0:
-                        logger.info("Migrating device replacement settings to offboarding settings")
-                        # Copy data from old table to new table
-                        cursor.execute("""
-                            INSERT INTO offboarding_settings (remove_all_custom_fields, clear_device_name, keep_serial, custom_field_settings, created_at, updated_at)
-                            SELECT remove_all_custom_fields, clear_device_name, keep_serial, custom_field_settings, created_at, updated_at
-                            FROM offboarding_settings
-                        """)
-                        logger.info(f"Migrated {old_count} records from offboarding_settings to offboarding_settings")
-
-                        # Drop the old table
-                        cursor.execute("DROP TABLE offboarding_settings")
-                        logger.info("Dropped old offboarding_settings table")
-        except Exception as e:
-            logger.error(f"Error during migration: {e}")
-            # Continue anyway - the new table will be created with defaults
 
     def get_nautobot_settings(self) -> Optional[Dict[str, Any]]:
         """Get current Nautobot settings"""
@@ -1083,8 +1058,11 @@ class SettingsManager:
 
                     return {
                         "remove_all_custom_fields": bool(result["remove_all_custom_fields"]),
-                        "clear_device_name": bool(result["clear_device_name"]) if "clear_device_name" in result.keys() else False,
-                        "keep_serial": bool(result["keep_serial"]) if "keep_serial" in result.keys() else False,
+                        "clear_device_name": bool(result["clear_device_name"]),
+                        "keep_serial": bool(result["keep_serial"]),
+                        "location_id": result["location_id"],
+                        "status_id": result["status_id"],
+                        "role_id": result["role_id"],
                         "custom_field_settings": custom_field_settings,
                     }
                 else:
@@ -1092,6 +1070,9 @@ class SettingsManager:
                         "remove_all_custom_fields": False,
                         "clear_device_name": False,
                         "keep_serial": False,
+                        "location_id": None,
+                        "status_id": None,
+                        "role_id": None,
                         "custom_field_settings": {},
                     }
 
@@ -1101,6 +1082,9 @@ class SettingsManager:
                 "remove_all_custom_fields": False,
                 "clear_device_name": False,
                 "keep_serial": False,
+                "location_id": None,
+                "status_id": None,
+                "role_id": None,
                 "custom_field_settings": {},
             }
 
@@ -1117,13 +1101,16 @@ class SettingsManager:
                 if count == 0:
                     cursor.execute(
                         """
-                        INSERT INTO offboarding_settings (remove_all_custom_fields, clear_device_name, keep_serial, custom_field_settings)
-                        VALUES (?, ?, ?, ?)
+                        INSERT INTO offboarding_settings (remove_all_custom_fields, clear_device_name, keep_serial, location_id, status_id, role_id, custom_field_settings)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
                         (
                             settings.get("remove_all_custom_fields", False),
                             settings.get("clear_device_name", False),
                             settings.get("keep_serial", False),
+                            settings.get("location_id"),
+                            settings.get("status_id"),
+                            settings.get("role_id"),
                             custom_field_settings_json,
                         ),
                     )
@@ -1134,6 +1121,9 @@ class SettingsManager:
                             remove_all_custom_fields = ?,
                             clear_device_name = ?,
                             keep_serial = ?,
+                            location_id = ?,
+                            status_id = ?,
+                            role_id = ?,
                             custom_field_settings = ?,
                             updated_at = CURRENT_TIMESTAMP
                         WHERE id = 1
@@ -1142,6 +1132,9 @@ class SettingsManager:
                             settings.get("remove_all_custom_fields", False),
                             settings.get("clear_device_name", False),
                             settings.get("keep_serial", False),
+                            settings.get("location_id"),
+                            settings.get("status_id"),
+                            settings.get("role_id"),
                             custom_field_settings_json,
                         ),
                     )

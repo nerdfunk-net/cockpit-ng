@@ -103,6 +103,44 @@ interface OffboardSummary {
   results: OffboardResult[]
 }
 
+type NautobotIntegrationMode = 'remove' | 'set-offboarding'
+
+const buildLocationPath = (location: LocationItem, locationMap: Map<string, LocationItem>) => {
+  const names: string[] = []
+  const visited = new Set<string>()
+  let current: LocationItem | undefined = location
+
+  while (current) {
+    if (visited.has(current.id)) {
+      names.unshift(`${current.name} (cycle)`)
+      break
+    }
+    visited.add(current.id)
+    names.unshift(current.name)
+
+    const parentId = current.parent?.id
+    if (!parentId) break
+    current = locationMap.get(parentId)
+    if (!current) break
+  }
+
+  return names.join(' → ')
+}
+
+const buildLocationHierarchy = (locations: LocationItem[]) => {
+  const map = new Map<string, LocationItem>()
+  locations.forEach(l => map.set(l.id, { ...l }))
+
+  const processed = locations.map(loc => {
+    const copy = { ...loc }
+    copy.hierarchicalPath = buildLocationPath(copy, map)
+    return copy
+  })
+
+  processed.sort((a, b) => (a.hierarchicalPath || '').localeCompare(b.hierarchicalPath || ''))
+  return processed
+}
+
 const PAGE_SIZE_OPTIONS = [10, 50, 100, 200, 500]
 
 export function OffboardDevicePage() {
@@ -145,6 +183,7 @@ export function OffboardDevicePage() {
     removeInterfaceIps: true,
     removeFromCheckMK: true
   })
+  const [nautobotIntegrationMode, setNautobotIntegrationMode] = useState<NautobotIntegrationMode>('remove')
 
   // Dropdown options
   const [dropdownOptions, setDropdownOptions] = useState({
@@ -172,11 +211,6 @@ export function OffboardDevicePage() {
     }
   }, [isAuthenticated, logout])
 
-  // Load initial data
-  useEffect(() => {
-    loadInitialData()
-  }, [])
-
   // Handle URL parameters
   useEffect(() => {
     const ipFilter = searchParams?.get('ip_filter')
@@ -187,11 +221,6 @@ export function OffboardDevicePage() {
       }))
     }
   }, [searchParams, filters.ipAddress])
-
-  // Apply filters when they change
-  useEffect(() => {
-    applyFilters()
-  }, [filters, devices, pagination.pageSize])
 
   // Auto-hide success messages after 2 seconds
   useEffect(() => {
@@ -204,63 +233,26 @@ export function OffboardDevicePage() {
     }
   }, [statusMessage])
 
-  const loadInitialData = async () => {
-    setIsLoading(true)
-    try {
-      // Load all required data in parallel
-      await Promise.all([
-        loadDevices(),
-        loadLocations()
-      ])
-    } catch (error) {
-      console.error('Error loading initial data:', error)
-      setStatusMessage({
-        type: 'error',
-        message: `Failed to load initial data: ${error instanceof Error ? error.message : 'Unknown error'}`
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const extractFilterOptions = useCallback((deviceList: Device[]) => {
+    const roles = new Set<string>()
+    const locations = new Set<string>()
+    const statuses = new Set<string>()
 
-  // Location filter helpers
-  const buildLocationPath = (location: LocationItem, locationMap: Map<string, LocationItem>) => {
-    const names: string[] = []
-    const visited = new Set<string>()
-    let current: LocationItem | undefined = location
-
-    while (current) {
-      if (visited.has(current.id)) {
-        names.unshift(`${current.name} (cycle)`)
-        break
-      }
-      visited.add(current.id)
-      names.unshift(current.name)
-
-      const parentId = current.parent?.id
-      if (!parentId) break
-      current = locationMap.get(parentId)
-      if (!current) break
-    }
-
-    return names.join(' → ')
-  }
-
-  const buildLocationHierarchy = (locations: LocationItem[]) => {
-    const map = new Map<string, LocationItem>()
-    locations.forEach(l => map.set(l.id, { ...l }))
-
-    const processed = locations.map(loc => {
-      const copy = { ...loc }
-      copy.hierarchicalPath = buildLocationPath(copy, map)
-      return copy
+    deviceList.forEach(device => {
+      if (device.role?.name) roles.add(device.role.name)
+      if (device.location?.name) locations.add(device.location.name)
+      if (device.status?.name) statuses.add(device.status.name)
     })
 
-    processed.sort((a, b) => (a.hierarchicalPath || '').localeCompare(b.hierarchicalPath || ''))
-    return processed
-  }
+    setDropdownOptions(prev => ({
+      ...prev,
+      roles: Array.from(roles).map(name => ({ id: name, name })),
+      locations: Array.from(locations).map(name => ({ id: name, name })),
+      statuses: Array.from(statuses).map(name => ({ id: name, name }))
+    }))
+  }, [])
 
-  const loadLocations = async () => {
+  const loadLocations = useCallback(async () => {
     try {
       const data = await apiCall<LocationItem[]>('nautobot/locations')
       const arr = Array.isArray(data) ? data : (data || [])
@@ -272,7 +264,7 @@ export function OffboardDevicePage() {
       setLocationsList([])
       setLocationFiltered([])
     }
-  }
+  }, [apiCall])
 
   // Click outside handler to close dropdown
   useEffect(() => {
@@ -286,7 +278,7 @@ export function OffboardDevicePage() {
     return () => document.removeEventListener('mousedown', onClick)
   }, [])
 
-  const loadDevices = async () => {
+  const loadDevices = useCallback(async () => {
     try {
       setStatusMessage({ type: 'info', message: 'Loading devices...' })
 
@@ -309,9 +301,9 @@ export function OffboardDevicePage() {
         message: `Failed to load devices: ${error instanceof Error ? error.message : 'Unknown error'}`
       })
     }
-  }
+  }, [apiCall, extractFilterOptions])
 
-  const reloadDevices = async () => {
+  const reloadDevices = useCallback(async () => {
     try {
       setStatusMessage({ type: 'info', message: 'Reloading devices from Nautobot...' })
 
@@ -334,31 +326,11 @@ export function OffboardDevicePage() {
         message: `Failed to reload devices: ${error instanceof Error ? error.message : 'Unknown error'}`
       })
     }
-  }
-
-  const extractFilterOptions = (deviceList: Device[]) => {
-    const roles = new Set<string>()
-    const locations = new Set<string>()
-    const statuses = new Set<string>()
-
-    deviceList.forEach(device => {
-      if (device.role?.name) roles.add(device.role.name)
-      if (device.location?.name) locations.add(device.location.name)
-      if (device.status?.name) statuses.add(device.status.name)
-    })
-
-    setDropdownOptions(prev => ({
-      ...prev,
-      roles: Array.from(roles).map(name => ({ id: name, name })),
-      locations: Array.from(locations).map(name => ({ id: name, name })),
-      statuses: Array.from(statuses).map(name => ({ id: name, name }))
-    }))
-  }
+  }, [apiCall, extractFilterOptions])
 
   const applyFilters = useCallback(() => {
     let filtered = devices
 
-    // Apply filters
     if (filters.deviceName) {
       filtered = filtered.filter(device =>
         device.name.toLowerCase().includes(filters.deviceName.toLowerCase())
@@ -381,15 +353,41 @@ export function OffboardDevicePage() {
 
     setFilteredDevices(filtered)
 
-    // Update pagination
     const totalPages = Math.ceil(filtered.length / pagination.pageSize)
     setPagination(prev => ({
       ...prev,
-      currentPage: 0, // Reset to first page when filters change
+      currentPage: 0,
       totalItems: filtered.length,
       totalPages
     }))
   }, [devices, filters, pagination.pageSize])
+
+  useEffect(() => {
+    applyFilters()
+  }, [applyFilters])
+
+  const loadInitialData = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      await Promise.all([
+        loadDevices(),
+        loadLocations()
+      ])
+    } catch (error) {
+      console.error('Error loading initial data:', error)
+      setStatusMessage({
+        type: 'error',
+        message: `Failed to load initial data: ${error instanceof Error ? error.message : 'Unknown error'}`
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }, [loadDevices, loadLocations])
+
+  // Load initial data
+  useEffect(() => {
+    loadInitialData()
+  }, [loadInitialData])
 
   const handleFilterChange = (field: keyof TableFilters, value: string) => {
     setFilters(prev => ({ ...prev, [field]: value }))
@@ -488,7 +486,8 @@ export function OffboardDevicePage() {
               body: {
                 remove_primary_ip: offboardProperties.removePrimaryIp,
                 remove_interface_ips: offboardProperties.removeInterfaceIps,
-                remove_from_checkmk: offboardProperties.removeFromCheckMK
+                remove_from_checkmk: offboardProperties.removeFromCheckMK,
+                nautobot_integration_mode: nautobotIntegrationMode
               }
             }
           )
@@ -648,6 +647,20 @@ export function OffboardDevicePage() {
               </div>
             </div>
             <div className="p-4 bg-white space-y-3">
+              {/* IP Removal Options */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold text-gray-700">Nautobot Integration</Label>
+                <Select value={nautobotIntegrationMode} onValueChange={(value) => setNautobotIntegrationMode(value as NautobotIntegrationMode)}>
+                  <SelectTrigger className="h-9 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="remove">Remove from Nautobot</SelectItem>
+                    <SelectItem value="set-offboarding">Set Offboarding Values</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* IP Removal Options */}
               <div className="space-y-3">
                 <Label className="text-sm font-semibold text-gray-700">IP Address Removal</Label>
@@ -1050,7 +1063,7 @@ export function OffboardDevicePage() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Detailed Results</h3>
 
-                {offboardSummary.results.map((result, index) => (
+                {offboardSummary.results.map(result => (
                   <div
                     key={result.device_id}
                     className={`border rounded-lg p-4 ${
