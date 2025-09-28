@@ -104,6 +104,7 @@ export function SyncDevicesPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null)
+  const [devicesLoaded, setDevicesLoaded] = useState(false)
 
   // Pagination state
   const [pagination, setPagination] = useState<PaginationState>({
@@ -115,12 +116,12 @@ export function SyncDevicesPage() {
 
   // Filters state with URL parameter support
   const [filters, setFilters] = useState<TableFilters>(() => {
-    const ipFilter = searchParams?.get('ip_filter') || ''
+    // Don't set IP filter immediately - wait for devices to load first
     return {
       deviceName: '',
       role: 'all',
       location: 'all',
-      ipAddress: ipFilter,
+      ipAddress: '',
       status: 'all'
     }
   })
@@ -163,23 +164,42 @@ export function SyncDevicesPage() {
   // Load initial data
   useEffect(() => {
     loadInitialData()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Apply initial IP filter after devices are loaded
+  useEffect(() => {
+    if (devicesLoaded) {
+      const ipFilter = searchParams?.get('ip_filter')
+      if (ipFilter && !filters.ipAddress) {
+        setFilters(prev => ({
+          ...prev,
+          ipAddress: ipFilter
+        }))
+      }
+    }
+  }, [devicesLoaded, searchParams, filters.ipAddress])
 
   // Handle URL parameters
   useEffect(() => {
     const ipFilter = searchParams?.get('ip_filter')
     if (ipFilter && ipFilter !== filters.ipAddress) {
-      setFilters(prev => ({
-        ...prev,
-        ipAddress: ipFilter
-      }))
+      // Force device reload when IP filter is present to ensure fresh data
+      setDevicesLoaded(false)
+      reloadDevices().then(() => {
+        setFilters(prev => ({
+          ...prev,
+          ipAddress: ipFilter
+        }))
+      })
     }
-  }, [searchParams, filters.ipAddress])
+  }, [searchParams, filters.ipAddress]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Apply filters when they change
+  // Apply filters when they change (only after devices are loaded)
   useEffect(() => {
-    applyFilters()
-  }, [filters, devices, pagination.pageSize])
+    if (devicesLoaded) {
+      applyFilters()
+    }
+  }, [filters, devices, pagination.pageSize, devicesLoaded]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-hide success messages after 2 seconds
   useEffect(() => {
@@ -195,7 +215,7 @@ export function SyncDevicesPage() {
   // Set default values when dropdown options are loaded
   useEffect(() => {
     setDefaultSyncProperties()
-  }, [dropdownOptions])
+  }, [dropdownOptions]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const setDefaultSyncProperties = () => {
     setSyncProperties(prev => {
@@ -335,12 +355,13 @@ export function SyncDevicesPage() {
   const loadDevices = async () => {
     try {
       setStatusMessage({ type: 'info', message: 'Loading devices...' })
-      
+
       const data = await apiCall<{ devices: Device[] }>('nautobot/devices')
-      
+
       if (data?.devices) {
         setDevices(data.devices)
         extractFilterOptions(data.devices)
+        setDevicesLoaded(true)
         setStatusMessage({
           type: 'success',
           message: `Loaded ${data.devices.length} devices successfully`
@@ -360,12 +381,13 @@ export function SyncDevicesPage() {
   const reloadDevices = async () => {
     try {
       setStatusMessage({ type: 'info', message: 'Reloading devices from Nautobot...' })
-      
+
       const data = await apiCall<{ devices: Device[] }>('nautobot/devices?reload=true')
-      
+
       if (data?.devices) {
         setDevices(data.devices)
         extractFilterOptions(data.devices)
+        setDevicesLoaded(true)
         setStatusMessage({
           type: 'success',
           message: `Reloaded ${data.devices.length} devices successfully from Nautobot`
