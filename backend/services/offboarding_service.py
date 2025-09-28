@@ -227,8 +227,28 @@ class OffboardingService:
                     results["success"] = False
                     logger.error(error_msg)
             
+            # Handle serial number clearing (if keep_serial is False)
+            if not offboarding_settings.get("keep_serial", False):
+                logger.info("DEBUG: keep_serial is False - clearing device serial number for %s", device_id)
+                try:
+                    await self._clear_device_serial(device_id)
+                    results["removed_items"].append("Device serial number cleared")
+                    logger.info("Successfully cleared device serial number for %s", device_id)
+                except HTTPException as exc:
+                    results["errors"].append(f"Failed to clear device serial number: {exc.detail}")
+                    results["success"] = False
+                    logger.error("Failed to clear device serial number for %s: %s", device_id, exc.detail)
+                except Exception as exc:
+                    error_msg = f"Failed to clear device serial number for {device_id}: {str(exc)}"
+                    results["errors"].append(error_msg)
+                    results["success"] = False
+                    logger.error(error_msg)
+
             # Handle custom fields processing
             await self._handle_set_offboarding_values(device_id, results, offboarding_settings, device_details)
+
+            # Handle location, status, and role updates
+            await self._handle_device_attributes_update(device_id, results, offboarding_settings)
 
         interface_ips_removed = []
         if request.remove_interface_ips:
@@ -387,6 +407,56 @@ class OffboardingService:
             logger.error("Failed to apply offboarding settings for device %s: %s", device_id, exc.detail)
         except Exception as exc:
             error_msg = f"Failed to apply offboarding settings for device {device_id}: {str(exc)}"
+            results["errors"].append(error_msg)
+            results["success"] = False
+            logger.error(error_msg)
+
+    async def _handle_device_attributes_update(
+        self,
+        device_id: str,
+        results: Dict[str, Any],
+        settings: Dict[str, Any],
+    ) -> None:
+        """Update device location, status, and role based on offboarding settings."""
+        logger.info("Updating device attributes (location, status, role) for device %s", device_id)
+
+        payload = {}
+        updates_made = []
+
+        # Update location if specified
+        if settings.get("location_id"):
+            payload["location"] = settings["location_id"]
+            updates_made.append("location")
+            logger.info("Setting device location to %s", settings["location_id"])
+
+        # Update status if specified
+        if settings.get("status_id"):
+            payload["status"] = settings["status_id"]
+            updates_made.append("status")
+            logger.info("Setting device status to %s", settings["status_id"])
+
+        # Update role if specified
+        if settings.get("role_id"):
+            payload["role"] = settings["role_id"]
+            updates_made.append("role")
+            logger.info("Setting device role to %s", settings["role_id"])
+
+        # Only make the API call if there are updates to apply
+        if not payload:
+            results["skipped_items"].append("No location, status, or role updates specified in offboarding settings")
+            logger.info("No device attribute updates specified; skipping")
+            return
+
+        try:
+            await self._update_device(device_id, payload)
+            results["removed_items"].append(f"Device attributes updated: {', '.join(updates_made)}")
+            logger.info("Successfully updated device attributes for %s: %s", device_id, ', '.join(updates_made))
+        except HTTPException as exc:
+            results["errors"].append(f"Failed to update device attributes: {exc.detail}")
+            results["success"] = False
+            logger.error("Failed to update device attributes for %s: %s", device_id, exc.detail)
+        except Exception as exc:
+            error_msg = f"Failed to update device attributes for {device_id}: {str(exc)}"
             results["errors"].append(error_msg)
             results["success"] = False
             logger.error(error_msg)
@@ -689,6 +759,38 @@ class OffboardingService:
         logger.info("DEBUG: Successfully cleared device name for %s", device_id)
         return updated_device
 
+    async def _clear_device_serial(self, device_id: str) -> Dict[str, Any]:
+        """Clear the device serial number by setting it to an empty string."""
+        logger.info("DEBUG: Clearing device serial number for device %s", device_id)
+        payload = {"serial": ""}
+
+        try:
+            updated_device = await nautobot_service.rest_request(
+                f"dcim/devices/{device_id}/",
+                method="PATCH",
+                data=payload,
+            )
+        except Exception as exc:
+            raise self._translate_exception(
+                exc, f"Failed to clear device serial number for {device_id}"
+            )
+
+        # Update cache
+        if isinstance(updated_device, dict):
+            cache_service.set(
+                self._device_cache_key(device_id),
+                updated_device,
+                DEVICE_CACHE_TTL,
+            )
+            cache_service.set(
+                self._device_details_cache_key(device_id),
+                updated_device,
+                DEVICE_CACHE_TTL,
+            )
+            cache_service.delete(self._device_list_cache_key())
+
+        logger.info("DEBUG: Successfully cleared device serial number for %s", device_id)
+        return updated_device
 
     async def _get_offboarding_settings(self) -> Optional[Dict[str, Any]]:
         try:
