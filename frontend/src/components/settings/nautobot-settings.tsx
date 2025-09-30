@@ -782,6 +782,9 @@ export default function NautobotSettingsForm() {
                       <SelectValue placeholder="Select a platform" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="detect">
+                        Auto-Detect Platform
+                      </SelectItem>
                       {platforms.map((platform) => (
                         <SelectItem key={platform.id} value={platform.id}>
                           {platform.name}

@@ -135,6 +135,14 @@ export function SyncDevicesPage() {
     sync_options: []
   })
 
+  // Store loaded defaults
+  const [nautobotDefaults, setNautobotDefaults] = useState<{
+    namespace: string
+    interface_status: string
+    ip_address_status: string
+    ip_prefix_status: string
+  } | null>(null)
+
   // Dropdown options
   const [dropdownOptions, setDropdownOptions] = useState({
     namespaces: [] as DropdownOption[],
@@ -212,55 +220,57 @@ export function SyncDevicesPage() {
     }
   }, [statusMessage])
 
-  // Set default values when dropdown options are loaded
+  // Load Nautobot defaults
+  const loadNautobotDefaults = async () => {
+    try {
+      const response = await apiCall<{
+        success: boolean
+        data?: {
+          namespace: string
+          interface_status: string
+          ip_address_status: string
+          ip_prefix_status: string
+        }
+      }>('settings/nautobot/defaults')
+
+      if (response?.success && response.data) {
+        setNautobotDefaults(response.data)
+      }
+    } catch (error) {
+      console.error('Error loading Nautobot defaults:', error)
+    }
+  }
+
+  // Set default values when defaults are loaded
   useEffect(() => {
-    setDefaultSyncProperties()
-  }, [dropdownOptions]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (nautobotDefaults) {
+      setDefaultSyncProperties()
+    }
+  }, [nautobotDefaults]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const setDefaultSyncProperties = () => {
+    if (!nautobotDefaults) return
+
     setSyncProperties(prev => {
       const updates: Partial<SyncProperties> = {}
-      
-      // Set default namespace to "Global" if available
-      if (dropdownOptions.namespaces.length > 0 && !prev.namespace) {
-        const globalNamespace = dropdownOptions.namespaces.find(ns => 
-          ns.name.toLowerCase().includes('global')
-        )
-        if (globalNamespace) {
-          updates.namespace = globalNamespace.id
-        }
+
+      // Use loaded defaults if current values are empty
+      if (!prev.namespace && nautobotDefaults.namespace) {
+        updates.namespace = nautobotDefaults.namespace
       }
-      
-      // Set default prefix status to "Active" if available
-      if (dropdownOptions.prefixStatuses.length > 0 && !prev.prefix_status) {
-        const activeStatus = dropdownOptions.prefixStatuses.find(status => 
-          status.name.toLowerCase().includes('active')
-        )
-        if (activeStatus) {
-          updates.prefix_status = activeStatus.id
-        }
+
+      if (!prev.prefix_status && nautobotDefaults.ip_prefix_status) {
+        updates.prefix_status = nautobotDefaults.ip_prefix_status
       }
-      
-      // Set default interface status to "Active" if available
-      if (dropdownOptions.interfaceStatuses.length > 0 && !prev.interface_status) {
-        const activeStatus = dropdownOptions.interfaceStatuses.find(status => 
-          status.name.toLowerCase().includes('active')
-        )
-        if (activeStatus) {
-          updates.interface_status = activeStatus.id
-        }
+
+      if (!prev.interface_status && nautobotDefaults.interface_status) {
+        updates.interface_status = nautobotDefaults.interface_status
       }
-      
-      // Set default IP address status to "Active" if available
-      if (dropdownOptions.ipAddressStatuses.length > 0 && !prev.ip_address_status) {
-        const activeStatus = dropdownOptions.ipAddressStatuses.find(status => 
-          status.name.toLowerCase().includes('active')
-        )
-        if (activeStatus) {
-          updates.ip_address_status = activeStatus.id
-        }
+
+      if (!prev.ip_address_status && nautobotDefaults.ip_address_status) {
+        updates.ip_address_status = nautobotDefaults.ip_address_status
       }
-      
+
       return Object.keys(updates).length > 0 ? { ...prev, ...updates } : prev
     })
   }
@@ -275,7 +285,8 @@ export function SyncDevicesPage() {
         loadPrefixStatuses(),
         loadInterfaceStatuses(),
         loadIPAddressStatuses(),
-        loadLocations()
+        loadLocations(),
+        loadNautobotDefaults()
       ])
     } catch (error) {
       console.error('Error loading initial data:', error)
