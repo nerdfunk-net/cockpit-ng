@@ -1,0 +1,92 @@
+Collected decorator matches for backend/routers (partial)
+
+(See grep_search results previously for full matches)
+
+Examples:
+- backend/routers/checkmk.py
+  - @router.post("/test")
+  - @router.get("/test")
+  - @router.get("/stats")
+  - @router.get("/version")
+  - @router.get("/hosts")
+  - @router.get("/hosts/{hostname}")
+  - @router.post("/hosts")
+  - @router.post("/hosts/create")
+  - @router.put("/hosts/{hostname}")
+  - @router.delete("/hosts/{hostname}")
+  - ...
+
+- backend/routers/templates.py
+  - @router.get("")
+  - @router.get("/categories")
+  - @router.get("/scan-import")
+  - @router.post("")
+  - @router.get("/{template_id}")
+  - @router.get("/name/{template_name}")
+  - @router.put("/{template_id}")
+  - @router.delete("/{template_id}")
+  - @router.get("/{template_id}/content")
+  - @router.post("/{template_id}/render")
+  - @router.get("/{template_id}/versions")
+  - @router.post("/upload")
+  - @router.post("/git/test")
+  - @router.post("/sync")
+  - @router.post("/import")
+  - @router.get("/health")
+
+- backend/routers/git_repositories.py
+  - @router.get("/")
+  - @router.get("/{repo_id}")
+  - @router.get("/{repo_id}/edit")
+  - @router.post("/")
+  - @router.put("/{repo_id}")
+  - @router.delete("/{repo_id}")
+  - @router.post("/test-connection")
+  - @router.get("/health")
+
+- backend/routers/nautobot.py (many endpoints)
+  - @router.get("/test")
+  - @router.get("/devices")
+  - @router.get("/devices/{device_id}")
+  - @router.put("/devices/{device_id}")
+  - @router.post("/devices/search")
+  - @router.post("/check-ip")
+  - @router.post("/devices/onboard")
+  - @router.post("/sync-network-data")
+  - @router.get("/locations")
+  - @router.get("/namespaces")
+  - @router.get("/stats")
+  - @router.get("/roles")
+  - @router.get("/platforms")
+  - @router.get("/statuses")
+  - ...
+
+- backend/routers/jobs.py
+  - @router.post("/compare-devices")
+  - @router.get("/scheduler-status")
+  - @router.delete("/{job_id}/cancel")
+  - @router.post("/cleanup")
+  - @router.get("/")
+  - @router.get("/{job_id}")
+  - @router.delete("/{job_id}")
+  - @router.post("/get-all-devices")
+  - @router.post("/scan-network/{cidr:path}")
+
+- backend/routers/ansible_inventory.py
+  - @router.post("/preview")
+  - @router.post("/generate")
+  - @router.post("/download")
+  - @router.get("/field-options")
+  - @router.get("/custom-fields")
+  - @router.get("/field-values/{field_name}")
+
+- backend/routers/profile.py
+  - @router.get("")
+  - @router.put("")
+
+- backend/routers/auth.py
+  - @router.post("/login")
+  - @router.post("/refresh")
+  - @router.post("/api-key-login")
+
+(Full grep results are available in terminal logs.)

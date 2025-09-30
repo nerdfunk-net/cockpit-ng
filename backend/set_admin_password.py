@@ -16,6 +16,7 @@ sys.path.insert(0, str(backend_dir))
 
 from config import settings as config_settings  # noqa: E402
 from core.auth import get_password_hash  # noqa: E402
+from user_db_manager import PERMISSIONS_ADMIN  # noqa: E402
 import sqlite3  # noqa: E402
 
 
@@ -95,18 +96,16 @@ def main():
         now = datetime.utcnow().isoformat()
 
         if admin_exists:
-            # Update existing admin user
+            # Update existing admin user with password and admin permissions
             conn.execute(
-                "UPDATE users SET password = ?, updated_at = ? WHERE username = 'admin'",
-                (hashed_password, now),
+                "UPDATE users SET password = ?, permissions = ?, updated_at = ? WHERE username = 'admin'",
+                (hashed_password, PERMISSIONS_ADMIN, now),
             )
             conn.commit()
             print()
-            print("✓ Admin password updated successfully!")
+            print("✓ Admin password and permissions updated successfully!")
         else:
             # Create admin user with full permissions
-            from user_db_manager import PERMISSIONS_ADMIN
-
             conn.execute(
                 """
                 INSERT INTO users (username, realname, email, password, permissions, debug, is_active, created_at, updated_at)
