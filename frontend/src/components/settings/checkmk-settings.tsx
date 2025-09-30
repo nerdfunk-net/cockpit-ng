@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -290,7 +290,7 @@ export default function CheckMKSettingsForm() {
                     className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                   />
                   <p className="text-xs text-gray-500">
-                    The CheckMK site name (usually 'cmk' for default installations)
+                    The CheckMK site name (usually &apos;cmk&apos; for default installations)
                   </p>
                 </div>
 

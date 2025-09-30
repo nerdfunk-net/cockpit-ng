@@ -577,10 +577,13 @@ async def update_nautobot_defaults(
 
 
 @router.get("/offboarding")
-async def get_device_offboarding_settings(current_user: dict = Depends(verify_admin_token)):
+async def get_device_offboarding_settings(
+    current_user: dict = Depends(verify_admin_token),
+):
     """Get device offboarding settings."""
     try:
         from settings_manager import settings_manager
+
         offboarding_settings = settings_manager.get_device_offboarding_settings()
         return {"success": True, "data": offboarding_settings}
 
@@ -601,7 +604,9 @@ async def update_device_offboarding_settings(
     try:
         from settings_manager import settings_manager
 
-        success = settings_manager.update_device_offboarding_settings(offboarding_request.dict())
+        success = settings_manager.update_device_offboarding_settings(
+            offboarding_request.dict()
+        )
 
         if success:
             return {
@@ -610,7 +615,10 @@ async def update_device_offboarding_settings(
                 "data": settings_manager.get_device_offboarding_settings(),
             }
         else:
-            return {"success": False, "message": "Failed to update device offboarding settings"}
+            return {
+                "success": False,
+                "message": "Failed to update device offboarding settings",
+            }
 
     except Exception as e:
         logger.error(f"Error updating device offboarding settings: {e}")

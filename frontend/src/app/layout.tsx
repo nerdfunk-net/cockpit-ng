@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import React from "react";
 import "./globals.css";
-import { localFonts, loadLocalFonts } from "@/lib/local-fonts";
+import { localFonts } from "@/lib/local-fonts";
 import { DebugProvider } from "@/contexts/debug-context";
 import { AuthHydration } from "@/components/auth/auth-hydration";
 

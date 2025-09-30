@@ -111,4 +111,6 @@ class DeviceOffboardingRequest(BaseModel):
     location_id: Optional[str] = None
     status_id: Optional[str] = None
     role_id: Optional[str] = None
-    custom_field_settings: Optional[Dict[str, str]] = None  # custom_field_name -> value or "clear"
+    custom_field_settings: Optional[Dict[str, str]] = (
+        None  # custom_field_name -> value or "clear"
+    )

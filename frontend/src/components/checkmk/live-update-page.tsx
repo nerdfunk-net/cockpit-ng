@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Search, Filter, X, ChevronLeft, ChevronRight, RotateCcw, GitCompare, RefreshCw } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Search, X, ChevronLeft, ChevronRight, RotateCcw, GitCompare, RefreshCw } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -327,7 +327,7 @@ export default function LiveUpdatePage() {
       setIsDiffModalOpen(true)
       showMessage(`Getting diff for ${device.name}...`, 'info')
 
-      const response = await apiCall<any>(`nb2cmk/device/${device.id}/compare`)
+      const response = await apiCall<DiffResult['differences']>(`nb2cmk/device/${device.id}/compare`)
       
       
       if (response) {

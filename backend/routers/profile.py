@@ -65,20 +65,28 @@ async def get_profile(current_user: str = Depends(get_current_username)):
             if cred.get("owner") == current_user:
                 # Get decrypted password to determine length
                 try:
-                    decrypted_password = credentials_manager.get_decrypted_password(cred["id"])
+                    decrypted_password = credentials_manager.get_decrypted_password(
+                        cred["id"]
+                    )
                     # Create a token with the same length as the actual password
-                    password_token = "•" * len(decrypted_password) if decrypted_password else ""
+                    password_token = (
+                        "•" * len(decrypted_password) if decrypted_password else ""
+                    )
                 except Exception as e:
-                    logger.warning(f"Failed to decrypt password for credential {cred['id']}: {e}")
+                    logger.warning(
+                        f"Failed to decrypt password for credential {cred['id']}: {e}"
+                    )
                     password_token = ""
-                
-                personal_credentials.append(PersonalCredentialData(
-                    id=str(cred["id"]),
-                    name=cred["name"],
-                    username=cred["username"],
-                    type=cred["type"],
-                    password=password_token,  # Return length-matched token instead of actual password
-                ))
+
+                personal_credentials.append(
+                    PersonalCredentialData(
+                        id=str(cred["id"]),
+                        name=cred["name"],
+                        username=cred["username"],
+                        type=cred["type"],
+                        password=password_token,  # Return length-matched token instead of actual password
+                    )
+                )
 
         return ProfileResponse(
             username=user["username"],
@@ -229,20 +237,28 @@ async def update_profile(
             if cred.get("owner") == current_user:
                 # Get decrypted password to determine length
                 try:
-                    decrypted_password = credentials_manager.get_decrypted_password(cred["id"])
+                    decrypted_password = credentials_manager.get_decrypted_password(
+                        cred["id"]
+                    )
                     # Create a token with the same length as the actual password
-                    password_token = "•" * len(decrypted_password) if decrypted_password else ""
+                    password_token = (
+                        "•" * len(decrypted_password) if decrypted_password else ""
+                    )
                 except Exception as e:
-                    logger.warning(f"Failed to decrypt password for credential {cred['id']}: {e}")
+                    logger.warning(
+                        f"Failed to decrypt password for credential {cred['id']}: {e}"
+                    )
                     password_token = ""
-                
-                personal_credentials.append(PersonalCredentialData(
-                    id=str(cred["id"]),
-                    name=cred["name"],
-                    username=cred["username"],
-                    type=cred["type"],
-                    password=password_token,  # Return length-matched token instead of actual password
-                ))
+
+                personal_credentials.append(
+                    PersonalCredentialData(
+                        id=str(cred["id"]),
+                        name=cred["name"],
+                        username=cred["username"],
+                        type=cred["type"],
+                        password=password_token,  # Return length-matched token instead of actual password
+                    )
+                )
 
         return ProfileResponse(
             username=updated_user["username"],

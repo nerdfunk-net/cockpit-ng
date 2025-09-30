@@ -151,7 +151,7 @@ async def get_devices(
     try:
         # Check cache first (unless reload is requested)
         cache_key = _get_device_list_cache_key(filter_type, filter_value, limit, offset)
-        
+
         if not reload:
             cached_result = _get_cached_device_list(cache_key)
             if cached_result is not None:
@@ -1401,7 +1401,7 @@ async def nautobot_health_check(current_user: dict = Depends(verify_token)):
         detailed_error = {
             "error_message": error_msg,
             "error_type": error_type,
-            "error_details": str(e.__dict__) if hasattr(e, '__dict__') else None,
+            "error_details": str(e.__dict__) if hasattr(e, "__dict__") else None,
         }
 
         if "403" in error_msg or "Invalid token" in error_msg:
@@ -1428,12 +1428,6 @@ async def get_device_details(
 ):
     """Get detailed device information using the comprehensive devices.md query."""
     try:
-        username = (
-            current_user.get("username")
-            if isinstance(current_user, dict)
-            else current_user.username
-        )
-
         # Start with a simplified query based on the working get_device method, then add more fields
         query = """
         query DeviceDetails($deviceId: ID!) {
@@ -1621,9 +1615,8 @@ async def delete_device(
     """Delete a device from Nautobot."""
     try:
         # Use REST API to delete the device
-        result = await nautobot_service.rest_request(
-            f"dcim/devices/{device_id}/",
-            method="DELETE"
+        await nautobot_service.rest_request(
+            f"dcim/devices/{device_id}/", method="DELETE"
         )
 
         # Clear device from cache
@@ -1644,7 +1637,7 @@ async def delete_device(
         return {
             "success": True,
             "message": f"Device {device_id} deleted successfully",
-            "device_id": device_id
+            "device_id": device_id,
         }
 
     except Exception as e:
@@ -1668,9 +1661,8 @@ async def delete_ip_address(
     """Delete an IP address from Nautobot."""
     try:
         # Use REST API to delete the IP address
-        result = await nautobot_service.rest_request(
-            f"ipam/ip-addresses/{ip_id}/",
-            method="DELETE"
+        await nautobot_service.rest_request(
+            f"ipam/ip-addresses/{ip_id}/", method="DELETE"
         )
 
         # Clear related caches
@@ -1684,7 +1676,7 @@ async def delete_ip_address(
         return {
             "success": True,
             "message": f"IP address {ip_id} deleted successfully",
-            "ip_id": ip_id
+            "ip_id": ip_id,
         }
 
     except Exception as e:

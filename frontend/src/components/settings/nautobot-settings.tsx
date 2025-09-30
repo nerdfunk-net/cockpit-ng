@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -408,10 +408,10 @@ export default function NautobotSettingsForm() {
         body: offboardingSettings
       })
 
-      if ((data as any).success) {
+      if (data.success) {
         showMessage('Device offboarding settings saved successfully!', 'success')
       } else {
-        showMessage((data as any).message || 'Failed to save offboarding settings', 'error')
+        showMessage(data.message || 'Failed to save offboarding settings', 'error')
       }
     } catch (error) {
       showMessage('Error saving offboarding settings', 'error')

@@ -14,9 +14,9 @@ from pathlib import Path
 backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 
-from config import settings as config_settings
-from core.auth import get_password_hash
-import sqlite3
+from config import settings as config_settings  # noqa: E402
+from core.auth import get_password_hash  # noqa: E402
+import sqlite3  # noqa: E402
 
 
 def main():
@@ -27,9 +27,7 @@ def main():
     print()
 
     # Get database path
-    users_db_path = os.path.join(
-        config_settings.data_directory, "settings", "users.db"
-    )
+    users_db_path = os.path.join(config_settings.data_directory, "settings", "users.db")
 
     # Check if database exists
     if not os.path.exists(users_db_path):
@@ -93,6 +91,7 @@ def main():
     # Update or create admin user
     try:
         from datetime import datetime
+
         now = datetime.utcnow().isoformat()
 
         if admin_exists:

@@ -260,7 +260,6 @@ class SettingsManager:
                     logger.info("Inserting default Nautobot defaults")
                     self._insert_default_nautobot_defaults(cursor)
 
-
                 # Check offboarding_settings
                 cursor.execute("SELECT COUNT(*) FROM offboarding_settings")
                 if cursor.fetchone()[0] == 0:
@@ -366,7 +365,6 @@ class SettingsManager:
             ),
         )
 
-
     def _insert_default_offboarding_settings(self, cursor):
         """Insert default offboarding settings"""
         cursor.execute(
@@ -376,7 +374,6 @@ class SettingsManager:
         """,
             (False, False, False, None, None, None, json.dumps({})),
         )
-
 
     def get_nautobot_settings(self) -> Optional[Dict[str, Any]]:
         """Get current Nautobot settings"""
@@ -955,7 +952,9 @@ class SettingsManager:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
 
-                result = cursor.execute("SELECT * FROM nautobot_defaults LIMIT 1").fetchone()
+                result = cursor.execute(
+                    "SELECT * FROM nautobot_defaults LIMIT 1"
+                ).fetchone()
 
                 if result:
                     return {
@@ -1052,12 +1051,18 @@ class SettingsManager:
                 if result:
                     custom_field_settings = result["custom_field_settings"]
                     try:
-                        custom_field_settings = json.loads(custom_field_settings) if custom_field_settings else {}
+                        custom_field_settings = (
+                            json.loads(custom_field_settings)
+                            if custom_field_settings
+                            else {}
+                        )
                     except json.JSONDecodeError:
                         custom_field_settings = {}
 
                     return {
-                        "remove_all_custom_fields": bool(result["remove_all_custom_fields"]),
+                        "remove_all_custom_fields": bool(
+                            result["remove_all_custom_fields"]
+                        ),
                         "clear_device_name": bool(result["clear_device_name"]),
                         "keep_serial": bool(result["keep_serial"]),
                         "location_id": result["location_id"],
@@ -1096,7 +1101,9 @@ class SettingsManager:
                 cursor.execute("SELECT COUNT(*) FROM offboarding_settings")
                 count = cursor.fetchone()[0]
 
-                custom_field_settings_json = json.dumps(settings.get("custom_field_settings", {}))
+                custom_field_settings_json = json.dumps(
+                    settings.get("custom_field_settings", {})
+                )
 
                 if count == 0:
                     cursor.execute(

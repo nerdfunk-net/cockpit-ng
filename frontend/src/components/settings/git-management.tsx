@@ -10,7 +10,7 @@ import { Textarea } from '../ui/textarea'
 import { Badge } from '../ui/badge'
 import { Checkbox } from '../ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
 import { Separator } from '../ui/separator'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
 import { 

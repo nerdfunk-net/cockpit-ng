@@ -1,32 +1,28 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
-import { Separator } from '@/components/ui/separator'
-import { 
-  Plus, 
-  Play, 
-  RotateCcw, 
-  Download, 
-  Copy, 
-  ChevronLeft, 
+import {
+  Plus,
+  Play,
+  RotateCcw,
+  Download,
+  Copy,
+  ChevronLeft,
   ChevronRight,
   Settings,
   Filter,
   FileText,
   Database,
-  Search,
-  X,
-  ChevronDown,
-  AlertCircle
+  X
 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 import { useAuthStore } from '@/lib/auth-store'
@@ -54,11 +50,6 @@ interface DeviceInfo {
 interface FieldOption {
   value: string
   label: string
-}
-
-interface TemplateCategory {
-  name: string
-  templates: string[]
 }
 
 interface LocationItem {

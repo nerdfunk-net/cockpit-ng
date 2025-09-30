@@ -8,16 +8,14 @@ import { Label } from '../ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Badge } from '../ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
-import { Separator } from '../ui/separator'
 import { Checkbox } from '../ui/checkbox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
-import { 
-  Users, 
-  Plus, 
-  RefreshCw, 
-  Edit, 
-  Trash2, 
-  Shield,
+import {
+  Users,
+  Plus,
+  RefreshCw,
+  Edit,
+  Trash2,
   CheckCircle,
   XCircle,
   AlertTriangle,
@@ -26,14 +24,6 @@ import {
   ToggleRight
 } from 'lucide-react'
 import { useApi } from '../../hooks/use-api'
-
-interface UserPermissions {
-  can_read: boolean
-  can_write: boolean
-  can_admin: boolean
-  can_delete: boolean
-  can_user_manage: boolean
-}
 
 interface User {
   id: number
