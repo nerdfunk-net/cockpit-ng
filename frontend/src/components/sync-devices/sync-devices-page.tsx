@@ -362,10 +362,7 @@ export function SyncDevicesPage() {
         setDevices(data.devices)
         extractFilterOptions(data.devices)
         setDevicesLoaded(true)
-        setStatusMessage({
-          type: 'success',
-          message: `Loaded ${data.devices.length} devices successfully`
-        })
+        setStatusMessage(null)
       } else {
         throw new Error('Invalid response format')
       }
@@ -388,10 +385,7 @@ export function SyncDevicesPage() {
         setDevices(data.devices)
         extractFilterOptions(data.devices)
         setDevicesLoaded(true)
-        setStatusMessage({
-          type: 'success',
-          message: `Reloaded ${data.devices.length} devices successfully from Nautobot`
-        })
+        setStatusMessage(null)
       } else {
         throw new Error('Invalid response format')
       }

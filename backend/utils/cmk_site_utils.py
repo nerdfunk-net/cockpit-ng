@@ -118,6 +118,7 @@ def get_device_folder(
     """Get the correct CheckMK folder for a device based on configuration rules.
 
     Priority order: by_name > by_ip > by_location > default
+    Role-based folder selection: Uses device role to determine folder configuration
 
     Args:
         device_data: Device data from Nautobot
@@ -139,15 +140,33 @@ def get_device_folder(
         )
         device_ip = _extract_device_ip(device_data)
 
+        # Extract device role
+        device_role = (
+            device_data.get("role", {}).get("name", "").lower()
+            if device_data.get("role")
+            else ""
+        )
+
+        # Determine which role configuration to use
+        if device_role and device_role in folders_config:
+            role_config = folders_config[device_role]
+            logger.debug(f"Using role-specific folder config for role '{device_role}'")
+        elif "default" in folders_config:
+            role_config = folders_config["default"]
+            logger.debug(f"Using default folder config (device role: '{device_role}')")
+        else:
+            logger.warning("No default folder configuration found")
+            role_config = {}
+
         # 1. Check by_name first (highest priority)
-        by_name_config = folders_config.get("by_name", {})
+        by_name_config = role_config.get("by_name", {})
         if device_name and device_name in by_name_config:
             folder_template = by_name_config[device_name]
             folder = parse_folder_value(folder_template, device_data)
             return folder.replace("//", "/")
 
         # 2. Check by_ip (second priority)
-        by_ip_config = folders_config.get("by_ip", {})
+        by_ip_config = role_config.get("by_ip", {})
         if device_ip and by_ip_config:
             folder_template = _match_ip_to_folder(device_ip, by_ip_config)
             if folder_template:
@@ -155,7 +174,7 @@ def get_device_folder(
                 return folder.replace("//", "/")
 
         # 3. Check by_location (third priority)
-        by_location_config = folders_config.get("by_location", {})
+        by_location_config = role_config.get("by_location", {})
         if (
             device_location
             and by_location_config
@@ -166,7 +185,7 @@ def get_device_folder(
             return folder.replace("//", "/")
 
         # 4. Use default folder (lowest priority) with template processing
-        default_folder_template = folders_config.get("default", "/")
+        default_folder_template = role_config.get("default", "/")
         folder = parse_folder_value(default_folder_template, device_data)
         return folder.replace("//", "/")
 

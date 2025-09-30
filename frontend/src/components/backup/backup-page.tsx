@@ -186,7 +186,7 @@ export default function BackupPage() {
           setFilterOptions(newFilterOptions)
         }
 
-        showMessage(`Loaded ${newDevices.length} devices`, 'success')
+        setStatusMessage(null)
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load devices'

@@ -30,17 +30,17 @@ function DashboardLayoutInner({ children, className }: DashboardLayoutProps) {
   useEffect(() => {
     const initAuth = async () => {
       debug.log('DashboardLayout: Initializing authentication')
-      
+
       // Debug authentication state
       debugAuth()
-      
+
       // For development, auto-login if no auth (disabled for testing)
       // await checkDevAuth()
-      
+
       // Give some time for auth to rehydrate
       setTimeout(() => {
         setIsLoading(false)
-        
+
         const currentState = useAuthStore.getState()
         if (typeof window !== 'undefined' && !currentState.isAuthenticated && !currentState.token) {
           debug.warn('DashboardLayout: No authentication found, redirecting to login')
@@ -51,9 +51,19 @@ function DashboardLayoutInner({ children, className }: DashboardLayoutProps) {
         }
       }, 500) // Increased timeout for async login
     }
-    
+
     initAuth()
   }, []) // Empty dependency array - only run once on mount
+
+  // Monitor auth state changes and redirect if logged out
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && !token) {
+      debug.warn('DashboardLayout: Authentication lost, redirecting to login')
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login'
+      }
+    }
+  }, [isAuthenticated, token, isLoading])
 
   if (isLoading) {
     return (

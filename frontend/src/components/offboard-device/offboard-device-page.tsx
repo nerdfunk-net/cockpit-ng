@@ -287,10 +287,7 @@ export function OffboardDevicePage() {
       if (data?.devices) {
         setDevices(data.devices)
         extractFilterOptions(data.devices)
-        setStatusMessage({
-          type: 'success',
-          message: `Loaded ${data.devices.length} devices successfully`
-        })
+        setStatusMessage(null)
       } else {
         throw new Error('Invalid response format')
       }
@@ -312,10 +309,7 @@ export function OffboardDevicePage() {
       if (data?.devices) {
         setDevices(data.devices)
         extractFilterOptions(data.devices)
-        setStatusMessage({
-          type: 'success',
-          message: `Reloaded ${data.devices.length} devices successfully from Nautobot`
-        })
+        setStatusMessage(null)
       } else {
         throw new Error('Invalid response format')
       }

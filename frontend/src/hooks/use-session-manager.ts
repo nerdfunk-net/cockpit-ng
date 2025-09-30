@@ -104,6 +104,10 @@ export function useSessionManager(config: SessionConfig = {}) {
           // Token is invalid/expired, logout user
           console.log('Session Manager: Token invalid, logging out user')
           logout()
+          // Redirect to login page
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login'
+          }
           return false
         }
         // For 403 and other errors, don't logout but stop refresh attempts
@@ -182,12 +186,16 @@ export function useSessionManager(config: SessionConfig = {}) {
       const currentToken = useAuthStore.getState().token
       
       // Check if cookies were cleared externally
-      const cookieToken = typeof window !== 'undefined' ? 
+      const cookieToken = typeof window !== 'undefined' ?
         document.cookie.split(';').find(row => row.trim().startsWith('cockpit_auth_token=')) : null
-      
+
       if (currentToken && !cookieToken) {
         console.log('Session Manager: Cookies cleared externally, logging out')
         logout()
+        // Redirect to login page
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login'
+        }
         return
       }
       
@@ -224,6 +232,10 @@ export function useSessionManager(config: SessionConfig = {}) {
       if (timeUntilExpiry <= 0) {
         console.log('Session Manager: Token has expired, logging out')
         logout()
+        // Redirect to login page
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login'
+        }
       }
     }, finalConfig.checkInterval)
   }, [getTokenExpiry, finalConfig.refreshBeforeExpiry, finalConfig.checkInterval, isUserActive, refreshToken, logout, scheduleRefresh])

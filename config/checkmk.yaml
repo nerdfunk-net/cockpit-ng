@@ -16,17 +16,20 @@ monitored_site:
     lab-2: cmk
 
 folders:
-  default: "/network/{_custom_field_data.net}/{location.name}"
+  server:
+    default: "/server/{_custom_field_data.net}/{location.name}"
+  default:
+    default: "/network/{_custom_field_data.net}/{location.name}"
 
-  # use folders to statically map folders to a checkmk device
-  by_location:
-    office: /testfolder
-  by_ip:
-    # the order is first match!
-    192.168.179.0/24: /testfolder/subfolder
-    0.0.0.0/0: "/network/{_custom_field_data.net}/{location.name}"
-  by_name:
-    lab-2: /testfolder
+    # use folders to statically map folders to a checkmk device
+    by_location:
+      office: /testfolder
+    by_ip:
+      # the order is first match!
+      192.168.179.0/24: /testfolder/subfolder
+      0.0.0.0/0: "/network/{_custom_field_data.net}/{location.name}"
+    by_name:
+      lab-2: /testfolder
 
 cf2htg:
   # use cf2htg to map custom fields to checkmk host tag groups
