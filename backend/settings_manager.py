@@ -79,6 +79,7 @@ class NautobotDefaults:
     namespace: str = ""
     device_role: str = ""
     secret_group: str = ""
+    csv_delimiter: str = ","
 
 
 @dataclass
@@ -212,6 +213,7 @@ class SettingsManager:
                         namespace TEXT DEFAULT '',
                         device_role TEXT DEFAULT '',
                         secret_group TEXT DEFAULT '',
+                        csv_delimiter TEXT DEFAULT ',',
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
@@ -272,6 +274,9 @@ class SettingsManager:
                     VALUES ('initialized', 'true')
                 """)
 
+                # Run migrations for existing databases
+                self._run_migrations(cursor)
+
                 conn.commit()
                 logger.info(f"Settings database initialized at {self.db_path}")
                 return True
@@ -279,6 +284,24 @@ class SettingsManager:
         except sqlite3.Error as e:
             logger.error(f"Database initialization failed: {e}")
             return False
+
+    def _run_migrations(self, cursor):
+        """Run database migrations for schema updates"""
+        try:
+            # Migration: Add csv_delimiter column to nautobot_defaults if it doesn't exist
+            cursor.execute("PRAGMA table_info(nautobot_defaults)")
+            columns = [column[1] for column in cursor.fetchall()]
+            
+            if 'csv_delimiter' not in columns:
+                logger.info("Running migration: Adding csv_delimiter column to nautobot_defaults")
+                cursor.execute("""
+                    ALTER TABLE nautobot_defaults 
+                    ADD COLUMN csv_delimiter TEXT DEFAULT ','
+                """)
+                logger.info("Migration completed: csv_delimiter column added")
+        
+        except Exception as e:
+            logger.error(f"Error running migrations: {e}")
 
     def _insert_default_nautobot_settings(self, cursor):
         """Insert default Nautobot settings"""
@@ -350,8 +373,8 @@ class SettingsManager:
         """Insert default Nautobot defaults"""
         cursor.execute(
             """
-            INSERT INTO nautobot_defaults (location, platform, interface_status, device_status, ip_address_status, namespace, device_role, secret_group)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO nautobot_defaults (location, platform, interface_status, device_status, ip_address_status, ip_prefix_status, namespace, device_role, secret_group, csv_delimiter)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
                 self.default_nautobot_defaults.location,
@@ -359,9 +382,11 @@ class SettingsManager:
                 self.default_nautobot_defaults.interface_status,
                 self.default_nautobot_defaults.device_status,
                 self.default_nautobot_defaults.ip_address_status,
+                self.default_nautobot_defaults.ip_prefix_status,
                 self.default_nautobot_defaults.namespace,
                 self.default_nautobot_defaults.device_role,
                 self.default_nautobot_defaults.secret_group,
+                self.default_nautobot_defaults.csv_delimiter,
             ),
         )
 
@@ -948,6 +973,7 @@ class SettingsManager:
     def get_nautobot_defaults(self) -> Dict[str, Any]:
         """Get current Nautobot defaults"""
         try:
+            logger.info("Getting Nautobot defaults from database")
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
@@ -956,8 +982,21 @@ class SettingsManager:
                     "SELECT * FROM nautobot_defaults LIMIT 1"
                 ).fetchone()
 
+                logger.info(f"Database query result: {result is not None}")
+                
                 if result:
-                    return {
+                    # Check if csv_delimiter column exists in the result
+                    csv_delimiter = ","
+                    available_keys = list(result.keys())
+                    logger.info(f"Available columns in nautobot_defaults: {available_keys}")
+                    
+                    if "csv_delimiter" in result.keys():
+                        csv_delimiter = result["csv_delimiter"]
+                        logger.info(f"CSV delimiter from DB: {csv_delimiter}")
+                    else:
+                        logger.warning("csv_delimiter column not found in database, using default ','")
+                    
+                    data = {
                         "location": result["location"],
                         "platform": result["platform"],
                         "interface_status": result["interface_status"],
@@ -967,14 +1006,22 @@ class SettingsManager:
                         "namespace": result["namespace"],
                         "device_role": result["device_role"],
                         "secret_group": result["secret_group"],
+                        "csv_delimiter": csv_delimiter,
                     }
+                    logger.info(f"Returning Nautobot defaults from database: {data}")
+                    return data
                 else:
                     # Return default values if no record exists
-                    return asdict(self.default_nautobot_defaults)
+                    logger.warning("No nautobot_defaults record found, returning default values")
+                    default_data = asdict(self.default_nautobot_defaults)
+                    logger.info(f"Default values: {default_data}")
+                    return default_data
 
         except Exception as e:
-            logger.error(f"Error getting Nautobot defaults: {e}")
-            return asdict(self.default_nautobot_defaults)
+            logger.error(f"Error getting Nautobot defaults: {e}", exc_info=True)
+            default_data = asdict(self.default_nautobot_defaults)
+            logger.info(f"Returning default values due to error: {default_data}")
+            return default_data
 
     def update_nautobot_defaults(self, defaults: Dict[str, Any]) -> bool:
         """Update Nautobot defaults"""
@@ -987,8 +1034,8 @@ class SettingsManager:
                 if count == 0:
                     cursor.execute(
                         """
-                        INSERT INTO nautobot_defaults (location, platform, interface_status, device_status, ip_address_status, ip_prefix_status, namespace, device_role, secret_group)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO nautobot_defaults (location, platform, interface_status, device_status, ip_address_status, ip_prefix_status, namespace, device_role, secret_group, csv_delimiter)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                         (
                             defaults.get("location", ""),
@@ -1000,6 +1047,7 @@ class SettingsManager:
                             defaults.get("namespace", ""),
                             defaults.get("device_role", ""),
                             defaults.get("secret_group", ""),
+                            defaults.get("csv_delimiter", ","),
                         ),
                     )
                 else:
@@ -1015,6 +1063,7 @@ class SettingsManager:
                             namespace = ?,
                             device_role = ?,
                             secret_group = ?,
+                            csv_delimiter = ?,
                             updated_at = CURRENT_TIMESTAMP
                         WHERE id = 1
                     """,
@@ -1028,6 +1077,7 @@ class SettingsManager:
                             defaults.get("namespace", ""),
                             defaults.get("device_role", ""),
                             defaults.get("secret_group", ""),
+                            defaults.get("csv_delimiter", ","),
                         ),
                     )
 

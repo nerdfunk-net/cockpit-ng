@@ -100,6 +100,7 @@ class NautobotDefaultsRequest(BaseModel):
     namespace: Optional[str] = None
     device_role: Optional[str] = None
     secret_group: Optional[str] = None
+    csv_delimiter: Optional[str] = ","
 
 
 class DeviceOffboardingRequest(BaseModel):

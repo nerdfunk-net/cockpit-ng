@@ -29,6 +29,7 @@ interface NautobotDefaults {
   namespace: string
   device_role: string
   secret_group: string
+  csv_delimiter: string
 }
 
 interface NautobotOption {
@@ -109,7 +110,8 @@ export default function NautobotSettingsForm() {
     ip_prefix_status: '',
     namespace: '',
     device_role: '',
-    secret_group: ''
+    secret_group: '',
+    csv_delimiter: ','
   })
 
   const [status, setStatus] = useState<StatusType>('idle')
@@ -157,6 +159,11 @@ export default function NautobotSettingsForm() {
     loadCustomFields()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Debug: Log when defaults state changes
+  useEffect(() => {
+    console.log('[DEBUG] defaults state changed:', defaults)
+  }, [defaults])
 
   // Location filtering effect for offboarding
   useEffect(() => {
@@ -215,9 +222,15 @@ export default function NautobotSettingsForm() {
   const loadDefaults = async () => {
     try {
       setDefaultsLoading(true)
+      console.log('[DEBUG] loadDefaults: Making API call...')
       const data: ApiResponse = await apiCall('settings/nautobot/defaults')
+      console.log('[DEBUG] loadDefaults: API response received:', data)
       if (data.success && data.data) {
+        console.log('[DEBUG] loadDefaults: Setting defaults state with:', data.data)
         setDefaults(data.data as NautobotDefaults)
+        console.log('[DEBUG] loadDefaults: State update called')
+      } else {
+        console.log('[DEBUG] loadDefaults: API response not successful or no data')
       }
     } catch (error) {
       console.error('Error loading Nautobot defaults:', error)
@@ -322,7 +335,8 @@ export default function NautobotSettingsForm() {
       ip_prefix_status: '',
       namespace: '',
       device_role: '',
-      secret_group: ''
+      secret_group: '',
+      csv_delimiter: ','
     })
     showMessage('Defaults reset', 'success')
   }
@@ -973,6 +987,25 @@ export default function NautobotSettingsForm() {
                   </Select>
                   <p className="text-xs text-gray-500">
                     Default secret group for device credentials
+                  </p>
+                </div>
+
+                {/* CSV Delimiter */}
+                <div className="space-y-2">
+                  <Label htmlFor="default-csv-delimiter" className="text-sm font-medium text-gray-700">
+                    CSV Delimiter
+                  </Label>
+                  <Input
+                    id="default-csv-delimiter"
+                    type="text"
+                    maxLength={1}
+                    placeholder=","
+                    value={defaults.csv_delimiter}
+                    onChange={(e) => updateDefault('csv_delimiter', e.target.value)}
+                    className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Default delimiter for CSV file uploads (default: comma)
                   </p>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
@@ -10,7 +10,9 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Search, Plus, CheckCircle, AlertCircle, Info, X, Settings, Eye, RefreshCw } from 'lucide-react'
+import { Search, Plus, CheckCircle, AlertCircle, Info, X, Settings, Eye, RefreshCw, FileUp, XCircle } from 'lucide-react'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 // Type definitions based on the original implementation
 interface DropdownOption {
@@ -59,6 +61,42 @@ interface NautobotDefaults {
   namespace: string
   device_role: string
   secret_group: string
+}
+
+interface CSVRow {
+  ipaddress: string
+  location?: string
+  interface_status?: string
+  device_status?: string
+  ipaddress_status?: string
+  namespace?: string
+  device_role?: string
+  secret_group?: string
+  platform?: string
+}
+
+interface ParsedCSVRow extends CSVRow {
+  rowNumber: number
+  isValid: boolean
+  validationErrors: string[]
+  mappedData: {
+    location_id?: string
+    location_display?: string
+    namespace_id?: string
+    namespace_display?: string
+    role_id?: string
+    role_display?: string
+    status_id?: string
+    status_display?: string
+    platform_id?: string
+    platform_display?: string
+    secret_groups_id?: string
+    secret_groups_display?: string
+    interface_status_id?: string
+    interface_status_display?: string
+    ip_address_status_id?: string
+    ip_address_status_display?: string
+  }
 }
 
 export function OnboardDevicePage() {
@@ -113,6 +151,20 @@ export function OnboardDevicePage() {
   const [isCheckingJob, setIsCheckingJob] = useState(false)
   const [onboardedIPAddress, setOnboardedIPAddress] = useState<string>('')
 
+  // CSV upload state
+  const [showCSVModal, setShowCSVModal] = useState(false)
+  const [parsedCSVData, setParsedCSVData] = useState<ParsedCSVRow[]>([])
+  const [isParsingCSV, setIsParsingCSV] = useState(false)
+  const [isOnboardingBulk, setIsOnboardingBulk] = useState(false)
+  const [bulkOnboardingResults, setBulkOnboardingResults] = useState<{
+    rowNumber: number
+    ipaddress: string
+    success: boolean
+    message: string
+    jobId?: string
+  }[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   // Validation state
   const [ipValidation, setIpValidation] = useState<{
     isValid: boolean
@@ -125,6 +177,7 @@ export function OnboardDevicePage() {
       return
     }
     loadDropdownData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated])
 
   // Location filtering effect
@@ -556,6 +609,345 @@ export function OnboardDevicePage() {
     router.push(`/sync-devices?ip_filter=${encodeURIComponent(firstIP)}`)
   }
 
+  // CSV Upload Handlers
+  const handleCSVUpload = () => {
+    setShowCSVModal(true)
+    setParsedCSVData([])
+    setBulkOnboardingResults([])
+  }
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      parseCSVFile(file)
+    }
+  }
+
+  const parseCSVFile = async (file: File) => {
+    setIsParsingCSV(true)
+    setParsedCSVData([])
+    
+    try {
+      const text = await file.text()
+      const lines = text.split('\n').filter(line => line.trim())
+      
+      if (lines.length < 2) {
+        setStatusMessage({
+          type: 'error',
+          message: 'CSV file must contain at least a header row and one data row.'
+        })
+        return
+      }
+
+      // Parse header row (case-insensitive)
+      const headerLine = lines[0]
+      const headers = headerLine.split(',').map(h => h.trim().toLowerCase())
+      
+      // Check for mandatory ipaddress column
+      const ipIndex = headers.indexOf('ipaddress')
+      if (ipIndex === -1) {
+        setStatusMessage({
+          type: 'error',
+          message: 'CSV file must contain an "ipaddress" column.'
+        })
+        return
+      }
+
+      // Map optional column indices
+      const columnMap = {
+        ipaddress: ipIndex,
+        location: headers.indexOf('location'),
+        interface_status: headers.indexOf('interface_status'),
+        device_status: headers.indexOf('device_status'),
+        ipaddress_status: headers.indexOf('ipaddress_status'),
+        namespace: headers.indexOf('namespace'),
+        device_role: headers.indexOf('device_role'),
+        secret_group: headers.indexOf('secret_group'),
+        platform: headers.indexOf('platform')
+      }
+
+      // Parse data rows
+      const parsedRows: ParsedCSVRow[] = []
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim()
+        if (!line) continue
+
+        const values = line.split(',').map(v => v.trim())
+        
+        const row: CSVRow = {
+          ipaddress: values[columnMap.ipaddress] || ''
+        }
+
+        // Add optional fields if present in CSV
+        if (columnMap.location >= 0 && values[columnMap.location]) {
+          row.location = values[columnMap.location]
+        }
+        if (columnMap.interface_status >= 0 && values[columnMap.interface_status]) {
+          row.interface_status = values[columnMap.interface_status]
+        }
+        if (columnMap.device_status >= 0 && values[columnMap.device_status]) {
+          row.device_status = values[columnMap.device_status]
+        }
+        if (columnMap.ipaddress_status >= 0 && values[columnMap.ipaddress_status]) {
+          row.ipaddress_status = values[columnMap.ipaddress_status]
+        }
+        if (columnMap.namespace >= 0 && values[columnMap.namespace]) {
+          row.namespace = values[columnMap.namespace]
+        }
+        if (columnMap.device_role >= 0 && values[columnMap.device_role]) {
+          row.device_role = values[columnMap.device_role]
+        }
+        if (columnMap.secret_group >= 0 && values[columnMap.secret_group]) {
+          row.secret_group = values[columnMap.secret_group]
+        }
+        if (columnMap.platform >= 0 && values[columnMap.platform]) {
+          row.platform = values[columnMap.platform]
+        }
+
+        // Validate and map row
+        const parsedRow = validateAndMapCSVRow(row, i + 1)
+        parsedRows.push(parsedRow)
+      }
+
+      setParsedCSVData(parsedRows)
+      
+      const validCount = parsedRows.filter(r => r.isValid).length
+      const invalidCount = parsedRows.length - validCount
+      
+      setStatusMessage({
+        type: invalidCount > 0 ? 'warning' : 'success',
+        message: `Parsed ${parsedRows.length} rows: ${validCount} valid, ${invalidCount} invalid.`
+      })
+    } catch (error) {
+      console.error('Error parsing CSV:', error)
+      setStatusMessage({
+        type: 'error',
+        message: `Error parsing CSV file: ${error instanceof Error ? error.message : 'Unknown error'}`
+      })
+    } finally {
+      setIsParsingCSV(false)
+    }
+  }
+
+  const validateAndMapCSVRow = (row: CSVRow, rowNumber: number): ParsedCSVRow => {
+    const validationErrors: string[] = []
+    const mappedData: ParsedCSVRow['mappedData'] = {}
+
+    // Validate IP address
+    if (!validateIPAddress(row.ipaddress)) {
+      validationErrors.push('Invalid IP address')
+    }
+
+    // Map location
+    if (row.location) {
+      const location = locations.find(loc => 
+        loc.name.toLowerCase() === row.location?.toLowerCase() ||
+        loc.hierarchicalPath?.toLowerCase() === row.location?.toLowerCase()
+      )
+      if (location) {
+        mappedData.location_id = location.id
+        mappedData.location_display = location.hierarchicalPath || location.name
+      } else {
+        validationErrors.push(`Location "${row.location}" not found`)
+      }
+    } else if (formData.location_id) {
+      // Use default from form
+      const defaultLocation = locations.find(loc => loc.id === formData.location_id)
+      mappedData.location_id = formData.location_id
+      mappedData.location_display = defaultLocation?.hierarchicalPath || defaultLocation?.name || 'Default'
+    }
+
+    // Map namespace
+    if (row.namespace) {
+      const namespace = namespaces.find(ns => ns.name.toLowerCase() === row.namespace?.toLowerCase())
+      if (namespace) {
+        mappedData.namespace_id = namespace.id
+        mappedData.namespace_display = namespace.name
+      } else {
+        validationErrors.push(`Namespace "${row.namespace}" not found`)
+      }
+    } else if (formData.namespace_id) {
+      const defaultNamespace = namespaces.find(ns => ns.id === formData.namespace_id)
+      mappedData.namespace_id = formData.namespace_id
+      mappedData.namespace_display = defaultNamespace?.name || 'Default'
+    }
+
+    // Map device role
+    if (row.device_role) {
+      const role = deviceRoles.find(r => r.name.toLowerCase() === row.device_role?.toLowerCase())
+      if (role) {
+        mappedData.role_id = role.id
+        mappedData.role_display = role.name
+      } else {
+        validationErrors.push(`Device role "${row.device_role}" not found`)
+      }
+    } else if (formData.role_id) {
+      const defaultRole = deviceRoles.find(r => r.id === formData.role_id)
+      mappedData.role_id = formData.role_id
+      mappedData.role_display = defaultRole?.name || 'Default'
+    }
+
+    // Map device status
+    if (row.device_status) {
+      const status = deviceStatuses.find(s => s.name.toLowerCase() === row.device_status?.toLowerCase())
+      if (status) {
+        mappedData.status_id = status.id
+        mappedData.status_display = status.name
+      } else {
+        validationErrors.push(`Device status "${row.device_status}" not found`)
+      }
+    } else if (formData.status_id) {
+      const defaultStatus = deviceStatuses.find(s => s.id === formData.status_id)
+      mappedData.status_id = formData.status_id
+      mappedData.status_display = defaultStatus?.name || 'Default'
+    }
+
+    // Map platform
+    if (row.platform) {
+      const platform = platforms.find(p => p.name.toLowerCase() === row.platform?.toLowerCase())
+      if (platform) {
+        mappedData.platform_id = platform.id
+        mappedData.platform_display = platform.name
+      } else {
+        validationErrors.push(`Platform "${row.platform}" not found`)
+      }
+    } else {
+      mappedData.platform_id = formData.platform_id
+      mappedData.platform_display = formData.platform_id === 'detect' ? 'Auto-Detect' : 
+        platforms.find(p => p.id === formData.platform_id)?.name || 'Default'
+    }
+
+    // Map secret group
+    if (row.secret_group) {
+      const secretGroup = secretGroups.find(sg => sg.name.toLowerCase() === row.secret_group?.toLowerCase())
+      if (secretGroup) {
+        mappedData.secret_groups_id = secretGroup.id
+        mappedData.secret_groups_display = secretGroup.name
+      } else {
+        validationErrors.push(`Secret group "${row.secret_group}" not found`)
+      }
+    } else if (formData.secret_groups_id) {
+      const defaultSecretGroup = secretGroups.find(sg => sg.id === formData.secret_groups_id)
+      mappedData.secret_groups_id = formData.secret_groups_id
+      mappedData.secret_groups_display = defaultSecretGroup?.name || 'Default'
+    }
+
+    // Map interface status
+    if (row.interface_status) {
+      const status = interfaceStatuses.find(s => s.name.toLowerCase() === row.interface_status?.toLowerCase())
+      if (status) {
+        mappedData.interface_status_id = status.id
+        mappedData.interface_status_display = status.name
+      } else {
+        validationErrors.push(`Interface status "${row.interface_status}" not found`)
+      }
+    } else if (formData.interface_status_id) {
+      const defaultStatus = interfaceStatuses.find(s => s.id === formData.interface_status_id)
+      mappedData.interface_status_id = formData.interface_status_id
+      mappedData.interface_status_display = defaultStatus?.name || 'Default'
+    }
+
+    // Map IP address status
+    if (row.ipaddress_status) {
+      const status = ipAddressStatuses.find(s => s.name.toLowerCase() === row.ipaddress_status?.toLowerCase())
+      if (status) {
+        mappedData.ip_address_status_id = status.id
+        mappedData.ip_address_status_display = status.name
+      } else {
+        validationErrors.push(`IP address status "${row.ipaddress_status}" not found`)
+      }
+    } else if (formData.ip_address_status_id) {
+      const defaultStatus = ipAddressStatuses.find(s => s.id === formData.ip_address_status_id)
+      mappedData.ip_address_status_id = formData.ip_address_status_id
+      mappedData.ip_address_status_display = defaultStatus?.name || 'Default'
+    }
+
+    // Check if all required fields are mapped
+    if (!mappedData.location_id) validationErrors.push('Location is required')
+    if (!mappedData.namespace_id) validationErrors.push('Namespace is required')
+    if (!mappedData.role_id) validationErrors.push('Device role is required')
+    if (!mappedData.status_id) validationErrors.push('Device status is required')
+    if (!mappedData.secret_groups_id) validationErrors.push('Secret group is required')
+    if (!mappedData.interface_status_id) validationErrors.push('Interface status is required')
+    if (!mappedData.ip_address_status_id) validationErrors.push('IP address status is required')
+
+    return {
+      ...row,
+      rowNumber,
+      isValid: validationErrors.length === 0,
+      validationErrors,
+      mappedData
+    }
+  }
+
+  const handleBulkOnboard = async () => {
+    const validRows = parsedCSVData.filter(row => row.isValid)
+    
+    if (validRows.length === 0) {
+      setStatusMessage({
+        type: 'error',
+        message: 'No valid rows to onboard. Please fix the errors first.'
+      })
+      return
+    }
+
+    setIsOnboardingBulk(true)
+    setBulkOnboardingResults([])
+    const results: typeof bulkOnboardingResults = []
+
+    for (const row of validRows) {
+      try {
+        const onboardData = {
+          ip_address: row.ipaddress,
+          location_id: row.mappedData.location_id!,
+          namespace_id: row.mappedData.namespace_id!,
+          role_id: row.mappedData.role_id!,
+          status_id: row.mappedData.status_id!,
+          platform_id: row.mappedData.platform_id!,
+          secret_groups_id: row.mappedData.secret_groups_id!,
+          interface_status_id: row.mappedData.interface_status_id!,
+          ip_address_status_id: row.mappedData.ip_address_status_id!,
+          port: formData.port,
+          timeout: formData.timeout
+        }
+
+        const data = await apiCall<{
+          job_id: string
+          message: string
+        }>('nautobot/devices/onboard', {
+          method: 'POST',
+          body: onboardData
+        })
+
+        results.push({
+          rowNumber: row.rowNumber,
+          ipaddress: row.ipaddress,
+          success: true,
+          message: data.message,
+          jobId: data.job_id
+        })
+      } catch (error) {
+        results.push({
+          rowNumber: row.rowNumber,
+          ipaddress: row.ipaddress,
+          success: false,
+          message: error instanceof Error ? error.message : 'Unknown error'
+        })
+      }
+    }
+
+    setBulkOnboardingResults(results)
+    const successCount = results.filter(r => r.success).length
+    const failureCount = results.length - successCount
+
+    setStatusMessage({
+      type: failureCount > 0 ? 'warning' : 'success',
+      message: `Bulk onboarding completed: ${successCount} succeeded, ${failureCount} failed.`
+    })
+
+    setIsOnboardingBulk(false)
+  }
+
   const isFormValid = ipValidation.isValid && 
     formData.location_id && 
     formData.namespace_id && 
@@ -673,25 +1065,36 @@ export function OnboardDevicePage() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">&nbsp;</Label>
-                <Button
-                  onClick={handleCheckIPInNautobot}
-                  disabled={!ipValidation.isValid || isValidatingIP}
-                  variant="outline"
-                  size="sm"
-                  className="w-full h-8 text-xs"
-                >
-                  {isValidatingIP ? (
-                    <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500 mr-1" />
-                      Checking...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="h-3 w-3 mr-1" />
-                      Check IP
-                    </>
-                  )}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleCheckIPInNautobot}
+                    disabled={!ipValidation.isValid || isValidatingIP}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 h-8 text-xs"
+                  >
+                    {isValidatingIP ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500 mr-1" />
+                        Checking...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="h-3 w-3 mr-1" />
+                        Check IP
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={handleCSVUpload}
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                    title="Upload CSV file to onboard multiple devices"
+                  >
+                    <FileUp className="h-3 w-3" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -1042,6 +1445,271 @@ export function OnboardDevicePage() {
           onClick={() => setShowLocationDropdown(false)}
         />
       )}
+
+      {/* CSV Upload Modal */}
+      <Dialog open={showCSVModal} onOpenChange={setShowCSVModal}>
+        <DialogContent className="!max-w-[70vw] !w-[98vw] max-h-[70vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Upload CSV for Bulk Device Onboarding</DialogTitle>
+            <DialogDescription className="text-xs">
+              Required: <strong>ipaddress</strong> | Optional: location, interface_status, device_status, ipaddress_status, namespace, device_role, secret_group, platform
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto space-y-4">
+            {/* File Upload Section */}
+            {parsedCSVData.length === 0 && (
+              <div className="space-y-4">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="csv-file-input"
+                  />
+                  <FileUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <Label
+                    htmlFor="csv-file-input"
+                    className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Click to select CSV file
+                  </Label>
+                  <p className="text-sm text-gray-500 mt-2">
+                    or drag and drop
+                  </p>
+                </div>
+
+                {isParsingCSV && (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
+                    <span className="text-sm text-gray-600">Parsing CSV file...</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Parsed Data Table */}
+            {parsedCSVData.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
+                  <div className="flex items-center gap-6">
+                    <div>
+                      <span className="text-sm font-semibold text-gray-700">Total Rows:</span>
+                      <span className="ml-2 text-lg font-bold text-gray-900">{parsedCSVData.length}</span>
+                    </div>
+                    <div className="h-6 w-px bg-gray-300" />
+                    <div>
+                      <span className="text-sm font-semibold text-green-700">Valid:</span>
+                      <span className="ml-2 text-lg font-bold text-green-600">{parsedCSVData.filter(r => r.isValid).length}</span>
+                    </div>
+                    <div className="h-6 w-px bg-gray-300" />
+                    <div>
+                      <span className="text-sm font-semibold text-red-700">Invalid:</span>
+                      <span className="ml-2 text-lg font-bold text-red-600">{parsedCSVData.filter(r => !r.isValid).length}</span>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setParsedCSVData([])
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = ''
+                      }
+                    }}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <FileUp className="h-3 w-3 mr-1" />
+                    Upload Different File
+                  </Button>
+                </div>
+
+                {/* Scrollable Table */}
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="max-h-[600px] overflow-y-auto">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-gray-50 z-10">
+                        <TableRow>
+                          <TableHead className="w-12 text-xs">#</TableHead>
+                          <TableHead className="text-xs">IP Address</TableHead>
+                          <TableHead className="text-xs">Location</TableHead>
+                          <TableHead className="text-xs">Namespace</TableHead>
+                          <TableHead className="text-xs">Role</TableHead>
+                          <TableHead className="text-xs">Status</TableHead>
+                          <TableHead className="text-xs">Platform</TableHead>
+                          <TableHead className="text-xs">Secret Group</TableHead>
+                          <TableHead className="text-xs">Interface Status</TableHead>
+                          <TableHead className="text-xs">IP Status</TableHead>
+                          <TableHead className="w-12 text-xs text-center">Valid</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {parsedCSVData.map((row) => (
+                          <TableRow 
+                            key={row.rowNumber}
+                            className={!row.isValid ? 'bg-red-50' : ''}
+                          >
+                            <TableCell className="font-medium text-xs">{row.rowNumber}</TableCell>
+                            <TableCell className="font-mono text-xs">
+                              {row.ipaddress}
+                              {!validateIPAddress(row.ipaddress) && (
+                                <XCircle className="inline-block h-3 w-3 text-red-500 ml-1" />
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              {row.mappedData.location_display || '-'}
+                              {row.validationErrors.some(e => e.includes('Location')) && (
+                                <div className="text-[10px] text-red-600 mt-0.5">
+                                  {row.validationErrors.find(e => e.includes('Location'))}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              {row.mappedData.namespace_display || '-'}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              {row.mappedData.role_display || '-'}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              {row.mappedData.status_display || '-'}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              {row.mappedData.platform_display || '-'}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              {row.mappedData.secret_groups_display || '-'}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              {row.mappedData.interface_status_display || '-'}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              {row.mappedData.ip_address_status_display || '-'}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {row.isValid ? (
+                                <CheckCircle className="h-4 w-4 text-green-500 mx-auto" />
+                              ) : (
+                                <XCircle className="h-4 w-4 text-red-500 mx-auto" />
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+
+                {/* Validation Errors Summary */}
+                {parsedCSVData.some(r => !r.isValid) && (
+                  <Alert className="border-yellow-500 bg-yellow-50">
+                    <AlertCircle className="h-4 w-4 text-yellow-600" />
+                    <AlertDescription className="text-xs text-yellow-800">
+                      <strong>Validation Errors:</strong>
+                      <ul className="list-disc list-inside mt-1 space-y-0.5">
+                        {parsedCSVData
+                          .filter(r => !r.isValid)
+                          .slice(0, 3)
+                          .map(row => (
+                            <li key={row.rowNumber} className="truncate">
+                              Row {row.rowNumber}: {row.validationErrors.join(', ')}
+                            </li>
+                          ))}
+                        {parsedCSVData.filter(r => !r.isValid).length > 3 && (
+                          <li className="italic">
+                            ... and {parsedCSVData.filter(r => !r.isValid).length - 3} more errors
+                          </li>
+                        )}
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Bulk Onboarding Results */}
+                {bulkOnboardingResults.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-sm">Onboarding Results</h4>
+                    <div className="border rounded-lg max-h-48 overflow-y-auto">
+                      <Table>
+                        <TableHeader className="sticky top-0 bg-gray-50">
+                          <TableRow>
+                            <TableHead className="w-12 text-xs">#</TableHead>
+                            <TableHead className="text-xs">IP Address</TableHead>
+                            <TableHead className="text-xs">Status</TableHead>
+                            <TableHead className="text-xs">Message</TableHead>
+                            <TableHead className="text-xs">Job ID</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {bulkOnboardingResults.map((result) => (
+                            <TableRow 
+                              key={result.rowNumber}
+                              className={result.success ? 'bg-green-50' : 'bg-red-50'}
+                            >
+                              <TableCell className="text-xs">{result.rowNumber}</TableCell>
+                              <TableCell className="font-mono text-xs">
+                                {result.ipaddress}
+                              </TableCell>
+                              <TableCell>
+                                {result.success ? (
+                                  <Badge className="bg-green-100 text-green-800 text-xs">Success</Badge>
+                                ) : (
+                                  <Badge variant="destructive" className="text-xs">Failed</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-xs">{result.message}</TableCell>
+                              <TableCell className="font-mono text-[10px]">
+                                {result.jobId || '-'}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <div className="flex items-center justify-between w-full">
+              <Button
+                onClick={() => {
+                  setShowCSVModal(false)
+                  setParsedCSVData([])
+                  setBulkOnboardingResults([])
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = ''
+                  }
+                }}
+                variant="outline"
+              >
+                Close
+              </Button>
+              {parsedCSVData.length > 0 && bulkOnboardingResults.length === 0 && (
+                <Button
+                  onClick={handleBulkOnboard}
+                  disabled={isOnboardingBulk || parsedCSVData.filter(r => r.isValid).length === 0}
+                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                >
+                  {isOnboardingBulk ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      Onboarding {parsedCSVData.filter(r => r.isValid).length} devices...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Onboard {parsedCSVData.filter(r => r.isValid).length} Devices
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
