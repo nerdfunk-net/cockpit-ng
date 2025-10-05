@@ -61,6 +61,7 @@ interface NautobotDefaults {
   namespace: string
   device_role: string
   secret_group: string
+  csv_delimiter: string
 }
 
 interface CSVRow {
@@ -628,6 +629,9 @@ export function OnboardDevicePage() {
     setParsedCSVData([])
     
     try {
+      // Get delimiter from settings, default to comma if not available
+      const delimiter = nautobotDefaults?.csv_delimiter || ','
+      
       const text = await file.text()
       const lines = text.split('\n').filter(line => line.trim())
       
@@ -641,7 +645,7 @@ export function OnboardDevicePage() {
 
       // Parse header row (case-insensitive)
       const headerLine = lines[0]
-      const headers = headerLine.split(',').map(h => h.trim().toLowerCase())
+      const headers = headerLine.split(delimiter).map(h => h.trim().toLowerCase())
       
       // Check for mandatory ipaddress column
       const ipIndex = headers.indexOf('ipaddress')
@@ -672,7 +676,7 @@ export function OnboardDevicePage() {
         const line = lines[i].trim()
         if (!line) continue
 
-        const values = line.split(',').map(v => v.trim())
+        const values = line.split(delimiter).map(v => v.trim())
         
         const row: CSVRow = {
           ipaddress: values[columnMap.ipaddress] || ''
@@ -1453,6 +1457,8 @@ export function OnboardDevicePage() {
             <DialogTitle>Upload CSV for Bulk Device Onboarding</DialogTitle>
             <DialogDescription className="text-xs">
               Required: <strong>ipaddress</strong> | Optional: location, interface_status, device_status, ipaddress_status, namespace, device_role, secret_group, platform
+              <br />
+              <span className="text-gray-500">Using delimiter: <strong className="text-blue-600">{nautobotDefaults?.csv_delimiter || ','}</strong> (configure in Nautobot Settings)</span>
             </DialogDescription>
           </DialogHeader>
 

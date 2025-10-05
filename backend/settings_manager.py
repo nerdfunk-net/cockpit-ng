@@ -973,7 +973,6 @@ class SettingsManager:
     def get_nautobot_defaults(self) -> Dict[str, Any]:
         """Get current Nautobot defaults"""
         try:
-            logger.info("Getting Nautobot defaults from database")
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
@@ -982,21 +981,13 @@ class SettingsManager:
                     "SELECT * FROM nautobot_defaults LIMIT 1"
                 ).fetchone()
 
-                logger.info(f"Database query result: {result is not None}")
-                
                 if result:
                     # Check if csv_delimiter column exists in the result
                     csv_delimiter = ","
-                    available_keys = list(result.keys())
-                    logger.info(f"Available columns in nautobot_defaults: {available_keys}")
-                    
                     if "csv_delimiter" in result.keys():
                         csv_delimiter = result["csv_delimiter"]
-                        logger.info(f"CSV delimiter from DB: {csv_delimiter}")
-                    else:
-                        logger.warning("csv_delimiter column not found in database, using default ','")
                     
-                    data = {
+                    return {
                         "location": result["location"],
                         "platform": result["platform"],
                         "interface_status": result["interface_status"],
@@ -1008,20 +999,13 @@ class SettingsManager:
                         "secret_group": result["secret_group"],
                         "csv_delimiter": csv_delimiter,
                     }
-                    logger.info(f"Returning Nautobot defaults from database: {data}")
-                    return data
                 else:
                     # Return default values if no record exists
-                    logger.warning("No nautobot_defaults record found, returning default values")
-                    default_data = asdict(self.default_nautobot_defaults)
-                    logger.info(f"Default values: {default_data}")
-                    return default_data
+                    return asdict(self.default_nautobot_defaults)
 
         except Exception as e:
             logger.error(f"Error getting Nautobot defaults: {e}", exc_info=True)
-            default_data = asdict(self.default_nautobot_defaults)
-            logger.info(f"Returning default values due to error: {default_data}")
-            return default_data
+            return asdict(self.default_nautobot_defaults)
 
     def update_nautobot_defaults(self, defaults: Dict[str, Any]) -> bool:
         """Update Nautobot defaults"""

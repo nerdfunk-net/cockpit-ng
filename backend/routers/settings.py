@@ -535,15 +535,11 @@ async def update_template_settings(
 async def get_nautobot_defaults(current_user: dict = Depends(verify_admin_token)):
     """Get Nautobot default settings."""
     try:
-        logger.info("API endpoint '/nautobot/defaults' called")
         from settings_manager import settings_manager
 
         defaults = settings_manager.get_nautobot_defaults()
-        logger.info(f"Retrieved defaults from settings_manager: {defaults}")
         
-        response = {"success": True, "data": defaults}
-        logger.info(f"Returning response: {response}")
-        return response
+        return {"success": True, "data": defaults}
 
     except Exception as e:
         logger.error(f"Error getting Nautobot defaults: {e}", exc_info=True)

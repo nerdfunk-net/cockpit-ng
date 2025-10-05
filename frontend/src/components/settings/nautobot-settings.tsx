@@ -160,11 +160,6 @@ export default function NautobotSettingsForm() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Debug: Log when defaults state changes
-  useEffect(() => {
-    console.log('[DEBUG] defaults state changed:', defaults)
-  }, [defaults])
-
   // Location filtering effect for offboarding
   useEffect(() => {
     if (!offboardLocationSearch.trim()) {
@@ -222,15 +217,9 @@ export default function NautobotSettingsForm() {
   const loadDefaults = async () => {
     try {
       setDefaultsLoading(true)
-      console.log('[DEBUG] loadDefaults: Making API call...')
       const data: ApiResponse = await apiCall('settings/nautobot/defaults')
-      console.log('[DEBUG] loadDefaults: API response received:', data)
       if (data.success && data.data) {
-        console.log('[DEBUG] loadDefaults: Setting defaults state with:', data.data)
         setDefaults(data.data as NautobotDefaults)
-        console.log('[DEBUG] loadDefaults: State update called')
-      } else {
-        console.log('[DEBUG] loadDefaults: API response not successful or no data')
       }
     } catch (error) {
       console.error('Error loading Nautobot defaults:', error)
