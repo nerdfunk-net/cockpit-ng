@@ -924,7 +924,7 @@ export function SyncDevicesPage() {
                         <td className="pl-4 pr-2 py-3 w-40">
                           <div className="space-y-1 relative" ref={locationContainerRef}>
                             <Label className="text-xs font-medium text-gray-600">Location</Label>
-                            <div>
+                            <div className="relative">
                               <Input
                                 placeholder="Filter by location..."
                                 value={locationSearch || (selectedLocationId ? locationsList.find(l => l.id === selectedLocationId)?.hierarchicalPath || '' : '')}
@@ -939,12 +939,18 @@ export function SyncDevicesPage() {
                                 className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
                               />
                               {showLocationDropdown && (
-                                <div className="absolute z-50 mt-1 left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                <div className="fixed z-[9999] mt-1 bg-white border border-gray-300 rounded-md shadow-xl max-h-60 overflow-y-auto min-w-[300px]"
+                                  style={{
+                                    top: locationContainerRef.current?.getBoundingClientRect().bottom ?? 0,
+                                    left: locationContainerRef.current?.getBoundingClientRect().left ?? 0,
+                                    width: locationContainerRef.current?.getBoundingClientRect().width ?? 'auto'
+                                  }}
+                                >
                                   {locationFiltered.length > 0 ? (
                                     locationFiltered.map(loc => (
                                       <div
                                         key={loc.id}
-                                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
                                         onClick={() => {
                                           setSelectedLocationId(loc.id)
                                           setLocationSearch(loc.hierarchicalPath || loc.name)

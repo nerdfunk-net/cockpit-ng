@@ -34,7 +34,7 @@ class GitRepositoryManager:
                     CREATE TABLE IF NOT EXISTS git_repositories (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         name TEXT UNIQUE NOT NULL,
-                        category TEXT NOT NULL CHECK (category IN ('configs', 'templates', 'onboarding')),
+                        category TEXT NOT NULL CHECK (category IN ('configs', 'templates', 'onboarding', 'inventory')),
                         url TEXT NOT NULL,
                         branch TEXT NOT NULL DEFAULT 'main',
                         credential_name TEXT,

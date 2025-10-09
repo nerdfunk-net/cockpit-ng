@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -150,6 +150,14 @@ export default function NautobotSettingsForm() {
   const [showOffboardLocationDropdown, setShowOffboardLocationDropdown] = useState(false)
   const [filteredOffboardLocations, setFilteredOffboardLocations] = useState<LocationItem[]>([])
 
+  // Location search functionality for defaults
+  const [defaultLocationSearch, setDefaultLocationSearch] = useState('')
+  const [showDefaultLocationDropdown, setShowDefaultLocationDropdown] = useState(false)
+  const [filteredDefaultLocations, setFilteredDefaultLocations] = useState<LocationItem[]>([])
+
+  // Refs for dropdown positioning
+  const defaultLocationContainerRef = useRef<HTMLDivElement>(null)
+
   // Load settings on component mount
   useEffect(() => {
     loadSettings()
@@ -173,6 +181,19 @@ export default function NautobotSettingsForm() {
     }
   }, [offboardLocationSearch, locations])
 
+  // Location filtering effect for defaults
+  useEffect(() => {
+    if (!defaultLocationSearch.trim()) {
+      setFilteredDefaultLocations(locations)
+    } else {
+      const searchLower = defaultLocationSearch.toLowerCase()
+      const filtered = locations.filter(location =>
+        location.hierarchicalPath?.toLowerCase().includes(searchLower)
+      )
+      setFilteredDefaultLocations(filtered)
+    }
+  }, [defaultLocationSearch, locations])
+
   // Update location search display when locations are loaded and we have a location_id
   useEffect(() => {
     if (offboardingSettings.location_id && locations.length > 0) {
@@ -183,20 +204,31 @@ export default function NautobotSettingsForm() {
     }
   }, [locations, offboardingSettings.location_id])
 
+  // Update default location search display when locations are loaded and we have a default location
+  useEffect(() => {
+    if (defaults.location && locations.length > 0) {
+      const selectedLocation = locations.find(loc => loc.id === defaults.location)
+      if (selectedLocation) {
+        setDefaultLocationSearch(selectedLocation.hierarchicalPath || selectedLocation.name)
+      }
+    }
+  }, [locations, defaults.location])
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement
       if (!target.closest('.location-dropdown-container')) {
         setShowOffboardLocationDropdown(false)
+        setShowDefaultLocationDropdown(false)
       }
     }
 
-    if (showOffboardLocationDropdown) {
+    if (showOffboardLocationDropdown || showDefaultLocationDropdown) {
       document.addEventListener('mousedown', handleClickOutside)
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showOffboardLocationDropdown])
+  }, [showOffboardLocationDropdown, showDefaultLocationDropdown])
 
 
   const loadSettings = async () => {
@@ -399,6 +431,12 @@ export default function NautobotSettingsForm() {
     setOffboardLocationSearch(location.hierarchicalPath || location.name)
     setOffboardingSettings(prev => ({ ...prev, location_id: location.id }))
     setShowOffboardLocationDropdown(false)
+  }
+
+  const handleDefaultLocationSelect = (location: LocationItem) => {
+    setDefaultLocationSearch(location.hierarchicalPath || location.name)
+    setDefaults(prev => ({ ...prev, location: location.id }))
+    setShowDefaultLocationDropdown(false)
   }
 
   const saveOffboardingSettings = async () => {
@@ -758,18 +796,43 @@ export default function NautobotSettingsForm() {
                   <Label htmlFor="default-location" className="text-sm font-medium text-gray-700">
                     Location
                   </Label>
-                  <Select value={defaults.location} onValueChange={(value) => updateDefault('location', value)}>
-                    <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
-                      <SelectValue placeholder="Select a location" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {locations.map((location) => (
-                        <SelectItem key={location.id} value={location.id}>
-                          {location.hierarchicalPath}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="relative location-dropdown-container" ref={defaultLocationContainerRef}>
+                    <Input
+                      placeholder="Search location..."
+                      value={defaultLocationSearch}
+                      onChange={(e) => {
+                        const query = e.target.value
+                        setDefaultLocationSearch(query)
+                        setShowDefaultLocationDropdown(true)
+                      }}
+                      onFocus={() => setShowDefaultLocationDropdown(true)}
+                      className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                    {showDefaultLocationDropdown && (
+                      <div
+                        className="fixed z-[9999] mt-1 bg-white border border-gray-300 rounded-md shadow-xl max-h-60 overflow-y-auto min-w-[300px]"
+                        style={{
+                          top: defaultLocationContainerRef.current?.getBoundingClientRect().bottom ?? 0,
+                          left: defaultLocationContainerRef.current?.getBoundingClientRect().left ?? 0,
+                          width: defaultLocationContainerRef.current?.getBoundingClientRect().width ?? 'auto'
+                        }}
+                      >
+                        {filteredDefaultLocations.length > 0 ? (
+                          filteredDefaultLocations.map((location) => (
+                            <div
+                              key={location.id}
+                              className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                              onClick={() => handleDefaultLocationSelect(location)}
+                            >
+                              {location.hierarchicalPath}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-sm text-gray-500 italic">No locations found</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-500">
                     Default location for new devices
                   </p>

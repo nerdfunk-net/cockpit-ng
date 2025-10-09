@@ -13,7 +13,7 @@ The cockpit-ng backend uses SQLite databases to store various types of applicati
 | **users.db** | `data/settings` | `users` | • User accounts (id, username, realname, email)<br/>• Encrypted passwords (bcrypt)<br/>• User permissions (bitwise flags)<br/>• Debug settings<br/>• Account status & timestamps | User authentication & management |
 | **credentials.db** | `data/settings` | `credentials` | • SSH/TACACS/Generic/Token credentials<br/>• Encrypted passwords (Fernet encryption)<br/>• Credential names & usernames<br/>• Expiration dates<br/>• Source (general/private)<br/>• Owner information | Secure credential storage |
 | **cockpit_settings.db** | `data/settings` | `settings`<br/>`user_profiles` | • Nautobot connection settings (URL, token, timeout)<br/>• Git repository settings (URL, branch, credentials)<br/>• CheckMK settings (URL, site, credentials)<br/>• Cache configuration<br/>• User profiles (realname, email, API keys) | Application configuration |
-| **git_repositories.db** | `data/settings/` | `git_repositories` | • Repository definitions (name, URL, branch)<br/>• Categories (configs, templates, onboarding)<br/>• Credentials & SSL settings<br/>• Sync status & timestamps<br/>• Active/inactive status | Git repository management |
+| **git_repositories.db** | `data/settings/` | `git_repositories` | • Repository definitions (name, URL, branch)<br/>• Categories (configs, templates, onboarding, inventory)<br/>• Credentials & SSL settings<br/>• Sync status & timestamps<br/>• Active/inactive status | Git repository management |
 | **cockpit_templates.db** | `data/settings` | `templates`<br/>`template_versions` | • Template definitions (name, type, category)<br/>• Git-sourced templates (repo URL, path, branch)<br/>• File/WebEditor templates (content, filename)<br/>• Template variables & tags<br/>• Version history & change tracking | Template management system |
 | **nb2cmk.db** | `data/settings` | `nb2cmk_jobs`<br/>`nb2cmk_device_results` | • Background job tracking (status, progress)<br/>• Device comparison results<br/>• Diff data & configurations<br/>• CheckMK sync status<br/>• Error messages & timestamps | Nautobot-to-CheckMK operations |
 | **jobs.db** | `data/jobs/` | `jobs`<br/>`job_results` | • APScheduler job management<br/>• Network scan jobs<br/>• Device comparison/sync jobs<br/>• Job progress & status tracking<br/>• Per-device results & errors | General job management |
@@ -70,7 +70,7 @@ Central configuration storage:
 Git integration and repository tracking:
 
 - **Repository Definitions**: URLs, branches, authentication settings
-- **Categories**: Organization by purpose (configs, templates, onboarding)
+- **Categories**: Organization by purpose (configs, templates, onboarding, inventory)
 - **Sync Management**: Status tracking, timestamps, error handling
 - **SSL Configuration**: Certificate validation settings
 - **Activation Status**: Enable/disable repositories without deletion

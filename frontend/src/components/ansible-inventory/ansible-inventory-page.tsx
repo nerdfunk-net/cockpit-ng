@@ -22,7 +22,8 @@ import {
   Filter,
   FileText,
   Database,
-  X
+  X,
+  GitBranch
 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 import { useAuthStore } from '@/lib/auth-store'
@@ -109,6 +110,20 @@ export default function AnsibleInventoryPage() {
   const [selectedTemplate, setSelectedTemplate] = useState('')
   const [showTemplateSection, setShowTemplateSection] = useState(false)
 
+  // Git repositories
+  const [gitRepositories, setGitRepositories] = useState<Array<{id: number, name: string, url: string, branch: string}>>([])
+  const [selectedGitRepo, setSelectedGitRepo] = useState<number | null>(null)
+
+  // Git push success modal
+  const [showGitSuccessModal, setShowGitSuccessModal] = useState(false)
+  const [gitPushResult, setGitPushResult] = useState<{
+    repository: string
+    branch: string
+    file: string
+    device_count: number
+    commit_message: string
+  } | null>(null)
+
   // Inventory generation
   const [generatedInventory, setGeneratedInventory] = useState('')
   const [showInventorySection, setShowInventorySection] = useState(false)
@@ -117,6 +132,7 @@ export default function AnsibleInventoryPage() {
   const [isLoadingPreview, setIsLoadingPreview] = useState(false)
   const [isLoadingFieldValues, setIsLoadingFieldValues] = useState(false)
   const [isGeneratingInventory, setIsGeneratingInventory] = useState(false)
+  const [isPushingToGit, setIsPushingToGit] = useState(false)
 
   // Custom fields menu
   const [showCustomFieldsMenu, setShowCustomFieldsMenu] = useState(false)
@@ -134,7 +150,8 @@ export default function AnsibleInventoryPage() {
     try {
       await Promise.all([
         loadFieldOptions(),
-        loadTemplateCategories()
+        loadTemplateCategories(),
+        loadGitRepositories()
       ])
     } catch (error) {
       console.error('Error loading initial data:', error)
@@ -171,6 +188,20 @@ export default function AnsibleInventoryPage() {
       setTemplateCategories(response)
     } catch (error) {
       console.error('Error loading template categories:', error)
+    }
+  }
+
+  const loadGitRepositories = async () => {
+    try {
+      const response = await apiCall<{
+        repositories: Array<{id: number, name: string, url: string, branch: string}>
+        total: number
+      }>('ansible-inventory/git-repositories')
+      
+      setGitRepositories(response.repositories)
+    } catch (error) {
+      console.error('Error loading Git repositories:', error)
+      setGitRepositories([])
     }
   }
 
@@ -395,7 +426,7 @@ export default function AnsibleInventoryPage() {
           case 'OR':
             orConditions.push(conditionData)
             break
-          case 'AND NOT':
+          case 'NOT':
             notConditions.push(conditionData)
             break
         }
@@ -544,6 +575,78 @@ export default function AnsibleInventoryPage() {
     } catch (error) {
       console.error('Error copying to clipboard:', error)
       alert('Failed to copy to clipboard')
+    }
+  }
+
+  const pushToGit = async () => {
+    if (!selectedCategory || !selectedTemplate) {
+      alert('Please select both template category and name.')
+      return
+    }
+
+    if (!selectedGitRepo) {
+      alert('Please select a Git repository.')
+      return
+    }
+
+    setIsPushingToGit(true)
+    try {
+      const operations = buildOperationsFromConditions()
+      
+      const response = await apiCall<{
+        success: boolean
+        message: string
+        repository: string
+        branch: string
+        file: string
+        device_count: number
+        commit_message: string
+      }>('ansible-inventory/push-to-git', {
+        method: 'POST',
+        body: {
+          operations,
+          template_name: selectedTemplate,
+          template_category: selectedCategory,
+          repository_id: selectedGitRepo
+        }
+      })
+
+      if (response.success) {
+        // Store result and show modal
+        setGitPushResult({
+          repository: response.repository,
+          branch: response.branch,
+          file: response.file,
+          device_count: response.device_count,
+          commit_message: response.commit_message
+        })
+        setShowGitSuccessModal(true)
+        
+        // Also show the generated inventory in the UI
+        setShowInventorySection(true)
+        
+        // If inventory wasn't generated yet, fetch it for display
+        if (!generatedInventory) {
+          const inventoryResponse = await apiCall<{
+            inventory_content: string
+            template_used: string
+            device_count: number
+          }>('ansible-inventory/generate', {
+            method: 'POST',
+            body: {
+              operations,
+              template_name: selectedTemplate,
+              template_category: selectedCategory
+            }
+          })
+          setGeneratedInventory(inventoryResponse.inventory_content)
+        }
+      }
+    } catch (error) {
+      console.error('Error pushing to Git:', error)
+      alert('Error pushing to Git: ' + (error as Error).message)
+    } finally {
+      setIsPushingToGit(false)
     }
   }
 
@@ -926,68 +1029,109 @@ export default function AnsibleInventoryPage() {
             </div>
           </div>
           <div className="p-6 bg-gradient-to-b from-white to-gray-50">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-              <div className="space-y-2">
-                <Label htmlFor="category">Template Category</Label>
-                <Select value={selectedCategory} onValueChange={(value) => {
-                  setSelectedCategory(value)
-                  setSelectedTemplate('')
-                  loadTemplatesForCategory(value)
-                }}>
-                  <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
-                    <SelectValue placeholder="Select Category..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {templateCategories.map(category => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <div className="grid grid-cols-1 gap-4">
+              {/* First row: All selections */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="category">Template Category</Label>
+                  <Select value={selectedCategory} onValueChange={(value) => {
+                    setSelectedCategory(value)
+                    setSelectedTemplate('')
+                    loadTemplatesForCategory(value)
+                  }}>
+                    <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                      <SelectValue placeholder="Select Category..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templateCategories.map(category => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="template">Template Name</Label>
+                  <Select 
+                    value={selectedTemplate} 
+                    onValueChange={setSelectedTemplate}
+                    disabled={!selectedCategory}
+                  >
+                    <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
+                      <SelectValue placeholder="Select Template..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTemplates.map(template => (
+                        <SelectItem key={template} value={template}>
+                          {template}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="gitRepo">Git Repository</Label>
+                  <Select 
+                    value={selectedGitRepo?.toString() || ''} 
+                    onValueChange={(value) => setSelectedGitRepo(parseInt(value))}
+                  >
+                    <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                      <SelectValue placeholder="Select Repository..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {gitRepositories.length === 0 ? (
+                        <SelectItem value="none" disabled>No repositories configured</SelectItem>
+                      ) : (
+                        gitRepositories.map(repo => (
+                          <SelectItem key={repo.id} value={repo.id.toString()}>
+                            {repo.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="template">Template Name</Label>
-                <Select 
-                  value={selectedTemplate} 
-                  onValueChange={setSelectedTemplate}
-                  disabled={!selectedCategory}
-                >
-                  <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
-                    <SelectValue placeholder="Select Template..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableTemplates.map(template => (
-                      <SelectItem key={template} value={template}>
-                        {template}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Second row: All action buttons */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                <div>
+                  <Button
+                    onClick={generateInventory}
+                    disabled={!selectedCategory || !selectedTemplate || isGeneratingInventory}
+                    className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white w-full"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span>{isGeneratingInventory ? 'Creating...' : 'Create Inventory'}</span>
+                  </Button>
+                </div>
 
-              <div>
-                <Button
-                  onClick={generateInventory}
-                  disabled={!selectedCategory || !selectedTemplate || isGeneratingInventory}
-                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white w-full"
-                >
-                  <Settings className="h-4 w-4" />
-                  <span>{isGeneratingInventory ? 'Generating...' : 'Generate Inventory'}</span>
-                </Button>
-              </div>
+                <div>
+                  <Button
+                    onClick={pushToGit}
+                    disabled={!selectedCategory || !selectedTemplate || !selectedGitRepo || isPushingToGit}
+                    variant="outline"
+                    className="flex items-center space-x-2 w-full border-2 border-blue-500 text-blue-600 hover:bg-blue-50 disabled:border-gray-300 disabled:text-gray-400"
+                  >
+                    <GitBranch className="h-4 w-4" />
+                    <span>{isPushingToGit ? 'Pushing...' : 'Push to Git'}</span>
+                  </Button>
+                </div>
 
-              <div>
-                <Button
-                  onClick={downloadInventory}
-                  disabled={!selectedCategory || !selectedTemplate}
-                  variant="outline"
-                  className="flex items-center space-x-2 w-full"
-                >
-                  <Download className="h-4 w-4" />
-                  <span>Download</span>
-                </Button>
+                <div>
+                  <Button
+                    onClick={downloadInventory}
+                    disabled={!selectedCategory || !selectedTemplate}
+                    variant="outline"
+                    className="flex items-center space-x-2 w-full"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>Download</span>
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -1051,6 +1195,64 @@ export default function AnsibleInventoryPage() {
                   </div>
                 ))
               )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Git Push Success Modal */}
+      {showGitSuccessModal && gitPushResult && (
+        <Dialog open={showGitSuccessModal} onOpenChange={setShowGitSuccessModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-green-600">
+                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                  <GitBranch className="h-5 w-5" />
+                </div>
+                Successfully Pushed to Git
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3">
+                  <div className="text-sm font-medium text-gray-500 w-24 flex-shrink-0">Repository:</div>
+                  <div className="text-sm font-medium text-gray-900">{gitPushResult.repository}</div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="text-sm font-medium text-gray-500 w-24 flex-shrink-0">Branch:</div>
+                  <div className="text-sm text-gray-900">{gitPushResult.branch}</div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="text-sm font-medium text-gray-500 w-24 flex-shrink-0">File:</div>
+                  <div className="text-sm text-gray-900">{gitPushResult.file}</div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="text-sm font-medium text-gray-500 w-24 flex-shrink-0">Devices:</div>
+                  <div className="text-sm text-gray-900">
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                      {gitPushResult.device_count}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-3">
+                <div className="text-sm font-medium text-gray-500 mb-2">Commit Message:</div>
+                <div className="bg-gray-50 p-3 rounded-md">
+                  <code className="text-sm text-gray-800 break-words whitespace-pre-wrap">
+                    {gitPushResult.commit_message}
+                  </code>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  onClick={() => setShowGitSuccessModal(false)}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
