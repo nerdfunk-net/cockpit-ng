@@ -29,6 +29,22 @@ class OIDCService:
         self._jwks_cache_times: Dict[str, datetime] = {}
         self._jwks_cache_ttl = timedelta(hours=1)
 
+    def _sanitize_token_response(self, token_response: Dict[str, Any]) -> Dict[str, Any]:
+        """Sanitize token response for logging by masking sensitive tokens."""
+        sanitized = token_response.copy()
+        
+        # Mask sensitive fields but show first/last few characters for debugging
+        sensitive_fields = ['access_token', 'refresh_token', 'id_token']
+        for field in sensitive_fields:
+            if field in sanitized and sanitized[field]:
+                token = sanitized[field]
+                if len(token) > 20:
+                    sanitized[field] = f"{token[:10]}...{token[-10:]}"
+                else:
+                    sanitized[field] = "***MASKED***"
+        
+        return sanitized
+
     async def get_oidc_config(self, provider_id: str) -> OIDCConfig:
         """Fetch OIDC configuration from discovery endpoint for specific provider."""
         # Check if any OIDC providers are enabled
@@ -154,6 +170,15 @@ class OIDCService:
             "client_id": client_id,
             "client_secret": client_secret,
         }
+        
+        # Debug logging: Log token request (sanitized)
+        sanitized_request = token_data.copy()
+        if 'client_secret' in sanitized_request:
+            sanitized_request['client_secret'] = '***MASKED***'
+        if 'code' in sanitized_request and len(sanitized_request['code']) > 20:
+            sanitized_request['code'] = f"{sanitized_request['code'][:10]}...{sanitized_request['code'][-10:]}"
+        logger.debug(f"Token request to provider '{provider_id}': {sanitized_request}")
+        logger.debug(f"Token endpoint URL: {config.token_endpoint}")
 
         try:
             async with httpx.AsyncClient() as client:
@@ -163,11 +188,24 @@ class OIDCService:
                     headers={"Content-Type": "application/x-www-form-urlencoded"},
                     timeout=10.0,
                 )
+                
+                # Debug logging: Log response status and headers
+                logger.debug(f"Token endpoint response status from provider '{provider_id}': {response.status_code}")
+                logger.debug(f"Token endpoint response headers from provider '{provider_id}': {dict(response.headers)}")
+                
                 response.raise_for_status()
-                return response.json()
+                token_response = response.json()
+                
+                # Debug logging: Log the token response (sanitized)
+                logger.debug(f"Token response from provider '{provider_id}': {self._sanitize_token_response(token_response)}")
+                
+                return token_response
 
         except httpx.HTTPError as e:
             logger.error(f"Token exchange failed for provider '{provider_id}': {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Error response status: {e.response.status_code}")
+                logger.error(f"Error response body: {e.response.text}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=f"Failed to exchange authorization code for tokens with provider '{provider_id}'",
