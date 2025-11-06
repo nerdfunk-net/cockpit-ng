@@ -243,6 +243,8 @@ class OIDCService:
 
     async def verify_id_token(self, provider_id: str, id_token: str) -> Dict[str, Any]:
         """Verify and decode ID token from OIDC provider."""
+        logger.debug(f"[OIDC Debug] Verifying ID token for provider '{provider_id}'")
+        
         config = await self.get_oidc_config(provider_id)
         jwks = await self.get_jwks(provider_id)
 
@@ -255,11 +257,18 @@ class OIDCService:
             )
 
         client_id = provider_config.get("client_id", settings.oidc_client_id)
+        
+        logger.debug(f"[OIDC Debug] Issuer: {config.issuer}")
+        logger.debug(f"[OIDC Debug] Client ID (audience): {client_id}")
 
         try:
             # Decode header to get kid
             unverified_header = jwt.get_unverified_header(id_token)
+            algorithm = unverified_header.get("alg")
             kid = unverified_header.get("kid")
+            
+            logger.debug(f"[OIDC Debug] ID token algorithm: {algorithm}")
+            logger.debug(f"[OIDC Debug] ID token key ID (kid): {kid}")
 
             # Find matching key in JWKS
             key = None
@@ -273,6 +282,8 @@ class OIDCService:
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail=f"Unable to find matching signing key for provider '{provider_id}'",
                 )
+            
+            logger.debug(f"[OIDC Debug] Found matching key in JWKS")
 
             # Verify and decode token
             # Note: We disable access_token validation since at_hash is optional
@@ -287,6 +298,12 @@ class OIDCService:
                     "verify_at_hash": False  # Disable at_hash validation
                 }
             )
+            
+            logger.debug(f"[OIDC Debug] ID token verified successfully")
+            logger.debug(f"[OIDC Debug] Token claims: {list(claims.keys())}")
+            logger.debug(f"[OIDC Debug] Subject (sub): {claims.get('sub')}")
+            logger.debug(f"[OIDC Debug] Issued at (iat): {claims.get('iat')}")
+            logger.debug(f"[OIDC Debug] Expires at (exp): {claims.get('exp')}")
 
             return claims
 
@@ -320,6 +337,8 @@ class OIDCService:
 
     def extract_user_data(self, provider_id: str, claims: Dict[str, Any]) -> Dict[str, Any]:
         """Extract user data from OIDC claims using provider-specific claim mappings."""
+        logger.debug(f"[OIDC Debug] Extracting user data from claims for provider '{provider_id}'")
+        
         # Get provider configuration for claim mappings
         provider_config = settings_manager.get_oidc_provider(provider_id)
         if not provider_config:
@@ -334,12 +353,16 @@ class OIDCService:
         name_claim = claim_mappings.get("name", settings.oidc_claim_name)
 
         # Log available claims for debugging
-        logger.debug(f"Available claims in ID token from '{provider_id}': {list(claims.keys())}")
-        logger.debug(f"Looking for username claim: '{username_claim}'")
+        logger.debug(f"[OIDC Debug] Available claims in ID token from '{provider_id}': {list(claims.keys())}")
+        logger.debug(f"[OIDC Debug] Claim mappings - username: {username_claim}, email: {email_claim}, name: {name_claim}")
 
         username = claims.get(username_claim)
         email = claims.get(email_claim)
         name = claims.get(name_claim, username)
+        
+        logger.debug(f"[OIDC Debug] Extracted username: {username}")
+        logger.debug(f"[OIDC Debug] Extracted email: {email}")
+        logger.debug(f"[OIDC Debug] Extracted name: {name}")
 
         if not username:
             logger.error(f"Username claim '{username_claim}' not found in token from provider '{provider_id}'")
@@ -365,6 +388,11 @@ class OIDCService:
         Returns:
             tuple: (user_dict, is_new_user)
         """
+        logger.debug(f"[OIDC Debug] Provisioning or retrieving user from provider '{provider_id}'")
+        logger.debug(f"[OIDC Debug] Username: {user_data.get('username')}")
+        logger.debug(f"[OIDC Debug] Email: {user_data.get('email')}")
+        logger.debug(f"[OIDC Debug] Subject (sub): {user_data.get('sub')}")
+        
         # Get provider configuration
         provider_config = settings_manager.get_oidc_provider(provider_id)
         if not provider_config:
@@ -395,7 +423,11 @@ class OIDCService:
 
             if updates:
                 user = update_user(user["id"], **updates)
-                logger.info(f"Updated OIDC user '{username}' from provider '{provider_id}'")
+                logger.info(f"[OIDC Debug] Updated user '{username}' information from provider '{provider_id}'")
+            else:
+                logger.info(f"[OIDC Debug] Existing user '{username}' logged in via OIDC provider '{provider_id}'")
+            
+            logger.debug(f"[OIDC Debug] User ID: {user['id']}, is_active: {user.get('is_active', True)}, role: {user.get('role', 'unknown')}")
 
             return user, False
 

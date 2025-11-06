@@ -143,13 +143,16 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
         claims = await oidc_service.verify_id_token(provider_id, id_token)
 
         # Extract user data from claims
+        logger.debug(f"[OIDC Debug] Extracting user data from claims...")
         user_data = oidc_service.extract_user_data(provider_id, claims)
 
         # Provision or get existing user
+        logger.debug(f"[OIDC Debug] Provisioning or retrieving user...")
         user, is_new_user = await oidc_service.provision_or_get_user(provider_id, user_data)
 
         # Check if user is inactive (new users awaiting approval)
         if not user.get("is_active", True):
+            logger.info(f"[OIDC Debug] User '{user['username']}' created but awaiting admin approval from provider '{provider_id}'")
             return ApprovalPendingResponse(
                 status="approval_pending",
                 message="Your account has been created but requires administrator approval before you can access the system.",
@@ -159,6 +162,7 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
             )
 
         # Create internal JWT token
+        logger.debug(f"[OIDC Debug] Creating application access token...")
         access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
         access_token = create_access_token(
             data={
@@ -170,6 +174,8 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
             },
             expires_delta=access_token_expires,
         )
+        
+        logger.info(f"[OIDC Debug] User '{user['username']}' authenticated successfully via OIDC provider '{provider_id}'")
 
         return LoginResponse(
             access_token=access_token,
