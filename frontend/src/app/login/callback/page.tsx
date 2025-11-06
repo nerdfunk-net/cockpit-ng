@@ -37,11 +37,25 @@ export default function OIDCCallbackPage() {
           throw new Error('Invalid state parameter - possible CSRF attack')
         }
 
-        // Clear stored state
-        sessionStorage.removeItem('oidc_state')
+        // Extract provider_id from state (format: "provider_id:random_state")
+        let providerId = 'default'
+        if (state && state.includes(':')) {
+          const [extractedProviderId] = state.split(':', 2)
+          providerId = extractedProviderId
+        } else {
+          // Fallback: Try to get from sessionStorage
+          const storedProviderId = sessionStorage.getItem('oidc_provider_id')
+          if (storedProviderId) {
+            providerId = storedProviderId
+          }
+        }
 
-        // Exchange code for tokens
-        const response = await fetch('/api/proxy/auth/oidc/callback', {
+        // Clear stored state and provider_id
+        sessionStorage.removeItem('oidc_state')
+        sessionStorage.removeItem('oidc_provider_id')
+
+        // Exchange code for tokens with provider-specific endpoint
+        const response = await fetch(`/api/proxy/auth/oidc/${providerId}/callback`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -51,10 +65,22 @@ export default function OIDCCallbackPage() {
 
         if (!response.ok) {
           const errorData = await response.json()
-          throw new Error(errorData.detail || 'Authentication failed')
+          throw new Error(errorData.detail || `Authentication failed with provider '${providerId}'`)
         }
 
         const data = await response.json()
+
+        // Check if user is awaiting approval
+        if (data.status === 'approval_pending') {
+          // Redirect to approval pending page with user info
+          const params = new URLSearchParams({
+            username: data.username || '',
+            email: data.email || '',
+            provider: data.oidc_provider || providerId,
+          })
+          router.push(`/login/approval-pending?${params.toString()}`)
+          return
+        }
 
         if (data.access_token) {
           login(data.access_token, {

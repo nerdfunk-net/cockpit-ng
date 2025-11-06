@@ -1,0 +1,201 @@
+# ============================================================================
+# OIDC Providers Configuration Example
+# ============================================================================
+# This file configures OpenID Connect (OIDC) Single Sign-On providers.
+# Copy this file to 'oidc_providers.yaml' and customize for your environment.
+#
+# Location: config/oidc_providers.yaml
+# Format: YAML
+#
+# Documentation: See OIDC_SETUP.md for detailed setup instructions
+# ============================================================================
+
+# ============================================================================
+# PROVIDER DEFINITIONS
+# ============================================================================
+# Define one or more OIDC identity providers (Keycloak, Azure AD, Okta, etc.)
+# Users will see these as login options on the login page.
+
+providers:
+  
+  # ---------------------------------------------------------------------------
+  # Example 1: Corporate Keycloak Instance
+  # ---------------------------------------------------------------------------
+  corporate:
+    # Enable/disable this provider
+    enabled: true
+    
+    # Display Settings (shown on login page)
+    name: "Corporate SSO"
+    description: "Sign in with your company account"
+    icon: "building"        # Options: building, flask, users, shield, or leave empty
+    display_order: 1        # Lower numbers appear first (1, 2, 3...)
+    
+    # OpenID Connect Configuration
+    # For Keycloak: http(s)://{host}:{port}/realms/{realm}/.well-known/openid-configuration
+    discovery_url: "https://keycloak.example.com/realms/production/.well-known/openid-configuration"
+    
+    # OAuth Client Credentials (from your OIDC provider)
+    client_id: "cockpit-production"
+    client_secret: "your-client-secret-here"
+    
+    # Optional: Override default redirect URI
+    # Default is automatically constructed from backend URL + /login/callback
+    redirect_uri: ""
+    
+    # OAuth Scopes to Request
+    # Standard scopes: openid (required), profile, email, offline_access
+    scopes:
+      - openid
+      - profile
+      - email
+      - offline_access
+    
+    # Claim Mapping
+    # Map OIDC token claims to user attributes
+    # Keycloak standard claims: preferred_username, email, name, given_name, family_name
+    claim_mappings:
+      username: "preferred_username"  # Claim to use as username (required)
+      email: "email"                   # Claim for email address
+      name: "name"                     # Claim for display name
+      groups: "groups"                 # Optional: for future role mapping
+    
+    # User Provisioning Settings
+    auto_provision: true            # Automatically create users on first login
+    default_role: "user"            # Role for new users: "user" or "admin"
+    username_prefix: ""             # Optional: prefix to avoid conflicts (e.g., "corp_")
+  
+  # ---------------------------------------------------------------------------
+  # Example 2: Development/Staging Environment
+  # ---------------------------------------------------------------------------
+  development:
+    enabled: false                  # Disabled by default
+    name: "Development SSO"
+    description: "For testing and development"
+    icon: "flask"
+    display_order: 2
+    
+    discovery_url: "http://localhost:7080/realms/dev/.well-known/openid-configuration"
+    client_id: "cockpit-dev"
+    client_secret: "dev-secret-change-me"
+    redirect_uri: ""
+    
+    scopes:
+      - openid
+      - profile
+      - email
+    
+    claim_mappings:
+      username: "email"             # Use email as username for dev
+      email: "email"
+      name: "name"
+    
+    auto_provision: true
+    default_role: "admin"           # Dev users get admin access
+    username_prefix: "dev_"
+  
+  # ---------------------------------------------------------------------------
+  # Example 3: Partner/External Access
+  # ---------------------------------------------------------------------------
+  partners:
+    enabled: false
+    name: "Partner Login"
+    description: "For external partners and contractors"
+    icon: "users"
+    display_order: 3
+    
+    discovery_url: "https://partners.example.com/realms/external/.well-known/openid-configuration"
+    client_id: "cockpit-partners"
+    client_secret: "partner-secret-change-me"
+    redirect_uri: ""
+    
+    scopes:
+      - openid
+      - email                       # Minimal scopes for partners
+    
+    claim_mappings:
+      username: "email"             # Use email for partner usernames
+      email: "email"
+      name: "name"
+    
+    auto_provision: false           # Manually create partner accounts
+    default_role: "user"
+    username_prefix: "partner_"
+
+# ============================================================================
+# GLOBAL OIDC SETTINGS
+# ============================================================================
+global:
+  # Allow Traditional Login
+  # true: Show both SSO and username/password login
+  # false: Show only SSO provider buttons (SSO-only mode)
+  allow_traditional_login: true
+  
+  # Session Timeout (minutes)
+  # How long before OIDC user sessions expire
+  session_timeout: 480
+  
+  # Auto-redirect to OIDC
+  # If only one provider is enabled, automatically redirect to it
+  # (skips login page provider selection)
+  auto_redirect_single_provider: false
+
+# ============================================================================
+# CONFIGURATION NOTES
+# ============================================================================
+#
+# 1. PROVIDER SETUP IN KEYCLOAK:
+#    - Create a new client with "OpenID Connect" protocol
+#    - Set Access Type to "confidential"
+#    - Add Valid Redirect URIs: http://localhost:3000/login/callback
+#    - Copy client secret from Credentials tab
+#
+# 2. DISCOVERY URL:
+#    - Must be accessible from backend server
+#    - Format: {base_url}/realms/{realm}/.well-known/openid-configuration
+#    - Test in browser - should return JSON configuration
+#
+# 3. CLAIM MAPPINGS:
+#    - username: Must be unique, used for user identification
+#    - email: Optional but recommended
+#    - name: Optional, used for display name
+#    - Common Keycloak claims: preferred_username, email, name, sub
+#
+# 4. AUTO-PROVISIONING:
+#    - When enabled: Creates users automatically on first OIDC login
+#    - When disabled: Users must exist in database before OIDC login
+#    - default_role: "user" (standard access) or "admin" (full access)
+#
+# 5. USERNAME CONFLICTS:
+#    - Use username_prefix to avoid conflicts between providers
+#    - Example: "corp_" prefix → username becomes "corp_john.doe"
+#    - Different providers can have same username with different prefixes
+#
+# 6. SECURITY RECOMMENDATIONS:
+#    - Use HTTPS for discovery_url in production
+#    - Store client_secret securely (consider environment variables)
+#    - Rotate client secrets periodically
+#    - Use minimal required scopes
+#    - Review user permissions after auto-provisioning
+#
+# 7. TROUBLESHOOTING:
+#    - Enable DEBUG logging in backend
+#    - Test discovery_url in browser
+#    - Verify redirect_uri matches Keycloak configuration
+#    - Check backend logs for detailed error messages
+#    - See OIDC_SETUP.md for detailed troubleshooting guide
+#
+# ============================================================================
+# QUICK START (Single Provider)
+# ============================================================================
+#
+# 1. Copy this file to: config/oidc_providers.yaml
+# 2. Enable ONE provider and update its settings:
+#    - Set enabled: true
+#    - Update discovery_url with your Keycloak URL
+#    - Update client_id and client_secret
+#    - Adjust claim_mappings if needed
+# 3. Restart backend service
+# 4. Access login page - you should see SSO button
+#
+# ============================================================================

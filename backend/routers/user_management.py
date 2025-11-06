@@ -20,6 +20,7 @@ from services.user_management import (
     get_user_by_id,
     update_user,
     delete_user,
+    hard_delete_user,
     bulk_hard_delete_users,
     bulk_update_permissions,
     toggle_user_status,
@@ -203,11 +204,11 @@ async def update_existing_user(
 async def delete_existing_user(
     user_id: int, current_user: dict = Depends(verify_admin_token)
 ):
-    """Delete a user."""
+    """Permanently delete a user from the database."""
     _check_admin_permission(current_user)
 
     try:
-        success = delete_user(user_id)
+        success = hard_delete_user(user_id)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"

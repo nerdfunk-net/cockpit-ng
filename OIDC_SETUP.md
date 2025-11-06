@@ -1,16 +1,165 @@
 # OIDC Authentication Setup Guide
 
-This guide explains how to configure and use OpenID Connect (OIDC) authentication with your Keycloak instance in Cockpit.
+This guide explains how to configure and use OpenID Connect (OIDC) authentication with Keycloak or other OIDC providers in Cockpit.
 
 ## Overview
 
-OIDC authentication has been implemented to allow Single Sign-On (SSO) using your existing Keycloak identity provider. Users can now login using either:
-- Traditional username/password authentication
-- OIDC SSO via the "Sign in with SSO" button
+OIDC authentication has been implemented to allow Single Sign-On (SSO) using your existing identity providers. The system supports:
+- **Multiple OIDC Providers**: Configure multiple Keycloak instances or different identity providers
+- **Provider Selection**: Users can choose which provider to use during login
+- **Traditional Authentication**: Optional username/password fallback
+- **Automatic User Provisioning**: Create users on first login per provider
 
-## Architecture
+## Multiple Provider Support
+
+### Architecture
+
+The multi-provider OIDC implementation uses a YAML configuration file (`config/oidc_providers.yaml`) to define multiple identity providers. Key features:
+
+- **Provider Selection UI**: Users see a list of enabled providers on the login page
+- **Per-Provider Configuration**: Each provider has its own client credentials, claim mappings, and auto-provisioning settings
+- **Provider-Specific Endpoints**: Backend routes include provider_id (e.g., `/auth/oidc/corporate/login`)
+- **State-Based Tracking**: Provider ID embedded in OAuth state parameter for callback validation
+
+### Configuration File Structure
+
+Create `config/oidc_providers.yaml`:
+
+```yaml
+# Global OIDC Settings
+global:
+  allow_traditional_login: true  # Allow username/password login alongside SSO
+
+# Provider Definitions
+providers:
+  corporate:
+    enabled: true
+    name: "Corporate SSO"
+    description: "Sign in with your company account"
+    icon: "building"  # Icon identifier for frontend (building, flask, etc.)
+    display_order: 1  # Lower numbers appear first
+    
+    # OpenID Connect Configuration
+    discovery_url: "https://keycloak.company.com/realms/production/.well-known/openid-configuration"
+    client_id: "cockpit-prod"
+    client_secret: "your-client-secret-here"
+    
+    # OAuth Scopes
+    scopes:
+      - openid
+      - profile
+      - email
+      - offline_access
+    
+    # Claim Mapping
+    claim_mappings:
+      username: "preferred_username"  # Which claim to use for username
+      email: "email"                   # Which claim to use for email
+      name: "name"                     # Which claim to use for display name
+    
+    # Auto-Provisioning Settings
+    auto_provisioning:
+      enabled: true           # Create users on first login
+      default_role: "user"    # Role for auto-provisioned users (user or admin)
+
+  development:
+    enabled: true
+    name: "Development Keycloak"
+    description: "For testing and development"
+    icon: "flask"
+    display_order: 2
+    
+    discovery_url: "http://127.0.0.1:7080/realms/oidc/.well-known/openid-configuration"
+    client_id: "oidc"
+    client_secret: "hOpFglgyuFLdb5N2nq6ZwkVbLYclhXnA"
+    
+    scopes:
+      - openid
+      - profile
+      - email
+    
+    claim_mappings:
+      username: "email"       # Use email as username
+      email: "email"
+      name: "name"
+    
+    auto_provisioning:
+      enabled: true
+      default_role: "user"
+```
 
 ### Backend Components
+
+1. **Settings Manager** ([backend/settings_manager.py](backend/settings_manager.py))
+   - Loads and parses `oidc_providers.yaml`
+   - Methods: `get_oidc_providers()`, `get_enabled_oidc_providers()`, `get_oidc_provider(provider_id)`
+
+2. **OIDC Service** ([backend/services/oidc_service.py](backend/services/oidc_service.py))
+   - Supports provider_id parameter in all methods
+   - Per-provider configuration caching
+   - Per-provider JWKS caching
+
+3. **OIDC Router** ([backend/routers/oidc.py](backend/routers/oidc.py))
+   - `GET /auth/oidc/providers` - List enabled providers
+   - `GET /auth/oidc/{provider_id}/login` - Initiate login with specific provider
+   - `POST /auth/oidc/{provider_id}/callback` - Handle callback for specific provider
+   - `POST /auth/oidc/{provider_id}/logout` - Logout from specific provider
+
+4. **Models** ([backend/models/auth.py](backend/models/auth.py))
+   - `OIDCProvider`: Provider information model
+   - `OIDCProvidersResponse`: List of providers response
+   - Extended models with provider_id tracking
+
+### Frontend Components
+
+1. **Login Page** ([frontend/src/app/login/page.tsx](frontend/src/app/login/page.tsx))
+   - Fetches available providers from `/auth/oidc/providers`
+   - Displays provider selection buttons with names, descriptions, and icons
+   - Handles provider-specific login initiation
+   - Supports two modes:
+     - **Dual mode**: Traditional login form + SSO providers (when `allow_traditional_login: true`)
+     - **SSO-only mode**: Only provider buttons (when `allow_traditional_login: false`)
+
+2. **Callback Handler** ([frontend/src/app/login/callback/page.tsx](frontend/src/app/login/callback/page.tsx))
+   - Extracts provider_id from state parameter
+   - Calls provider-specific callback endpoint
+   - Handles provider-specific error messages
+
+## Quick Start: Single Provider
+
+For a simple single-provider setup, create `config/oidc_providers.yaml`:
+
+```yaml
+global:
+  allow_traditional_login: true
+
+providers:
+  keycloak:
+    enabled: true
+    name: "Sign in with SSO"
+    discovery_url: "http://127.0.0.1:7080/realms/oidc/.well-known/openid-configuration"
+    client_id: "oidc"
+    client_secret: "your-secret-here"
+    scopes:
+      - openid
+      - profile
+      - email
+    claim_mappings:
+      username: "preferred_username"
+      email: "email"
+      name: "name"
+    auto_provisioning:
+      enabled: true
+      default_role: "user"
+```
+
+No environment variables needed - the YAML file is the only configuration required.
+
+## Architecture (Legacy Single Provider)
+
+> **Note**: Legacy environment variable configuration is still supported for backwards compatibility, but the YAML configuration method is recommended for all deployments.
+
+### Backend Components (Single Provider)
 
 1. **Configuration** ([backend/config.py](backend/config.py))
    - OIDC settings loaded from environment variables
@@ -396,8 +545,215 @@ For issues or questions:
 - Verify network connectivity
 - Test discovery URL manually
 
+## Multi-Provider Troubleshooting
+
+### "OIDC provider 'xyz' not found"
+
+- Check provider_id in `oidc_providers.yaml` matches the one being used
+- Provider IDs are case-sensitive
+- Restart backend after YAML changes
+
+### "OIDC provider 'xyz' is not enabled"
+
+- Set `enabled: true` for the provider in YAML config
+- Check YAML syntax is valid
+- Restart backend service
+
+### No providers appearing on login page
+
+- Verify at least one provider has `enabled: true`
+- Check backend logs for YAML parsing errors
+- Ensure `config/oidc_providers.yaml` exists
+- Test endpoint: `GET /api/proxy/auth/oidc/providers`
+
+### Provider-specific callback failures
+
+- Verify `discovery_url` is accessible for each provider
+- Check `client_id` and `client_secret` match each Keycloak client
+- Ensure each provider's redirect URI includes: `http://localhost:3000/login/callback`
+- Review provider-specific logs in backend
+
+### State parameter provider mismatch
+
+- State format should be: `provider_id:random_state`
+- Clear browser sessionStorage and cookies
+- Ensure callback URL doesn't modify state parameter
+- Check for URL encoding issues
+
+### Users from different providers conflict
+
+- Use different `claim_mappings.username` fields per provider to avoid conflicts
+- Example: Corporate uses `preferred_username`, Dev uses `email`
+- Consider adding provider prefix to usernames if needed
+- Review user provisioning logs
+
+### Icon not displaying correctly
+
+- Valid icon values: `building`, `flask`, or leave empty for default
+- Icons are rendered by frontend (lucide-react)
+- Check frontend console for icon errors
+
+## Configuration Examples
+
+### Example 1: Production + Staging Keycloak
+
+```yaml
+global:
+  allow_traditional_login: false  # SSO-only mode
+
+providers:
+  production:
+    enabled: true
+    name: "Production Environment"
+    description: "For production access"
+    icon: "building"
+    display_order: 1
+    discovery_url: "https://sso.company.com/realms/prod/.well-known/openid-configuration"
+    client_id: "cockpit"
+    client_secret: "prod-secret"
+    scopes: [openid, profile, email]
+    claim_mappings:
+      username: "preferred_username"
+      email: "email"
+      name: "name"
+    auto_provisioning:
+      enabled: true
+      default_role: "user"
+
+  staging:
+    enabled: true
+    name: "Staging Environment"
+    description: "For testing and QA"
+    icon: "flask"
+    display_order: 2
+    discovery_url: "https://sso-staging.company.com/realms/stage/.well-known/openid-configuration"
+    client_id: "cockpit-stage"
+    client_secret: "stage-secret"
+    scopes: [openid, profile, email]
+    claim_mappings:
+      username: "preferred_username"
+      email: "email"
+      name: "name"
+    auto_provisioning:
+      enabled: true
+      default_role: "user"
+```
+
+### Example 2: Corporate + External Partner Access
+
+```yaml
+global:
+  allow_traditional_login: true  # Allow password login for admins
+
+providers:
+  corporate:
+    enabled: true
+    name: "Employee Login"
+    description: "For company employees"
+    icon: "building"
+    display_order: 1
+    discovery_url: "https://sso.company.com/realms/employees/.well-known/openid-configuration"
+    client_id: "cockpit-internal"
+    client_secret: "internal-secret"
+    scopes: [openid, profile, email, groups]
+    claim_mappings:
+      username: "preferred_username"
+      email: "email"
+      name: "name"
+    auto_provisioning:
+      enabled: true
+      default_role: "user"
+
+  partners:
+    enabled: true
+    name: "Partner Access"
+    description: "For external partners"
+    icon: "users"
+    display_order: 2
+    discovery_url: "https://partners.company.com/realms/partners/.well-known/openid-configuration"
+    client_id: "cockpit-partners"
+    client_secret: "partners-secret"
+    scopes: [openid, email]
+    claim_mappings:
+      username: "email"  # Use email as username for partners
+      email: "email"
+      name: "name"
+    auto_provisioning:
+      enabled: false  # Manually create partner accounts
+      default_role: "user"
+```
+
+### Example 3: Local Development
+
+```yaml
+global:
+  allow_traditional_login: true  # Enable password login for local dev
+
+providers:
+  local:
+    enabled: true
+    name: "Local Keycloak"
+    description: "Development environment"
+    icon: "flask"
+    display_order: 1
+    discovery_url: "http://127.0.0.1:7080/realms/oidc/.well-known/openid-configuration"
+    client_id: "oidc"
+    client_secret: "dev-secret"
+    scopes: [openid, profile, email]
+    claim_mappings:
+      username: "email"
+      email: "email"
+      name: "name"
+    auto_provisioning:
+      enabled: true
+      default_role: "admin"  # Dev users get admin by default
+```
+
+## Migration from Environment Variables
+
+If you have existing OIDC configuration using environment variables (`.env`), migrate to YAML:
+
+**Old (.env):**
+```bash
+OIDC_ENABLED=true
+OIDC_DISCOVERY_URL=http://127.0.0.1:7080/realms/oidc/.well-known/openid-configuration
+OIDC_CLIENT_ID=oidc
+OIDC_CLIENT_SECRET=hOpFglgyuFLdb5N2nq6ZwkVbLYclhXnA
+OIDC_REDIRECT_URI=http://localhost:3000/login/callback
+OIDC_SCOPES=openid,profile,email
+OIDC_CLAIM_USERNAME=preferred_username
+OIDC_CLAIM_EMAIL=email
+OIDC_CLAIM_NAME=name
+OIDC_AUTO_PROVISION=true
+```
+
+**New (config/oidc_providers.yaml):**
+```yaml
+global:
+  allow_traditional_login: true
+
+providers:
+  default:
+    enabled: true
+    name: "Sign in with SSO"
+    discovery_url: "http://127.0.0.1:7080/realms/oidc/.well-known/openid-configuration"
+    client_id: "oidc"
+    client_secret: "hOpFglgyuFLdb5N2nq6ZwkVbLYclhXnA"
+    scopes: [openid, profile, email]
+    claim_mappings:
+      username: "preferred_username"
+      email: "email"
+      name: "name"
+    auto_provisioning:
+      enabled: true
+      default_role: "user"
+```
+
+After migration, you can remove the OIDC_* environment variables from `.env`.
+
 ## References
 
 - [OpenID Connect Specification](https://openid.net/specs/openid-connect-core-1_0.html)
 - [Keycloak Documentation](https://www.keycloak.org/documentation)
 - [OAuth 2.0 Authorization Code Flow](https://oauth.net/2/grant-types/authorization-code/)
+- [YAML Configuration Reference](https://yaml.org/spec/1.2/spec.html)

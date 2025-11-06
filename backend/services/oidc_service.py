@@ -12,60 +12,79 @@ from jose import jwt, JWTError
 from fastapi import HTTPException, status
 from config import settings
 from models.auth import OIDCConfig
+from settings_manager import settings_manager
 
 logger = logging.getLogger(__name__)
 
 
 class OIDCService:
-    """Service for OIDC authentication operations."""
+    """Service for OIDC authentication operations supporting multiple providers."""
 
     def __init__(self):
-        self._config: Optional[OIDCConfig] = None
-        self._jwks_cache: Optional[Dict[str, Any]] = None
-        self._jwks_cache_time: Optional[datetime] = None
+        # Cache per provider: {provider_id: config}
+        self._configs: Dict[str, OIDCConfig] = {}
+        # JWKS cache per provider: {provider_id: jwks}
+        self._jwks_caches: Dict[str, Dict[str, Any]] = {}
+        # JWKS cache time per provider: {provider_id: datetime}
+        self._jwks_cache_times: Dict[str, datetime] = {}
         self._jwks_cache_ttl = timedelta(hours=1)
 
-    async def get_oidc_config(self) -> OIDCConfig:
-        """Fetch OIDC configuration from discovery endpoint."""
-        if not settings.oidc_enabled:
+    async def get_oidc_config(self, provider_id: str) -> OIDCConfig:
+        """Fetch OIDC configuration from discovery endpoint for specific provider."""
+        # Check if any OIDC providers are enabled
+        if not settings_manager.is_oidc_enabled():
             raise HTTPException(
                 status_code=status.HTTP_501_NOT_IMPLEMENTED,
                 detail="OIDC authentication is not enabled",
             )
 
-        if not settings.oidc_discovery_url:
+        # Get provider configuration
+        provider_config = settings_manager.get_oidc_provider(provider_id)
+        if not provider_config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"OIDC provider '{provider_id}' not found",
+            )
+
+        if not provider_config.get("enabled", False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"OIDC provider '{provider_id}' is not enabled",
+            )
+
+        discovery_url = provider_config.get("discovery_url")
+        if not discovery_url:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="OIDC discovery URL not configured",
+                detail=f"OIDC discovery URL not configured for provider '{provider_id}'",
             )
 
         # Return cached config if available
-        if self._config:
-            return self._config
+        if provider_id in self._configs:
+            return self._configs[provider_id]
 
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    settings.oidc_discovery_url, timeout=10.0
-                )
+                response = await client.get(discovery_url, timeout=10.0)
                 response.raise_for_status()
                 config_data = response.json()
 
-            self._config = OIDCConfig(**config_data)
-            logger.info(f"Loaded OIDC config from {settings.oidc_discovery_url}")
-            return self._config
+            config = OIDCConfig(**config_data)
+            self._configs[provider_id] = config
+            logger.info(f"Loaded OIDC config for provider '{provider_id}' from {discovery_url}")
+            return config
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to fetch OIDC configuration: {e}")
+            logger.error(f"Failed to fetch OIDC configuration for '{provider_id}': {e}")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Unable to connect to OIDC provider",
+                detail=f"Unable to connect to OIDC provider '{provider_id}'",
             )
         except Exception as e:
-            logger.error(f"Error parsing OIDC configuration: {e}")
+            logger.error(f"Error parsing OIDC configuration for '{provider_id}': {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Invalid OIDC provider configuration",
+                detail=f"Invalid OIDC provider configuration for '{provider_id}'",
             )
 
     def generate_state(self) -> str:
@@ -73,17 +92,32 @@ class OIDCService:
         return secrets.token_urlsafe(32)
 
     def generate_authorization_url(
-        self, config: OIDCConfig, state: str, redirect_uri: Optional[str] = None
+        self, provider_id: str, config: OIDCConfig, state: str, redirect_uri: Optional[str] = None
     ) -> str:
         """Generate the authorization URL for OIDC login."""
-        redirect = redirect_uri or settings.oidc_redirect_uri
-        scopes = " ".join(settings.oidc_scopes)
+        # Get provider configuration
+        provider_config = settings_manager.get_oidc_provider(provider_id)
+        if not provider_config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"OIDC provider '{provider_id}' not found",
+            )
+
+        # Use provider-specific settings
+        client_id = provider_config.get("client_id", settings.oidc_client_id)
+        scopes = provider_config.get("scopes", settings.oidc_scopes)
+        
+        # Fallback to global redirect URI if not specified
+        if not redirect_uri:
+            redirect_uri = settings.oidc_redirect_uri
+
+        scopes_str = " ".join(scopes)
 
         params = {
-            "client_id": settings.oidc_client_id,
+            "client_id": client_id,
             "response_type": "code",
-            "scope": scopes,
-            "redirect_uri": redirect,
+            "scope": scopes_str,
+            "redirect_uri": redirect_uri,
             "state": state,
         }
 
@@ -92,18 +126,33 @@ class OIDCService:
         return f"{config.authorization_endpoint}?{query_params}"
 
     async def exchange_code_for_tokens(
-        self, code: str, redirect_uri: Optional[str] = None
+        self, provider_id: str, code: str, redirect_uri: Optional[str] = None
     ) -> Dict[str, Any]:
         """Exchange authorization code for tokens."""
-        config = await self.get_oidc_config()
-        redirect = redirect_uri or settings.oidc_redirect_uri
+        config = await self.get_oidc_config(provider_id)
+        
+        # Get provider configuration
+        provider_config = settings_manager.get_oidc_provider(provider_id)
+        if not provider_config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"OIDC provider '{provider_id}' not found",
+            )
+
+        # Use provider-specific settings
+        client_id = provider_config.get("client_id", settings.oidc_client_id)
+        client_secret = provider_config.get("client_secret", settings.oidc_client_secret)
+        
+        # Fallback to global redirect URI if not specified
+        if not redirect_uri:
+            redirect_uri = settings.oidc_redirect_uri
 
         token_data = {
             "grant_type": "authorization_code",
             "code": code,
-            "redirect_uri": redirect,
-            "client_id": settings.oidc_client_id,
-            "client_secret": settings.oidc_client_secret,
+            "redirect_uri": redirect_uri,
+            "client_id": client_id,
+            "client_secret": client_secret,
         }
 
         try:
@@ -118,23 +167,23 @@ class OIDCService:
                 return response.json()
 
         except httpx.HTTPError as e:
-            logger.error(f"Token exchange failed: {e}")
+            logger.error(f"Token exchange failed for provider '{provider_id}': {e}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Failed to exchange authorization code for tokens",
+                detail=f"Failed to exchange authorization code for tokens with provider '{provider_id}'",
             )
 
-    async def get_jwks(self) -> Dict[str, Any]:
+    async def get_jwks(self, provider_id: str) -> Dict[str, Any]:
         """Fetch and cache JWKS from the OIDC provider."""
         # Return cached JWKS if still valid
         if (
-            self._jwks_cache
-            and self._jwks_cache_time
-            and datetime.now(timezone.utc) - self._jwks_cache_time < self._jwks_cache_ttl
+            provider_id in self._jwks_caches
+            and provider_id in self._jwks_cache_times
+            and datetime.now(timezone.utc) - self._jwks_cache_times[provider_id] < self._jwks_cache_ttl
         ):
-            return self._jwks_cache
+            return self._jwks_caches[provider_id]
 
-        config = await self.get_oidc_config()
+        config = await self.get_oidc_config(provider_id)
 
         try:
             async with httpx.AsyncClient() as client:
@@ -142,22 +191,32 @@ class OIDCService:
                 response.raise_for_status()
                 jwks = response.json()
 
-            self._jwks_cache = jwks
-            self._jwks_cache_time = datetime.now(timezone.utc)
-            logger.debug("JWKS cache updated")
+            self._jwks_caches[provider_id] = jwks
+            self._jwks_cache_times[provider_id] = datetime.now(timezone.utc)
+            logger.debug(f"JWKS cache updated for provider '{provider_id}'")
             return jwks
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to fetch JWKS: {e}")
+            logger.error(f"Failed to fetch JWKS for provider '{provider_id}': {e}")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Unable to fetch OIDC signing keys",
+                detail=f"Unable to fetch OIDC signing keys from provider '{provider_id}'",
             )
 
-    async def verify_id_token(self, id_token: str) -> Dict[str, Any]:
+    async def verify_id_token(self, provider_id: str, id_token: str) -> Dict[str, Any]:
         """Verify and decode ID token from OIDC provider."""
-        config = await self.get_oidc_config()
-        jwks = await self.get_jwks()
+        config = await self.get_oidc_config(provider_id)
+        jwks = await self.get_jwks(provider_id)
+
+        # Get provider configuration
+        provider_config = settings_manager.get_oidc_provider(provider_id)
+        if not provider_config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"OIDC provider '{provider_id}' not found",
+            )
+
+        client_id = provider_config.get("client_id", settings.oidc_client_id)
 
         try:
             # Decode header to get kid
@@ -174,7 +233,7 @@ class OIDCService:
             if not key:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Unable to find matching signing key",
+                    detail=f"Unable to find matching signing key for provider '{provider_id}'",
                 )
 
             # Verify and decode token
@@ -184,7 +243,7 @@ class OIDCService:
                 id_token,
                 key,
                 algorithms=["RS256", "RS384", "RS512"],
-                audience=settings.oidc_client_id,
+                audience=client_id,
                 issuer=config.issuer,
                 options={
                     "verify_at_hash": False  # Disable at_hash validation
@@ -194,15 +253,15 @@ class OIDCService:
             return claims
 
         except JWTError as e:
-            logger.error(f"ID token verification failed: {e}")
+            logger.error(f"ID token verification failed for provider '{provider_id}': {e}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid ID token",
+                detail=f"Invalid ID token from provider '{provider_id}'",
             )
 
-    async def get_user_info(self, access_token: str) -> Dict[str, Any]:
+    async def get_user_info(self, provider_id: str, access_token: str) -> Dict[str, Any]:
         """Fetch user information from the userinfo endpoint."""
-        config = await self.get_oidc_config()
+        config = await self.get_oidc_config(provider_id)
 
         try:
             async with httpx.AsyncClient() as client:
@@ -215,41 +274,69 @@ class OIDCService:
                 return response.json()
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to fetch user info: {e}")
+            logger.error(f"Failed to fetch user info from provider '{provider_id}': {e}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Failed to fetch user information",
+                detail=f"Failed to fetch user information from provider '{provider_id}'",
             )
 
-    def extract_user_data(self, claims: Dict[str, Any]) -> Dict[str, Any]:
-        """Extract user data from OIDC claims."""
-        # Log available claims for debugging
-        logger.debug(f"Available claims in ID token: {list(claims.keys())}")
-        logger.debug(f"Looking for username claim: '{settings.oidc_claim_username}'")
+    def extract_user_data(self, provider_id: str, claims: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract user data from OIDC claims using provider-specific claim mappings."""
+        # Get provider configuration for claim mappings
+        provider_config = settings_manager.get_oidc_provider(provider_id)
+        if not provider_config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"OIDC provider '{provider_id}' not found",
+            )
 
-        username = claims.get(settings.oidc_claim_username)
-        email = claims.get(settings.oidc_claim_email)
-        name = claims.get(settings.oidc_claim_name, username)
+        claim_mappings = provider_config.get("claim_mappings", {})
+        username_claim = claim_mappings.get("username", settings.oidc_claim_username)
+        email_claim = claim_mappings.get("email", settings.oidc_claim_email)
+        name_claim = claim_mappings.get("name", settings.oidc_claim_name)
+
+        # Log available claims for debugging
+        logger.debug(f"Available claims in ID token from '{provider_id}': {list(claims.keys())}")
+        logger.debug(f"Looking for username claim: '{username_claim}'")
+
+        username = claims.get(username_claim)
+        email = claims.get(email_claim)
+        name = claims.get(name_claim, username)
 
         if not username:
-            logger.error(f"Username claim '{settings.oidc_claim_username}' not found in token")
+            logger.error(f"Username claim '{username_claim}' not found in token from provider '{provider_id}'")
             logger.error(f"Available claims: {claims}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Username claim '{settings.oidc_claim_username}' not found in token",
+                detail=f"Username claim '{username_claim}' not found in token from provider '{provider_id}'",
             )
 
-        logger.info(f"Extracted user data: username={username}, email={email}, name={name}")
+        logger.info(f"Extracted user data from provider '{provider_id}': username={username}, email={email}, name={name}")
 
         return {
             "username": username,
             "email": email,
             "realname": name,
             "sub": claims.get("sub"),
+            "provider_id": provider_id,
         }
 
-    async def provision_or_get_user(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Provision a new user or get existing user from OIDC data."""
+    async def provision_or_get_user(self, provider_id: str, user_data: Dict[str, Any]) -> tuple[Dict[str, Any], bool]:
+        """Provision a new user or get existing user from OIDC data.
+        
+        Returns:
+            tuple: (user_dict, is_new_user)
+        """
+        # Get provider configuration
+        provider_config = settings_manager.get_oidc_provider(provider_id)
+        if not provider_config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"OIDC provider '{provider_id}' not found",
+            )
+
+        auto_provision = provider_config.get("auto_provisioning", {}).get("enabled", settings.oidc_auto_provision)
+
         from services.user_management import (
             get_user_by_username,
             create_user,
@@ -270,38 +357,44 @@ class OIDCService:
 
             if updates:
                 user = update_user(user["id"], **updates)
-                logger.info(f"Updated OIDC user: {username}")
+                logger.info(f"Updated OIDC user '{username}' from provider '{provider_id}'")
 
-            return user
+            return user, False
 
         # Create new user if auto-provisioning is enabled
-        if not settings.oidc_auto_provision:
+        if not auto_provision:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="User does not exist and auto-provisioning is disabled",
+                detail=f"User does not exist and auto-provisioning is disabled for provider '{provider_id}'",
             )
 
         try:
             # Generate a random password (won't be used for OIDC login)
             random_password = secrets.token_urlsafe(32)
 
+            # Get default role from provider config or use 'user'
+            default_role_str = provider_config.get("auto_provisioning", {}).get("default_role", "user")
+            default_role = UserRole.user if default_role_str == "user" else UserRole.admin
+
+            # Create new user as INACTIVE - requires admin approval
             user = create_user(
                 username=username,
                 realname=user_data.get("realname", username),
                 password=random_password,
                 email=user_data.get("email"),
-                role=UserRole.user,  # Default role for OIDC users
+                role=default_role,
                 debug=False,
+                is_active=False,  # New OIDC users start as inactive
             )
 
-            logger.info(f"Auto-provisioned new OIDC user: {username}")
-            return user
+            logger.info(f"Auto-provisioned new INACTIVE OIDC user '{username}' from provider '{provider_id}' - requires admin approval")
+            return user, True  # Return True to indicate new user
 
         except Exception as e:
-            logger.error(f"Failed to provision OIDC user: {e}")
+            logger.error(f"Failed to provision OIDC user from provider '{provider_id}': {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to provision user account",
+                detail=f"Failed to provision user account from provider '{provider_id}'",
             )
 
 

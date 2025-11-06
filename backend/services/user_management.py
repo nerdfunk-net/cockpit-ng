@@ -20,6 +20,7 @@ def create_user(
     email: Optional[str] = None,
     role: UserRole = UserRole.user,
     debug: bool = False,
+    is_active: bool = True,
 ) -> Dict[str, Any]:
     """Create a new user."""
     # Get permissions for role
@@ -33,6 +34,7 @@ def create_user(
             email=email,
             permissions=permissions,
             debug=debug,
+            is_active=is_active,
         )
 
         # Add role to response
@@ -129,11 +131,19 @@ def update_user(
 
 
 def delete_user(user_id: int) -> bool:
-    """Delete a user."""
+    """Delete a user (soft delete - sets is_active=0)."""
     try:
         return user_db.delete_user(user_id)
     except Exception as e:
         raise Exception(f"Failed to delete user: {str(e)}")
+
+
+def hard_delete_user(user_id: int) -> bool:
+    """Permanently delete a user from the database."""
+    try:
+        return user_db.hard_delete_user(user_id)
+    except Exception as e:
+        raise Exception(f"Failed to permanently delete user: {str(e)}")
 
 
 def bulk_delete_users(user_ids: List[int]) -> Tuple[int, List[str]]:

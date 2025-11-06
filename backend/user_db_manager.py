@@ -80,6 +80,7 @@ def create_user(
     email: Optional[str] = None,
     permissions: int = PERMISSIONS_USER,
     debug: bool = False,
+    is_active: bool = True,
 ) -> Dict[str, Any]:
     """Create a new user."""
     _ensure_users_database()
@@ -95,8 +96,8 @@ def create_user(
         try:
             cursor = conn.execute(
                 """
-                INSERT INTO users (username, realname, email, password, permissions, debug, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO users (username, realname, email, password, permissions, debug, is_active, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     username,
@@ -105,6 +106,7 @@ def create_user(
                     hashed_password,
                     permissions,
                     1 if debug else 0,
+                    1 if is_active else 0,
                     now,
                     now,
                 ),
@@ -112,7 +114,7 @@ def create_user(
             user_id = cursor.lastrowid
             conn.commit()
 
-            return get_user_by_id(user_id)
+            return get_user_by_id(user_id, include_inactive=True)
 
         except sqlite3.IntegrityError as e:
             if "UNIQUE constraint failed: users.username" in str(e):

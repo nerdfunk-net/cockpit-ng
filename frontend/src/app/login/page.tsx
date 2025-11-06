@@ -7,33 +7,48 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuthStore } from '@/lib/auth-store'
-import { Heart, AlertCircle, LogIn } from 'lucide-react'
+import { Heart, AlertCircle, LogIn, Building2, FlaskConical } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+interface OIDCProvider {
+  provider_id: string
+  name: string
+  description?: string
+  icon?: string
+  display_order: number
+}
+
+interface OIDCProvidersResponse {
+  providers: OIDCProvider[]
+  allow_traditional_login: boolean
+}
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [isOidcLoading, setIsOidcLoading] = useState(false)
+  const [oidcLoadingProvider, setOidcLoadingProvider] = useState<string | null>(null)
   const [error, setError] = useState('')
-  const [oidcEnabled, setOidcEnabled] = useState(false)
+  const [oidcProviders, setOidcProviders] = useState<OIDCProvider[]>([])
+  const [allowTraditionalLogin, setAllowTraditionalLogin] = useState(true)
   const { login } = useAuthStore()
   const router = useRouter()
 
-  // Check if OIDC is enabled
+  // Fetch available OIDC providers
   useEffect(() => {
-    const checkOidcEnabled = async () => {
+    const fetchOidcProviders = async () => {
       try {
-        const response = await fetch('/api/proxy/auth/oidc/enabled')
+        const response = await fetch('/api/proxy/auth/oidc/providers')
         if (response.ok) {
-          const data = await response.json()
-          setOidcEnabled(data.enabled)
+          const data: OIDCProvidersResponse = await response.json()
+          setOidcProviders(data.providers || [])
+          setAllowTraditionalLogin(data.allow_traditional_login)
         }
       } catch (err) {
-        console.error('Failed to check OIDC status:', err)
+        console.error('Failed to fetch OIDC providers:', err)
       }
     }
-    checkOidcEnabled()
+    fetchOidcProviders()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,15 +110,15 @@ export default function LoginPage() {
     }
   }
 
-  const handleOidcLogin = async () => {
-    setIsOidcLoading(true)
+  const handleOidcLogin = async (providerId: string) => {
+    setOidcLoadingProvider(providerId)
     setError('')
 
     try {
-      const response = await fetch('/api/proxy/auth/oidc/login')
+      const response = await fetch(`/api/proxy/auth/oidc/${providerId}/login`)
 
       if (!response.ok) {
-        throw new Error('Failed to initiate OIDC login')
+        throw new Error(`Failed to initiate OIDC login with ${providerId}`)
       }
 
       const data = await response.json()
@@ -113,6 +128,10 @@ export default function LoginPage() {
         if (data.state) {
           sessionStorage.setItem('oidc_state', data.state)
         }
+        // Store provider_id for callback
+        if (data.provider_id) {
+          sessionStorage.setItem('oidc_provider_id', data.provider_id)
+        }
         // Redirect to OIDC provider
         window.location.href = data.authorization_url
       } else {
@@ -121,7 +140,19 @@ export default function LoginPage() {
     } catch (err) {
       console.error('OIDC login error:', err)
       setError(err instanceof Error ? err.message : 'OIDC login failed')
-      setIsOidcLoading(false)
+      setOidcLoadingProvider(null)
+    }
+  }
+
+  // Helper to get icon for provider
+  const getProviderIcon = (iconName?: string) => {
+    switch (iconName) {
+      case 'building':
+        return <Building2 className="w-5 h-5" />
+      case 'flask':
+        return <FlaskConical className="w-5 h-5" />
+      default:
+        return <LogIn className="w-5 h-5" />
     }
   }
 
@@ -146,6 +177,50 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {!allowTraditionalLogin && oidcProviders.length > 0 ? (
+              // OIDC-only mode: Show only SSO options
+              <div className="space-y-4">
+                {error && (
+                  <div className="flex items-center space-x-2 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                <p className="text-sm text-gray-600 text-center mb-4">
+                  Choose your organization to sign in
+                </p>
+
+                {oidcProviders.map((provider) => (
+                  <Button
+                    key={provider.provider_id}
+                    type="button"
+                    variant="outline"
+                    className="w-full h-14 flex items-center space-x-3"
+                    onClick={() => handleOidcLogin(provider.provider_id)}
+                    disabled={oidcLoadingProvider !== null}
+                  >
+                    {oidcLoadingProvider === provider.provider_id ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                        <span>Redirecting...</span>
+                      </div>
+                    ) : (
+                      <>
+                        {getProviderIcon(provider.icon)}
+                        <div className="flex flex-col items-start text-left">
+                          <span className="font-medium text-base">{provider.name}</span>
+                          {provider.description && (
+                            <span className="text-xs text-gray-500">{provider.description}</span>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </Button>
+                ))}
+              </div>
+            ) : (
+              // Traditional login form with optional SSO buttons
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
                 <div className="flex items-center space-x-2 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
@@ -200,39 +275,46 @@ export default function LoginPage() {
                 )}
               </Button>
 
-              {oidcEnabled && (
-                <>
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white px-2 text-gray-500">Or continue with</span>
-                    </div>
+              {oidcProviders.length > 0 && allowTraditionalLogin && (
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
                   </div>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-11"
-                    onClick={handleOidcLogin}
-                    disabled={isOidcLoading}
-                  >
-                    {isOidcLoading ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
-                        <span>Redirecting...</span>
-                      </div>
-                    ) : (
-                      <>
-                        <LogIn className="w-4 h-4 mr-2" />
-                        Sign in with SSO
-                      </>
-                    )}
-                  </Button>
-                </>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-gray-500">Or continue with</span>
+                  </div>
+                </div>
               )}
+
+              {oidcProviders.map((provider) => (
+                <Button
+                  key={provider.provider_id}
+                  type="button"
+                  variant="outline"
+                  className="w-full h-11 flex items-center justify-center space-x-2"
+                  onClick={() => handleOidcLogin(provider.provider_id)}
+                  disabled={oidcLoadingProvider !== null}
+                >
+                  {oidcLoadingProvider === provider.provider_id ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                      <span>Redirecting...</span>
+                    </div>
+                  ) : (
+                    <>
+                      {getProviderIcon(provider.icon)}
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium">{provider.name}</span>
+                        {provider.description && (
+                          <span className="text-xs text-gray-500">{provider.description}</span>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </Button>
+              ))}
             </form>
+            )}
           </CardContent>
         </Card>
 
