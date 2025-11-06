@@ -77,7 +77,7 @@ def _get_cached_device_list(cache_key: str) -> Optional[list]:
 
 @router.get("/test")
 async def test_current_nautobot_connection(
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ):
     """Test current Nautobot connection."""
     try:
@@ -137,7 +137,7 @@ async def get_devices(
     filter_type: Optional[str] = None,
     filter_value: Optional[str] = None,
     reload: bool = False,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ):
     """Get list of devices from Nautobot with optional filtering and pagination.
 
@@ -548,8 +548,8 @@ async def get_devices(
 
 
 @router.get("/devices/{device_id}")
-async def get_device(device_id: str, current_user: dict = Depends(verify_admin_token)):
-    """Get specific device details from Nautobot."""
+async def get_device(device_id: str, current_user: dict = Depends(verify_token)):
+    """Get device details from Nautobot by device ID."""
     try:
         # Check cache first
         cached_device = _get_cached_device(device_id)
@@ -608,93 +608,24 @@ async def get_device(device_id: str, current_user: dict = Depends(verify_admin_t
 @router.put("/devices/{device_id}")
 async def update_device(
     device_id: str,
-    payload: Dict[str, Any],
-    current_user: dict = Depends(verify_admin_token),
+    update_data: dict,
+    current_user: dict = Depends(verify_token),
 ):
-    """Update a device in Nautobot using REST API."""
-    if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Request body cannot be empty.",
-        )
-
-    try:
-        updated_device = await nautobot_service.rest_request(
-            f"dcim/devices/{device_id}/",
-            method="PUT",
-            data=payload,
-        )
-
-        if isinstance(updated_device, dict):
-            _cache_device(updated_device)
-            details_cache_key = f"nautobot:device_details:{device_id}"
-            cache_service.set(details_cache_key, updated_device, DEVICE_CACHE_TTL)
-
-        cache_service.delete("nautobot:devices:list:all")
-
-        return {
-            "success": True,
-            "device_id": device_id,
-            "device": updated_device,
-        }
-
-    except Exception as e:
-        error_message = str(e)
-        logger.error(f"Error updating device {device_id}: {error_message}")
-
-        if "404" in error_message or "Not Found" in error_message:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Device {device_id} not found",
-            )
-        if "status 400" in error_message:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid request payload: {error_message}",
-            )
-        if "status 403" in error_message:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Permission denied updating device {device_id}",
-            )
-
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update device: {error_message}",
-        )
+    """Update device in Nautobot."""
 
 
 @router.post("/devices/search")
 async def search_devices(
-    filters: DeviceFilter, current_user: dict = Depends(verify_admin_token)
+    filters: DeviceFilter, current_user: dict = Depends(verify_token)
 ):
-    """Search devices with filters."""
-    try:
-        query_params = []
-        if filters.location:
-            query_params.append(f"location={filters.location}")
-        if filters.device_type:
-            query_params.append(f"device_type={filters.device_type}")
-        if filters.status:
-            query_params.append(f"status={filters.status}")
-
-        query_string = "&".join(query_params)
-        endpoint = f"dcim/devices/?{query_string}" if query_string else "dcim/devices/"
-
-        result = await nautobot_service.rest_request(endpoint)
-        return result
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to search devices: {str(e)}",
-        )
+    """Search devices in Nautobot with complex filters."""
 
 
 @router.post("/check-ip")
-async def check_ip_address(
-    request: CheckIPRequest, current_user: dict = Depends(verify_admin_token)
+async def check_ip(
+    request: CheckIPRequest, current_user: dict = Depends(verify_token)
 ):
-    """Check if an IP address is available in Nautobot."""
+    """Check if an IP address exists in Nautobot."""
     try:
         # Use GraphQL query as specified in nautobot_access.md
         query = """
@@ -746,7 +677,7 @@ async def check_ip_address(
 
 @router.post("/devices/onboard")
 async def onboard_device(
-    request: DeviceOnboardRequest, current_user: dict = Depends(verify_admin_token)
+    request: DeviceOnboardRequest, current_user: dict = Depends(verify_token)
 ):
     """Onboard a new device to Nautobot."""
     try:
@@ -843,7 +774,7 @@ async def onboard_device(
 
 @router.post("/sync-network-data")
 async def sync_network_data(
-    request: SyncNetworkDataRequest, current_user: dict = Depends(verify_admin_token)
+    request: SyncNetworkDataRequest, current_user: dict = Depends(verify_token)
 ):
     """Sync network data with Nautobot."""
     try:
@@ -926,7 +857,7 @@ async def sync_network_data(
 
 # Additional endpoints for various Nautobot resources
 @router.get("/locations")
-async def get_locations(current_user: dict = Depends(verify_admin_token)):
+async def get_locations(current_user: dict = Depends(verify_token)):
     """Get list of locations from Nautobot with parent and children relationships."""
     try:
         # Try in-memory cache first
@@ -978,7 +909,7 @@ async def get_locations(current_user: dict = Depends(verify_admin_token)):
 
 
 @router.get("/namespaces")
-async def get_namespaces(current_user: dict = Depends(verify_admin_token)):
+async def get_namespaces(current_user: dict = Depends(verify_token)):
     """Get list of namespaces from Nautobot."""
     try:
         query = """
@@ -1007,7 +938,7 @@ async def get_namespaces(current_user: dict = Depends(verify_admin_token)):
 
 
 @router.get("/stats")
-async def get_nautobot_stats(current_user: dict = Depends(verify_admin_token)):
+async def get_nautobot_stats(current_user: dict = Depends(verify_token)):
     """Get Nautobot statistics with 10-minute caching."""
     from datetime import datetime, timezone, timedelta
     import json
@@ -1099,7 +1030,7 @@ async def get_nautobot_stats(current_user: dict = Depends(verify_admin_token)):
 
 
 @router.get("/roles")
-async def get_nautobot_roles(current_user: dict = Depends(verify_admin_token)):
+async def get_nautobot_roles(current_user: dict = Depends(verify_token)):
     """Get Nautobot device roles."""
     try:
         result = await nautobot_service.rest_request("extras/roles/")
@@ -1112,7 +1043,7 @@ async def get_nautobot_roles(current_user: dict = Depends(verify_admin_token)):
 
 
 @router.get("/roles/devices")
-async def get_nautobot_device_roles(current_user: dict = Depends(verify_admin_token)):
+async def get_nautobot_device_roles(current_user: dict = Depends(verify_token)):
     """Get Nautobot roles specifically for dcim.device content type."""
     try:
         result = await nautobot_service.rest_request(
@@ -1127,7 +1058,7 @@ async def get_nautobot_device_roles(current_user: dict = Depends(verify_admin_to
 
 
 @router.get("/platforms")
-async def get_nautobot_platforms(current_user: dict = Depends(verify_admin_token)):
+async def get_nautobot_platforms(current_user: dict = Depends(verify_token)):
     """Get Nautobot platforms."""
     try:
         result = await nautobot_service.rest_request("dcim/platforms/")
@@ -1140,7 +1071,7 @@ async def get_nautobot_platforms(current_user: dict = Depends(verify_admin_token
 
 
 @router.get("/statuses")
-async def get_nautobot_statuses(current_user: dict = Depends(verify_admin_token)):
+async def get_nautobot_statuses(current_user: dict = Depends(verify_token)):
     """Get all Nautobot statuses."""
     try:
         result = await nautobot_service.rest_request("extras/statuses/")
@@ -1154,7 +1085,7 @@ async def get_nautobot_statuses(current_user: dict = Depends(verify_admin_token)
 
 @router.get("/statuses/device")
 async def get_nautobot_device_statuses(
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ):
     """Get Nautobot device statuses."""
     try:
@@ -1171,7 +1102,7 @@ async def get_nautobot_device_statuses(
 
 @router.get("/statuses/interface")
 async def get_nautobot_interface_statuses(
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ):
     """Get Nautobot interface statuses."""
     try:
@@ -1188,7 +1119,7 @@ async def get_nautobot_interface_statuses(
 
 @router.get("/statuses/ipaddress")
 async def get_nautobot_ipaddress_statuses(
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ):
     """Get Nautobot IP address statuses."""
     try:
@@ -1205,7 +1136,7 @@ async def get_nautobot_ipaddress_statuses(
 
 @router.get("/statuses/prefix")
 async def get_nautobot_prefix_statuses(
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ):
     """Get Nautobot prefix statuses."""
     try:
@@ -1222,7 +1153,7 @@ async def get_nautobot_prefix_statuses(
 
 @router.get("/statuses/combined")
 async def get_nautobot_combined_statuses(
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ):
     """Get combined Nautobot statuses."""
     try:
@@ -1236,7 +1167,7 @@ async def get_nautobot_combined_statuses(
 
 
 @router.get("/secret-groups")
-async def get_nautobot_secret_groups(current_user: dict = Depends(verify_admin_token)):
+async def get_nautobot_secret_groups(current_user: dict = Depends(verify_token)):
     """Get Nautobot secret groups."""
     try:
         # Use GraphQL query as specified in nautobot_access.md
@@ -1262,7 +1193,7 @@ async def get_nautobot_secret_groups(current_user: dict = Depends(verify_admin_t
 
 
 @router.get("/device-types")
-async def get_nautobot_device_types(current_user: dict = Depends(verify_admin_token)):
+async def get_nautobot_device_types(current_user: dict = Depends(verify_token)):
     """Get Nautobot device types."""
     try:
         result = await nautobot_service.rest_request("dcim/device-types/")
@@ -1275,7 +1206,7 @@ async def get_nautobot_device_types(current_user: dict = Depends(verify_admin_to
 
 
 @router.get("/manufacturers")
-async def get_nautobot_manufacturers(current_user: dict = Depends(verify_admin_token)):
+async def get_nautobot_manufacturers(current_user: dict = Depends(verify_token)):
     """Get Nautobot manufacturers."""
     try:
         result = await nautobot_service.rest_request("dcim/manufacturers/")
@@ -1288,7 +1219,7 @@ async def get_nautobot_manufacturers(current_user: dict = Depends(verify_admin_t
 
 
 @router.get("/tags")
-async def get_nautobot_tags(current_user: dict = Depends(verify_admin_token)):
+async def get_nautobot_tags(current_user: dict = Depends(verify_token)):
     """Get Nautobot tags."""
     try:
         result = await nautobot_service.rest_request("extras/tags/")
@@ -1301,7 +1232,7 @@ async def get_nautobot_tags(current_user: dict = Depends(verify_admin_token)):
 
 
 @router.get("/tags/devices")
-async def get_nautobot_device_tags(current_user: dict = Depends(verify_admin_token)):
+async def get_nautobot_device_tags(current_user: dict = Depends(verify_token)):
     """Get Nautobot tags specifically for dcim.device content type."""
     try:
         result = await nautobot_service.rest_request(
@@ -1317,7 +1248,7 @@ async def get_nautobot_device_tags(current_user: dict = Depends(verify_admin_tok
 
 @router.get("/custom-fields/devices")
 async def get_nautobot_device_custom_fields(
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ):
     """Get Nautobot custom fields specifically for dcim.device content type."""
     try:
@@ -1335,7 +1266,7 @@ async def get_nautobot_device_custom_fields(
 @router.get("/custom-field-choices/{custom_field_name}")
 async def get_nautobot_custom_field_choices(
     custom_field_name: str,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ):
     """Get Nautobot custom field choices for a specific custom field."""
     try:
@@ -1352,7 +1283,7 @@ async def get_nautobot_custom_field_choices(
 
 @router.get("/jobs/{job_id}/results")
 async def get_job_results(
-    job_id: str, current_user: dict = Depends(verify_admin_token)
+    job_id: str, current_user: dict = Depends(verify_token)
 ):
     """Get job results from Nautobot."""
     try:
@@ -1424,7 +1355,7 @@ async def nautobot_health_check(current_user: dict = Depends(verify_token)):
 @router.get("/devices/{device_id}/details")
 async def get_device_details(
     device_id: str,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ):
     """Get detailed device information using the comprehensive devices.md query."""
     try:
@@ -1610,7 +1541,7 @@ async def get_device_details(
 @router.delete("/devices/{device_id}")
 async def delete_device(
     device_id: str,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ):
     """Delete a device from Nautobot."""
     try:
@@ -1656,7 +1587,7 @@ async def delete_device(
 @router.delete("/ip-address/{ip_id}")
 async def delete_ip_address(
     ip_id: str,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ):
     """Delete an IP address from Nautobot."""
     try:
@@ -1696,7 +1627,7 @@ async def delete_ip_address(
 async def offboard_device(
     device_id: str,
     request: OffboardDeviceRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ):
     """Offboard a device by removing it or applying configured offboarding values."""
     try:

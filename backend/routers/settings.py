@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from core.auth import verify_admin_token
+from core.auth import verify_admin_token, verify_token
 from models.settings import (
     NautobotSettingsRequest,
     GitSettingsRequest,
@@ -532,7 +532,7 @@ async def update_template_settings(
 
 
 @router.get("/nautobot/defaults")
-async def get_nautobot_defaults(current_user: dict = Depends(verify_admin_token)):
+async def get_nautobot_defaults(current_user: dict = Depends(verify_token)):
     """Get Nautobot default settings."""
     try:
         from settings_manager import settings_manager

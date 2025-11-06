@@ -14,6 +14,7 @@ import asyncio
 
 # Import routers
 from routers.auth import router as auth_router
+from routers.oidc import router as oidc_router
 from routers.nautobot import router as nautobot_router
 from routers.checkmk import router as checkmk_router
 from routers.nb2cmk import router as nb2cmk_router
@@ -57,6 +58,7 @@ apscheduler_service: Optional[APSchedulerJobService] = None
 
 # Include routers
 app.include_router(auth_router)
+app.include_router(oidc_router)
 app.include_router(nautobot_router)
 app.include_router(checkmk_router)
 app.include_router(nb2cmk_router)

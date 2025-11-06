@@ -1,22 +1,40 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuthStore } from '@/lib/auth-store'
-import { Heart, AlertCircle } from 'lucide-react'
+import { Heart, AlertCircle, LogIn } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isOidcLoading, setIsOidcLoading] = useState(false)
   const [error, setError] = useState('')
+  const [oidcEnabled, setOidcEnabled] = useState(false)
   const { login } = useAuthStore()
   const router = useRouter()
+
+  // Check if OIDC is enabled
+  useEffect(() => {
+    const checkOidcEnabled = async () => {
+      try {
+        const response = await fetch('/api/proxy/auth/oidc/enabled')
+        if (response.ok) {
+          const data = await response.json()
+          setOidcEnabled(data.enabled)
+        }
+      } catch (err) {
+        console.error('Failed to check OIDC status:', err)
+      }
+    }
+    checkOidcEnabled()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,7 +56,7 @@ export default function LoginPage() {
       if (!response.ok) {
         const errorData = await response.json()
         console.log('Login error response:', errorData)
-        
+
         if (response.status === 401) {
           throw new Error('Invalid username or password')
         } else if (response.status === 503) {
@@ -52,7 +70,7 @@ export default function LoginPage() {
 
       const data = await response.json()
       console.log('Login successful:', data)
-      
+
       if (data.access_token) {
         login(data.access_token, {
           id: data.user?.id?.toString() || '1',
@@ -74,6 +92,36 @@ export default function LoginPage() {
       }
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleOidcLogin = async () => {
+    setIsOidcLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch('/api/proxy/auth/oidc/login')
+
+      if (!response.ok) {
+        throw new Error('Failed to initiate OIDC login')
+      }
+
+      const data = await response.json()
+
+      if (data.authorization_url) {
+        // Store state in sessionStorage for validation on callback
+        if (data.state) {
+          sessionStorage.setItem('oidc_state', data.state)
+        }
+        // Redirect to OIDC provider
+        window.location.href = data.authorization_url
+      } else {
+        throw new Error('No authorization URL received')
+      }
+    } catch (err) {
+      console.error('OIDC login error:', err)
+      setError(err instanceof Error ? err.message : 'OIDC login failed')
+      setIsOidcLoading(false)
     }
   }
 
@@ -151,6 +199,39 @@ export default function LoginPage() {
                   'Sign In'
                 )}
               </Button>
+
+              {oidcEnabled && (
+                <>
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-white px-2 text-gray-500">Or continue with</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-11"
+                    onClick={handleOidcLogin}
+                    disabled={isOidcLoading}
+                  >
+                    {isOidcLoading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                        <span>Redirecting...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <LogIn className="w-4 h-4 mr-2" />
+                        Sign in with SSO
+                      </>
+                    )}
+                  </Button>
+                </>
+              )}
             </form>
           </CardContent>
         </Card>

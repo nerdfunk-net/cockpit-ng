@@ -42,3 +42,28 @@ class TokenData(BaseModel):
     """Token data for JWT processing."""
 
     username: Optional[str] = None
+
+
+class OIDCAuthRequest(BaseModel):
+    """OIDC authentication request parameters."""
+
+    redirect_uri: Optional[str] = None
+    state: Optional[str] = None
+
+
+class OIDCCallbackRequest(BaseModel):
+    """OIDC callback request with authorization code."""
+
+    code: str
+    state: Optional[str] = None
+
+
+class OIDCConfig(BaseModel):
+    """OIDC provider configuration from discovery endpoint."""
+
+    issuer: str
+    authorization_endpoint: str
+    token_endpoint: str
+    userinfo_endpoint: str
+    jwks_uri: str
+    end_session_endpoint: Optional[str] = None

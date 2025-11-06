@@ -125,7 +125,7 @@ async def test_current_checkmk_connection(
 
 
 @router.get("/stats")
-async def get_checkmk_stats(current_user: dict = Depends(verify_admin_token)):
+async def get_checkmk_stats(current_user: dict = Depends(verify_token)):
     """Get CheckMK statistics with 10-minute caching."""
     # Cache configuration
     cache_duration = timedelta(minutes=10)

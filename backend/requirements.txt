@@ -3,6 +3,7 @@ uvicorn
 pydantic[dotenv]
 pydantic-settings
 requests
+httpx
 pyjwt
 passlib
 python-multipart
@@ -17,3 +18,4 @@ napalm
 pyyaml
 apscheduler
 sqlalchemy
+python-jose[cryptography]
