@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -540,8 +540,8 @@ export default function NetmikoPage() {
                     </TableHeader>
                     <TableBody>
                       {executionResults.map((result, index) => (
-                        <>
-                          <TableRow key={`${result.device}-${index}`} className="hover:bg-gray-50">
+                        <Fragment key={`${result.device}-${index}`}>
+                          <TableRow className="hover:bg-gray-50">
                             <TableCell>
                               {getResultIcon(result.success)}
                             </TableCell>
@@ -572,7 +572,7 @@ export default function NetmikoPage() {
                             </TableCell>
                           </TableRow>
                           {expandedDevices.has(result.device) && result.output && (
-                            <TableRow key={`${result.device}-details-${index}`}>
+                            <TableRow>
                               <TableCell colSpan={5} className="p-0">
                                 <div className="bg-gray-900 p-4 border-t border-gray-700">
                                   <div className="mb-2 text-xs text-gray-400 font-medium">
@@ -585,7 +585,7 @@ export default function NetmikoPage() {
                               </TableCell>
                             </TableRow>
                           )}
-                        </>
+                        </Fragment>
                       ))}
                     </TableBody>
                   </Table>
