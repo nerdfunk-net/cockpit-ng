@@ -30,6 +30,7 @@ import {
   Activity,
   Eye,
   Minus,
+  Terminal,
 } from 'lucide-react'
 
 interface NavItem {
@@ -79,6 +80,7 @@ const navigationSections: NavSection[] = [
     title: 'Automation',
     items: [
       { label: 'Inventory', href: '/ansible-inventory', icon: List },
+      { label: 'Netmiko', href: '/netmiko', icon: Terminal },
     ],
   },
   {

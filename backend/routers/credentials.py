@@ -59,3 +59,15 @@ def delete_credential(cred_id: int) -> dict:
         return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/{cred_id}/password", dependencies=[Depends(verify_admin_token)])
+def get_credential_password(cred_id: int) -> dict:
+    """Get the decrypted password for a credential."""
+    try:
+        password = cred_mgr.get_decrypted_password(cred_id)
+        if password is None:
+            raise HTTPException(status_code=404, detail="Credential not found")
+        return {"password": password}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

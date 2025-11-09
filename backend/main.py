@@ -31,6 +31,7 @@ from routers.profile import router as profile_router
 from routers.user_management import router as user_management_router
 from routers.git_repositories import router as git_repositories_router
 from routers.jobs import router as jobs_router
+from routers.netmiko import router as netmiko_router
 from health import router as health_router
 
 # APScheduler service (optional for testing)
@@ -75,6 +76,7 @@ app.include_router(profile_router)
 app.include_router(user_management_router)
 app.include_router(git_repositories_router)
 app.include_router(jobs_router)
+app.include_router(netmiko_router)
 app.include_router(health_router)
 
 
