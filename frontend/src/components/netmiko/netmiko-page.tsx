@@ -53,12 +53,16 @@ export default function NetmikoPage() {
 
   // Execution state
   const [isExecuting, setIsExecuting] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [executionResults, setExecutionResults] = useState<CommandResult[]>([])
   const [showResults, setShowResults] = useState(false)
+  const [expandedDevices, setExpandedDevices] = useState<Set<string>>(new Set())
   const [executionSummary, setExecutionSummary] = useState<{
     total: number
     successful: number
     failed: number
+    cancelled: number
   } | null>(null)
 
   const handleDevicesSelected = (devices: DeviceInfo[], conditions: LogicalCondition[]) => {
@@ -137,6 +141,9 @@ export default function NetmikoPage() {
       return
     }
 
+    // Generate session ID upfront so Cancel button is available
+    const sessionId = crypto.randomUUID()
+    setCurrentSessionId(sessionId)
     setIsExecuting(true)
     setShowResults(false)
     setExecutionResults([])
@@ -151,6 +158,7 @@ export default function NetmikoPage() {
       if (commandList.length === 0) {
         alert('Please enter valid commands.')
         setIsExecuting(false)
+        setCurrentSessionId(null)
         return
       }
 
@@ -166,7 +174,8 @@ export default function NetmikoPage() {
         devices,
         commands: commandList,
         enable_mode: enableMode,
-        write_config: writeConfig
+        write_config: writeConfig,
+        session_id: sessionId  // Send session ID to backend
       }
 
       if (selectedCredentialId === 'manual') {
@@ -179,10 +188,12 @@ export default function NetmikoPage() {
       }
 
       const response = await apiCall<{
+        session_id: string
         results: CommandResult[]
         total_devices: number
         successful: number
         failed: number
+        cancelled: number
       }>('netmiko/execute-commands', {
         method: 'POST',
         body: requestBody
@@ -192,7 +203,8 @@ export default function NetmikoPage() {
       setExecutionSummary({
         total: response.total_devices,
         successful: response.successful,
-        failed: response.failed
+        failed: response.failed,
+        cancelled: response.cancelled
       })
       setShowResults(true)
     } catch (error) {
@@ -200,7 +212,36 @@ export default function NetmikoPage() {
       alert('Error executing commands: ' + (error as Error).message)
     } finally {
       setIsExecuting(false)
+      setCurrentSessionId(null)
+      setIsCancelling(false)
     }
+  }
+
+  const handleCancelExecution = async () => {
+    if (!currentSessionId) {
+      return
+    }
+
+    setIsCancelling(true)
+    try {
+      await apiCall(`netmiko/cancel/${currentSessionId}`, {
+        method: 'POST'
+      })
+      // Note: The execution will continue but remaining devices will be cancelled
+    } catch (error) {
+      console.error('Error cancelling execution:', error)
+      alert('Error cancelling execution: ' + (error as Error).message)
+    }
+  }
+
+  const toggleDeviceDetails = (deviceName: string) => {
+    const newExpanded = new Set(expandedDevices)
+    if (newExpanded.has(deviceName)) {
+      newExpanded.delete(deviceName)
+    } else {
+      newExpanded.add(deviceName)
+    }
+    setExpandedDevices(newExpanded)
   }
 
   const getResultIcon = (success: boolean) => {
@@ -405,8 +446,8 @@ export default function NetmikoPage() {
                   </div>
                 </div>
 
-                {/* Execute Button */}
-                <div className="flex justify-start pt-2">
+                {/* Execute and Cancel Buttons */}
+                <div className="flex justify-start gap-3 pt-2">
                   <Button
                     onClick={handleExecuteCommands}
                     disabled={isExecuting || selectedDevices.length === 0 || !commands.trim() || !username.trim() || !password.trim()}
@@ -425,6 +466,18 @@ export default function NetmikoPage() {
                       </>
                     )}
                   </Button>
+
+                  {isExecuting && currentSessionId && (
+                    <Button
+                      onClick={handleCancelExecution}
+                      disabled={isCancelling}
+                      className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white border-0 px-6"
+                      size="lg"
+                    >
+                      <XCircle className="h-5 w-5" />
+                      <span>{isCancelling ? 'Cancelling...' : 'Cancel'}</span>
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -444,7 +497,7 @@ export default function NetmikoPage() {
               </div>
               <div className="p-6 bg-gradient-to-b from-white to-gray-50">
                 {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                   <Card className="border-2 border-blue-200 bg-blue-50">
                     <CardHeader className="pb-3">
                       <CardDescription className="text-xs text-blue-600">Total Devices</CardDescription>
@@ -463,38 +516,79 @@ export default function NetmikoPage() {
                       <CardTitle className="text-2xl text-red-800">{executionSummary.failed}</CardTitle>
                     </CardHeader>
                   </Card>
+                  {executionSummary.cancelled > 0 && (
+                    <Card className="border-2 border-orange-200 bg-orange-50">
+                      <CardHeader className="pb-3">
+                        <CardDescription className="text-xs text-orange-600">Cancelled</CardDescription>
+                        <CardTitle className="text-2xl text-orange-800">{executionSummary.cancelled}</CardTitle>
+                      </CardHeader>
+                    </Card>
+                  )}
                 </div>
 
                 {/* Results Table */}
-                <div className="space-y-4">
-                  {executionResults.map((result, index) => (
-                    <div key={`${result.device}-${index}`} className="border rounded-lg overflow-hidden">
-                      {/* Device Header */}
-                      <div className={`p-3 flex items-center justify-between ${
-                        result.success ? 'bg-green-50 border-b border-green-200' : 'bg-red-50 border-b border-red-200'
-                      }`}>
-                        <div className="flex items-center space-x-3">
-                          {getResultIcon(result.success)}
-                          <div>
-                            <div className="font-medium text-gray-900">{result.device}</div>
-                            {result.error && (
-                              <div className="text-sm text-red-600">{result.error}</div>
-                            )}
-                          </div>
-                        </div>
-                        {getResultBadge(result.success)}
-                      </div>
-
-                      {/* Output */}
-                      {result.output && (
-                        <div className="p-4 bg-gray-900">
-                          <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap overflow-x-auto">
-                            {result.output}
-                          </pre>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12"></TableHead>
+                        <TableHead>Device</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Message</TableHead>
+                        <TableHead className="w-32 text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {executionResults.map((result, index) => (
+                        <>
+                          <TableRow key={`${result.device}-${index}`} className="hover:bg-gray-50">
+                            <TableCell>
+                              {getResultIcon(result.success)}
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {result.device}
+                            </TableCell>
+                            <TableCell>
+                              {getResultBadge(result.success)}
+                            </TableCell>
+                            <TableCell className="max-w-md">
+                              {result.error ? (
+                                <span className="text-sm text-red-600">{result.error}</span>
+                              ) : (
+                                <span className="text-sm text-gray-600">Command executed successfully</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {result.output && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => toggleDeviceDetails(result.device)}
+                                  className="text-xs"
+                                >
+                                  {expandedDevices.has(result.device) ? 'Hide Details' : 'Show Details'}
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                          {expandedDevices.has(result.device) && result.output && (
+                            <TableRow key={`${result.device}-details-${index}`}>
+                              <TableCell colSpan={5} className="p-0">
+                                <div className="bg-gray-900 p-4 border-t border-gray-700">
+                                  <div className="mb-2 text-xs text-gray-400 font-medium">
+                                    Output for {result.device}:
+                                  </div>
+                                  <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap overflow-x-auto max-h-96 overflow-y-auto">
+                                    {result.output}
+                                  </pre>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
             </div>

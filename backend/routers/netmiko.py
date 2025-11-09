@@ -47,6 +47,10 @@ class DeviceCommand(BaseModel):
         default=False,
         description="Whether to save config to startup after successful execution"
     )
+    session_id: str | None = Field(
+        default=None,
+        description="Optional session ID for cancellation support"
+    )
 
 
 class CommandResult(BaseModel):
@@ -61,10 +65,12 @@ class CommandResult(BaseModel):
 class CommandExecutionResponse(BaseModel):
     """Model for command execution response."""
 
+    session_id: str
     results: List[CommandResult]
     total_devices: int
     successful: int
     failed: int
+    cancelled: int
 
 
 @router.post("/execute-commands", response_model=CommandExecutionResponse)
@@ -161,13 +167,14 @@ async def execute_commands(
                 )
 
         # Execute commands on all devices
-        results = await netmiko_service.execute_commands(
+        session_id, results = await netmiko_service.execute_commands(
             devices=request.devices,
             commands=request.commands,
             username=username,
             password=password,
             enable_mode=request.enable_mode,
-            write_config=request.write_config
+            write_config=request.write_config,
+            session_id=request.session_id
         )
 
         # Convert results to response model
@@ -183,18 +190,21 @@ async def execute_commands(
 
         # Calculate statistics
         successful = sum(1 for r in results if r["success"])
-        failed = len(results) - successful
+        cancelled = sum(1 for r in results if r.get("cancelled", False))
+        failed = len(results) - successful - cancelled
 
         logger.info(
             f"Command execution completed for user {current_user}. "
-            f"Total: {len(results)}, Successful: {successful}, Failed: {failed}"
+            f"Total: {len(results)}, Successful: {successful}, Failed: {failed}, Cancelled: {cancelled}"
         )
 
         return CommandExecutionResponse(
+            session_id=session_id,
             results=command_results,
             total_devices=len(results),
             successful=successful,
-            failed=failed
+            failed=failed,
+            cancelled=cancelled
         )
 
     except HTTPException:
@@ -246,6 +256,40 @@ async def get_supported_platforms(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get supported platforms: {str(e)}"
+        )
+
+
+@router.post("/cancel/{session_id}")
+async def cancel_execution(
+    session_id: str,
+    current_user: str = Depends(get_current_username)
+) -> Dict[str, Any]:
+    """
+    Cancel an ongoing command execution session.
+
+    Devices that haven't started execution yet will be marked as cancelled.
+    Devices that are already executing will complete their current operation.
+
+    Args:
+        session_id: The session ID to cancel
+        current_user: Current authenticated user
+
+    Returns:
+        Cancellation confirmation
+    """
+    try:
+        logger.info(f"Cancel request from user {current_user} for session {session_id}")
+        netmiko_service.cancel_session(session_id)
+        return {
+            "success": True,
+            "message": f"Session {session_id} marked for cancellation",
+            "session_id": session_id
+        }
+    except Exception as e:
+        logger.error(f"Error cancelling session {session_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to cancel session: {str(e)}"
         )
 
 

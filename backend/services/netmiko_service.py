@@ -4,11 +4,12 @@ Netmiko service for executing commands on network devices.
 
 from __future__ import annotations
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Set
 from netmiko import ConnectHandler
 from netmiko.exceptions import NetmikoTimeoutException, NetmikoAuthenticationException
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,17 @@ class NetmikoService:
     def __init__(self):
         """Initialize the service."""
         self.executor = ThreadPoolExecutor(max_workers=10)
+        self.cancelled_sessions: Set[str] = set()  # Track cancelled session IDs
+
+    def cancel_session(self, session_id: str) -> None:
+        """
+        Cancel an execution session.
+
+        Args:
+            session_id: The session ID to cancel
+        """
+        self.cancelled_sessions.add(session_id)
+        logger.info(f"Session {session_id} marked for cancellation")
 
     def _connect_and_execute(
         self,
@@ -29,6 +41,7 @@ class NetmikoService:
         commands: List[str],
         enable_mode: bool = False,
         write_config: bool = False,
+        session_id: str | None = None,
     ) -> Dict[str, Any]:
         """
         Connect to a device and execute commands.
@@ -41,6 +54,7 @@ class NetmikoService:
             commands: List of commands to execute
             enable_mode: Whether to enter config mode
             write_config: Whether to save config after successful execution
+            session_id: Optional session ID for cancellation support
 
         Returns:
             Dictionary with execution results
@@ -53,7 +67,15 @@ class NetmikoService:
             "success": False,
             "output": "",
             "error": None,
+            "cancelled": False,
         }
+
+        # Check if session has been cancelled before starting
+        if session_id and session_id in self.cancelled_sessions:
+            logger.info(f"Skipping device {host_ip} - session {session_id} cancelled")
+            result["cancelled"] = True
+            result["error"] = "Execution cancelled by user"
+            return result
 
         try:
             logger.info(f"Connecting to device {host_ip} (type: {device_type})")
@@ -155,7 +177,8 @@ class NetmikoService:
         password: str,
         enable_mode: bool = False,
         write_config: bool = False,
-    ) -> List[Dict[str, Any]]:
+        session_id: str | None = None,
+    ) -> tuple[str, List[Dict[str, Any]]]:
         """
         Execute commands on multiple devices concurrently.
 
@@ -166,12 +189,18 @@ class NetmikoService:
             password: SSH password
             enable_mode: Whether to enter config mode
             write_config: Whether to save config after successful execution
+            session_id: Optional session ID for cancellation support
 
         Returns:
-            List of result dictionaries
+            Tuple of (session_id, list of result dictionaries)
         """
+        # Generate session ID if not provided
+        if not session_id:
+            session_id = str(uuid.uuid4())
+
         logger.info(
-            f"Starting command execution on {len(devices)} devices. "
+            f"Starting command execution on {len(devices)} devices "
+            f"(session: {session_id}). "
             f"Commands: {len(commands)}, Enable mode: {enable_mode}, Write config: {write_config}"
         )
 
@@ -200,6 +229,7 @@ class NetmikoService:
                 commands,
                 enable_mode,
                 write_config,
+                session_id,
             )
             tasks.append(task)
 
@@ -222,12 +252,19 @@ class NetmikoService:
 
         # Log summary
         success_count = sum(1 for r in processed_results if r["success"])
+        cancelled_count = sum(1 for r in processed_results if r.get("cancelled", False))
         logger.info(
-            f"Command execution completed. "
-            f"Successful: {success_count}/{len(processed_results)}"
+            f"Command execution completed (session: {session_id}). "
+            f"Successful: {success_count}/{len(processed_results)}, "
+            f"Cancelled: {cancelled_count}"
         )
 
-        return processed_results
+        # Clean up cancelled session from tracking
+        if session_id in self.cancelled_sessions:
+            self.cancelled_sessions.remove(session_id)
+            logger.info(f"Cleaned up cancelled session: {session_id}")
+
+        return session_id, processed_results
 
     def _map_platform_to_device_type(self, platform: str) -> str:
         """
