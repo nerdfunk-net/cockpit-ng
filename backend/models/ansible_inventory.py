@@ -78,3 +78,52 @@ class InventoryGenerateResponse(BaseModel):
     inventory_content: str = Field(..., description="Generated inventory content")
     template_used: str = Field(..., description="Template name that was used")
     device_count: int = Field(..., description="Number of devices in inventory")
+
+
+class SavedInventoryCondition(BaseModel):
+    """Saved inventory condition from the UI."""
+
+    field: str = Field(..., description="Device field to filter on")
+    operator: str = Field(..., description="Logical operator")
+    value: str = Field(..., description="Value to filter by")
+    logic: str = Field(..., description="Logic operator (AND, OR, NOT)")
+
+
+class SavedInventory(BaseModel):
+    """Saved inventory configuration."""
+
+    name: str = Field(..., description="Inventory name")
+    description: Optional[str] = Field(None, description="Inventory description")
+    conditions: List[SavedInventoryCondition] = Field(
+        ..., description="List of logical conditions"
+    )
+    created_at: Optional[str] = Field(None, description="Creation timestamp")
+    updated_at: Optional[str] = Field(None, description="Last update timestamp")
+
+
+class SaveInventoryRequest(BaseModel):
+    """Request for saving an inventory."""
+
+    name: str = Field(..., description="Inventory name")
+    description: Optional[str] = Field(None, description="Inventory description")
+    conditions: List[SavedInventoryCondition] = Field(
+        ..., description="List of logical conditions"
+    )
+    repository_id: int = Field(..., description="Git repository ID to save to")
+
+
+class SaveInventoryResponse(BaseModel):
+    """Response after saving an inventory."""
+
+    success: bool = Field(..., description="Whether save was successful")
+    message: str = Field(..., description="Status message")
+    inventory_name: str = Field(..., description="Name of saved inventory")
+
+
+class ListInventoriesResponse(BaseModel):
+    """Response with list of saved inventories."""
+
+    inventories: List[SavedInventory] = Field(
+        ..., description="List of saved inventories"
+    )
+    total: int = Field(..., description="Total number of inventories")

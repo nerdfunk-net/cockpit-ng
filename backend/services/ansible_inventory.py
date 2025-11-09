@@ -1013,6 +1013,303 @@ class AnsibleInventoryService:
             logger.error(f"Error getting field values for '{field_name}': {e}")
             return []
 
+    async def save_inventory(
+        self,
+        name: str,
+        description: str | None,
+        conditions: List[Any],
+        repository_id: int,
+    ) -> Dict[str, Any]:
+        """
+        Save inventory configuration to a git repository.
+
+        Args:
+            name: Inventory name
+            description: Inventory description
+            conditions: List of logical conditions
+            repository_id: Git repository ID
+
+        Returns:
+            Dictionary with success message
+        """
+        import json
+        from datetime import datetime
+        from pathlib import Path
+        from git_repositories_manager import GitRepositoryManager
+        from services.git_utils import open_or_clone, resolve_git_credentials, add_auth_to_url, set_ssl_env
+
+        try:
+            logger.info(f"Saving inventory '{name}' to repository {repository_id}")
+
+            # Get repository information
+            git_manager = GitRepositoryManager()
+            repository = git_manager.get_repository(repository_id)
+
+            if not repository:
+                raise ValueError(f"Repository with ID {repository_id} not found")
+
+            if repository["category"] != "inventory":
+                raise ValueError(
+                    f"Repository must be of category 'inventory', got '{repository['category']}'"
+                )
+
+            # Check if repository has credentials configured for HTTPS URLs
+            if repository.get("url", "").startswith("https://"):
+                username, token = resolve_git_credentials(repository)
+                if not token:
+                    raise ValueError(
+                        f"Repository '{repository['name']}' requires credentials. "
+                        "Please configure a credential for this repository in Settings → Credentials, "
+                        "or use SSH URL (git@...) instead of HTTPS."
+                    )
+
+            # Open or clone repository
+            logger.info(f"Opening/cloning Git repository: {repository['name']}")
+            repo = open_or_clone(repository)
+
+            # Create inventories directory if it doesn't exist
+            inventories_dir = Path(repo.working_dir) / "inventories"
+            inventories_dir.mkdir(exist_ok=True)
+
+            # Create inventory file
+            inventory_file = inventories_dir / f"{name}.json"
+            
+            # Check if file exists to determine if this is an update
+            is_update = inventory_file.exists()
+
+            # Prepare inventory data
+            inventory_data = {
+                "name": name,
+                "description": description,
+                "conditions": [
+                    {
+                        "field": c.field,
+                        "operator": c.operator,
+                        "value": c.value,
+                        "logic": c.logic,
+                    }
+                    for c in conditions
+                ],
+                "created_at": datetime.now().isoformat() if not is_update else None,
+                "updated_at": datetime.now().isoformat(),
+            }
+
+            # If updating, preserve created_at
+            if is_update:
+                try:
+                    existing_data = json.loads(inventory_file.read_text())
+                    inventory_data["created_at"] = existing_data.get("created_at")
+                except Exception as e:
+                    logger.warning(f"Could not read existing inventory: {e}")
+
+            # Write inventory to file
+            logger.info(f"Writing inventory to {inventory_file}")
+            inventory_file.write_text(json.dumps(inventory_data, indent=2))
+
+            # Stage the file
+            repo.index.add([str(inventory_file.relative_to(repo.working_dir))])
+
+            # Commit changes
+            action = "Updated" if is_update else "Created"
+            commit_message = f"{action} inventory: {name}"
+            if description:
+                commit_message += f"\n\n{description}"
+            
+            logger.info(f"Committing changes with message: {commit_message}")
+            repo.index.commit(commit_message)
+
+            # Push to remote
+            logger.info(f"Pushing to remote branch: {repository.get('branch', 'main')}")
+
+            # Get credentials and set up auth
+            username, token = resolve_git_credentials(repository)
+
+            # Configure push URL with auth
+            if username and token:
+                push_url = add_auth_to_url(repository["url"], username, token)
+                origin = repo.remotes.origin
+                original_url = origin.url
+                origin.set_url(push_url)
+
+            try:
+                with set_ssl_env(repository):
+                    origin.push(
+                        refspec=f"{repository.get('branch', 'main')}:{repository.get('branch', 'main')}"
+                    )
+            finally:
+                # Restore original URL if we modified it
+                if username and token:
+                    origin.set_url(original_url)
+
+            logger.info(f"Successfully saved inventory '{name}' to repository")
+
+            return {
+                "success": True,
+                "message": f"Inventory '{name}' successfully saved to {repository['name']}",
+            }
+
+        except Exception as e:
+            logger.error(f"Error saving inventory: {e}")
+            raise
+
+    async def list_inventories(self, repository_id: int) -> List[Dict[str, Any]]:
+        """
+        List all saved inventories from a git repository.
+
+        Args:
+            repository_id: Git repository ID
+
+        Returns:
+            List of saved inventories
+        """
+        import json
+        from pathlib import Path
+        from git_repositories_manager import GitRepositoryManager
+        from services.git_utils import open_or_clone
+        from models.ansible_inventory import SavedInventory, SavedInventoryCondition
+
+        try:
+            logger.info(f"Listing inventories from repository {repository_id}")
+
+            # Get repository information
+            git_manager = GitRepositoryManager()
+            repository = git_manager.get_repository(repository_id)
+
+            if not repository:
+                raise ValueError(f"Repository with ID {repository_id} not found")
+
+            if repository["category"] != "inventory":
+                raise ValueError(
+                    f"Repository must be of category 'inventory', got '{repository['category']}'"
+                )
+
+            # Check if repository has credentials configured for HTTPS URLs
+            if repository.get("url", "").startswith("https://"):
+                from services.git_utils import resolve_git_credentials
+                username, token = resolve_git_credentials(repository)
+                if not token:
+                    raise ValueError(
+                        f"Repository '{repository['name']}' requires credentials. "
+                        "Please configure a credential for this repository in Settings → Credentials."
+                    )
+
+            # Open or clone repository
+            logger.info(f"Opening/cloning Git repository: {repository['name']}")
+            repo = open_or_clone(repository)
+
+            # Pull latest changes
+            origin = repo.remotes.origin
+            origin.pull(repository.get('branch', 'main'))
+
+            # Read inventories directory
+            inventories_dir = Path(repo.working_dir) / "inventories"
+            if not inventories_dir.exists():
+                logger.info("No inventories directory found")
+                return []
+
+            inventories = []
+            for inventory_file in inventories_dir.glob("*.json"):
+                try:
+                    data = json.loads(inventory_file.read_text())
+                    
+                    # Convert to SavedInventory model
+                    inventory = SavedInventory(
+                        name=data["name"],
+                        description=data.get("description"),
+                        conditions=[
+                            SavedInventoryCondition(**c) for c in data["conditions"]
+                        ],
+                        created_at=data.get("created_at"),
+                        updated_at=data.get("updated_at"),
+                    )
+                    inventories.append(inventory)
+                except Exception as e:
+                    logger.warning(f"Error reading inventory file {inventory_file}: {e}")
+                    continue
+
+            logger.info(f"Found {len(inventories)} inventories")
+            return inventories
+
+        except Exception as e:
+            logger.error(f"Error listing inventories: {e}")
+            raise
+
+    async def load_inventory(
+        self, name: str, repository_id: int
+    ) -> Dict[str, Any] | None:
+        """
+        Load a saved inventory configuration from a git repository.
+
+        Args:
+            name: Inventory name
+            repository_id: Git repository ID
+
+        Returns:
+            Inventory data or None if not found
+        """
+        import json
+        from pathlib import Path
+        from git_repositories_manager import GitRepositoryManager
+        from services.git_utils import open_or_clone
+        from models.ansible_inventory import SavedInventory, SavedInventoryCondition
+
+        try:
+            logger.info(f"Loading inventory '{name}' from repository {repository_id}")
+
+            # Get repository information
+            git_manager = GitRepositoryManager()
+            repository = git_manager.get_repository(repository_id)
+
+            if not repository:
+                raise ValueError(f"Repository with ID {repository_id} not found")
+
+            if repository["category"] != "inventory":
+                raise ValueError(
+                    f"Repository must be of category 'inventory', got '{repository['category']}'"
+                )
+
+            # Check if repository has credentials configured for HTTPS URLs
+            if repository.get("url", "").startswith("https://"):
+                from services.git_utils import resolve_git_credentials
+                username, token = resolve_git_credentials(repository)
+                if not token:
+                    raise ValueError(
+                        f"Repository '{repository['name']}' requires credentials. "
+                        "Please configure a credential for this repository in Settings → Credentials."
+                    )
+
+            # Open or clone repository
+            logger.info(f"Opening/cloning Git repository: {repository['name']}")
+            repo = open_or_clone(repository)
+
+            # Pull latest changes
+            origin = repo.remotes.origin
+            origin.pull(repository.get('branch', 'main'))
+
+            # Read inventory file
+            inventory_file = Path(repo.working_dir) / "inventories" / f"{name}.json"
+            if not inventory_file.exists():
+                logger.warning(f"Inventory file not found: {inventory_file}")
+                return None
+
+            data = json.loads(inventory_file.read_text())
+
+            # Convert to SavedInventory model
+            inventory = SavedInventory(
+                name=data["name"],
+                description=data.get("description"),
+                conditions=[SavedInventoryCondition(**c) for c in data["conditions"]],
+                created_at=data.get("created_at"),
+                updated_at=data.get("updated_at"),
+            )
+
+            logger.info(f"Successfully loaded inventory '{name}'")
+            return inventory
+
+        except Exception as e:
+            logger.error(f"Error loading inventory: {e}")
+            raise
+
 
 # Global service instance
 ansible_inventory_service = AnsibleInventoryService()

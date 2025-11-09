@@ -76,7 +76,7 @@ const navigationSections: NavSection[] = [
     ],
   },
   {
-    title: 'Ansible',
+    title: 'Automation',
     items: [
       { label: 'Inventory', href: '/ansible-inventory', icon: List },
     ],

@@ -23,7 +23,9 @@ import {
   FileText,
   Database,
   X,
-  GitBranch
+  GitBranch,
+  Save,
+  FolderOpen
 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 import { useAuthStore } from '@/lib/auth-store'
@@ -137,6 +139,25 @@ export default function AnsibleInventoryPage() {
   // Custom fields menu
   const [showCustomFieldsMenu, setShowCustomFieldsMenu] = useState(false)
 
+  // Save/Load Inventory modals
+  const [showSaveModal, setShowSaveModal] = useState(false)
+  const [showLoadModal, setShowLoadModal] = useState(false)
+  const [inventoryRepositories, setInventoryRepositories] = useState<Array<{id: number, name: string, url: string, branch: string}>>([])
+  const [selectedInventoryRepo, setSelectedInventoryRepo] = useState<number | null>(null)
+  const [savedInventories, setSavedInventories] = useState<Array<{
+    name: string
+    description?: string
+    conditions: LogicalCondition[]
+    created_at?: string
+    updated_at?: string
+  }>>([])
+  const [saveInventoryName, setSaveInventoryName] = useState('')
+  const [saveInventoryDescription, setSaveInventoryDescription] = useState('')
+  const [isSavingInventory, setIsSavingInventory] = useState(false)
+  const [isLoadingInventories, setIsLoadingInventories] = useState(false)
+  const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false)
+  const [inventoryToOverwrite, setInventoryToOverwrite] = useState<string | null>(null)
+
   // Authentication effect - simplified since DashboardLayout handles auth
   useEffect(() => {
     if (isAuthenticated && token) {
@@ -202,6 +223,173 @@ export default function AnsibleInventoryPage() {
     } catch (error) {
       console.error('Error loading Git repositories:', error)
       setGitRepositories([])
+    }
+  }
+
+  const loadInventoryRepositories = async () => {
+    try {
+      const response = await apiCall<{
+        repositories: Array<{id: number, name: string, url: string, branch: string, category: string}>
+        total: number
+      }>('git-repositories?category=inventory')
+      
+      setInventoryRepositories(response.repositories)
+      // Auto-select first repository if available and return its ID
+      if (response.repositories.length > 0) {
+        const firstRepoId = response.repositories[0].id
+        setSelectedInventoryRepo(firstRepoId)
+        return firstRepoId
+      }
+      return null
+    } catch (error) {
+      console.error('Error loading inventory repositories:', error)
+      setInventoryRepositories([])
+      return null
+    }
+  }
+
+  const loadSavedInventories = async (repositoryId: number) => {
+    setIsLoadingInventories(true)
+    try {
+      const response = await apiCall<{
+        inventories: Array<{
+          name: string
+          description?: string
+          conditions: LogicalCondition[]
+          created_at?: string
+          updated_at?: string
+        }>
+        total: number
+      }>(`ansible-inventory/list-inventories?repository_id=${repositoryId}`)
+      
+      setSavedInventories(response.inventories)
+    } catch (error) {
+      console.error('Error loading saved inventories:', error)
+      setSavedInventories([])
+    } finally {
+      setIsLoadingInventories(false)
+    }
+  }
+
+  const handleSaveInventory = async () => {
+    if (!saveInventoryName.trim()) {
+      alert('Please enter an inventory name.')
+      return
+    }
+
+    if (!selectedInventoryRepo) {
+      alert('Please select a repository.')
+      return
+    }
+
+    if (conditions.length === 0) {
+      alert('Please add at least one condition before saving.')
+      return
+    }
+
+    // Check if inventory name already exists
+    const existingInventory = savedInventories.find(inv => inv.name === saveInventoryName)
+    if (existingInventory && !showOverwriteConfirm) {
+      setInventoryToOverwrite(saveInventoryName)
+      setShowOverwriteConfirm(true)
+      return
+    }
+
+    setIsSavingInventory(true)
+    try {
+      await apiCall('ansible-inventory/save-inventory', {
+        method: 'POST',
+        body: {
+          name: saveInventoryName,
+          description: saveInventoryDescription || undefined,
+          conditions: conditions,
+          repository_id: selectedInventoryRepo
+        }
+      })
+
+      alert(`Inventory "${saveInventoryName}" saved successfully!`)
+      setSaveInventoryName('')
+      setSaveInventoryDescription('')
+      setShowSaveModal(false)
+      setShowOverwriteConfirm(false)
+      setInventoryToOverwrite(null)
+      
+      // Reload the list of inventories
+      await loadSavedInventories(selectedInventoryRepo)
+    } catch (error) {
+      console.error('Error saving inventory:', error)
+      alert('Error saving inventory: ' + (error as Error).message)
+    } finally {
+      setIsSavingInventory(false)
+    }
+  }
+
+  const handleLoadInventory = async (inventoryName: string) => {
+    if (!selectedInventoryRepo) {
+      alert('Please select a repository.')
+      return
+    }
+
+    try {
+      const response = await apiCall<{
+        name: string
+        description?: string
+        conditions: LogicalCondition[]
+        created_at?: string
+        updated_at?: string
+      }>(`ansible-inventory/load-inventory/${encodeURIComponent(inventoryName)}?repository_id=${selectedInventoryRepo}`)
+
+      // Load the conditions into the UI
+      setConditions(response.conditions)
+      
+      // Clear preview results and template section
+      setShowPreviewResults(false)
+      setShowTemplateSection(false)
+      setShowInventorySection(false)
+      setPreviewDevices([])
+      setGeneratedInventory('')
+      
+      setShowLoadModal(false)
+      alert(`Inventory "${inventoryName}" loaded successfully with ${response.conditions.length} condition(s)!`)
+    } catch (error) {
+      console.error('Error loading inventory:', error)
+      alert('Error loading inventory: ' + (error as Error).message)
+    }
+  }
+
+  const openSaveModal = async () => {
+    if (conditions.length === 0) {
+      alert('Please add at least one condition before saving.')
+      return
+    }
+
+    setShowSaveModal(true)
+
+    // Load inventory repositories if not already loaded
+    let repoId = selectedInventoryRepo
+    if (inventoryRepositories.length === 0) {
+      repoId = await loadInventoryRepositories()
+    }
+
+    // Load existing inventories if a repository is selected
+    if (repoId) {
+      await loadSavedInventories(repoId)
+    }
+  }
+
+  const openLoadModal = async () => {
+    setShowLoadModal(true)
+    
+    // Load inventory repositories if not already loaded
+    let repoId = selectedInventoryRepo
+    if (inventoryRepositories.length === 0) {
+      repoId = await loadInventoryRepositories()
+    }
+
+    // Load existing inventories if a repository is selected
+    // This will run after loadInventoryRepositories completes
+    if (repoId) {
+      await loadSavedInventories(repoId)
     }
   }
 
@@ -865,7 +1053,7 @@ export default function AnsibleInventoryPage() {
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {conditions.map((condition, index) => (
-                    <div key={index} className="flex items-center space-x-2">
+                    <div key={`${condition.field}-${condition.value}-${index}`} className="flex items-center space-x-2">
                       {index > 0 && (
                         <Badge className={getLogicBadgeColor(condition.logic)}>
                           {condition.logic}
@@ -891,8 +1079,8 @@ export default function AnsibleInventoryPage() {
             </div>
           </div>
 
-          {/* Preview Button */}
-          <div className="flex justify-start">
+          {/* Action Buttons */}
+          <div className="flex justify-start gap-2">
             <Button
               onClick={previewResults}
               disabled={conditions.length === 0 || isLoadingPreview}
@@ -900,6 +1088,22 @@ export default function AnsibleInventoryPage() {
             >
               <Play className="h-4 w-4" />
               <span>{isLoadingPreview ? 'Loading...' : 'Preview Results'}</span>
+            </Button>
+            <Button
+              onClick={openSaveModal}
+              disabled={conditions.length === 0}
+              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white border-0"
+            >
+              <Save className="h-4 w-4" />
+              <span>Save Inventory</span>
+            </Button>
+            <Button
+              onClick={openLoadModal}
+              variant="outline"
+              className="flex items-center space-x-2"
+            >
+              <FolderOpen className="h-4 w-4" />
+              <span>Load Inventory</span>
             </Button>
           </div>
         </div>
@@ -1249,6 +1453,223 @@ export default function AnsibleInventoryPage() {
                 <Button
                   onClick={() => setShowGitSuccessModal(false)}
                   className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Save Inventory Modal */}
+      {showSaveModal && (
+        <Dialog open={showSaveModal} onOpenChange={setShowSaveModal}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Save Inventory Configuration</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              {/* Repository Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="save-repository">Repository</Label>
+                <Select 
+                  value={selectedInventoryRepo?.toString() || ''} 
+                  onValueChange={(value) => {
+                    const repoId = parseInt(value)
+                    setSelectedInventoryRepo(repoId)
+                    loadSavedInventories(repoId)
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a repository..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {inventoryRepositories.map(repo => (
+                      <SelectItem key={repo.id} value={repo.id.toString()}>
+                        {repo.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Inventory Name */}
+              <div className="space-y-2">
+                <Label htmlFor="inventory-name">Inventory Name *</Label>
+                <Input
+                  id="inventory-name"
+                  placeholder="Enter inventory name..."
+                  value={saveInventoryName}
+                  onChange={(e) => setSaveInventoryName(e.target.value)}
+                />
+              </div>
+
+              {/* Inventory Description */}
+              <div className="space-y-2">
+                <Label htmlFor="inventory-description">Description</Label>
+                <Textarea
+                  id="inventory-description"
+                  placeholder="Enter a description for this inventory..."
+                  value={saveInventoryDescription}
+                  onChange={(e) => setSaveInventoryDescription(e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              {/* Existing Inventories List */}
+              {savedInventories.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Existing Inventories</Label>
+                  <div className="border rounded-md p-2 max-h-48 overflow-y-auto">
+                    {savedInventories.map((inv) => (
+                      <div
+                        key={inv.name}
+                        className="p-2 hover:bg-gray-50 rounded cursor-pointer"
+                        onClick={() => setSaveInventoryName(inv.name)}
+                      >
+                        <div className="font-medium">{inv.name}</div>
+                        {inv.description && (
+                          <div className="text-sm text-gray-600">{inv.description}</div>
+                        )}
+                        <div className="text-xs text-gray-400">
+                          {inv.conditions.length} condition{inv.conditions.length !== 1 ? 's' : ''}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500">Click an inventory to select its name (will overwrite if you save)</p>
+                </div>
+              )}
+
+              {/* Overwrite Confirmation */}
+              {showOverwriteConfirm && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                  <p className="text-sm text-yellow-800">
+                    An inventory named &quot;{inventoryToOverwrite}&quot; already exists. Do you want to overwrite it?
+                  </p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowSaveModal(false)
+                    setShowOverwriteConfirm(false)
+                    setInventoryToOverwrite(null)
+                    setSaveInventoryName('')
+                    setSaveInventoryDescription('')
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveInventory}
+                  disabled={isSavingInventory || !saveInventoryName.trim() || !selectedInventoryRepo}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {isSavingInventory ? 'Saving...' : (showOverwriteConfirm ? 'Yes, Overwrite' : 'Save')}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Load Inventory Modal */}
+      {showLoadModal && (
+        <Dialog open={showLoadModal} onOpenChange={setShowLoadModal}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Load Inventory Configuration</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              {/* Repository Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="load-repository">Repository</Label>
+                <Select 
+                  value={selectedInventoryRepo?.toString() || ''} 
+                  onValueChange={(value) => {
+                    const repoId = parseInt(value)
+                    setSelectedInventoryRepo(repoId)
+                    loadSavedInventories(repoId)
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a repository..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {inventoryRepositories.map(repo => (
+                      <SelectItem key={repo.id} value={repo.id.toString()}>
+                        {repo.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Loading State */}
+              {isLoadingInventories && (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+                </div>
+              )}
+
+              {/* Saved Inventories List */}
+              {!isLoadingInventories && savedInventories.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  No saved inventories found in this repository.
+                </div>
+              )}
+
+              {!isLoadingInventories && savedInventories.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Select an Inventory to Load</Label>
+                  <div className="border rounded-md max-h-96 overflow-y-auto">
+                    {savedInventories.map((inv) => (
+                      <div
+                        key={inv.name}
+                        className="p-3 hover:bg-blue-50 border-b last:border-b-0 cursor-pointer transition-colors"
+                        onClick={() => handleLoadInventory(inv.name)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">{inv.name}</div>
+                            {inv.description && (
+                              <div className="text-sm text-gray-600 mt-1">{inv.description}</div>
+                            )}
+                            <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                              <span>{inv.conditions.length} condition{inv.conditions.length !== 1 ? 's' : ''}</span>
+                              {inv.updated_at && (
+                                <span>Updated: {new Date(inv.updated_at).toLocaleDateString()}</span>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="ml-2"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleLoadInventory(inv.name)
+                            }}
+                          >
+                            Load
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex justify-end pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowLoadModal(false)}
                 >
                   Close
                 </Button>
