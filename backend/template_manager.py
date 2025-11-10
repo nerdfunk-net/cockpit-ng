@@ -74,6 +74,10 @@ class TemplateManager:
                         variables TEXT DEFAULT '{}',  -- JSON string
                         tags TEXT DEFAULT '[]',       -- JSON string
 
+                        -- Ownership and scope
+                        created_by TEXT,
+                        scope TEXT DEFAULT 'global' CHECK(scope IN ('global', 'private')),
+
                         -- Status
                         is_active BOOLEAN DEFAULT 1,
                         last_sync TIMESTAMP,
@@ -84,6 +88,19 @@ class TemplateManager:
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """)
+
+                # Add columns to existing tables if they don't exist (migration)
+                try:
+                    cursor.execute("SELECT created_by FROM templates LIMIT 1")
+                except sqlite3.OperationalError:
+                    cursor.execute("ALTER TABLE templates ADD COLUMN created_by TEXT")
+                    logger.info("Added 'created_by' column to templates table")
+
+                try:
+                    cursor.execute("SELECT scope FROM templates LIMIT 1")
+                except sqlite3.OperationalError:
+                    cursor.execute("ALTER TABLE templates ADD COLUMN scope TEXT DEFAULT 'global' CHECK(scope IN ('global', 'private'))")
+                    logger.info("Added 'scope' column to templates table")
 
                 # Create template_versions table for history
                 cursor.execute("""
@@ -112,6 +129,12 @@ class TemplateManager:
                 )
                 cursor.execute(
                     "CREATE INDEX IF NOT EXISTS idx_templates_active ON templates(is_active)"
+                )
+                cursor.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_templates_created_by ON templates(created_by)"
+                )
+                cursor.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_templates_scope ON templates(scope)"
                 )
                 cursor.execute(
                     "CREATE INDEX IF NOT EXISTS idx_template_versions_template_id ON template_versions(template_id)"
@@ -172,8 +195,8 @@ class TemplateManager:
                         name, source, template_type, category, description,
                         git_repo_url, git_branch, git_username, git_token, git_path, git_verify_ssl,
                         content, filename, content_hash,
-                        variables, tags, is_active, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        variables, tags, created_by, scope, is_active, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                     (
                         template_data["name"],
@@ -192,6 +215,8 @@ class TemplateManager:
                         content_hash,
                         variables_json,
                         tags_json,
+                        template_data.get("created_by"),
+                        template_data.get("scope", "global"),
                         True,
                         now,
                     ),
@@ -243,7 +268,9 @@ class TemplateManager:
                 row = cursor.fetchone()
 
                 if row:
-                    return self._row_to_dict(row)
+                    result = self._row_to_dict(row)
+                    logger.info(f"DEBUG: get_template({template_id}) - scope={result.get('scope')}, created_by={result.get('created_by')}")
+                    return result
                 return None
 
         except Exception as e:
@@ -271,9 +298,14 @@ class TemplateManager:
             return None
 
     def list_templates(
-        self, category: str = None, source: str = None, active_only: bool = True
+        self, category: str = None, source: str = None, active_only: bool = True, username: str = None
     ) -> List[Dict[str, Any]]:
-        """List templates with optional filtering"""
+        """List templates with optional filtering.
+
+        Returns:
+        - Global templates (scope='global')
+        - Private templates owned by the user (scope='private' AND created_by=username)
+        """
         try:
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
@@ -285,6 +317,16 @@ class TemplateManager:
                 if active_only:
                     query += " AND is_active = 1"
 
+                # Filter by scope and ownership
+                if username:
+                    query += " AND (scope = 'global' OR (scope = 'private' AND created_by = ?))"
+                    params.append(username)
+                    logger.info(f"DEBUG: list_templates - filtering for username={username}")
+                else:
+                    # If no username provided, only show global templates
+                    query += " AND scope = 'global'"
+                    logger.info(f"DEBUG: list_templates - no username, showing only global templates")
+
                 if category:
                     query += " AND category = ?"
                     params.append(category)
@@ -295,10 +337,18 @@ class TemplateManager:
 
                 query += " ORDER BY name"
 
+                logger.info(f"DEBUG: list_templates - SQL query: {query}")
+                logger.info(f"DEBUG: list_templates - SQL params: {params}")
+
                 cursor.execute(query, params)
                 rows = cursor.fetchall()
 
-                return [self._row_to_dict(row) for row in rows]
+                results = [self._row_to_dict(row) for row in rows]
+                logger.info(f"DEBUG: list_templates - found {len(results)} templates")
+                for template in results:
+                    logger.info(f"DEBUG: list_templates - template: id={template['id']}, name={template['name']}, scope={template.get('scope')}, created_by={template.get('created_by')}")
+
+                return results
 
         except Exception as e:
             logger.error(f"Error listing templates: {e}")
@@ -315,6 +365,8 @@ class TemplateManager:
                 if not current:
                     raise ValueError(f"Template with ID {template_id} not found")
 
+                logger.info(f"DEBUG: update_template({template_id}) - incoming scope={template_data.get('scope')}, current scope={current.get('scope')}")
+
                 # Prepare update data
                 now = datetime.now(timezone.utc).isoformat()
                 variables_json = json.dumps(template_data.get("variables", {}))
@@ -328,15 +380,19 @@ class TemplateManager:
                 # Check if content changed
                 content_changed = content_hash != current.get("content_hash")
 
+                # Get the scope to update
+                new_scope = template_data.get("scope", current.get("scope", "global"))
+                logger.info(f"DEBUG: update_template({template_id}) - will update scope to: {new_scope}")
+
                 # Update template
                 cursor.execute(
                     """
                     UPDATE templates SET
                         name = ?, template_type = ?, category = ?, description = ?,
-                        git_repo_url = ?, git_branch = ?, git_username = ?, git_token = ?, 
+                        git_repo_url = ?, git_branch = ?, git_username = ?, git_token = ?,
                         git_path = ?, git_verify_ssl = ?,
                         content = ?, filename = ?, content_hash = ?,
-                        variables = ?, tags = ?, updated_at = ?
+                        variables = ?, tags = ?, scope = ?, updated_at = ?
                     WHERE id = ?
                 """,
                     (
@@ -355,10 +411,13 @@ class TemplateManager:
                         content_hash,
                         variables_json,
                         tags_json,
+                        new_scope,
                         now,
                         template_id,
                     ),
                 )
+
+                logger.info(f"DEBUG: update_template({template_id}) - SQL UPDATE executed with scope={new_scope}")
 
                 # Save content to file if needed
                 if current["source"] in ["file", "webeditor"] and content:
@@ -626,9 +685,12 @@ class TemplateManager:
             logger.error(f"Error creating template version: {e}")
 
     def search_templates(
-        self, query: str, search_content: bool = False
+        self, query: str, search_content: bool = False, username: str = None
     ) -> List[Dict[str, Any]]:
-        """Search templates by name, description, category, or content"""
+        """Search templates by name, description, category, or content.
+
+        Respects scope and ownership - returns global templates and user's private templates.
+        """
         try:
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
@@ -637,37 +699,80 @@ class TemplateManager:
                 search_pattern = f"%{query}%"
 
                 if search_content:
-                    cursor.execute(
-                        """
-                        SELECT * FROM templates 
-                        WHERE is_active = 1 AND (
-                            name LIKE ? OR 
-                            description LIKE ? OR 
-                            category LIKE ? OR
-                            content LIKE ?
+                    if username:
+                        cursor.execute(
+                            """
+                            SELECT * FROM templates
+                            WHERE is_active = 1
+                            AND (scope = 'global' OR (scope = 'private' AND created_by = ?))
+                            AND (
+                                name LIKE ? OR
+                                description LIKE ? OR
+                                category LIKE ? OR
+                                content LIKE ?
+                            )
+                            ORDER BY name
+                        """,
+                            (
+                                username,
+                                search_pattern,
+                                search_pattern,
+                                search_pattern,
+                                search_pattern,
+                            ),
                         )
-                        ORDER BY name
-                    """,
-                        (
-                            search_pattern,
-                            search_pattern,
-                            search_pattern,
-                            search_pattern,
-                        ),
-                    )
+                    else:
+                        cursor.execute(
+                            """
+                            SELECT * FROM templates
+                            WHERE is_active = 1
+                            AND scope = 'global'
+                            AND (
+                                name LIKE ? OR
+                                description LIKE ? OR
+                                category LIKE ? OR
+                                content LIKE ?
+                            )
+                            ORDER BY name
+                        """,
+                            (
+                                search_pattern,
+                                search_pattern,
+                                search_pattern,
+                                search_pattern,
+                            ),
+                        )
                 else:
-                    cursor.execute(
-                        """
-                        SELECT * FROM templates 
-                        WHERE is_active = 1 AND (
-                            name LIKE ? OR 
-                            description LIKE ? OR 
-                            category LIKE ?
+                    if username:
+                        cursor.execute(
+                            """
+                            SELECT * FROM templates
+                            WHERE is_active = 1
+                            AND (scope = 'global' OR (scope = 'private' AND created_by = ?))
+                            AND (
+                                name LIKE ? OR
+                                description LIKE ? OR
+                                category LIKE ?
+                            )
+                            ORDER BY name
+                        """,
+                            (username, search_pattern, search_pattern, search_pattern),
                         )
-                        ORDER BY name
-                    """,
-                        (search_pattern, search_pattern, search_pattern),
-                    )
+                    else:
+                        cursor.execute(
+                            """
+                            SELECT * FROM templates
+                            WHERE is_active = 1
+                            AND scope = 'global'
+                            AND (
+                                name LIKE ? OR
+                                description LIKE ? OR
+                                category LIKE ?
+                            )
+                            ORDER BY name
+                        """,
+                            (search_pattern, search_pattern, search_pattern),
+                        )
 
                 rows = cursor.fetchall()
                 return [self._row_to_dict(row) for row in rows]

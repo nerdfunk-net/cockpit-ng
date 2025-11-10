@@ -26,6 +26,13 @@ class TemplateType(str, Enum):
     TEXTFSM = "textfsm"
 
 
+class TemplateScope(str, Enum):
+    """Template scope types."""
+
+    GLOBAL = "global"
+    PRIVATE = "private"
+
+
 class TemplateRequest(BaseModel):
     """Template creation/update request model."""
 
@@ -57,6 +64,11 @@ class TemplateRequest(BaseModel):
         None, description="Original filename for uploaded files"
     )
 
+    # Ownership and scope
+    scope: TemplateScope = Field(
+        default=TemplateScope.GLOBAL, description="Template scope (global or private)"
+    )
+
     # Metadata
     variables: Optional[Dict[str, Any]] = Field(
         default_factory=dict, description="Template variables"
@@ -84,6 +96,10 @@ class TemplateResponse(BaseModel):
     # File/WebEditor-specific fields
     content: Optional[str]
     filename: Optional[str]
+
+    # Ownership and scope
+    created_by: Optional[str]
+    scope: TemplateScope
 
     # Metadata
     variables: Dict[str, Any]
@@ -223,7 +239,46 @@ class TemplateUpdateRequest(BaseModel):
     template_type: Optional[TemplateType] = Field(
         None, description="Template content type"
     )
+    scope: Optional[TemplateScope] = Field(None, description="Template scope")
 
     # Metadata
     variables: Optional[Dict[str, Any]] = Field(None, description="Template variables")
     tags: Optional[List[str]] = Field(None, description="Template tags")
+
+
+class TemplateRenderRequest(BaseModel):
+    """Template render request model for flexible template rendering."""
+
+    template_id: Optional[int] = Field(
+        None, description="Template ID to render (either this or template_content)"
+    )
+    template_content: Optional[str] = Field(
+        None, description="Template content for ad-hoc rendering (either this or template_id)"
+    )
+    category: str = Field(
+        ..., description="Template category (netmiko, inventory, onboarding, parser)"
+    )
+    device_id: Optional[str] = Field(
+        None, description="Device UUID for Nautobot context lookup"
+    )
+    user_variables: Optional[Dict[str, Any]] = Field(
+        default_factory=dict, description="User-provided variables for template"
+    )
+    use_nautobot_context: bool = Field(
+        default=True, description="Whether to include Nautobot device context"
+    )
+
+
+class TemplateRenderResponse(BaseModel):
+    """Template render response model."""
+
+    rendered_content: str = Field(..., description="The rendered template output")
+    variables_used: List[str] = Field(
+        ..., description="List of variables referenced in the template"
+    )
+    context_data: Optional[Dict[str, Any]] = Field(
+        None, description="Full context used for rendering (for debugging)"
+    )
+    warnings: Optional[List[str]] = Field(
+        default_factory=list, description="Non-fatal warnings during rendering"
+    )

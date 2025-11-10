@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
 import { escapeHtml } from '@/lib/security'
@@ -52,6 +53,8 @@ interface Template {
   category: string
   description: string
   updated_at: string
+  created_by?: string
+  scope: 'global' | 'private'
   git_repo_url?: string
   git_branch?: string
   git_path?: string
@@ -64,6 +67,7 @@ interface TemplateFormData {
   category: string
   description: string
   content?: string
+  scope: 'global' | 'private'
   git_repo_url?: string
   git_branch?: string
   git_path?: string
@@ -116,6 +120,7 @@ export default function TemplateManagement() {
     category: '__none__',
     description: '',
     content: '',
+    scope: 'global',
     git_repo_url: '',
     git_branch: 'main',
     git_path: '',
@@ -175,6 +180,7 @@ export default function TemplateManagement() {
       category: '__none__',
       description: '',
       content: '',
+      scope: 'global',
       git_repo_url: '',
       git_branch: 'main',
       git_path: '',
@@ -226,6 +232,7 @@ export default function TemplateManagement() {
         category: template.category || '__none__',
         description: template.description || '',
         content: response.content || '',
+        scope: template.scope || 'global',
         git_repo_url: template.git_repo_url || '',
         git_branch: template.git_branch || 'main',
         git_path: template.git_path || '',
@@ -264,6 +271,7 @@ export default function TemplateManagement() {
         template_type: string;
         category: string;
         description: string;
+        scope: string;
         git_repo_url?: string;
         git_branch?: string;
         git_path?: string;
@@ -276,7 +284,8 @@ export default function TemplateManagement() {
         source: formData.source,
         template_type: formData.template_type,
         category: formData.category === '__none__' ? '' : formData.category,
-        description: formData.description
+        description: formData.description,
+        scope: formData.scope
       }
 
       // Add source-specific data
@@ -348,6 +357,7 @@ export default function TemplateManagement() {
         template_type: string;
         category: string;
         description: string;
+        scope: string;
         git_repo_url?: string;
         git_branch?: string;
         git_path?: string;
@@ -360,7 +370,8 @@ export default function TemplateManagement() {
         source: formData.source,
         template_type: formData.template_type,
         category: formData.category === '__none__' ? '' : formData.category,
-        description: formData.description
+        description: formData.description,
+        scope: formData.scope
       }
 
       // Add source-specific data
@@ -764,21 +775,20 @@ export default function TemplateManagement() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Updated</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {loadingState === 'loading' ? (
                         <tr>
-                          <td colSpan={8} className="px-6 py-4 text-center">
+                          <td colSpan={7} className="px-6 py-4 text-center">
                             <RefreshCw className="h-5 w-5 animate-spin mx-auto" />
                             <span className="ml-2">Loading templates...</span>
                           </td>
                         </tr>
                       ) : filteredTemplates.length === 0 ? (
                         <tr>
-                          <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
+                          <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                             No templates found
                           </td>
                         </tr>
@@ -823,9 +833,6 @@ export default function TemplateManagement() {
                               </td>
                               <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
                                 {template.description || '-'}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {new Date(template.updated_at).toLocaleDateString()}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center space-x-2">
@@ -928,7 +935,7 @@ export default function TemplateManagement() {
                     <SelectContent>
                       <SelectItem value="__none__">No Category</SelectItem>
                       {/* Canonical categories only to avoid duplicates from the API */}
-                      {['inventory', 'onboarding', 'parser'].map(cat => (
+                      {['inventory', 'onboarding', 'parser', 'netmiko'].map(cat => (
                         <SelectItem key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</SelectItem>
                       ))}
                     </SelectContent>
@@ -958,6 +965,28 @@ export default function TemplateManagement() {
                     onChange={(e) => handleFormChange('description', e.target.value)}
                     className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 shadow-sm"
                   />
+                </div>
+              </div>
+
+              {/* Template Scope */}
+              <div className="flex items-center space-x-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <Checkbox
+                  id="template-scope"
+                  checked={formData.scope === 'global'}
+                  onCheckedChange={(checked) =>
+                    handleFormChange('scope', checked ? 'global' : 'private')
+                  }
+                />
+                <div className="grid gap-1.5 leading-none">
+                  <label
+                    htmlFor="template-scope"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    This template is global
+                  </label>
+                  <p className="text-sm text-muted-foreground">
+                    Global templates are visible to all users. Private templates are only visible to you.
+                  </p>
                 </div>
               </div>
 

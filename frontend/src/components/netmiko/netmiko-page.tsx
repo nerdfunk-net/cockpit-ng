@@ -12,9 +12,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Terminal, Play, AlertCircle, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { Terminal, Play, AlertCircle, CheckCircle2, XCircle, Loader2, Plus, Trash2 } from 'lucide-react'
 import { DeviceSelector, type DeviceInfo, type LogicalCondition } from '@/components/shared/device-selector'
 import { useApi } from '@/hooks/use-api'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 interface StoredCredential {
   id: number
@@ -31,6 +38,21 @@ interface CommandResult {
   error?: string
 }
 
+interface TemplateVariable {
+  id: string
+  name: string
+  value: string
+}
+
+interface Template {
+  id: number
+  name: string
+  category: string
+  content: string
+  scope: 'global' | 'private'
+  created_by?: string
+}
+
 export default function NetmikoPage() {
   const { apiCall } = useApi()
 
@@ -45,6 +67,30 @@ export default function NetmikoPage() {
   const [selectedCredentialId, setSelectedCredentialId] = useState<string>('manual')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+
+  // Variables & Templates state
+  const [variables, setVariables] = useState<TemplateVariable[]>([
+    { id: crypto.randomUUID(), name: '', value: '' }
+  ])
+  const [useNautobotContext, setUseNautobotContext] = useState(true)
+  const [templates, setTemplates] = useState<Template[]>([])
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('none')
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
+  const [testDeviceId, setTestDeviceId] = useState<string>('')
+  const [isTestingTemplate, setIsTestingTemplate] = useState(false)
+  const [showTestResultDialog, setShowTestResultDialog] = useState(false)
+  const [testResult, setTestResult] = useState<string>('')
+  const [showNautobotDataDialog, setShowNautobotDataDialog] = useState(false)
+  const [nautobotData, setNautobotData] = useState<any>(null)
+  const [isLoadingNautobotData, setIsLoadingNautobotData] = useState(false)
+  const [editedTemplateContent, setEditedTemplateContent] = useState<string>('')
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false)
+  const [showErrorDialog, setShowErrorDialog] = useState(false)
+  const [errorDetails, setErrorDetails] = useState<{
+    title: string
+    message: string
+    details?: string[]
+  } | null>(null)
 
   // Commands state
   const [commands, setCommands] = useState('')
@@ -82,9 +128,10 @@ export default function NetmikoPage() {
     setSelectedDevices(devices)
   }
 
-  // Load stored SSH credentials on mount
+  // Load stored SSH credentials and templates on mount
   useEffect(() => {
     loadStoredCredentials()
+    loadTemplates()
   }, [])
 
   const loadStoredCredentials = async () => {
@@ -96,6 +143,232 @@ export default function NetmikoPage() {
     } catch (error) {
       console.error('Error loading credentials:', error)
       setStoredCredentials([])
+    }
+  }
+
+  const loadTemplates = async () => {
+    try {
+      // Try lowercase first (standard)
+      let response = await apiCall<{ templates: Template[]; total: number }>('templates?category=netmiko')
+      console.log('Loaded templates with category=netmiko:', response.templates)
+
+      // If no templates found, try with capital N (in case user created it manually)
+      if (!response.templates || response.templates.length === 0) {
+        const responseCapital = await apiCall<{ templates: Template[]; total: number }>('templates?category=Netmiko')
+        console.log('Loaded templates with category=Netmiko:', responseCapital.templates)
+        setTemplates(responseCapital.templates || [])
+      } else {
+        setTemplates(response.templates || [])
+      }
+    } catch (error) {
+      console.error('Error loading templates:', error)
+      setTemplates([])
+    }
+  }
+
+  // Variable management functions
+  const addVariable = () => {
+    setVariables([...variables, { id: crypto.randomUUID(), name: '', value: '' }])
+  }
+
+  const removeVariable = (id: string) => {
+    if (variables.length > 1) {
+      setVariables(variables.filter(v => v.id !== id))
+    }
+  }
+
+  const updateVariable = (id: string, field: 'name' | 'value', value: string) => {
+    setVariables(variables.map(v =>
+      v.id === id ? { ...v, [field]: value } : v
+    ))
+  }
+
+  const validateVariableName = (name: string): boolean => {
+    // Jinja2 variable names: alphanumeric and underscore, cannot start with a number
+    const validPattern = /^[a-zA-Z_][a-zA-Z0-9_]*$/
+    return validPattern.test(name)
+  }
+
+  const handleTemplateChange = async (templateId: string) => {
+    setSelectedTemplateId(templateId)
+    if (templateId === 'none') {
+      setSelectedTemplate(null)
+      setEditedTemplateContent('')
+      return
+    }
+
+    const template = templates.find(t => t.id.toString() === templateId)
+    if (template) {
+      setSelectedTemplate(template)
+      setEditedTemplateContent(template.content)
+    }
+  }
+
+  const handleSaveTemplate = async () => {
+    if (!selectedTemplate || selectedTemplate.scope !== 'private') {
+      return
+    }
+
+    setIsSavingTemplate(true)
+    try {
+      await apiCall(`templates/${selectedTemplate.id}`, {
+        method: 'PUT',
+        body: {
+          content: editedTemplateContent
+        }
+      })
+
+      // Update the local template list
+      setTemplates(templates.map(t =>
+        t.id === selectedTemplate.id ? { ...t, content: editedTemplateContent } : t
+      ))
+      setSelectedTemplate({ ...selectedTemplate, content: editedTemplateContent })
+
+      alert('Template saved successfully!')
+    } catch (error) {
+      console.error('Error saving template:', error)
+      alert('Failed to save template')
+    } finally {
+      setIsSavingTemplate(false)
+    }
+  }
+
+  const handleTestTemplate = async () => {
+    if (!selectedTemplate || !testDeviceId) {
+      return
+    }
+
+    setIsTestingTemplate(true)
+    try {
+      // Find the selected device
+      const device = selectedDevices.find(d => d.id === testDeviceId)
+      if (!device) {
+        alert('Selected device not found')
+        return
+      }
+
+      // Prepare variables object
+      const varsObject: Record<string, string> = {}
+      variables.forEach(v => {
+        if (v.name && validateVariableName(v.name)) {
+          varsObject[v.name] = v.value
+        }
+      })
+
+      // Call backend to render template using the new endpoint
+      // For private templates, use edited content if it has been modified
+      const useEditedContent = selectedTemplate.scope === 'private' && editedTemplateContent !== selectedTemplate.content
+
+      const response = await apiCall<{
+        rendered_content: string
+        variables_used: string[]
+        warnings?: string[]
+      }>('templates/render', {
+        method: 'POST',
+        body: useEditedContent ? {
+          template_content: editedTemplateContent,
+          category: 'netmiko',
+          device_id: device.id,
+          user_variables: varsObject,
+          use_nautobot_context: useNautobotContext
+        } : {
+          template_id: selectedTemplate.id,
+          category: 'netmiko',
+          device_id: device.id,  // Pass UUID directly
+          user_variables: varsObject,
+          use_nautobot_context: useNautobotContext
+        }
+      })
+
+      setTestResult(response.rendered_content)
+      setShowTestResultDialog(true)
+
+      // Log warnings if any
+      if (response.warnings && response.warnings.length > 0) {
+        console.warn('Template rendering warnings:', response.warnings)
+      }
+    } catch (error: any) {
+      console.error('Error testing template:', error)
+
+      // Parse error message to extract details
+      const errorMessage = error?.message || 'Unknown error'
+      const details: string[] = []
+
+      // Check if it's a 400 Bad Request with template rendering error
+      if (errorMessage.includes('400') && errorMessage.includes('detail')) {
+        try {
+          // Extract the detail from the error message
+          const detailMatch = errorMessage.match(/"detail":"([^"]+)"/)
+          if (detailMatch && detailMatch[1]) {
+            const detailMessage = detailMatch[1]
+
+            // Parse the detail message for available variables
+            const availableVarsMatch = detailMessage.match(/Available variables: (.+)$/)
+            const errorDescMatch = detailMessage.match(/^([^.]+)/)
+
+            if (errorDescMatch) {
+              details.push(`Error: ${errorDescMatch[1]}`)
+            }
+
+            if (availableVarsMatch) {
+              details.push(`Available variables: ${availableVarsMatch[1]}`)
+            }
+
+            // Add user-provided variables
+            const userVars = Object.keys(varsObject)
+            if (userVars.length > 0) {
+              details.push(`User-provided variables: ${userVars.join(', ')}`)
+            } else {
+              details.push('User-provided variables: (none)')
+            }
+
+            // Add Nautobot context status
+            details.push(`Nautobot context enabled: ${useNautobotContext ? 'Yes' : 'No'}`)
+            if (useNautobotContext) {
+              details.push(`Selected device: ${device.name}`)
+            }
+          }
+        } catch (parseError) {
+          details.push(`Error message: ${errorMessage}`)
+        }
+      } else {
+        details.push(`Error message: ${errorMessage}`)
+      }
+
+      setErrorDetails({
+        title: 'Template Rendering Failed',
+        message: 'The template could not be rendered. Please check the details below:',
+        details
+      })
+      setShowErrorDialog(true)
+    } finally {
+      setIsTestingTemplate(false)
+    }
+  }
+
+  const handleShowNautobotData = async () => {
+    if (!testDeviceId) {
+      return
+    }
+
+    setIsLoadingNautobotData(true)
+    try {
+      // Find the selected device
+      const device = selectedDevices.find(d => d.id === testDeviceId)
+      if (!device) {
+        alert('Selected device not found')
+        return
+      }
+
+      // Fetch detailed Nautobot data
+      const response = await apiCall<any>(`nautobot/devices/${device.id}/details`)
+      setNautobotData(response)
+      setShowNautobotDataDialog(true)
+    } catch (error) {
+      console.error('Error fetching Nautobot data:', error)
+      alert('Error fetching Nautobot data: ' + (error as Error).message)
+    } finally {
+      setIsLoadingNautobotData(false)
     }
   }
 
@@ -270,8 +543,9 @@ export default function NetmikoPage() {
 
       {/* Main Tabs */}
       <Tabs defaultValue="devices" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="devices">Devices</TabsTrigger>
+          <TabsTrigger value="variables">Variables & Templates</TabsTrigger>
           <TabsTrigger value="commands">Commands</TabsTrigger>
         </TabsList>
 
@@ -303,10 +577,240 @@ export default function NetmikoPage() {
               <CheckCircle2 className="h-4 w-4" />
               <AlertDescription>
                 <strong>{selectedDevices.length}</strong> device{selectedDevices.length !== 1 ? 's' : ''} selected.
-                Switch to the <strong>Commands</strong> tab to execute commands.
+                Switch to the <strong>Variables & Templates</strong> tab to configure templates, or <strong>Commands</strong> tab to execute commands.
               </AlertDescription>
             </Alert>
           )}
+        </TabsContent>
+
+        {/* Variables & Templates Tab */}
+        <TabsContent value="variables" className="space-y-6">
+          {/* Panel 1: Variables */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Template Variables</CardTitle>
+              <CardDescription>
+                Define variables that will be used in your Jinja2 template
+              </CardDescription>
+            </CardHeader>
+            <div className="p-6 space-y-4">
+              {/* Nautobot Context Checkbox */}
+              <div className="flex items-center space-x-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <Switch
+                  id="use-nautobot-context"
+                  checked={useNautobotContext}
+                  onCheckedChange={setUseNautobotContext}
+                />
+                <div className="flex-1">
+                  <Label htmlFor="use-nautobot-context" className="font-medium cursor-pointer">
+                    Use Nautobot data & context
+                  </Label>
+                  <p className="text-xs text-gray-600 mt-1">
+                    When enabled, Nautobot device data will be available in the template context
+                  </p>
+                </div>
+              </div>
+
+              {/* Variables List */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Custom Variables</Label>
+                  <Button
+                    onClick={addVariable}
+                    size="sm"
+                    variant="outline"
+                    className="flex items-center gap-1"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Variable
+                  </Button>
+                </div>
+
+                {variables.map((variable, index) => (
+                  <div key={variable.id} className="flex items-start gap-2">
+                    <div className="flex-1 grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Input
+                          placeholder="Variable name (e.g., hostname)"
+                          value={variable.name}
+                          onChange={(e) => updateVariable(variable.id, 'name', e.target.value)}
+                          className={`border-2 ${
+                            variable.name && !validateVariableName(variable.name)
+                              ? 'border-red-500 focus:border-red-500'
+                              : 'border-slate-300 focus:border-blue-500'
+                          } bg-white`}
+                        />
+                        {variable.name && !validateVariableName(variable.name) && (
+                          <p className="text-xs text-red-600">
+                            Invalid name. Use letters, numbers, underscore. Must start with letter or underscore.
+                          </p>
+                        )}
+                      </div>
+                      <Input
+                        placeholder="Value"
+                        value={variable.value}
+                        onChange={(e) => updateVariable(variable.id, 'value', e.target.value)}
+                        className="border-2 border-slate-300 bg-white focus:border-blue-500"
+                      />
+                    </div>
+                    <Button
+                      onClick={() => removeVariable(variable.id)}
+                      size="icon"
+                      variant="ghost"
+                      className="h-10 w-10 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      disabled={variables.length === 1}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+
+          {/* Panel 2: Template Selection */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Template Selection</CardTitle>
+              <CardDescription>
+                Choose a Jinja2 template to generate commands for your devices
+              </CardDescription>
+            </CardHeader>
+            <div className="p-6 space-y-4">
+              {/* Template Selection Dropdown */}
+              <div className="space-y-2">
+                <Label htmlFor="template-select">Template</Label>
+                <Select value={selectedTemplateId} onValueChange={handleTemplateChange}>
+                  <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500">
+                    <SelectValue placeholder="Select a template..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Template</SelectItem>
+                    {templates.map((template) => (
+                      <SelectItem key={template.id} value={template.id.toString()}>
+                        {template.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Template Preview */}
+              {selectedTemplate && (
+                <>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Template Preview</Label>
+                      {selectedTemplate.scope === 'private' && (
+                        <Badge variant="outline" className="text-xs">
+                          Editable (Private)
+                        </Badge>
+                      )}
+                    </div>
+                    <Textarea
+                      value={editedTemplateContent}
+                      onChange={(e) => setEditedTemplateContent(e.target.value)}
+                      readOnly={selectedTemplate.scope !== 'private'}
+                      rows={12}
+                      className={`font-mono text-sm border-2 resize-none ${
+                        selectedTemplate.scope === 'private'
+                          ? 'border-blue-300 bg-white'
+                          : 'border-slate-300 bg-gray-50'
+                      }`}
+                      placeholder={selectedTemplate.scope === 'private' ? 'Edit your private template...' : ''}
+                    />
+                    {selectedTemplate.scope === 'private' && (
+                      <div className="flex justify-end">
+                        <Button
+                          onClick={handleSaveTemplate}
+                          disabled={isSavingTemplate || editedTemplateContent === selectedTemplate.content}
+                          size="sm"
+                          className="gap-2"
+                        >
+                          {isSavingTemplate ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-4 w-4" />
+                              Save Template
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Test Template Section */}
+                  <div className="space-y-3 p-4 bg-gray-50 rounded-md border border-gray-200">
+                    <Label className="text-sm font-medium">Test Template Rendering</Label>
+
+                    {selectedDevices.length === 0 ? (
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          Please select devices in the <strong>Devices</strong> tab first to test the template.
+                        </AlertDescription>
+                      </Alert>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="flex items-end gap-2">
+                          <div className="flex-1 space-y-2">
+                            <Label htmlFor="test-device-select" className="text-sm">
+                              Select Device for Testing
+                            </Label>
+                            <Select value={testDeviceId} onValueChange={setTestDeviceId}>
+                              <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500">
+                                <SelectValue placeholder="Choose a device..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {selectedDevices.map((device) => (
+                                  <SelectItem key={device.id} value={device.id}>
+                                    {device.name} ({device.primary_ip4 || 'No IP'})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Button
+                            onClick={handleTestTemplate}
+                            disabled={!testDeviceId || isTestingTemplate}
+                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
+                          >
+                            {isTestingTemplate ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Testing...
+                              </>
+                            ) : (
+                              'Test Template'
+                            )}
+                          </Button>
+                          <Button
+                            onClick={handleShowNautobotData}
+                            disabled={!testDeviceId || isLoadingNautobotData}
+                            variant="outline"
+                            className="border-2 border-slate-300"
+                          >
+                            {isLoadingNautobotData ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Loading...
+                              </>
+                            ) : (
+                              'Show Nautobot Data'
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </Card>
         </TabsContent>
 
         {/* Commands Tab */}
@@ -595,6 +1099,216 @@ export default function NetmikoPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Test Template Result Dialog */}
+      <Dialog open={showTestResultDialog} onOpenChange={setShowTestResultDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Template Test Result</DialogTitle>
+            <DialogDescription>
+              Rendered template output for the selected device
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Rendered Commands</Label>
+              <Textarea
+                value={testResult}
+                readOnly
+                rows={20}
+                className="font-mono text-sm border-2 border-slate-300 bg-gray-50 resize-none"
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={() => setShowTestResultDialog(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Nautobot Data Dialog */}
+      <Dialog open={showNautobotDataDialog} onOpenChange={setShowNautobotDataDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Nautobot Device Details</DialogTitle>
+            <DialogDescription>
+              Complete device information from Nautobot
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto">
+            {nautobotData && (
+              <div className="space-y-4">
+                {/* Device Overview */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                      <Label className="text-xs text-blue-600 font-semibold">Device Name</Label>
+                      <p className="text-sm font-medium mt-1">{nautobotData.name || 'N/A'}</p>
+                    </div>
+                    {nautobotData.primary_ip4 && (
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                        <Label className="text-xs text-green-600 font-semibold">Primary IPv4</Label>
+                        <p className="text-sm font-medium mt-1">{nautobotData.primary_ip4.address || 'N/A'}</p>
+                      </div>
+                    )}
+                    {nautobotData.role && (
+                      <div className="p-3 bg-purple-50 border border-purple-200 rounded-md">
+                        <Label className="text-xs text-purple-600 font-semibold">Role</Label>
+                        <p className="text-sm font-medium mt-1">{nautobotData.role.name || 'N/A'}</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    {nautobotData.device_type && (
+                      <div className="p-3 bg-orange-50 border border-orange-200 rounded-md">
+                        <Label className="text-xs text-orange-600 font-semibold">Device Type</Label>
+                        <p className="text-sm font-medium mt-1">{nautobotData.device_type.model || 'N/A'}</p>
+                        {nautobotData.device_type.manufacturer && (
+                          <p className="text-xs text-gray-600 mt-1">{nautobotData.device_type.manufacturer.name}</p>
+                        )}
+                      </div>
+                    )}
+                    {nautobotData.platform && (
+                      <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-md">
+                        <Label className="text-xs text-indigo-600 font-semibold">Platform</Label>
+                        <p className="text-sm font-medium mt-1">{nautobotData.platform.name || 'N/A'}</p>
+                      </div>
+                    )}
+                    {nautobotData.status && (
+                      <div className="p-3 bg-teal-50 border border-teal-200 rounded-md">
+                        <Label className="text-xs text-teal-600 font-semibold">Status</Label>
+                        <p className="text-sm font-medium mt-1">{nautobotData.status.name || 'N/A'}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Location */}
+                {nautobotData.location && (
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+                    <Label className="text-xs text-gray-600 font-semibold">Location</Label>
+                    <p className="text-sm font-medium mt-1">
+                      {nautobotData.location.name}
+                      {nautobotData.location.parent && ` (${nautobotData.location.parent.name})`}
+                    </p>
+                  </div>
+                )}
+
+                {/* Serial & Asset Tag */}
+                {(nautobotData.serial || nautobotData.asset_tag) && (
+                  <div className="grid grid-cols-2 gap-4">
+                    {nautobotData.serial && (
+                      <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+                        <Label className="text-xs text-gray-600 font-semibold">Serial Number</Label>
+                        <p className="text-sm font-medium mt-1">{nautobotData.serial}</p>
+                      </div>
+                    )}
+                    {nautobotData.asset_tag && (
+                      <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+                        <Label className="text-xs text-gray-600 font-semibold">Asset Tag</Label>
+                        <p className="text-sm font-medium mt-1">{nautobotData.asset_tag}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Config Context */}
+                {nautobotData.config_context && Object.keys(nautobotData.config_context).length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Config Context</Label>
+                    <pre className="p-3 bg-gray-900 text-green-400 text-xs font-mono rounded-md overflow-x-auto max-h-60 overflow-y-auto">
+                      {JSON.stringify(nautobotData.config_context, null, 2)}
+                    </pre>
+                  </div>
+                )}
+
+                {/* Tags */}
+                {nautobotData.tags && nautobotData.tags.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Tags</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {nautobotData.tags.map((tag: any) => (
+                        <Badge key={tag.id} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                          {tag.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Full JSON Data */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Full Device Data (JSON)</Label>
+                  <pre className="p-3 bg-gray-900 text-green-400 text-xs font-mono rounded-md overflow-x-auto max-h-96 overflow-y-auto">
+                    {JSON.stringify(nautobotData, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end pt-4 border-t">
+            <Button onClick={() => setShowNautobotDataDialog(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Error Dialog */}
+      <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <XCircle className="h-5 w-5" />
+              {errorDetails?.title || 'Error'}
+            </DialogTitle>
+            <DialogDescription>
+              {errorDetails?.message}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {errorDetails?.details && errorDetails.details.length > 0 && (
+              <div className="space-y-2 p-4 bg-red-50 border border-red-200 rounded-md">
+                <Label className="text-sm font-semibold text-red-900">Details:</Label>
+                <ul className="space-y-1 text-sm text-red-800">
+                  {errorDetails.details.map((detail, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <span className="text-red-600 mt-0.5">•</span>
+                      <span className="flex-1 font-mono">{detail}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-900">
+                <strong>Tip:</strong> Make sure all variables used in the template are either:
+              </p>
+              <ul className="mt-2 space-y-1 text-sm text-blue-800 ml-4">
+                <li>• Provided in the "Variables" section above</li>
+                <li>• Available from Nautobot context (enable "Use Nautobot Context")</li>
+                <li>• Part of the standard variables (user_variables, nautobot)</li>
+              </ul>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowErrorDialog(false)
+                  console.log('Full error details:', errorDetails)
+                }}
+              >
+                View in Console
+              </Button>
+              <Button onClick={() => setShowErrorDialog(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -23,6 +23,8 @@ from models.templates import (
     TemplateUpdateRequest,
     ImportableTemplateInfo,
     TemplateScanImportResponse,
+    TemplateRenderRequest,
+    TemplateRenderResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -37,22 +39,36 @@ async def list_templates(
     active_only: bool = True,
     current_user: dict = Depends(verify_admin_token),
 ) -> TemplateListResponse:
-    """List all templates with optional filtering."""
+    """List all templates with optional filtering.
+
+    Returns global templates and user's private templates.
+    """
     try:
         from template_manager import template_manager
 
+        logger.info(f"DEBUG: API list_templates - current_user dict: {current_user}")
+        username = current_user.get("username")  # Get username from current_user
+        logger.info(f"DEBUG: API list_templates - extracted username: {username}")
+
         if search:
-            templates = template_manager.search_templates(search, search_content=True)
+            logger.info(f"DEBUG: API list_templates - using search with username={username}")
+            templates = template_manager.search_templates(
+                search, search_content=True, username=username
+            )
         else:
+            logger.info(f"DEBUG: API list_templates - calling list_templates with username={username}")
             templates = template_manager.list_templates(
-                category=category, source=source, active_only=active_only
+                category=category, source=source, active_only=active_only, username=username
             )
 
         # Convert to response models
+        logger.info(f"DEBUG: API list_templates - received {len(templates)} templates from manager")
         template_responses = []
         for template in templates:
+            logger.info(f"DEBUG: API list_templates - converting template id={template['id']}, name={template['name']}, scope={template.get('scope')}")
             template_responses.append(TemplateResponse(**template))
 
+        logger.info(f"DEBUG: API list_templates - returning {len(template_responses)} templates to frontend")
         return TemplateListResponse(
             templates=template_responses, total=len(template_responses)
         )
@@ -174,7 +190,12 @@ async def create_template(
     try:
         from template_manager import template_manager
 
+        username = current_user.get("username")  # Get username from current_user
+
         template_data = template_request.dict(exclude_unset=True)
+        # Set created_by to the current user
+        template_data["created_by"] = username
+
         template_id = template_manager.create_template(template_data)
 
         if template_id:
@@ -261,6 +282,8 @@ async def update_template(
         from template_manager import template_manager
 
         template_data = template_request.dict(exclude_unset=True, exclude_none=True)
+        logger.info(f"DEBUG: API update_template({template_id}) - received data: {template_data}")
+        logger.info(f"DEBUG: API update_template({template_id}) - scope in data: {template_data.get('scope')}")
         success = template_manager.update_template(template_id, template_data)
 
         if success:
@@ -426,11 +449,14 @@ async def upload_template_file(
     category: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
     template_type: str = Form("jinja2"),
+    scope: str = Form("global"),
     current_user: dict = Depends(verify_admin_token),
 ) -> TemplateResponse:
     """Upload a template file."""
     try:
         from template_manager import template_manager
+
+        username = current_user.get("username")  # Get username from current_user
 
         # Read file content
         content = await file.read()
@@ -453,6 +479,8 @@ async def upload_template_file(
             "description": description,
             "content": content_str,
             "filename": file.filename,
+            "created_by": username,
+            "scope": scope,
         }
 
         template_id = template_manager.create_template(template_data)
@@ -632,6 +660,8 @@ async def import_templates(
                             "content": template_content,
                             "description": properties.get("description", ""),
                             "filename": os.path.basename(template_path),
+                            "created_by": current_user.get("username"),
+                            "scope": "global",  # Imported templates are global by default
                         }
 
                         print(
@@ -697,6 +727,8 @@ async def import_templates(
                             "category": inferred_category,
                             "content": file_data["content"],
                             "filename": file_data["filename"],
+                            "created_by": current_user.get("username"),
+                            "scope": "global",  # Imported templates are global by default
                         }
                         if not import_request.overwrite_existing:
                             existing = template_manager.get_template_by_name(
@@ -739,6 +771,83 @@ async def import_templates(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to import templates: {str(e)}",
+        )
+
+
+@router.post("/render", response_model=TemplateRenderResponse)
+async def render_template_endpoint(
+    render_request: TemplateRenderRequest,
+    current_user: dict = Depends(verify_admin_token),
+) -> TemplateRenderResponse:
+    """
+    Render a template with category-specific logic.
+
+    Supports both saved templates (via template_id) and ad-hoc templates (via template_content).
+    Can include Nautobot device context and user-provided variables.
+    """
+    try:
+        from services.render_service import render_service
+        from template_manager import template_manager
+
+        # Validate: must provide either template_id or template_content
+        if not render_request.template_id and not render_request.template_content:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Must provide either template_id or template_content",
+            )
+
+        # Get template content
+        if render_request.template_id:
+            # Fetch template from database
+            template = template_manager.get_template(render_request.template_id)
+            if not template:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Template with ID {render_request.template_id} not found",
+                )
+            template_content = template_manager.get_template_content(
+                render_request.template_id
+            )
+            if not template_content:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Template content for ID {render_request.template_id} not found",
+                )
+            # Use template's category if not provided in request
+            category = render_request.category or template.get("category", "generic")
+        else:
+            # Use provided template content
+            template_content = render_request.template_content
+            category = render_request.category
+
+        # Render the template
+        result = await render_service.render_template(
+            template_content=template_content,
+            category=category,
+            device_id=render_request.device_id,
+            user_variables=render_request.user_variables or {},
+            use_nautobot_context=render_request.use_nautobot_context,
+        )
+
+        return TemplateRenderResponse(
+            rendered_content=result["rendered_content"],
+            variables_used=result["variables_used"],
+            context_data=result.get("context_data"),
+            warnings=result.get("warnings", []),
+        )
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.error(f"Error rendering template: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to render template: {str(e)}",
         )
 
 
