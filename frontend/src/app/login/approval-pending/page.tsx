@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Clock, Mail, Shield, CheckCircle2, ArrowLeft } from 'lucide-react'
+import { Clock, Mail, Shield, CheckCircle2, ArrowLeft, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
-export default function ApprovalPendingPage() {
+function ApprovalPendingContent() {
   const searchParams = useSearchParams()
   const [username, setUsername] = useState<string>('')
   const [email, setEmail] = useState<string>('')
@@ -133,5 +133,21 @@ export default function ApprovalPendingPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function ApprovalPendingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <Card className="w-full max-w-2xl">
+          <CardContent className="pt-6 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <ApprovalPendingContent />
+    </Suspense>
   )
 }

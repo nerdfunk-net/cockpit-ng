@@ -21,12 +21,19 @@ interface SchedulerStatus {
   error?: string
 }
 
+interface JobResult {
+  job_id?: string
+  status?: string
+  message?: string
+  error?: string
+}
+
 export default function APSchedulerTest() {
   const { apiCall } = useApi()
   const [isStarting, setIsStarting] = useState(false)
   const [schedulerStatus, setSchedulerStatus] = useState<SchedulerStatus | null>(null)
   const [loading, setLoading] = useState(false)
-  const [lastResult, setLastResult] = useState<unknown>(null)
+  const [lastResult, setLastResult] = useState<JobResult | null>(null)
 
   // Auto-refresh scheduler status every 5 seconds
   useEffect(() => {
@@ -49,7 +56,7 @@ export default function APSchedulerTest() {
       const result = await apiCall('jobs/compare-devices', {
         method: 'POST'
       })
-      setLastResult(result)
+      setLastResult(result as JobResult)
       console.log('Started APScheduler job:', result)
       await refreshStatus()
     } catch (error) {

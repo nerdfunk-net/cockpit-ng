@@ -400,7 +400,7 @@ export default function ConfigsViewPage() {
       showMessage(`Loading ${configFile.name}...`, 'info')
 
       // Get the repository details to find the default branch
-      const repoResponse = await apiCall(`git-repositories/${selectedRepository}`)
+      const repoResponse = await apiCall(`git-repositories/${selectedRepository}`) as { branch?: string }
       if (!repoResponse?.branch) {
         showMessage('Could not determine repository branch', 'error')
         return

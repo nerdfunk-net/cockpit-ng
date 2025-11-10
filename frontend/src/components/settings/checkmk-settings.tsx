@@ -154,7 +154,7 @@ export default function CheckMKSettingsForm() {
       const [checkmkResponse, snmpResponse] = await Promise.all([
         apiCall('config/checkmk.yaml'),
         apiCall('config/snmp_mapping.yaml')
-      ])
+      ]) as [{ success?: boolean; data?: string }, { success?: boolean; data?: string }]
       
       if (checkmkResponse.success) {
         setCheckmkYaml(checkmkResponse.data || '')
@@ -176,7 +176,7 @@ export default function CheckMKSettingsForm() {
       const response = await apiCall(`config/${filename}`, {
         method: 'POST',
         body: { content }
-      })
+      }) as { success?: boolean; message?: string }
       
       if (response.success) {
         showMessage(`${filename} saved successfully!`, 'success')

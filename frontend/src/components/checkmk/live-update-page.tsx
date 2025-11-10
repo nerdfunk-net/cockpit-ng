@@ -69,7 +69,7 @@ interface DiffResult {
 }
 
 // Helper function to render config comparison
-const renderConfigComparison = (nautobot: { attributes?: Record<string, unknown> }, checkmk: { attributes?: Record<string, unknown> }, ignoredAttributes: string[] = []) => {
+const renderConfigComparison = (nautobot: { attributes?: Record<string, unknown> } | null, checkmk: { attributes?: Record<string, unknown> } | null, ignoredAttributes: string[] = []) => {
   const allKeys = new Set([
     ...Object.keys(nautobot?.attributes || {}),
     ...Object.keys(checkmk?.attributes || {})

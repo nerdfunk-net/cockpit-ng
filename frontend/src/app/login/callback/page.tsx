@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuthStore } from '@/lib/auth-store'
 import { Heart, AlertCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export default function OIDCCallbackPage() {
+function OIDCCallbackContent() {
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing')
   const [error, setError] = useState('')
   const router = useRouter()
@@ -178,5 +178,21 @@ export default function OIDCCallbackPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function OIDCCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <OIDCCallbackContent />
+    </Suspense>
   )
 }
