@@ -9,7 +9,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from core.auth import verify_admin_token
+from core.auth import verify_admin_token, verify_token
 from models.git_repositories import (
     GitRepositoryRequest,
     GitRepositoryResponse,
@@ -33,7 +33,7 @@ router = APIRouter(prefix="/api/git-repositories", tags=["git-repositories"])
 async def get_repositories(
     category: Optional[str] = None,
     active_only: bool = False,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ):
     """Get all git repositories."""
     try:

@@ -61,7 +61,7 @@ def delete_credential(cred_id: int) -> dict:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/{cred_id}/password", dependencies=[Depends(verify_admin_token)])
+@router.get("/{cred_id}/password", dependencies=[Depends(verify_token)])
 def get_credential_password(cred_id: int) -> dict:
     """Get the decrypted password for a credential."""
     try:
