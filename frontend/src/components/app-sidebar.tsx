@@ -81,6 +81,7 @@ const navigationSections: NavSection[] = [
     items: [
       { label: 'Inventory', href: '/ansible-inventory', icon: List },
       { label: 'Netmiko', href: '/netmiko', icon: Terminal },
+      { label: 'Templates', href: '/automation/templates', icon: FileText },
     ],
   },
   {

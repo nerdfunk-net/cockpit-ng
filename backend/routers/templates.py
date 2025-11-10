@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 import os
 
-from core.auth import verify_admin_token
+from core.auth import verify_admin_token, verify_token
 from models.templates import (
     TemplateRequest,
     TemplateResponse,
@@ -37,7 +37,7 @@ async def list_templates(
     source: Optional[str] = None,
     search: Optional[str] = None,
     active_only: bool = True,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ) -> TemplateListResponse:
     """List all templates with optional filtering.
 
@@ -83,7 +83,7 @@ async def list_templates(
 
 @router.get("/categories")
 async def get_template_categories(
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ) -> List[str]:
     """Get all template categories."""
     try:
@@ -184,9 +184,9 @@ async def scan_import_directory(
 
 @router.post("", response_model=TemplateResponse)
 async def create_template(
-    template_request: TemplateRequest, current_user: dict = Depends(verify_admin_token)
+    template_request: TemplateRequest, current_user: dict = Depends(verify_token)
 ) -> TemplateResponse:
-    """Create a new template."""
+    """Create a new template. All authenticated users can create templates."""
     try:
         from template_manager import template_manager
 
@@ -219,7 +219,7 @@ async def create_template(
 
 @router.get("/{template_id}", response_model=TemplateResponse)
 async def get_template(
-    template_id: int, current_user: dict = Depends(verify_admin_token)
+    template_id: int, current_user: dict = Depends(verify_token)
 ) -> TemplateResponse:
     """Get a specific template by ID."""
     try:
@@ -275,11 +275,29 @@ async def get_template_by_name(
 async def update_template(
     template_id: int,
     template_request: TemplateUpdateRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ) -> TemplateResponse:
-    """Update an existing template."""
+    """Update an existing template. Users can update their own templates, admins can update all."""
     try:
         from template_manager import template_manager
+
+        # Get the existing template to check ownership
+        existing_template = template_manager.get_template(template_id)
+        if not existing_template:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Template with ID {template_id} not found"
+            )
+
+        # Check permissions: users can only edit their own templates, admins can edit all
+        username = current_user.get("username")
+        is_admin = current_user.get("permissions", 0) & 16  # Check admin permission bit
+
+        if not is_admin and existing_template.get("created_by") != username:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only edit your own templates"
+            )
 
         template_data = template_request.dict(exclude_unset=True, exclude_none=True)
         logger.info(f"DEBUG: API update_template({template_id}) - received data: {template_data}")
@@ -777,7 +795,7 @@ async def import_templates(
 @router.post("/render", response_model=TemplateRenderResponse)
 async def render_template_endpoint(
     render_request: TemplateRenderRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(verify_token),
 ) -> TemplateRenderResponse:
     """
     Render a template with category-specific logic.

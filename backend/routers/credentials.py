@@ -3,14 +3,14 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List
 
-from core.auth import verify_admin_token
+from core.auth import verify_admin_token, verify_token
 from models.credentials import CredentialCreate, CredentialUpdate
 import credentials_manager as cred_mgr
 
 router = APIRouter(prefix="/api/credentials", tags=["credentials"])
 
 
-@router.get("", dependencies=[Depends(verify_admin_token)])
+@router.get("", dependencies=[Depends(verify_token)])
 def list_credentials(include_expired: bool = Query(False)) -> List[dict]:
     return cred_mgr.list_credentials(include_expired=include_expired, source="general")
 
