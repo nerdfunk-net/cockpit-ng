@@ -20,7 +20,41 @@ class NetmikoService:
     def __init__(self):
         """Initialize the service."""
         self.executor = ThreadPoolExecutor(max_workers=10)
+        self.active_sessions: Set[str] = set()  # Track active session IDs
         self.cancelled_sessions: Set[str] = set()  # Track cancelled session IDs
+
+    def register_session(self, session_id: str) -> None:
+        """
+        Register a new execution session.
+
+        Args:
+            session_id: The session ID to register
+        """
+        self.active_sessions.add(session_id)
+        logger.info(f"Session {session_id} registered")
+
+    def unregister_session(self, session_id: str) -> None:
+        """
+        Unregister an execution session.
+
+        Args:
+            session_id: The session ID to unregister
+        """
+        self.active_sessions.discard(session_id)
+        self.cancelled_sessions.discard(session_id)
+        logger.info(f"Session {session_id} unregistered")
+
+    def is_session_cancelled(self, session_id: str) -> bool:
+        """
+        Check if a session has been cancelled.
+
+        Args:
+            session_id: The session ID to check
+
+        Returns:
+            True if the session has been cancelled, False otherwise
+        """
+        return session_id in self.cancelled_sessions
 
     def cancel_session(self, session_id: str) -> None:
         """
@@ -166,6 +200,51 @@ class NetmikoService:
             error_msg = f"Unexpected error: {str(e)}"
             logger.error(f"Error executing commands on {host_ip}: {e}")
             result["error"] = error_msg
+
+        return result
+
+    async def execute_commands_on_device(
+        self,
+        device_ip: str,
+        platform: str,
+        username: str,
+        password: str,
+        commands: List[str],
+        enable_mode: bool = False,
+        write_config: bool = False,
+        session_id: str | None = None,
+    ) -> Dict[str, Any]:
+        """
+        Execute commands on a single device.
+
+        Args:
+            device_ip: IP address of the device
+            platform: Device platform (e.g., 'cisco_ios', 'arista_eos')
+            username: SSH username
+            password: SSH password
+            commands: List of commands to execute
+            enable_mode: Whether to enter config mode
+            write_config: Whether to save config after successful execution
+            session_id: Optional session ID for cancellation support
+
+        Returns:
+            Result dictionary with success, output, and error fields
+        """
+        device_type = self._map_platform_to_device_type(platform)
+
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            self.executor,
+            self._connect_and_execute,
+            device_ip,
+            device_type,
+            username,
+            password,
+            commands,
+            enable_mode,
+            write_config,
+            session_id,
+        )
 
         return result
 

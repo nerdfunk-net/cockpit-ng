@@ -96,6 +96,7 @@ export default function NetmikoPage() {
   const [commands, setCommands] = useState('')
   const [enableMode, setEnableMode] = useState(false)
   const [writeConfig, setWriteConfig] = useState(false)
+  const [dryRun, setDryRun] = useState(false)
 
   // Execution state
   const [isExecuting, setIsExecuting] = useState(false)
@@ -404,14 +405,23 @@ export default function NetmikoPage() {
       return
     }
 
-    if (!commands.trim()) {
-      alert('Please enter at least one command.')
-      return
+    // Check if using template or commands
+    const usingTemplate = selectedTemplateId !== 'none'
+
+    if (!usingTemplate) {
+      // Command mode validation
+      if (!commands.trim()) {
+        alert('Please enter at least one command.')
+        return
+      }
     }
 
-    if (!username.trim() || !password.trim()) {
-      alert('Please enter username and password.')
-      return
+    // Validate credentials (not required for dry run with template)
+    if (!usingTemplate || !dryRun) {
+      if (!username.trim() || !password.trim()) {
+        alert('Please enter username and password.')
+        return
+      }
     }
 
     // Generate session ID upfront so Cancel button is available
@@ -422,67 +432,134 @@ export default function NetmikoPage() {
     setExecutionResults([])
 
     try {
-      // Parse commands (split by newline, filter empty lines)
-      const commandList = commands
-        .split('\n')
-        .map(cmd => cmd.trim())
-        .filter(cmd => cmd.length > 0)
+      if (usingTemplate) {
+        // Template execution mode
+        const varsObject: Record<string, string> = {}
+        variables.forEach(v => {
+          if (v.name && validateVariableName(v.name)) {
+            varsObject[v.name] = v.value
+          }
+        })
 
-      if (commandList.length === 0) {
-        alert('Please enter valid commands.')
-        setIsExecuting(false)
-        setCurrentSessionId(null)
-        return
-      }
+        // Determine if we should send template_id or template_content
+        const useEditedContent = selectedTemplate && editedTemplateContent !== selectedTemplate.content
 
-      // Prepare device list for backend
-      const devices = selectedDevices.map(device => ({
-        ip: device.primary_ip4 || '',
-        name: device.name,
-        platform: device.platform || 'cisco_ios'
-      }))
+        const requestBody: any = {
+          device_ids: selectedDevices.map(d => d.id),
+          user_variables: varsObject,
+          use_nautobot_context: useNautobotContext,
+          dry_run: dryRun,
+          enable_mode: enableMode,
+          write_config: writeConfig,
+          session_id: sessionId
+        }
 
-      // Prepare request body based on credential source
-      const requestBody: any = {
-        devices,
-        commands: commandList,
-        enable_mode: enableMode,
-        write_config: writeConfig,
-        session_id: sessionId  // Send session ID to backend
-      }
+        if (useEditedContent) {
+          requestBody.template_content = editedTemplateContent
+        } else {
+          requestBody.template_id = selectedTemplate?.id
+        }
 
-      if (selectedCredentialId === 'manual') {
-        // Use manual credentials
-        requestBody.username = username
-        requestBody.password = password
+        if (selectedCredentialId === 'manual') {
+          requestBody.username = username
+          requestBody.password = password
+        } else if (selectedCredentialId !== 'manual') {
+          requestBody.credential_id = parseInt(selectedCredentialId)
+        }
+
+        const response = await apiCall<{
+          session_id: string
+          results: Array<{
+            device_id: string
+            device_name: string
+            success: boolean
+            rendered_content?: string
+            output?: string
+            error?: string
+          }>
+          summary: Record<string, number>
+        }>('netmiko/execute-template', {
+          method: 'POST',
+          body: requestBody
+        })
+
+        // Convert template results to command results format for display
+        const convertedResults: CommandResult[] = response.results.map(r => ({
+          device: r.device_name,
+          success: r.success,
+          output: dryRun
+            ? `[DRY RUN - Rendered Commands]\n\n${r.rendered_content || ''}`
+            : r.output || r.rendered_content || '',
+          error: r.error
+        }))
+
+        setExecutionResults(convertedResults)
+        setExecutionSummary({
+          total: response.summary.total,
+          successful: dryRun ? response.summary.rendered_successfully : (response.summary.executed_successfully || 0),
+          failed: response.summary.failed,
+          cancelled: response.summary.cancelled || 0
+        })
+        setShowResults(true)
       } else {
-        // Use stored credential
-        requestBody.credential_id = parseInt(selectedCredentialId)
+        // Command execution mode (original logic)
+        const commandList = commands
+          .split('\n')
+          .map(cmd => cmd.trim())
+          .filter(cmd => cmd.length > 0)
+
+        if (commandList.length === 0) {
+          alert('Please enter valid commands.')
+          setIsExecuting(false)
+          setCurrentSessionId(null)
+          return
+        }
+
+        const devices = selectedDevices.map(device => ({
+          ip: device.primary_ip4 || '',
+          name: device.name,
+          platform: device.platform || 'cisco_ios'
+        }))
+
+        const requestBody: any = {
+          devices,
+          commands: commandList,
+          enable_mode: enableMode,
+          write_config: writeConfig,
+          session_id: sessionId
+        }
+
+        if (selectedCredentialId === 'manual') {
+          requestBody.username = username
+          requestBody.password = password
+        } else {
+          requestBody.credential_id = parseInt(selectedCredentialId)
+        }
+
+        const response = await apiCall<{
+          session_id: string
+          results: CommandResult[]
+          total_devices: number
+          successful: number
+          failed: number
+          cancelled: number
+        }>('netmiko/execute-commands', {
+          method: 'POST',
+          body: requestBody
+        })
+
+        setExecutionResults(response.results)
+        setExecutionSummary({
+          total: response.total_devices,
+          successful: response.successful,
+          failed: response.failed,
+          cancelled: response.cancelled
+        })
+        setShowResults(true)
       }
-
-      const response = await apiCall<{
-        session_id: string
-        results: CommandResult[]
-        total_devices: number
-        successful: number
-        failed: number
-        cancelled: number
-      }>('netmiko/execute-commands', {
-        method: 'POST',
-        body: requestBody
-      })
-
-      setExecutionResults(response.results)
-      setExecutionSummary({
-        total: response.total_devices,
-        successful: response.successful,
-        failed: response.failed,
-        cancelled: response.cancelled
-      })
-      setShowResults(true)
     } catch (error) {
-      console.error('Error executing commands:', error)
-      alert('Error executing commands: ' + (error as Error).message)
+      console.error('Error executing:', error)
+      alert('Error executing: ' + (error as Error).message)
     } finally {
       setIsExecuting(false)
       setCurrentSessionId(null)
@@ -546,7 +623,7 @@ export default function NetmikoPage() {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="devices">Devices</TabsTrigger>
           <TabsTrigger value="variables">Variables & Templates</TabsTrigger>
-          <TabsTrigger value="commands">Commands</TabsTrigger>
+          <TabsTrigger value="commands">Execute</TabsTrigger>
         </TabsList>
 
         {/* Devices Tab */}
@@ -900,21 +977,36 @@ export default function NetmikoPage() {
                   </div>
                 )}
 
-                {/* Commands Input */}
-                <div className="space-y-2">
-                  <Label htmlFor="commands">Commands (one per line) *</Label>
-                  <Textarea
-                    id="commands"
-                    placeholder="Enter commands, one per line. Example:&#10;show version&#10;show ip interface brief&#10;show running-config"
-                    value={commands}
-                    onChange={(e) => setCommands(e.target.value)}
-                    rows={8}
-                    className="font-mono text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
-                  />
-                  <p className="text-xs text-gray-500">
-                    Tip: Enter one command per line. Commands will be executed in sequence.
-                  </p>
-                </div>
+                {/* Commands Input or Template Info */}
+                {selectedTemplateId === 'none' ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="commands">Commands (one per line) *</Label>
+                    <Textarea
+                      id="commands"
+                      placeholder="Enter commands, one per line. Example:&#10;show version&#10;show ip interface brief&#10;show running-config"
+                      value={commands}
+                      onChange={(e) => setCommands(e.target.value)}
+                      rows={8}
+                      className="font-mono text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Tip: Enter one command per line. Commands will be executed in sequence.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-blue-50 border-2 border-blue-300 rounded-md space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                      <Label className="text-blue-900 font-semibold">Using Template</Label>
+                    </div>
+                    <p className="text-sm text-blue-800">
+                      Commands will be generated from the selected template: <strong>{selectedTemplate?.name}</strong>
+                    </p>
+                    <p className="text-xs text-blue-700">
+                      The template will be rendered for each device using Nautobot context and your defined variables.
+                    </p>
+                  </div>
+                )}
 
                 {/* Enable Mode Toggle */}
                 <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-md">
@@ -950,11 +1042,36 @@ export default function NetmikoPage() {
                   </div>
                 </div>
 
+                {/* Dry Run Toggle (only for templates) */}
+                {selectedTemplateId !== 'none' && (
+                  <div className="flex items-center space-x-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <Switch
+                      id="dry-run"
+                      checked={dryRun}
+                      onCheckedChange={setDryRun}
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor="dry-run" className="font-medium cursor-pointer text-yellow-900">
+                        Dry Run (render only, do not execute)
+                      </Label>
+                      <p className="text-xs text-yellow-800 mt-1">
+                        When enabled, the template will be rendered for each device but NOT executed. Use this to preview generated commands.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Execute and Cancel Buttons */}
                 <div className="flex justify-start gap-3 pt-2">
                   <Button
                     onClick={handleExecuteCommands}
-                    disabled={isExecuting || selectedDevices.length === 0 || !commands.trim() || !username.trim() || !password.trim()}
+                    disabled={
+                      isExecuting ||
+                      selectedDevices.length === 0 ||
+                      (selectedTemplateId === 'none' && !commands.trim()) ||
+                      (selectedTemplateId === 'none' && (!username.trim() || !password.trim())) ||
+                      (selectedTemplateId !== 'none' && !dryRun && (!username.trim() || !password.trim()))
+                    }
                     className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white border-0 px-6"
                     size="lg"
                   >
@@ -966,7 +1083,11 @@ export default function NetmikoPage() {
                     ) : (
                       <>
                         <Play className="h-5 w-5" />
-                        <span>Run Commands</span>
+                        <span>
+                          {selectedTemplateId !== 'none'
+                            ? (dryRun ? 'Render Template (Dry Run)' : 'Execute Template')
+                            : 'Run Commands'}
+                        </span>
                       </>
                     )}
                   </Button>
