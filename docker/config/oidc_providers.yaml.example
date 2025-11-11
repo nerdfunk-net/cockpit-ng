@@ -1,0 +1,157 @@
+# ============================================================================
+# OIDC Providers Configuration Example for Docker
+# ============================================================================
+# This file configures OpenID Connect (OIDC) Single Sign-On providers.
+# Copy this file to 'oidc_providers.yaml' in the same directory and customize.
+#
+# Docker Mount: This directory is mounted at /app/config in the container
+# Documentation: See ../OIDC_SETUP.md for detailed setup instructions
+# ============================================================================
+
+providers:
+  
+  # ---------------------------------------------------------------------------
+  # Example: Corporate Keycloak Instance
+  # ---------------------------------------------------------------------------
+  corporate:
+    enabled: false                  # Set to true to enable this provider
+    
+    # Display Settings (shown on login page)
+    name: "Corporate SSO"
+    description: "Sign in with your company account"
+    icon: "building"                # Options: building, flask, users, shield
+    display_order: 1
+    
+    # OpenID Connect Configuration
+    # For Keycloak: http(s)://{host}:{port}/realms/{realm}/.well-known/openid-configuration
+    discovery_url: "https://keycloak.example.com/realms/production/.well-known/openid-configuration"
+    
+    # OAuth Client Credentials (from your OIDC provider)
+    client_id: "cockpit"
+    client_secret: "your-client-secret-here"
+    
+    # Redirect URI - Update with your actual frontend URL
+    # For Docker: Use the URL where your users access the application
+    redirect_uri: "http://localhost:3000/login/callback"
+    
+    # OAuth Scopes
+    scopes:
+      - openid
+      - profile
+      - email
+      - offline_access
+    
+    # Claim Mapping - Map OIDC token claims to user attributes
+    claim_mappings:
+      username: "preferred_username"
+      email: "email"
+      name: "name"
+      groups: "groups"
+    
+    # User Provisioning
+    auto_provision: true            # Create users automatically on first login
+    default_role: "user"            # Role for new users: "user" or "admin"
+    username_prefix: ""
+
+  # ---------------------------------------------------------------------------
+  # Example: Development Environment
+  # ---------------------------------------------------------------------------
+  development:
+    enabled: false
+    name: "Development SSO"
+    description: "For testing and development"
+    icon: "flask"
+    display_order: 2
+    
+    discovery_url: "http://host.docker.internal:7080/realms/dev/.well-known/openid-configuration"
+    client_id: "cockpit-dev"
+    client_secret: "dev-secret-change-me"
+    redirect_uri: "http://localhost:3000/login/callback"
+    
+    scopes:
+      - openid
+      - profile
+      - email
+    
+    claim_mappings:
+      username: "preferred_username"
+      email: "email"
+      name: "name"
+    
+    auto_provision: true
+    default_role: "admin"
+    username_prefix: "dev_"
+
+# ============================================================================
+# GLOBAL OIDC SETTINGS
+# ============================================================================
+global:
+  # Allow traditional username/password login alongside SSO
+  allow_traditional_login: true
+  
+  # Session timeout for OIDC users (minutes)
+  session_timeout: 480
+  
+  # Auto-redirect to OIDC if only one provider is enabled
+  auto_redirect_single_provider: false
+
+# ============================================================================
+# DOCKER-SPECIFIC NOTES
+# ============================================================================
+#
+# 1. NETWORK CONNECTIVITY:
+#    - discovery_url must be accessible from the Docker container
+#    - For local Keycloak: Use "host.docker.internal" instead of "localhost"
+#    - Example: http://host.docker.internal:7080/realms/...
+#
+# 2. REDIRECT URI:
+#    - Must match what users type in their browser
+#    - Common values:
+#      * Local: http://localhost:3000/login/callback
+#      * Production: https://cockpit.example.com/login/callback
+#    - Must be configured in your OIDC provider's allowed redirects
+#
+# 3. APPLY CHANGES:
+#    - After editing this file, restart the container:
+#      docker compose restart
+#    - No need to rebuild the image
+#
+# 4. KEYCLOAK SETUP FOR DOCKER:
+#    a) Create a new client in Keycloak
+#    b) Set "Valid Redirect URIs" to your redirect_uri
+#    c) Enable "Client authentication" (confidential client)
+#    d) Copy the client secret from Credentials tab
+#    e) Ensure Keycloak is accessible from Docker container
+#
+# 5. TESTING CONNECTION:
+#    - Test discovery URL from inside container:
+#      docker compose exec cockpit-ng curl {discovery_url}
+#    - Should return JSON with OIDC configuration
+#
+# 6. TROUBLESHOOTING:
+#    - View logs: docker compose logs -f
+#    - Check backend logs for OIDC errors
+#    - Verify network connectivity between container and OIDC provider
+#    - Ensure redirect_uri matches exactly in both files
+#
+# ============================================================================
+# QUICK START
+# ============================================================================
+#
+# 1. Copy this file:
+#    cp oidc_providers.yaml.example oidc_providers.yaml
+#
+# 2. Edit oidc_providers.yaml:
+#    - Set enabled: true for one provider
+#    - Update discovery_url (use host.docker.internal for local Keycloak)
+#    - Update client_id and client_secret
+#    - Update redirect_uri to match your frontend URL
+#
+# 3. Restart container:
+#    docker compose restart
+#
+# 4. Test login:
+#    - Go to http://localhost:3000/login
+#    - You should see your SSO provider button
+#
+# ============================================================================

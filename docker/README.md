@@ -80,6 +80,37 @@ export NO_PROXY=localhost,127.0.0.1,.local
 docker compose logs
 ```
 
+## ⚙️ Configuration
+
+### OIDC/SSO Authentication
+Cockpit-NG supports OpenID Connect (OIDC) for Single Sign-On. The configuration is managed through YAML files:
+
+1. **Setup OIDC Configuration**:
+   ```bash
+   # Create or edit the OIDC providers config
+   cd docker
+   mkdir -p config
+   cp ../config/oidc_providers.yaml.example config/oidc_providers.yaml
+   # Edit config/oidc_providers.yaml with your provider details
+   ```
+
+2. **Volume Mounting**: The `docker-compose.yml` automatically mounts `./docker/config/` to `/app/config/` inside the container, allowing you to:
+   - Edit `oidc_providers.yaml` on the host
+   - Changes take effect after container restart
+   - No need to rebuild the image
+
+3. **Configuration Files**:
+   - `oidc_providers.yaml` - OIDC/SSO provider configuration
+   - `checkmk.yaml` - Check_MK integration settings
+   - `snmp_mapping.yaml` - SNMP mapping configuration
+
+4. **Apply Changes**:
+   ```bash
+   docker compose restart
+   ```
+
+For detailed OIDC setup instructions, see `../OIDC_SETUP.md` in the project root.
+
 ## 📋 Troubleshooting
 
 1. **Build Issues**: Check `DOCKER.md` for common problems

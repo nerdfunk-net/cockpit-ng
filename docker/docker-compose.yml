@@ -22,8 +22,12 @@ services:
     volumes:
       # Persist data directory
       - cockpit_data:/app/data
-      # Optional: Mount external configuration
-      - ./config:/app/config:ro
+      # Mount configuration directory for OIDC and other configs (read-write for user editing)
+      - ./config:/app/config
+      # Note: The config directory should contain:
+      #   - oidc_providers.yaml (for SSO/OIDC configuration)
+      #   - checkmk.yaml (for Check_MK settings)
+      #   - snmp_mapping.yaml (for SNMP mappings)
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health", "||", "curl", "-f", "http://localhost:8000/health"]
