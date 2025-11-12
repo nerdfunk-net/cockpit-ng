@@ -3,7 +3,6 @@ Tests for MCP server.
 """
 
 import pytest
-import json
 from fastapi.testclient import TestClient
 from unittest.mock import patch, AsyncMock
 import sys

@@ -5,10 +5,15 @@ OIDC authentication router for OpenID Connect integration with multiple provider
 from __future__ import annotations
 import logging
 from datetime import timedelta
-from typing import List, Union
-from fastapi import APIRouter, HTTPException, status, Query, Response
-from fastapi.responses import RedirectResponse
-from models.auth import LoginResponse, OIDCCallbackRequest, OIDCProvidersResponse, OIDCProvider, ApprovalPendingResponse
+from typing import Union
+from fastapi import APIRouter, HTTPException, status, Query
+from models.auth import (
+    LoginResponse,
+    OIDCCallbackRequest,
+    OIDCProvidersResponse,
+    OIDCProvider,
+    ApprovalPendingResponse,
+)
 from core.auth import create_access_token
 from services.oidc_service import oidc_service
 from settings_manager import settings_manager
@@ -36,7 +41,7 @@ async def get_oidc_providers():
 
     try:
         enabled_providers = settings_manager.get_enabled_oidc_providers()
-        
+
         # Return only user-facing information
         providers_list = [
             OIDCProvider(
@@ -48,10 +53,12 @@ async def get_oidc_providers():
             )
             for provider in enabled_providers
         ]
-        
+
         return OIDCProvidersResponse(
             providers=providers_list,
-            allow_traditional_login=settings_manager.get_oidc_global_settings().get("allow_traditional_login", True),
+            allow_traditional_login=settings_manager.get_oidc_global_settings().get(
+                "allow_traditional_login", True
+            ),
         )
 
     except Exception as e:
@@ -65,7 +72,7 @@ async def get_oidc_providers():
 @router.get("/{provider_id}/login")
 async def oidc_login(
     provider_id: str,
-    redirect_uri: str = Query(None, description="Optional redirect URI override")
+    redirect_uri: str = Query(None, description="Optional redirect URI override"),
 ):
     """
     Initiate OIDC authentication flow with specific provider.
@@ -80,7 +87,7 @@ async def oidc_login(
     try:
         config = await oidc_service.get_oidc_config(provider_id)
         state = oidc_service.generate_state()
-        
+
         # Include provider_id in state for callback validation
         state_with_provider = f"{provider_id}:{state}"
 
@@ -105,7 +112,10 @@ async def oidc_login(
         )
 
 
-@router.post("/{provider_id}/callback", response_model=Union[LoginResponse, ApprovalPendingResponse])
+@router.post(
+    "/{provider_id}/callback",
+    response_model=Union[LoginResponse, ApprovalPendingResponse],
+)
 async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
     """
     Handle OIDC callback with authorization code for specific provider.
@@ -130,7 +140,9 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
                     )
 
         # Exchange authorization code for tokens
-        tokens = await oidc_service.exchange_code_for_tokens(provider_id, callback_data.code)
+        tokens = await oidc_service.exchange_code_for_tokens(
+            provider_id, callback_data.code
+        )
 
         id_token = tokens.get("id_token")
         if not id_token:
@@ -143,16 +155,20 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
         claims = await oidc_service.verify_id_token(provider_id, id_token)
 
         # Extract user data from claims
-        logger.debug(f"[OIDC Debug] Extracting user data from claims...")
+        logger.debug("[OIDC Debug] Extracting user data from claims...")
         user_data = oidc_service.extract_user_data(provider_id, claims)
 
         # Provision or get existing user
-        logger.debug(f"[OIDC Debug] Provisioning or retrieving user...")
-        user, is_new_user = await oidc_service.provision_or_get_user(provider_id, user_data)
+        logger.debug("[OIDC Debug] Provisioning or retrieving user...")
+        user, is_new_user = await oidc_service.provision_or_get_user(
+            provider_id, user_data
+        )
 
         # Check if user is inactive (new users awaiting approval)
         if not user.get("is_active", True):
-            logger.info(f"[OIDC Debug] User '{user['username']}' created but awaiting admin approval from provider '{provider_id}'")
+            logger.info(
+                f"[OIDC Debug] User '{user['username']}' created but awaiting admin approval from provider '{provider_id}'"
+            )
             return ApprovalPendingResponse(
                 status="approval_pending",
                 message="Your account has been created but requires administrator approval before you can access the system.",
@@ -162,7 +178,7 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
             )
 
         # Create internal JWT token
-        logger.debug(f"[OIDC Debug] Creating application access token...")
+        logger.debug("[OIDC Debug] Creating application access token...")
         access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
         access_token = create_access_token(
             data={
@@ -174,8 +190,10 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
             },
             expires_delta=access_token_expires,
         )
-        
-        logger.info(f"[OIDC Debug] User '{user['username']}' authenticated successfully via OIDC provider '{provider_id}'")
+
+        logger.info(
+            f"[OIDC Debug] User '{user['username']}' authenticated successfully via OIDC provider '{provider_id}'"
+        )
 
         return LoginResponse(
             access_token=access_token,

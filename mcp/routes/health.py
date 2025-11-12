@@ -31,15 +31,15 @@ async def health_check():
     """Health check endpoint."""
     current_time = datetime.utcnow()
     uptime = str(current_time - server_start_time)
-    
+
     checks = {
         "server": "ok",
         "cockpit_api": "unknown",
         "config": "ok"
     }
-    
+
     overall_status = "ok"
-    
+
     # Check Cockpit API connectivity
     try:
         async with CockpitAPIClient() as client:
@@ -62,14 +62,7 @@ async def health_check():
         checks["cockpit_api"] = "error"
         overall_status = "degraded"
         logger.error(f"Cockpit API health check error: {e}")
-    
-    # Return appropriate status code
-    status_code = status.HTTP_200_OK
-    if overall_status == "error":
-        status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-    elif overall_status == "degraded":
-        status_code = status.HTTP_200_OK  # Still operational but with warnings
-    
+
     return HealthResponse(
         status=overall_status,
         timestamp=current_time.isoformat(),

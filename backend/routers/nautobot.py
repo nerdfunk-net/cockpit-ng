@@ -4,10 +4,10 @@ Nautobot router for device management and API interactions.
 
 from __future__ import annotations
 import logging
-from typing import Any, Dict, Optional
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from core.auth import verify_admin_token, verify_token
+from core.auth import verify_token
 from models.nautobot import (
     CheckIPRequest,
     DeviceOnboardRequest,
@@ -622,9 +622,7 @@ async def search_devices(
 
 
 @router.post("/check-ip")
-async def check_ip(
-    request: CheckIPRequest, current_user: dict = Depends(verify_token)
-):
+async def check_ip(request: CheckIPRequest, current_user: dict = Depends(verify_token)):
     """Check if an IP address exists in Nautobot."""
     try:
         # Use GraphQL query as specified in nautobot_access.md
@@ -1282,9 +1280,7 @@ async def get_nautobot_custom_field_choices(
 
 
 @router.get("/jobs/{job_id}/results")
-async def get_job_results(
-    job_id: str, current_user: dict = Depends(verify_token)
-):
+async def get_job_results(job_id: str, current_user: dict = Depends(verify_token)):
     """Get job results from Nautobot."""
     try:
         result = await nautobot_service.rest_request(f"extras/job-results/{job_id}/")

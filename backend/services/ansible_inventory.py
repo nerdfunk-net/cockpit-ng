@@ -1036,7 +1036,12 @@ class AnsibleInventoryService:
         from datetime import datetime
         from pathlib import Path
         from git_repositories_manager import GitRepositoryManager
-        from services.git_utils import open_or_clone, resolve_git_credentials, add_auth_to_url, set_ssl_env
+        from services.git_utils import (
+            open_or_clone,
+            resolve_git_credentials,
+            add_auth_to_url,
+            set_ssl_env,
+        )
 
         try:
             logger.info(f"Saving inventory '{name}' to repository {repository_id}")
@@ -1073,7 +1078,7 @@ class AnsibleInventoryService:
 
             # Create inventory file
             inventory_file = inventories_dir / f"{name}.json"
-            
+
             # Check if file exists to determine if this is an update
             is_update = inventory_file.exists()
 
@@ -1114,7 +1119,7 @@ class AnsibleInventoryService:
             commit_message = f"{action} inventory: {name}"
             if description:
                 commit_message += f"\n\n{description}"
-            
+
             logger.info(f"Committing changes with message: {commit_message}")
             repo.index.commit(commit_message)
 
@@ -1186,6 +1191,7 @@ class AnsibleInventoryService:
             # Check if repository has credentials configured for HTTPS URLs
             if repository.get("url", "").startswith("https://"):
                 from services.git_utils import resolve_git_credentials
+
                 username, token = resolve_git_credentials(repository)
                 if not token:
                     raise ValueError(
@@ -1199,7 +1205,7 @@ class AnsibleInventoryService:
 
             # Pull latest changes
             origin = repo.remotes.origin
-            origin.pull(repository.get('branch', 'main'))
+            origin.pull(repository.get("branch", "main"))
 
             # Read inventories directory
             inventories_dir = Path(repo.working_dir) / "inventories"
@@ -1211,7 +1217,7 @@ class AnsibleInventoryService:
             for inventory_file in inventories_dir.glob("*.json"):
                 try:
                     data = json.loads(inventory_file.read_text())
-                    
+
                     # Convert to SavedInventory model
                     inventory = SavedInventory(
                         name=data["name"],
@@ -1224,7 +1230,9 @@ class AnsibleInventoryService:
                     )
                     inventories.append(inventory)
                 except Exception as e:
-                    logger.warning(f"Error reading inventory file {inventory_file}: {e}")
+                    logger.warning(
+                        f"Error reading inventory file {inventory_file}: {e}"
+                    )
                     continue
 
             logger.info(f"Found {len(inventories)} inventories")
@@ -1271,6 +1279,7 @@ class AnsibleInventoryService:
             # Check if repository has credentials configured for HTTPS URLs
             if repository.get("url", "").startswith("https://"):
                 from services.git_utils import resolve_git_credentials
+
                 username, token = resolve_git_credentials(repository)
                 if not token:
                     raise ValueError(
@@ -1284,7 +1293,7 @@ class AnsibleInventoryService:
 
             # Pull latest changes
             origin = repo.remotes.origin
-            origin.pull(repository.get('branch', 'main'))
+            origin.pull(repository.get("branch", "main"))
 
             # Read inventory file
             inventory_file = Path(repo.working_dir) / "inventories" / f"{name}.json"

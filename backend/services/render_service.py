@@ -148,7 +148,11 @@ class RenderService:
                 variables = {"deviceId": device_id}
                 response = await nautobot_service.graphql_query(query, variables)
 
-                if not response or "data" not in response or not response["data"].get("device"):
+                if (
+                    not response
+                    or "data" not in response
+                    or not response["data"].get("device")
+                ):
                     raise ValueError(f"Device {device_id} not found in Nautobot")
 
                 context["nautobot"] = response["data"]["device"]
@@ -172,14 +176,9 @@ class RenderService:
         except UndefinedError as e:
             # Provide detailed error with available variables
             available_vars = list(context.keys())
-            error_details = {
-                "error": str(e),
-                "available_variables": available_vars,
-                "user_provided_variables": list((user_variables or {}).keys()),
-                "nautobot_context_enabled": use_nautobot_context,
-                "device_id": device_id
-            }
-            raise ValueError(f"Undefined variable in template: {str(e)}. Available variables: {', '.join(available_vars)}")
+            raise ValueError(
+                f"Undefined variable in template: {str(e)}. Available variables: {', '.join(available_vars)}"
+            )
         except TemplateError as e:
             raise ValueError(f"Template syntax error: {str(e)}")
 
@@ -309,7 +308,9 @@ class RenderService:
         except UndefinedError as e:
             # Provide detailed error with available variables
             available_vars = list(context.keys())
-            raise ValueError(f"Undefined variable in template: {str(e)}. Available variables: {', '.join(available_vars)}")
+            raise ValueError(
+                f"Undefined variable in template: {str(e)}. Available variables: {', '.join(available_vars)}"
+            )
         except TemplateError as e:
             raise ValueError(f"Template syntax error: {str(e)}")
 

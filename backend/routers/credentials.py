@@ -13,8 +13,10 @@ router = APIRouter(prefix="/api/credentials", tags=["credentials"])
 @router.get("", dependencies=[Depends(verify_token)])
 def list_credentials(
     include_expired: bool = Query(False),
-    source: Optional[str] = Query(None, description="Filter by source: 'general', 'private', or None for all"),
-    current_user: str = Depends(get_current_username)
+    source: Optional[str] = Query(
+        None, description="Filter by source: 'general', 'private', or None for all"
+    ),
+    current_user: str = Depends(get_current_username),
 ) -> List[dict]:
     """
     List credentials accessible to the current user.
@@ -25,17 +27,29 @@ def list_credentials(
     """
     if source == "general":
         # Return only general credentials
-        return cred_mgr.list_credentials(include_expired=include_expired, source="general")
+        return cred_mgr.list_credentials(
+            include_expired=include_expired, source="general"
+        )
     elif source == "private":
         # Return only user's private credentials
-        all_private = cred_mgr.list_credentials(include_expired=include_expired, source="private")
-        user_private = [cred for cred in all_private if cred.get("owner") == current_user]
+        all_private = cred_mgr.list_credentials(
+            include_expired=include_expired, source="private"
+        )
+        user_private = [
+            cred for cred in all_private if cred.get("owner") == current_user
+        ]
         return user_private
     else:
         # Return both general and user's private credentials
-        general_creds = cred_mgr.list_credentials(include_expired=include_expired, source="general")
-        all_private = cred_mgr.list_credentials(include_expired=include_expired, source="private")
-        user_private = [cred for cred in all_private if cred.get("owner") == current_user]
+        general_creds = cred_mgr.list_credentials(
+            include_expired=include_expired, source="general"
+        )
+        all_private = cred_mgr.list_credentials(
+            include_expired=include_expired, source="private"
+        )
+        user_private = [
+            cred for cred in all_private if cred.get("owner") == current_user
+        ]
         return general_creds + user_private
 
 

@@ -9,7 +9,6 @@ network scanning, and inventory synchronization.
 import os
 import sys
 import logging
-import asyncio
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
 import httpx
@@ -19,6 +18,7 @@ from dotenv import load_dotenv
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 from mcp.server.fastmcp import FastMCP
+from auth import get_current_user, get_api_key_from_env
 
 # Load environment variables
 load_dotenv()
@@ -155,9 +155,6 @@ class CockpitAPIClient:
         return await self._request("POST", path, **kwargs)
 
 
-# Import authentication
-from auth import get_current_user, get_api_key_from_env
-
 # Helper function to get API key from context
 def get_api_key_from_context() -> Optional[str]:
     """Extract API key from MCP context."""
@@ -250,9 +247,6 @@ async def backup_device_configuration(device_id: str) -> BackupResult:
     Args:
         device_id: Unique identifier of the device to backup
     """
-    api_key = get_api_key_from_context()
-    client = CockpitAPIClient(api_key)
-    
     try:
         # For now, return a placeholder since there's no specific backup endpoint
         # In a real implementation, this would integrate with the device management system
@@ -374,7 +368,6 @@ async def compare_configurations(
 
 if __name__ == "__main__":
     # Run the MCP server
-    import uvicorn
     
     # The MCP SDK handles the protocol implementation
     # We just need to run our server

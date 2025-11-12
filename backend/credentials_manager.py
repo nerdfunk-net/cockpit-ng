@@ -220,7 +220,11 @@ def update_credential(
         new_type = cred_type if cred_type is not None else row["type"]
         new_valid = valid_until if valid_until is not None else row["valid_until"]
         new_source = source if source is not None else row["source"]
-        new_owner = owner if owner is not None else (row["owner"] if "owner" in row.keys() else None)
+        new_owner = (
+            owner
+            if owner is not None
+            else (row["owner"] if "owner" in row.keys() else None)
+        )
         encrypted = row["password_encrypted"]
         if password:
             encrypted = encryption_service.encrypt(password)

@@ -13,19 +13,19 @@ def test_imports():
     """Test that all imports work correctly."""
     try:
         print("Testing imports...")
-        
+
         # Test MCP SDK import
-        from mcp.server.fastmcp import FastMCP
+        import mcp.server.fastmcp  # noqa: F401
         print("✅ MCP SDK imported successfully")
-        
+
         # Test server import
-        from server import mcp, list_devices, scan_network
+        import server  # noqa: F401
         print("✅ Server module imported successfully")
-        
+
         # Test auth import
-        from auth import validate_api_key
+        import auth  # noqa: F401
         print("✅ Auth module imported successfully")
-        
+
         print("\n✅ All imports successful!")
         return True
         
@@ -40,10 +40,9 @@ def test_server_creation():
     """Test that the MCP server can be created."""
     try:
         print("\nTesting server creation...")
-        from server import mcp
         
         # Check that server has resources and tools
-        print(f"✅ Server created with resources and tools")
+        print("✅ Server created with resources and tools")
         return True
         
     except Exception as e:

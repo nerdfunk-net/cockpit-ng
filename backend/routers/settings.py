@@ -538,7 +538,7 @@ async def get_nautobot_defaults(current_user: dict = Depends(verify_token)):
         from settings_manager import settings_manager
 
         defaults = settings_manager.get_nautobot_defaults()
-        
+
         return {"success": True, "data": defaults}
 
     except Exception as e:

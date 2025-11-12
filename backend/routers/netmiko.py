@@ -20,36 +20,31 @@ class DeviceCommand(BaseModel):
 
     devices: List[Dict[str, str]] = Field(
         ...,
-        description="List of devices with 'ip' or 'primary_ip4' and 'platform' fields"
+        description="List of devices with 'ip' or 'primary_ip4' and 'platform' fields",
     )
     commands: List[str] = Field(
-        ...,
-        description="List of commands to execute",
-        min_items=1
+        ..., description="List of commands to execute", min_items=1
     )
     credential_id: int | None = Field(
-        default=None,
-        description="ID of stored credential to use (optional)"
+        default=None, description="ID of stored credential to use (optional)"
     )
     username: str | None = Field(
         default=None,
-        description="SSH username (required if credential_id not provided)"
+        description="SSH username (required if credential_id not provided)",
     )
     password: str | None = Field(
         default=None,
-        description="SSH password (required if credential_id not provided)"
+        description="SSH password (required if credential_id not provided)",
     )
     enable_mode: bool = Field(
-        default=False,
-        description="Whether to enter config mode after login"
+        default=False, description="Whether to enter config mode after login"
     )
     write_config: bool = Field(
         default=False,
-        description="Whether to save config to startup after successful execution"
+        description="Whether to save config to startup after successful execution",
     )
     session_id: str | None = Field(
-        default=None,
-        description="Optional session ID for cancellation support"
+        default=None, description="Optional session ID for cancellation support"
     )
 
 
@@ -77,53 +72,47 @@ class TemplateExecutionRequest(BaseModel):
     """Model for template execution request."""
 
     device_ids: List[str] = Field(
-        ...,
-        description="List of device UUIDs from Nautobot",
-        min_items=1
+        ..., description="List of device UUIDs from Nautobot", min_items=1
     )
     template_id: int | None = Field(
         default=None,
-        description="ID of saved template (either this or template_content required)"
+        description="ID of saved template (either this or template_content required)",
     )
     template_content: str | None = Field(
         default=None,
-        description="Ad-hoc template content (either this or template_id required)"
+        description="Ad-hoc template content (either this or template_id required)",
     )
     user_variables: Dict[str, Any] = Field(
         default_factory=dict,
-        description="User-defined variables for template rendering"
+        description="User-defined variables for template rendering",
     )
     use_nautobot_context: bool = Field(
         default=True,
-        description="Whether to include Nautobot device data in template context"
+        description="Whether to include Nautobot device data in template context",
     )
     dry_run: bool = Field(
-        default=False,
-        description="If true, only render templates without executing"
+        default=False, description="If true, only render templates without executing"
     )
     credential_id: int | None = Field(
-        default=None,
-        description="ID of stored credential to use (optional)"
+        default=None, description="ID of stored credential to use (optional)"
     )
     username: str | None = Field(
         default=None,
-        description="SSH username (required if credential_id not provided and not dry_run)"
+        description="SSH username (required if credential_id not provided and not dry_run)",
     )
     password: str | None = Field(
         default=None,
-        description="SSH password (required if credential_id not provided and not dry_run)"
+        description="SSH password (required if credential_id not provided and not dry_run)",
     )
     enable_mode: bool = Field(
-        default=False,
-        description="Whether to enter enable mode after login"
+        default=False, description="Whether to enter enable mode after login"
     )
     write_config: bool = Field(
         default=False,
-        description="Whether to save config to startup after successful execution"
+        description="Whether to save config to startup after successful execution",
     )
     session_id: str | None = Field(
-        default=None,
-        description="Optional session ID for cancellation support"
+        default=None, description="Optional session ID for cancellation support"
     )
 
 
@@ -150,8 +139,7 @@ class TemplateExecutionResponse(BaseModel):
 
 @router.post("/execute-commands", response_model=CommandExecutionResponse)
 async def execute_commands(
-    request: DeviceCommand,
-    current_user: str = Depends(get_current_username)
+    request: DeviceCommand, current_user: str = Depends(get_current_username)
 ) -> CommandExecutionResponse:
     """
     Execute commands on multiple network devices using Netmiko.
@@ -179,14 +167,12 @@ async def execute_commands(
         # Validate inputs
         if not request.devices:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No devices provided"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="No devices provided"
             )
 
         if not request.commands:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No commands provided"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="No commands provided"
             )
 
         # Get credentials - either from stored credential or manual entry
@@ -200,23 +186,31 @@ async def execute_commands(
 
             try:
                 # Get credential details - include both general and user's private credentials
-                general_creds = cred_mgr.list_credentials(include_expired=False, source="general")
-                private_creds = cred_mgr.list_credentials(include_expired=False, source="private")
-                user_private = [c for c in private_creds if c.get("owner") == current_user]
+                general_creds = cred_mgr.list_credentials(
+                    include_expired=False, source="general"
+                )
+                private_creds = cred_mgr.list_credentials(
+                    include_expired=False, source="private"
+                )
+                user_private = [
+                    c for c in private_creds if c.get("owner") == current_user
+                ]
                 credentials = general_creds + user_private
 
-                credential = next((c for c in credentials if c["id"] == request.credential_id), None)
+                credential = next(
+                    (c for c in credentials if c["id"] == request.credential_id), None
+                )
 
                 if not credential:
                     raise HTTPException(
                         status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Credential with ID {request.credential_id} not found or not accessible"
+                        detail=f"Credential with ID {request.credential_id} not found or not accessible",
                     )
 
                 if credential["type"] != "ssh":
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Credential must be of type 'ssh', got '{credential['type']}'"
+                        detail=f"Credential must be of type 'ssh', got '{credential['type']}'",
                     )
 
                 # Get decrypted password
@@ -226,7 +220,7 @@ async def execute_commands(
                 if not password:
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail="Failed to decrypt credential password"
+                        detail="Failed to decrypt credential password",
                     )
 
             except HTTPException:
@@ -235,14 +229,14 @@ async def execute_commands(
                 logger.error(f"Error loading stored credential: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Failed to load stored credential: {str(e)}"
+                    detail=f"Failed to load stored credential: {str(e)}",
                 )
         else:
             # Use manual credentials
             if not username or not password:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Username and password are required when not using stored credentials"
+                    detail="Username and password are required when not using stored credentials",
                 )
 
         # Execute commands on all devices
@@ -253,7 +247,7 @@ async def execute_commands(
             password=password,
             enable_mode=request.enable_mode,
             write_config=request.write_config,
-            session_id=request.session_id
+            session_id=request.session_id,
         )
 
         # Convert results to response model
@@ -262,7 +256,7 @@ async def execute_commands(
                 device=r["device"],
                 success=r["success"],
                 output=r["output"],
-                error=r.get("error")
+                error=r.get("error"),
             )
             for r in results
         ]
@@ -283,7 +277,7 @@ async def execute_commands(
             total_devices=len(results),
             successful=successful,
             failed=failed,
-            cancelled=cancelled
+            cancelled=cancelled,
         )
 
     except HTTPException:
@@ -292,13 +286,13 @@ async def execute_commands(
         logger.error(f"Error executing commands: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to execute commands: {str(e)}"
+            detail=f"Failed to execute commands: {str(e)}",
         )
 
 
 @router.get("/supported-platforms")
 async def get_supported_platforms(
-    current_user: str = Depends(get_current_username)
+    current_user: str = Depends(get_current_username),
 ) -> Dict[str, List[str]]:
     """
     Get list of supported network device platforms.
@@ -325,23 +319,19 @@ async def get_supported_platforms(
             "HP Comware",
         ]
 
-        return {
-            "platforms": platforms,
-            "total": len(platforms)
-        }
+        return {"platforms": platforms, "total": len(platforms)}
 
     except Exception as e:
         logger.error(f"Error getting supported platforms: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get supported platforms: {str(e)}"
+            detail=f"Failed to get supported platforms: {str(e)}",
         )
 
 
 @router.post("/cancel/{session_id}")
 async def cancel_execution(
-    session_id: str,
-    current_user: str = Depends(get_current_username)
+    session_id: str, current_user: str = Depends(get_current_username)
 ) -> Dict[str, Any]:
     """
     Cancel an ongoing command execution session.
@@ -362,20 +352,19 @@ async def cancel_execution(
         return {
             "success": True,
             "message": f"Session {session_id} marked for cancellation",
-            "session_id": session_id
+            "session_id": session_id,
         }
     except Exception as e:
         logger.error(f"Error cancelling session {session_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to cancel session: {str(e)}"
+            detail=f"Failed to cancel session: {str(e)}",
         )
 
 
 @router.post("/execute-template", response_model=TemplateExecutionResponse)
 async def execute_template(
-    request: TemplateExecutionRequest,
-    current_user: str = Depends(get_current_username)
+    request: TemplateExecutionRequest, current_user: str = Depends(get_current_username)
 ) -> TemplateExecutionResponse:
     """
     Execute a template on multiple network devices.
@@ -407,14 +396,13 @@ async def execute_template(
         # Validate inputs
         if not request.device_ids:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No devices provided"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="No devices provided"
             )
 
         if not request.template_id and not request.template_content:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Either template_id or template_content must be provided"
+                detail="Either template_id or template_content must be provided",
             )
 
         # Get template content
@@ -423,13 +411,15 @@ async def execute_template(
             if not template:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Template with ID {request.template_id} not found"
+                    detail=f"Template with ID {request.template_id} not found",
                 )
-            template_content = template_manager.get_template_content(request.template_id)
+            template_content = template_manager.get_template_content(
+                request.template_id
+            )
             if not template_content:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Template content for ID {request.template_id} not found"
+                    detail=f"Template content for ID {request.template_id} not found",
                 )
         else:
             template_content = request.template_content
@@ -448,23 +438,32 @@ async def execute_template(
 
                 try:
                     # Get credential details - include both general and user's private credentials
-                    general_creds = cred_mgr.list_credentials(include_expired=False, source="general")
-                    private_creds = cred_mgr.list_credentials(include_expired=False, source="private")
-                    user_private = [c for c in private_creds if c.get("owner") == current_user]
+                    general_creds = cred_mgr.list_credentials(
+                        include_expired=False, source="general"
+                    )
+                    private_creds = cred_mgr.list_credentials(
+                        include_expired=False, source="private"
+                    )
+                    user_private = [
+                        c for c in private_creds if c.get("owner") == current_user
+                    ]
                     credentials = general_creds + user_private
 
-                    credential = next((c for c in credentials if c["id"] == request.credential_id), None)
+                    credential = next(
+                        (c for c in credentials if c["id"] == request.credential_id),
+                        None,
+                    )
 
                     if not credential:
                         raise HTTPException(
                             status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"Credential with ID {request.credential_id} not found or not accessible"
+                            detail=f"Credential with ID {request.credential_id} not found or not accessible",
                         )
 
                     if credential["type"] != "ssh":
                         raise HTTPException(
                             status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"Credential must be of type 'ssh', got '{credential['type']}'"
+                            detail=f"Credential must be of type 'ssh', got '{credential['type']}'",
                         )
 
                     username = credential["username"]
@@ -473,7 +472,7 @@ async def execute_template(
                     if not password:
                         raise HTTPException(
                             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Failed to decrypt credential password"
+                            detail="Failed to decrypt credential password",
                         )
 
                 except HTTPException:
@@ -481,12 +480,12 @@ async def execute_template(
                 except Exception as e:
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail=f"Error retrieving credential: {str(e)}"
+                        detail=f"Error retrieving credential: {str(e)}",
                     )
             elif not username or not password:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Either credential_id or both username and password must be provided for non-dry-run execution"
+                    detail="Either credential_id or both username and password must be provided for non-dry-run execution",
                 )
 
         # Generate session ID
@@ -507,12 +506,14 @@ async def execute_template(
             if netmiko_service.is_session_cancelled(session_id):
                 logger.info(f"Session {session_id} cancelled, stopping execution")
                 cancelled_count += 1
-                results.append(TemplateExecutionResult(
-                    device_id=device_id,
-                    device_name="Unknown",
-                    success=False,
-                    error="Execution cancelled by user"
-                ))
+                results.append(
+                    TemplateExecutionResult(
+                        device_id=device_id,
+                        device_name="Unknown",
+                        success=False,
+                        error="Execution cancelled by user",
+                    )
+                )
                 continue
 
             try:
@@ -533,16 +534,24 @@ async def execute_template(
                 }
                 """
                 variables = {"deviceId": device_id}
-                nautobot_response = await nautobot_service.graphql_query(query, variables)
+                nautobot_response = await nautobot_service.graphql_query(
+                    query, variables
+                )
 
-                if not nautobot_response or "data" not in nautobot_response or not nautobot_response["data"].get("device"):
+                if (
+                    not nautobot_response
+                    or "data" not in nautobot_response
+                    or not nautobot_response["data"].get("device")
+                ):
                     failed_count += 1
-                    results.append(TemplateExecutionResult(
-                        device_id=device_id,
-                        device_name="Unknown",
-                        success=False,
-                        error=f"Device {device_id} not found in Nautobot"
-                    ))
+                    results.append(
+                        TemplateExecutionResult(
+                            device_id=device_id,
+                            device_name="Unknown",
+                            success=False,
+                            error=f"Device {device_id} not found in Nautobot",
+                        )
+                    )
                     continue
 
                 device = nautobot_response["data"]["device"]
@@ -555,62 +564,76 @@ async def execute_template(
                         category="netmiko",
                         device_id=device_id,
                         user_variables=request.user_variables,
-                        use_nautobot_context=request.use_nautobot_context
+                        use_nautobot_context=request.use_nautobot_context,
                     )
                     rendered_content = render_result["rendered_content"]
                     rendered_count += 1
                 except Exception as render_error:
                     failed_count += 1
-                    results.append(TemplateExecutionResult(
-                        device_id=device_id,
-                        device_name=device_name,
-                        success=False,
-                        error=f"Template rendering failed: {str(render_error)}"
-                    ))
+                    results.append(
+                        TemplateExecutionResult(
+                            device_id=device_id,
+                            device_name=device_name,
+                            success=False,
+                            error=f"Template rendering failed: {str(render_error)}",
+                        )
+                    )
                     continue
 
                 # If dry run, just return rendered content
                 if request.dry_run:
-                    results.append(TemplateExecutionResult(
-                        device_id=device_id,
-                        device_name=device_name,
-                        success=True,
-                        rendered_content=rendered_content
-                    ))
+                    results.append(
+                        TemplateExecutionResult(
+                            device_id=device_id,
+                            device_name=device_name,
+                            success=True,
+                            rendered_content=rendered_content,
+                        )
+                    )
                     continue
 
                 # Execute rendered commands on device
                 try:
                     # Check for cancellation before execution
                     if netmiko_service.is_session_cancelled(session_id):
-                        logger.info(f"Session {session_id} cancelled before executing on {device_name}")
+                        logger.info(
+                            f"Session {session_id} cancelled before executing on {device_name}"
+                        )
                         cancelled_count += 1
-                        results.append(TemplateExecutionResult(
-                            device_id=device_id,
-                            device_name=device_name,
-                            success=False,
-                            rendered_content=rendered_content,
-                            error="Execution cancelled by user"
-                        ))
+                        results.append(
+                            TemplateExecutionResult(
+                                device_id=device_id,
+                                device_name=device_name,
+                                success=False,
+                                rendered_content=rendered_content,
+                                error="Execution cancelled by user",
+                            )
+                        )
                         continue
 
                     # Get device connection details
                     device_ip = device.get("primary_ip4", {}).get("host")
                     if not device_ip:
                         failed_count += 1
-                        results.append(TemplateExecutionResult(
-                            device_id=device_id,
-                            device_name=device_name,
-                            success=False,
-                            rendered_content=rendered_content,
-                            error="Device has no primary IP address"
-                        ))
+                        results.append(
+                            TemplateExecutionResult(
+                                device_id=device_id,
+                                device_name=device_name,
+                                success=False,
+                                rendered_content=rendered_content,
+                                error="Device has no primary IP address",
+                            )
+                        )
                         continue
 
                     platform = device.get("platform", {}).get("name", "cisco_ios")
 
                     # Convert rendered content to command list
-                    commands = [line.strip() for line in rendered_content.split('\n') if line.strip()]
+                    commands = [
+                        line.strip()
+                        for line in rendered_content.split("\n")
+                        if line.strip()
+                    ]
 
                     # Execute commands
                     execution_result = await netmiko_service.execute_commands_on_device(
@@ -621,46 +644,54 @@ async def execute_template(
                         commands=commands,
                         enable_mode=request.enable_mode,
                         write_config=request.write_config,
-                        session_id=session_id
+                        session_id=session_id,
                     )
 
                     if execution_result["success"]:
                         executed_count += 1
-                        results.append(TemplateExecutionResult(
-                            device_id=device_id,
-                            device_name=device_name,
-                            success=True,
-                            rendered_content=rendered_content,
-                            output=execution_result["output"]
-                        ))
+                        results.append(
+                            TemplateExecutionResult(
+                                device_id=device_id,
+                                device_name=device_name,
+                                success=True,
+                                rendered_content=rendered_content,
+                                output=execution_result["output"],
+                            )
+                        )
                     else:
                         failed_count += 1
-                        results.append(TemplateExecutionResult(
+                        results.append(
+                            TemplateExecutionResult(
+                                device_id=device_id,
+                                device_name=device_name,
+                                success=False,
+                                rendered_content=rendered_content,
+                                error=execution_result.get("error", "Execution failed"),
+                            )
+                        )
+
+                except Exception as exec_error:
+                    failed_count += 1
+                    results.append(
+                        TemplateExecutionResult(
                             device_id=device_id,
                             device_name=device_name,
                             success=False,
                             rendered_content=rendered_content,
-                            error=execution_result.get("error", "Execution failed")
-                        ))
-
-                except Exception as exec_error:
-                    failed_count += 1
-                    results.append(TemplateExecutionResult(
-                        device_id=device_id,
-                        device_name=device_name,
-                        success=False,
-                        rendered_content=rendered_content,
-                        error=f"Execution failed: {str(exec_error)}"
-                    ))
+                            error=f"Execution failed: {str(exec_error)}",
+                        )
+                    )
 
             except Exception as e:
                 failed_count += 1
-                results.append(TemplateExecutionResult(
-                    device_id=device_id,
-                    device_name="Unknown",
-                    success=False,
-                    error=f"Unexpected error: {str(e)}"
-                ))
+                results.append(
+                    TemplateExecutionResult(
+                        device_id=device_id,
+                        device_name="Unknown",
+                        success=False,
+                        error=f"Unexpected error: {str(e)}",
+                    )
+                )
 
         # Unregister session
         netmiko_service.unregister_session(session_id)
@@ -670,16 +701,14 @@ async def execute_template(
             "total": len(request.device_ids),
             "rendered_successfully": rendered_count,
             "failed": failed_count,
-            "cancelled": cancelled_count
+            "cancelled": cancelled_count,
         }
 
         if not request.dry_run:
             summary["executed_successfully"] = executed_count
 
         return TemplateExecutionResponse(
-            session_id=session_id,
-            results=results,
-            summary=summary
+            session_id=session_id, results=results, summary=summary
         )
 
     except HTTPException:
@@ -688,12 +717,14 @@ async def execute_template(
         logger.error(f"Error executing template: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Template execution failed: {str(e)}"
+            detail=f"Template execution failed: {str(e)}",
         )
 
 
 @router.get("/health")
-async def health_check(current_user: str = Depends(get_current_username)) -> Dict[str, str]:
+async def health_check(
+    current_user: str = Depends(get_current_username),
+) -> Dict[str, str]:
     """
     Health check endpoint for Netmiko service.
 
@@ -703,7 +734,4 @@ async def health_check(current_user: str = Depends(get_current_username)) -> Dic
     Returns:
         Health status
     """
-    return {
-        "status": "healthy",
-        "service": "netmiko"
-    }
+    return {"status": "healthy", "service": "netmiko"}

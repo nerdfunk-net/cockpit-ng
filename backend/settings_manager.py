@@ -292,15 +292,17 @@ class SettingsManager:
             # Migration: Add csv_delimiter column to nautobot_defaults if it doesn't exist
             cursor.execute("PRAGMA table_info(nautobot_defaults)")
             columns = [column[1] for column in cursor.fetchall()]
-            
-            if 'csv_delimiter' not in columns:
-                logger.info("Running migration: Adding csv_delimiter column to nautobot_defaults")
+
+            if "csv_delimiter" not in columns:
+                logger.info(
+                    "Running migration: Adding csv_delimiter column to nautobot_defaults"
+                )
                 cursor.execute("""
                     ALTER TABLE nautobot_defaults 
                     ADD COLUMN csv_delimiter TEXT DEFAULT ','
                 """)
                 logger.info("Migration completed: csv_delimiter column added")
-        
+
         except Exception as e:
             logger.error(f"Error running migrations: {e}")
 
@@ -987,7 +989,7 @@ class SettingsManager:
                     csv_delimiter = ","
                     if "csv_delimiter" in result.keys():
                         csv_delimiter = result["csv_delimiter"]
-                    
+
                     return {
                         "location": result["location"],
                         "platform": result["platform"],
@@ -1192,7 +1194,7 @@ class SettingsManager:
     # OIDC Provider Management
     def get_oidc_providers_config_path(self) -> str:
         """Get path to OIDC providers YAML configuration file"""
-        from config import settings as config_settings
+
         # Look for config in project root/config directory
         project_root = os.path.dirname(os.path.dirname(__file__))
         config_path = os.path.join(project_root, "config", "oidc_providers.yaml")
@@ -1201,28 +1203,30 @@ class SettingsManager:
     def load_oidc_providers(self) -> Dict[str, Any]:
         """Load OIDC providers configuration from YAML file"""
         config_path = self.get_oidc_providers_config_path()
-        
+
         if not os.path.exists(config_path):
             logger.warning(f"OIDC providers config not found at {config_path}")
             return {"providers": {}, "global": {"allow_traditional_login": True}}
-        
+
         try:
-            with open(config_path, 'r') as f:
+            with open(config_path, "r") as f:
                 config = yaml.safe_load(f)
-            
+
             if not config:
                 logger.warning("OIDC providers config is empty")
                 return {"providers": {}, "global": {"allow_traditional_login": True}}
-            
+
             # Validate structure
             if "providers" not in config:
                 config["providers"] = {}
             if "global" not in config:
                 config["global"] = {"allow_traditional_login": True}
-            
-            logger.info(f"Loaded {len(config.get('providers', {}))} OIDC provider(s) from config")
+
+            logger.info(
+                f"Loaded {len(config.get('providers', {}))} OIDC provider(s) from config"
+            )
             return config
-        
+
         except yaml.YAMLError as e:
             logger.error(f"Error parsing OIDC providers YAML: {e}")
             return {"providers": {}, "global": {"allow_traditional_login": True}}
@@ -1238,7 +1242,7 @@ class SettingsManager:
     def get_enabled_oidc_providers(self) -> List[Dict[str, Any]]:
         """Get list of enabled OIDC providers sorted by display_order"""
         providers = self.get_oidc_providers()
-        
+
         enabled_providers = []
         for provider_id, provider_config in providers.items():
             if provider_config.get("enabled", False):
@@ -1246,10 +1250,10 @@ class SettingsManager:
                 provider_data = provider_config.copy()
                 provider_data["provider_id"] = provider_id
                 enabled_providers.append(provider_data)
-        
+
         # Sort by display_order
         enabled_providers.sort(key=lambda p: p.get("display_order", 999))
-        
+
         logger.info(f"Found {len(enabled_providers)} enabled OIDC provider(s)")
         return enabled_providers
 
@@ -1257,13 +1261,13 @@ class SettingsManager:
         """Get specific OIDC provider configuration by ID"""
         providers = self.get_oidc_providers()
         provider = providers.get(provider_id)
-        
+
         if provider:
             # Add provider_id to the config
             provider_data = provider.copy()
             provider_data["provider_id"] = provider_id
             return provider_data
-        
+
         logger.warning(f"OIDC provider '{provider_id}' not found in config")
         return None
 

@@ -51,24 +51,37 @@ async def list_templates(
         logger.info(f"DEBUG: API list_templates - extracted username: {username}")
 
         if search:
-            logger.info(f"DEBUG: API list_templates - using search with username={username}")
+            logger.info(
+                f"DEBUG: API list_templates - using search with username={username}"
+            )
             templates = template_manager.search_templates(
                 search, search_content=True, username=username
             )
         else:
-            logger.info(f"DEBUG: API list_templates - calling list_templates with username={username}")
+            logger.info(
+                f"DEBUG: API list_templates - calling list_templates with username={username}"
+            )
             templates = template_manager.list_templates(
-                category=category, source=source, active_only=active_only, username=username
+                category=category,
+                source=source,
+                active_only=active_only,
+                username=username,
             )
 
         # Convert to response models
-        logger.info(f"DEBUG: API list_templates - received {len(templates)} templates from manager")
+        logger.info(
+            f"DEBUG: API list_templates - received {len(templates)} templates from manager"
+        )
         template_responses = []
         for template in templates:
-            logger.info(f"DEBUG: API list_templates - converting template id={template['id']}, name={template['name']}, scope={template.get('scope')}")
+            logger.info(
+                f"DEBUG: API list_templates - converting template id={template['id']}, name={template['name']}, scope={template.get('scope')}"
+            )
             template_responses.append(TemplateResponse(**template))
 
-        logger.info(f"DEBUG: API list_templates - returning {len(template_responses)} templates to frontend")
+        logger.info(
+            f"DEBUG: API list_templates - returning {len(template_responses)} templates to frontend"
+        )
         return TemplateListResponse(
             templates=template_responses, total=len(template_responses)
         )
@@ -286,7 +299,7 @@ async def update_template(
         if not existing_template:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Template with ID {template_id} not found"
+                detail=f"Template with ID {template_id} not found",
             )
 
         # Check permissions: users can only edit their own templates, admins can edit all
@@ -296,12 +309,16 @@ async def update_template(
         if not is_admin and existing_template.get("created_by") != username:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only edit your own templates"
+                detail="You can only edit your own templates",
             )
 
         template_data = template_request.dict(exclude_unset=True, exclude_none=True)
-        logger.info(f"DEBUG: API update_template({template_id}) - received data: {template_data}")
-        logger.info(f"DEBUG: API update_template({template_id}) - scope in data: {template_data.get('scope')}")
+        logger.info(
+            f"DEBUG: API update_template({template_id}) - received data: {template_data}"
+        )
+        logger.info(
+            f"DEBUG: API update_template({template_id}) - scope in data: {template_data.get('scope')}"
+        )
         success = template_manager.update_template(template_id, template_data)
 
         if success:

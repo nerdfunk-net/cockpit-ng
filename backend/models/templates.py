@@ -253,7 +253,8 @@ class TemplateRenderRequest(BaseModel):
         None, description="Template ID to render (either this or template_content)"
     )
     template_content: Optional[str] = Field(
-        None, description="Template content for ad-hoc rendering (either this or template_id)"
+        None,
+        description="Template content for ad-hoc rendering (either this or template_id)",
     )
     category: str = Field(
         ..., description="Template category (netmiko, inventory, onboarding, parser)"

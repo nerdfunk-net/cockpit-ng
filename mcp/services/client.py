@@ -93,7 +93,7 @@ class CockpitAPIClient:
             logger.error(f"HTTP error {e.response.status_code} for {method} {url}")
             try:
                 error_detail = e.response.json()
-            except:
+            except Exception:
                 error_detail = {"detail": e.response.text}
             raise HTTPError(e.response.status_code, error_detail)
             

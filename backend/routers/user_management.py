@@ -19,7 +19,6 @@ from services.user_management import (
     get_all_users,
     get_user_by_id,
     update_user,
-    delete_user,
     hard_delete_user,
     bulk_hard_delete_users,
     bulk_update_permissions,

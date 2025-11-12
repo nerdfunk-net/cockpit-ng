@@ -5,7 +5,6 @@ Tests for MCP server using official SDK.
 import pytest
 import os
 import sys
-import asyncio
 from unittest.mock import patch, AsyncMock, MagicMock
 
 # Add paths for imports
@@ -14,7 +13,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'backend'))
 
 # Import our server components
 from server import (
-    mcp, list_devices, get_device_config, scan_network, 
+    list_devices, get_device_config, scan_network, 
     backup_device_configuration, sync_inventory, onboard_device, 
     compare_configurations, CockpitAPIClient
 )

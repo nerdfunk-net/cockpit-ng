@@ -62,7 +62,9 @@ class Settings:
     oidc_discovery_url: str = os.getenv("OIDC_DISCOVERY_URL", "")
     oidc_client_id: str = os.getenv("OIDC_CLIENT_ID", "")
     oidc_client_secret: str = os.getenv("OIDC_CLIENT_SECRET", "")
-    oidc_redirect_uri: str = os.getenv("OIDC_REDIRECT_URI", "http://localhost:3000/login/callback")
+    oidc_redirect_uri: str = os.getenv(
+        "OIDC_REDIRECT_URI", "http://localhost:3000/login/callback"
+    )
     oidc_scopes: list = get_env_list("OIDC_SCOPES", ["openid", "profile", "email"])
     oidc_claim_username: str = os.getenv("OIDC_CLAIM_USERNAME", "preferred_username")
     oidc_claim_email: str = os.getenv("OIDC_CLAIM_EMAIL", "email")

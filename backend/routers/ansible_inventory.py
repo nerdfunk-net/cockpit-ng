@@ -221,7 +221,9 @@ async def get_field_values(
 
 
 @router.get("/git-repositories")
-async def get_git_repositories(current_user: str = Depends(get_current_username)) -> dict:
+async def get_git_repositories(
+    current_user: str = Depends(get_current_username),
+) -> dict:
     """
     Get Git repositories configured with category='inventory'.
     """
@@ -262,9 +264,14 @@ async def push_to_git(
     """
     try:
         from services.git_shared_utils import git_repo_manager
-        from services.git_utils import open_or_clone, resolve_git_credentials, add_auth_to_url, set_ssl_env
+        from services.git_utils import (
+            open_or_clone,
+            resolve_git_credentials,
+            add_auth_to_url,
+            set_ssl_env,
+        )
         from pathlib import Path
-        
+
         # Validate request
         operations = request.get("operations", [])
         template_name = request.get("template_name")
@@ -298,13 +305,19 @@ async def push_to_git(
             )
 
         # Generate inventory content
-        logger.info(f"Generating inventory for Git push to repository: {repository['name']}")
-        
+        logger.info(
+            f"Generating inventory for Git push to repository: {repository['name']}"
+        )
+
         # Convert operations to the expected format
         from models.ansible_inventory import LogicalOperation
+
         operation_objects = [LogicalOperation(**op) for op in operations]
-        
-        inventory_content, device_count = await ansible_inventory_service.generate_inventory(
+
+        (
+            inventory_content,
+            device_count,
+        ) = await ansible_inventory_service.generate_inventory(
             operation_objects, template_name, template_category
         )
 
@@ -329,10 +342,10 @@ async def push_to_git(
 
         # Push to remote
         logger.info(f"Pushing to remote branch: {repository.get('branch', 'main')}")
-        
+
         # Get credentials and set up auth
         username, token = resolve_git_credentials(repository)
-        
+
         # Configure push URL with auth
         if username and token:
             push_url = add_auth_to_url(repository["url"], username, token)
@@ -340,16 +353,20 @@ async def push_to_git(
             origin = repo.remotes.origin
             original_url = origin.url
             origin.set_url(push_url)
-        
+
         try:
             with set_ssl_env(repository):
-                origin.push(refspec=f"{repository.get('branch', 'main')}:{repository.get('branch', 'main')}")
+                origin.push(
+                    refspec=f"{repository.get('branch', 'main')}:{repository.get('branch', 'main')}"
+                )
         finally:
             # Restore original URL if we modified it
             if username and token:
                 origin.set_url(original_url)
 
-        logger.info(f"Successfully pushed inventory to Git repository: {repository['name']}")
+        logger.info(
+            f"Successfully pushed inventory to Git repository: {repository['name']}"
+        )
 
         return {
             "success": True,
@@ -386,7 +403,7 @@ def build_commit_message(operations: list, device_count: int) -> str:
             field = condition.get("field", "")
             operator = condition.get("operator", "equals")
             value = condition.get("value", "")
-            
+
             if op_type == "NOT":
                 conditions.append(f"NOT {field}={value}")
             elif operator == "contains":
@@ -399,7 +416,7 @@ def build_commit_message(operations: list, device_count: int) -> str:
         if len(conditions) > 3:
             condition_str += f", +{len(conditions) - 3} more"
         return f"Update inventory: {condition_str} ({device_count} devices)"
-    
+
     return f"Update inventory ({device_count} devices)"
 
 
@@ -412,14 +429,14 @@ async def save_inventory(
     """
     try:
         logger.info(f"Saving inventory '{request.name}' from user: {current_user}")
-        
+
         result = await ansible_inventory_service.save_inventory(
             name=request.name,
             description=request.description,
             conditions=request.conditions,
             repository_id=request.repository_id,
         )
-        
+
         return SaveInventoryResponse(
             success=True,
             message=result["message"],
@@ -446,10 +463,12 @@ async def list_inventories(
     List all saved inventories from a git repository.
     """
     try:
-        logger.info(f"Listing inventories from repository {repository_id} for user: {current_user}")
-        
+        logger.info(
+            f"Listing inventories from repository {repository_id} for user: {current_user}"
+        )
+
         inventories = await ansible_inventory_service.list_inventories(repository_id)
-        
+
         return ListInventoriesResponse(
             inventories=inventories,
             total=len(inventories),
@@ -471,25 +490,27 @@ async def list_inventories(
 async def load_inventory(
     inventory_name: str,
     repository_id: int,
-    current_user: str = Depends(get_current_username)
+    current_user: str = Depends(get_current_username),
 ) -> SavedInventory:
     """
     Load a saved inventory configuration from a git repository.
     """
     try:
-        logger.info(f"Loading inventory '{inventory_name}' from repository {repository_id} for user: {current_user}")
-        
+        logger.info(
+            f"Loading inventory '{inventory_name}' from repository {repository_id} for user: {current_user}"
+        )
+
         inventory = await ansible_inventory_service.load_inventory(
             name=inventory_name,
             repository_id=repository_id,
         )
-        
+
         if not inventory:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Inventory '{inventory_name}' not found",
             )
-        
+
         return inventory
     except HTTPException:
         raise

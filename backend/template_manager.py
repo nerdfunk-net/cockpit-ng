@@ -99,7 +99,9 @@ class TemplateManager:
                 try:
                     cursor.execute("SELECT scope FROM templates LIMIT 1")
                 except sqlite3.OperationalError:
-                    cursor.execute("ALTER TABLE templates ADD COLUMN scope TEXT DEFAULT 'global' CHECK(scope IN ('global', 'private'))")
+                    cursor.execute(
+                        "ALTER TABLE templates ADD COLUMN scope TEXT DEFAULT 'global' CHECK(scope IN ('global', 'private'))"
+                    )
                     logger.info("Added 'scope' column to templates table")
 
                 # Create template_versions table for history
@@ -269,7 +271,9 @@ class TemplateManager:
 
                 if row:
                     result = self._row_to_dict(row)
-                    logger.info(f"DEBUG: get_template({template_id}) - scope={result.get('scope')}, created_by={result.get('created_by')}")
+                    logger.info(
+                        f"DEBUG: get_template({template_id}) - scope={result.get('scope')}, created_by={result.get('created_by')}"
+                    )
                     return result
                 return None
 
@@ -298,7 +302,11 @@ class TemplateManager:
             return None
 
     def list_templates(
-        self, category: str = None, source: str = None, active_only: bool = True, username: str = None
+        self,
+        category: str = None,
+        source: str = None,
+        active_only: bool = True,
+        username: str = None,
     ) -> List[Dict[str, Any]]:
         """List templates with optional filtering.
 
@@ -321,11 +329,15 @@ class TemplateManager:
                 if username:
                     query += " AND (scope = 'global' OR (scope = 'private' AND created_by = ?))"
                     params.append(username)
-                    logger.info(f"DEBUG: list_templates - filtering for username={username}")
+                    logger.info(
+                        f"DEBUG: list_templates - filtering for username={username}"
+                    )
                 else:
                     # If no username provided, only show global templates
                     query += " AND scope = 'global'"
-                    logger.info(f"DEBUG: list_templates - no username, showing only global templates")
+                    logger.info(
+                        "DEBUG: list_templates - no username, showing only global templates"
+                    )
 
                 if category:
                     query += " AND category = ?"
@@ -346,7 +358,9 @@ class TemplateManager:
                 results = [self._row_to_dict(row) for row in rows]
                 logger.info(f"DEBUG: list_templates - found {len(results)} templates")
                 for template in results:
-                    logger.info(f"DEBUG: list_templates - template: id={template['id']}, name={template['name']}, scope={template.get('scope')}, created_by={template.get('created_by')}")
+                    logger.info(
+                        f"DEBUG: list_templates - template: id={template['id']}, name={template['name']}, scope={template.get('scope')}, created_by={template.get('created_by')}"
+                    )
 
                 return results
 
@@ -365,7 +379,9 @@ class TemplateManager:
                 if not current:
                     raise ValueError(f"Template with ID {template_id} not found")
 
-                logger.info(f"DEBUG: update_template({template_id}) - incoming scope={template_data.get('scope')}, current scope={current.get('scope')}")
+                logger.info(
+                    f"DEBUG: update_template({template_id}) - incoming scope={template_data.get('scope')}, current scope={current.get('scope')}"
+                )
 
                 # Prepare update data
                 now = datetime.now(timezone.utc).isoformat()
@@ -382,7 +398,9 @@ class TemplateManager:
 
                 # Get the scope to update
                 new_scope = template_data.get("scope", current.get("scope", "global"))
-                logger.info(f"DEBUG: update_template({template_id}) - will update scope to: {new_scope}")
+                logger.info(
+                    f"DEBUG: update_template({template_id}) - will update scope to: {new_scope}"
+                )
 
                 # Update template
                 cursor.execute(
@@ -417,7 +435,9 @@ class TemplateManager:
                     ),
                 )
 
-                logger.info(f"DEBUG: update_template({template_id}) - SQL UPDATE executed with scope={new_scope}")
+                logger.info(
+                    f"DEBUG: update_template({template_id}) - SQL UPDATE executed with scope={new_scope}"
+                )
 
                 # Save content to file if needed
                 if current["source"] in ["file", "webeditor"] and content:

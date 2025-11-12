@@ -94,7 +94,7 @@ class NetmikoService:
             Dictionary with execution results
         """
         # Extract host part if IP is in CIDR notation (e.g., 192.168.1.1/24)
-        host_ip = device_ip.split('/')[0] if '/' in device_ip else device_ip
+        host_ip = device_ip.split("/")[0] if "/" in device_ip else device_ip
 
         result = {
             "device": host_ip,
@@ -142,19 +142,21 @@ class NetmikoService:
                 else:
                     # Execute commands in exec mode, line by line
                     for idx, command in enumerate(commands, 1):
-                        logger.info(f"Executing command {idx}/{len(commands)} on {host_ip}: {command}")
+                        logger.info(
+                            f"Executing command {idx}/{len(commands)} on {host_ip}: {command}"
+                        )
 
                         # Send command and wait for prompt (Netmiko handles this)
                         cmd_output = connection.send_command(
                             command,
                             read_timeout=30,
-                            expect_string=None  # Auto-detect prompt
+                            expect_string=None,  # Auto-detect prompt
                         )
 
                         # Format output with separators
-                        output += f"\n{'='*60}\n"
+                        output += f"\n{'=' * 60}\n"
                         output += f"Command {idx}: {command}\n"
-                        output += f"{'='*60}\n"
+                        output += f"{'=' * 60}\n"
                         output += cmd_output + "\n"
 
                 # Save config if requested and execution was successful
@@ -164,24 +166,24 @@ class NetmikoService:
                         save_output = connection.send_command(
                             "copy running-config startup-config",
                             expect_string=r"Destination filename",
-                            read_timeout=30
+                            read_timeout=30,
                         )
                         # Confirm by pressing enter (send empty line)
                         save_output += connection.send_command(
-                            "\n",
-                            expect_string=None,
-                            read_timeout=30
+                            "\n", expect_string=None, read_timeout=30
                         )
-                        output += f"\n{'='*60}\n"
+                        output += f"\n{'=' * 60}\n"
                         output += "Save Config to Startup\n"
-                        output += f"{'='*60}\n"
+                        output += f"{'=' * 60}\n"
                         output += save_output + "\n"
                         logger.info(f"Config saved to startup on {host_ip}")
                     except Exception as save_error:
-                        logger.warning(f"Failed to save config on {host_ip}: {save_error}")
-                        output += f"\n{'='*60}\n"
+                        logger.warning(
+                            f"Failed to save config on {host_ip}: {save_error}"
+                        )
+                        output += f"\n{'=' * 60}\n"
                         output += "Save Config to Startup - WARNING\n"
-                        output += f"{'='*60}\n"
+                        output += f"{'=' * 60}\n"
                         output += f"Failed to save config: {str(save_error)}\n"
 
                 result["success"] = True
@@ -294,7 +296,9 @@ class NetmikoService:
             )
 
             if not device_ip:
-                logger.warning(f"Skipping device without IP: {device.get('name', 'Unknown')}")
+                logger.warning(
+                    f"Skipping device without IP: {device.get('name', 'Unknown')}"
+                )
                 continue
 
             # Run the synchronous netmiko operation in a thread pool
@@ -320,12 +324,15 @@ class NetmikoService:
         for i, result in enumerate(results):
             if isinstance(result, Exception):
                 logger.error(f"Task failed with exception: {result}")
-                processed_results.append({
-                    "device": devices[i].get("ip") or devices[i].get("primary_ip4", "Unknown"),
-                    "success": False,
-                    "output": "",
-                    "error": str(result),
-                })
+                processed_results.append(
+                    {
+                        "device": devices[i].get("ip")
+                        or devices[i].get("primary_ip4", "Unknown"),
+                        "success": False,
+                        "output": "",
+                        "error": str(result),
+                    }
+                )
             else:
                 processed_results.append(result)
 
