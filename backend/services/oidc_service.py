@@ -178,6 +178,9 @@ class OIDCService:
         config: OIDCConfig,
         state: str,
         redirect_uri: Optional[str] = None,
+        scopes_override: Optional[list] = None,
+        response_type_override: Optional[str] = None,
+        client_id_override: Optional[str] = None,
     ) -> str:
         """Generate the authorization URL for OIDC login."""
         # Get provider configuration
@@ -188,9 +191,18 @@ class OIDCService:
                 detail=f"OIDC provider '{provider_id}' not found",
             )
 
-        # Use provider-specific settings
-        client_id = provider_config.get("client_id", settings.oidc_client_id)
-        scopes = provider_config.get("scopes", settings.oidc_scopes)
+        # Use provider-specific settings or overrides (for testing)
+        client_id = (
+            client_id_override
+            if client_id_override
+            else provider_config.get("client_id", settings.oidc_client_id)
+        )
+        scopes = (
+            scopes_override
+            if scopes_override
+            else provider_config.get("scopes", settings.oidc_scopes)
+        )
+        response_type = response_type_override if response_type_override else "code"
 
         # Fallback to global redirect URI if not specified
         if not redirect_uri:
@@ -198,9 +210,25 @@ class OIDCService:
 
         scopes_str = " ".join(scopes)
 
+        # Log overrides for debugging
+        if any([client_id_override, scopes_override, response_type_override]):
+            logger.info(
+                f"[OIDC Test] Generating authorization URL with overrides for '{provider_id}'"
+            )
+            if client_id_override:
+                logger.info(f"[OIDC Test] - client_id overridden: {client_id_override}")
+            if scopes_override:
+                logger.info(
+                    f"[OIDC Test] - scopes overridden: {', '.join(scopes_override)}"
+                )
+            if response_type_override:
+                logger.info(
+                    f"[OIDC Test] - response_type overridden: {response_type_override}"
+                )
+
         params = {
             "client_id": client_id,
-            "response_type": "code",
+            "response_type": response_type,
             "scope": scopes_str,
             "redirect_uri": redirect_uri,
             "state": state,

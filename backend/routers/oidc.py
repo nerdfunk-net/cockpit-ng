@@ -4,8 +4,9 @@ OIDC authentication router for OpenID Connect integration with multiple provider
 
 from __future__ import annotations
 import logging
-from datetime import timedelta
-from typing import Union
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Union
 from fastapi import APIRouter, HTTPException, status, Query
 from models.auth import (
     LoginResponse,
@@ -13,6 +14,7 @@ from models.auth import (
     OIDCProvidersResponse,
     OIDCProvider,
     ApprovalPendingResponse,
+    OIDCTestLoginRequest,
 )
 from core.auth import create_access_token
 from services.oidc_service import oidc_service
@@ -112,6 +114,65 @@ async def oidc_login(
         )
 
 
+@router.post("/{provider_id}/test-login")
+async def oidc_test_login(provider_id: str, test_params: OIDCTestLoginRequest):
+    """
+    Initiate OIDC authentication flow with custom test parameters.
+    This endpoint allows overriding default configuration for testing purposes.
+    Returns authorization URL for redirect.
+    """
+    if not settings_manager.is_oidc_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="OIDC authentication is not enabled",
+        )
+
+    try:
+        config = await oidc_service.get_oidc_config(provider_id)
+        state = oidc_service.generate_state()
+
+        # Include provider_id in state for callback validation
+        state_with_provider = f"{provider_id}:{state}"
+
+        logger.info(f"[OIDC Test] Initiating test login for provider '{provider_id}'")
+        logger.info(f"[OIDC Test] Test parameters: {test_params.model_dump()}")
+
+        # Generate authorization URL with test overrides
+        auth_url = oidc_service.generate_authorization_url(
+            provider_id=provider_id,
+            config=config,
+            state=state_with_provider,
+            redirect_uri=test_params.redirect_uri,
+            scopes_override=test_params.scopes,
+            response_type_override=test_params.response_type,
+            client_id_override=test_params.client_id,
+        )
+
+        return {
+            "authorization_url": auth_url,
+            "state": state_with_provider,
+            "provider_id": provider_id,
+            "test_mode": True,
+            "overrides": {
+                "redirect_uri": test_params.redirect_uri,
+                "scopes": test_params.scopes,
+                "response_type": test_params.response_type,
+                "client_id": test_params.client_id,
+            },
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"OIDC test login initiation failed for provider '{provider_id}': {e}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to initiate OIDC test login with provider '{provider_id}'",
+        )
+
+
 @router.post(
     "/{provider_id}/callback",
     response_model=Union[LoginResponse, ApprovalPendingResponse],
@@ -141,7 +202,7 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
 
         # Exchange authorization code for tokens
         tokens = await oidc_service.exchange_code_for_tokens(
-            provider_id, callback_data.code
+            provider_id, callback_data.code, callback_data.redirect_uri
         )
 
         id_token = tokens.get("id_token")
@@ -261,4 +322,131 @@ async def oidc_logout(provider_id: str, id_token_hint: str = Query(None)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process OIDC logout for provider '{provider_id}'",
+        )
+
+
+@router.get("/debug")
+async def get_oidc_debug_info():
+    """
+    Get detailed debug information about OIDC configuration.
+    This endpoint provides comprehensive configuration details for testing and troubleshooting.
+    """
+    try:
+        oidc_enabled = settings_manager.is_oidc_enabled()
+        global_settings = settings_manager.get_oidc_global_settings()
+
+        providers_debug = []
+
+        if oidc_enabled:
+            enabled_providers = settings_manager.get_enabled_oidc_providers()
+
+            for provider in enabled_providers:
+                provider_id = provider["provider_id"]
+
+                # Get full configuration
+                try:
+                    config = await oidc_service.get_oidc_config(provider_id)
+
+                    # Validate configuration
+                    issues = []
+                    status_level = "ok"
+
+                    if not provider.get("client_id"):
+                        issues.append("Missing client_id")
+                        status_level = "error"
+
+                    if not provider.get("client_secret"):
+                        issues.append("Missing client_secret")
+                        status_level = "error"
+
+                    if not config.authorization_endpoint:
+                        issues.append("Missing authorization_endpoint")
+                        status_level = "error"
+
+                    if not config.token_endpoint:
+                        issues.append("Missing token_endpoint")
+                        status_level = "error"
+
+                    if not config.jwks_uri:
+                        issues.append("Missing jwks_uri")
+                        status_level = "error"
+
+                    # Check CA certificate if configured
+                    ca_cert_path = provider.get("ca_cert_path")
+                    ca_cert_exists = False
+                    if ca_cert_path:
+                        # Resolve path the same way as oidc_service does
+                        ca_cert_file = Path(ca_cert_path)
+                        if not ca_cert_file.is_absolute():
+                            # Relative to project root (backend parent directory)
+                            ca_cert_file = Path(__file__).parent.parent.parent / ca_cert_path
+
+                        ca_cert_exists = ca_cert_file.exists()
+                        if not ca_cert_exists:
+                            issues.append(
+                                f"CA certificate file not found: {ca_cert_path}"
+                            )
+                            status_level = (
+                                "warning" if status_level == "ok" else status_level
+                            )
+
+                    # Get scopes from provider config (not from OIDCConfig)
+                    scopes = provider.get("scopes", settings.oidc_scopes)
+
+                    providers_debug.append(
+                        {
+                            "provider_id": provider_id,
+                            "name": provider.get("name", provider_id),
+                            "enabled": True,
+                            "config": {
+                                "client_id": provider.get("client_id", ""),
+                                "authorization_endpoint": config.authorization_endpoint,
+                                "token_endpoint": config.token_endpoint,
+                                "userinfo_endpoint": config.userinfo_endpoint,
+                                "jwks_uri": config.jwks_uri,
+                                "issuer": config.issuer,
+                                "ca_cert_path": ca_cert_path,
+                                "ca_cert_exists": ca_cert_exists,
+                                "scopes": scopes,
+                                "response_type": "code",
+                            },
+                            "status": status_level,
+                            "issues": issues,
+                        }
+                    )
+
+                except Exception as e:
+                    logger.error(
+                        f"Failed to load configuration for provider '{provider_id}': {e}"
+                    )
+                    providers_debug.append(
+                        {
+                            "provider_id": provider_id,
+                            "name": provider.get("name", provider_id),
+                            "enabled": True,
+                            "config": {},
+                            "status": "error",
+                            "issues": [f"Failed to load configuration: {str(e)}"],
+                        }
+                    )
+
+        return {
+            "oidc_enabled": oidc_enabled,
+            "allow_traditional_login": global_settings.get(
+                "allow_traditional_login", True
+            ),
+            "providers": providers_debug,
+            "global_config": {
+                "default_role": global_settings.get("default_role", "user"),
+                "auto_create_users": global_settings.get("auto_create_users", True),
+                "update_user_info": global_settings.get("update_user_info", True),
+            },
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get OIDC debug info: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve OIDC debug information: {str(e)}",
         )
