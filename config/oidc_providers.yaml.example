@@ -46,6 +46,8 @@ providers:
     # Custom CA Certificate (for self-signed certificates in air-gapped environments)
     # Path can be absolute or relative to project root
     # Optional: Leave empty or remove if using publicly trusted certificates
+    # IMPORTANT: Certificate MUST be in PEM format (text format starting with -----BEGIN CERTIFICATE-----)
+    # If you have DER/CRT/CER format, use the convert-cert.sh script in config/certs/ to convert
     # ca_cert_path: "config/certs/corporate-ca.cert.pem"
 
     # OAuth Scopes to Request
@@ -86,6 +88,7 @@ providers:
     redirect_uri: ""
 
     # Custom CA Certificate (optional - each provider can have its own CA cert)
+    # Must be in PEM format - use config/certs/convert-cert.sh to convert other formats
     # ca_cert_path: "config/certs/dev-ca.cert.pem"
 
     scopes:
@@ -118,6 +121,7 @@ providers:
     redirect_uri: ""
 
     # Custom CA Certificate (optional - useful if partner uses different CA)
+    # Must be in PEM format - use config/certs/convert-cert.sh to convert other formats
     # ca_cert_path: "config/certs/partner-ca.cert.pem"
 
     scopes:
@@ -187,7 +191,10 @@ global:
 #    - Each provider can use a different CA certificate
 #    - Path can be absolute or relative to project root
 #    - Common location: config/certs/your-ca.cert.pem
-#    - Certificate must be in PEM format
+#    - Certificate MUST be in PEM format (text format with -----BEGIN CERTIFICATE-----)
+#    - To convert DER/CRT/CER/P7B formats: Use config/certs/convert-cert.sh script
+#    - To check format: openssl x509 -in cert.crt -text -noout
+#    - If error, try DER: openssl x509 -inform DER -in cert.crt -text -noout
 #
 # 7. SECURITY RECOMMENDATIONS:
 #    - Use HTTPS for discovery_url in production

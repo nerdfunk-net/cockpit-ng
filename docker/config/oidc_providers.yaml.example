@@ -36,7 +36,9 @@ providers:
 
     # Custom CA Certificate (for self-signed certificates in air-gapped environments)
     # Path relative to /app/config in container (this directory)
+    # IMPORTANT: Certificate MUST be in PEM format (text format starting with -----BEGIN CERTIFICATE-----)
     # In Docker, place your CA certificate in this directory and reference it here
+    # To convert other formats, use: docker/config/certs/convert-cert.sh (before building image)
     # ca_cert_path: "certs/corporate-ca.cert.pem"
 
     # OAuth Scopes
@@ -74,6 +76,7 @@ providers:
     redirect_uri: "http://localhost:3000/login/callback"
 
     # Custom CA Certificate (optional - each provider can have its own CA cert)
+    # Must be in PEM format - use convert-cert.sh to convert before deploying
     # ca_cert_path: "certs/dev-ca.cert.pem"
 
     scopes:
@@ -137,8 +140,10 @@ global:
 #    - Path is relative to /app/config in container
 #    - Example: ca_cert_path: "certs/my-ca.cert.pem"
 #    - Each provider can use a different CA certificate
-#    - Certificate must be in PEM format
+#    - Certificate MUST be in PEM format (text format with -----BEGIN CERTIFICATE-----)
+#    - To convert formats: Use config/certs/convert-cert.sh before building
 #    - Create certs directory: mkdir -p docker/config/certs
+#    - Verify format: openssl x509 -in cert.pem -text -noout
 #
 # 6. TESTING CONNECTION:
 #    - Test discovery URL from inside container:
