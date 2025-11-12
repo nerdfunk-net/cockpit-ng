@@ -199,14 +199,18 @@ async def execute_commands(
             import credentials_manager as cred_mgr
 
             try:
-                # Get credential details
-                credentials = cred_mgr.list_credentials(include_expired=False, source="general")
+                # Get credential details - include both general and user's private credentials
+                general_creds = cred_mgr.list_credentials(include_expired=False, source="general")
+                private_creds = cred_mgr.list_credentials(include_expired=False, source="private")
+                user_private = [c for c in private_creds if c.get("owner") == current_user]
+                credentials = general_creds + user_private
+
                 credential = next((c for c in credentials if c["id"] == request.credential_id), None)
 
                 if not credential:
                     raise HTTPException(
                         status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Credential with ID {request.credential_id} not found"
+                        detail=f"Credential with ID {request.credential_id} not found or not accessible"
                     )
 
                 if credential["type"] != "ssh":
@@ -443,13 +447,18 @@ async def execute_template(
                 import credentials_manager as cred_mgr
 
                 try:
-                    credentials = cred_mgr.list_credentials(include_expired=False, source="general")
+                    # Get credential details - include both general and user's private credentials
+                    general_creds = cred_mgr.list_credentials(include_expired=False, source="general")
+                    private_creds = cred_mgr.list_credentials(include_expired=False, source="private")
+                    user_private = [c for c in private_creds if c.get("owner") == current_user]
+                    credentials = general_creds + user_private
+
                     credential = next((c for c in credentials if c["id"] == request.credential_id), None)
 
                     if not credential:
                         raise HTTPException(
                             status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"Credential with ID {request.credential_id} not found"
+                            detail=f"Credential with ID {request.credential_id} not found or not accessible"
                         )
 
                     if credential["type"] != "ssh":

@@ -82,7 +82,8 @@ export default function CredentialsManagement() {
   const loadCredentials = async () => {
     setLoading(true)
     try {
-      const response = await apiCall<Credential[]>(`credentials?include_expired=${includeExpired}`)
+      // Only load general/admin credentials for settings page
+      const response = await apiCall<Credential[]>(`credentials?source=general&include_expired=${includeExpired}`)
       setCredentials(response || [])
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'

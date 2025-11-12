@@ -11,6 +11,7 @@ export function useCredentialManager() {
 
   const loadStoredCredentials = async () => {
     try {
+      // Fetch both general and user's private credentials (source not specified = all accessible)
       const response = await apiCall<StoredCredential[]>('credentials?include_expired=false')
       // Filter for SSH credentials only
       const sshCredentials = response.filter(cred => cred.type === 'ssh')
