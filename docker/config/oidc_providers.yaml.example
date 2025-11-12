@@ -33,7 +33,12 @@ providers:
     # Redirect URI - Update with your actual frontend URL
     # For Docker: Use the URL where your users access the application
     redirect_uri: "http://localhost:3000/login/callback"
-    
+
+    # Custom CA Certificate (for self-signed certificates in air-gapped environments)
+    # Path relative to /app/config in container (this directory)
+    # In Docker, place your CA certificate in this directory and reference it here
+    # ca_cert_path: "certs/corporate-ca.cert.pem"
+
     # OAuth Scopes
     scopes:
       - openid
@@ -67,7 +72,10 @@ providers:
     client_id: "cockpit-dev"
     client_secret: "dev-secret-change-me"
     redirect_uri: "http://localhost:3000/login/callback"
-    
+
+    # Custom CA Certificate (optional - each provider can have its own CA cert)
+    # ca_cert_path: "certs/dev-ca.cert.pem"
+
     scopes:
       - openid
       - profile
@@ -123,12 +131,23 @@ global:
 #    d) Copy the client secret from Credentials tab
 #    e) Ensure Keycloak is accessible from Docker container
 #
-# 5. TESTING CONNECTION:
+# 5. CUSTOM CA CERTIFICATES (Air-Gapped Environments):
+#    - For self-signed certificates, specify ca_cert_path
+#    - Place CA certificate files in docker/config/certs/
+#    - Path is relative to /app/config in container
+#    - Example: ca_cert_path: "certs/my-ca.cert.pem"
+#    - Each provider can use a different CA certificate
+#    - Certificate must be in PEM format
+#    - Create certs directory: mkdir -p docker/config/certs
+#
+# 6. TESTING CONNECTION:
 #    - Test discovery URL from inside container:
 #      docker compose exec cockpit-ng curl {discovery_url}
 #    - Should return JSON with OIDC configuration
+#    - If using custom CA, test SSL:
+#      docker compose exec cockpit-ng curl --cacert /app/config/certs/ca.pem {url}
 #
-# 6. TROUBLESHOOTING:
+# 7. TROUBLESHOOTING:
 #    - View logs: docker compose logs -f
 #    - Check backend logs for OIDC errors
 #    - Verify network connectivity between container and OIDC provider

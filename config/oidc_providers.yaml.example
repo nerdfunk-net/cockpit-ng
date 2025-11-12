@@ -42,7 +42,12 @@ providers:
     # Optional: Override default redirect URI
     # Default is automatically constructed from backend URL + /login/callback
     redirect_uri: ""
-    
+
+    # Custom CA Certificate (for self-signed certificates in air-gapped environments)
+    # Path can be absolute or relative to project root
+    # Optional: Leave empty or remove if using publicly trusted certificates
+    # ca_cert_path: "config/certs/corporate-ca.cert.pem"
+
     # OAuth Scopes to Request
     # Standard scopes: openid (required), profile, email, offline_access
     scopes:
@@ -79,7 +84,10 @@ providers:
     client_id: "cockpit-dev"
     client_secret: "dev-secret-change-me"
     redirect_uri: ""
-    
+
+    # Custom CA Certificate (optional - each provider can have its own CA cert)
+    # ca_cert_path: "config/certs/dev-ca.cert.pem"
+
     scopes:
       - openid
       - profile
@@ -108,7 +116,10 @@ providers:
     client_id: "cockpit-partners"
     client_secret: "partner-secret-change-me"
     redirect_uri: ""
-    
+
+    # Custom CA Certificate (optional - useful if partner uses different CA)
+    # ca_cert_path: "config/certs/partner-ca.cert.pem"
+
     scopes:
       - openid
       - email                       # Minimal scopes for partners
@@ -171,14 +182,22 @@ global:
 #    - Example: "corp_" prefix → username becomes "corp_john.doe"
 #    - Different providers can have same username with different prefixes
 #
-# 6. SECURITY RECOMMENDATIONS:
+# 6. CUSTOM CA CERTIFICATES (Air-Gapped Environments):
+#    - For self-signed certificates, specify ca_cert_path
+#    - Each provider can use a different CA certificate
+#    - Path can be absolute or relative to project root
+#    - Common location: config/certs/your-ca.cert.pem
+#    - Certificate must be in PEM format
+#
+# 7. SECURITY RECOMMENDATIONS:
 #    - Use HTTPS for discovery_url in production
 #    - Store client_secret securely (consider environment variables)
 #    - Rotate client secrets periodically
 #    - Use minimal required scopes
 #    - Review user permissions after auto-provisioning
+#    - Protect CA certificate files (read-only permissions)
 #
-# 7. TROUBLESHOOTING:
+# 8. TROUBLESHOOTING:
 #    - Enable DEBUG logging in backend
 #    - Test discovery_url in browser
 #    - Verify redirect_uri matches Keycloak configuration

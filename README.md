@@ -29,6 +29,17 @@ Cockpit-NG is a next-generation network management dashboard designed for networ
 - **Workflow Orchestration**: Multi-device operation support
 - **API-First Design**: RESTful API for external integration
 
+### 🔐 **Authentication & Security**
+- **JWT Authentication**: Secure token-based authentication with session management
+- **OIDC/SSO Support**: Multi-provider OpenID Connect authentication
+  - Multiple identity provider support (Keycloak, Azure AD, Okta, etc.)
+  - Custom CA certificate support for air-gapped/corporate environments
+  - Per-provider configuration and claim mapping
+  - Auto-provisioning with role assignment
+  - Traditional login fallback option
+- **Credential Management**: Encrypted credential storage
+- **SSL/TLS Support**: Custom CA certificates for self-signed certificates
+
 ### 📊 **CheckMK Integration**
 - **Device Synchronization**: Bidirectional sync between Nautobot and CheckMK
 - **Site Management**: Automatic site assignment based on location, IP, or name
@@ -282,9 +293,13 @@ Authorization: Bearer <token>
 ## 🔒 Security Features
 
 - **JWT Authentication**: Secure token-based authentication
+- **OIDC/SSO Authentication**: Multi-provider Single Sign-On support
+  - Supports self-signed certificates with custom CA configuration
+  - Per-provider SSL/TLS configuration
+  - Air-gapped environment support
 - **Session Management**: Automatic session renewal with activity tracking
 - **Credential Protection**: Encrypted credential storage
-- **SSL/TLS Support**: HTTPS endpoints for secure communication
+- **SSL/TLS Support**: HTTPS endpoints and custom CA certificates
 - **Input Validation**: Comprehensive request validation
 
 ## 📈 Performance & Monitoring
@@ -369,6 +384,8 @@ cockpit-ng/
 
 ## 📚 Documentation
 
+- [OIDC/SSO Setup Guide](OIDC_SETUP.md) - Configure Single Sign-On with Keycloak, Azure AD, etc.
+- [OIDC Implementation Guide](OIDC_IMPLEMENTATION_GUIDE.md) - Technical implementation details
 - [Docker Deployment Guide](DOCKER.md)
 - [Frontend Documentation](frontend/README.md)
 - [API Documentation](http://localhost:3000/api/proxy/docs) (when running)

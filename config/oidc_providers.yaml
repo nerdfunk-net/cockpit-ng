@@ -46,22 +46,25 @@ providers:
     description: "Login with your development account"
     icon: "code"
     display_order: 2
-    
+
     discovery_url: "http://127.0.0.1:7080/realms/dev/.well-known/openid-configuration"
     client_id: "cockpit-dev"
     client_secret: "dev-secret-123"
     redirect_uri: ""
-    
+
+    # Custom CA Certificate (optional - each provider can have its own CA cert)
+    # ca_cert_path: "config/certs/dev-ca.cert.pem"
+
     scopes:
       - openid
       - profile
       - email
-    
+
     claim_mappings:
       username: "preferred_username"
       email: "email"
       name: "name"
-    
+
     auto_provision: true
     default_role: "user"
     username_prefix: ""

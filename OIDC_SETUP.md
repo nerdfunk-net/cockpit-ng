@@ -38,11 +38,16 @@ providers:
     description: "Sign in with your company account"
     icon: "building"  # Icon identifier for frontend (building, flask, etc.)
     display_order: 1  # Lower numbers appear first
-    
+
     # OpenID Connect Configuration
     discovery_url: "https://keycloak.company.com/realms/production/.well-known/openid-configuration"
     client_id: "cockpit-prod"
     client_secret: "your-client-secret-here"
+
+    # Custom CA Certificate (for air-gapped environments with self-signed certs)
+    # Path can be absolute or relative to project root
+    # Optional: Leave empty or omit if using publicly trusted certificates
+    ca_cert_path: "config/certs/corporate-ca.cert.pem"
     
     # OAuth Scopes
     scopes:
@@ -394,13 +399,52 @@ OIDC_CLAIM_NAME=given_name
 - Validated on callback to prevent CSRF
 - Cleared after successful authentication
 
+### Custom CA Certificates (Air-Gapped Environments)
+
+For environments with self-signed certificates or private Certificate Authorities:
+
+**Configuration:**
+```yaml
+providers:
+  corporate:
+    # ... other settings ...
+    ca_cert_path: "config/certs/corporate-ca.cert.pem"
+```
+
+**Features:**
+- Each provider can use a different CA certificate
+- Supports both absolute and relative paths
+- Certificate must be in PEM format
+- Place certificates in `config/certs/` directory
+- Multiple CA certificates supported (one per provider)
+
+**Setup:**
+1. Export your CA certificate in PEM format
+2. Copy to `config/certs/` directory
+3. Add `ca_cert_path` to provider configuration
+4. Restart backend service
+
+**Example for multiple providers:**
+```yaml
+providers:
+  corporate:
+    ca_cert_path: "config/certs/corporate-ca.pem"
+
+  development:
+    ca_cert_path: "config/certs/dev-ca.pem"
+
+  partners:
+    ca_cert_path: "config/certs/partner-ca.pem"
+```
+
 ### HTTPS in Production
 
 For production deployments:
 - Use HTTPS for all URLs
-- Update `OIDC_REDIRECT_URI` to use `https://`
+- Update redirect URIs to use `https://`
 - Configure valid SSL certificates
 - Enable HSTS headers
+- Use custom CA certificates for internal CAs
 
 ## Troubleshooting
 
@@ -415,6 +459,43 @@ For production deployments:
 - Verify Keycloak is running
 - Check network/firewall settings
 - Test URL in browser: should return JSON config
+
+### "SSL: CERTIFICATE_VERIFY_FAILED" or "unable to get local issuer certificate"
+
+This error occurs when using self-signed certificates or private CAs:
+
+**Solution:**
+1. Export your CA certificate:
+   ```bash
+   # From Keycloak/OIDC provider server
+   openssl s_client -connect keycloak.example.com:443 -showcerts
+   # Copy the CA certificate (between BEGIN/END CERTIFICATE)
+   ```
+
+2. Save as PEM file:
+   ```bash
+   mkdir -p config/certs
+   # Save certificate as config/certs/ca.cert.pem
+   ```
+
+3. Configure provider:
+   ```yaml
+   providers:
+     corporate:
+       ca_cert_path: "config/certs/ca.cert.pem"
+   ```
+
+4. Restart backend:
+   ```bash
+   cd backend
+   python start.py
+   ```
+
+**Verify certificate path:**
+- Check file exists: `ls -l config/certs/ca.cert.pem`
+- Check permissions: File should be readable
+- Check format: File should start with `-----BEGIN CERTIFICATE-----`
+- Check logs for: `Loaded custom CA certificate for provider 'corporate'`
 
 ### "Invalid state parameter"
 

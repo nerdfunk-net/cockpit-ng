@@ -160,6 +160,7 @@ providers:
     discovery_url: string
     client_id: string
     client_secret: string
+    ca_cert_path: string          # Optional: Custom CA certificate for self-signed certs
     scopes: list[string]
     claim_mappings:
       username: string
@@ -259,22 +260,57 @@ class OIDCService:
 
 #### 2.2 Critical Implementation Details
 
-**Discovery Configuration:**
+**Discovery Configuration (with SSL support):**
 ```python
 async def get_oidc_config(self, provider_id: str):
     provider = settings_manager.get_oidc_provider(provider_id)
     if not provider or not provider.get('enabled'):
         raise ProviderNotFoundError()
-    
+
     if provider_id in self._configs:
         return self._configs[provider_id]
-    
-    async with httpx.AsyncClient() as client:
+
+    # Get SSL context for custom CA certificates
+    ssl_context = self._get_ssl_context(provider_id)
+
+    # Create httpx client with custom SSL context if available
+    client_kwargs = {"timeout": 10.0}
+    if ssl_context:
+        client_kwargs["verify"] = ssl_context
+
+    async with httpx.AsyncClient(**client_kwargs) as client:
         response = await client.get(provider['discovery_url'])
         config_data = response.json()
-    
+
     self._configs[provider_id] = OIDCConfig(**config_data)
     return self._configs[provider_id]
+
+def _get_ssl_context(self, provider_id: str):
+    """Get or create SSL context with custom CA certificate for the provider."""
+    if provider_id in self._ssl_contexts:
+        return self._ssl_contexts[provider_id]
+
+    provider = settings_manager.get_oidc_provider(provider_id)
+    ca_cert_path = provider.get('ca_cert_path')
+
+    if not ca_cert_path:
+        return None
+
+    # Resolve path and load certificate
+    ca_cert_file = Path(ca_cert_path)
+    if not ca_cert_file.is_absolute():
+        ca_cert_file = Path(__file__).parent.parent / ca_cert_path
+
+    if not ca_cert_file.exists():
+        logger.warning(f"CA certificate not found: {ca_cert_file}")
+        return None
+
+    # Create SSL context with custom CA
+    ssl_context = ssl.create_default_context()
+    ssl_context.load_verify_locations(cafile=str(ca_cert_file))
+
+    self._ssl_contexts[provider_id] = ssl_context
+    return ssl_context
 ```
 
 **Token Verification:**
@@ -667,13 +703,17 @@ class OIDCService:
         self._configs: Dict[str, OIDCConfig] = {}
         self._jwks_caches: Dict[str, Dict] = {}
         self._jwks_cache_times: Dict[str, datetime] = {}
-    
+        self._ssl_contexts: Dict[str, ssl.SSLContext] = {}  # SSL context cache
+
     async def get_oidc_config(self, provider_id: str):
         if provider_id in self._configs:
             return self._configs[provider_id]
-        
-        # Fetch and cache
-        config = await fetch_discovery(provider_id)
+
+        # Get SSL context for custom CA certificates
+        ssl_context = self._get_ssl_context(provider_id)
+
+        # Fetch and cache (with SSL support)
+        config = await fetch_discovery(provider_id, ssl_context)
         self._configs[provider_id] = config
         return config
 ```
@@ -734,6 +774,7 @@ return (
   - [ ] Invalid YAML returns error
   - [ ] Missing file returns default/empty config
   - [ ] Multiple providers parsed correctly
+  - [ ] CA certificate paths parsed correctly
 
 - [ ] Settings Manager
   - [ ] `get_oidc_providers()` returns all providers
@@ -744,6 +785,9 @@ return (
 - [ ] OIDC Service
   - [ ] Discovery endpoint fetches config
   - [ ] Config cached per provider
+  - [ ] SSL context created for custom CA certificates
+  - [ ] SSL context cached per provider
+  - [ ] HTTPS connections work with custom CA
   - [ ] JWKS fetched and cached
   - [ ] Token exchange returns tokens
   - [ ] ID token verification succeeds with valid token
@@ -928,6 +972,7 @@ const handleProviderLogin = async (providerId) => {
 - Test URL in browser
 - Check network/firewall
 - Verify URL format (must end in `/.well-known/openid-configuration`)
+- For HTTPS with self-signed certs: Add `ca_cert_path` to provider config
 
 **Issue: "Token verification failed"**
 - Check client_id matches OIDC provider
@@ -943,6 +988,14 @@ const handleProviderLogin = async (providerId) => {
 - Check `auto_provisioning.enabled: true`
 - Verify claim mappings extract username
 - Check username claim exists in token
+
+**Issue: "SSL: CERTIFICATE_VERIFY_FAILED"**
+- Provider uses self-signed certificate or private CA
+- Export CA certificate in PEM format
+- Save to `config/certs/` directory
+- Add `ca_cert_path` to provider configuration
+- Verify certificate file exists and is readable
+- Check logs for "Loaded custom CA certificate" message
 
 ---
 
