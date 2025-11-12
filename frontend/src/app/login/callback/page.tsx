@@ -184,12 +184,22 @@ function OIDCCallbackContent() {
 export default function OIDCCallbackPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-4 shadow-apple-lg">
+              <Heart className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Cockpit</h1>
+          </div>
+          <Card className="glass backdrop-blur-xl border-white/20 shadow-apple-xl">
+            <CardContent className="pt-6 pb-6">
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     }>
       <OIDCCallbackContent />

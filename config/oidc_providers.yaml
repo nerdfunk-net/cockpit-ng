@@ -9,12 +9,16 @@ providers:
     description: "Login with your corporate account"
     icon: "building"  # Icon identifier for UI
     display_order: 1
-    
+
     # OpenID Connect Configuration
-    discovery_url: "http://127.0.0.1:7080/realms/cockpit/.well-known/openid-configuration"
+    discovery_url: "https://keycloak:7443/realms/cockpit/.well-known/openid-configuration"
     client_id: "cockpit"
     client_secret: "QihKtC9YCU6TVPV2oOlNrEoqZXF83Ix9"
     redirect_uri: "http://localhost:3000/login/callback"  # Leave empty to use default from backend URL
+
+    # Custom CA Certificate (for air-gapped environments with self-signed certificates)
+    # Path can be absolute or relative to project root
+    ca_cert_path: "config/certs/ca.cert.pem"
     
     # OAuth Scopes
     scopes:
