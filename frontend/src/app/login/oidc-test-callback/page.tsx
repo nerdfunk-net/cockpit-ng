@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -31,8 +31,8 @@ interface TokenResponse {
 }
 
 interface DecodedToken {
-  header: any
-  payload: any
+  header: Record<string, unknown>
+  payload: Record<string, unknown>
   signature: string
 }
 
@@ -46,7 +46,7 @@ interface CallbackDebugInfo {
   error?: string
 }
 
-export default function OIDCTestCallbackPage() {
+function OIDCTestCallbackContent() {
   const searchParams = useSearchParams()
   const [debugInfo, setDebugInfo] = useState<CallbackDebugInfo>({ query_params: {} })
   const [loading, setLoading] = useState(true)
@@ -179,7 +179,7 @@ export default function OIDCTestCallbackPage() {
     }
   }
 
-  const renderJSON = (data: any, title: string) => (
+  const renderJSON = (data: Record<string, unknown> | unknown, title: string) => (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-gray-700">{title}</h4>
@@ -264,8 +264,8 @@ export default function OIDCTestCallbackPage() {
 
         {/* Error Alert */}
         {debugInfo.error && (
-          <Alert variant="destructive">
-            <XCircle className="h-4 w-4" />
+          <Alert className="border-red-500 bg-red-50 text-red-900">
+            <XCircle className="h-4 w-4 text-red-500" />
             <AlertDescription>
               <strong>Error:</strong> {debugInfo.error}
             </AlertDescription>
@@ -519,5 +519,23 @@ export default function OIDCTestCallbackPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function OIDCTestCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto p-6">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Loading OIDC Callback...</CardTitle>
+            </CardHeader>
+          </Card>
+        </div>
+      </div>
+    }>
+      <OIDCTestCallbackContent />
+    </Suspense>
   )
 }

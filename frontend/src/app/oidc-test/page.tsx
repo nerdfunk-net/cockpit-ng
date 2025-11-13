@@ -68,7 +68,7 @@ interface DebugLog {
   timestamp: string
   level: 'info' | 'warning' | 'error' | 'success'
   message: string
-  details?: any
+  details?: Record<string, unknown>
 }
 
 export default function OIDCTestPage() {
@@ -86,7 +86,7 @@ export default function OIDCTestPage() {
   const [customResponseType, setCustomResponseType] = useState('')
   const [customClientId, setCustomClientId] = useState('')
 
-  const addLog = (level: DebugLog['level'], message: string, details?: any) => {
+  const addLog = (level: DebugLog['level'], message: string, details?: Record<string, unknown>) => {
     const log: DebugLog = {
       timestamp: new Date().toISOString(),
       level,
@@ -377,8 +377,8 @@ export default function OIDCTestPage() {
                   <TabsContent value="config" className="space-y-4 mt-4">
                     {/* Issues */}
                     {selectedProviderInfo.issues.length > 0 && (
-                      <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
+                      <Alert className="border-red-500 bg-red-50 text-red-900">
+                        <AlertCircle className="h-4 w-4 text-red-500" />
                         <AlertDescription>
                           <div className="font-semibold mb-1">Configuration Issues:</div>
                           <ul className="list-disc list-inside space-y-1">
@@ -592,7 +592,7 @@ export default function OIDCTestPage() {
                     <Button
                       onClick={() => {
                         // Build overrides object
-                        const overrides: any = {}
+                        const overrides: Record<string, unknown> = {}
 
                         // If debug callback is enabled, set redirect_uri
                         if (useDebugCallback) {
