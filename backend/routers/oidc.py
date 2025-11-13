@@ -390,8 +390,8 @@ async def get_oidc_debug_info():
                                 "warning" if status_level == "ok" else status_level
                             )
 
-                    # Get scopes from provider config (not from OIDCConfig)
-                    scopes = provider.get("scopes", settings.oidc_scopes)
+                    # Get scopes from provider config (default to standard OIDC scopes)
+                    scopes = provider.get("scopes", ["openid", "profile", "email"])
 
                     providers_debug.append(
                         {

@@ -12,7 +12,6 @@ from datetime import datetime, timedelta, timezone
 import httpx
 from jose import jwt, JWTError
 from fastapi import HTTPException, status
-from config import settings
 from models.auth import OIDCConfig
 from settings_manager import settings_manager
 
@@ -195,18 +194,29 @@ class OIDCService:
         client_id = (
             client_id_override
             if client_id_override
-            else provider_config.get("client_id", settings.oidc_client_id)
+            else provider_config.get("client_id")
         )
+        if not client_id:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"OIDC provider '{provider_id}' missing required 'client_id' in configuration",
+            )
+
         scopes = (
             scopes_override
             if scopes_override
-            else provider_config.get("scopes", settings.oidc_scopes)
+            else provider_config.get("scopes", ["openid", "profile", "email"])
         )
         response_type = response_type_override if response_type_override else "code"
 
-        # Fallback to global redirect URI if not specified
+        # Use provider redirect_uri or raise error if not specified
         if not redirect_uri:
-            redirect_uri = settings.oidc_redirect_uri
+            redirect_uri = provider_config.get("redirect_uri")
+            if not redirect_uri:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"OIDC provider '{provider_id}' missing required 'redirect_uri' in configuration",
+                )
 
         scopes_str = " ".join(scopes)
 
@@ -256,14 +266,28 @@ class OIDCService:
             )
 
         # Use provider-specific settings
-        client_id = provider_config.get("client_id", settings.oidc_client_id)
-        client_secret = provider_config.get(
-            "client_secret", settings.oidc_client_secret
-        )
+        client_id = provider_config.get("client_id")
+        if not client_id:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"OIDC provider '{provider_id}' missing required 'client_id' in configuration",
+            )
 
-        # Fallback to global redirect URI if not specified
+        client_secret = provider_config.get("client_secret")
+        if not client_secret:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"OIDC provider '{provider_id}' missing required 'client_secret' in configuration",
+            )
+
+        # Use provider redirect_uri or raise error if not specified
         if not redirect_uri:
-            redirect_uri = settings.oidc_redirect_uri
+            redirect_uri = provider_config.get("redirect_uri")
+            if not redirect_uri:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"OIDC provider '{provider_id}' missing required 'redirect_uri' in configuration",
+                )
 
         token_data = {
             "grant_type": "authorization_code",
@@ -382,7 +406,12 @@ class OIDCService:
                 detail=f"OIDC provider '{provider_id}' not found",
             )
 
-        client_id = provider_config.get("client_id", settings.oidc_client_id)
+        client_id = provider_config.get("client_id")
+        if not client_id:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"OIDC provider '{provider_id}' missing required 'client_id' in configuration",
+            )
 
         logger.debug(f"[OIDC Debug] Issuer: {config.issuer}")
         logger.debug(f"[OIDC Debug] Client ID (audience): {client_id}")
@@ -491,9 +520,9 @@ class OIDCService:
             )
 
         claim_mappings = provider_config.get("claim_mappings", {})
-        username_claim = claim_mappings.get("username", settings.oidc_claim_username)
-        email_claim = claim_mappings.get("email", settings.oidc_claim_email)
-        name_claim = claim_mappings.get("name", settings.oidc_claim_name)
+        username_claim = claim_mappings.get("username", "preferred_username")
+        email_claim = claim_mappings.get("email", "email")
+        name_claim = claim_mappings.get("name", "name")
 
         # Log available claims for debugging
         logger.debug(
@@ -556,9 +585,13 @@ class OIDCService:
                 detail=f"OIDC provider '{provider_id}' not found",
             )
 
-        auto_provision = provider_config.get("auto_provisioning", {}).get(
-            "enabled", settings.oidc_auto_provision
-        )
+        # Check if auto-provisioning is enabled (default to True for backward compatibility)
+        auto_provision_config = provider_config.get("auto_provision")
+        if auto_provision_config is None:
+            # If not specified in YAML, default to True
+            auto_provision = True
+        else:
+            auto_provision = bool(auto_provision_config)
 
         from services.user_management import (
             get_user_by_username,
@@ -609,9 +642,7 @@ class OIDCService:
             random_password = secrets.token_urlsafe(32)
 
             # Get default role from provider config or use 'user'
-            default_role_str = provider_config.get("auto_provisioning", {}).get(
-                "default_role", "user"
-            )
+            default_role_str = provider_config.get("default_role", "user")
             default_role = (
                 UserRole.user if default_role_str == "user" else UserRole.admin
             )

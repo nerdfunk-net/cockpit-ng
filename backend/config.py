@@ -57,19 +57,8 @@ class Settings:
     initial_username: str = os.getenv("INITIAL_USERNAME", "admin")
     initial_password: str = os.getenv("INITIAL_PASSWORD", "admin")
 
-    # OIDC Configuration
-    oidc_enabled: bool = get_env_bool("OIDC_ENABLED", False)
-    oidc_discovery_url: str = os.getenv("OIDC_DISCOVERY_URL", "")
-    oidc_client_id: str = os.getenv("OIDC_CLIENT_ID", "")
-    oidc_client_secret: str = os.getenv("OIDC_CLIENT_SECRET", "")
-    oidc_redirect_uri: str = os.getenv(
-        "OIDC_REDIRECT_URI", "http://localhost:3000/login/callback"
-    )
-    oidc_scopes: list = get_env_list("OIDC_SCOPES", ["openid", "profile", "email"])
-    oidc_claim_username: str = os.getenv("OIDC_CLAIM_USERNAME", "preferred_username")
-    oidc_claim_email: str = os.getenv("OIDC_CLAIM_EMAIL", "email")
-    oidc_claim_name: str = os.getenv("OIDC_CLAIM_NAME", "name")
-    oidc_auto_provision: bool = get_env_bool("OIDC_AUTO_PROVISION", True)
+    # OIDC Configuration - Now managed via config/oidc_providers.yaml
+    # No environment variables needed - all OIDC settings are in the YAML file
 
     # SSL/TLS Configuration for Git operations
     git_ssl_verify: bool = os.getenv("GIT_SSL_VERIFY", "true").lower() == "true"
