@@ -55,6 +55,7 @@ function OIDCTestCallbackContent() {
 
   useEffect(() => {
     analyzeCallback()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
   const analyzeCallback = async () => {

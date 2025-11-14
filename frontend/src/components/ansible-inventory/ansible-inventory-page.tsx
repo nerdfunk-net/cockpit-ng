@@ -93,7 +93,6 @@ export default function AnsibleInventoryPage() {
   const [locations, setLocations] = useState<LocationItem[]>([])
   const [locationSearchValue, setLocationSearchValue] = useState('')
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
-  const [selectedLocationValue, setSelectedLocationValue] = useState('')
 
   // Preview results
   const [previewDevices, setPreviewDevices] = useState<DeviceInfo[]>([])
@@ -165,6 +164,7 @@ export default function AnsibleInventoryPage() {
       setAuthReady(true)
       loadInitialData()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, token])
 
   const loadInitialData = async () => {
@@ -477,7 +477,6 @@ export default function AnsibleInventoryPage() {
     setCurrentField(fieldName)
     setCurrentValue('')
     setLocationSearchValue('')
-    setSelectedLocationValue('')
     setFieldValues([])
 
     if (fieldName === 'custom_fields') {
@@ -538,14 +537,13 @@ export default function AnsibleInventoryPage() {
     }
 
     setConditions([...conditions, condition])
-    
+
     // Reset form
     setCurrentField('')
     setCurrentOperator('equals')
     setCurrentValue('')
     setCurrentLogic('AND')
     setLocationSearchValue('')
-    setSelectedLocationValue('')
     setFieldValues([])
   }
 
@@ -567,7 +565,6 @@ export default function AnsibleInventoryPage() {
     setCurrentValue('')
     setCurrentLogic('AND')
     setLocationSearchValue('')
-    setSelectedLocationValue('')
     setFieldValues([])
     setPreviewDevices([])
     setTotalDevices(0)
@@ -977,7 +974,6 @@ export default function AnsibleInventoryPage() {
                             onClick={() => {
                               setLocationSearchValue(location.hierarchicalPath)
                               setCurrentValue(location.name)
-                              setSelectedLocationValue(location.name)
                               setShowLocationDropdown(false)
                             }}
                           >

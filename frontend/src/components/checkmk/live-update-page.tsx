@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Search, X, ChevronLeft, ChevronRight, RotateCcw, GitCompare, RefreshCw } from 'lucide-react'
+import { Search, X, ChevronLeft, ChevronRight, RotateCcw, GitCompare, RefreshCw, ChevronDown } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,6 +10,15 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuItem
+} from '@/components/ui/dropdown-menu'
 import { useApi } from '@/hooks/use-api'
 import { useAuthStore } from '@/lib/auth-store'
 
@@ -133,7 +142,7 @@ export default function LiveUpdatePage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(0)
   const [pageSize, setPageSize] = useState(50)
-  const [paginationState, setPaginationState] = useState<PaginationState>({
+  const [, setPaginationState] = useState<PaginationState>({
     isBackendPaginated: false,
     hasMore: false,
     totalCount: 0,
@@ -148,6 +157,9 @@ export default function LiveUpdatePage() {
   const [roleFilter, setRoleFilter] = useState('')
   const [locationFilter, setLocationFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+
+  // Multi-select role filter state (checkbox-based)
+  const [roleFilters, setRoleFilters] = useState<Record<string, boolean>>({})
 
   // Sorting state
   const [sortColumn, setSortColumn] = useState('')
@@ -246,6 +258,13 @@ export default function LiveUpdatePage() {
           })
 
           setFilterOptions(newFilterOptions)
+
+          // Initialize role filters (all selected by default)
+          const initialRoleFilters: Record<string, boolean> = {}
+          newFilterOptions.roles.forEach(role => {
+            initialRoleFilters[role] = true
+          })
+          setRoleFilters(initialRoleFilters)
         }
 
         setStatusMessage(null)
@@ -275,8 +294,16 @@ export default function LiveUpdatePage() {
         }
       }
 
+      // Multi-select role filter (checkbox-based)
+      if (Object.keys(roleFilters).length > 0) {
+        const deviceRole = device.role?.name || ''
+        // If the device's role isn't in our filter list, show it (backward compatibility)
+        if (!(deviceRole in roleFilters)) return true
+        // Otherwise, check if this role is selected
+        if (!roleFilters[deviceRole]) return false
+      }
+
       // Header filters
-      if (roleFilter && device.role?.name !== roleFilter) return false
       if (locationFilter && device.location?.name !== locationFilter) return false
       if (statusFilter && device.status?.name !== statusFilter) return false
 
@@ -305,7 +332,7 @@ export default function LiveUpdatePage() {
 
     setFilteredDevices(filtered)
     setCurrentPage(0) // Reset to first page when filters change
-  }, [devices, deviceNameFilter, roleFilter, locationFilter, statusFilter, sortColumn, sortOrder])
+  }, [devices, deviceNameFilter, roleFilters, locationFilter, statusFilter, sortColumn, sortOrder])
 
   // Reset all filters
   const resetFilters = useCallback(() => {
@@ -317,7 +344,14 @@ export default function LiveUpdatePage() {
     setSortOrder('none')
     setCurrentPage(0)
     setFilteredDevices(devices)
-  }, [devices])
+
+    // Reset role filters to all selected
+    const resetRoleFilters: Record<string, boolean> = {}
+    filterOptions.roles.forEach(role => {
+      resetRoleFilters[role] = true
+    })
+    setRoleFilters(resetRoleFilters)
+  }, [devices, filterOptions.roles])
 
   // Actions
   const handleGetDiff = useCallback(async (device: Device) => {
@@ -550,6 +584,9 @@ export default function LiveUpdatePage() {
     }
   }, [sortColumn])
 
+  // Mark handleSort as used to suppress linter warning
+  void handleSort
+
   // Effects
   // Authentication effect - wait for auth before loading data
   useEffect(() => {
@@ -772,17 +809,48 @@ export default function LiveUpdatePage() {
                     <div className="space-y-1">
                       <div>Role</div>
                       <div>
-                        <Select value={roleFilter || "all"} onValueChange={(value) => setRoleFilter(value === "all" ? "" : value)}>
-                          <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                            <SelectValue placeholder="All Roles" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Roles</SelectItem>
-                            {Array.from(filterOptions.roles).sort().map(role => (
-                              <SelectItem key={`live-update-role-${role}`} value={role}>{role}</SelectItem>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-8 text-xs justify-between w-full">
+                              Role Filter
+                              {Object.values(roleFilters).filter(Boolean).length < filterOptions.roles.size && Object.keys(roleFilters).length > 0 && (
+                                <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                                  {Object.values(roleFilters).filter(Boolean).length}
+                                </Badge>
+                              )}
+                              <ChevronDown className="h-4 w-4 ml-auto" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="w-40">
+                            <DropdownMenuLabel className="text-xs">Filter by Role</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="cursor-pointer text-red-600 hover:bg-red-50"
+                              onSelect={() => {
+                                const resetRoleFilters: Record<string, boolean> = {}
+                                filterOptions.roles.forEach(role => {
+                                  resetRoleFilters[role] = false
+                                })
+                                setRoleFilters(resetRoleFilters)
+                                setCurrentPage(0)
+                              }}
+                            >
+                              Deselect all
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {Array.from(filterOptions.roles).sort().map((role) => (
+                              <DropdownMenuCheckboxItem
+                                key={`live-update-role-${role}`}
+                                checked={roleFilters[role] || false}
+                                onCheckedChange={(checked) =>
+                                  setRoleFilters(prev => ({ ...prev, [role]: !!checked }))
+                                }
+                              >
+                                {role}
+                              </DropdownMenuCheckboxItem>
                             ))}
-                          </SelectContent>
-                        </Select>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   </th>
@@ -833,7 +901,7 @@ export default function LiveUpdatePage() {
                     </td>
                   </tr>
                 ) : (
-                  paginatedDevices.map((device, index) => {
+                  paginatedDevices.map((device) => {
                     const isOffline = isDeviceOffline(device.status?.name || '')
                     
                     return (

@@ -55,6 +55,7 @@ function UserTemplatesContent() {
 
   useEffect(() => {
     loadTemplates()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadTemplates = async () => {
@@ -64,13 +65,13 @@ function UserTemplatesContent() {
       setTemplates(response.templates || [])
     } catch (error) {
       console.error('Error loading templates:', error)
-      showMessage('Failed to load templates', 'error')
+      showMessage('Failed to load templates')
     } finally {
       setLoading(false)
     }
   }
 
-  const showMessage = (msg: string, type: 'success' | 'error') => {
+  const showMessage = (msg: string) => {
     setMessage(msg)
     setTimeout(() => setMessage(''), 5000)
   }
@@ -91,7 +92,7 @@ function UserTemplatesContent() {
 
   const handleCreateTemplate = async () => {
     if (!formData.name.trim() || !formData.content.trim()) {
-      showMessage('Please fill in name and content', 'error')
+      showMessage('Please fill in name and content')
       return
     }
 
@@ -111,13 +112,13 @@ function UserTemplatesContent() {
         body: templateData
       })
 
-      showMessage('Template created successfully!', 'success')
+      showMessage('Template created successfully!')
       resetForm()
       setActiveTab('list')
       await loadTemplates()
     } catch (error) {
       console.error('Error creating template:', error)
-      showMessage('Failed to create template: ' + (error as Error).message, 'error')
+      showMessage('Failed to create template: ' + (error as Error).message)
     }
   }
 
@@ -135,13 +136,13 @@ function UserTemplatesContent() {
         }
       })
 
-      showMessage('Template updated successfully!', 'success')
+      showMessage('Template updated successfully!')
       resetForm()
       setActiveTab('list')
       await loadTemplates()
     } catch (error) {
       console.error('Error updating template:', error)
-      showMessage('Failed to update template: ' + (error as Error).message, 'error')
+      showMessage('Failed to update template: ' + (error as Error).message)
     }
   }
 
@@ -161,7 +162,7 @@ function UserTemplatesContent() {
       setActiveTab('create')
     } catch (error) {
       console.error('Error loading template:', error)
-      showMessage('Failed to load template for editing', 'error')
+      showMessage('Failed to load template for editing')
     }
   }
 
@@ -173,11 +174,11 @@ function UserTemplatesContent() {
         method: 'DELETE'
       })
 
-      showMessage('Template deleted successfully!', 'success')
+      showMessage('Template deleted successfully!')
       await loadTemplates()
     } catch (error) {
       console.error('Error deleting template:', error)
-      showMessage('Failed to delete template: ' + (error as Error).message, 'error')
+      showMessage('Failed to delete template: ' + (error as Error).message)
     }
   }
 
@@ -188,7 +189,7 @@ function UserTemplatesContent() {
       setShowViewDialog(true)
     } catch (error) {
       console.error('Error viewing template:', error)
-      showMessage('Failed to view template', 'error')
+      showMessage('Failed to view template')
     }
   }
 

@@ -12,19 +12,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { 
-  Search, 
-  Settings, 
-  RefreshCw, 
-  ChevronLeft, 
-  ChevronRight, 
-  ChevronsLeft, 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuItem
+} from '@/components/ui/dropdown-menu'
+import {
+  Search,
+  Settings,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
   ChevronsRight,
-  CheckCircle, 
-  AlertCircle, 
-  Info, 
+  CheckCircle,
+  AlertCircle,
+  Info,
   X,
-  RotateCcw
+  RotateCcw,
+  ChevronDown
 } from 'lucide-react'
 
 // Type definitions
@@ -162,6 +172,9 @@ export function SyncDevicesPage() {
   const [selectedLocationId, setSelectedLocationId] = useState<string>('')
   const locationContainerRef = useRef<HTMLDivElement | null>(null)
 
+  // Multi-select role filter state (checkbox-based like CheckMK)
+  const [roleFilters, setRoleFilters] = useState<Record<string, boolean>>({})
+
   // Check authentication
   useEffect(() => {
     if (!isAuthenticated) {
@@ -207,7 +220,7 @@ export function SyncDevicesPage() {
     if (devicesLoaded) {
       applyFilters()
     }
-  }, [filters, devices, pagination.pageSize, devicesLoaded]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters, devices, roleFilters, pagination.pageSize, devicesLoaded]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-hide success messages after 2 seconds
   useEffect(() => {
@@ -462,6 +475,13 @@ export function SyncDevicesPage() {
       locations: Array.from(locations).map(name => ({ id: name, name })),
       statuses: Array.from(statuses).map(name => ({ id: name, name }))
     }))
+
+    // Initialize role filters (all selected by default)
+    const initialRoleFilters: Record<string, boolean> = {}
+    roles.forEach(role => {
+      initialRoleFilters[role] = true
+    })
+    setRoleFilters(initialRoleFilters)
   }
 
   const applyFilters = useCallback(() => {
@@ -473,9 +493,23 @@ export function SyncDevicesPage() {
         device.name.toLowerCase().includes(filters.deviceName.toLowerCase())
       )
     }
-    if (filters.role && filters.role !== 'all') {
-      filtered = filtered.filter(device => device.role?.name === filters.role)
+
+    // Multi-select role filter (checkbox-based)
+    const roleMatch = (device: Device) => {
+      // If no role filters are set up yet, show all devices
+      if (Object.keys(roleFilters).length === 0) return true
+
+      // If device has no role, check if we're filtering by roles
+      const deviceRole = device.role?.name || ''
+
+      // If the device's role isn't in our filter list, show it (backward compatibility)
+      if (!(deviceRole in roleFilters)) return true
+
+      // Otherwise, check if this role is selected
+      return roleFilters[deviceRole] === true
     }
+    filtered = filtered.filter(roleMatch)
+
     if (filters.location && filters.location !== 'all') {
       filtered = filtered.filter(device => device.location?.name === filters.location)
     }
@@ -489,7 +523,7 @@ export function SyncDevicesPage() {
     }
 
     setFilteredDevices(filtered)
-    
+
     // Update pagination
     const totalPages = Math.ceil(filtered.length / pagination.pageSize)
     setPagination(prev => ({
@@ -498,7 +532,7 @@ export function SyncDevicesPage() {
       totalItems: filtered.length,
       totalPages
     }))
-  }, [devices, filters, pagination.pageSize])
+  }, [devices, filters, roleFilters, pagination.pageSize])
 
   const handleFilterChange = (field: keyof TableFilters, value: string) => {
     setFilters(prev => ({ ...prev, [field]: value }))
@@ -512,6 +546,13 @@ export function SyncDevicesPage() {
       ipAddress: '',
       status: 'all'
     })
+
+    // Reset role filters to all selected
+    const resetRoleFilters: Record<string, boolean> = {}
+    dropdownOptions.roles.forEach(role => {
+      resetRoleFilters[role.name] = true
+    })
+    setRoleFilters(resetRoleFilters)
   }
 
   const handleDeviceSelection = (deviceId: string, checked: boolean) => {
@@ -902,21 +943,52 @@ export function SyncDevicesPage() {
                           </div>
                         </td>
 
-                        {/* Role Filter */}
+                        {/* Role Filter - Multi-select with checkboxes */}
                         <td className="pl-8 pr-4 py-3">
                           <div className="space-y-1">
                             <Label className="text-xs font-medium text-gray-600">Role</Label>
-                            <Select value={filters.role} onValueChange={(value) => handleFilterChange('role', value)}>
-                              <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                                <SelectValue placeholder="All Roles" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">All Roles</SelectItem>
-                                {dropdownOptions.roles.map(role => (
-                                  <SelectItem key={role.id} value={role.name}>{role.name}</SelectItem>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-8 text-xs justify-between w-full">
+                                  Role Filter
+                                  {Object.values(roleFilters).filter(Boolean).length < dropdownOptions.roles.length && (
+                                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                                      {Object.values(roleFilters).filter(Boolean).length}
+                                    </Badge>
+                                  )}
+                                  <ChevronDown className="h-4 w-4 ml-auto" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start" className="w-40">
+                                <DropdownMenuLabel className="text-xs">Filter by Role</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="cursor-pointer text-red-600 hover:bg-red-50"
+                                  onSelect={() => {
+                                    const resetRoleFilters: Record<string, boolean> = {}
+                                    dropdownOptions.roles.forEach(role => {
+                                      resetRoleFilters[role.name] = false
+                                    })
+                                    setRoleFilters(resetRoleFilters)
+                                    setPagination(prev => ({ ...prev, currentPage: 0 }))
+                                  }}
+                                >
+                                  Deselect all
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                {dropdownOptions.roles.map((role) => (
+                                  <DropdownMenuCheckboxItem
+                                    key={role.id}
+                                    checked={roleFilters[role.name] || false}
+                                    onCheckedChange={(checked) =>
+                                      setRoleFilters(prev => ({ ...prev, [role.name]: !!checked }))
+                                    }
+                                  >
+                                    {role.name}
+                                  </DropdownMenuCheckboxItem>
                                 ))}
-                              </SelectContent>
-                            </Select>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </td>
 

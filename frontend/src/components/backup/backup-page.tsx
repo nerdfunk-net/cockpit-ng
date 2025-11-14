@@ -70,7 +70,7 @@ export default function BackupPage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(0)
   const [pageSize, setPageSize] = useState(50)
-  const [paginationState, setPaginationState] = useState<PaginationState>({
+  const [, setPaginationState] = useState<PaginationState>({
     isBackendPaginated: false,
     hasMore: false,
     totalCount: 0,
@@ -108,12 +108,10 @@ export default function BackupPage() {
   const [backupInProgress, setBackupInProgress] = useState<Set<string>>(new Set())
 
   // Show status message
-  const showMessage = useCallback((text: string, type: 'success' | 'error' | 'info' = 'info') => {
-    setStatusMessage({ type, text })
-    // Auto-hide after 3 seconds for success and info
-    if (type === 'success' || type === 'info') {
-      setTimeout(() => setStatusMessage(null), 3000)
-    }
+  const showMessage = useCallback((text: string) => {
+    setStatusMessage({ type: 'info', text })
+    // Auto-hide after 3 seconds
+    setTimeout(() => setStatusMessage(null), 3000)
   }, [])
 
   // Load devices from API
@@ -189,7 +187,7 @@ export default function BackupPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load devices'
       setError(message)
-      showMessage(message, 'error')
+      showMessage(message)
     } finally {
       setLoading(false)
     }
@@ -275,18 +273,18 @@ export default function BackupPage() {
     try {
       setBackupInProgress(prev => new Set(prev.add(device.id)))
       
-      showMessage(`Starting backup for ${device.name}`, 'info')
+      showMessage(`Starting backup for ${device.name}`)
 
       // Simulate backup API call - replace with actual endpoint
       await new Promise(resolve => setTimeout(resolve, 2000))
       
-      showMessage(`Backup completed for ${device.name}`, 'success')
+      showMessage(`Backup completed for ${device.name}`)
 
       // Refresh devices to update last backup time
       setTimeout(() => loadDevices(), 1000)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Backup failed'
-      showMessage(`Backup failed for ${device.name}: ${message}`, 'error')
+      showMessage(`Backup failed for ${device.name}: ${message}`)
     } finally {
       setBackupInProgress(prev => {
         const newSet = new Set(prev)
@@ -312,8 +310,8 @@ export default function BackupPage() {
       
       setBackupHistory(mockHistory)
       setIsHistoryModalOpen(true)
-    } catch (err) {
-      showMessage('Failed to load backup history', 'error')
+    } catch {
+      showMessage('Failed to load backup history')
     }
   }, [showMessage])
 
@@ -350,10 +348,12 @@ export default function BackupPage() {
       setAuthReady(true)
       loadDevices()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, token])
 
   useEffect(() => {
     applyFilters()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [devices, deviceNameFilter, roleFilter, locationFilter, deviceTypeFilter, statusFilter, dateFilter, dateComparison, sortColumn, sortOrder]) // Run when filter/sort dependencies change
 
   // Helper functions
@@ -657,7 +657,7 @@ export default function BackupPage() {
                     </td>
                   </tr>
                 ) : (
-                  paginatedDevices.map((device, index) => {
+                  paginatedDevices.map((device) => {
                     const isOffline = isDeviceOffline(device.status?.name || '')
                     const isBackingUp = backupInProgress.has(device.id)
                     

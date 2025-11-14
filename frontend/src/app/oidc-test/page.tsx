@@ -24,13 +24,6 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-interface OIDCProvider {
-  provider_id: string
-  name: string
-  description?: string
-  icon?: string
-  display_order: number
-}
 
 interface ProviderDebugInfo {
   provider_id: string
@@ -98,6 +91,7 @@ export default function OIDCTestPage() {
 
   useEffect(() => {
     fetchDebugInfo()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchDebugInfo = async () => {

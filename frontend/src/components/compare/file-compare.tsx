@@ -133,6 +133,7 @@ export default function FileCompare() {
   // Load files on mount
   useEffect(() => {
     loadRepositories()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Load files when repository changes
@@ -145,6 +146,7 @@ export default function FileCompare() {
       setSelectedLeftFile(null)
       setSelectedRightFile(null)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRepo])
 
   // Load font size from localStorage

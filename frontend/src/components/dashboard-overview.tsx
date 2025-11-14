@@ -58,6 +58,7 @@ export default function DashboardOverview() {
   useEffect(() => {
     loadDashboardData()
     loadCheckmkData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadCheckmkData = async () => {

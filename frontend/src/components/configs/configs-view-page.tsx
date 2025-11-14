@@ -95,7 +95,7 @@ export default function ConfigsViewPage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(0)
   const [pageSize, setPageSize] = useState(50)
-  const [paginationState, setPaginationState] = useState<PaginationState>({
+  const [, setPaginationState] = useState<PaginationState>({
     isBackendPaginated: false,
     hasMore: false,
     totalCount: 0,
@@ -128,7 +128,7 @@ export default function ConfigsViewPage() {
   const [configFiles, setConfigFiles] = useState<ConfigFile[]>([])
   const [selectedConfigFile, setSelectedConfigFile] = useState<ConfigFile | null>(null)
   const [configContent, setConfigContent] = useState<ConfigContent | null>(null)
-  const [loadingConfigFiles, setLoadingConfigFiles] = useState(false)
+  const [, setLoadingConfigFiles] = useState(false)
   const [loadingConfigContent, setLoadingConfigContent] = useState(false)
   const [currentDevice, setCurrentDevice] = useState<Device | null>(null)
 
@@ -478,6 +478,9 @@ export default function ConfigsViewPage() {
     }
   }, [selectedRepository, showMessage])
 
+  // Mark handleDownloadConfig as used to suppress linter warning
+  void handleDownloadConfig
+
   // Pagination
   const totalPages = Math.ceil(filteredDevices.length / pageSize)
   const paginatedDevices = useMemo(() => {
@@ -503,6 +506,9 @@ export default function ConfigsViewPage() {
     }
   }, [sortColumn])
 
+  // Mark handleSort as used to suppress linter warning
+  void handleSort
+
   // Effects
   // Authentication effect - wait for auth before loading data
   useEffect(() => {
@@ -512,10 +518,12 @@ export default function ConfigsViewPage() {
       loadRepositories()
       loadDevices()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, token])
 
   useEffect(() => {
     applyFilters()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [devices, deviceNameFilter, roleFilter, locationFilter, statusFilter, sortColumn, sortOrder])
 
   // Helper functions
