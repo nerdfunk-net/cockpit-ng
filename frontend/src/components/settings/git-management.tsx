@@ -140,11 +140,13 @@ const GitManagement: React.FC = () => {
   useEffect(() => {
     loadRepositories()
     loadCredentials()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Filter repositories when search or filters change
   useEffect(() => {
     filterRepositories()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repositories, searchTerm, filterCategory, filterStatus])
 
   const showMessage = (text: string, type: 'success' | 'error') => {
@@ -214,7 +216,7 @@ const GitManagement: React.FC = () => {
       showMessage('Repository added successfully!', 'success')
       resetForm()
       loadRepositories()
-    } catch (error) {
+    } catch {
       showMessage('Failed to add repository', 'error')
     } finally {
       setIsSubmitting(false)
@@ -259,7 +261,7 @@ const GitManagement: React.FC = () => {
         type: response.success ? 'success' : 'error',
         text: response.message
       })
-    } catch (error) {
+    } catch {
       setConnectionStatus({
         type: 'error',
         text: 'Connection test failed'
@@ -319,7 +321,7 @@ const GitManagement: React.FC = () => {
       await apiCall(`git-repositories/${repo.id}`, { method: 'DELETE' })
       showMessage('Repository deleted successfully!', 'success')
       loadRepositories()
-    } catch (error) {
+    } catch {
       showMessage('Failed to delete repository', 'error')
     }
   }
@@ -329,7 +331,7 @@ const GitManagement: React.FC = () => {
       await apiCall(`git/${repo.id}/sync`, { method: 'POST' })
       showMessage('Repository synced successfully!', 'success')
       loadRepositories()
-    } catch (error) {
+    } catch {
       showMessage('Failed to sync repository', 'error')
     }
   }
@@ -343,7 +345,7 @@ const GitManagement: React.FC = () => {
       await apiCall(`git/${repo.id}/remove-and-sync`, { method: 'POST' })
       showMessage('Repository removed and re-cloned successfully!', 'success')
       loadRepositories()
-    } catch (error) {
+    } catch {
       showMessage('Failed to remove and sync repository', 'error')
     }
   }
@@ -359,7 +361,7 @@ const GitManagement: React.FC = () => {
       } else {
         throw new Error('Failed to load repository status')
       }
-    } catch (error) {
+    } catch {
       showMessage('Failed to load repository status', 'error')
       setShowStatusDialog(false)
     }
