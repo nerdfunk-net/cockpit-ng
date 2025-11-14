@@ -309,26 +309,6 @@ export default function FileCompare() {
     }
   }
 
-  const getDiffLineClass = (type: DiffLine['type']) => {
-    switch (type) {
-      case 'insert': return 'bg-green-50 border-l-4 border-l-green-500'
-      case 'delete': return 'bg-red-50 border-l-4 border-l-red-500'
-      case 'replace': return 'bg-yellow-50 border-l-4 border-l-yellow-500'
-      case 'equal': return 'bg-gray-50'
-      default: return 'bg-gray-50'
-    }
-  }
-
-  const getDiffIcon = (type: DiffLine['type']) => {
-    switch (type) {
-      case 'insert': return <span className="text-green-600">+</span>
-      case 'delete': return <span className="text-red-600">-</span>
-      case 'replace': return <span className="text-yellow-600">~</span>
-      case 'equal': return <span className="text-gray-400"> </span>
-      default: return <span className="text-gray-400"> </span>
-    }
-  }
-
   // Side-by-side styling functions
   const getLeftLineClass = (type: DiffLine['type']) => {
     switch (type) {

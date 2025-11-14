@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -101,7 +101,7 @@ export default function FileHistoryCompare() {
   const [selectedBranch, setSelectedBranch] = useState<string>('')
   const [commits, setCommits] = useState<Commit[]>([])
   const [leftCommit, setLeftCommit] = useState<string>('')
-  const [rightCommit, setRightCommit] = useState<string>('')
+  const [, setRightCommit] = useState<string>('')
   
   // File selection state
   const [gitFiles, setGitFiles] = useState<FileItem[]>([])
@@ -454,15 +454,6 @@ export default function FileHistoryCompare() {
     const element = document.querySelector(`[data-line-index="${lineIndex}"]`)
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }
-  }
-
-  const getDiffPrefix = (type: DiffLine['type']) => {
-    switch (type) {
-      case 'insert': return '+ '
-      case 'delete': return '- '
-      case 'replace': return '~ '
-      default: return '  '
     }
   }
 
