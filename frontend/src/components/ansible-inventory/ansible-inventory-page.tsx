@@ -1,6 +1,6 @@
 /**
  * Refactored Ansible Inventory Page - Main Component
- * Uses extracted hooks, components, and utilities for better maintainability
+ * Uses shared DeviceSelector component and custom hooks for maintainability
  */
 
 'use client'
@@ -10,31 +10,20 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 import { useApi } from '@/hooks/use-api'
 import { useAuthStore } from '@/lib/auth-store'
 
+// Import shared DeviceSelector
+import { DeviceSelector, type DeviceInfo, type LogicalCondition } from '@/components/shared/device-selector'
+
 // Import custom hooks
 import {
-  useConditionBuilder,
-  usePreviewResults,
   useInventoryGeneration,
   useGitOperations,
-  useSavedInventories,
 } from './hooks'
 
-// Import components (to be created)
-import { ConditionBuilderTab } from './tabs'
-import { PreviewResultsTab } from './tabs'
+// Import components
 import { InventoryGenerationTab } from './tabs'
 
-// Import dialogs (to be created)
-import { SaveInventoryDialog } from './dialogs'
-import { LoadInventoryDialog } from './dialogs'
+// Import dialogs
 import { GitSuccessDialog } from './dialogs'
-import { CustomFieldsDialog } from './dialogs'
-
-// Import utilities
-import { buildOperationsFromConditions } from './utils'
-
-// Import types
-import type { DeviceInfo, LogicalCondition } from './types'
 
 export default function AnsibleInventoryPage() {
   const { apiCall } = useApi()
@@ -43,12 +32,13 @@ export default function AnsibleInventoryPage() {
   // Authentication state
   const [authReady, setAuthReady] = useState(false)
 
+  // Device selection state (from DeviceSelector)
+  const [previewDevices, setPreviewDevices] = useState<DeviceInfo[]>([])
+  const [deviceConditions, setDeviceConditions] = useState<LogicalCondition[]>([])
+
   // Use custom hooks for state management
-  const conditionBuilder = useConditionBuilder()
-  const previewResults = usePreviewResults()
   const inventoryGeneration = useInventoryGeneration()
   const gitOperations = useGitOperations()
-  const savedInventories = useSavedInventories()
 
   // Authentication effect
   useEffect(() => {
@@ -63,36 +53,11 @@ export default function AnsibleInventoryPage() {
   const loadInitialData = async () => {
     try {
       await Promise.all([
-        loadFieldOptions(),
         loadTemplateCategories(),
         loadGitRepositories()
       ])
     } catch (error) {
       console.error('Error loading initial data:', error)
-    }
-  }
-
-  const loadFieldOptions = async () => {
-    try {
-      const response = await apiCall<{
-        fields: Array<{value: string, label: string}>
-        operators: Array<{value: string, label: string}>
-        logical_operations: Array<{value: string, label: string}>
-      }>('ansible-inventory/field-options')
-      
-      conditionBuilder.setFieldOptions(response.fields)
-      conditionBuilder.setOperatorOptions(response.operators)
-      
-      // Modify logic options display labels
-      const modifiedLogicOptions = response.logical_operations.map(option => {
-        if (option.value === 'not') {
-          return { ...option, label: '& NOT' }
-        }
-        return option
-      })
-      conditionBuilder.setLogicOptions(modifiedLogicOptions)
-    } catch (error) {
-      console.error('Error loading field options:', error)
     }
   }
 
@@ -119,36 +84,10 @@ export default function AnsibleInventoryPage() {
     }
   }
 
-  const handlePreviewResults = async () => {
-    if (conditionBuilder.conditions.length === 0) {
-      alert('Please add at least one condition.')
-      return
-    }
-
-    previewResults.setIsLoadingPreview(true)
-    try {
-      const operations = buildOperationsFromConditions(conditionBuilder.conditions)
-      const response = await apiCall<{
-        devices: DeviceInfo[]
-        total_count: number
-        operations_executed: number
-      }>('ansible-inventory/preview', {
-        method: 'POST',
-        body: { operations }
-      })
-
-      previewResults.updatePreview(
-        response.devices,
-        response.total_count,
-        response.operations_executed
-      )
-      inventoryGeneration.setShowTemplateSection(true)
-    } catch (error) {
-      console.error('Error previewing results:', error)
-      alert('Error previewing results: ' + (error as Error).message)
-    } finally {
-      previewResults.setIsLoadingPreview(false)
-    }
+  const handleDevicesSelected = (devices: DeviceInfo[], conditions: LogicalCondition[]) => {
+    setPreviewDevices(devices)
+    setDeviceConditions(conditions)
+    inventoryGeneration.setShowTemplateSection(true)
   }
 
   // Loading state
@@ -180,65 +119,43 @@ export default function AnsibleInventoryPage() {
         </div>
       </div>
 
-      {/* Condition Builder Tab */}
-      <ConditionBuilderTab
-        conditionBuilder={conditionBuilder}
-        apiCall={apiCall}
-        onPreview={handlePreviewResults}
-        savedInventories={savedInventories}
-      />
+      {/* Device Selector - replaces ConditionBuilderTab and PreviewResultsTab */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Select Devices</CardTitle>
+          <CardDescription>
+            Use logical operations to filter devices for inventory generation
+          </CardDescription>
+        </CardHeader>
+      </Card>
 
-      {/* Preview Results Tab */}
-      {previewResults.showPreviewResults && (
-        <PreviewResultsTab
-          previewResults={previewResults}
-        />
-      )}
+      <DeviceSelector
+        onDevicesSelected={handleDevicesSelected}
+        showActions={true}
+        showSaveLoad={true}
+        compact={false}
+        enableSelection={false}
+        initialConditions={deviceConditions}
+        initialDevices={previewDevices}
+      />
 
       {/* Inventory Generation Tab */}
       {inventoryGeneration.showTemplateSection && (
         <InventoryGenerationTab
           inventoryGeneration={inventoryGeneration}
           gitOperations={gitOperations}
-          previewResults={previewResults}
-          conditionBuilder={conditionBuilder}
+          previewDevices={previewDevices}
+          deviceConditions={deviceConditions}
           apiCall={apiCall}
           token={token}
         />
       )}
 
       {/* Dialogs */}
-      <CustomFieldsDialog
-        show={inventoryGeneration.showCustomFieldsMenu}
-        onClose={() => inventoryGeneration.setShowCustomFieldsMenu(false)}
-        customFields={conditionBuilder.customFields}
-      />
-
       <GitSuccessDialog
         show={gitOperations.showGitSuccessModal}
         onClose={() => gitOperations.setShowGitSuccessModal(false)}
         result={gitOperations.gitPushResult}
-      />
-
-      <SaveInventoryDialog
-        show={savedInventories.showSaveModal}
-        onClose={() => savedInventories.closeSaveModal()}
-        conditions={conditionBuilder.conditions}
-        savedInventories={savedInventories}
-        apiCall={apiCall}
-      />
-
-      <LoadInventoryDialog
-        show={savedInventories.showLoadModal}
-        onClose={() => savedInventories.closeLoadModal()}
-        savedInventories={savedInventories}
-        apiCall={apiCall}
-        onLoad={(loadedConditions: LogicalCondition[]) => {
-          conditionBuilder.loadConditions(loadedConditions)
-          previewResults.resetPreview()
-          inventoryGeneration.setShowTemplateSection(false)
-          inventoryGeneration.setShowInventorySection(false)
-        }}
       />
     </div>
   )

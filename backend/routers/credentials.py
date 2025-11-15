@@ -113,12 +113,42 @@ def delete_credential(cred_id: int) -> dict:
     "/{cred_id}/password",
     dependencies=[Depends(require_permission("settings.credentials", "read"))],
 )
-def get_credential_password(cred_id: int) -> dict:
-    """Get the decrypted password for a credential."""
+def get_credential_password(
+    cred_id: int, current_user: str = Depends(get_current_username)
+) -> dict:
+    """Get the decrypted password for a credential.
+    
+    Only returns password if:
+    - Credential is general (accessible to all)
+    - Credential is private and owned by current user
+    """
     try:
+        # First check if credential exists and is accessible
+        general_creds = cred_mgr.list_credentials(
+            include_expired=False, source="general"
+        )
+        all_private = cred_mgr.list_credentials(
+            include_expired=False, source="private"
+        )
+        user_private = [
+            cred for cred in all_private if cred.get("owner") == current_user
+        ]
+        accessible_creds = general_creds + user_private
+        
+        credential = next((c for c in accessible_creds if c["id"] == cred_id), None)
+        
+        if not credential:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Credential with ID {cred_id} not found or not accessible"
+            )
+        
+        # Now get the decrypted password
         password = cred_mgr.get_decrypted_password(cred_id)
         if password is None:
             raise HTTPException(status_code=404, detail="Credential not found")
         return {"password": password}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

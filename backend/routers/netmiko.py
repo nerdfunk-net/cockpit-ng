@@ -193,7 +193,7 @@ async def execute_commands(
                     include_expired=False, source="private"
                 )
                 user_private = [
-                    c for c in private_creds if c.get("owner") == current_user
+                    c for c in private_creds if c.get("owner") == current_user["username"]
                 ]
                 credentials = general_creds + user_private
 
@@ -445,7 +445,7 @@ async def execute_template(
                         include_expired=False, source="private"
                     )
                     user_private = [
-                        c for c in private_creds if c.get("owner") == current_user
+                        c for c in private_creds if c.get("owner") == current_user["username"]
                     ]
                     credentials = general_creds + user_private
 

@@ -9,18 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { FileText, Download, GitBranch, Settings, Copy } from 'lucide-react'
 import { buildOperationsFromConditions } from '../utils'
-import type { ApiCallType } from '../types'
+import type { ApiCallType, DeviceInfo, LogicalCondition } from '../types'
 
 type InventoryGenerationType = ReturnType<typeof import('../hooks').useInventoryGeneration>
 type GitOperationsType = ReturnType<typeof import('../hooks').useGitOperations>
-type ConditionBuilderType = ReturnType<typeof import('../hooks').useConditionBuilder>
-type PreviewResultsType = ReturnType<typeof import('../hooks').usePreviewResults>
 
 interface InventoryGenerationTabProps {
   inventoryGeneration: InventoryGenerationType
   gitOperations: GitOperationsType
-  previewResults: PreviewResultsType
-  conditionBuilder: ConditionBuilderType
+  previewDevices: DeviceInfo[]
+  deviceConditions: LogicalCondition[]
   apiCall: ApiCallType
   token: string | null
 }
@@ -28,8 +26,8 @@ interface InventoryGenerationTabProps {
 export function InventoryGenerationTab({
   inventoryGeneration,
   gitOperations,
-  previewResults,
-  conditionBuilder,
+  previewDevices,
+  deviceConditions,
   apiCall,
   token,
 }: InventoryGenerationTabProps) {
@@ -58,9 +56,6 @@ export function InventoryGenerationTab({
     updateGitPushResult,
   } = gitOperations
 
-  const { conditions } = conditionBuilder
-  const { previewDevices } = previewResults
-
   const loadTemplatesForCategory = async (category: string) => {
     if (!category) {
       setAvailableTemplates([])
@@ -84,7 +79,7 @@ export function InventoryGenerationTab({
 
     setIsGeneratingInventory(true)
     try {
-      const operations = buildOperationsFromConditions(conditions)
+      const operations = buildOperationsFromConditions(deviceConditions)
       const response = await apiCall<{
         inventory_content: string
         template_used: string
@@ -115,7 +110,7 @@ export function InventoryGenerationTab({
     }
 
     try {
-      const operations = buildOperationsFromConditions(conditions)
+      const operations = buildOperationsFromConditions(deviceConditions)
 
       // Use fetch for file download
       const response = await fetch('/api/proxy/ansible-inventory/download', {
@@ -163,7 +158,7 @@ export function InventoryGenerationTab({
 
     setIsPushingToGit(true)
     try {
-      const operations = buildOperationsFromConditions(conditions)
+      const operations = buildOperationsFromConditions(deviceConditions)
 
       const response = await apiCall<{
         success: boolean
