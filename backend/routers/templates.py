@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 import os
 
-from core.auth import verify_admin_token, verify_token
+from core.auth import require_permission
 from models.templates import (
     TemplateRequest,
     TemplateResponse,
@@ -37,7 +37,7 @@ async def list_templates(
     source: Optional[str] = None,
     search: Optional[str] = None,
     active_only: bool = True,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("network.templates", "read")),
 ) -> TemplateListResponse:
     """List all templates with optional filtering.
 
@@ -96,7 +96,7 @@ async def list_templates(
 
 @router.get("/categories")
 async def get_template_categories(
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("network.templates", "read")),
 ) -> List[str]:
     """Get all template categories."""
     try:
@@ -114,7 +114,7 @@ async def get_template_categories(
 
 @router.get("/scan-import", response_model=TemplateScanImportResponse)
 async def scan_import_directory(
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("network.templates", "write")),
 ) -> TemplateScanImportResponse:
     """Scan the import directory for YAML template files."""
     try:
@@ -197,9 +197,9 @@ async def scan_import_directory(
 
 @router.post("", response_model=TemplateResponse)
 async def create_template(
-    template_request: TemplateRequest, current_user: dict = Depends(verify_token)
+    template_request: TemplateRequest, current_user: dict = Depends(require_permission("network.templates", "write"))
 ) -> TemplateResponse:
-    """Create a new template. All authenticated users can create templates."""
+    """Create a new template. Requires write permission."""
     try:
         from template_manager import template_manager
 
@@ -232,7 +232,7 @@ async def create_template(
 
 @router.get("/{template_id}", response_model=TemplateResponse)
 async def get_template(
-    template_id: int, current_user: dict = Depends(verify_token)
+    template_id: int, current_user: dict = Depends(require_permission("network.templates", "read"))
 ) -> TemplateResponse:
     """Get a specific template by ID."""
     try:
@@ -259,7 +259,7 @@ async def get_template(
 
 @router.get("/name/{template_name}", response_model=TemplateResponse)
 async def get_template_by_name(
-    template_name: str, current_user: dict = Depends(verify_admin_token)
+    template_name: str, current_user: dict = Depends(require_permission("network.templates", "read"))
 ) -> TemplateResponse:
     """Get a template by name."""
     try:
@@ -288,9 +288,9 @@ async def get_template_by_name(
 async def update_template(
     template_id: int,
     template_request: TemplateUpdateRequest,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("network.templates", "write")),
 ) -> TemplateResponse:
-    """Update an existing template. Users can update their own templates, admins can update all."""
+    """Update an existing template. Requires write permission."""
     try:
         from template_manager import template_manager
 
@@ -344,7 +344,7 @@ async def update_template(
 async def delete_template(
     template_id: int,
     hard_delete: bool = True,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("network.templates", "delete")),
 ) -> Dict[str, str]:
     """Delete a template."""
     try:
@@ -372,7 +372,7 @@ async def delete_template(
 
 @router.get("/{template_id}/content")
 async def get_template_content(
-    template_id: int, current_user: dict = Depends(verify_admin_token)
+    template_id: int, current_user: dict = Depends(require_permission("network.templates", "read"))
 ) -> Dict[str, str]:
     """Get template content."""
     try:
@@ -401,7 +401,7 @@ async def get_template_content(
 async def render_template(
     template_id: int,
     render_request: TemplateContentRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("network.templates", "write")),
 ) -> TemplateContentResponse:
     """Render a template with provided variables."""
     try:
@@ -460,7 +460,7 @@ async def render_template(
 
 @router.get("/{template_id}/versions")
 async def get_template_versions(
-    template_id: int, current_user: dict = Depends(verify_admin_token)
+    template_id: int, current_user: dict = Depends(require_permission("network.templates", "read"))
 ) -> List[Dict[str, Any]]:
     """Get version history for a template."""
     try:
@@ -485,7 +485,7 @@ async def upload_template_file(
     description: Optional[str] = Form(None),
     template_type: str = Form("jinja2"),
     scope: str = Form("global"),
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("network.templates", "write")),
 ) -> TemplateResponse:
     """Upload a template file."""
     try:
@@ -541,7 +541,7 @@ async def upload_template_file(
 
 @router.post("/git/test")
 async def test_git_connection(
-    git_test: TemplateGitTestRequest, current_user: dict = Depends(verify_admin_token)
+    git_test: TemplateGitTestRequest, current_user: dict = Depends(require_permission("network.templates", "write"))
 ) -> Dict[str, Any]:
     """Test Git repository connection for templates."""
     try:
@@ -565,7 +565,7 @@ async def test_git_connection(
 
 @router.post("/sync", response_model=TemplateSyncResponse)
 async def sync_templates(
-    sync_request: TemplateSyncRequest, current_user: dict = Depends(verify_admin_token)
+    sync_request: TemplateSyncRequest, current_user: dict = Depends(require_permission("network.templates", "write"))
 ) -> TemplateSyncResponse:
     """Sync templates from Git repositories."""
     try:
@@ -606,7 +606,7 @@ async def sync_templates(
 @router.post("/import", response_model=TemplateImportResponse)
 async def import_templates(
     import_request: TemplateImportRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("network.templates", "write")),
 ) -> TemplateImportResponse:
     """Import multiple templates from various sources."""
     try:
@@ -812,7 +812,7 @@ async def import_templates(
 @router.post("/render", response_model=TemplateRenderResponse)
 async def render_template_endpoint(
     render_request: TemplateRenderRequest,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("network.templates", "read")),
 ) -> TemplateRenderResponse:
     """
     Render a template with category-specific logic.
@@ -888,7 +888,7 @@ async def render_template_endpoint(
 
 @router.get("/health")
 async def template_health_check(
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("network.templates", "read")),
 ) -> Dict[str, Any]:
     """Check template system health."""
     try:

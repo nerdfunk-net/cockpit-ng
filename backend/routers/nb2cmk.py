@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from core.auth import verify_token
+from core.auth import require_permission
 from services.nb2cmk_base_service import nb2cmk_service
 from services.nb2cmk_background_service import nb2cmk_background_service
 from models.nb2cmk import (
@@ -25,7 +25,7 @@ router = APIRouter(prefix="/api/nb2cmk", tags=["nb2cmk"])
 @router.get("/jobs")
 async def get_jobs_list(
     limit: int = 100,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
 ):
     """Get list of recent background jobs"""
     try:
@@ -74,7 +74,7 @@ async def get_jobs_list(
 
 @router.post("/start-diff-job", response_model=JobStartResponse)
 async def start_devices_diff_job(
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Start a background job to get all devices from Nautobot with CheckMK comparison status"""
     try:
@@ -92,7 +92,7 @@ async def start_devices_diff_job(
 @router.get("/job/{job_id}/progress", response_model=JobProgressResponse)
 async def get_job_progress(
     job_id: str,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
 ):
     """Get progress information for a background job"""
     try:
@@ -111,7 +111,7 @@ async def get_job_progress(
 @router.get("/job/{job_id}/results", response_model=JobResultsResponse)
 async def get_job_results(
     job_id: str,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
 ):
     """Get complete results for a completed background job"""
     try:
@@ -130,7 +130,7 @@ async def get_job_results(
 @router.post("/job/{job_id}/cancel")
 async def cancel_job(
     job_id: str,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Cancel a running background job"""
     try:
@@ -155,7 +155,7 @@ async def cancel_job(
 @router.delete("/job/{job_id}")
 async def delete_job(
     job_id: str,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "delete")),
 ):
     """Delete a completed background job and its results"""
     try:
@@ -195,7 +195,7 @@ async def delete_job(
 
 @router.post("/jobs/clear-completed")
 async def clear_completed_jobs(
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Clear all completed and failed jobs"""
     try:
@@ -217,7 +217,7 @@ async def clear_completed_jobs(
 
 @router.get("/devices", response_model=dict)
 async def get_devices_for_sync(
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
 ):
     """Get all devices from Nautobot for CheckMK sync"""
     try:
@@ -233,7 +233,7 @@ async def get_devices_for_sync(
 
 @router.get("/device/{device_id}/normalized")
 async def get_device_normalized(
-    device_id: str, current_user: dict = Depends(verify_token)
+    device_id: str, current_user: dict = Depends(require_permission("checkmk.devices", "read"))
 ):
     """Get normalized device config from Nautobot for CheckMK comparison."""
     try:
@@ -251,7 +251,7 @@ async def get_device_normalized(
 
 
 @router.get("/get_default_site")
-async def get_default_site(current_user: dict = Depends(verify_token)):
+async def get_default_site(current_user: dict = Depends(require_permission("checkmk.devices", "write"))):
     """Get the default site from CheckMK configuration."""
     try:
         result = nb2cmk_service.get_default_site()
@@ -264,7 +264,7 @@ async def get_default_site(current_user: dict = Depends(verify_token)):
 
 @router.get("/get_diff", response_model=dict)
 async def get_devices_diff(
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
 ):
     """Get all devices from Nautobot with CheckMK comparison status"""
     try:
@@ -280,7 +280,7 @@ async def get_devices_diff(
 
 @router.get("/device/{device_id}/compare")
 async def compare_device_config(
-    device_id: str, current_user: dict = Depends(verify_token)
+    device_id: str, current_user: dict = Depends(require_permission("checkmk.devices", "read"))
 ):
     """Compare normalized Nautobot device config with CheckMK host config."""
     try:
@@ -298,7 +298,7 @@ async def compare_device_config(
 
 @router.post("/device/{device_id}/add")
 async def add_device_to_checkmk(
-    device_id: str, current_user: dict = Depends(verify_token)
+    device_id: str, current_user: dict = Depends(require_permission("checkmk.devices", "write"))
 ):
     """Add a device from Nautobot to CheckMK using normalized config."""
     try:
@@ -316,7 +316,7 @@ async def add_device_to_checkmk(
 
 @router.post("/device/{device_id}/update")
 async def update_device_in_checkmk(
-    device_id: str, current_user: dict = Depends(verify_token)
+    device_id: str, current_user: dict = Depends(require_permission("checkmk.devices", "write"))
 ):
     """Update/sync a device from Nautobot to CheckMK using normalized config."""
     try:

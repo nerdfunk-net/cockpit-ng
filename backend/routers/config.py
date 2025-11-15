@@ -8,7 +8,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from core.auth import get_current_username
+from core.auth import require_permission
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/config", tags=["config"])
@@ -24,7 +24,7 @@ class ConfigFileContent(BaseModel):
 @router.get("/{filename}")
 async def read_config_file(
     filename: str,
-    current_user: str = Depends(get_current_username),
+    current_user: dict = Depends(require_permission("configs.backup", "execute")),
 ):
     """Read a configuration file."""
     try:
@@ -79,7 +79,7 @@ async def read_config_file(
 async def write_config_file(
     filename: str,
     file_content: ConfigFileContent,
-    current_user: str = Depends(get_current_username),
+    current_user: dict = Depends(require_permission("configs.backup", "execute")),
 ):
     """Write a configuration file."""
     try:
@@ -124,7 +124,7 @@ async def write_config_file(
 
 @router.get("/")
 async def list_config_files(
-    current_user: str = Depends(get_current_username),
+    current_user: dict = Depends(require_permission("configs.backup", "execute")),
 ):
     """List available configuration files."""
     try:

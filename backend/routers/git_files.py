@@ -11,7 +11,7 @@ import fnmatch
 from fastapi import APIRouter, Depends, HTTPException, status
 from git import InvalidGitRepositoryError, GitCommandError
 
-from core.auth import get_current_username
+from core.auth import require_permission
 from services.cache_service import cache_service
 from services.git_utils import repo_path as git_repo_path
 from services.git_shared_utils import get_git_repo_by_id, git_repo_manager
@@ -25,7 +25,7 @@ async def search_repository_files(
     repo_id: int,
     query: str = "",
     limit: int = 50,
-    current_user: str = Depends(get_current_username),
+    current_user: dict = Depends(require_permission("git.repositories", "read")),
 ):
     """Search for files in a specific Git repository with filtering and pagination."""
     try:
@@ -149,7 +149,7 @@ async def get_files(
     repo_id: int,
     commit_hash: str,
     file_path: str = None,
-    current_user: str = Depends(get_current_username),
+    current_user: dict = Depends(require_permission("git.repositories", "read")),
 ):
     """Get list of files in a specific commit or file content if file_path is provided."""
     try:
@@ -198,7 +198,7 @@ async def get_files(
 
 @router.get("/files/{file_path:path}/history")
 async def get_file_history(
-    repo_id: int, file_path: str, current_user: str = Depends(get_current_username)
+    repo_id: int, file_path: str, current_user: dict = Depends(require_permission("git.repositories", "read"))
 ):
     """Get the last change information for a specific file."""
     try:
@@ -256,7 +256,7 @@ async def get_file_complete_history(
     repo_id: int,
     file_path: str,
     from_commit: str = None,
-    current_user: str = Depends(get_current_username),
+    current_user: dict = Depends(require_permission("git.repositories", "read")),
 ):
     """Get the complete history of a file from a specific commit backwards to its creation."""
     try:

@@ -5,7 +5,7 @@ User management router for CRUD operations.
 from __future__ import annotations
 import logging
 from fastapi import APIRouter, HTTPException, status, Depends
-from core.auth import verify_admin_token
+from core.auth import require_permission
 from models.user_management import (
     UserCreate,
     UserUpdate,
@@ -37,7 +37,7 @@ def _check_admin_permission(current_user: str):
 
 
 @router.get("", response_model=UserListResponse)
-async def list_users(current_user: dict = Depends(verify_admin_token)):
+async def list_users(current_user: dict = Depends(require_permission("users", "write"))):
     """Get all users."""
     _check_admin_permission(current_user)
 
@@ -74,7 +74,7 @@ async def list_users(current_user: dict = Depends(verify_admin_token)):
 
 @router.post("", response_model=UserResponse)
 async def create_new_user(
-    user_data: UserCreate, current_user: dict = Depends(verify_admin_token)
+    user_data: UserCreate, current_user: dict = Depends(require_permission("users", "write"))
 ):
     """Create a new user."""
     _check_admin_permission(current_user)
@@ -116,7 +116,7 @@ async def create_new_user(
 
 
 @router.get("/{user_id}", response_model=UserResponse)
-async def get_user(user_id: int, current_user: dict = Depends(verify_admin_token)):
+async def get_user(user_id: int, current_user: dict = Depends(require_permission("users", "write"))):
     """Get a specific user by ID."""
     _check_admin_permission(current_user)
 
@@ -154,7 +154,7 @@ async def get_user(user_id: int, current_user: dict = Depends(verify_admin_token
 async def update_existing_user(
     user_id: int,
     user_data: UserUpdate,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("users", "write")),
 ):
     """Update an existing user."""
     _check_admin_permission(current_user)
@@ -201,7 +201,7 @@ async def update_existing_user(
 
 @router.delete("/{user_id}")
 async def delete_existing_user(
-    user_id: int, current_user: dict = Depends(verify_admin_token)
+    user_id: int, current_user: dict = Depends(require_permission("users", "delete"))
 ):
     """Permanently delete a user from the database."""
     _check_admin_permission(current_user)
@@ -227,7 +227,7 @@ async def delete_existing_user(
 
 @router.post("/bulk-action")
 async def perform_bulk_action(
-    action_data: BulkUserAction, current_user: dict = Depends(verify_admin_token)
+    action_data: BulkUserAction, current_user: dict = Depends(require_permission("users", "write"))
 ):
     """Perform bulk actions on multiple users."""
     _check_admin_permission(current_user)
@@ -275,7 +275,7 @@ async def perform_bulk_action(
 
 @router.patch("/{user_id}/toggle-status", response_model=UserResponse)
 async def toggle_user_active_status(
-    user_id: int, current_user: dict = Depends(verify_admin_token)
+    user_id: int, current_user: dict = Depends(require_permission("users", "write"))
 ):
     """Toggle user active status (enable/disable login)."""
     logger.info(f"Toggle status called for user_id: {user_id}")

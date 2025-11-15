@@ -7,7 +7,7 @@ import logging
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from core.auth import verify_token
+from core.auth import require_permission
 from models.nautobot import (
     CheckIPRequest,
     DeviceOnboardRequest,
@@ -77,7 +77,7 @@ def _get_cached_device_list(cache_key: str) -> Optional[list]:
 
 @router.get("/test")
 async def test_current_nautobot_connection(
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Test current Nautobot connection."""
     try:
@@ -137,7 +137,7 @@ async def get_devices(
     filter_type: Optional[str] = None,
     filter_value: Optional[str] = None,
     reload: bool = False,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get list of devices from Nautobot with optional filtering and pagination.
 
@@ -548,7 +548,10 @@ async def get_devices(
 
 
 @router.get("/devices/{device_id}")
-async def get_device(device_id: str, current_user: dict = Depends(verify_token)):
+async def get_device(
+    device_id: str,
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
     """Get device details from Nautobot by device ID."""
     try:
         # Check cache first
@@ -609,20 +612,24 @@ async def get_device(device_id: str, current_user: dict = Depends(verify_token))
 async def update_device(
     device_id: str,
     update_data: dict,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("nautobot.devices", "write")),
 ):
     """Update device in Nautobot."""
 
 
 @router.post("/devices/search")
 async def search_devices(
-    filters: DeviceFilter, current_user: dict = Depends(verify_token)
+    filters: DeviceFilter,
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Search devices in Nautobot with complex filters."""
 
 
 @router.post("/check-ip")
-async def check_ip(request: CheckIPRequest, current_user: dict = Depends(verify_token)):
+async def check_ip(
+    request: CheckIPRequest,
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
     """Check if an IP address exists in Nautobot."""
     try:
         # Use GraphQL query as specified in nautobot_access.md
@@ -675,7 +682,8 @@ async def check_ip(request: CheckIPRequest, current_user: dict = Depends(verify_
 
 @router.post("/devices/onboard")
 async def onboard_device(
-    request: DeviceOnboardRequest, current_user: dict = Depends(verify_token)
+    request: DeviceOnboardRequest,
+    current_user: dict = Depends(require_permission("devices.onboard", "execute")),
 ):
     """Onboard a new device to Nautobot."""
     try:
@@ -772,7 +780,8 @@ async def onboard_device(
 
 @router.post("/sync-network-data")
 async def sync_network_data(
-    request: SyncNetworkDataRequest, current_user: dict = Depends(verify_token)
+    request: SyncNetworkDataRequest,
+    current_user: dict = Depends(require_permission("nautobot.devices", "write")),
 ):
     """Sync network data with Nautobot."""
     try:
@@ -855,7 +864,9 @@ async def sync_network_data(
 
 # Additional endpoints for various Nautobot resources
 @router.get("/locations")
-async def get_locations(current_user: dict = Depends(verify_token)):
+async def get_locations(
+    current_user: dict = Depends(require_permission("nautobot.locations", "read")),
+):
     """Get list of locations from Nautobot with parent and children relationships."""
     try:
         # Try in-memory cache first
@@ -907,7 +918,9 @@ async def get_locations(current_user: dict = Depends(verify_token)):
 
 
 @router.get("/namespaces")
-async def get_namespaces(current_user: dict = Depends(verify_token)):
+async def get_namespaces(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
     """Get list of namespaces from Nautobot."""
     try:
         query = """
@@ -936,7 +949,9 @@ async def get_namespaces(current_user: dict = Depends(verify_token)):
 
 
 @router.get("/stats")
-async def get_nautobot_stats(current_user: dict = Depends(verify_token)):
+async def get_nautobot_stats(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
     """Get Nautobot statistics with 10-minute caching."""
     from datetime import datetime, timezone, timedelta
     import json
@@ -1028,7 +1043,9 @@ async def get_nautobot_stats(current_user: dict = Depends(verify_token)):
 
 
 @router.get("/roles")
-async def get_nautobot_roles(current_user: dict = Depends(verify_token)):
+async def get_nautobot_roles(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
     """Get Nautobot device roles."""
     try:
         result = await nautobot_service.rest_request("extras/roles/")
@@ -1041,7 +1058,9 @@ async def get_nautobot_roles(current_user: dict = Depends(verify_token)):
 
 
 @router.get("/roles/devices")
-async def get_nautobot_device_roles(current_user: dict = Depends(verify_token)):
+async def get_nautobot_device_roles(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
     """Get Nautobot roles specifically for dcim.device content type."""
     try:
         result = await nautobot_service.rest_request(
@@ -1056,7 +1075,9 @@ async def get_nautobot_device_roles(current_user: dict = Depends(verify_token)):
 
 
 @router.get("/platforms")
-async def get_nautobot_platforms(current_user: dict = Depends(verify_token)):
+async def get_nautobot_platforms(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
     """Get Nautobot platforms."""
     try:
         result = await nautobot_service.rest_request("dcim/platforms/")
@@ -1069,7 +1090,9 @@ async def get_nautobot_platforms(current_user: dict = Depends(verify_token)):
 
 
 @router.get("/statuses")
-async def get_nautobot_statuses(current_user: dict = Depends(verify_token)):
+async def get_nautobot_statuses(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
     """Get all Nautobot statuses."""
     try:
         result = await nautobot_service.rest_request("extras/statuses/")
@@ -1083,7 +1106,7 @@ async def get_nautobot_statuses(current_user: dict = Depends(verify_token)):
 
 @router.get("/statuses/device")
 async def get_nautobot_device_statuses(
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get Nautobot device statuses."""
     try:
@@ -1100,7 +1123,7 @@ async def get_nautobot_device_statuses(
 
 @router.get("/statuses/interface")
 async def get_nautobot_interface_statuses(
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get Nautobot interface statuses."""
     try:
@@ -1117,7 +1140,7 @@ async def get_nautobot_interface_statuses(
 
 @router.get("/statuses/ipaddress")
 async def get_nautobot_ipaddress_statuses(
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get Nautobot IP address statuses."""
     try:
@@ -1134,7 +1157,7 @@ async def get_nautobot_ipaddress_statuses(
 
 @router.get("/statuses/prefix")
 async def get_nautobot_prefix_statuses(
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get Nautobot prefix statuses."""
     try:
@@ -1151,7 +1174,7 @@ async def get_nautobot_prefix_statuses(
 
 @router.get("/statuses/combined")
 async def get_nautobot_combined_statuses(
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get combined Nautobot statuses."""
     try:
@@ -1165,7 +1188,9 @@ async def get_nautobot_combined_statuses(
 
 
 @router.get("/secret-groups")
-async def get_nautobot_secret_groups(current_user: dict = Depends(verify_token)):
+async def get_nautobot_secret_groups(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
     """Get Nautobot secret groups."""
     try:
         # Use GraphQL query as specified in nautobot_access.md
@@ -1191,7 +1216,9 @@ async def get_nautobot_secret_groups(current_user: dict = Depends(verify_token))
 
 
 @router.get("/device-types")
-async def get_nautobot_device_types(current_user: dict = Depends(verify_token)):
+async def get_nautobot_device_types(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
     """Get Nautobot device types."""
     try:
         result = await nautobot_service.rest_request("dcim/device-types/")
@@ -1204,7 +1231,9 @@ async def get_nautobot_device_types(current_user: dict = Depends(verify_token)):
 
 
 @router.get("/manufacturers")
-async def get_nautobot_manufacturers(current_user: dict = Depends(verify_token)):
+async def get_nautobot_manufacturers(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
     """Get Nautobot manufacturers."""
     try:
         result = await nautobot_service.rest_request("dcim/manufacturers/")
@@ -1217,7 +1246,9 @@ async def get_nautobot_manufacturers(current_user: dict = Depends(verify_token))
 
 
 @router.get("/tags")
-async def get_nautobot_tags(current_user: dict = Depends(verify_token)):
+async def get_nautobot_tags(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
     """Get Nautobot tags."""
     try:
         result = await nautobot_service.rest_request("extras/tags/")
@@ -1230,7 +1261,9 @@ async def get_nautobot_tags(current_user: dict = Depends(verify_token)):
 
 
 @router.get("/tags/devices")
-async def get_nautobot_device_tags(current_user: dict = Depends(verify_token)):
+async def get_nautobot_device_tags(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
     """Get Nautobot tags specifically for dcim.device content type."""
     try:
         result = await nautobot_service.rest_request(
@@ -1246,7 +1279,7 @@ async def get_nautobot_device_tags(current_user: dict = Depends(verify_token)):
 
 @router.get("/custom-fields/devices")
 async def get_nautobot_device_custom_fields(
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get Nautobot custom fields specifically for dcim.device content type."""
     try:
@@ -1264,7 +1297,7 @@ async def get_nautobot_device_custom_fields(
 @router.get("/custom-field-choices/{custom_field_name}")
 async def get_nautobot_custom_field_choices(
     custom_field_name: str,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get Nautobot custom field choices for a specific custom field."""
     try:
@@ -1280,7 +1313,10 @@ async def get_nautobot_custom_field_choices(
 
 
 @router.get("/jobs/{job_id}/results")
-async def get_job_results(job_id: str, current_user: dict = Depends(verify_token)):
+async def get_job_results(
+    job_id: str,
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
     """Get job results from Nautobot."""
     try:
         result = await nautobot_service.rest_request(f"extras/job-results/{job_id}/")
@@ -1307,7 +1343,9 @@ async def get_job_results(job_id: str, current_user: dict = Depends(verify_token
 
 
 @router.get("/health-check")
-async def nautobot_health_check(current_user: dict = Depends(verify_token)):
+async def nautobot_health_check(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
     """Simple health check to verify Nautobot connectivity."""
     try:
         # Use the same test approach as the nautobot service - query devices with limit 1
@@ -1351,7 +1389,7 @@ async def nautobot_health_check(current_user: dict = Depends(verify_token)):
 @router.get("/devices/{device_id}/details")
 async def get_device_details(
     device_id: str,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get detailed device information using the comprehensive devices.md query."""
     try:
@@ -1537,7 +1575,7 @@ async def get_device_details(
 @router.delete("/devices/{device_id}")
 async def delete_device(
     device_id: str,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("nautobot.devices", "delete")),
 ):
     """Delete a device from Nautobot."""
     try:
@@ -1583,7 +1621,7 @@ async def delete_device(
 @router.delete("/ip-address/{ip_id}")
 async def delete_ip_address(
     ip_id: str,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("nautobot.devices", "delete")),
 ):
     """Delete an IP address from Nautobot."""
     try:
@@ -1623,7 +1661,7 @@ async def delete_ip_address(
 async def offboard_device(
     device_id: str,
     request: OffboardDeviceRequest,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("devices.offboard", "execute")),
 ):
     """Offboard a device by removing it or applying configured offboarding values."""
     try:

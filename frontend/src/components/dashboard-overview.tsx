@@ -200,7 +200,7 @@ export default function DashboardOverview() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold text-slate-900">Analytics Dashboard</h1>
+          <h1 className="text-3xl font-bold text-slate-900">Cockpit Dashboard</h1>
           <p className="text-slate-600">Network infrastructure overview and real-time statistics</p>
         </div>
         <div className="flex items-center space-x-4">

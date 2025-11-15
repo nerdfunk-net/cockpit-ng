@@ -157,3 +157,138 @@ def get_api_key_user(x_api_key: str = Header(None, alias="X-Api-Key")) -> dict:
 def get_current_username(user_info: dict = Depends(verify_token)) -> str:
     """Extract username from user info for backward compatibility."""
     return user_info["username"]
+
+
+# ============================================================================
+# RBAC Permission Checking
+# ============================================================================
+
+
+def require_permission(resource: str, action: str):
+    """Dependency to require a specific permission.
+
+    Usage:
+        @app.get("/api/devices", dependencies=[Depends(require_permission("nautobot.devices", "read"))])
+        def get_devices():
+            ...
+    """
+
+    def permission_checker(user_info: dict = Depends(verify_token)) -> dict:
+        import rbac_manager as rbac
+
+        user_id = user_info.get("user_id")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User ID not found in token",
+            )
+
+        if not rbac.has_permission(user_id, resource, action):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission denied: {resource}:{action} required",
+            )
+
+        return user_info
+
+    return permission_checker
+
+
+def require_any_permission(resource: str, actions: list):
+    """Dependency to require ANY of the specified permissions.
+
+    Usage:
+        @app.get("/api/devices", dependencies=[Depends(require_any_permission("nautobot.devices", ["read", "write"]))])
+        def get_devices():
+            ...
+    """
+
+    def permission_checker(user_info: dict = Depends(verify_token)) -> dict:
+        import rbac_manager as rbac
+
+        user_id = user_info.get("user_id")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User ID not found in token",
+            )
+
+        if not rbac.check_any_permission(user_id, resource, actions):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission denied: One of {resource}:{actions} required",
+            )
+
+        return user_info
+
+    return permission_checker
+
+
+def require_all_permissions(resource: str, actions: list):
+    """Dependency to require ALL of the specified permissions.
+
+    Usage:
+        @app.get("/api/devices", dependencies=[Depends(require_all_permissions("nautobot.devices", ["read", "write"]))])
+        def manage_devices():
+            ...
+    """
+
+    def permission_checker(user_info: dict = Depends(verify_token)) -> dict:
+        import rbac_manager as rbac
+
+        user_id = user_info.get("user_id")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User ID not found in token",
+            )
+
+        if not rbac.check_all_permissions(user_id, resource, actions):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission denied: All of {resource}:{actions} required",
+            )
+
+        return user_info
+
+    return permission_checker
+
+
+def require_role(role_name: str):
+    """Dependency to require a specific role.
+
+    Usage:
+        @app.get("/api/admin", dependencies=[Depends(require_role("admin"))])
+        def admin_endpoint():
+            ...
+    """
+
+    def role_checker(user_info: dict = Depends(verify_token)) -> dict:
+        import rbac_manager as rbac
+
+        user_id = user_info.get("user_id")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User ID not found in token",
+            )
+
+        user_roles = rbac.get_user_roles(user_id)
+        role_names = [role["name"] for role in user_roles]
+
+        if role_name not in role_names:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Role '{role_name}' required",
+            )
+
+        return user_info
+
+    return role_checker
+
+
+def has_permission_check(user_id: int, resource: str, action: str) -> bool:
+    """Helper function to check permission (non-dependency version)."""
+    import rbac_manager as rbac
+
+    return rbac.has_permission(user_id, resource, action)

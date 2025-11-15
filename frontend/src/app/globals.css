@@ -45,7 +45,7 @@
 
 :root {
   --radius: 0.75rem;
-  /* Modern Analytics Dashboard - Light Mode */
+  /* Modern Cockpit Dashboard - Light Mode */
   /* Primary Blue Palette */
   --background: #fafbfc;                    /* Soft gray-blue background */
   --foreground: #1a202c;                   /* Dark blue-gray text */
@@ -126,7 +126,7 @@
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   }
   
-  /* Modern Analytics Dashboard Glass Effects */
+  /* Modern Cockpit Dashboard Glass Effects */
   .glass {
     @apply bg-white/80 backdrop-blur-xl border border-white/20;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
@@ -137,7 +137,7 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
   }
   
-  /* Modern Analytics Dashboard Card Styles */
+  /* Modern Cockpit Dashboard Card Styles */
   .analytics-card {
     @apply bg-white border border-slate-200 rounded-xl;
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
@@ -238,7 +238,7 @@
     }
   }
   
-  /* Analytics Dashboard Grid */
+  /* Cockpit Dashboard Grid */
   .analytics-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

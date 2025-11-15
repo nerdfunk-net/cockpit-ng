@@ -36,6 +36,8 @@ import {
 interface Credential {
   id: string
   name: string
+  type: string
+  username: string
   source?: string // Add source field to distinguish general vs personal
 }
 

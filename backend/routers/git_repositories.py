@@ -9,7 +9,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from core.auth import verify_admin_token, verify_token
+from core.auth import require_permission
 from models.git_repositories import (
     GitRepositoryRequest,
     GitRepositoryResponse,
@@ -33,7 +33,7 @@ router = APIRouter(prefix="/api/git-repositories", tags=["git-repositories"])
 async def get_repositories(
     category: Optional[str] = None,
     active_only: bool = False,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("git.repositories", "read")),
 ):
     """Get all git repositories."""
     try:
@@ -56,7 +56,7 @@ async def get_repositories(
 
 @router.get("/{repo_id}", response_model=GitRepositoryResponse)
 async def get_repository(
-    repo_id: int, current_user: dict = Depends(verify_admin_token)
+    repo_id: int, current_user: dict = Depends(require_permission("git.repositories", "read"))
 ):
     """Get a specific git repository by ID."""
     try:
@@ -77,7 +77,7 @@ async def get_repository(
 
 @router.get("/{repo_id}/edit")
 async def get_repository_for_edit(
-    repo_id: int, current_user: dict = Depends(verify_admin_token)
+    repo_id: int, current_user: dict = Depends(require_permission("git.repositories", "write"))
 ):
     """Get a specific git repository by ID with all fields for editing."""
     try:
@@ -96,7 +96,7 @@ async def get_repository_for_edit(
 
 @router.post("/", response_model=GitRepositoryResponse)
 async def create_repository(
-    repository: GitRepositoryRequest, current_user: dict = Depends(verify_admin_token)
+    repository: GitRepositoryRequest, current_user: dict = Depends(require_permission("git.repositories", "write"))
 ):
     """Create a new git repository."""
     try:
@@ -128,7 +128,7 @@ async def create_repository(
 async def update_repository(
     repo_id: int,
     repository: GitRepositoryUpdateRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("git.repositories", "write")),
 ):
     """Update a git repository."""
     try:
@@ -174,7 +174,7 @@ async def update_repository(
 async def delete_repository(
     repo_id: int,
     hard_delete: bool = True,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("git.repositories", "delete")),
 ):
     """Delete a git repository."""
     try:
@@ -199,7 +199,7 @@ async def delete_repository(
 @router.post("/test-connection", response_model=GitConnectionTestResponse)
 async def test_git_connection(
     test_request: GitConnectionTestRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("git.repositories", "write")),
 ):
     """Test git repository connection."""
     try:
@@ -290,7 +290,7 @@ async def test_git_connection(
 
 
 @router.get("/health")
-async def health_check(current_user: dict = Depends(verify_admin_token)):
+async def health_check(current_user: dict = Depends(require_permission("git.repositories", "read"))):
     """Health check for git repository management."""
     try:
         health = git_repo_manager.health_check()

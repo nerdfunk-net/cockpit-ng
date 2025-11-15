@@ -3,14 +3,16 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional
 
-from core.auth import verify_admin_token, verify_token, get_current_username
+from core.auth import require_permission, get_current_username
 from models.credentials import CredentialCreate, CredentialUpdate
 import credentials_manager as cred_mgr
 
 router = APIRouter(prefix="/api/credentials", tags=["credentials"])
 
 
-@router.get("", dependencies=[Depends(verify_token)])
+@router.get(
+    "", dependencies=[Depends(require_permission("settings.credentials", "read"))]
+)
 def list_credentials(
     include_expired: bool = Query(False),
     source: Optional[str] = Query(
@@ -53,7 +55,9 @@ def list_credentials(
         return general_creds + user_private
 
 
-@router.post("", dependencies=[Depends(verify_admin_token)])
+@router.post(
+    "", dependencies=[Depends(require_permission("settings.credentials", "write"))]
+)
 def create_credential(payload: CredentialCreate) -> dict:
     try:
         return cred_mgr.create_credential(
@@ -70,7 +74,10 @@ def create_credential(payload: CredentialCreate) -> dict:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.put("/{cred_id}", dependencies=[Depends(verify_admin_token)])
+@router.put(
+    "/{cred_id}",
+    dependencies=[Depends(require_permission("settings.credentials", "write"))],
+)
 def update_credential(cred_id: int, payload: CredentialUpdate) -> dict:
     try:
         return cred_mgr.update_credential(
@@ -90,7 +97,10 @@ def update_credential(cred_id: int, payload: CredentialUpdate) -> dict:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.delete("/{cred_id}", dependencies=[Depends(verify_admin_token)])
+@router.delete(
+    "/{cred_id}",
+    dependencies=[Depends(require_permission("settings.credentials", "delete"))],
+)
 def delete_credential(cred_id: int) -> dict:
     try:
         cred_mgr.delete_credential(cred_id)
@@ -99,7 +109,10 @@ def delete_credential(cred_id: int) -> dict:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/{cred_id}/password", dependencies=[Depends(verify_token)])
+@router.get(
+    "/{cred_id}/password",
+    dependencies=[Depends(require_permission("settings.credentials", "read"))],
+)
 def get_credential_password(cred_id: int) -> dict:
     """Get the decrypted password for a credential."""
     try:

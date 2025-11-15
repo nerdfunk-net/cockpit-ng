@@ -10,7 +10,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from git import InvalidGitRepositoryError, GitCommandError
 
-from core.auth import get_current_username
+from core.auth import require_permission
 from models.git import GitCommitRequest, GitBranchRequest
 from services.cache_service import cache_service
 from services.git_shared_utils import get_git_repo_by_id
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/git/{repo_id}", tags=["git-version-control"])
 
 
 @router.get("/branches")
-async def get_branches(repo_id: int, current_user: str = Depends(get_current_username)):
+async def get_branches(repo_id: int, current_user: dict = Depends(require_permission("git.operations", "execute"))):
     """Get list of Git branches."""
     try:
         repo = get_git_repo_by_id(repo_id)
@@ -50,7 +50,7 @@ async def get_branches(repo_id: int, current_user: str = Depends(get_current_use
 async def create_or_switch_branch(
     repo_id: int,
     request: GitBranchRequest,
-    current_user: str = Depends(get_current_username),
+    current_user: dict = Depends(require_permission("git.operations", "execute")),
 ):
     """Create or switch to a Git branch."""
     try:
@@ -78,7 +78,7 @@ async def create_or_switch_branch(
 
 @router.get("/commits/{branch_name}")
 async def get_commits(
-    repo_id: int, branch_name: str, current_user: str = Depends(get_current_username)
+    repo_id: int, branch_name: str, current_user: dict = Depends(require_permission("git.repositories", "read"))
 ):
     """Get commits for a specific branch."""
     try:
@@ -141,7 +141,7 @@ async def get_commits(
 async def create_commit(
     repo_id: int,
     request: GitCommitRequest,
-    current_user: str = Depends(get_current_username),
+    current_user: dict = Depends(require_permission("git.operations", "execute")),
 ):
     """Commit changes to Git repository."""
     try:
@@ -174,7 +174,7 @@ async def create_commit(
 
 @router.get("/commits/{commit_hash}/diff")
 async def get_commit_diff(
-    repo_id: int, commit_hash: str, current_user: str = Depends(get_current_username)
+    repo_id: int, commit_hash: str, current_user: dict = Depends(require_permission("git.repositories", "read"))
 ):
     """Get diff for a specific commit."""
     try:
@@ -219,7 +219,7 @@ async def get_commit_diff(
 
 @router.post("/diff")
 async def compare_commits(
-    repo_id: int, request: dict, current_user: str = Depends(get_current_username)
+    repo_id: int, request: dict, current_user: dict = Depends(require_permission("git.operations", "execute"))
 ):
     """Compare files between two Git commits."""
     try:

@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, HTTPException, status
 from git import GitCommandError, Repo
 
-from core.auth import get_current_username, verify_admin_token
+from core.auth import require_permission
 from services.cache_service import cache_service
 from services.git_utils import (
     repo_path as git_repo_path,
@@ -139,7 +139,7 @@ def get_cached_commits(repo_id: int, branch_name: str, repo_path: str, limit: in
 
 @router.get("/status")
 async def get_repository_status(
-    repo_id: int, current_user: str = Depends(get_current_username)
+    repo_id: int, current_user: dict = Depends(require_permission("git.operations", "execute"))
 ):
     """Get the status of a specific repository (exists, sync status, commit info)."""
     try:
@@ -338,7 +338,7 @@ async def get_repository_status(
 
 @router.post("/sync")
 async def sync_repository(
-    repo_id: int, current_user: dict = Depends(verify_admin_token)
+    repo_id: int, current_user: dict = Depends(require_permission("git.operations", "execute"))
 ):
     """Sync a git repository (clone if not exists, pull if exists)."""
     try:
@@ -480,7 +480,7 @@ async def sync_repository(
 
 @router.post("/remove-and-sync")
 async def remove_and_sync_repository(
-    repo_id: int, current_user: dict = Depends(verify_admin_token)
+    repo_id: int, current_user: dict = Depends(require_permission("git.operations", "execute"))
 ):
     """Remove existing repository and clone fresh copy."""
     try:
@@ -602,7 +602,7 @@ async def remove_and_sync_repository(
 
 @router.get("/info")
 async def get_repository_info(
-    repo_id: int, current_user: str = Depends(get_current_username)
+    repo_id: int, current_user: dict = Depends(require_permission("git.operations", "execute"))
 ):
     """Get detailed information about a repository."""
     try:
@@ -664,7 +664,7 @@ async def get_repository_info(
 
 
 @router.get("/debug")
-async def debug_git(repo_id: int, current_user: str = Depends(get_current_username)):
+async def debug_git(repo_id: int, current_user: dict = Depends(require_permission("git.operations", "execute"))):
     """Debug Git setup."""
     try:
         repo = get_git_repo_by_id(repo_id)

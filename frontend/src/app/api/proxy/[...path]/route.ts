@@ -110,10 +110,15 @@ async function handleRequest(
     })
     
     console.log(`Backend ${method} response status:`, backendResponse.status)
-    
+
+    // Handle 204 No Content responses
+    if (backendResponse.status === 204) {
+      return new NextResponse(null, { status: 204 })
+    }
+
     // Get response content type
     const contentType = backendResponse.headers.get('content-type')
-    
+
     // Handle different response types
     let responseData
     if (contentType?.includes('application/json')) {
@@ -121,7 +126,7 @@ async function handleRequest(
     } else {
       responseData = await backendResponse.text()
     }
-    
+
     if (!backendResponse.ok) {
       console.log(`Backend ${method} error response:`, responseData)
       return NextResponse.json(
@@ -129,7 +134,7 @@ async function handleRequest(
         { status: backendResponse.status }
       )
     }
-    
+
     // Return the successful response
     return NextResponse.json(responseData, {
       status: backendResponse.status,

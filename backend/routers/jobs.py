@@ -10,7 +10,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, validator
 
-from core.auth import verify_token
+from core.auth import require_permission
 from models.job_models import (
     JobStartResponse,
     Job,
@@ -218,7 +218,7 @@ class ParallelJobRequest(BaseModel):
 @router.post("/compare-devices", response_model=JobStartResponse)
 async def start_devices_compare_job(
     request: ParallelJobRequest,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("jobs", "read")),
     scheduler_service: APSchedulerJobService = Depends(get_scheduler_service),
 ):
     """Start a parallel device comparison job using APScheduler"""
@@ -458,7 +458,7 @@ async def delete_job(job_id: str, _: dict = Depends(verify_token)):
 
 @router.post("/get-all-devices", response_model=JobStartResponse)
 async def start_get_all_devices_job(
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("jobs", "read")),
     scheduler_service: APSchedulerJobService = Depends(get_scheduler_service),
 ):
     """Start a background job to fetch and cache all device properties from Nautobot"""
@@ -480,7 +480,7 @@ async def start_get_all_devices_job(
 async def start_network_scan_job(
     cidr: str,
     request: NetworkScanRequest,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("jobs", "read")),
     scheduler_service: APSchedulerJobService = Depends(get_scheduler_service),
 ):
     """Start a network scan job using ping or fping"""

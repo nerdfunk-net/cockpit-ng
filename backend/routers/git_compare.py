@@ -9,7 +9,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from core.auth import get_current_username
+from core.auth import require_permission
 from services.git_shared_utils import get_git_repo_by_id
 
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/git-compare", tags=["git-compare"])
 
 @router.post("/repos")
 async def compare_files_across_repos(
-    request: dict, current_user: str = Depends(get_current_username)
+    request: dict, current_user: dict = Depends(require_permission("git.operations", "execute"))
 ):
     """Compare files between different repositories."""
     try:

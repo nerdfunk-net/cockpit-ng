@@ -8,7 +8,7 @@ from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from core.auth import get_current_username
+from core.auth import require_permission
 from services.netmiko_service import netmiko_service
 
 logger = logging.getLogger(__name__)
@@ -139,7 +139,7 @@ class TemplateExecutionResponse(BaseModel):
 
 @router.post("/execute-commands", response_model=CommandExecutionResponse)
 async def execute_commands(
-    request: DeviceCommand, current_user: str = Depends(get_current_username)
+    request: DeviceCommand, current_user: dict = Depends(require_permission("network.netmiko", "execute"))
 ) -> CommandExecutionResponse:
     """
     Execute commands on multiple network devices using Netmiko.
@@ -292,7 +292,7 @@ async def execute_commands(
 
 @router.get("/supported-platforms")
 async def get_supported_platforms(
-    current_user: str = Depends(get_current_username),
+    current_user: dict = Depends(require_permission("network.netmiko", "execute")),
 ) -> Dict[str, List[str]]:
     """
     Get list of supported network device platforms.
@@ -331,7 +331,7 @@ async def get_supported_platforms(
 
 @router.post("/cancel/{session_id}")
 async def cancel_execution(
-    session_id: str, current_user: str = Depends(get_current_username)
+    session_id: str, current_user: dict = Depends(require_permission("network.netmiko", "execute"))
 ) -> Dict[str, Any]:
     """
     Cancel an ongoing command execution session.
@@ -364,7 +364,7 @@ async def cancel_execution(
 
 @router.post("/execute-template", response_model=TemplateExecutionResponse)
 async def execute_template(
-    request: TemplateExecutionRequest, current_user: str = Depends(get_current_username)
+    request: TemplateExecutionRequest, current_user: dict = Depends(require_permission("network.netmiko", "execute"))
 ) -> TemplateExecutionResponse:
     """
     Execute a template on multiple network devices.
@@ -723,7 +723,7 @@ async def execute_template(
 
 @router.get("/health")
 async def health_check(
-    current_user: str = Depends(get_current_username),
+    current_user: dict = Depends(require_permission("network.netmiko", "execute")),
 ) -> Dict[str, str]:
     """
     Health check endpoint for Netmiko service.

@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Union
+from typing import Union
 from fastapi import APIRouter, HTTPException, status, Query
 from models.auth import (
     LoginResponse,
@@ -379,7 +379,9 @@ async def get_oidc_debug_info():
                         ca_cert_file = Path(ca_cert_path)
                         if not ca_cert_file.is_absolute():
                             # Relative to project root (backend parent directory)
-                            ca_cert_file = Path(__file__).parent.parent.parent / ca_cert_path
+                            ca_cert_file = (
+                                Path(__file__).parent.parent.parent / ca_cert_path
+                            )
 
                         ca_cert_exists = ca_cert_file.exists()
                         if not ca_cert_exists:

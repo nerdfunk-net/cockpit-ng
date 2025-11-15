@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from core.auth import verify_admin_token, verify_token
+from core.auth import require_permission
 from models.settings import (
     NautobotSettingsRequest,
     GitSettingsRequest,
@@ -26,7 +26,7 @@ router = APIRouter(prefix="/api/settings", tags=["settings"])
 
 
 @router.get("")
-async def get_all_settings(current_user: dict = Depends(verify_admin_token)):
+async def get_all_settings(current_user: dict = Depends(require_permission("settings.nautobot", "write"))):
     """Get all application settings."""
     try:
         from settings_manager import settings_manager
@@ -55,7 +55,7 @@ async def get_all_settings(current_user: dict = Depends(verify_admin_token)):
 
 
 @router.get("/nautobot")
-async def get_nautobot_settings(current_user: dict = Depends(verify_admin_token)):
+async def get_nautobot_settings(current_user: dict = Depends(require_permission("settings.nautobot", "write"))):
     """Get Nautobot settings."""
     try:
         from settings_manager import settings_manager
@@ -72,7 +72,7 @@ async def get_nautobot_settings(current_user: dict = Depends(verify_admin_token)
 
 
 @router.get("/git")
-async def get_git_settings(current_user: dict = Depends(verify_admin_token)):
+async def get_git_settings(current_user: dict = Depends(require_permission("settings.nautobot", "write"))):
     """Get Git settings."""
     try:
         from settings_manager import settings_manager
@@ -89,7 +89,7 @@ async def get_git_settings(current_user: dict = Depends(verify_admin_token)):
 
 
 @router.get("/cache")
-async def get_cache_settings(current_user: dict = Depends(verify_admin_token)):
+async def get_cache_settings(current_user: dict = Depends(require_permission("settings.nautobot", "write"))):
     """Get Cache settings."""
     try:
         from settings_manager import settings_manager
@@ -107,7 +107,7 @@ async def get_cache_settings(current_user: dict = Depends(verify_admin_token)):
 @router.put("/cache")
 async def update_cache_settings(
     cache_request: CacheSettingsRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ):
     """Update Cache settings."""
     try:
@@ -138,7 +138,7 @@ async def update_cache_settings(
 @router.post("/cache")
 async def create_cache_settings(
     cache_request: CacheSettingsRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ):
     """Create/Update Cache settings via POST."""
     try:
@@ -166,7 +166,7 @@ async def create_cache_settings(
 @router.put("")
 async def update_all_settings(
     settings_request: AllSettingsRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ):
     """Update all application settings."""
     try:
@@ -203,7 +203,7 @@ async def update_all_settings(
 @router.put("/nautobot")
 async def update_nautobot_settings(
     nautobot_request: NautobotSettingsRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ):
     """Update Nautobot settings."""
     try:
@@ -232,7 +232,7 @@ async def update_nautobot_settings(
 
 @router.put("/git")
 async def update_git_settings(
-    git_request: GitSettingsRequest, current_user: dict = Depends(verify_admin_token)
+    git_request: GitSettingsRequest, current_user: dict = Depends(require_permission("settings.nautobot", "write"))
 ):
     """Update Git settings."""
     try:
@@ -263,7 +263,7 @@ async def update_git_settings(
 @router.post("/nautobot")
 async def create_nautobot_settings(
     nautobot_request: NautobotSettingsRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ):
     """Create/Update Nautobot settings via POST."""
     try:
@@ -290,7 +290,7 @@ async def create_nautobot_settings(
 
 @router.post("/git")
 async def create_git_settings(
-    git_request: GitSettingsRequest, current_user: dict = Depends(verify_admin_token)
+    git_request: GitSettingsRequest, current_user: dict = Depends(require_permission("settings.nautobot", "write"))
 ):
     """Create/Update Git settings via POST."""
     try:
@@ -315,7 +315,7 @@ async def create_git_settings(
 @router.post("/test/nautobot")
 async def test_nautobot_connection(
     test_request: ConnectionTestRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ):
     """Test Nautobot connection with provided settings."""
     try:
@@ -343,7 +343,7 @@ async def test_nautobot_connection(
 
 
 @router.get("/checkmk")
-async def get_checkmk_settings(current_user: dict = Depends(verify_admin_token)):
+async def get_checkmk_settings(current_user: dict = Depends(require_permission("settings.nautobot", "write"))):
     """Get CheckMK settings."""
     try:
         from settings_manager import settings_manager
@@ -362,7 +362,7 @@ async def get_checkmk_settings(current_user: dict = Depends(verify_admin_token))
 @router.post("/checkmk")
 async def create_checkmk_settings(
     checkmk_request: CheckMKSettingsRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ):
     """Create/Update CheckMK settings via POST."""
     try:
@@ -390,7 +390,7 @@ async def create_checkmk_settings(
 @router.post("/test/checkmk")
 async def test_checkmk_connection(
     test_request: CheckMKTestRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ):
     """Test CheckMK connection with provided settings."""
     try:
@@ -423,7 +423,7 @@ async def test_checkmk_connection(
 
 @router.post("/test/git")
 async def test_git_connection(
-    test_request: GitTestRequest, current_user: dict = Depends(verify_admin_token)
+    test_request: GitTestRequest, current_user: dict = Depends(require_permission("settings.nautobot", "write"))
 ):
     """Test Git connection with provided settings."""
     try:
@@ -453,7 +453,7 @@ async def test_git_connection(
 
 
 @router.post("/reset")
-async def reset_settings_to_defaults(current_user: dict = Depends(verify_admin_token)):
+async def reset_settings_to_defaults(current_user: dict = Depends(require_permission("settings.nautobot", "write"))):
     """Reset all settings to default values."""
     try:
         from settings_manager import settings_manager
@@ -480,7 +480,7 @@ async def reset_settings_to_defaults(current_user: dict = Depends(verify_admin_t
 
 
 @router.get("/health")
-async def check_settings_health(current_user: dict = Depends(verify_admin_token)):
+async def check_settings_health(current_user: dict = Depends(require_permission("settings.nautobot", "write"))):
     """Check settings database health."""
     try:
         from settings_manager import settings_manager
@@ -509,7 +509,7 @@ async def check_settings_health(current_user: dict = Depends(verify_admin_token)
 
 # Legacy template settings endpoints for backward compatibility
 @router.get("/templates")
-async def get_template_settings(current_user: dict = Depends(verify_admin_token)):
+async def get_template_settings(current_user: dict = Depends(require_permission("settings.nautobot", "write"))):
     """Get template settings (legacy endpoint - redirects to new template management)."""
     return {
         "message": "Template settings have been moved to /api/templates",
@@ -520,7 +520,7 @@ async def get_template_settings(current_user: dict = Depends(verify_admin_token)
 
 @router.post("/templates")
 async def update_template_settings(
-    template_data: dict, current_user: dict = Depends(verify_admin_token)
+    template_data: dict, current_user: dict = Depends(require_permission("settings.nautobot", "write"))
 ):
     """Update template settings (legacy endpoint - redirects to new template management)."""
     return {
@@ -532,7 +532,7 @@ async def update_template_settings(
 
 
 @router.get("/nautobot/defaults")
-async def get_nautobot_defaults(current_user: dict = Depends(verify_token)):
+async def get_nautobot_defaults(current_user: dict = Depends(require_permission("settings.nautobot", "read"))):
     """Get Nautobot default settings."""
     try:
         from settings_manager import settings_manager
@@ -552,7 +552,7 @@ async def get_nautobot_defaults(current_user: dict = Depends(verify_token)):
 @router.post("/nautobot/defaults")
 async def update_nautobot_defaults(
     defaults_request: NautobotDefaultsRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ):
     """Update Nautobot default settings."""
     try:
@@ -579,7 +579,7 @@ async def update_nautobot_defaults(
 
 @router.get("/offboarding")
 async def get_device_offboarding_settings(
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ):
     """Get device offboarding settings."""
     try:
@@ -599,7 +599,7 @@ async def get_device_offboarding_settings(
 @router.post("/offboarding")
 async def update_device_offboarding_settings(
     offboarding_request: DeviceOffboardingRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ):
     """Update device offboarding settings."""
     try:

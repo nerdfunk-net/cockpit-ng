@@ -8,7 +8,7 @@ and management operations. All endpoints are protected by token authentication.
 from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 
-from core.auth import verify_admin_token
+from core.auth import require_permission
 from services.cache_service import cache_service
 
 router = APIRouter(prefix="/api/cache", tags=["cache"])
@@ -36,7 +36,7 @@ def _clear_device_cache(device_id: str = None) -> int:
 
 
 @router.get("/stats")
-async def cache_stats(current_user: dict = Depends(verify_admin_token)):
+async def cache_stats(current_user: dict = Depends(require_permission("settings.cache", "write"))):
     """Return comprehensive cache statistics including performance metrics."""
     try:
         stats = cache_service.stats()
@@ -50,7 +50,7 @@ async def cache_entries(
     include_expired: bool = Query(
         False, description="Include expired entries in the response"
     ),
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("settings.cache", "write")),
 ):
     """Return detailed information about all cache entries."""
     try:
@@ -62,7 +62,7 @@ async def cache_entries(
 
 @router.get("/namespace/{namespace}")
 async def cache_namespace_info(
-    namespace: str, current_user: dict = Depends(verify_admin_token)
+    namespace: str, current_user: dict = Depends(require_permission("settings.cache", "write"))
 ):
     """Return detailed information about a specific cache namespace."""
     try:
@@ -73,7 +73,7 @@ async def cache_namespace_info(
 
 
 @router.get("/performance")
-async def cache_performance(current_user: dict = Depends(verify_admin_token)):
+async def cache_performance(current_user: dict = Depends(require_permission("settings.cache", "write"))):
     """Return detailed cache performance metrics."""
     try:
         metrics = cache_service.get_performance_metrics()
@@ -84,7 +84,7 @@ async def cache_performance(current_user: dict = Depends(verify_admin_token)):
 
 @router.post("/clear")
 async def clear_cache(
-    payload: dict = None, current_user: dict = Depends(verify_admin_token)
+    payload: dict = None, current_user: dict = Depends(require_permission("settings.cache", "write"))
 ):
     """Clear cache entries. Accepts optional JSON { "namespace": "repo:123" }.
 
@@ -115,7 +115,7 @@ async def clear_cache(
 
 
 @router.post("/cleanup")
-async def cleanup_expired(current_user: dict = Depends(verify_admin_token)):
+async def cleanup_expired(current_user: dict = Depends(require_permission("settings.cache", "write"))):
     """Remove expired cache entries and return count of removed items."""
     try:
         removed_count = cache_service.cleanup_expired()
@@ -130,7 +130,7 @@ async def cleanup_expired(current_user: dict = Depends(verify_admin_token)):
 
 @router.post("/devices/clear")
 async def clear_devices_cache(
-    payload: dict = None, current_user: dict = Depends(verify_admin_token)
+    payload: dict = None, current_user: dict = Depends(require_permission("settings.cache", "write"))
 ):
     """Clear device cache. Accepts optional JSON { "device_id": "123" }.
 
@@ -159,7 +159,7 @@ async def clear_devices_cache(
 
 
 @router.get("/devices/stats")
-async def get_devices_cache_stats(current_user: dict = Depends(verify_admin_token)):
+async def get_devices_cache_stats(current_user: dict = Depends(require_permission("settings.cache", "write"))):
     """Get device cache statistics and information."""
     try:
         # Get namespace stats for device cache

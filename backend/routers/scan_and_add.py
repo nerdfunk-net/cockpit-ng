@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, validator
 from jinja2 import Environment, BaseLoader
 
-from core.auth import get_current_username
+from core.auth import require_permission
 from services.scan_service import scan_service
 from services.nautobot import nautobot_service
 from template_manager import template_manager
@@ -149,7 +149,7 @@ class OnboardResponse(BaseModel):
 # API Endpoints
 @router.post("/start", response_model=ScanStartResponse)
 async def start_scan(
-    request: ScanStartRequest, current_user: str = Depends(get_current_username)
+    request: ScanStartRequest, current_user: dict = Depends(require_permission("scan", "execute"))
 ):
     """Start a new network scan job."""
     try:

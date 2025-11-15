@@ -101,7 +101,7 @@ const navigationSections: NavSection[] = [
       { label: 'Git Management', href: '/settings/git', icon: GitBranch },
       { label: 'Cache', href: '/settings/cache', icon: Zap },
       { label: 'Credentials', href: '/settings/credentials', icon: Key },
-      { label: 'User Management', href: '/settings/users', icon: Users },
+      { label: 'Users & Permissions', href: '/settings/permissions', icon: Shield },
       { label: 'Jobs', href: '/settings/jobs', icon: Activity },
     ],
   },
@@ -197,7 +197,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
               </>
             )}
           </Button>
-          {!isCollapsed && !isItemCollapsed && (
+          {!isCollapsed && !isItemCollapsed && item.children && (
             <div className="mt-1 space-y-1">
               {item.children.map(child => renderMenuItem(child, sectionTitle, depth + 1))}
             </div>
@@ -321,7 +321,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
           {!isCollapsed && (
             <div className="pt-4 border-t border-slate-100">
               <p className="text-xs text-slate-400 text-center leading-relaxed">
-                © 2025 Analytics Dashboard
+                © 2025 Cockpit Dashboard
                 <br />
                 <span className="text-slate-300">Network Management</span>
               </p>

@@ -9,7 +9,7 @@ import os
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from core.auth import verify_admin_token, verify_token
+from core.auth import require_permission
 from models.checkmk import (
     CheckMKTestConnectionRequest,
     CheckMKTestConnectionResponse,
@@ -53,7 +53,7 @@ router = APIRouter(prefix="/api/checkmk", tags=["checkmk"])
 @router.post("/test", response_model=CheckMKTestConnectionResponse)
 async def test_checkmk_connection(
     request: CheckMKTestConnectionRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Test CheckMK connection with provided settings."""
     try:
@@ -81,7 +81,7 @@ async def test_checkmk_connection(
 
 @router.get("/test")
 async def test_current_checkmk_connection(
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Test current CheckMK connection using saved settings."""
     try:
@@ -125,7 +125,7 @@ async def test_current_checkmk_connection(
 
 
 @router.get("/stats")
-async def get_checkmk_stats(current_user: dict = Depends(verify_token)):
+async def get_checkmk_stats(current_user: dict = Depends(require_permission("checkmk.devices", "read"))):
     """Get CheckMK statistics with 10-minute caching."""
     # Cache configuration
     cache_duration = timedelta(minutes=10)
@@ -292,7 +292,7 @@ def _get_checkmk_client(site_name: str = None):
 
 
 @router.get("/version", response_model=CheckMKVersionResponse)
-async def get_version(current_user: dict = Depends(verify_admin_token)):
+async def get_version(current_user: dict = Depends(require_permission("checkmk.devices", "read"))):
     """Get CheckMK version information"""
     try:
         client = _get_checkmk_client()
@@ -321,7 +321,7 @@ async def get_all_hosts(
     effective_attributes: bool = False,
     include_links: bool = False,
     site: str = None,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Get all hosts from CheckMK"""
     try:
@@ -362,7 +362,7 @@ async def get_all_hosts(
 async def get_host(
     hostname: str,
     effective_attributes: bool = False,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Get specific host configuration"""
     try:
@@ -402,7 +402,7 @@ async def get_host(
 @router.post("/hosts", response_model=CheckMKOperationResponse)
 async def create_host(
     request: CheckMKHostCreateRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Create new host in CheckMK"""
     try:
@@ -433,7 +433,7 @@ async def create_host(
 async def create_host_v2(
     request: CheckMKHostCreateRequest,
     bake_agent: bool = False,
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Create new host in CheckMK (v2 endpoint with query parameter support)"""
     try:
@@ -468,7 +468,7 @@ async def create_host_v2(
 async def update_host(
     hostname: str,
     request: CheckMKHostUpdateRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Update existing host configuration"""
     try:
@@ -491,7 +491,7 @@ async def update_host(
 @router.delete("/hosts/{hostname}", response_model=CheckMKOperationResponse)
 async def delete_host(
     hostname: str,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "delete")),
 ):
     """Delete host from CheckMK"""
     try:
@@ -515,7 +515,7 @@ async def delete_host(
 async def move_host(
     hostname: str,
     request: CheckMKHostMoveRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Move host to different folder"""
     try:
@@ -565,7 +565,7 @@ async def move_host(
 async def rename_host(
     hostname: str,
     request: CheckMKHostRenameRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Rename host"""
     try:
@@ -593,7 +593,7 @@ async def rename_host(
 @router.post("/hosts/bulk-create", response_model=CheckMKOperationResponse)
 async def bulk_create_hosts(
     request: CheckMKBulkHostCreateRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Create multiple hosts in one request"""
     try:
@@ -630,7 +630,7 @@ async def bulk_create_hosts(
 @router.post("/hosts/bulk-update", response_model=CheckMKOperationResponse)
 async def bulk_update_hosts(
     request: CheckMKBulkHostUpdateRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Update multiple hosts in one request"""
     try:
@@ -661,7 +661,7 @@ async def bulk_update_hosts(
 @router.post("/hosts/bulk-delete", response_model=CheckMKOperationResponse)
 async def bulk_delete_hosts(
     request: CheckMKBulkHostDeleteRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Delete multiple hosts in one request"""
     try:
@@ -689,7 +689,7 @@ async def bulk_delete_hosts(
 @router.get("/monitoring/hosts", response_model=CheckMKOperationResponse)
 async def get_all_monitored_hosts(
     request: CheckMKServiceQueryRequest = None,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Get all monitored hosts with status information"""
     try:
@@ -717,7 +717,7 @@ async def get_all_monitored_hosts(
 async def get_monitored_host(
     hostname: str,
     request: CheckMKServiceQueryRequest = None,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Get monitored host with status information"""
     try:
@@ -745,7 +745,7 @@ async def get_monitored_host(
 async def get_host_services(
     hostname: str,
     request: CheckMKServiceQueryRequest = None,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Get services for a specific host"""
     try:
@@ -778,7 +778,7 @@ async def show_service(
     hostname: str,
     service: str,
     request: CheckMKServiceQueryRequest = None,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Show specific service details"""
     try:
@@ -808,7 +808,7 @@ async def show_service(
 @router.get("/hosts/{hostname}/discovery", response_model=CheckMKOperationResponse)
 async def get_service_discovery(
     hostname: str,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Get service discovery status for a host"""
     try:
@@ -836,7 +836,7 @@ async def get_service_discovery(
 async def start_service_discovery(
     hostname: str,
     request: CheckMKServiceDiscoveryRequest = CheckMKServiceDiscoveryRequest(),
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Start service discovery for a host"""
     try:
@@ -863,7 +863,7 @@ async def start_service_discovery(
 )
 async def wait_for_service_discovery(
     hostname: str,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Wait for service discovery completion"""
     try:
@@ -893,7 +893,7 @@ async def wait_for_service_discovery(
 async def update_discovery_phase(
     hostname: str,
     request: CheckMKDiscoveryPhaseUpdateRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Update discovery phase for a host"""
     try:
@@ -926,7 +926,7 @@ async def update_discovery_phase(
 @router.post("/acknowledge/host", response_model=CheckMKOperationResponse)
 async def acknowledge_host_problem(
     request: CheckMKAcknowledgeHostRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Acknowledge host problem"""
     try:
@@ -959,7 +959,7 @@ async def acknowledge_host_problem(
 @router.post("/acknowledge/service", response_model=CheckMKOperationResponse)
 async def acknowledge_service_problem(
     request: CheckMKAcknowledgeServiceRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Acknowledge service problem"""
     try:
@@ -991,7 +991,7 @@ async def acknowledge_service_problem(
 @router.delete("/acknowledge/{ack_id}", response_model=CheckMKOperationResponse)
 async def delete_acknowledgment(
     ack_id: str,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "delete")),
 ):
     """Delete acknowledgment"""
     try:
@@ -1014,7 +1014,7 @@ async def delete_acknowledgment(
 @router.post("/downtime/host", response_model=CheckMKOperationResponse)
 async def create_host_downtime(
     request: CheckMKDowntimeRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Create downtime for host"""
     try:
@@ -1045,7 +1045,7 @@ async def create_host_downtime(
 @router.post("/comments/host", response_model=CheckMKOperationResponse)
 async def add_host_comment(
     request: CheckMKCommentRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Add comment to host"""
     try:
@@ -1074,7 +1074,7 @@ async def add_host_comment(
 @router.post("/comments/service", response_model=CheckMKOperationResponse)
 async def add_service_comment(
     request: CheckMKCommentRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Add comment to service"""
     try:
@@ -1106,7 +1106,7 @@ async def add_service_comment(
 
 @router.get("/changes/pending", response_model=CheckMKOperationResponse)
 async def get_pending_changes(
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Get pending configuration changes"""
     try:
@@ -1129,7 +1129,7 @@ async def get_pending_changes(
 @router.post("/changes/activate", response_model=CheckMKOperationResponse)
 async def activate_changes(
     request: CheckMKActivateChangesRequest = CheckMKActivateChangesRequest(),
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Activate pending configuration changes"""
     try:
@@ -1158,7 +1158,7 @@ async def activate_changes(
 @router.get("/activation/{activation_id}", response_model=CheckMKOperationResponse)
 async def get_activation_status(
     activation_id: str,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Get activation status"""
     try:
@@ -1185,7 +1185,7 @@ async def get_activation_status(
 )
 async def wait_for_activation_completion(
     activation_id: str,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Wait for activation completion"""
     try:
@@ -1209,7 +1209,7 @@ async def wait_for_activation_completion(
 
 @router.get("/activation/running", response_model=CheckMKOperationResponse)
 async def get_running_activations(
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Get currently running activations"""
     try:
@@ -1236,7 +1236,7 @@ async def get_running_activations(
 
 @router.get("/host-groups", response_model=CheckMKOperationResponse)
 async def get_host_groups(
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Get all host groups"""
     try:
@@ -1259,7 +1259,7 @@ async def get_host_groups(
 @router.get("/host-groups/{group_name}", response_model=CheckMKOperationResponse)
 async def get_host_group(
     group_name: str,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Get specific host group"""
     try:
@@ -1284,7 +1284,7 @@ async def get_host_group(
 @router.post("/host-groups", response_model=CheckMKOperationResponse)
 async def create_host_group(
     request: CheckMKHostGroupCreateRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Create host group"""
     try:
@@ -1310,7 +1310,7 @@ async def create_host_group(
 async def update_host_group(
     name: str,
     request: CheckMKHostGroupUpdateRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Update existing host group"""
     try:
@@ -1333,7 +1333,7 @@ async def update_host_group(
 @router.delete("/host-groups/{name}", response_model=CheckMKOperationResponse)
 async def delete_host_group(
     name: str,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "delete")),
 ):
     """Delete host group"""
     try:
@@ -1356,7 +1356,7 @@ async def delete_host_group(
 @router.put("/host-groups/bulk-update", response_model=CheckMKOperationResponse)
 async def bulk_update_host_groups(
     request: CheckMKHostGroupBulkUpdateRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Update multiple host groups in one request"""
     try:
@@ -1381,7 +1381,7 @@ async def bulk_update_host_groups(
 @router.delete("/host-groups/bulk-delete", response_model=CheckMKOperationResponse)
 async def bulk_delete_host_groups(
     request: CheckMKHostGroupBulkDeleteRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "delete")),
 ):
     """Delete multiple host groups in one request"""
     try:
@@ -1411,7 +1411,7 @@ async def get_all_folders(
     parent: str = None,
     recursive: bool = False,
     show_hosts: bool = False,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Get all folders"""
     try:
@@ -1498,7 +1498,7 @@ async def get_all_folders(
 async def get_folder(
     folder_path: str,
     show_hosts: bool = False,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Get specific folder"""
     try:
@@ -1546,7 +1546,7 @@ async def get_folder(
 @router.post("/folders", response_model=CheckMKOperationResponse)
 async def create_folder(
     request: CheckMKFolderCreateRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Create new folder"""
     try:
@@ -1627,7 +1627,7 @@ async def create_folder(
 async def update_folder(
     folder_path: str,
     request: CheckMKFolderUpdateRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Update existing folder"""
     try:
@@ -1664,7 +1664,7 @@ async def update_folder(
 async def delete_folder(
     folder_path: str,
     delete_mode: str = "recursive",
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "delete")),
 ):
     """Delete folder"""
     try:
@@ -1694,7 +1694,7 @@ async def delete_folder(
 async def move_folder(
     folder_path: str,
     request: CheckMKFolderMoveRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Move folder to different location"""
     try:
@@ -1731,7 +1731,7 @@ async def move_folder(
 @router.put("/folders/bulk-update", response_model=CheckMKOperationResponse)
 async def bulk_update_folders(
     request: CheckMKFolderBulkUpdateRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Update multiple folders in one request"""
     try:
@@ -1757,7 +1757,7 @@ async def bulk_update_folders(
 async def get_hosts_in_folder(
     folder_path: str,
     effective_attributes: bool = False,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Get all hosts in a specific folder"""
     try:
@@ -1792,7 +1792,7 @@ async def get_hosts_in_folder(
 
 @router.get("/host-tag-groups", response_model=CheckMKHostTagGroupListResponse)
 async def get_all_host_tag_groups(
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Get all host tag groups"""
     try:
@@ -1828,7 +1828,7 @@ async def get_all_host_tag_groups(
 @router.get("/host-tag-groups/{name}", response_model=CheckMKOperationResponse)
 async def get_host_tag_group(
     name: str,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Get specific host tag group"""
     try:
@@ -1853,7 +1853,7 @@ async def get_host_tag_group(
 @router.post("/host-tag-groups", response_model=CheckMKOperationResponse)
 async def create_host_tag_group(
     request: CheckMKHostTagGroupCreateRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Create new host tag group"""
     try:
@@ -1889,7 +1889,7 @@ async def create_host_tag_group(
 async def update_host_tag_group(
     name: str,
     request: CheckMKHostTagGroupUpdateRequest,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Update existing host tag group"""
     try:
@@ -1929,7 +1929,7 @@ async def delete_host_tag_group(
     name: str,
     repair: bool = False,
     mode: str = None,
-    current_user: dict = Depends(verify_admin_token),
+    current_user: dict = Depends(require_permission("checkmk.devices", "delete")),
 ):
     """Delete host tag group"""
     try:

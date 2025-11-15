@@ -142,13 +142,6 @@ export default function UserManagement() {
     setShowDialog(true)
   }
 
-  const handleRoleChange = (role: string) => {
-    setFormData(prev => ({
-      ...prev,
-      role: role as 'admin' | 'user' | 'viewer' | 'custom'
-    }))
-  }
-
   const saveUser = async () => {
     if (!formData.username || !formData.realname || (!editingUser && !formData.password)) {
       showMessage('Please fill in all required fields', 'error')
@@ -311,25 +304,6 @@ export default function UserManagement() {
     loadUsers()
   }, [])
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'admin': return 'bg-red-100 text-red-800'
-      case 'user': return 'bg-blue-100 text-blue-800'
-      case 'viewer': return 'bg-gray-100 text-gray-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getPermissionSummary = (permissions: number) => {
-    const perms = []
-    if (permissions & PERMISSION_READ) perms.push('Read')
-    if (permissions & PERMISSION_WRITE) perms.push('Write')
-    if (permissions & PERMISSION_ADMIN) perms.push('Admin')
-    if (permissions & PERMISSION_DELETE) perms.push('Delete')
-    if (permissions & PERMISSION_USER_MANAGE) perms.push('User Mgmt')
-    return perms.join(', ') || 'None'
-  }
-
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -340,7 +314,7 @@ export default function UserManagement() {
           </div>
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">User Management</h1>
-            <p className="text-gray-600">Manage system users, roles, and permissions</p>
+            <p className="text-gray-600">Manage user accounts and basic settings. Configure roles and permissions in Settings → Permissions.</p>
           </div>
         </div>
       </div>
@@ -369,7 +343,7 @@ export default function UserManagement() {
                 <span>Users ({users.length})</span>
               </CardTitle>
               <CardDescription className="text-blue-100">
-                Manage user accounts, roles, and access permissions
+                Create and manage user accounts
               </CardDescription>
             </div>
             <div className="flex items-center space-x-2 mr-4">
@@ -439,19 +413,6 @@ export default function UserManagement() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="role">Role</Label>
-                      <Select value={formData.role} onValueChange={handleRoleChange}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="viewer">Viewer</SelectItem>
-                          <SelectItem value="user">User</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
                       <Label htmlFor="debug">Debug Mode</Label>
                       <div className="flex items-center space-x-2 mt-2">
                         <Checkbox
@@ -514,8 +475,6 @@ export default function UserManagement() {
                     </TableHead>
                     <TableHead>Username</TableHead>
                     <TableHead>Real Name</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Permissions</TableHead>
                     <TableHead>Debug</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -532,14 +491,6 @@ export default function UserManagement() {
                       </TableCell>
                       <TableCell className="font-medium">{user.username}</TableCell>
                       <TableCell>{user.realname}</TableCell>
-                      <TableCell>
-                        <Badge className={getRoleBadgeColor(user.role)}>
-                          {user.role.toUpperCase()}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-600">
-                        {getPermissionSummary(user.permissions)}
-                      </TableCell>
                       <TableCell>
                         <Badge variant={user.debug ? "destructive" : "secondary"}>
                           {user.debug ? 'On' : 'Off'}
