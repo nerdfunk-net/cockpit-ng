@@ -35,9 +35,10 @@ import {
 
 interface NavItem {
   label: string
-  href: string
+  href?: string  // Optional when item has children
   icon: React.ComponentType<{ className?: string }>
   badge?: string
+  children?: NavItem[]  // Support for nested menu items
 }
 
 interface NavSection {
@@ -69,19 +70,26 @@ const navigationSections: NavSection[] = [
     ],
   },
   {
-    title: 'Configs',
+    title: 'Network',
     items: [
-      { label: 'View', href: '/configs', icon: Eye },
-      { label: 'Backup', href: '/backup', icon: Save },
-      { label: 'Compare', href: '/compare', icon: GitCompare },
-    ],
-  },
-  {
-    title: 'Automation',
-    items: [
-      { label: 'Inventory', href: '/ansible-inventory', icon: List },
       { label: 'Netmiko', href: '/netmiko', icon: Terminal },
-      { label: 'Templates', href: '/automation/templates', icon: FileText },
+      {
+        label: 'Configs',
+        icon: FileText,
+        children: [
+          { label: 'View', href: '/configs', icon: Eye },
+          { label: 'Backup', href: '/backup', icon: Save },
+          { label: 'Compare', href: '/compare', icon: GitCompare },
+        ],
+      },
+      {
+        label: 'General',
+        icon: List,
+        children: [
+          { label: 'Inventory', href: '/ansible-inventory', icon: List },
+          { label: 'Templates', href: '/automation/templates', icon: FileText },
+        ],
+      },
     ],
   },
   {
@@ -106,6 +114,7 @@ interface AppSidebarProps {
 export function AppSidebar({ className }: AppSidebarProps) {
   const { isCollapsed, toggleCollapsed } = useSidebar()
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
+  const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set())
   const { user, logout } = useAuthStore()
   const pathname = usePathname()
   const router = useRouter()
@@ -125,8 +134,20 @@ export function AppSidebar({ className }: AppSidebarProps) {
     })
   }
 
+  const toggleItem = (itemKey: string) => {
+    setCollapsedItems(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(itemKey)) {
+        newSet.delete(itemKey)
+      } else {
+        newSet.add(itemKey)
+      }
+      return newSet
+    })
+  }
+
   const sidebarWidth = isCollapsed ? 'w-16' : 'w-64'
-  
+
   // Filter navigation sections based on user role
   const visibleSections = navigationSections.filter(section => {
     // Hide Settings section for non-admin users
@@ -135,6 +156,84 @@ export function AppSidebar({ className }: AppSidebarProps) {
     }
     return true
   })
+
+  // Helper function to check if any child is active
+  const hasActiveChild = (item: NavItem): boolean => {
+    if (item.href && pathname === item.href) return true
+    if (item.children) {
+      return item.children.some(child => hasActiveChild(child))
+    }
+    return false
+  }
+
+  // Recursive component to render menu items
+  const renderMenuItem = (item: NavItem, sectionTitle: string, depth: number = 0) => {
+    const itemKey = `${sectionTitle}-${item.label}`
+    const isItemCollapsed = collapsedItems.has(itemKey)
+    const hasChildren = item.children && item.children.length > 0
+    const isActive = item.href ? pathname === item.href : hasActiveChild(item)
+    const Icon = item.icon
+    const paddingLeft = depth > 0 ? `${12 + depth * 16}px` : '12px'
+
+    if (hasChildren) {
+      // Item with submenu - don't highlight parent items
+      return (
+        <div key={itemKey}>
+          <Button
+            variant="ghost"
+            onClick={() => toggleItem(itemKey)}
+            style={{ paddingLeft }}
+            className="w-full justify-start h-9 transition-all duration-200 button-analytics pr-3 text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+          >
+            <Icon className={cn('h-4 w-4', isCollapsed ? '' : 'mr-2')} />
+            {!isCollapsed && (
+              <>
+                <span className="flex-1 text-left font-medium">{item.label}</span>
+                {isItemCollapsed ? (
+                  <ChevronRight className="h-3 w-3" />
+                ) : (
+                  <ChevronDown className="h-3 w-3" />
+                )}
+              </>
+            )}
+          </Button>
+          {!isCollapsed && !isItemCollapsed && (
+            <div className="mt-1 space-y-1">
+              {item.children.map(child => renderMenuItem(child, sectionTitle, depth + 1))}
+            </div>
+          )}
+        </div>
+      )
+    } else {
+      // Regular item with link
+      return (
+        <Link key={itemKey} href={item.href || '#'}>
+          <Button
+            variant={isActive ? 'default' : 'ghost'}
+            style={{ paddingLeft }}
+            className={cn(
+              'w-full justify-start h-9 transition-all duration-200 button-analytics pr-3',
+              isActive
+                ? 'bg-blue-600 text-white shadow-analytics hover:bg-blue-700'
+                : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+            )}
+          >
+            <Icon className={cn('h-4 w-4', isCollapsed ? '' : 'mr-2')} />
+            {!isCollapsed && (
+              <>
+                <span className="flex-1 text-left font-medium">{item.label}</span>
+                {item.badge && (
+                  <Badge variant="secondary" className="text-xs bg-slate-100 text-slate-600">
+                    {item.badge}
+                  </Badge>
+                )}
+              </>
+            )}
+          </Button>
+        </Link>
+      )
+    }
+  }
 
   return (
     <div
@@ -202,43 +301,13 @@ export function AppSidebar({ className }: AppSidebarProps) {
                       )}
                     </button>
                   )}
-                  <div 
+                  <div
                     className={cn(
                       "space-y-1 transition-all duration-300 overflow-hidden",
                       !isCollapsed && isSectionCollapsed ? "max-h-0 opacity-0" : "max-h-none opacity-100"
                     )}
                   >
-                    {section.items.map((item) => {
-                      const isActive = pathname === item.href
-                      const Icon = item.icon
-                      
-                      return (
-                        <Link key={item.href} href={item.href}>
-                          <Button
-                            variant={isActive ? 'default' : 'ghost'}
-                            className={cn(
-                              'w-full justify-start h-9 transition-all duration-200 button-analytics',
-                              isCollapsed ? 'px-3' : 'px-3',
-                              isActive
-                                ? 'bg-blue-600 text-white shadow-analytics hover:bg-blue-700'
-                                : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                            )}
-                          >
-                            <Icon className={cn('h-4 w-4', isCollapsed ? '' : 'mr-2')} />
-                            {!isCollapsed && (
-                              <>
-                                <span key="nav-label" className="flex-1 text-left font-medium">{item.label}</span>
-                                {item.badge && (
-                                  <Badge key="nav-badge" variant="secondary" className="text-xs bg-slate-100 text-slate-600">
-                                    {item.badge}
-                                  </Badge>
-                                )}
-                              </>
-                            )}
-                          </Button>
-                        </Link>
-                      )
-                    })}
+                    {section.items.map((item) => renderMenuItem(item, section.title))}
                   </div>
                 </div>
               )
