@@ -343,45 +343,20 @@ export function ScanAndAddPage() {
 
   const loadCredentials = async () => {
     try {
-      // Load general credentials
-      const generalData = await apiCall<Credential[]>('credentials/')
-      const validGeneralCredentials = Array.isArray(generalData) ? generalData.map(cred => ({
-        ...cred,
-        source: 'general',
-        name: `${cred.name} (System)`
-      })) : []
+      // Load all credentials (includes both general and private from credentials database)
+      const credentialsData = await apiCall<Credential[]>('credentials/')
+      const validCredentials = Array.isArray(credentialsData) ? credentialsData
+        .filter(cred => cred.type === 'ssh' || cred.type === 'tacacs')
+        .map(cred => ({
+          ...cred,
+          name: `${cred.name} (${cred.type.toUpperCase()} - ${cred.username})`
+        })) : []
 
-      // Load personal credentials from profile
-      let personalCredentials: Credential[] = []
-      try {
-        const profileData = await apiCall<{
-          personal_credentials: Array<{
-            id: string
-            name: string
-            username: string
-            type: string
-          }>
-        }>('profile')
-        
-        if (profileData.personal_credentials && Array.isArray(profileData.personal_credentials)) {
-          personalCredentials = profileData.personal_credentials.map(cred => ({
-            id: cred.id,
-            name: `${cred.name} (Personal)`,
-            source: 'personal'
-          }))
-        }
-      } catch (error) {
-        console.warn('Could not load personal credentials:', error)
-        // Continue without personal credentials if profile endpoint fails
-      }
+      setCredentials(validCredentials)
 
-      // Combine both types of credentials
-      const allCredentials = [...validGeneralCredentials, ...personalCredentials]
-      setCredentials(allCredentials)
-      
       // Auto-select if only one credential is available and no credential is selected
-      if (allCredentials.length === 1 && selectedCredentials.length === 1 && selectedCredentials[0] === '') {
-        setSelectedCredentials([String(allCredentials[0].id)])
+      if (validCredentials.length === 1 && selectedCredentials.length === 1 && selectedCredentials[0] === '') {
+        setSelectedCredentials([String(validCredentials[0].id)])
       }
     } catch (error) {
       console.error('Error loading credentials:', error)
@@ -1344,16 +1319,16 @@ export function ScanAndAddPage() {
                       <SelectContent>
                         {Array.isArray(credentials) && credentials.length > 0 ? (
                           credentials.map(credential => (
-                            <SelectItem key={credential.id} value={String(credential.id)}>
+                            <SelectItem key={`credential-${credential.id}`} value={String(credential.id)}>
                               <div className="flex items-center space-x-2 w-full">
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                  credential.source === 'personal' 
-                                    ? 'bg-blue-100 text-blue-800' 
+                                  credential.source === 'private'
+                                    ? 'bg-blue-100 text-blue-800'
                                     : 'bg-gray-100 text-gray-800'
                                 }`}>
-                                  {credential.source === 'personal' ? 'Personal' : 'System'}
+                                  {credential.source === 'private' ? 'Private' : 'General'}
                                 </span>
-                                <span className="flex-1">{credential.name.replace(' (System)', '').replace(' (Personal)', '')}</span>
+                                <span className="flex-1">{credential.name}</span>
                               </div>
                             </SelectItem>
                           ))
@@ -1424,7 +1399,7 @@ export function ScanAndAddPage() {
                   <div className="border rounded-md p-3 max-h-40 overflow-y-auto">
                     {Array.isArray(parserTemplates) && parserTemplates.length > 0 ? (
                       parserTemplates.map(template => (
-                        <div key={template.id} className="flex items-center space-x-2 py-1">
+                        <div key={`parser-template-${template.id}`} className="flex items-center space-x-2 py-1">
                           <Checkbox
                             id={String(template.id)}
                             checked={selectedParserTemplates.includes(String(template.id))}
@@ -1474,7 +1449,7 @@ export function ScanAndAddPage() {
                     {Array.isArray(gitRepositories) && gitRepositories
                       .filter(repo => repo.id && String(repo.id).trim() !== '')
                       .map(repo => (
-                      <SelectItem key={repo.id} value={String(repo.id)}>
+                      <SelectItem key={`git-repo-${repo.id}`} value={String(repo.id)}>
                         {repo.name}
                       </SelectItem>
                     ))}
@@ -1493,7 +1468,7 @@ export function ScanAndAddPage() {
                     {Array.isArray(inventoryTemplates) && inventoryTemplates
                       .filter(template => template.id && String(template.id).trim() !== '')
                       .map(template => (
-                      <SelectItem key={template.id} value={String(template.id)}>
+                      <SelectItem key={`inventory-template-${template.id}`} value={String(template.id)}>
                         {template.name}
                       </SelectItem>
                     ))}
@@ -1804,7 +1779,7 @@ export function ScanAndAddPage() {
                     {Array.isArray(platforms) && platforms
                       .filter(platform => platform.id && String(platform.id).trim() !== '')
                       .map(platform => (
-                      <SelectItem key={platform.id} value={String(platform.id)}>
+                      <SelectItem key={`platform-${platform.id}`} value={String(platform.id)}>
                         {platform.name}
                       </SelectItem>
                     ))}
@@ -1843,7 +1818,7 @@ export function ScanAndAddPage() {
                     {Array.isArray(roles) && roles
                       .filter(role => role.name && String(role.name).trim() !== '')
                       .map(role => (
-                      <SelectItem key={role.id} value={String(role.name)}>
+                      <SelectItem key={`role-${role.id}`} value={String(role.name)}>
                         {role.name}
                       </SelectItem>
                     ))}
@@ -1873,7 +1848,7 @@ export function ScanAndAddPage() {
                       {modalLocationFiltered.length > 0 ? (
                         modalLocationFiltered.map(loc => (
                           <div
-                            key={loc.id}
+                            key={`modal-location-${loc.id}`}
                             className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
                             onClick={() => {
                               updateDeviceMetadata(editingDeviceIp, 'location', loc.id)
@@ -1906,7 +1881,7 @@ export function ScanAndAddPage() {
                     {Array.isArray(namespaces) && namespaces
                       .filter(namespace => namespace.name && String(namespace.name).trim() !== '')
                       .map(namespace => (
-                      <SelectItem key={namespace.id} value={String(namespace.name)}>
+                      <SelectItem key={`namespace-${namespace.id}`} value={String(namespace.name)}>
                         {namespace.name}
                       </SelectItem>
                     ))}
@@ -1928,7 +1903,7 @@ export function ScanAndAddPage() {
                     {Array.isArray(deviceStatuses) && deviceStatuses
                       .filter(status => status.name && String(status.name).trim() !== '')
                       .map(status => (
-                      <SelectItem key={status.id} value={String(status.name)}>
+                      <SelectItem key={`device-status-${status.id}`} value={String(status.name)}>
                         {status.name}
                       </SelectItem>
                     ))}
@@ -1950,7 +1925,7 @@ export function ScanAndAddPage() {
                     {Array.isArray(interfaceStatuses) && interfaceStatuses
                       .filter(status => status.name && String(status.name).trim() !== '')
                       .map(status => (
-                      <SelectItem key={status.id} value={String(status.name)}>
+                      <SelectItem key={`interface-status-${status.id}`} value={String(status.name)}>
                         {status.name}
                       </SelectItem>
                     ))}
@@ -1972,7 +1947,7 @@ export function ScanAndAddPage() {
                     {Array.isArray(ipAddressStatuses) && ipAddressStatuses
                       .filter(status => status.name && String(status.name).trim() !== '')
                       .map(status => (
-                      <SelectItem key={status.id} value={String(status.name)}>
+                      <SelectItem key={`ip-status-${status.id}`} value={String(status.name)}>
                         {status.name}
                       </SelectItem>
                     ))}
@@ -1995,7 +1970,7 @@ export function ScanAndAddPage() {
                     {Array.isArray(secretGroups) && secretGroups
                       .filter(group => group.id && String(group.id).trim() !== '')
                       .map(group => (
-                      <SelectItem key={group.id} value={String(group.id)}>
+                      <SelectItem key={`secret-group-${group.id}`} value={String(group.id)}>
                         {group.name}
                       </SelectItem>
                     ))}
@@ -2053,7 +2028,7 @@ export function ScanAndAddPage() {
                   {Array.isArray(platforms) && platforms
                     .filter(platform => platform.id && String(platform.id).trim() !== '')
                     .map(platform => (
-                    <SelectItem key={platform.id} value={String(platform.id)}>
+                    <SelectItem key={`assign-platform-${platform.id}`} value={String(platform.id)}>
                       {platform.name}
                     </SelectItem>
                   ))}
@@ -2075,7 +2050,7 @@ export function ScanAndAddPage() {
                   {Array.isArray(roles) && roles
                     .filter(role => role.name && String(role.name).trim() !== '')
                     .map(role => (
-                    <SelectItem key={role.id} value={String(role.name)}>
+                    <SelectItem key={`assign-role-${role.id}`} value={String(role.name)}>
                       {role.name}
                     </SelectItem>
                   ))}
@@ -2105,7 +2080,7 @@ export function ScanAndAddPage() {
                     {assignLocationFiltered.length > 0 ? (
                       assignLocationFiltered.map(loc => (
                         <div
-                          key={loc.id}
+                          key={`assign-location-${loc.id}`}
                           className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
                           onClick={() => {
                             setAssignAllData(prev => ({ ...prev, location: loc.id }))
@@ -2138,7 +2113,7 @@ export function ScanAndAddPage() {
                   {namespaces
                     .filter(namespace => namespace.name && String(namespace.name).trim() !== '')
                     .map(namespace => (
-                    <SelectItem key={namespace.id} value={String(namespace.name)}>
+                    <SelectItem key={`assign-namespace-${namespace.id}`} value={String(namespace.name)}>
                       {namespace.name}
                     </SelectItem>
                   ))}
@@ -2160,7 +2135,7 @@ export function ScanAndAddPage() {
                   {deviceStatuses
                     .filter(status => status.name && String(status.name).trim() !== '')
                     .map(status => (
-                    <SelectItem key={status.id} value={String(status.name)}>
+                    <SelectItem key={`assign-device-status-${status.id}`} value={String(status.name)}>
                       {status.name}
                     </SelectItem>
                   ))}
@@ -2182,7 +2157,7 @@ export function ScanAndAddPage() {
                   {interfaceStatuses
                     .filter(status => status.name && String(status.name).trim() !== '')
                     .map(status => (
-                    <SelectItem key={status.id} value={String(status.name)}>
+                    <SelectItem key={`assign-interface-status-${status.id}`} value={String(status.name)}>
                       {status.name}
                     </SelectItem>
                   ))}
@@ -2204,7 +2179,7 @@ export function ScanAndAddPage() {
                   {ipAddressStatuses
                     .filter(status => status.name && String(status.name).trim() !== '')
                     .map(status => (
-                    <SelectItem key={status.id} value={String(status.name)}>
+                    <SelectItem key={`assign-ip-status-${status.id}`} value={String(status.name)}>
                       {status.name}
                     </SelectItem>
                   ))}
