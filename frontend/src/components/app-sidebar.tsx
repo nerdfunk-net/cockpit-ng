@@ -72,7 +72,6 @@ const navigationSections: NavSection[] = [
   {
     title: 'Network',
     items: [
-      { label: 'Netmiko', href: '/netmiko', icon: Terminal },
       {
         label: 'Configs',
         icon: FileText,
@@ -83,9 +82,10 @@ const navigationSections: NavSection[] = [
         ],
       },
       {
-        label: 'General',
-        icon: List,
+        label: 'Automation',
+        icon: Zap,
         children: [
+          { label: 'Netmiko', href: '/netmiko', icon: Terminal },
           { label: 'Inventory', href: '/ansible-inventory', icon: List },
           { label: 'Templates', href: '/automation/templates', icon: FileText },
         ],
