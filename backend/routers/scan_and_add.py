@@ -20,7 +20,7 @@ from git_repositories_manager import GitRepositoryManager
 
 logger = logging.getLogger(__name__)
 router = APIRouter(
-    prefix="/api/scan", tags=["scan"], dependencies=[Depends(get_current_username)]
+    prefix="/api/scan", tags=["scan"]
 )
 
 

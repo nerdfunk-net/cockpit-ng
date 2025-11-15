@@ -242,7 +242,7 @@ async def start_devices_compare_job(
 
 @router.get("/scheduler-status")
 async def get_scheduler_status(
-    _: dict = Depends(verify_token),
+    _: dict = Depends(require_permission("jobs", "read")),
     scheduler_service: APSchedulerJobService = Depends(get_scheduler_service),
 ):
     """Get APScheduler status and running jobs"""
@@ -259,7 +259,7 @@ async def get_scheduler_status(
 @router.delete("/{job_id}/cancel")
 async def cancel_scheduler_job(
     job_id: str,
-    _: dict = Depends(verify_token),
+    _: dict = Depends(require_permission("jobs", "delete")),
     scheduler_service: APSchedulerJobService = Depends(get_scheduler_service),
 ):
     """Cancel an APScheduler job"""
@@ -301,7 +301,7 @@ async def cancel_scheduler_job(
 
 @router.post("/cleanup")
 async def cleanup_old_jobs(
-    _: dict = Depends(verify_token),
+    _: dict = Depends(require_permission("jobs", "write")),
 ):
     """Clear all completed, failed, and cancelled jobs from the database"""
     try:
@@ -319,7 +319,7 @@ async def cleanup_old_jobs(
 
 
 @router.get("/", response_model=JobListResponse)
-async def get_jobs(limit: int = 100, _: dict = Depends(verify_token)):
+async def get_jobs(limit: int = 100, _: dict = Depends(require_permission("jobs", "read"))):
     """Get all jobs from the new job database"""
     try:
         jobs_data = job_db_service.get_jobs(limit=limit)
@@ -355,7 +355,7 @@ async def get_jobs(limit: int = 100, _: dict = Depends(verify_token)):
 
 
 @router.get("/{job_id}", response_model=JobDetailResponse)
-async def get_job_details(job_id: str, _: dict = Depends(verify_token)):
+async def get_job_details(job_id: str, _: dict = Depends(require_permission("jobs", "read"))):
     """Get detailed job information including device results"""
     logger.info(f"=== JOB DETAILS REQUEST for job_id: {job_id} ===")
     try:
@@ -433,7 +433,7 @@ async def get_job_details(job_id: str, _: dict = Depends(verify_token)):
 
 
 @router.delete("/{job_id}")
-async def delete_job(job_id: str, _: dict = Depends(verify_token)):
+async def delete_job(job_id: str, _: dict = Depends(require_permission("jobs", "delete"))):
     """Delete a job and its results from the database"""
     try:
         success = job_db_service.delete_job(job_id)
