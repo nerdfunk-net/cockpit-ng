@@ -2,7 +2,7 @@
  * Hook for managing Git repository operations
  */
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { GitRepository, GitPushResult } from '../types'
 
 export function useGitOperations() {
@@ -25,7 +25,7 @@ export function useGitOperations() {
     setShowGitSuccessModal(true)
   }
 
-  return {
+  return useMemo(() => ({
     // State
     gitRepositories,
     selectedGitRepo,
@@ -43,5 +43,11 @@ export function useGitOperations() {
     // Actions
     resetGitPush,
     updateGitPushResult,
-  }
+  }), [
+    gitRepositories,
+    selectedGitRepo,
+    isPushingToGit,
+    showGitSuccessModal,
+    gitPushResult
+  ])
 }

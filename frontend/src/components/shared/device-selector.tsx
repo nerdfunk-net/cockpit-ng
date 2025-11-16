@@ -2,6 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
+
+// Define default arrays outside component to prevent re-creating on every render
+const EMPTY_CONDITIONS: LogicalCondition[] = []
+const EMPTY_DEVICES: DeviceInfo[] = []
+const EMPTY_DEVICE_IDS: string[] = []
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -80,10 +85,10 @@ export function DeviceSelector({
   showActions = true,
   showSaveLoad = true,
   compact = false,
-  initialConditions = [],
-  initialDevices = [],
+  initialConditions = EMPTY_CONDITIONS,
+  initialDevices = EMPTY_DEVICES,
   enableSelection = false,
-  selectedDeviceIds = [],
+  selectedDeviceIds = EMPTY_DEVICE_IDS,
   onSelectionChange
 }: DeviceSelectorProps) {
   const { apiCall } = useApi()

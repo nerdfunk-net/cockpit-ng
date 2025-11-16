@@ -2,7 +2,7 @@
  * Hook for managing template and inventory generation
  */
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 
 export function useInventoryGeneration() {
   // Template state
@@ -32,7 +32,7 @@ export function useInventoryGeneration() {
     setShowInventorySection(false)
   }
 
-  return {
+  return useMemo(() => ({
     // Template state
     templateCategories,
     selectedCategory,
@@ -62,5 +62,15 @@ export function useInventoryGeneration() {
     // Actions
     resetTemplateSelection,
     resetGeneration,
-  }
+  }), [
+    templateCategories,
+    selectedCategory,
+    availableTemplates,
+    selectedTemplate,
+    showTemplateSection,
+    generatedInventory,
+    showInventorySection,
+    isGeneratingInventory,
+    showCustomFieldsMenu
+  ])
 }

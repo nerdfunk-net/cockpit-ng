@@ -42,24 +42,36 @@ export default function AnsibleInventoryPage() {
 
   // Authentication effect
   useEffect(() => {
-    if (isAuthenticated && token) {
+    if (isAuthenticated && token && !authReady) {
       console.log('Ansible Inventory: Authentication ready')
       setAuthReady(true)
-      loadInitialData()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, token])
+  }, [isAuthenticated, token, authReady])
 
-  const loadInitialData = async () => {
-    try {
-      await Promise.all([
-        loadTemplateCategories(),
-        loadGitRepositories()
-      ])
-    } catch (error) {
-      console.error('Error loading initial data:', error)
+  // Load initial data once when authReady becomes true
+  useEffect(() => {
+    if (!authReady) return
+
+    const loadInitialData = async () => {
+      try {
+        // Load template categories
+        const categoriesResponse = await apiCall<string[]>('templates/categories')
+        inventoryGeneration.setTemplateCategories(categoriesResponse)
+
+        // Load git repositories
+        const gitResponse = await apiCall<{
+          repositories: Array<{id: number, name: string, url: string, branch: string}>
+          total: number
+        }>('ansible-inventory/git-repositories')
+        gitOperations.setGitRepositories(gitResponse.repositories)
+      } catch (error) {
+        console.error('Error loading initial data:', error)
+      }
     }
-  }
+
+    loadInitialData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authReady])
 
   const loadTemplateCategories = async () => {
     try {
@@ -135,8 +147,6 @@ export default function AnsibleInventoryPage() {
         showSaveLoad={true}
         compact={false}
         enableSelection={false}
-        initialConditions={deviceConditions}
-        initialDevices={previewDevices}
       />
 
       {/* Inventory Generation Tab */}
