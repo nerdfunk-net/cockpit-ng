@@ -75,7 +75,7 @@ export function UserRolesManager() {
       for (const user of users) {
         await loadUserRoles(user.id)
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to load users',
@@ -88,7 +88,7 @@ export function UserRolesManager() {
     try {
       const data = await apiCall<Role[]>('rbac/roles')
       setRoles(data)
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to load roles',

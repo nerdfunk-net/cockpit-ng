@@ -34,7 +34,7 @@ export function SessionStatus({ showDetails = false, className = '' }: SessionSt
       )
       const decoded = JSON.parse(jsonPayload)
       return decoded.exp ? new Date(decoded.exp * 1000) : null
-    } catch (error) {
+    } catch {
       return null
     }
   }

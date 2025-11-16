@@ -926,9 +926,9 @@ export default function ConfigsViewPage() {
           <div className="space-y-4">
             
             <div className="space-y-2">
-              {configFiles.map((file, index) => (
+              {configFiles.map((file) => (
                 <div
-                  key={`config-file-${index}`}
+                  key={file.path}
                   className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
                   onClick={() => handleConfigFileSelection(file)}
                 >

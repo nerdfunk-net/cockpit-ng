@@ -1244,7 +1244,8 @@ export function ScanAndAddPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {cidrRanges.map((cidr, index) => (
-              <div key={index} className="flex items-center space-x-2">
+              // eslint-disable-next-line react/no-array-index-key
+              <div key={`cidr-input-${index}`} className="flex items-center space-x-2">
                 <Input
                   value={cidr}
                   onChange={(e) => updateCidrRange(index, e.target.value)}
@@ -1307,7 +1308,8 @@ export function ScanAndAddPage() {
                   Choose from system-wide credentials or your personal credentials for device authentication
                 </p>
                 {selectedCredentials.map((credentialId, index) => (
-                  <div key={index} className="flex items-center space-x-2">
+                  // eslint-disable-next-line react/no-array-index-key
+                  <div key={`credential-${credentialId}-${index}`} className="flex items-center space-x-2">
                     <Select 
                       value={String(credentialId)} 
                       onValueChange={(value) => updateCredential(index, value)}
@@ -2249,8 +2251,8 @@ export function ScanAndAddPage() {
                       <tbody>
                         {scanJob.results
                           .filter(result => !result.is_alive || !result.is_authenticated)
-                          .map((result, index) => (
-                          <tr key={`${result.ip}-${index}`} className="border-b">
+                          .map((result) => (
+                          <tr key={result.ip} className="border-b">
                             <td className="p-3 font-mono">{result.ip}</td>
                             <td className="p-3">
                               <Badge variant={result.is_alive ? 'secondary' : 'destructive'}>

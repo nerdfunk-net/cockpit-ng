@@ -59,7 +59,7 @@ export function UserPermissionsManager() {
     try {
       const response = await apiCall<{ users: User[] }>('user-management')
       setUsers(response.users || [])
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to load users',

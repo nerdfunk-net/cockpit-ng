@@ -376,8 +376,8 @@ export default function OIDCTestPage() {
                         <AlertDescription>
                           <div className="font-semibold mb-1">Configuration Issues:</div>
                           <ul className="list-disc list-inside space-y-1">
-                            {selectedProviderInfo.issues.map((issue, idx) => (
-                              <li key={idx} className="text-sm">{issue}</li>
+                            {selectedProviderInfo.issues.map((issue) => (
+                              <li key={issue} className="text-sm">{issue}</li>
                             ))}
                           </ul>
                         </AlertDescription>
@@ -687,9 +687,9 @@ export default function OIDCTestPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-96 overflow-y-auto">
-              {logs.map((log, idx) => (
+              {logs.map((log) => (
                 <div
-                  key={idx}
+                  key={`${log.timestamp}-${log.message}`}
                   className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
                 >
                   {getLevelIcon(log.level)}

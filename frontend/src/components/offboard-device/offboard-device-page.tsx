@@ -1167,8 +1167,8 @@ export function OffboardDevicePage() {
                       <div className="mb-3">
                         <strong className="text-sm text-green-700">Items Removed:</strong>
                         <ul className="list-disc list-inside mt-1 text-sm text-green-600">
-                          {result.removed_items.map((item, idx) => (
-                            <li key={idx}>{item}</li>
+                          {result.removed_items.map((item) => (
+                            <li key={item}>{item}</li>
                           ))}
                         </ul>
                       </div>
@@ -1178,8 +1178,8 @@ export function OffboardDevicePage() {
                       <div className="mb-3">
                         <strong className="text-sm text-yellow-700">Items Skipped:</strong>
                         <ul className="list-disc list-inside mt-1 text-sm text-yellow-600">
-                          {result.skipped_items.map((item, idx) => (
-                            <li key={idx}>{item}</li>
+                          {result.skipped_items.map((item) => (
+                            <li key={item}>{item}</li>
                           ))}
                         </ul>
                       </div>
@@ -1189,8 +1189,8 @@ export function OffboardDevicePage() {
                       <div className="mb-3">
                         <strong className="text-sm text-red-700">Errors:</strong>
                         <ul className="list-disc list-inside mt-1 text-sm text-red-600">
-                          {result.errors.map((error, idx) => (
-                            <li key={idx}>{error}</li>
+                          {result.errors.map((error) => (
+                            <li key={error}>{error}</li>
                           ))}
                         </ul>
                       </div>

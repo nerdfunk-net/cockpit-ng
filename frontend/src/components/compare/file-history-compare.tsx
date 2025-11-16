@@ -197,9 +197,9 @@ export default function FileHistoryCompare() {
     
     try {
       console.log('Loading files for repo:', selectedRepo.name)
-      const response = await apiCall<FileItem[]>(`git/${selectedRepo.id}/files`)
-      console.log('Files loaded:', response.length, 'files')
-      setGitFiles(response)
+      const response = await apiCall<{files: FileItem[]}>(`file-compare/list?repo_id=${selectedRepo.id}`)
+      console.log('Files loaded:', response.files.length, 'files')
+      setGitFiles(response.files)
     } catch (error) {
       console.error('Error loading files:', error)
       setGitFiles([])
@@ -520,7 +520,7 @@ export default function FileHistoryCompare() {
                   }
                 }
               }}>
-                <SelectTrigger key="unique-id-fhc-repo-trigger" className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                <SelectTrigger key="unique-id-fhc-repo-trigger" className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select repository" />
                 </SelectTrigger>
                 <SelectContent key="unique-id-fhc-repo-content">
@@ -543,13 +543,13 @@ export default function FileHistoryCompare() {
                   loadCommitsForBranch(newValue)
                 }
               }} disabled={!selectedRepo}>
-                <SelectTrigger key="unique-id-fhc-15" className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                <SelectTrigger key="unique-id-fhc-15" className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select branch" />
                 </SelectTrigger>
                 <SelectContent key="unique-id-fhc-16">
                   <SelectItem key="unique-id-fhc-17" value="__none__">Select branch...</SelectItem>
-                  {branches.map((branch, index) => (
-                    <SelectItem key={`unique-id-fhc-18-${index}`} value={branch.name}>
+                  {branches.map((branch) => (
+                    <SelectItem key={branch.name} value={branch.name}>
                       {branch.name}{branch.current ? ' (current)' : ''}
                     </SelectItem>
                   ))}
@@ -562,13 +562,13 @@ export default function FileHistoryCompare() {
               <Select key="unique-id-fhc-21" value={leftCommit || '__none__'} onValueChange={(value) => {
                 setLeftCommit(value === '__none__' ? '' : value)
               }}>
-                <SelectTrigger key="unique-id-fhc-22" className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                <SelectTrigger key="unique-id-fhc-22" className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select source commit" />
                 </SelectTrigger>
                 <SelectContent key="unique-id-fhc-23">
                   <SelectItem key="unique-id-fhc-24" value="__none__">Select source commit...</SelectItem>
-                  {commits.map((commit, index) => (
-                    <SelectItem key={`unique-id-fhc-25-${index}`} value={commit.hash}>
+                  {commits.map((commit) => (
+                    <SelectItem key={commit.hash} value={commit.hash}>
                       {commit.short_hash} - {commit.message.substring(0, 50)}
                     </SelectItem>
                   ))}
@@ -592,14 +592,14 @@ export default function FileHistoryCompare() {
                 />
                 {showGitResults && (
                   <div key="unique-id-fhc-37" className="absolute top-full left-0 right-0 z-[9999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto">
-                    {searchFiles(gitFileSearch, gitFiles || []).map((file, index) => (
+                    {searchFiles(gitFileSearch, gitFiles || []).map((file) => (
                       <div
-                        key={`unique-id-fhc-38-${index}`}
+                        key={file.path}
                         className="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                         onClick={() => handleGitFileSelect(file)}
                       >
-                        <div key={`unique-id-fhc-39-${index}`} className="font-medium text-sm">{file.name}</div>
-                        <div key={`unique-id-fhc-40-${index}`} className="text-xs text-gray-500">{file.path}</div>
+                        <div className="font-medium text-sm">{file.name}</div>
+                        <div className="text-xs text-gray-500">{file.path}</div>
                       </div>
                     ))}
                     {searchFiles(gitFileSearch, gitFiles || []).length === 0 && (
@@ -735,9 +735,9 @@ export default function FileHistoryCompare() {
           </div>
           <div key="unique-id-fhc-history-content" className="p-6 bg-gradient-to-b from-white to-gray-50">
             <div key="unique-id-fhc-history-list" className="space-y-1">
-              {fileHistory.map((commit, index) => (
+              {fileHistory.map((commit) => (
                 <div
-                  key={`unique-id-fhc-commit-${index}`}
+                  key={commit.hash}
                   className={`flex items-center justify-between p-2 border rounded-lg cursor-pointer transition-colors ${
                     selectedCommits.includes(commit.hash)
                       ? 'bg-blue-50 border-blue-300'
@@ -745,14 +745,14 @@ export default function FileHistoryCompare() {
                   }`}
                   onClick={() => handleCommitSelection(commit.hash)}
                 >
-                  <div key={`unique-id-fhc-commit-info-${index}`} className="flex-1">
-                    <div key={`unique-id-fhc-commit-row-${index}`} className="flex items-center gap-3 text-sm">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 text-sm">
                       {/* Name (Hash) */}
-                      <span key={`unique-id-fhc-commit-message-${index}`} className="font-medium text-gray-800 min-w-0 flex-1 truncate">
+                      <span className="font-medium text-gray-800 min-w-0 flex-1 truncate">
                         {commit.message} <span className="font-mono text-xs text-gray-600">({commit.short_hash})</span>
                       </span>
                       {/* Status */}
-                      <span key={`unique-id-fhc-commit-change-${index}`} className={`text-xs px-2 py-1 rounded font-medium ${
+                      <span className={`text-xs px-2 py-1 rounded font-medium ${
                         commit.change_type === 'A' ? 'bg-green-100 text-green-800' :
                         commit.change_type === 'M' ? 'bg-blue-100 text-blue-800' :
                         commit.change_type === 'D' ? 'bg-red-100 text-red-800' :
@@ -764,23 +764,22 @@ export default function FileHistoryCompare() {
                          'No Change'}
                       </span>
                       {/* Date */}
-                      <span key={`unique-id-fhc-commit-date-${index}`} className="text-xs text-gray-500 whitespace-nowrap">
+                      <span className="text-xs text-gray-500 whitespace-nowrap">
                         {new Date(commit.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
                       </span>
                       {/* Author */}
-                      <span key={`unique-id-fhc-commit-author-${index}`} className="text-xs text-gray-600 whitespace-nowrap">
+                      <span className="text-xs text-gray-600 whitespace-nowrap">
                         {commit.author.name}
                       </span>
                     </div>
                   </div>
-                  <div key={`unique-id-fhc-commit-actions-${index}`} className="flex items-center gap-2 ml-4">
+                  <div className="flex items-center gap-2 ml-4">
                     {selectedCommits.includes(commit.hash) && (
-                      <span key={`unique-id-fhc-selected-badge-${index}`} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
                         Selected {selectedCommits.indexOf(commit.hash) + 1}
                       </span>
                     )}
                     <Button
-                      key={`unique-id-fhc-view-btn-${index}`}
                       size="sm"
                       variant="outline"
                       onClick={(e) => {
@@ -790,10 +789,9 @@ export default function FileHistoryCompare() {
                       disabled={loading}
                       className="flex items-center gap-1 h-7 px-2"
                     >
-                      <Eye key={`unique-id-fhc-view-icon-${index}`} className="h-3 w-3" />
+                      <Eye className="h-3 w-3" />
                     </Button>
                     <Button
-                      key={`unique-id-fhc-download-btn-${index}`}
                       size="sm"
                       variant="outline"
                       onClick={(e) => {
@@ -803,10 +801,9 @@ export default function FileHistoryCompare() {
                       disabled={loading}
                       className="flex items-center gap-1 h-7 px-2"
                     >
-                      <Download key={`unique-id-fhc-download-icon-${index}`} className="h-3 w-3" />
+                      <Download className="h-3 w-3" />
                     </Button>
                     <Button
-                      key={`unique-id-fhc-changes-btn-${index}`}
                       size="sm"
                       variant="outline"
                       onClick={(e) => {
@@ -816,8 +813,8 @@ export default function FileHistoryCompare() {
                       disabled={loading}
                       className="flex items-center gap-1 h-7 px-2"
                     >
-                      <Eye key={`unique-id-fhc-changes-icon-${index}`} className="h-3 w-3" />
-                      <span key={`unique-id-fhc-changes-text-${index}`}>Changes</span>
+                      <Eye className="h-3 w-3" />
+                      <span>Changes</span>
                     </Button>
                   </div>
                 </div>

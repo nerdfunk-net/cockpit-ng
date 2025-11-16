@@ -574,8 +574,8 @@ export function JobsManagementPage() {
                 <h3 className="font-semibold mb-2">Device Results ({selectedJob.device_results.length})</h3>
                 <div className="bg-gray-50 p-4 rounded max-h-60 overflow-y-auto">
                   <div className="space-y-2">
-                    {selectedJob.device_results.map((result, idx) => (
-                      <div key={idx} className="border border-gray-200 rounded p-3 bg-white">
+                    {selectedJob.device_results.map((result) => (
+                      <div key={result.device_name} className="border border-gray-200 rounded p-3 bg-white">
                         <div className="flex justify-between items-start mb-2">
                           <span className="font-medium text-sm">{result.device_name}</span>
                           <Badge 

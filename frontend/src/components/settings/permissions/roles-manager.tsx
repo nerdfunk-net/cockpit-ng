@@ -65,7 +65,7 @@ export function RolesManager() {
       setLoading(true)
       const data = await apiCall<Role[]>('rbac/roles')
       setRoles(data)
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to load roles',
@@ -95,7 +95,7 @@ export function RolesManager() {
       const data = await apiCall<RoleWithPermissions>(`rbac/roles/${roleId}`)
       setSelectedRole(data)
       setIsPermissionsOpen(true)
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to load role permissions',

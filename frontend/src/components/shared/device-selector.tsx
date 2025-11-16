@@ -823,7 +823,7 @@ export function DeviceSelector({
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {conditions.map((condition, index) => (
-                    <div key={`${condition.field}-${condition.value}-${index}`} className="flex items-center space-x-2">
+                    <div key={`${condition.field}-${condition.operator}-${condition.value}-${condition.logic}`} className="flex items-center space-x-2">
                       {index > 0 && (
                         <Badge className={getLogicBadgeColor(condition.logic)}>
                           {condition.logic}
@@ -966,8 +966,8 @@ export function DeviceSelector({
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {device.tags.map((tag, index) => (
-                            <Badge key={`${device.id}-tag-${index}`} variant="outline" className="text-xs">
+                          {device.tags.map((tag) => (
+                            <Badge key={`${device.id}-tag-${tag}`} variant="outline" className="text-xs">
                               {tag}
                             </Badge>
                           ))}

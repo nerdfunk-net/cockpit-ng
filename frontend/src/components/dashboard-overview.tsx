@@ -94,7 +94,7 @@ export default function DashboardOverview() {
         localStorage.removeItem(CACHE_KEY)
         return null
       }
-    } catch (error) {
+    } catch {
       localStorage.removeItem(CACHE_KEY)
       return null
     }

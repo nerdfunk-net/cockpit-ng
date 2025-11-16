@@ -363,7 +363,7 @@ export default function GitCompare() {
                 setComparisonResult(null)
                 setShowComparison(false)
               }}>
-                <SelectTrigger key="unique-id-gc-repo-trigger" className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                <SelectTrigger key="unique-id-gc-repo-trigger" className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select repository" />
                 </SelectTrigger>
                 <SelectContent key="unique-id-gc-repo-content">
@@ -387,13 +387,13 @@ export default function GitCompare() {
                   loadCommitsForBranch(newValue)
                 }
               }}>
-                <SelectTrigger key="unique-id-gc-15" className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                <SelectTrigger key="unique-id-gc-15" className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select branch" />
                 </SelectTrigger>
                 <SelectContent key="unique-id-gc-16">
                   <SelectItem key="unique-id-gc-17" value="__none__">Select branch...</SelectItem>
-                  {branches.map((branch, index) => (
-                    <SelectItem key={`unique-id-gc-18-${index}`} value={branch.name}>
+                  {branches.map((branch) => (
+                    <SelectItem key={branch.name} value={branch.name}>
                       {branch.name}{branch.current ? ' (current)' : ''}
                     </SelectItem>
                   ))}
@@ -406,13 +406,13 @@ export default function GitCompare() {
               <Select key="unique-id-gc-21" value={leftCommit || '__none__'} onValueChange={(value) => {
                 setLeftCommit(value === '__none__' ? '' : value)
               }}>
-                <SelectTrigger key="unique-id-gc-22" className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                <SelectTrigger key="unique-id-gc-22" className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select source commit" />
                 </SelectTrigger>
                 <SelectContent key="unique-id-gc-23">
                   <SelectItem key="unique-id-gc-24" value="__none__">Select source commit...</SelectItem>
-                  {commits.map((commit, index) => (
-                    <SelectItem key={`unique-id-gc-25-${index}`} value={commit.hash}>
+                  {commits.map((commit) => (
+                    <SelectItem key={commit.hash} value={commit.hash}>
                       {commit.short_hash} - {commit.message.substring(0, 50)}
                     </SelectItem>
                   ))}
@@ -425,13 +425,13 @@ export default function GitCompare() {
               <Select key="unique-id-gc-28" value={rightCommit || '__none__'} onValueChange={(value) => {
                 setRightCommit(value === '__none__' ? '' : value)
               }}>
-                <SelectTrigger key="unique-id-gc-29" className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                <SelectTrigger key="unique-id-gc-29" className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue placeholder="Select target commit" />
                 </SelectTrigger>
                 <SelectContent key="unique-id-gc-30">
                   <SelectItem key="unique-id-gc-31" value="__none__">Select target commit...</SelectItem>
-                  {commits.map((commit, index) => (
-                    <SelectItem key={`unique-id-gc-32-${index}`} value={commit.hash}>
+                  {commits.map((commit) => (
+                    <SelectItem key={commit.hash} value={commit.hash}>
                       {commit.short_hash} - {commit.message.substring(0, 50)}
                     </SelectItem>
                   ))}
@@ -456,14 +456,14 @@ export default function GitCompare() {
               />
               {showGitResults && (
                 <div key="unique-id-gc-37" className="absolute top-full left-0 right-0 z-[9999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto">
-                  {searchFiles(gitFileSearch, gitFiles || []).map((file, index) => (
+                  {searchFiles(gitFileSearch, gitFiles || []).map((file) => (
                     <div
-                      key={`unique-id-gc-38-${index}`}
+                      key={file.path}
                       className="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                       onClick={() => handleGitFileSelect(file)}
                     >
-                      <div key={`unique-id-gc-39-${index}`} className="font-medium text-sm">{file.name}</div>
-                      <div key={`unique-id-gc-40-${index}`} className="text-xs text-gray-500">{file.path}</div>
+                      <div className="font-medium text-sm">{file.name}</div>
+                      <div className="text-xs text-gray-500">{file.path}</div>
                     </div>
                   ))}
                   {searchFiles(gitFileSearch, gitFiles || []).length === 0 && (

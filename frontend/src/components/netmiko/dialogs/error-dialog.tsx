@@ -34,8 +34,8 @@ export function ErrorDialog({ open, onOpenChange, errorDetails }: ErrorDialogPro
             <div className="space-y-2 p-4 bg-red-50 border border-red-200 rounded-md">
               <Label className="text-sm font-semibold text-red-900">Details:</Label>
               <ul className="space-y-1 text-sm text-red-800">
-                {errorDetails.details.map((detail, index) => (
-                  <li key={index} className="flex items-start gap-2">
+                {errorDetails.details.map((detail) => (
+                  <li key={detail} className="flex items-start gap-2">
                     <span className="text-red-600 mt-0.5">•</span>
                     <span className="flex-1 font-mono">{detail}</span>
                   </li>

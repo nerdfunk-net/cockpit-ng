@@ -426,14 +426,14 @@ export default function FileCompare() {
                   />
                   {showLeftResults && selectedRepo && (
                     <div key="unique-id-fh-15" className="absolute top-full left-0 right-0 z-[99999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto">
-                      {searchFiles(leftFileSearch, leftFiles || []).map((file, index) => (
+                      {searchFiles(leftFileSearch, leftFiles || []).map((file) => (
                         <div
-                          key={`unique-id-fh-16-${index}`}
+                          key={file.path}
                           className="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                           onClick={() => handleFileSelect(file, 'left')}
                         >
-                          <div key={`unique-id-fh-17-${index}`} className="font-medium text-sm">{file.name}</div>
-                          <div key={`unique-id-fh-18-${index}`} className="text-xs text-gray-500">{file.path}</div>
+                          <div className="font-medium text-sm">{file.name}</div>
+                          <div className="text-xs text-gray-500">{file.path}</div>
                         </div>
                       ))}
                       {searchFiles(leftFileSearch, leftFiles || []).length === 0 && (
@@ -462,14 +462,14 @@ export default function FileCompare() {
                   />
                   {showRightResults && selectedRepo && (
                     <div key="unique-id-fh-25" className="absolute top-full left-0 right-0 z-[99999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto">
-                      {searchFiles(rightFileSearch, rightFiles || []).map((file, index) => (
+                      {searchFiles(rightFileSearch, rightFiles || []).map((file) => (
                         <div
-                          key={`unique-id-fh-26-${index}`}
+                          key={file.path}
                           className="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                           onClick={() => handleFileSelect(file, 'right')}
                         >
-                          <div key={`unique-id-fh-27-${index}`} className="font-medium text-sm">{file.name}</div>
-                          <div key={`unique-id-fh-28-${index}`} className="text-xs text-gray-500">{file.path}</div>
+                          <div className="font-medium text-sm">{file.name}</div>
+                          <div className="text-xs text-gray-500">{file.path}</div>
                         </div>
                       ))}
                       {searchFiles(rightFileSearch, rightFiles || []).length === 0 && (

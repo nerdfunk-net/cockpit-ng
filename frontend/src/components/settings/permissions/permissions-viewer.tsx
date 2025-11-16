@@ -35,7 +35,7 @@ export function PermissionsViewer() {
       setLoading(true)
       const data = await apiCall<Permission[]>('rbac/permissions')
       setPermissions(data)
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to load permissions',
