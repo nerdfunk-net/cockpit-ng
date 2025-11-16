@@ -35,7 +35,6 @@ export function DeviceSelectionTab({
         onDevicesSelected={onDevicesSelected}
         showActions={true}
         showSaveLoad={true}
-        compact={false}
         initialConditions={deviceConditions}
         initialDevices={previewDevices}
         enableSelection={true}

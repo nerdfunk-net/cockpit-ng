@@ -13,7 +13,7 @@ interface SessionStatusProps {
 
 export function SessionStatus({ showDetails = false, className = '' }: SessionStatusProps) {
   const { token, user } = useAuthStore()
-  const { isUserActive, timeSinceActivity, refreshToken } = useSessionManager()
+  const { isUserActive, getTimeSinceActivity, refreshToken } = useSessionManager()
 
   // Don't show anything if not authenticated
   if (!token || !user) {
@@ -24,6 +24,7 @@ export function SessionStatus({ showDetails = false, className = '' }: SessionSt
   const getTokenExpiry = (token: string): Date | null => {
     try {
       const base64Url = token.split('.')[1]
+      if (!base64Url) return null
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
       const jsonPayload = decodeURIComponent(
         atob(base64)
@@ -58,9 +59,9 @@ export function SessionStatus({ showDetails = false, className = '' }: SessionSt
     // Simple status badge
     return (
       <div className={`flex items-center gap-2 ${className}`}>
-        <Badge variant={isUserActive ? 'default' : 'secondary'} className="text-xs">
+        <Badge variant={isUserActive() ? 'default' : 'secondary'} className="text-xs">
           <Activity className="h-3 w-3 mr-1" />
-          {isUserActive ? 'Active' : 'Idle'}
+          {isUserActive() ? 'Active' : 'Idle'}
         </Badge>
         
         {tokenExpiry && (
@@ -97,16 +98,16 @@ export function SessionStatus({ showDetails = false, className = '' }: SessionSt
         </div>
         
         <div className="flex justify-between">
-          <span>Activity Status:</span>
-          <Badge variant={isUserActive ? 'default' : 'secondary'} className="text-xs">
+          <span>Status:</span>
+          <Badge variant={isUserActive() ? 'default' : 'secondary'} className="text-xs">
             <Activity className="h-3 w-3 mr-1" />
-            {isUserActive ? 'Active' : 'Idle'}
+            {isUserActive() ? 'Active' : 'Idle'}
           </Badge>
         </div>
         
         <div className="flex justify-between">
           <span>Last Activity:</span>
-          <span>{formatTimeSince(timeSinceActivity)} ago</span>
+          <span>{formatTimeSince(getTimeSinceActivity())} ago</span>
         </div>
         
         {tokenExpiry && (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -35,6 +35,24 @@ export default function APSchedulerTest() {
   const [loading, setLoading] = useState(false)
   const [lastResult, setLastResult] = useState<JobResult | null>(null)
 
+  const refreshStatus = useCallback(async () => {
+    setLoading(true)
+    try {
+      const status = await apiCall<SchedulerStatus>('jobs/scheduler-status')
+      setSchedulerStatus(status)
+    } catch (error) {
+      console.error('Error getting scheduler status:', error)
+      setSchedulerStatus({
+        scheduler_running: false,
+        total_jobs: 0,
+        jobs: [],
+        error: String(error)
+      })
+    } finally {
+      setLoading(false)
+    }
+  }, [apiCall])
+
   // Auto-refresh scheduler status every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
@@ -47,7 +65,7 @@ export default function APSchedulerTest() {
     refreshStatus()
 
     return () => clearInterval(interval)
-  }, [loading, isStarting])
+  }, [loading, isStarting, refreshStatus])
 
   const startParallelJob = async () => {
     setIsStarting(true)
@@ -64,24 +82,6 @@ export default function APSchedulerTest() {
       setLastResult({ error: String(error) })
     } finally {
       setIsStarting(false)
-    }
-  }
-
-  const refreshStatus = async () => {
-    setLoading(true)
-    try {
-      const status = await apiCall<SchedulerStatus>('jobs/scheduler-status')
-      setSchedulerStatus(status)
-    } catch (error) {
-      console.error('Error getting scheduler status:', error)
-      setSchedulerStatus({
-        scheduler_running: false,
-        total_jobs: 0,
-        jobs: [],
-        error: String(error)
-      })
-    } finally {
-      setLoading(false)
     }
   }
 

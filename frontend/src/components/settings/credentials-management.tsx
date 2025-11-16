@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -74,12 +74,12 @@ export default function CredentialsManagement() {
     valid_until: ''
   })
 
-  const showMessage = (text: string, type: StatusMessage['type'] = 'success') => {
+  const showMessage = useCallback((text: string, type: StatusMessage['type'] = 'success') => {
     setMessage({ text, type })
     setTimeout(() => setMessage(null), 4000)
-  }
+  }, [])
 
-  const loadCredentials = async () => {
+  const loadCredentials = useCallback(async () => {
     setLoading(true)
     try {
       // Only load general/admin credentials for settings page
@@ -93,7 +93,7 @@ export default function CredentialsManagement() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [includeExpired, apiCall, showMessage])
 
   const resetForm = () => {
     setFormData({
@@ -270,7 +270,7 @@ export default function CredentialsManagement() {
 
   useEffect(() => {
     loadCredentials()
-  }, [includeExpired])
+  }, [loadCredentials])
 
   if (loading) {
     return (

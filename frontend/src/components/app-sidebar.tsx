@@ -21,7 +21,6 @@ import {
   GitBranch,
   Zap,
   Key,
-  Users,
   Menu,
   Shield,
   ChevronDown,

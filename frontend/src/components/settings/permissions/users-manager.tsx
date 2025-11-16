@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -61,11 +61,7 @@ export function UsersManager() {
   const { apiCall } = useApi()
   const { toast } = useToast()
 
-  useEffect(() => {
-    loadUsers()
-  }, [])
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true)
       const response = await apiCall<{ users: User[] }>('user-management')
@@ -79,7 +75,11 @@ export function UsersManager() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [apiCall, toast])
+
+  useEffect(() => {
+    loadUsers()
+  }, [loadUsers])
 
   const openCreateDialog = () => {
     setEditingUser(null)

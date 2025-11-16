@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -55,20 +55,7 @@ export function UserPermissionsManager() {
   const { apiCall } = useApi()
   const { toast } = useToast()
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
-    try {
-      setLoading(true)
-      await Promise.all([loadUsers(), loadAllPermissions()])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       const response = await apiCall<{ users: User[] }>('user-management')
       setUsers(response.users || [])
@@ -79,16 +66,29 @@ export function UserPermissionsManager() {
         variant: 'destructive',
       })
     }
-  }
+  }, [apiCall, toast])
 
-  const loadAllPermissions = async () => {
+  const loadAllPermissions = useCallback(async () => {
     try {
       const data = await apiCall<Permission[]>('rbac/permissions')
       setAllPermissions(data)
     } catch (error) {
       console.error('Failed to load permissions:', error)
     }
-  }
+  }, [apiCall])
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true)
+      await Promise.all([loadUsers(), loadAllPermissions()])
+    } finally {
+      setLoading(false)
+    }
+  }, [loadUsers, loadAllPermissions])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const loadUserOverrides = async (userId: number) => {
     try {
@@ -168,7 +168,7 @@ export function UserPermissionsManager() {
     if (!acc[perm.resource]) {
       acc[perm.resource] = []
     }
-    acc[perm.resource].push(perm)
+    acc[perm.resource]!.push(perm)
     return acc
   }, {} as Record<string, Permission[]>)
 

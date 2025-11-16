@@ -1140,12 +1140,133 @@ def create_devices_table():
 - ✅ Pydantic models for request/response validation
 - ✅ TypeScript interfaces for type safety
 
+### React Best Practices (CRITICAL - Prevents Infinite Loops)
+
+**MUST-FOLLOW RULES to prevent re-render loops:**
+
+#### 1. Default Parameters - NEVER Use Inline Literals
+```typescript
+// ❌ WRONG - Creates new array every render
+function Component({ items = [], config = {} }) {
+  // This causes infinite loops in child components!
+}
+
+// ✅ CORRECT - Use constants
+const EMPTY_ARRAY: string[] = []
+const EMPTY_OBJECT = {}
+function Component({ items = EMPTY_ARRAY, config = EMPTY_OBJECT }) {
+  // Stable references prevent re-renders
+}
+```
+
+#### 2. Custom Hooks - ALWAYS Memoize Return Values
+```typescript
+// ❌ WRONG - Returns new object every render
+export function useMyHook() {
+  const [state, setState] = useState()
+  return { state, setState }  // New object each time!
+}
+
+// ✅ CORRECT - Memoize the return value
+export function useMyHook() {
+  const [state, setState] = useState()
+  return useMemo(() => ({
+    state,
+    setState
+  }), [state])  // Stable reference
+}
+```
+
+#### 3. useEffect Dependencies - MUST Be Stable
+```typescript
+// ❌ WRONG - Unstable dependencies
+function Component() {
+  const config = { key: 'value' }  // New object each render!
+  
+  useEffect(() => {
+    doSomething(config)
+  }, [config])  // Runs every render = infinite loop!
+}
+
+// ✅ CORRECT - Stable dependencies
+const DEFAULT_CONFIG = { key: 'value' }  // Outside component
+
+function Component() {
+  useEffect(() => {
+    doSomething(DEFAULT_CONFIG)
+  }, [])  // Runs once
+  
+  // OR use useMemo for dynamic values
+  const config = useMemo(() => ({ key: someValue }), [someValue])
+  useEffect(() => {
+    doSomething(config)
+  }, [config])  // Only runs when someValue changes
+}
+```
+
+#### 4. Component Prop Passing - Avoid Circular Dependencies
+```typescript
+// ❌ WRONG - Parent passes data that child loads
+function Parent() {
+  const [data, setData] = useState([])
+  
+  return <Child 
+    initialData={data}  // Child sets this in parent
+    onDataLoad={setData}  // Creates circular dependency
+  />
+}
+
+// ✅ CORRECT - Lift state or use separate effects
+function Parent() {
+  const [data, setData] = useState([])
+  
+  useEffect(() => {
+    loadData().then(setData)  // Parent loads its own data
+  }, [])
+  
+  return <Child data={data} />
+}
+```
+
+#### 5. Exhaustive Dependencies - ALWAYS Include All
+```typescript
+// ❌ WRONG - Missing dependencies
+useEffect(() => {
+  if (isReady) {
+    loadData(userId)  // Uses isReady and userId
+  }
+}, [])  // Missing dependencies!
+
+// ✅ CORRECT - All dependencies included
+useEffect(() => {
+  if (isReady) {
+    loadData(userId)
+  }
+}, [isReady, userId, loadData])  // Complete dependency array
+```
+
+**Enforcement:**
+- ESLint rule `react-hooks/exhaustive-deps` set to `error`
+- Custom ESLint rule `no-inline-defaults` catches inline literals
+- Pre-commit hooks block non-compliant code
+- TypeScript strict mode enforces type safety
+
+**When Writing Code:**
+1. ✅ Declare constants outside component for empty arrays/objects
+2. ✅ Wrap all custom hook returns in `useMemo()`
+3. ✅ Always use complete dependency arrays in useEffect/useMemo/useCallback
+4. ✅ Move object/array creation outside render or wrap in useMemo
+5. ✅ Avoid passing both initial data and setters that create circular deps
+6. ✅ Use React DevTools to check for unnecessary re-renders
+
 ### Performance
 - ✅ Minimize 'use client' directives
 - ✅ Use dynamic imports for heavy components
 - ✅ Implement proper loading states
 - ✅ Cache API responses appropriately
 - ✅ Optimize images (WebP, lazy loading)
+- ✅ Memoize expensive computations
+- ✅ Use React.memo() for expensive pure components
 
 ### Development Workflow
 - ✅ Run backend and frontend in separate terminals
@@ -1153,3 +1274,6 @@ def create_devices_table():
 - ✅ Check logs for errors and warnings
 - ✅ Test authenticated endpoints with valid tokens
 - ✅ Use VS Code tasks for common operations
+- ✅ Run `npm run check` before committing
+- ✅ Pre-commit hooks will auto-fix and block bad code
+- ✅ All CI/CD checks must pass before merging

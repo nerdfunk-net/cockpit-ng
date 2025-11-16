@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Card } from '@/components/ui/card'
+import { useState, useEffect, useCallback } from 'react'
 
 // Define default arrays outside component to prevent re-creating on every render
 const EMPTY_CONDITIONS: LogicalCondition[] = []
@@ -72,7 +71,6 @@ interface DeviceSelectorProps {
   onDevicesSelected?: (devices: DeviceInfo[], conditions: LogicalCondition[]) => void
   showActions?: boolean
   showSaveLoad?: boolean
-  compact?: boolean
   initialConditions?: LogicalCondition[]
   initialDevices?: DeviceInfo[]
   enableSelection?: boolean
@@ -84,7 +82,6 @@ export function DeviceSelector({
   onDevicesSelected,
   showActions = true,
   showSaveLoad = true,
-  compact = false,
   initialConditions = EMPTY_CONDITIONS,
   initialDevices = EMPTY_DEVICES,
   enableSelection = false,
@@ -111,7 +108,7 @@ export function DeviceSelector({
   const [locations, setLocations] = useState<LocationItem[]>([])
   const [locationSearchValue, setLocationSearchValue] = useState('')
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
-  const [selectedLocationValue, setSelectedLocationValue] = useState('')
+  const [_selectedLocationValue, setSelectedLocationValue] = useState('')
 
   // Preview results
   const [previewDevices, setPreviewDevices] = useState<DeviceInfo[]>(initialDevices)
@@ -151,10 +148,6 @@ export function DeviceSelector({
   const [isLoadingInventories, setIsLoadingInventories] = useState(false)
   const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false)
   const [inventoryToOverwrite, setInventoryToOverwrite] = useState<string | null>(null)
-
-  useEffect(() => {
-    loadFieldOptions()
-  }, [])
 
   // Sync with initial props when they change
   useEffect(() => {
@@ -208,7 +201,7 @@ export function DeviceSelector({
     }
   }
 
-  const loadFieldOptions = async () => {
+  const loadFieldOptions = useCallback(async () => {
     try {
       const response = await apiCall<{
         fields: FieldOption[]
@@ -229,7 +222,11 @@ export function DeviceSelector({
     } catch (error) {
       console.error('Error loading field options:', error)
     }
-  }
+  }, [apiCall])
+
+  useEffect(() => {
+    loadFieldOptions()
+  }, [loadFieldOptions])
 
   const loadInventoryRepositories = async () => {
     try {
@@ -240,9 +237,11 @@ export function DeviceSelector({
 
       setInventoryRepositories(response.repositories)
       if (response.repositories.length > 0) {
-        const firstRepoId = response.repositories[0].id
-        setSelectedInventoryRepo(firstRepoId)
-        return firstRepoId
+        const firstRepoId = response.repositories[0]?.id
+        if (firstRepoId) {
+          setSelectedInventoryRepo(firstRepoId)
+          return firstRepoId
+        }
       }
       return null
     } catch (error) {
@@ -534,7 +533,7 @@ export function DeviceSelector({
   const buildOperationsFromConditions = () => {
     if (conditions.length === 0) return []
 
-    if (conditions.length === 1) {
+    if (conditions.length === 1 && conditions[0]) {
       return [{
         operation_type: 'AND',
         conditions: [{

@@ -11,8 +11,6 @@ import { useAuthStore } from '@/lib/auth-store'
 import { useToast } from '@/hooks/use-toast'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { generateAvatarDataUrl } from '@/components/ui/local-avatar'
-import { useDebug } from '@/contexts/debug-context'
-import { debug, debugFetch } from '@/lib/debug'
 import { Eye, EyeOff, Save, User, Mail, Lock, Bug, Key, RefreshCw, Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -41,7 +39,6 @@ interface ProfileData {
 export function ProfilePage() {
   const { user, token } = useAuthStore()
   const { toast } = useToast()
-  const { refreshDebugState } = useDebug()
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -67,14 +64,12 @@ export function ProfilePage() {
   useEffect(() => {
     const loadProfile = async () => {
       if (!user || !token) {
-        debug.log('ProfilePage: No user or token, skipping profile load')
         return
       }
       
-      debug.log('ProfilePage: Loading profile data for user:', user.username)
       setIsLoading(true)
       try {
-        const response = await debugFetch('/api/proxy/profile', {
+        const response = await fetch('/api/proxy/profile', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -83,7 +78,6 @@ export function ProfilePage() {
 
         if (response.ok) {
           const data = await response.json()
-          debug.log('ProfilePage: Profile data loaded successfully:', data)
           setFormData({
             username: data.username || user.username,
             realname: data.realname || '',
@@ -109,7 +103,6 @@ export function ProfilePage() {
             })
           })
         } else {
-          debug.warn('ProfilePage: Profile endpoint not found, using default values')
           // If profile endpoint doesn't exist yet, use default values
           setFormData({
             username: user.username,
@@ -233,7 +226,6 @@ export function ProfilePage() {
 
   const handleSave = async () => {
     if (!validatePasswords()) {
-      debug.warn('ProfilePage: Password validation failed')
       return
     }
 
@@ -247,7 +239,6 @@ export function ProfilePage() {
       return
     }
 
-    debug.log('ProfilePage: Starting profile save')
     setIsSaving(true)
     try {
       const updateData: {
@@ -280,12 +271,10 @@ export function ProfilePage() {
       // Only include password if it's being changed
       if (passwords.newPassword) {
         updateData.password = passwords.newPassword
-        debug.log('ProfilePage: Including password update in request')
       }
 
-      debug.log('ProfilePage: Sending profile update:', { ...updateData, password: updateData.password ? '[REDACTED]' : undefined })
 
-      const response = await debugFetch('/api/proxy/profile', {
+      const response = await fetch('/api/proxy/profile', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -296,7 +285,6 @@ export function ProfilePage() {
 
       if (response.ok) {
         const responseData = await response.json()
-        debug.log('ProfilePage: Profile updated successfully', responseData)
         
         // Update form data with response data (includes updated personal credentials with proper IDs)
         if (responseData.personal_credentials) {
@@ -332,7 +320,7 @@ export function ProfilePage() {
         setPasswordError('')
         
         // Refresh debug state if debug mode was changed
-        await refreshDebugState()
+        // Personal credentials saved successfully
       } else {
         const errorData = await response.json().catch(() => ({ detail: 'Failed to update profile' }))
         throw new Error(errorData.detail || 'Failed to update profile')

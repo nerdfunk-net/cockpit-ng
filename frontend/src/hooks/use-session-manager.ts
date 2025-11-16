@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import React, { useEffect, useRef, useCallback } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
-import { debug } from '@/lib/debug'
 
 interface SessionConfig {
   /** Time before token expiry to refresh (in milliseconds) */
@@ -19,13 +18,21 @@ const DEFAULT_CONFIG: Required<SessionConfig> = {
   checkInterval: 30 * 1000, // Check every 30 seconds
 }
 
-export function useSessionManager(config: SessionConfig = {}) {
+const EMPTY_CONFIG: SessionConfig = {}
+
+export function useSessionManager(config: SessionConfig = EMPTY_CONFIG) {
   const finalConfig = { ...DEFAULT_CONFIG, ...config }
   const { token, login, logout, user, hydrate } = useAuthStore()
   
-  const lastActivityRef = useRef<number>(Date.now())
+  const lastActivityRef = useRef<number>(0)
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const scheduleRefreshRef = useRef<((expiryTime: number) => void) | null>(null)
+  
+  // Initialize lastActivityRef on mount only
+  useEffect(() => {
+    lastActivityRef.current = Date.now()
+  }, [])
   
   // Hydrate auth state from cookies on component mount
   useEffect(() => {
@@ -37,8 +44,10 @@ export function useSessionManager(config: SessionConfig = {}) {
     lastActivityRef.current = Date.now()
   }, [])
 
-  // Activity event listeners
-  const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click', 'focus']
+  // Activity event listeners (constant reference)
+  const activityEvents = React.useMemo(() => [
+    'mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click', 'focus'
+  ], [])
 
   useEffect(() => {
     // Add activity listeners
@@ -52,12 +61,15 @@ export function useSessionManager(config: SessionConfig = {}) {
         document.removeEventListener(event, updateActivity)
       })
     }
-  }, [updateActivity])
+  }, [updateActivity, activityEvents])
 
   // Parse JWT token to get expiry time
   const getTokenExpiry = useCallback((token: string): number | null => {
     try {
       const base64Url = token.split('.')[1]
+      if (!base64Url) {
+        return null
+      }
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
       const jsonPayload = decodeURIComponent(
         atob(base64)
@@ -88,7 +100,6 @@ export function useSessionManager(config: SessionConfig = {}) {
 
     try {
       console.log('Session Manager: Refreshing token...')
-      debug.log('SessionManager: Starting token refresh')
       
       const response = await fetch('/api/auth/refresh', {
         method: 'POST',
@@ -119,7 +130,6 @@ export function useSessionManager(config: SessionConfig = {}) {
       
       if (data.access_token && data.user) {
         console.log('Session Manager: Token refreshed successfully')
-        debug.log('SessionManager: Token refresh successful, new token expires at:', new Date(data.expires_in * 1000 + Date.now()).toISOString())
         login(data.access_token, {
           id: data.user.id?.toString() || data.user.username,
           username: data.user.username,
@@ -138,7 +148,7 @@ export function useSessionManager(config: SessionConfig = {}) {
     }
   }, [token, user, login, logout])
 
-  // Schedule token refresh
+  // Schedule token refresh - using ref pattern for recursive callback
   const scheduleRefresh = useCallback((expiryTime: number) => {
     // Clear existing timeout
     if (refreshTimeoutRef.current) {
@@ -160,10 +170,10 @@ export function useSessionManager(config: SessionConfig = {}) {
           const success = await refreshToken()
           
           if (success) {
-            // Schedule next refresh for the new token
+            // Schedule next refresh for the new token - use ref to avoid circular dependency
             const newExpiryTime = getTokenExpiry(useAuthStore.getState().token!)
-            if (newExpiryTime) {
-              scheduleRefresh(newExpiryTime)
+            if (newExpiryTime && scheduleRefreshRef.current) {
+              scheduleRefreshRef.current(newExpiryTime)
             }
           }
         } else {
@@ -174,6 +184,11 @@ export function useSessionManager(config: SessionConfig = {}) {
       console.log('Session Manager: Token already expired or expires very soon')
     }
   }, [finalConfig.refreshBeforeExpiry, isUserActive, refreshToken, getTokenExpiry])
+
+  // Update ref whenever scheduleRefresh changes
+  useEffect(() => {
+    scheduleRefreshRef.current = scheduleRefresh
+  }, [scheduleRefresh])
 
   // Periodic check for token expiry, user activity, and cookie presence
   const startPeriodicCheck = useCallback(() => {
@@ -220,8 +235,8 @@ export function useSessionManager(config: SessionConfig = {}) {
           refreshToken().then(success => {
             if (success) {
               const newExpiryTime = getTokenExpiry(useAuthStore.getState().token!)
-              if (newExpiryTime) {
-                scheduleRefresh(newExpiryTime)
+              if (newExpiryTime && scheduleRefreshRef.current) {
+                scheduleRefreshRef.current(newExpiryTime)
               }
             }
           })
@@ -238,7 +253,7 @@ export function useSessionManager(config: SessionConfig = {}) {
         }
       }
     }, finalConfig.checkInterval)
-  }, [getTokenExpiry, finalConfig.refreshBeforeExpiry, finalConfig.checkInterval, isUserActive, refreshToken, logout, scheduleRefresh])
+  }, [getTokenExpiry, finalConfig.refreshBeforeExpiry, finalConfig.checkInterval, isUserActive, refreshToken, logout])
 
   // Main effect to manage session
   useEffect(() => {
@@ -293,9 +308,10 @@ export function useSessionManager(config: SessionConfig = {}) {
     }
   }, [])
 
-  return {
-    isUserActive: isUserActive(),
-    timeSinceActivity: Date.now() - lastActivityRef.current,
+  // Return API with getter functions instead of calling impure functions during render
+  return React.useMemo(() => ({
+    isUserActive,
+    getTimeSinceActivity: () => Date.now() - lastActivityRef.current,
     refreshToken,
-  }
+  }), [isUserActive, refreshToken])
 }

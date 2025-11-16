@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -134,12 +134,33 @@ export default function TemplateManagement() {
   const [activeTab, setActiveTab] = useState('list')
   const [showSourceChangeModal, setShowSourceChangeModal] = useState(false)
 
-  useEffect(() => {
-    loadTemplates()
-    loadCategories()
+  const showMessage = useCallback((msg: string, _type: 'success' | 'error') => {
+    setMessage(msg)
+    setTimeout(() => setMessage(''), 5000)
   }, [])
 
-  const loadTemplates = async () => {
+  const clearSelection = useCallback(() => {
+    setSelectedTemplates(new Set())
+    setEditingTemplate(null)
+    setIsCreating(false)
+    setFormData({
+      name: '',
+      source: '',
+      template_type: 'jinja2',
+      category: '__none__',
+      description: '',
+      content: '',
+      scope: 'global',
+      git_repo_url: '',
+      git_branch: 'main',
+      git_path: '',
+      git_username: '',
+      git_token: ''
+    })
+    setSelectedFile(null)
+  }, [])
+
+  const loadTemplates = useCallback(async () => {
     setLoadingState('loading')
     try {
       const response = await apiCall<{ templates: Template[] }>('templates')
@@ -152,21 +173,21 @@ export default function TemplateManagement() {
       setLoadingState('error')
       showMessage('Failed to load templates', 'error')
     }
-  }
+  }, [apiCall, clearSelection, showMessage])
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       const response = await apiCall<string[]>('templates/categories')
       setCategories(response || [])
     } catch (error) {
       console.error('Error loading categories:', error)
     }
-  }
+  }, [apiCall])
 
-  const showMessage = (msg: string, type: 'success' | 'error') => {
-    setMessage(msg)
-    setTimeout(() => setMessage(''), 5000)
-  }
+  useEffect(() => {
+    loadTemplates()
+    loadCategories()
+  }, [loadTemplates, loadCategories])
 
   const handleFormChange = (field: keyof TemplateFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -210,10 +231,6 @@ export default function TemplateManagement() {
     } else {
       setSelectedTemplates(new Set(filteredTemplates.map(t => t.id)))
     }
-  }
-
-  const clearSelection = () => {
-    setSelectedTemplates(new Set())
   }
 
   const handleEditTemplate = async (template: Template) => {

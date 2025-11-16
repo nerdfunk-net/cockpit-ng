@@ -23,7 +23,7 @@ export class ReactKeyDebugger extends Component<Props, State> {
     return { hasError: true, error, errorInfo: null }
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error(`🚨 React Error in ${this.props.name}:`, error)
     console.error('🔍 Component Stack:', errorInfo.componentStack)
     console.error('🔍 Error Stack:', error.stack)
@@ -34,7 +34,7 @@ export class ReactKeyDebugger extends Component<Props, State> {
     })
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div className="border-2 border-red-500 p-4 m-2 bg-red-50">

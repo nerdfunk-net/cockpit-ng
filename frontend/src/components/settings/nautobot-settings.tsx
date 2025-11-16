@@ -228,6 +228,7 @@ export default function NautobotSettingsForm() {
       document.addEventListener('mousedown', handleClickOutside)
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
+    return undefined
   }, [showOffboardLocationDropdown, showDefaultLocationDropdown])
 
 
@@ -424,7 +425,7 @@ export default function NautobotSettingsForm() {
     }
 
     // Join path with arrows, or return just the name if it's a root location
-    return path.length > 1 ? path.join(' → ') : path[0]
+    return path.length > 1 ? path.join(' → ') : (path[0] || '')
   }
 
   const handleOffboardLocationSelect = (location: LocationItem) => {

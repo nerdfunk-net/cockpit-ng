@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
-import { useDebug } from '@/contexts/debug-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -28,8 +27,7 @@ import {
   Edit,
   Upload,
   Users,
-  GitBranch,
-  Bug
+  GitBranch
 } from 'lucide-react'
 
 // Type definitions
@@ -136,7 +134,6 @@ export function ScanAndAddPage() {
   // Auth and API
   const { isAuthenticated, logout } = useAuthStore()
   const { apiCall } = useApi()
-  const { isDebugEnabled } = useDebug()
 
   // State management
   const [currentPhase, setCurrentPhase] = useState<WizardPhase>('networks')
@@ -183,7 +180,6 @@ export function ScanAndAddPage() {
   const [isDeviceModalOpen, setIsDeviceModalOpen] = useState<boolean>(false)
   const [isAssignAllModalOpen, setIsAssignAllModalOpen] = useState<boolean>(false)
   const [isScanResultsModalOpen, setIsScanResultsModalOpen] = useState<boolean>(false)
-  const [isDebugModalOpen, setIsDebugModalOpen] = useState<boolean>(false)
   const [editingDeviceIp, setEditingDeviceIp] = useState<string>('')
   const [assignAllData, setAssignAllData] = useState<Partial<DeviceMetadata>>({})
   // Modal-local location filter state for device configuration modal
@@ -233,6 +229,7 @@ export function ScanAndAddPage() {
       
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [statusMessage])
 
   // Update parser templates visibility based on discovery mode
@@ -242,7 +239,7 @@ export function ScanAndAddPage() {
       setSelectedParserTemplates([])
     } else {
       // Auto-select if only one parser template is available when switching to SSH Login
-      if (parserTemplates.length === 1 && selectedParserTemplates.length === 0) {
+      if (parserTemplates.length === 1 && selectedParserTemplates.length === 0 && parserTemplates[0]) {
         setSelectedParserTemplates([String(parserTemplates[0].id)])
       }
     }
@@ -264,7 +261,7 @@ export function ScanAndAddPage() {
         if (errorMsg.includes('503')) {
           // Try to extract JSON from the error message
           const jsonMatch = errorMsg.match(/API Error 503: (.+)$/)
-          if (jsonMatch) {
+          if (jsonMatch && jsonMatch[1]) {
             try {
               const errorData = JSON.parse(jsonMatch[1])
               errorDetail = errorData.detail || errorMsg
@@ -357,7 +354,7 @@ export function ScanAndAddPage() {
       setCredentials(validCredentials)
 
       // Auto-select if only one credential is available and no credential is selected
-      if (validCredentials.length === 1 && selectedCredentials.length === 1 && selectedCredentials[0] === '') {
+      if (validCredentials.length === 1 && selectedCredentials.length === 1 && selectedCredentials[0] === '' && validCredentials[0]) {
         setSelectedCredentials([String(validCredentials[0].id)])
       }
     } catch (error) {
@@ -385,7 +382,7 @@ export function ScanAndAddPage() {
       setGitRepositories(onboardingRepos)
       
       // Auto-select if only one git repository is available and none is selected
-      if (onboardingRepos.length === 1 && (!gitRepository || gitRepository === '')) {
+      if (onboardingRepos.length === 1 && (!gitRepository || gitRepository === '') && onboardingRepos[0]) {
         setGitRepository(String(onboardingRepos[0].id))
       }
     } catch (error) {
@@ -419,7 +416,7 @@ export function ScanAndAddPage() {
       setInventoryTemplates(validTemplates || [])
       
       // Auto-select if only one inventory template is available and none is selected
-      if (validTemplates.length === 1 && (!inventoryTemplate || inventoryTemplate === '')) {
+      if (validTemplates.length === 1 && (!inventoryTemplate || inventoryTemplate === '') && validTemplates[0]) {
         setInventoryTemplate(String(validTemplates[0].id))
       }
     } catch (error) {
@@ -453,7 +450,7 @@ export function ScanAndAddPage() {
       setParserTemplates(validTemplates || [])
       
       // Auto-select if only one parser template is available and SSH Login mode is enabled
-      if (validTemplates.length === 1 && showParserTemplates && selectedParserTemplates.length === 0) {
+      if (validTemplates.length === 1 && showParserTemplates && selectedParserTemplates.length === 0 && validTemplates[0]) {
         setSelectedParserTemplates([String(validTemplates[0].id)])
       }
     } catch (error) {
@@ -605,7 +602,7 @@ export function ScanAndAddPage() {
         current = current.parent?.id ? locationMap.get(current.parent.id) || null : null
       }
 
-      return parts.length > 1 ? parts.join(' → ') : parts[0]
+      return parts.length > 1 ? parts.join(' → ') : (parts[0] || '')
     }
 
     return locationData.map(location => ({
@@ -702,6 +699,7 @@ export function ScanAndAddPage() {
     if (!cidrRegex.test(cidr)) return false
 
     const [ip, prefix] = cidr.split('/')
+    if (!prefix || !ip) return false
     const prefixNum = parseInt(prefix)
     
     if (prefixNum < 22 || prefixNum > 32) return false
@@ -957,7 +955,7 @@ export function ScanAndAddPage() {
 
     try {
       const selectedIps = Array.from(selectedDevices)
-      const devicesToOnboard = selectedIps.map(ip => deviceMetadata[ip]).filter(Boolean)
+      const devicesToOnboard = selectedIps.map(ip => deviceMetadata[ip]).filter((device): device is NonNullable<typeof device> => Boolean(device))
 
       if (!scanJob?.job_id) {
         setStatusMessage({
@@ -1096,9 +1094,9 @@ export function ScanAndAddPage() {
     setDeviceMetadata(prev => ({
       ...prev,
       [ip]: {
-        ...prev[ip],
+        ...(prev[ip] || {}),
         [field]: value
-      }
+      } as DeviceMetadata
     }))
   }
 
@@ -1133,9 +1131,9 @@ export function ScanAndAddPage() {
       setDeviceMetadata(prev => ({
         ...prev,
         [ip]: {
-          ...prev[ip],
+          ...(prev[ip] || {}),
           ...updates
-        }
+        } as DeviceMetadata
       }))
     })
 
@@ -1617,18 +1615,6 @@ export function ScanAndAddPage() {
                       <Edit className="h-4 w-4 mr-1" />
                       Assign to All
                     </Button>
-                    {isDebugEnabled && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsDebugModalOpen(true)}
-                        disabled={discoveredDevices.length === 0}
-                        className="text-purple-600 hover:text-purple-700 border-purple-200 hover:border-purple-300"
-                      >
-                        <Bug className="h-4 w-4 mr-1" />
-                        Debug Info
-                      </Button>
-                    )}
                     <Button
                       onClick={onboardSelectedDevices}
                       disabled={selectedDevices.size === 0 || isOnboarding}
@@ -2313,108 +2299,6 @@ export function ScanAndAddPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Debug Modal */}
-      {isDebugEnabled && (
-        <Dialog open={isDebugModalOpen} onOpenChange={setIsDebugModalOpen}>
-          <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center space-x-2">
-                <Bug className="h-5 w-5 text-purple-500" />
-                <span>Debug Information</span>
-              </DialogTitle>
-              <DialogDescription>
-                Debug information for scanned devices including raw command output and parsing results.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-6">
-              {discoveredDevices.map((device) => {
-                const debugInfo = scanJob?.results?.find(r => r.ip === device.ip)?.debug_info
-                
-                if (!debugInfo) {
-                  return (
-                    <Card key={device.ip} className="border-slate-200">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center justify-between">
-                          <span>{device.ip} ({device.hostname || 'Unknown'})</span>
-                          <Badge variant="secondary">No Debug Data</Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-slate-600">No debug information available for this device.</p>
-                      </CardContent>
-                    </Card>
-                  )
-                }
-
-                return (
-                  <Card key={device.ip} className="border-slate-200">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base flex items-center justify-between">
-                        <span>{device.ip} ({device.hostname || 'Unknown'})</span>
-                        <Badge variant="outline" className="text-purple-600 border-purple-200">
-                          {debugInfo.device_type_tried}
-                        </Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Connection Info */}
-                      <div>
-                        <h4 className="font-medium text-sm text-slate-700 mb-2">Connection Details</h4>
-                        <div className="bg-slate-50 p-3 rounded-lg text-sm space-y-1">
-                          <div><strong>Device Type Tried:</strong> {debugInfo.device_type_tried}</div>
-                          <div><strong>Parsing Method:</strong> {debugInfo.parsing_method}</div>
-                          {debugInfo.hostname_extracted && (
-                            <div><strong>Hostname Extracted:</strong> {debugInfo.hostname_extracted}</div>
-                          )}
-                          {debugInfo.hostname_extraction_method && (
-                            <div><strong>Extraction Method:</strong> {debugInfo.hostname_extraction_method}</div>
-                          )}
-                          {debugInfo.parsed_fields && (
-                            <div><strong>Parsed Fields:</strong> {Array.isArray(debugInfo.parsed_fields) ? debugInfo.parsed_fields.join(', ') : debugInfo.parsed_fields}</div>
-                          )}
-                          {debugInfo.error && (
-                            <div className="text-red-600"><strong>Error:</strong> {debugInfo.error}</div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Raw Show Version Output */}
-                      {debugInfo.show_version_raw && (
-                        <div>
-                          <h4 className="font-medium text-sm text-slate-700 mb-2">Raw &ldquo;show version&rdquo; Output</h4>
-                          <div className="bg-slate-900 text-slate-100 p-4 rounded-lg text-xs font-mono max-h-60 overflow-y-auto">
-                            <pre className="whitespace-pre-wrap">{debugInfo.show_version_raw}</pre>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Structured Parsing Results */}
-                      {debugInfo.show_version_structured && (
-                        <div>
-                          <h4 className="font-medium text-sm text-slate-700 mb-2">Structured Parsing Results (ntc-templates)</h4>
-                          <div className="bg-green-50 p-4 rounded-lg text-xs font-mono max-h-60 overflow-y-auto">
-                            <pre className="whitespace-pre-wrap text-green-800">
-                              {JSON.stringify(debugInfo.show_version_structured, null, 2)}
-                            </pre>
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-            
-            <DialogFooter>
-              <Button onClick={() => setIsDebugModalOpen(false)}>
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   )
 }

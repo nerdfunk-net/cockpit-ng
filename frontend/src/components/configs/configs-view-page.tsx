@@ -151,7 +151,7 @@ export default function ConfigsViewPage() {
         setRepositories(configRepos)
         
         // Auto-select first config repository if available
-        if (configRepos.length > 0 && selectedRepository === null) {
+        if (configRepos.length > 0 && configRepos[0] && selectedRepository === null) {
           setSelectedRepository(configRepos[0].id)
         }
       }
@@ -237,7 +237,7 @@ export default function ConfigsViewPage() {
     } finally {
       setLoading(false)
     }
-  }, [apiCall])
+  }, [apiCall, showMessage])
 
   // Apply filters and sorting
   const applyFilters = useCallback(() => {
@@ -358,36 +358,6 @@ export default function ConfigsViewPage() {
     }
   }, [selectedRepository, apiCall, showMessage])
 
-  // Actions
-  const handleViewConfig = useCallback(async (device: Device) => {
-    try {
-      setCurrentDevice(device)
-      const files = await searchConfigFiles(device)
-      
-      if (files === null) {
-        return // Error already shown
-      }
-
-      if (files.length === 0) {
-        showMessage(`No configuration files found for ${device.name}`, 'info')
-        return
-      }
-
-      if (files.length === 1) {
-        // Single file found, display it directly
-        setSelectedConfigFile(files[0])
-        await loadConfigContent(files[0])
-      } else {
-        // Multiple files found, show selection modal
-        setConfigFiles(files)
-        setIsConfigSelectionModalOpen(true)
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to view config'
-      showMessage(`Failed to view config for ${device.name}: ${message}`, 'error')
-    }
-  }, [searchConfigFiles, showMessage])
-
   // Load config file content
   const loadConfigContent = useCallback(async (configFile: ConfigFile) => {
     if (selectedRepository === null) {
@@ -436,6 +406,36 @@ export default function ConfigsViewPage() {
       setLoadingConfigContent(false)
     }
   }, [selectedRepository, apiCall, showMessage])
+
+  // Actions
+  const handleViewConfig = useCallback(async (device: Device) => {
+    try {
+      setCurrentDevice(device)
+      const files = await searchConfigFiles(device)
+      
+      if (files === null) {
+        return // Error already shown
+      }
+
+      if (files.length === 0) {
+        showMessage(`No configuration files found for ${device.name}`, 'info')
+        return
+      }
+
+      if (files.length === 1 && files[0]) {
+        // Single file found, display it directly
+        setSelectedConfigFile(files[0])
+        await loadConfigContent(files[0])
+      } else {
+        // Multiple files found, show selection modal
+        setConfigFiles(files)
+        setIsConfigSelectionModalOpen(true)
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to view config'
+      showMessage(`Failed to view config for ${device.name}: ${message}`, 'error')
+    }
+  }, [searchConfigFiles, showMessage, loadConfigContent])
 
   // Handle config file selection from modal
   const handleConfigFileSelection = useCallback(async (configFile: ConfigFile) => {

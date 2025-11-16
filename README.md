@@ -318,6 +318,148 @@ Authorization: Bearer <token>
 
 ## 🛠️ Development
 
+### **Development Setup**
+
+**Prerequisites**:
+- Node.js 18+ and npm
+- Python 3.9+
+- Git
+
+**Backend Setup**:
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+pip install -r requirements.txt
+python start.py
+```
+
+**Frontend Setup**:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### **Development Workflow & Best Practices**
+
+#### **Code Quality Enforcement**
+
+This project uses multiple layers of automated code quality checks:
+
+1. **ESLint** - Catches errors during development
+   ```bash
+   npm run lint        # Check for errors
+   npm run lint:fix    # Auto-fix errors
+   ```
+
+2. **TypeScript** - Strict type checking
+   ```bash
+   npm run type-check  # Verify type safety
+   ```
+
+3. **Prettier** - Code formatting
+   ```bash
+   npm run format       # Format all files
+   npm run format:check # Check formatting
+   ```
+
+4. **Pre-commit Hooks** - Automatically run before each commit
+   - ESLint with auto-fix
+   - Prettier formatting
+   - Type checking
+   - Blocks commits with errors
+
+5. **Complete Check**
+   ```bash
+   npm run check       # Run all checks
+   npm run check:fix   # Run all checks with auto-fix
+   ```
+
+#### **React Best Practices**
+
+To prevent infinite re-render loops and performance issues, follow these rules:
+
+**✅ DO:**
+```typescript
+// Use constants for empty default parameters
+const EMPTY_ARRAY: string[] = []
+const EMPTY_OBJECT = {}
+
+function MyComponent({ items = EMPTY_ARRAY }) {
+  // items reference stays stable
+}
+
+// Memoize custom hook return values
+export function useMyHook() {
+  const [state, setState] = useState()
+  return useMemo(() => ({
+    state,
+    setState
+  }), [state])
+}
+
+// Stable useEffect dependencies
+useEffect(() => {
+  loadData()
+}, [stableValue]) // Only stable references
+```
+
+**❌ DON'T:**
+```typescript
+// Inline default parameters create new references every render
+function MyComponent({ items = [] }) { // ❌ New array each render!
+  // Causes infinite loops in child useEffect
+}
+
+// Non-memoized hook returns
+export function useMyHook() {
+  const [state, setState] = useState()
+  return { state, setState } // ❌ New object each render!
+}
+
+// Unstable useEffect dependencies
+const config = { key: 'value' } // ❌ New object each render!
+useEffect(() => {
+  doSomething(config)
+}, [config]) // ❌ Runs every render!
+```
+
+**Key Rules:**
+- ✅ Use `const` declarations for empty arrays/objects
+- ✅ Wrap custom hook returns in `useMemo()`
+- ✅ Ensure useEffect dependencies are stable references
+- ✅ Move object/array creation outside render body or use useMemo
+- ✅ Use exhaustive dependencies in useEffect/useMemo/useCallback
+- ✅ Prefer Server Components (default in Next.js 15)
+- ✅ Use `'use client'` only when needed (state, effects, events)
+
+#### **Backend Best Practices**
+
+- ✅ Always use JWT authentication for protected routes
+- ✅ Check permissions with `require_permission()` decorator
+- ✅ Validate inputs with Pydantic models
+- ✅ Put business logic in services layer, not routers
+- ✅ Database operations in manager files
+- ✅ Use HTTPException for errors with appropriate status codes
+- ✅ Log errors with proper severity levels
+
+#### **Git Workflow**
+
+1. Create feature branch from `main`
+2. Make changes following best practices
+3. Pre-commit hooks run automatically on commit
+4. Push and create Pull Request
+5. Ensure all CI/CD checks pass
+6. Get code review approval
+7. Merge to main
+
+**Pre-commit Hook Features:**
+- Automatically runs ESLint with `--fix`
+- Formats code with Prettier
+- Only processes staged files (fast!)
+- Blocks commit if errors remain
+
 ### **Project Structure**
 ```
 cockpit-ng/

@@ -244,6 +244,7 @@ export function OffboardDevicePage() {
 
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [statusMessage])
 
   const extractFilterOptions = useCallback((deviceList: Device[]) => {
@@ -538,8 +539,8 @@ export function OffboardDevicePage() {
             failedCount++
             results.push({
               success: false,
-              device_id: deviceId,
-              device_name: deviceName,
+              device_id: deviceId || 'unknown',
+              device_name: deviceName || 'Unknown Device',
               removed_items: [],
               skipped_items: [],
               errors: ['No response received from server'],
@@ -551,8 +552,8 @@ export function OffboardDevicePage() {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error'
           results.push({
             success: false,
-            device_id: deviceId,
-            device_name: deviceName,
+            device_id: deviceId || 'unknown',
+            device_name: deviceName || 'Unknown Device',
             removed_items: [],
             skipped_items: [],
             errors: [errorMessage],

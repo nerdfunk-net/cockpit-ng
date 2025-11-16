@@ -33,7 +33,7 @@ export function LocalAvatar({ username, size = 48, className = "" }: LocalAvatar
       '#6366F1', // Indigo
     ];
     
-    return colors[Math.abs(hash) % colors.length];
+    return colors[Math.abs(hash) % colors.length] || '#3B82F6';
   };
 
   const initials = username.slice(0, 2).toUpperCase();
@@ -85,7 +85,7 @@ export function generateAvatarDataUrl(username: string, size: number = 48): stri
       '#06B6D4', '#F97316', '#84CC16', '#EC4899', '#6366F1',
     ];
     
-    return colors[Math.abs(hash) % colors.length];
+    return colors[Math.abs(hash) % colors.length] || '#3B82F6';
   };
 
   const initials = username.slice(0, 2).toUpperCase();

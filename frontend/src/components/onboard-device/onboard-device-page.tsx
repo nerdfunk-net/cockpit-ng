@@ -298,7 +298,7 @@ export function OnboardDevicePage() {
     }
 
     // Join path with arrows, or return just the name if it's a root location
-    return path.length > 1 ? path.join(' → ') : path[0]
+    return path.length > 1 ? path.join(' → ') : (path[0] || '')
   }
 
   const findDefaultOption = (options: DropdownOption[], name: string): DropdownOption | undefined => {
@@ -438,7 +438,7 @@ export function OnboardDevicePage() {
       }>(`nautobot/devices?filter_type=name&filter_value=${encodeURIComponent(deviceSearchQuery)}&limit=10`)
 
       if (data.devices?.length > 0) {
-        if (data.devices.length === 1) {
+        if (data.devices.length === 1 && data.devices[0]) {
           const device = data.devices[0]
           const location = device.location ? ` (${device.location.name})` : ''
           const role = device.role ? ` [${device.role.name}]` : ''
@@ -604,7 +604,7 @@ export function OnboardDevicePage() {
   const handleGoToSyncDevices = () => {
     // Navigate to sync devices page with the IP address filter
     const ipAddresses = onboardedIPAddress.split(',').map(ip => ip.trim()).filter(ip => ip.length > 0)
-    const firstIP = ipAddresses[0]
+    const firstIP = ipAddresses[0] || ''
 
     // Navigate with query parameters to pre-fill the filter
     router.push(`/sync-devices?ip_filter=${encodeURIComponent(firstIP)}`)
@@ -645,6 +645,13 @@ export function OnboardDevicePage() {
 
       // Parse header row (case-insensitive)
       const headerLine = lines[0]
+      if (!headerLine) {
+        setStatusMessage({
+          type: 'error',
+          message: 'CSV file is empty or has no header row.'
+        })
+        return
+      }
       const headers = headerLine.split(delimiter).map(h => h.trim().toLowerCase())
       
       // Check for mandatory ipaddress column
@@ -673,7 +680,9 @@ export function OnboardDevicePage() {
       // Parse data rows
       const parsedRows: ParsedCSVRow[] = []
       for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim()
+        const currentLine = lines[i]
+        if (!currentLine) continue
+        const line = currentLine.trim()
         if (!line) continue
 
         const values = line.split(delimiter).map(v => v.trim())

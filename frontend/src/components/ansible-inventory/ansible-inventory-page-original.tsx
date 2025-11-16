@@ -235,7 +235,7 @@ export default function AnsibleInventoryPage() {
       
       setInventoryRepositories(response.repositories)
       // Auto-select first repository if available and return its ID
-      if (response.repositories.length > 0) {
+      if (response.repositories.length > 0 && response.repositories[0]) {
         const firstRepoId = response.repositories[0].id
         setSelectedInventoryRepo(firstRepoId)
         return firstRepoId
@@ -577,7 +577,7 @@ export default function AnsibleInventoryPage() {
   const buildOperationsFromConditions = () => {
     if (conditions.length === 0) return []
 
-    if (conditions.length === 1) {
+    if (conditions.length === 1 && conditions[0]) {
       return [{
         operation_type: 'AND',
         conditions: [{

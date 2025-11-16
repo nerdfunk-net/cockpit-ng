@@ -134,10 +134,11 @@ export function walkReactFiber() {
     return
   }
   
-  function walkFiber(node: unknown, depth = 0) {
+  // Commented out until needed - was causing unused variable errors
+  /*
+  function _walkFiber(_node: unknown, _depth = 0) {
     // TODO: Fix TypeScript issues with React Fiber internals
     // This is debug code and can be improved later
-    /*
     if (!node) return
     
     const indent = '  '.repeat(depth)
@@ -157,8 +158,8 @@ export function walkReactFiber() {
     if (node.sibling) {
       walkFiber(node.sibling, depth)
     }
-    */
   }
+  */
   
   try {
     // walkFiber(fiber) // Commented out until TypeScript issues are resolved

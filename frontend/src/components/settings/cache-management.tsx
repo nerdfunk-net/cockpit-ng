@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -104,7 +104,6 @@ export default function CacheManagement() {
   const [originalSettings, setOriginalSettings] = useState<CacheSettings | null>(null)
   const [stats, setStats] = useState<CacheStats | null>(null)
   const [entries, setEntries] = useState<CacheEntry[]>([])
-  const [selectedNamespace, setSelectedNamespace] = useState<string>('')
   const [namespaceInfo, setNamespaceInfo] = useState<NamespaceInfo | null>(null)
   const [showStats, setShowStats] = useState(false)
   const [showEntries, setShowEntries] = useState(false)
@@ -117,12 +116,12 @@ export default function CacheManagement() {
   const [loadingEntries, setLoadingEntries] = useState(false)
   const [loadingNamespace, setLoadingNamespace] = useState(false)
 
-  const showMessage = (text: string, type: StatusMessage['type'] = 'success') => {
+  const showMessage = useCallback((text: string, type: StatusMessage['type'] = 'success') => {
     setMessage({ text, type })
     setTimeout(() => setMessage(null), 4000)
-  }
+  }, [])
 
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     setLoading(true)
     try {
       const response = await apiCall<{ success: boolean; data: CacheSettings }>('settings/cache')
@@ -142,7 +141,7 @@ export default function CacheManagement() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [apiCall, showMessage])
 
   const saveSettings = async () => {
     setSaving(true)
@@ -284,7 +283,7 @@ export default function CacheManagement() {
 
   useEffect(() => {
     loadSettings()
-  }, [])
+  }, [loadSettings])
 
   if (loading) {
     return (
@@ -810,7 +809,7 @@ export default function CacheManagement() {
 
                 {/* Entries List */}
                 <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {entries.map((entry, index) => (
+                  {entries.map((entry) => (
                     <div 
                       key={entry.key} 
                       className={`p-3 rounded-lg border ${

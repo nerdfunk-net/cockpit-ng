@@ -181,7 +181,7 @@ export default function FileCompare() {
       
       // Auto-select the first active repository
       const activeRepos = response.repositories?.filter(repo => repo.is_active) || []
-      if (activeRepos.length > 0) {
+      if (activeRepos.length > 0 && activeRepos[0]) {
         console.log('Auto-selecting first active repository:', activeRepos[0].name)
         setSelectedRepo(activeRepos[0])
       }

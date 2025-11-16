@@ -231,6 +231,7 @@ export function SyncDevicesPage() {
       
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [statusMessage])
 
   // Load Nautobot defaults

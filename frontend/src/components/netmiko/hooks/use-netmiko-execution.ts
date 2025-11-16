@@ -189,9 +189,9 @@ export function useNetmikoExecution() {
 
       setExecutionResults(convertedResults)
       setExecutionSummary({
-        total: response.summary.total,
-        successful: dryRun ? response.summary.rendered_successfully : (response.summary.executed_successfully || 0),
-        failed: response.summary.failed,
+        total: response.summary.total || 0,
+        successful: dryRun ? (response.summary.rendered_successfully || 0) : (response.summary.executed_successfully || 0),
+        failed: response.summary.failed || 0,
         cancelled: response.summary.cancelled || 0
       })
       setShowResults(true)

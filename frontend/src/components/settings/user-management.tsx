@@ -1,11 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Badge } from '../ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Checkbox } from '../ui/checkbox'
@@ -91,12 +90,12 @@ export default function UserManagement() {
     is_active: true
   })
 
-  const showMessage = (text: string, type: StatusMessage['type'] = 'success') => {
+  const showMessage = useCallback((text: string, type: StatusMessage['type'] = 'success') => {
     setMessage({ text, type })
     setTimeout(() => setMessage(null), 4000)
-  }
+  }, [])
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true)
     try {
       const response = await apiCall<{users: User[], total: number}>('user-management')
@@ -108,7 +107,7 @@ export default function UserManagement() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [apiCall, showMessage])
 
   const resetForm = () => {
     setFormData({
@@ -302,7 +301,7 @@ export default function UserManagement() {
 
   useEffect(() => {
     loadUsers()
-  }, [])
+  }, [loadUsers])
 
   return (
     <div className="space-y-6">

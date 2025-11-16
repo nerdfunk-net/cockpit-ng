@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,16 +9,12 @@ import Link from 'next/link'
 
 function ApprovalPendingContent() {
   const searchParams = useSearchParams()
-  const [username, setUsername] = useState<string>('')
-  const [email, setEmail] = useState<string>('')
-  const [provider, setProvider] = useState<string>('')
-
-  useEffect(() => {
-    // Get user info from URL parameters
-    setUsername(searchParams.get('username') || '')
-    setEmail(searchParams.get('email') || '')
-    setProvider(searchParams.get('provider') || '')
-  }, [searchParams])
+  
+  // Read directly from URL params instead of using state
+  // This avoids setState in useEffect and is more performant
+  const username = searchParams.get('username') || ''
+  const email = searchParams.get('email') || ''
+  const provider = searchParams.get('provider') || ''
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">

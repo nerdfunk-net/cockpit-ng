@@ -191,7 +191,7 @@ export default function BackupPage() {
     } finally {
       setLoading(false)
     }
-  }, [apiCall])
+  }, [apiCall, showMessage])
 
   // Apply filters and sorting
   const applyFilters = useCallback(() => {

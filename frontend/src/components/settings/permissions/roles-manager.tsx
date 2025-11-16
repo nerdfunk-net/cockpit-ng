@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -60,12 +60,7 @@ export function RolesManager() {
   const { apiCall } = useApi()
   const { toast } = useToast()
 
-  useEffect(() => {
-    loadRoles()
-    loadAllPermissions()
-  }, [])
-
-  const loadRoles = async () => {
+  const loadRoles = useCallback(async () => {
     try {
       setLoading(true)
       const data = await apiCall<Role[]>('rbac/roles')
@@ -79,16 +74,21 @@ export function RolesManager() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [apiCall, toast])
 
-  const loadAllPermissions = async () => {
+  const loadAllPermissions = useCallback(async () => {
     try {
       const data = await apiCall<Permission[]>('rbac/permissions')
       setAllPermissions(data)
     } catch (error) {
       console.error('Failed to load permissions:', error)
     }
-  }
+  }, [apiCall])
+
+  useEffect(() => {
+    loadRoles()
+    loadAllPermissions()
+  }, [loadRoles, loadAllPermissions])
 
   const loadRoleWithPermissions = async (roleId: number) => {
     try {
@@ -245,7 +245,7 @@ export function RolesManager() {
     if (!acc[perm.resource]) {
       acc[perm.resource] = []
     }
-    acc[perm.resource].push(perm)
+    acc[perm.resource]!.push(perm)
     return acc
   }, {} as Record<string, Permission[]>)
 

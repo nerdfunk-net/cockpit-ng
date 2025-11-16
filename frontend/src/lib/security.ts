@@ -2,6 +2,8 @@
  * Security utilities for protecting against XSS, CSRF and other vulnerabilities
  */
 
+const EMPTY_DOMAINS: string[] = []
+
 /**
  * Escapes HTML characters to prevent XSS attacks
  * @param unsafe - The unsafe string that may contain HTML
@@ -40,7 +42,7 @@ export function stripHtml(input: string): string {
  * @param allowedDomains - Optional array of allowed domains
  * @returns True if the URL is safe
  */
-export function isSafeUrl(url: string, allowedDomains: string[] = []): boolean {
+export function isSafeUrl(url: string, allowedDomains: string[] = EMPTY_DOMAINS): boolean {
   try {
     const parsed = new URL(url, window.location.origin)
 

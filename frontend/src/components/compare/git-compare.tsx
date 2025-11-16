@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -106,10 +106,85 @@ export default function GitCompare() {
   // Refs for click outside handling
   const gitSearchRef = useRef<HTMLDivElement>(null)
 
+  const loadCommitsForBranch = useCallback(async (branch: string) => {
+    if (!selectedRepo) return
+    
+    try {
+      console.log('Loading commits for branch:', branch, 'in repo:', selectedRepo.name)
+      const response = await apiCall<Commit[]>(`git/${selectedRepo.id}/commits/${encodeURIComponent(branch)}`)
+      console.log('Commits loaded:', response.length, 'commits')
+      setCommits(response)
+      
+      // Clear previous selections when branch changes
+      setLeftCommit('')
+      setRightCommit('')
+      setComparisonResult(null)
+      setShowComparison(false)
+    } catch (error) {
+      console.error('Error loading commits:', error)
+    }
+  }, [selectedRepo, apiCall])
+
+  const loadRepositories = useCallback(async () => {
+    try {
+      console.log('Loading repositories...')
+      const response = await apiCall<{repositories: GitRepository[]}>('git-repositories')
+      console.log('Repositories loaded:', response)
+      setRepositories(response.repositories || [])
+      
+      // Auto-select the first active repository
+      const activeRepos = response.repositories?.filter(repo => repo.is_active) || []
+      if (activeRepos.length > 0 && activeRepos[0]) {
+        console.log('Auto-selecting first active repository:', activeRepos[0].name)
+        setSelectedRepo(activeRepos[0])
+      }
+    } catch (error) {
+      console.error('Error loading repositories:', error)
+    }
+  }, [apiCall])
+
+  const loadBranches = useCallback(async () => {
+    if (!selectedRepo) return
+    
+    try {
+      console.log('Loading branches for repo:', selectedRepo.name)
+      const response = await apiCall<Branch[]>(`git/${selectedRepo.id}/branches`)
+      console.log('Branches loaded:', response)
+      setBranches(response)
+      
+      // Auto-select the current branch if available
+      const currentBranch = response.find(branch => branch.current)
+      if (currentBranch) {
+        console.log('Auto-selecting current branch:', currentBranch.name)
+        setSelectedBranch(currentBranch.name)
+        loadCommitsForBranch(currentBranch.name)
+      }
+    } catch (error) {
+      console.error('Error loading branches:', error)
+    }
+  }, [selectedRepo, apiCall, loadCommitsForBranch])
+
+  const loadFiles = useCallback(async () => {
+    if (!selectedRepo) {
+      setGitFiles([])
+      return
+    }
+
+    try {
+      const response = await apiCall<{files: FileItem[]}>(`file-compare/list?repo_id=${selectedRepo.id}`)
+      const files = Array.isArray(response?.files) ? response.files : []
+      setGitFiles(files)
+    } catch (error) {
+      console.error('Error loading files:', error)
+      // Ensure we always have an array even on error
+      setGitFiles([])
+    }
+  }, [selectedRepo, apiCall])
+
   // Load initial data
   useEffect(() => {
     loadRepositories()
-  }, [])
+  }, [loadRepositories])
 
   // Load branches and files when repository is selected
   useEffect(() => {
@@ -127,7 +202,7 @@ export default function GitCompare() {
       setSelectedGitFile(null)
       setGitFileSearch('')
     }
-  }, [selectedRepo])
+  }, [selectedRepo, loadBranches, loadFiles])
 
   // Load font size from localStorage
   useEffect(() => {
@@ -148,81 +223,6 @@ export default function GitCompare() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
-
-  const loadRepositories = async () => {
-    try {
-      console.log('Loading repositories...')
-      const response = await apiCall<{repositories: GitRepository[]}>('git-repositories')
-      console.log('Repositories loaded:', response)
-      setRepositories(response.repositories || [])
-      
-      // Auto-select the first active repository
-      const activeRepos = response.repositories?.filter(repo => repo.is_active) || []
-      if (activeRepos.length > 0) {
-        console.log('Auto-selecting first active repository:', activeRepos[0].name)
-        setSelectedRepo(activeRepos[0])
-      }
-    } catch (error) {
-      console.error('Error loading repositories:', error)
-    }
-  }
-
-  const loadBranches = async () => {
-    if (!selectedRepo) return
-    
-    try {
-      console.log('Loading branches for repo:', selectedRepo.name)
-      const response = await apiCall<Branch[]>(`git/${selectedRepo.id}/branches`)
-      console.log('Branches loaded:', response)
-      setBranches(response)
-      
-      // Auto-select the current branch if available
-      const currentBranch = response.find(branch => branch.current)
-      if (currentBranch) {
-        console.log('Auto-selecting current branch:', currentBranch.name)
-        setSelectedBranch(currentBranch.name)
-        loadCommitsForBranch(currentBranch.name)
-      }
-    } catch (error) {
-      console.error('Error loading branches:', error)
-    }
-  }
-
-  const loadFiles = async () => {
-    if (!selectedRepo) {
-      setGitFiles([])
-      return
-    }
-
-    try {
-      const response = await apiCall<{files: FileItem[]}>(`file-compare/list?repo_id=${selectedRepo.id}`)
-      const files = Array.isArray(response?.files) ? response.files : []
-      setGitFiles(files)
-    } catch (error) {
-      console.error('Error loading files:', error)
-      // Ensure we always have an array even on error
-      setGitFiles([])
-    }
-  }
-
-  const loadCommitsForBranch = async (branch: string) => {
-    if (!selectedRepo) return
-    
-    try {
-      console.log('Loading commits for branch:', branch, 'in repo:', selectedRepo.name)
-      const response = await apiCall<Commit[]>(`git/${selectedRepo.id}/commits/${encodeURIComponent(branch)}`)
-      console.log('Commits loaded:', response.length, 'commits')
-      setCommits(response)
-      
-      // Clear previous selections when branch changes
-      setLeftCommit('')
-      setRightCommit('')
-      setComparisonResult(null)
-      setShowComparison(false)
-    } catch (error) {
-      console.error('Error loading commits:', error)
-    }
-  }
 
   const searchFiles = (query: string, files: FileItem[]) => {
     if (!query.trim()) return []

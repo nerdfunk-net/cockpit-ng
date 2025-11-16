@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
@@ -21,14 +21,15 @@ export default function ConfigCompare() {
   const { isAuthenticated, token } = useAuthStore()
   
   // Core state
-  const [authReady, setAuthReady] = useState(false)
   const [comparisonMode, setComparisonMode] = useState<ComparisonMode>('files')
+
+  // Calculate authReady based on authentication state
+  const authReady = useMemo(() => isAuthenticated && !!token, [isAuthenticated, token])
 
   // Authentication effect - simplified since DashboardLayout handles auth
   useEffect(() => {
     if (isAuthenticated && token) {
       console.log('Compare: Authentication ready')
-      setAuthReady(true)
     }
   }, [isAuthenticated, token])
 

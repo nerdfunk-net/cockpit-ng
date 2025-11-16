@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -30,11 +30,7 @@ export function PermissionsViewer() {
   const { apiCall } = useApi()
   const { toast } = useToast()
 
-  useEffect(() => {
-    loadPermissions()
-  }, [])
-
-  const loadPermissions = async () => {
+  const loadPermissions = useCallback(async () => {
     try {
       setLoading(true)
       const data = await apiCall<Permission[]>('rbac/permissions')
@@ -48,7 +44,11 @@ export function PermissionsViewer() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [apiCall, toast])
+
+  useEffect(() => {
+    loadPermissions()
+  }, [loadPermissions])
 
   const filteredPermissions = permissions.filter(
     (perm) =>
@@ -62,7 +62,7 @@ export function PermissionsViewer() {
     if (!acc[perm.resource]) {
       acc[perm.resource] = []
     }
-    acc[perm.resource].push(perm)
+    acc[perm.resource]!.push(perm)
     return acc
   }, {} as Record<string, Permission[]>)
 

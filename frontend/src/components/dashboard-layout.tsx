@@ -4,10 +4,8 @@ import { AppSidebar } from './app-sidebar'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/lib/auth-store'
 import { useEffect, useState } from 'react'
-import { debugAuth } from '@/lib/auth-debug'
 import { SidebarProvider, useSidebar } from './sidebar-context'
 import { useSessionManager } from '@/hooks/use-session-manager'
-import { debug } from '@/lib/debug'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -29,10 +27,6 @@ function DashboardLayoutInner({ children, className }: DashboardLayoutProps) {
   // Check authentication status
   useEffect(() => {
     const initAuth = async () => {
-      debug.log('DashboardLayout: Initializing authentication')
-
-      // Debug authentication state
-      debugAuth()
 
       // For development, auto-login if no auth (disabled for testing)
       // await checkDevAuth()
@@ -43,11 +37,9 @@ function DashboardLayoutInner({ children, className }: DashboardLayoutProps) {
 
         const currentState = useAuthStore.getState()
         if (typeof window !== 'undefined' && !currentState.isAuthenticated && !currentState.token) {
-          debug.warn('DashboardLayout: No authentication found, redirecting to login')
-          console.log('No authentication found after dev login attempt, redirecting to login')
+          console.log('No authentication found, redirecting to login')
           window.location.href = '/login'
         } else {
-          debug.log('DashboardLayout: Authentication successful, user authenticated')
         }
       }, 500) // Increased timeout for async login
     }
@@ -58,7 +50,6 @@ function DashboardLayoutInner({ children, className }: DashboardLayoutProps) {
   // Monitor auth state changes and redirect if logged out
   useEffect(() => {
     if (!isLoading && !isAuthenticated && !token) {
-      debug.warn('DashboardLayout: Authentication lost, redirecting to login')
       if (typeof window !== 'undefined') {
         window.location.href = '/login'
       }

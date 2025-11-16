@@ -36,9 +36,10 @@ interface Role {
   is_system: boolean
 }
 
-interface UserWithRoles extends User {
-  roles: Role[]
-}
+// Reserved for future use
+// interface UserWithRoles extends User {
+//   roles: Role[]
+// }
 
 export function UserRolesManager() {
   const [users, setUsers] = useState<User[]>([])

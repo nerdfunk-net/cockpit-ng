@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,13 +48,17 @@ export default function CheckMKSettingsForm() {
   const [yamlLoading, setYamlLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('connection')
 
-  // Load settings on component mount
-  useEffect(() => {
-    loadSettings()
-    loadYamlFiles()
+  const showMessage = useCallback((msg: string, type: 'success' | 'error') => {
+    setMessage(msg)
+    setStatus(type === 'success' ? 'success' : 'error')
+    
+    setTimeout(() => {
+      setMessage('')
+      setStatus('idle')
+    }, 5000)
   }, [])
 
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       setIsLoading(true)
       const data: ApiResponse = await apiCall('settings/checkmk')
@@ -67,7 +71,35 @@ export default function CheckMKSettingsForm() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [apiCall, showMessage])
+
+  const loadYamlFiles = useCallback(async () => {
+    try {
+      setYamlLoading(true)
+      const [checkmkResponse, snmpResponse] = await Promise.all([
+        apiCall('config/checkmk.yaml'),
+        apiCall('config/snmp_mapping.yaml')
+      ]) as [{ success?: boolean; data?: string }, { success?: boolean; data?: string }]
+      
+      if (checkmkResponse.success) {
+        setCheckmkYaml(checkmkResponse.data || '')
+      }
+      if (snmpResponse.success) {
+        setSnmpMappingYaml(snmpResponse.data || '')
+      }
+    } catch (error) {
+      console.error('Error loading YAML files:', error)
+      showMessage('Failed to load YAML configuration files', 'error')
+    } finally {
+      setYamlLoading(false)
+    }
+  }, [apiCall, showMessage])
+
+  // Load settings on component mount
+  useEffect(() => {
+    loadSettings()
+    loadYamlFiles()
+  }, [loadSettings, loadYamlFiles])
 
   const testConnection = async () => {
     setStatus('testing')
@@ -133,41 +165,8 @@ export default function CheckMKSettingsForm() {
     showMessage('Settings reset to defaults', 'success')
   }
 
-  const showMessage = (msg: string, type: 'success' | 'error') => {
-    setMessage(msg)
-    setStatus(type === 'success' ? 'success' : 'error')
-    
-    setTimeout(() => {
-      setMessage('')
-      setStatus('idle')
-    }, 5000)
-  }
-
   const updateSetting = (key: keyof CheckMKSettings, value: string | boolean) => {
     setSettings(prev => ({ ...prev, [key]: value }))
-  }
-
-  // YAML file functions
-  const loadYamlFiles = async () => {
-    try {
-      setYamlLoading(true)
-      const [checkmkResponse, snmpResponse] = await Promise.all([
-        apiCall('config/checkmk.yaml'),
-        apiCall('config/snmp_mapping.yaml')
-      ]) as [{ success?: boolean; data?: string }, { success?: boolean; data?: string }]
-      
-      if (checkmkResponse.success) {
-        setCheckmkYaml(checkmkResponse.data || '')
-      }
-      if (snmpResponse.success) {
-        setSnmpMappingYaml(snmpResponse.data || '')
-      }
-    } catch (error) {
-      console.error('Error loading YAML files:', error)
-      showMessage('Failed to load YAML configuration files', 'error')
-    } finally {
-      setYamlLoading(false)
-    }
   }
 
   const saveYamlFile = async (filename: 'checkmk.yaml' | 'snmp_mapping.yaml', content: string) => {

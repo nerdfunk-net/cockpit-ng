@@ -140,7 +140,7 @@ export function findReactComponents() {
       key.startsWith('_reactInternalFiber')
     )
     
-    if (fiberKeys.length > 0) {
+    if (fiberKeys.length > 0 && fiberKeys[0]) {
       const fiberNode = (element as unknown as { [key: string]: unknown })[fiberKeys[0]]
       reactElements.push({ element, fiberNode })
     }

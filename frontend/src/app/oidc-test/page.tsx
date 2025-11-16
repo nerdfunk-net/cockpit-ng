@@ -114,7 +114,7 @@ export default function OIDCTestPage() {
       })
 
       // Auto-select first provider
-      if (data.providers.length > 0) {
+      if (data.providers.length > 0 && data.providers[0]) {
         setSelectedProvider(data.providers[0].provider_id)
       }
     } catch (err) {

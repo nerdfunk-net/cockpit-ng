@@ -73,29 +73,6 @@ export default function AnsibleInventoryPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authReady])
 
-  const loadTemplateCategories = async () => {
-    try {
-      const response = await apiCall<string[]>('templates/categories')
-      inventoryGeneration.setTemplateCategories(response)
-    } catch (error) {
-      console.error('Error loading template categories:', error)
-    }
-  }
-
-  const loadGitRepositories = async () => {
-    try {
-      const response = await apiCall<{
-        repositories: Array<{id: number, name: string, url: string, branch: string}>
-        total: number
-      }>('ansible-inventory/git-repositories')
-      
-      gitOperations.setGitRepositories(response.repositories)
-    } catch (error) {
-      console.error('Error loading Git repositories:', error)
-      gitOperations.setGitRepositories([])
-    }
-  }
-
   const handleDevicesSelected = (devices: DeviceInfo[], conditions: LogicalCondition[]) => {
     setPreviewDevices(devices)
     setDeviceConditions(conditions)
@@ -145,7 +122,6 @@ export default function AnsibleInventoryPage() {
         onDevicesSelected={handleDevicesSelected}
         showActions={true}
         showSaveLoad={true}
-        compact={false}
         enableSelection={false}
       />
 

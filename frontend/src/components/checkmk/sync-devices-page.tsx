@@ -141,8 +141,10 @@ const getSiteFromDevice = (device: Device, defaultSite: string = 'cmk'): string 
   return defaultSite
 }
 
+const EMPTY_IGNORED_ATTRIBUTES: string[] = []
+
 // Helper function to render config comparison
-const renderConfigComparison = (nautobot: { attributes?: Record<string, unknown> }, checkmk: { attributes?: Record<string, unknown> }, ignoredAttributes: string[] = []) => {
+const renderConfigComparison = (nautobot: { attributes?: Record<string, unknown> }, checkmk: { attributes?: Record<string, unknown> }, ignoredAttributes: string[] = EMPTY_IGNORED_ATTRIBUTES) => {
   const allKeys = new Set([
     ...Object.keys(nautobot?.attributes || {}),
     ...Object.keys(checkmk?.attributes || {})
@@ -206,8 +208,6 @@ export function CheckMKSyncDevicesPage() {
   const [selectedDeviceForDiff, setSelectedDeviceForDiff] = useState<Device | null>(null)
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'warning' | 'info', message: string } | null>(null)
   const [showStatusModal, setShowStatusModal] = useState(false)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isActivating, setIsActivating] = useState(false)
 
   // Add device confirmation modal state
   const [showAddDeviceModal, setShowAddDeviceModal] = useState(false)
@@ -337,24 +337,6 @@ export function CheckMKSyncDevicesPage() {
     const savedJobId = localStorage.getItem('nb2cmk_current_job_id')
     const savedIsRunning = localStorage.getItem('nb2cmk_is_job_running') === 'true'
     return { savedJobId, savedIsRunning }
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const clearJobState = () => {
-    setCurrentJobId(null)
-    setIsJobRunning(false)
-    setJobProgress(null)
-    setDevices([])
-    saveJobStateToStorage(null, false)
-    setStatusMessage({
-      type: 'info',
-      message: 'Job state cleared. You can start a new comparison job.'
-    })
-    setShowStatusModal(true)
-    setTimeout(() => {
-      setStatusMessage(null)
-      setShowStatusModal(false)
-    }, 3000)
   }
 
   // Fetch available completed jobs from backend
@@ -554,31 +536,6 @@ export function CheckMKSyncDevicesPage() {
       // Keep default value 'cmk' if fetch fails
     }
   }, [token])
-
-  // Check for pending changes
-  const checkPendingChanges = async (): Promise<boolean> => {
-    if (!token) return false
-    
-    try {
-      const response = await fetch('/api/proxy/checkmk/changes/pending', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        // Check if there are any pending changes (non-empty list)
-        // The response structure is: { data: { value: [...] } }
-        return data.data && data.data.value && data.data.value.length > 0
-      }
-      return false
-    } catch (error) {
-      console.error('Error checking pending changes:', error)
-      return false
-    }
-  }
 
   // Load job state and default site when component mounts
   useEffect(() => {
@@ -783,60 +740,6 @@ export function CheckMKSyncDevicesPage() {
   }
 
   // Background job functions
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleStartCheck = async () => {
-    if (!token) {
-      setStatusMessage({ type: 'error', message: 'Authentication required' })
-      setShowStatusModal(true)
-      return
-    }
-
-    try {
-      setIsJobRunning(true)
-      const response = await fetch('/api/proxy/nb2cmk/start-diff-job', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setCurrentJobId(data.job_id)
-        setIsJobRunning(true)
-        saveJobStateToStorage(data.job_id, true)
-        setStatusMessage({
-          type: 'success',
-          message: `Background job started with ID: ${data.job_id}`
-        })
-        setShowStatusModal(true)
-        
-        // Auto-hide success message after 3 seconds
-        setTimeout(() => {
-          setStatusMessage(null)
-          setShowStatusModal(false)
-        }, 3000)
-      } else {
-        const errorData = await response.json()
-        setStatusMessage({
-          type: 'error',
-          message: `Failed to start background job: ${errorData.detail || 'Unknown error'}`
-        })
-        setShowStatusModal(true)
-        setIsJobRunning(false)
-      }
-    } catch (error) {
-      console.error('Error starting background job:', error)
-      setStatusMessage({
-        type: 'error',
-        message: 'Error starting background job'
-      })
-      setShowStatusModal(true)
-      setIsJobRunning(false)
-    }
-  }
-
   // Start new device comparison job using the APScheduler service
   const startNewJob = async () => {
     if (!token) {
@@ -927,8 +830,6 @@ export function CheckMKSyncDevicesPage() {
         setJobProgress(newProgress)
         
         // Update job running state and save to storage
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const jobFinished = data.status === 'completed' || data.status === 'failed' || data.status === 'cancelled'
         const jobStillRunning = data.status === 'running' || data.status === 'pending'
         
         setIsJobRunning(jobStillRunning)
@@ -1171,81 +1072,6 @@ export function CheckMKSyncDevicesPage() {
         message: 'Error syncing devices'
       })
       setShowStatusModal(true)
-    }
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleActivateChanges = async () => {
-    if (!token) {
-      setStatusMessage({ type: 'error', message: 'Authentication required' })
-      setShowStatusModal(true)
-      return
-    }
-
-    setIsActivating(true)
-    setStatusMessage({ 
-      type: 'info', 
-      message: 'Checking for pending changes...' 
-    })
-    setShowStatusModal(true)
-    
-    try {
-      // First check if there are pending changes
-      const hasPendingChanges = await checkPendingChanges()
-      
-      if (!hasPendingChanges) {
-        setStatusMessage({ 
-          type: 'info', 
-          message: 'No pending changes to activate in CheckMK' 
-        })
-        setShowStatusModal(true)
-        setIsActivating(false)
-        return
-      }
-
-      // If there are pending changes, proceed with activation
-      setStatusMessage({ 
-        type: 'info', 
-        message: 'Activating pending changes in CheckMK...' 
-      })
-      
-      const response = await fetch('/api/proxy/checkmk/changes/activate', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (response.ok) {
-        setStatusMessage({ 
-          type: 'success', 
-          message: 'Successfully activated pending changes in CheckMK' 
-        })
-        setShowStatusModal(true)
-        
-        // Auto-hide success message after 3 seconds
-        setTimeout(() => {
-          setStatusMessage(null)
-          setShowStatusModal(false)
-        }, 3000)
-      } else {
-        const errorData = await response.json()
-        setStatusMessage({ 
-          type: 'error', 
-          message: `Failed to activate changes: ${errorData.detail || 'Unknown error'}` 
-        })
-        setShowStatusModal(true)
-      }
-    } catch (error) {
-      console.error('Error activating changes:', error)
-      setStatusMessage({ 
-        type: 'error', 
-        message: 'Error activating changes in CheckMK' 
-      })
-      setShowStatusModal(true)
-    } finally {
-      setIsActivating(false)
     }
   }
 

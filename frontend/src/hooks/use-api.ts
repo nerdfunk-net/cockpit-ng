@@ -8,12 +8,15 @@ interface ApiOptions {
   headers?: Record<string, string>
 }
 
+const EMPTY_OPTIONS: ApiOptions = {}
+const EMPTY_HEADERS: Record<string, string> = {}
+
 export function useApi() {
   const { token, logout } = useAuthStore()
   const router = useRouter()
 
-  const apiCall = useCallback(async <T = unknown>(endpoint: string, options: ApiOptions = {}): Promise<T> => {
-    const { method = 'GET', body, headers = {} } = options
+  const apiCall = useCallback(async <T = unknown>(endpoint: string, options: ApiOptions = EMPTY_OPTIONS): Promise<T> => {
+    const { method = 'GET', body, headers = EMPTY_HEADERS } = options
     
     const defaultHeaders: Record<string, string> = {
       'Content-Type': 'application/json',

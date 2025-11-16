@@ -158,7 +158,7 @@ function OIDCTestCallbackContent() {
 
     try {
       const parts = token.split('.')
-      if (parts.length !== 3) return undefined
+      if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return undefined
 
       return {
         header: JSON.parse(atob(parts[0])),

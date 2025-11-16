@@ -51,7 +51,7 @@ export function formatDeviceValue(value: string | undefined): string {
 export function buildOperationsFromConditions(conditions: LogicalCondition[]) {
   if (conditions.length === 0) return []
 
-  if (conditions.length === 1) {
+  if (conditions.length === 1 && conditions[0]) {
     return [{
       operation_type: 'AND',
       conditions: [{

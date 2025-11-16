@@ -41,7 +41,7 @@ function OIDCCallbackContent() {
         let providerId = 'default'
         if (state && state.includes(':')) {
           const [extractedProviderId] = state.split(':', 2)
-          providerId = extractedProviderId
+          providerId = extractedProviderId || 'default'
         } else {
           // Fallback: Try to get from sessionStorage
           const storedProviderId = sessionStorage.getItem('oidc_provider_id')

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import React from "react";
 import "./globals.css";
 import { localFonts } from "@/lib/local-fonts";
-import { DebugProvider } from "@/contexts/debug-context";
 import { AuthHydration } from "@/components/auth/auth-hydration";
 
 // Use local font configuration for air-gapped environments
@@ -26,24 +25,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Enhanced error reporting in development
-  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-    const originalError = console.error
-    console.error = function(...args) {
-      if (args.some(arg => typeof arg === 'string' && (
-        arg.includes('key') || 
-        arg.includes('Warning') ||
-        arg.includes('Each child in a list')
-      ))) {
-        console.group('🚨 REACT KEY WARNING DETECTED:')
-        originalError.apply(console, args)
-        console.trace('Call stack:')
-        console.groupEnd()
-      } else {
-        originalError.apply(console, args)
-      }
-    }
-  }
+  // Note: Console override removed due to React immutability rules
+  // Use React DevTools and browser console for debugging instead
 
   return (
     <html lang="en">
@@ -69,9 +52,7 @@ export default function RootLayout({
       >
         <React.StrictMode>
           <AuthHydration />
-          <DebugProvider>
-            {children}
-          </DebugProvider>
+          {children}
         </React.StrictMode>
       </body>
     </html>
