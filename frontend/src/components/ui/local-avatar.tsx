@@ -59,9 +59,10 @@ export function LocalAvatar({ username, size = 48, className = "" }: LocalAvatar
   `;
   
   const dataUrl = `data:image/svg+xml;base64,${btoa(svgContent)}`;
-  
+
   return (
-    <img 
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
       src={dataUrl}
       alt={`Avatar for ${username}`}
       className={className}

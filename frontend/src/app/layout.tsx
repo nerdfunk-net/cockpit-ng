@@ -32,10 +32,13 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* Load local fonts for air-gapped environments */}
+        {/* eslint-disable-next-line @next/next/no-css-tags */}
         <link rel="stylesheet" href="/fonts/geist.css" media="all" />
+        {/* eslint-disable-next-line @next/next/no-css-tags */}
         <link rel="stylesheet" href="/fonts/geist-mono.css" media="all" />
         {/* Air-gapped fallback CSS */}
         {process.env.NEXT_PUBLIC_AIR_GAPPED === "true" && (
+          // eslint-disable-next-line @next/next/no-css-tags
           <link rel="stylesheet" href="/airgap-fallback.css" media="all" />
         )}
         <style dangerouslySetInnerHTML={{
