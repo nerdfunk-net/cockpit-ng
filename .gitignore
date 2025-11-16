@@ -195,3 +195,4 @@ backend/data/cache/nautobot_stats.json
 apscheduler_jobs.db
 /data/jobs
 /backend/data/cache
+/backend/node_modules
