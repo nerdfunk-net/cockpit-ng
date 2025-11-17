@@ -747,7 +747,7 @@ async def add_device(
     1. Create device in Nautobot DCIM
     2. Create IP addresses for all interfaces (if specified)
     3. Create interfaces and assign IP addresses
-    4. Assign primary IPv4 address (skeleton only)
+    4. Assign primary IPv4 address to device
 
     Request body:
     {
@@ -1080,8 +1080,8 @@ async def add_device(
             workflow_status["step3_interfaces"]["status"] = "skipped"
             workflow_status["step3_interfaces"]["message"] = "No interfaces to create"
 
-        # Step 4: Assign primary IPv4 address (skeleton)
-        logger.info("Step 4: Assigning primary IPv4 (skeleton)")
+        # Step 4: Assign primary IPv4 address
+        logger.info("Step 4: Assigning primary IPv4 address to device")
         workflow_status["step4_primary_ip"]["status"] = "in_progress"
 
         if primary_ipv4_id:
@@ -1089,20 +1089,20 @@ async def add_device(
             if success:
                 workflow_status["step4_primary_ip"]["status"] = "success"
                 workflow_status["step4_primary_ip"]["message"] = (
-                    "Primary IPv4 assignment (skeleton)"
+                    "Primary IPv4 address assigned successfully"
                 )
                 workflow_status["step4_primary_ip"]["data"] = {"ip_id": primary_ipv4_id}
-                logger.info(f"Primary IPv4 assigned: {primary_ipv4_id}")
+                logger.info(f"Primary IPv4 assigned successfully: {primary_ipv4_id}")
             else:
                 workflow_status["step4_primary_ip"]["status"] = "failed"
                 workflow_status["step4_primary_ip"]["message"] = (
-                    "Failed to assign primary IPv4"
+                    "Failed to assign primary IPv4 address"
                 )
-                logger.warning("Failed to assign primary IPv4")
+                logger.warning("Failed to assign primary IPv4 address")
         else:
             workflow_status["step4_primary_ip"]["status"] = "skipped"
             workflow_status["step4_primary_ip"]["message"] = (
-                "No IPv4 address available for primary IP"
+                "No IPv4 address available for primary IP assignment"
             )
             logger.info("No IPv4 address found for primary IP assignment")
 
@@ -1145,32 +1145,30 @@ async def add_device(
 
 async def _assign_primary_ipv4(device_id: str, ip_address_id: str) -> bool:
     """
-    Skeleton function to assign primary IPv4 address to a device.
+    Assign primary IPv4 address to a device.
 
     Args:
-        device_id: The Nautobot device ID
-        ip_address_id: The Nautobot IP address ID to set as primary
+        device_id: The Nautobot device ID (UUID)
+        ip_address_id: The Nautobot IP address ID (UUID) to set as primary
 
     Returns:
         bool: True if successful, False otherwise
     """
     try:
-        # TODO: Implement primary IP assignment
-        # This is a skeleton for now - to be implemented later
-        logger.info(
-            f"[SKELETON] Would assign primary IPv4 {ip_address_id} to device {device_id}"
+        logger.info(f"Assigning primary IPv4 {ip_address_id} to device {device_id}")
+
+        # Use the DCIM devices PATCH endpoint to update the primary_ip4 field
+        endpoint = f"dcim/devices/{device_id}/"
+        await nautobot_service.rest_request(
+            endpoint=endpoint, method="PATCH", data={"primary_ip4": ip_address_id}
         )
 
-        # When implemented, should do:
-        # await nautobot_service.rest_request(
-        #     endpoint=f"dcim/devices/{device_id}/",
-        #     method="PATCH",
-        #     data={"primary_ip4": ip_address_id}
-        # )
-
+        logger.info(
+            f"Successfully assigned primary IPv4 {ip_address_id} to device {device_id}"
+        )
         return True
     except Exception as e:
-        logger.error(f"Error in _assign_primary_ipv4: {str(e)}")
+        logger.error(f"Error assigning primary IPv4 to device {device_id}: {str(e)}")
         return False
 
 

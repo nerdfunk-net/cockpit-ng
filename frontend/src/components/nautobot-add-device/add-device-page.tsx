@@ -424,7 +424,7 @@ export function AddDevicePage() {
 
       // Step 4: Primary IP
       if (workflowStatus.step4_primary_ip.status === 'success') {
-        statusMessages.push(`✓ Primary IPv4 prepared (skeleton)`)
+        statusMessages.push(`✓ Primary IPv4 address assigned successfully`)
       } else if (workflowStatus.step4_primary_ip.status === 'skipped') {
         statusMessages.push(`○ No primary IPv4 to assign`)
       } else if (workflowStatus.step4_primary_ip.status === 'failed') {
