@@ -1251,13 +1251,33 @@ useEffect(() => {
 - Pre-commit hooks block non-compliant code
 - TypeScript strict mode enforces type safety
 
+#### 6. Callbacks Passed to Hooks - ALWAYS Use useCallback
+```typescript
+// ❌ WRONG - Inline callback creates new function every render
+const { data } = useMyHook({
+  onChange: () => {
+    doSomething()
+  }
+})  // Hook sees new callback → re-runs logic → infinite loop!
+
+// ✅ CORRECT - Stable callback with useCallback
+const handleChange = useCallback(() => {
+  doSomething()
+}, [])  // Empty deps = never changes
+
+const { data } = useMyHook({
+  onChange: handleChange  // Same function every time
+})
+```
+
 **When Writing Code:**
 1. ✅ Declare constants outside component for empty arrays/objects
 2. ✅ Wrap all custom hook returns in `useMemo()`
 3. ✅ Always use complete dependency arrays in useEffect/useMemo/useCallback
 4. ✅ Move object/array creation outside render or wrap in useMemo
 5. ✅ Avoid passing both initial data and setters that create circular deps
-6. ✅ Use React DevTools to check for unnecessary re-renders
+6. ✅ **ALWAYS wrap callbacks passed to custom hooks in `useCallback()`**
+7. ✅ Use React DevTools to check for unnecessary re-renders
 
 ### Performance
 - ✅ Minimize 'use client' directives

@@ -1,0 +1,56 @@
+/**
+ * Shared Repository Selector Component
+ * Used across all compare pages for consistent repository selection
+ */
+
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import type { GitRepository } from '@/types/git'
+
+interface RepositorySelectorProps {
+  repositories: GitRepository[]
+  selectedRepo: GitRepository | null
+  onSelectRepo: (repo: GitRepository | null) => void
+  disabled?: boolean
+  className?: string
+}
+
+export function RepositorySelector({
+  repositories,
+  selectedRepo,
+  onSelectRepo,
+  disabled = false,
+  className = ''
+}: RepositorySelectorProps) {
+  return (
+    <div className={`space-y-2 ${className}`}>
+      <Label>Repository</Label>
+      <Select
+        value={selectedRepo?.id.toString() || '__none__'}
+        onValueChange={(value) => {
+          if (value === '__none__') {
+            onSelectRepo(null)
+          } else {
+            const repo = repositories.find(r => r.id.toString() === value)
+            if (repo) {
+              onSelectRepo(repo)
+            }
+          }
+        }}
+        disabled={disabled}
+      >
+        <SelectTrigger className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+          <SelectValue placeholder="Select repository" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__none__">Select repository...</SelectItem>
+          {repositories.map((repo) => (
+            <SelectItem key={repo.id} value={repo.id.toString()}>
+              {repo.name} {!repo.is_active && '(inactive)'}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}

@@ -1,169 +1,72 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { 
-  GitCommit, 
-  GitCompare as GitCompareIcon, 
-  Download, 
-  Eye, 
-  EyeOff, 
-  ChevronUp, 
+import {
+  GitCommit,
+  GitCompare as GitCompareIcon,
+  ChevronUp,
   ChevronDown,
-  RefreshCw 
+  RefreshCw
 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
-
-interface GitRepository {
-  id: number
-  name: string
-  category: string
-  url: string
-  branch: string
-  is_active: boolean
-  description?: string
-}
-
-interface FileItem {
-  name: string
-  path: string
-  size: number
-  type: 'file' | 'directory'
-}
-
-interface Branch {
-  name: string
-  current: boolean
-}
-
-interface Commit {
-  hash: string
-  author: {
-    name: string
-    email: string
-  }
-  date: string
-  message: string
-  short_hash: string
-  files_changed: number
-}
-
-interface DiffLine {
-  type: 'equal' | 'delete' | 'insert' | 'replace' | 'empty'
-  line_number: number | null
-  content: string
-}
-
-interface ComparisonResult {
-  commit1: string
-  commit2: string
-  file_path: string
-  diff_lines: string[]
-  left_file: string
-  right_file: string
-  left_lines: DiffLine[]
-  right_lines: DiffLine[]
-  stats: {
-    additions: number
-    deletions: number
-    changes: number
-    total_lines: number
-  }
-}
+import {
+  useGitRepositories,
+  useGitBranches,
+  useGitCommits,
+  useFileSearch,
+  useDiffNavigation
+} from '@/hooks/git'
+import {
+  RepositorySelector,
+  BranchSelector,
+  CommitSelector,
+  FileSearchInput,
+  DiffControls
+} from './shared'
+import {
+  getLeftLineClass,
+  getRightLineClass,
+  exportDiffAsText
+} from '@/lib/compare-utils'
+import type {
+  FileItem,
+  ComparisonResult
+} from '@/types/git'
 
 export default function GitCompare() {
   const { apiCall } = useApi()
-  
-  // Repository state
-  const [repositories, setRepositories] = useState<GitRepository[]>([])
-  const [selectedRepo, setSelectedRepo] = useState<GitRepository | null>(null)
-  
-  // Git state
-  const [branches, setBranches] = useState<Branch[]>([])
-  const [selectedBranch, setSelectedBranch] = useState<string>('')
-  const [commits, setCommits] = useState<Commit[]>([])
+
+  // Commit selection state (must be before hooks that use callbacks)
   const [leftCommit, setLeftCommit] = useState<string>('')
   const [rightCommit, setRightCommit] = useState<string>('')
-  
-  // File selection state
-  const [gitFiles, setGitFiles] = useState<FileItem[]>([])
-  const [selectedGitFile, setSelectedGitFile] = useState<FileItem | null>(null)
-  const [gitFileSearch, setGitFileSearch] = useState('')
-  const [showGitResults, setShowGitResults] = useState(false)
-  
-  // Comparison state
   const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null)
   const [showComparison, setShowComparison] = useState(false)
+
+  // Memoized callback for branch changes
+  const handleBranchChange = useCallback(() => {
+    setLeftCommit('')
+    setRightCommit('')
+    setComparisonResult(null)
+    setShowComparison(false)
+  }, [])
+
+  // Use custom hooks for state management
+  const { repositories, selectedRepo, setSelectedRepo } = useGitRepositories()
+  const { branches, selectedBranch, setSelectedBranch } = useGitBranches(
+    selectedRepo?.id || null,
+    { onBranchChange: handleBranchChange }
+  )
+  const { commits } = useGitCommits(selectedRepo?.id || null, selectedBranch)
+  const diffNav = useDiffNavigation()
+
+  // File loading and search state
+  const [gitFiles, setGitFiles] = useState<FileItem[]>([])
+  const fileSearch = useFileSearch(gitFiles)
   const [loading, setLoading] = useState(false)
-  const [hideUnchanged, setHideUnchanged] = useState(false)
-  const [currentDiffIndex, setCurrentDiffIndex] = useState(0)
-  const [fontSize, setFontSize] = useState(12)
-  
-  // Refs for click outside handling
-  const gitSearchRef = useRef<HTMLDivElement>(null)
 
-  const loadCommitsForBranch = useCallback(async (branch: string) => {
-    if (!selectedRepo) return
-    
-    try {
-      console.log('Loading commits for branch:', branch, 'in repo:', selectedRepo.name)
-      const response = await apiCall<Commit[]>(`git/${selectedRepo.id}/commits/${encodeURIComponent(branch)}`)
-      console.log('Commits loaded:', response.length, 'commits')
-      setCommits(response)
-      
-      // Clear previous selections when branch changes
-      setLeftCommit('')
-      setRightCommit('')
-      setComparisonResult(null)
-      setShowComparison(false)
-    } catch (error) {
-      console.error('Error loading commits:', error)
-    }
-  }, [selectedRepo, apiCall])
-
-  const loadRepositories = useCallback(async () => {
-    try {
-      console.log('Loading repositories...')
-      const response = await apiCall<{repositories: GitRepository[]}>('git-repositories')
-      console.log('Repositories loaded:', response)
-      setRepositories(response.repositories || [])
-      
-      // Auto-select the first active repository
-      const activeRepos = response.repositories?.filter(repo => repo.is_active) || []
-      if (activeRepos.length > 0 && activeRepos[0]) {
-        console.log('Auto-selecting first active repository:', activeRepos[0].name)
-        setSelectedRepo(activeRepos[0])
-      }
-    } catch (error) {
-      console.error('Error loading repositories:', error)
-    }
-  }, [apiCall])
-
-  const loadBranches = useCallback(async () => {
-    if (!selectedRepo) return
-    
-    try {
-      console.log('Loading branches for repo:', selectedRepo.name)
-      const response = await apiCall<Branch[]>(`git/${selectedRepo.id}/branches`)
-      console.log('Branches loaded:', response)
-      setBranches(response)
-      
-      // Auto-select the current branch if available
-      const currentBranch = response.find(branch => branch.current)
-      if (currentBranch) {
-        console.log('Auto-selecting current branch:', currentBranch.name)
-        setSelectedBranch(currentBranch.name)
-        loadCommitsForBranch(currentBranch.name)
-      }
-    } catch (error) {
-      console.error('Error loading branches:', error)
-    }
-  }, [selectedRepo, apiCall, loadCommitsForBranch])
-
+  // Load files when repository changes
   const loadFiles = useCallback(async () => {
     if (!selectedRepo) {
       setGitFiles([])
@@ -176,77 +79,18 @@ export default function GitCompare() {
       setGitFiles(files)
     } catch (error) {
       console.error('Error loading files:', error)
-      // Ensure we always have an array even on error
       setGitFiles([])
     }
   }, [selectedRepo, apiCall])
 
-  // Load initial data
   useEffect(() => {
-    loadRepositories()
-  }, [loadRepositories])
-
-  // Load branches and files when repository is selected
-  useEffect(() => {
-    if (selectedRepo) {
-      loadBranches()
-      loadFiles()
-    } else {
-      // Clear state when no repository is selected
-      setBranches([])
-      setSelectedBranch('')
-      setCommits([])
-      setLeftCommit('')
-      setRightCommit('')
-      setGitFiles([])
-      setSelectedGitFile(null)
-      setGitFileSearch('')
-    }
-  }, [selectedRepo, loadBranches, loadFiles])
-
-  // Load font size from localStorage
-  useEffect(() => {
-    const storedFontSize = localStorage.getItem('diff_font_size')
-    if (storedFontSize) {
-      setFontSize(parseInt(storedFontSize))
-    }
-  }, [])
-
-  // Click outside to close dropdowns
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (gitSearchRef.current && !gitSearchRef.current.contains(event.target as Node)) {
-        setShowGitResults(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  const searchFiles = (query: string, files: FileItem[]) => {
-    if (!query.trim()) return []
-    // Add safety check to ensure files is an array
-    if (!Array.isArray(files)) {
-      console.warn('searchFiles: files parameter is not an array:', files)
-      return []
-    }
-    return files.filter(file => 
-      file.name.toLowerCase().includes(query.toLowerCase()) ||
-      file.path.toLowerCase().includes(query.toLowerCase())
-    )
-  }
-
-  const handleGitFileSelect = (file: FileItem) => {
-    setSelectedGitFile(file)
-    setGitFileSearch(file.name)
-    setShowGitResults(false)
-  }
+    loadFiles()
+  }, [loadFiles])
 
   const canCompare = () => {
-    return selectedRepo && leftCommit && leftCommit.trim() !== '' && 
-           rightCommit && rightCommit.trim() !== '' && 
-           selectedGitFile && leftCommit !== rightCommit
+    return selectedRepo && leftCommit && leftCommit.trim() !== '' &&
+           rightCommit && rightCommit.trim() !== '' &&
+           fileSearch.selectedFile && leftCommit !== rightCommit
   }
 
   const handleCompare = async () => {
@@ -259,13 +103,13 @@ export default function GitCompare() {
         body: JSON.stringify({
           commit1: leftCommit,
           commit2: rightCommit,
-          file_path: selectedGitFile!.path
+          file_path: fileSearch.selectedFile!.path
         })
       })
 
       setComparisonResult(response)
       setShowComparison(true)
-      setCurrentDiffIndex(0)
+      diffNav.setCurrentIndex(0)
     } catch (error) {
       console.error('Error comparing commits:', error)
     } finally {
@@ -275,55 +119,19 @@ export default function GitCompare() {
 
   const exportDiff = () => {
     if (!comparisonResult) return
-
-    const diffContent = comparisonResult.diff_lines.join('\n')
-
-    const blob = new Blob([`--- ${comparisonResult.left_file}\n+++ ${comparisonResult.right_file}\n${diffContent}`], {
-      type: 'text/plain'
-    })
-    
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `git-diff-${Date.now()}.patch`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    exportDiffAsText(comparisonResult, `git-diff-${Date.now()}.patch`)
   }
 
   const navigateDiff = (direction: 'next' | 'prev') => {
     if (!comparisonResult) return
     
-    const visibleDiffs = comparisonResult.left_lines.filter(d => d.type !== 'equal')
-    const maxIndex = visibleDiffs.length - 1
-    
-    if (direction === 'next' && currentDiffIndex < maxIndex) {
-      setCurrentDiffIndex(currentDiffIndex + 1)
-    } else if (direction === 'prev' && currentDiffIndex > 0) {
-      setCurrentDiffIndex(currentDiffIndex - 1)
+    if (direction === 'next') {
+      diffNav.nextDiff()
+    } else {
+      diffNav.prevDiff()
     }
   }
 
-  const getLeftLineClass = (type: DiffLine['type']) => {
-    switch (type) {
-      case 'delete': return 'bg-red-50 text-red-900'
-      case 'replace': return 'bg-yellow-50 text-yellow-900'
-      case 'equal': return 'bg-white'
-      case 'empty': return 'bg-gray-100'
-      default: return 'bg-white'
-    }
-  }
-
-  const getRightLineClass = (type: DiffLine['type']) => {
-    switch (type) {
-      case 'insert': return 'bg-green-50 text-green-900'
-      case 'replace': return 'bg-yellow-50 text-yellow-900'
-      case 'equal': return 'bg-white'
-      case 'empty': return 'bg-gray-100'
-      default: return 'bg-white'
-    }
-  }
 
   return (
     <div key="unique-id-gc-1" className="space-y-6">
@@ -348,131 +156,57 @@ export default function GitCompare() {
         </div>
         <div key="unique-id-gc-10" className="p-6 bg-gradient-to-b from-white to-gray-50">
           <div key="unique-id-gc-11" className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div key="unique-id-gc-repo" className="space-y-2">
-              <Label key="unique-id-gc-repo-label">Repository</Label>
-              <Select key="unique-id-gc-repo-select" value={selectedRepo?.id.toString() || '__none__'} onValueChange={(value) => {
-                const repoId = value === '__none__' ? null : parseInt(value)
-                const repo = repositories.find(r => r.id === repoId)
-                setSelectedRepo(repo || null)
-                // Clear dependent state when repo changes
-                setBranches([])
-                setSelectedBranch('')
-                setCommits([])
+            <RepositorySelector
+              repositories={repositories}
+              selectedRepo={selectedRepo}
+              onSelectRepo={(repo) => {
+                setSelectedRepo(repo)
+                // Clear commit selections when repo changes
                 setLeftCommit('')
                 setRightCommit('')
                 setComparisonResult(null)
                 setShowComparison(false)
-              }}>
-                <SelectTrigger key="unique-id-gc-repo-trigger" className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                  <SelectValue placeholder="Select repository" />
-                </SelectTrigger>
-                <SelectContent key="unique-id-gc-repo-content">
-                  <SelectItem key="unique-id-gc-repo-none" value="__none__">Select repository...</SelectItem>
-                  {repositories
-                    .filter(repo => repo.is_active)
-                    .map((repo) => (
-                      <SelectItem key={`unique-id-gc-repo-${repo.id}`} value={repo.id.toString()}>
-                        {repo.name} ({repo.category})
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div key="unique-id-gc-12" className="space-y-2">
-                <Label key="unique-id-gc-13">Branch</Label>
-              <Select key="unique-id-gc-14" value={selectedBranch || '__none__'} onValueChange={(value) => {
-                const newValue = value === '__none__' ? '' : value
-                setSelectedBranch(newValue)
-                if (newValue) {
-                  loadCommitsForBranch(newValue)
-                }
-              }}>
-                <SelectTrigger key="unique-id-gc-15" className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                  <SelectValue placeholder="Select branch" />
-                </SelectTrigger>
-                <SelectContent key="unique-id-gc-16">
-                  <SelectItem key="unique-id-gc-17" value="__none__">Select branch...</SelectItem>
-                  {branches.map((branch) => (
-                    <SelectItem key={branch.name} value={branch.name}>
-                      {branch.name}{branch.current ? ' (current)' : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              }}
+            />
 
-            <div key="unique-id-gc-19" className="space-y-2">
-              <Label key="unique-id-gc-20">Source Commit</Label>
-              <Select key="unique-id-gc-21" value={leftCommit || '__none__'} onValueChange={(value) => {
-                setLeftCommit(value === '__none__' ? '' : value)
-              }}>
-                <SelectTrigger key="unique-id-gc-22" className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                  <SelectValue placeholder="Select source commit" />
-                </SelectTrigger>
-                <SelectContent key="unique-id-gc-23">
-                  <SelectItem key="unique-id-gc-24" value="__none__">Select source commit...</SelectItem>
-                  {commits.map((commit) => (
-                    <SelectItem key={commit.hash} value={commit.hash}>
-                      {commit.short_hash} - {commit.message.substring(0, 50)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <BranchSelector
+              branches={branches}
+              selectedBranch={selectedBranch}
+              onSelectBranch={setSelectedBranch}
+              disabled={!selectedRepo}
+            />
 
-            <div key="unique-id-gc-26" className="space-y-2">
-              <Label key="unique-id-gc-27">Target Commit</Label>
-              <Select key="unique-id-gc-28" value={rightCommit || '__none__'} onValueChange={(value) => {
-                setRightCommit(value === '__none__' ? '' : value)
-              }}>
-                <SelectTrigger key="unique-id-gc-29" className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                  <SelectValue placeholder="Select target commit" />
-                </SelectTrigger>
-                <SelectContent key="unique-id-gc-30">
-                  <SelectItem key="unique-id-gc-31" value="__none__">Select target commit...</SelectItem>
-                  {commits.map((commit) => (
-                    <SelectItem key={commit.hash} value={commit.hash}>
-                      {commit.short_hash} - {commit.message.substring(0, 50)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <CommitSelector
+              commits={commits}
+              selectedCommit={leftCommit}
+              onSelectCommit={setLeftCommit}
+              label="Source Commit"
+              placeholder="Select source commit"
+              disabled={!selectedBranch}
+            />
+
+            <CommitSelector
+              commits={commits}
+              selectedCommit={rightCommit}
+              onSelectCommit={setRightCommit}
+              label="Target Commit"
+              placeholder="Select target commit"
+              disabled={!selectedBranch}
+            />
           </div>
 
-          <div key="unique-id-gc-33" className="space-y-2" ref={gitSearchRef}>
-            <Label key="unique-id-gc-34">File to Compare</Label>
-            <div key="unique-id-gc-35" className="relative">
-              <Input
-                key="unique-id-gc-36"
-                placeholder="Search for file..."
-                value={gitFileSearch}
-                onChange={(e) => {
-                  setGitFileSearch(e.target.value)
-                  setShowGitResults(e.target.value.length > 0)
-                }}
-                onFocus={() => setShowGitResults(gitFileSearch.length > 0)}
-                className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
-              />
-              {showGitResults && (
-                <div key="unique-id-gc-37" className="absolute top-full left-0 right-0 z-[9999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto">
-                  {searchFiles(gitFileSearch, gitFiles || []).map((file) => (
-                    <div
-                      key={file.path}
-                      className="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                      onClick={() => handleGitFileSelect(file)}
-                    >
-                      <div className="font-medium text-sm">{file.name}</div>
-                      <div className="text-xs text-gray-500">{file.path}</div>
-                    </div>
-                  ))}
-                  {searchFiles(gitFileSearch, gitFiles || []).length === 0 && (
-                    <div key="unique-id-gc-41" className="p-2 text-sm text-gray-500">No files found</div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+          <FileSearchInput
+            label="File to Compare"
+            placeholder="Search for file..."
+            searchQuery={fileSearch.searchQuery}
+            onSearchQueryChange={fileSearch.setSearchQuery}
+            showResults={fileSearch.showResults}
+            onShowResultsChange={fileSearch.setShowResults}
+            filteredFiles={fileSearch.filteredFiles}
+            onFileSelect={fileSearch.setSelectedFile}
+            searchRef={fileSearch.searchRef}
+            disabled={!selectedRepo}
+          />
         </div>
       </div>
 
@@ -503,56 +237,17 @@ export default function GitCompare() {
               )}
               <span key="unique-id-gc-50">Compare Commits</span>
             </Button>
-              
-              {comparisonResult && (
-                <Button 
-                  key="unique-id-gc-51"
-                  variant="outline" 
-                  onClick={exportDiff}
-                  className="flex items-center gap-2"
-                >
-                  <Download key="unique-id-gc-52" className="h-4 w-4" />
-                  <span key="unique-id-gc-53">Export Diff</span>
-                </Button>
-              )}
             </div>
 
-            <div key="unique-id-gc-54" className="flex items-center gap-2">
-              {comparisonResult && (
-                <div key="unique-id-font-selector" className="flex items-center gap-2">
-                  <Label key="unique-id-font-label" className="text-sm">Font Size:</Label>
-                  <Select key="unique-id-font-select" value={fontSize.toString()} onValueChange={(value) => setFontSize(parseInt(value))}>
-                    <SelectTrigger key="unique-id-font-trigger" className="w-20 h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                      <SelectValue key="unique-id-font-value" />
-                    </SelectTrigger>
-                    <SelectContent key="unique-id-font-content">
-                      {[8, 10, 12, 14, 16].map((size) => (
-                        <SelectItem key={`unique-id-font-item-${size}`} value={size.toString()}>{size}px</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              <Button
-                key="unique-id-gc-55"
-                variant="outline"
-                size="sm"
-                onClick={() => setHideUnchanged(!hideUnchanged)}
-                className="flex items-center gap-2"
-              >
-                {hideUnchanged ? (
-                  <>
-                    <Eye key="unique-id-gc-56" className="h-4 w-4" />
-                    <span key="unique-id-gc-57">Show Unchanged</span>
-                  </>
-                ) : (
-                  <>
-                    <EyeOff key="unique-id-gc-58" className="h-4 w-4" />
-                    <span key="unique-id-gc-59">Hide Unchanged</span>
-                  </>
-                )}
-              </Button>
-            </div>
+            {comparisonResult && (
+              <DiffControls
+                fontSize={diffNav.fontSize}
+                onFontSizeChange={diffNav.setFontSize}
+                hideUnchanged={diffNav.hideUnchanged}
+                onHideUnchangedToggle={diffNav.toggleHideUnchanged}
+                onExport={exportDiff}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -585,7 +280,7 @@ export default function GitCompare() {
                     size="sm"
                     variant="outline"
                     onClick={() => navigateDiff('prev')}
-                    disabled={currentDiffIndex === 0}
+                    disabled={diffNav.currentIndex === 0}
                     className="bg-white/20 border-white/30 text-white hover:bg-white/30"
                   >
                     <ChevronUp key="unique-id-gc-77" className="h-4 w-4" />
@@ -597,7 +292,7 @@ export default function GitCompare() {
                     onClick={() => navigateDiff('next')}
                     disabled={(() => {
                       const visibleDiffs = comparisonResult.left_lines.filter(d => d.type !== 'equal')
-                      return currentDiffIndex >= visibleDiffs.length - 1
+                      return diffNav.currentIndex >= visibleDiffs.length - 1
                     })()}
                     className="bg-white/20 border-white/30 text-white hover:bg-white/30"
                   >
@@ -620,10 +315,10 @@ export default function GitCompare() {
             <div 
               key="unique-id-gc-83"
               className="border rounded-lg overflow-auto font-mono"
-              style={{ fontSize: `${fontSize}px`, maxHeight: '600px' }}
+              style={{ fontSize: `${diffNav.fontSize}px`, maxHeight: '600px' }}
             >
               {/* Side-by-side comparison header */}
-              <div key="unique-id-gc-header" className="grid grid-cols-2 bg-gray-100 border-b sticky top-0" style={{ fontSize: `${Math.max(fontSize - 2, 8)}px` }}>
+              <div key="unique-id-gc-header" className="grid grid-cols-2 bg-gray-100 border-b sticky top-0" style={{ fontSize: `${Math.max(diffNav.fontSize - 2, 8)}px` }}>
                 <div key="unique-id-gc-left-header" className="p-2 border-r font-semibold text-gray-700">
                   {comparisonResult.commit1}: {comparisonResult.left_file}
                 </div>
@@ -642,8 +337,8 @@ export default function GitCompare() {
                   const leftLine = comparisonResult.left_lines[i]
                   const rightLine = comparisonResult.right_lines[i]
                   
-                  // Skip if both lines are equal and hideUnchanged is true
-                  if (hideUnchanged && leftLine?.type === 'equal' && rightLine?.type === 'equal') {
+                  // Skip if both lines are equal and diffNav.hideUnchanged is true
+                  if (diffNav.hideUnchanged && leftLine?.type === 'equal' && rightLine?.type === 'equal') {
                     continue
                   }
                   
