@@ -94,7 +94,7 @@ export function ExecutionResults({ results, summary }: ExecutionResultsProps) {
             </TableHeader>
             <TableBody>
               {results.map((result, index) => (
-                <Fragment key={`${result.device}-${index}`}>
+                <Fragment key={result.device || `result-${index}`}>
                   <TableRow className="hover:bg-gray-50">
                     <TableCell>
                       {getResultIcon(result.success)}

@@ -198,7 +198,9 @@ async def get_files(
 
 @router.get("/files/{file_path:path}/history")
 async def get_file_history(
-    repo_id: int, file_path: str, current_user: dict = Depends(require_permission("git.repositories", "read"))
+    repo_id: int,
+    file_path: str,
+    current_user: dict = Depends(require_permission("git.repositories", "read")),
 ):
     """Get the last change information for a specific file."""
     try:

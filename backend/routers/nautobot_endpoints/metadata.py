@@ -4,7 +4,6 @@ Nautobot metadata and lookup endpoints.
 
 from __future__ import annotations
 import logging
-from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
@@ -13,7 +12,9 @@ from services import nautobot_service, offboarding_service
 from services.cache_service import cache_service
 
 logger = logging.getLogger(__name__)
-router = APIRouter(tags=["nautobot-metadata"])  # No prefix - endpoints at /api/nautobot root
+router = APIRouter(
+    tags=["nautobot-metadata"]
+)  # No prefix - endpoints at /api/nautobot root
 
 # Cache configuration
 DEVICE_CACHE_TTL = 30 * 60  # 30 minutes in seconds

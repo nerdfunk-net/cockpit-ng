@@ -373,7 +373,7 @@ export function AddDevicePage() {
       const workflowStatus = result.workflow_status
       const summary = result.summary
       
-      let statusMessages: string[] = []
+      const statusMessages: string[] = []
       let hasErrors = false
       let hasWarnings = false
 
@@ -392,7 +392,7 @@ export function AddDevicePage() {
         statusMessages.push(`⚠ ${workflowStatus.step2_ip_addresses.message}`)
         hasWarnings = true
         // Show which IPs failed
-        workflowStatus.step2_ip_addresses.errors.forEach((err: any) => {
+        workflowStatus.step2_ip_addresses.errors.forEach((err: { ip_address: string; interface: string; error: string }) => {
           statusMessages.push(`  - Failed: ${err.ip_address} (${err.interface}): ${err.error}`)
         })
       } else if (workflowStatus.step2_ip_addresses.status === 'failed') {
@@ -406,7 +406,7 @@ export function AddDevicePage() {
       if (workflowStatus.step3_interfaces.status === 'success') {
         statusMessages.push(`✓ Created ${summary.interfaces_created} interface(s)`)
         // Show IP assignment details
-        const ipAssignments = workflowStatus.step3_interfaces.data.filter((iface: any) => iface.ip_assigned)
+        const ipAssignments = workflowStatus.step3_interfaces.data.filter((iface: { ip_assigned: boolean }) => iface.ip_assigned)
         if (ipAssignments.length > 0) {
           statusMessages.push(`  - Assigned ${ipAssignments.length} IP address(es) to interfaces`)
         }
@@ -414,7 +414,7 @@ export function AddDevicePage() {
         statusMessages.push(`⚠ ${workflowStatus.step3_interfaces.message}`)
         hasWarnings = true
         // Show which interfaces failed
-        workflowStatus.step3_interfaces.errors.forEach((err: any) => {
+        workflowStatus.step3_interfaces.errors.forEach((err: { interface: string; error: string }) => {
           statusMessages.push(`  - Failed: ${err.interface}: ${err.error}`)
         })
       } else if (workflowStatus.step3_interfaces.status === 'failed') {

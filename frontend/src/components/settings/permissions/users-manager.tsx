@@ -136,7 +136,7 @@ export function UsersManager() {
     try {
       if (editingUser) {
         // Update existing user
-        const payload: any = {}
+        const payload: Record<string, string | boolean> = {}
         if (formData.realname) payload.realname = formData.realname
         if (formData.email) payload.email = formData.email
         if (formData.password) payload.password = formData.password

@@ -19,6 +19,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 from config import settings as config_settings
+import user_db_manager as user_db
 
 # Logger
 logger = logging.getLogger(__name__)
@@ -591,8 +592,6 @@ def check_all_permissions(user_id: int, resource: str, actions: List[str]) -> bo
 # User Management Functions (Bridge to user_db_manager)
 # ============================================================================
 
-import user_db_manager as user_db
-
 
 def create_user_with_roles(
     username: str,
@@ -604,7 +603,7 @@ def create_user_with_roles(
     is_active: bool = True,
 ) -> Dict[str, Any]:
     """Create user and assign roles in one operation.
-    
+
     Args:
         username: Unique username
         realname: User's real name
@@ -613,10 +612,10 @@ def create_user_with_roles(
         role_ids: List of role IDs to assign to user
         debug: Enable debug mode for user
         is_active: User account active status
-        
+
     Returns:
         Dictionary with user details
-        
+
     Raises:
         ValueError: If username already exists or role_id is invalid
     """
@@ -630,7 +629,7 @@ def create_user_with_roles(
         debug=debug,
         is_active=is_active,
     )
-    
+
     # Assign roles in rbac.db
     if role_ids:
         for role_id in role_ids:
@@ -640,49 +639,51 @@ def create_user_with_roles(
                 # Rollback: delete the user we just created
                 user_db.hard_delete_user(user["id"])
                 raise ValueError(f"Role with id {role_id} not found")
-            
+
             assign_role_to_user(user["id"], role_id)
-    
+
     return user
 
 
-def get_user_with_rbac(user_id: int, include_inactive: bool = False) -> Optional[Dict[str, Any]]:
+def get_user_with_rbac(
+    user_id: int, include_inactive: bool = False
+) -> Optional[Dict[str, Any]]:
     """Get user with their roles and effective permissions.
-    
+
     Args:
         user_id: User ID
         include_inactive: Include inactive users
-        
+
     Returns:
         Dictionary with user details, roles, and permissions, or None if not found
     """
     user = user_db.get_user_by_id(user_id, include_inactive=include_inactive)
     if not user:
         return None
-    
+
     # Add RBAC data
     user["roles"] = get_user_roles(user_id)
     user["permissions"] = get_user_permissions(user_id)
-    
+
     return user
 
 
 def list_users_with_rbac(include_inactive: bool = True) -> List[Dict[str, Any]]:
     """List all users with their roles and permissions.
-    
+
     Args:
         include_inactive: Include inactive users in the list
-        
+
     Returns:
         List of user dictionaries with roles and permissions
     """
     users = user_db.get_all_users(include_inactive=include_inactive)
-    
+
     # Add role and permission information to each user
     for user in users:
         user["roles"] = get_user_roles(user["id"])
         user["permissions"] = get_user_permissions(user["id"])
-    
+
     return users
 
 
@@ -695,7 +696,7 @@ def update_user_profile(
     is_active: Optional[bool] = None,
 ) -> Optional[Dict[str, Any]]:
     """Update user profile (delegates to user_db_manager).
-    
+
     Args:
         user_id: User ID
         realname: New real name
@@ -703,7 +704,7 @@ def update_user_profile(
         password: New password (will be hashed)
         debug: Enable/disable debug mode
         is_active: Enable/disable account
-        
+
     Returns:
         Updated user dictionary or None if not found
     """
@@ -720,17 +721,17 @@ def update_user_profile(
 
 def delete_user_with_rbac(user_id: int) -> bool:
     """Delete user and all RBAC associations.
-    
+
     This cascades to remove:
     - All role assignments
     - All permission overrides
     - Private credentials owned by the user
     - User profile
     - The user account itself
-    
+
     Args:
         user_id: User ID
-        
+
     Returns:
         True if user was deleted, False if not found
     """
@@ -738,53 +739,57 @@ def delete_user_with_rbac(user_id: int) -> bool:
     user = user_db.get_user_by_id(user_id, include_inactive=True)
     if not user:
         return False
-    
+
     username = user.get("username")
-    
+
     # Remove all role assignments
     roles = get_user_roles(user_id)
     for role in roles:
         remove_role_from_user(user_id, role["id"])
-    
+
     # Remove all permission overrides
     overrides = get_user_permission_overrides(user_id)
     for override in overrides:
         remove_permission_from_user(user_id, override["id"])
-    
+
     # Delete user's private credentials
     if username:
         try:
             import credentials_manager
+
             deleted_count = credentials_manager.delete_credentials_by_owner(username)
-            logger.info(f"Deleted {deleted_count} private credentials for user {username}")
+            logger.info(
+                f"Deleted {deleted_count} private credentials for user {username}"
+            )
         except Exception as e:
             logger.warning(f"Failed to delete credentials for user {username}: {e}")
-    
+
     # Delete user profile
     if username:
         try:
             import profile_manager
+
             profile_manager.delete_user_profile(username)
             logger.info(f"Deleted profile for user {username}")
         except Exception as e:
             logger.warning(f"Failed to delete profile for user {username}: {e}")
-    
+
     # Delete user from users.db
     return user_db.hard_delete_user(user_id)
 
 
 def bulk_delete_users_with_rbac(user_ids: List[int]) -> Tuple[int, List[str]]:
     """Bulk delete users with RBAC cleanup.
-    
+
     Args:
         user_ids: List of user IDs to delete
-        
+
     Returns:
         Tuple of (success_count, error_messages)
     """
     success_count = 0
     errors = []
-    
+
     for user_id in user_ids:
         try:
             if delete_user_with_rbac(user_id):
@@ -793,37 +798,37 @@ def bulk_delete_users_with_rbac(user_ids: List[int]) -> Tuple[int, List[str]]:
                 errors.append(f"User {user_id} not found")
         except Exception as e:
             errors.append(f"User {user_id}: {str(e)}")
-    
+
     return success_count, errors
 
 
 def toggle_user_activation(user_id: int) -> Optional[Dict[str, Any]]:
     """Toggle user active status.
-    
+
     Args:
         user_id: User ID
-        
+
     Returns:
         Updated user dictionary or None if not found
     """
     user = user_db.get_user_by_id(user_id, include_inactive=True)
     if not user:
         return None
-    
+
     return user_db.update_user(user_id, is_active=not user["is_active"])
 
 
 def toggle_user_debug(user_id: int) -> Optional[Dict[str, Any]]:
     """Toggle user debug mode.
-    
+
     Args:
         user_id: User ID
-        
+
     Returns:
         Updated user dictionary or None if not found
     """
     user = user_db.get_user_by_id(user_id)
     if not user:
         return None
-    
+
     return user_db.update_user(user_id, debug=not user["debug"])

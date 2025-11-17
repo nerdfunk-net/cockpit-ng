@@ -139,7 +139,8 @@ def get_cached_commits(repo_id: int, branch_name: str, repo_path: str, limit: in
 
 @router.get("/status")
 async def get_repository_status(
-    repo_id: int, current_user: dict = Depends(require_permission("git.operations", "execute"))
+    repo_id: int,
+    current_user: dict = Depends(require_permission("git.operations", "execute")),
 ):
     """Get the status of a specific repository (exists, sync status, commit info)."""
     try:
@@ -338,7 +339,8 @@ async def get_repository_status(
 
 @router.post("/sync")
 async def sync_repository(
-    repo_id: int, current_user: dict = Depends(require_permission("git.operations", "execute"))
+    repo_id: int,
+    current_user: dict = Depends(require_permission("git.operations", "execute")),
 ):
     """Sync a git repository (clone if not exists, pull if exists)."""
     try:
@@ -480,7 +482,8 @@ async def sync_repository(
 
 @router.post("/remove-and-sync")
 async def remove_and_sync_repository(
-    repo_id: int, current_user: dict = Depends(require_permission("git.operations", "execute"))
+    repo_id: int,
+    current_user: dict = Depends(require_permission("git.operations", "execute")),
 ):
     """Remove existing repository and clone fresh copy."""
     try:
@@ -602,7 +605,8 @@ async def remove_and_sync_repository(
 
 @router.get("/info")
 async def get_repository_info(
-    repo_id: int, current_user: dict = Depends(require_permission("git.operations", "execute"))
+    repo_id: int,
+    current_user: dict = Depends(require_permission("git.operations", "execute")),
 ):
     """Get detailed information about a repository."""
     try:
@@ -664,7 +668,10 @@ async def get_repository_info(
 
 
 @router.get("/debug")
-async def debug_git(repo_id: int, current_user: dict = Depends(require_permission("git.operations", "execute"))):
+async def debug_git(
+    repo_id: int,
+    current_user: dict = Depends(require_permission("git.operations", "execute")),
+):
     """Debug Git setup."""
     try:
         repo = get_git_repo_by_id(repo_id)

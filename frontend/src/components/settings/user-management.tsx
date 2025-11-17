@@ -39,7 +39,7 @@ interface User {
   realname: string
   email?: string
   roles: Role[]
-  permissions: any[]
+  permissions: Array<{ resource: string; action: string }>
   debug: boolean
   is_active: boolean
   created_at: string
@@ -152,7 +152,7 @@ export default function UserManagement() {
     try {
       if (editingUser) {
         // Update user - only send changed fields
-        const payload: any = {}
+        const payload: Record<string, string | boolean> = {}
         if (formData.realname) payload.realname = formData.realname
         if (formData.email) payload.email = formData.email
         if (formData.password) payload.password = formData.password

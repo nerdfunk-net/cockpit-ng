@@ -56,7 +56,8 @@ async def get_repositories(
 
 @router.get("/{repo_id}", response_model=GitRepositoryResponse)
 async def get_repository(
-    repo_id: int, current_user: dict = Depends(require_permission("git.repositories", "read"))
+    repo_id: int,
+    current_user: dict = Depends(require_permission("git.repositories", "read")),
 ):
     """Get a specific git repository by ID."""
     try:
@@ -77,7 +78,8 @@ async def get_repository(
 
 @router.get("/{repo_id}/edit")
 async def get_repository_for_edit(
-    repo_id: int, current_user: dict = Depends(require_permission("git.repositories", "write"))
+    repo_id: int,
+    current_user: dict = Depends(require_permission("git.repositories", "write")),
 ):
     """Get a specific git repository by ID with all fields for editing."""
     try:
@@ -96,7 +98,8 @@ async def get_repository_for_edit(
 
 @router.post("/", response_model=GitRepositoryResponse)
 async def create_repository(
-    repository: GitRepositoryRequest, current_user: dict = Depends(require_permission("git.repositories", "write"))
+    repository: GitRepositoryRequest,
+    current_user: dict = Depends(require_permission("git.repositories", "write")),
 ):
     """Create a new git repository."""
     try:
@@ -290,7 +293,9 @@ async def test_git_connection(
 
 
 @router.get("/health")
-async def health_check(current_user: dict = Depends(require_permission("git.repositories", "read"))):
+async def health_check(
+    current_user: dict = Depends(require_permission("git.repositories", "read")),
+):
     """Health check for git repository management."""
     try:
         health = git_repo_manager.health_check()

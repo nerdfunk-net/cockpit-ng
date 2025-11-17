@@ -139,7 +139,8 @@ class TemplateExecutionResponse(BaseModel):
 
 @router.post("/execute-commands", response_model=CommandExecutionResponse)
 async def execute_commands(
-    request: DeviceCommand, current_user: dict = Depends(require_permission("network.netmiko", "execute"))
+    request: DeviceCommand,
+    current_user: dict = Depends(require_permission("network.netmiko", "execute")),
 ) -> CommandExecutionResponse:
     """
     Execute commands on multiple network devices using Netmiko.
@@ -193,7 +194,9 @@ async def execute_commands(
                     include_expired=False, source="private"
                 )
                 user_private = [
-                    c for c in private_creds if c.get("owner") == current_user["username"]
+                    c
+                    for c in private_creds
+                    if c.get("owner") == current_user["username"]
                 ]
                 credentials = general_creds + user_private
 
@@ -331,7 +334,8 @@ async def get_supported_platforms(
 
 @router.post("/cancel/{session_id}")
 async def cancel_execution(
-    session_id: str, current_user: dict = Depends(require_permission("network.netmiko", "execute"))
+    session_id: str,
+    current_user: dict = Depends(require_permission("network.netmiko", "execute")),
 ) -> Dict[str, Any]:
     """
     Cancel an ongoing command execution session.
@@ -364,7 +368,8 @@ async def cancel_execution(
 
 @router.post("/execute-template", response_model=TemplateExecutionResponse)
 async def execute_template(
-    request: TemplateExecutionRequest, current_user: dict = Depends(require_permission("network.netmiko", "execute"))
+    request: TemplateExecutionRequest,
+    current_user: dict = Depends(require_permission("network.netmiko", "execute")),
 ) -> TemplateExecutionResponse:
     """
     Execute a template on multiple network devices.
@@ -445,7 +450,9 @@ async def execute_template(
                         include_expired=False, source="private"
                     )
                     user_private = [
-                        c for c in private_creds if c.get("owner") == current_user["username"]
+                        c
+                        for c in private_creds
+                        if c.get("owner") == current_user["username"]
                     ]
                     credentials = general_creds + user_private
 

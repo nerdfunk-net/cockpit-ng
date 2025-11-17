@@ -41,22 +41,22 @@ async def assign_ip_address_to_interface(
         if "ip_address" not in assignment_data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Missing required field: ip_address"
+                detail="Missing required field: ip_address",
             )
         if "interface" not in assignment_data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Missing required field: interface"
+                detail="Missing required field: interface",
             )
 
         endpoint = "ipam/ip-address-to-interface/"
         result = await nautobot_service.rest_request(
-            endpoint,
-            method="POST",
-            data=assignment_data
+            endpoint, method="POST", data=assignment_data
         )
 
-        logger.info(f"Assigned IP address {assignment_data.get('ip_address')} to interface {assignment_data.get('interface')}")
+        logger.info(
+            f"Assigned IP address {assignment_data.get('ip_address')} to interface {assignment_data.get('interface')}"
+        )
         return result
 
     except HTTPException:

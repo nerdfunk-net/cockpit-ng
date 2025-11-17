@@ -319,7 +319,9 @@ async def cleanup_old_jobs(
 
 
 @router.get("/", response_model=JobListResponse)
-async def get_jobs(limit: int = 100, _: dict = Depends(require_permission("jobs", "read"))):
+async def get_jobs(
+    limit: int = 100, _: dict = Depends(require_permission("jobs", "read"))
+):
     """Get all jobs from the new job database"""
     try:
         jobs_data = job_db_service.get_jobs(limit=limit)
@@ -355,7 +357,9 @@ async def get_jobs(limit: int = 100, _: dict = Depends(require_permission("jobs"
 
 
 @router.get("/{job_id}", response_model=JobDetailResponse)
-async def get_job_details(job_id: str, _: dict = Depends(require_permission("jobs", "read"))):
+async def get_job_details(
+    job_id: str, _: dict = Depends(require_permission("jobs", "read"))
+):
     """Get detailed job information including device results"""
     logger.info(f"=== JOB DETAILS REQUEST for job_id: {job_id} ===")
     try:
@@ -433,7 +437,9 @@ async def get_job_details(job_id: str, _: dict = Depends(require_permission("job
 
 
 @router.delete("/{job_id}")
-async def delete_job(job_id: str, _: dict = Depends(require_permission("jobs", "delete"))):
+async def delete_job(
+    job_id: str, _: dict = Depends(require_permission("jobs", "delete"))
+):
     """Delete a job and its results from the database"""
     try:
         success = job_db_service.delete_job(job_id)

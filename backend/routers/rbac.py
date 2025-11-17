@@ -628,7 +628,9 @@ async def toggle_user_activation(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error toggling activation for user {user_id}: {str(e)}", exc_info=True)
+        logger.error(
+            f"Error toggling activation for user {user_id}: {str(e)}", exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to toggle user activation",
@@ -653,7 +655,9 @@ async def toggle_user_debug(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error toggling debug for user {user_id}: {str(e)}", exc_info=True)
+        logger.error(
+            f"Error toggling debug for user {user_id}: {str(e)}", exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to toggle user debug mode",

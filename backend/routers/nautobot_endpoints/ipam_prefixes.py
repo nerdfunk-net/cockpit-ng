@@ -96,7 +96,9 @@ async def get_ipam_prefix(
     except Exception as e:
         logger.error(f"Failed to get IPAM prefix {prefix_id}: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_404_NOT_FOUND
+            if "404" in str(e)
+            else status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve IPAM prefix: {str(e)}",
         )
 
@@ -132,19 +134,17 @@ async def create_ipam_prefix(
         if "prefix" not in prefix_data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Missing required field: prefix"
+                detail="Missing required field: prefix",
             )
         if "namespace" not in prefix_data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Missing required field: namespace"
+                detail="Missing required field: namespace",
             )
 
         endpoint = "ipam/prefixes/"
         result = await nautobot_service.rest_request(
-            endpoint,
-            method="POST",
-            data=prefix_data
+            endpoint, method="POST", data=prefix_data
         )
 
         logger.info(f"Created prefix {prefix_data.get('prefix')} in Nautobot IPAM")
@@ -190,7 +190,7 @@ async def update_ipam_prefix(
         result = await nautobot_service.rest_request(
             endpoint,
             method="PATCH",  # Use PATCH for partial updates
-            data=prefix_data
+            data=prefix_data,
         )
 
         logger.info(f"Updated prefix {prefix_id} in Nautobot IPAM")
@@ -199,7 +199,9 @@ async def update_ipam_prefix(
     except Exception as e:
         logger.error(f"Failed to update IPAM prefix {prefix_id}: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_404_NOT_FOUND
+            if "404" in str(e)
+            else status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update IPAM prefix: {str(e)}",
         )
 
@@ -225,6 +227,8 @@ async def delete_ipam_prefix(
     except Exception as e:
         logger.error(f"Failed to delete IPAM prefix {prefix_id}: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_404_NOT_FOUND
+            if "404" in str(e)
+            else status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete IPAM prefix: {str(e)}",
         )

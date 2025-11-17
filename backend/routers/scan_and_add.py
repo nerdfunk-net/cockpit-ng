@@ -19,9 +19,7 @@ from git_repositories_manager import GitRepositoryManager
 """API router for Scan & Add wizard operations."""
 
 logger = logging.getLogger(__name__)
-router = APIRouter(
-    prefix="/api/scan", tags=["scan"]
-)
+router = APIRouter(prefix="/api/scan", tags=["scan"])
 
 
 # Request/Response Models
@@ -149,7 +147,8 @@ class OnboardResponse(BaseModel):
 # API Endpoints
 @router.post("/start", response_model=ScanStartResponse)
 async def start_scan(
-    request: ScanStartRequest, current_user: dict = Depends(require_permission("scan", "execute"))
+    request: ScanStartRequest,
+    current_user: dict = Depends(require_permission("scan", "execute")),
 ):
     """Start a new network scan job."""
     try:

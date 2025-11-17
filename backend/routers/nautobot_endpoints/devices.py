@@ -19,7 +19,6 @@ from services import nautobot_service
 from services.cache_service import cache_service
 from services.nautobot_helpers.cache_helpers import (
     DEVICE_CACHE_TTL,
-    get_device_cache_key,
     get_device_list_cache_key,
     cache_device,
     get_cached_device,
@@ -28,7 +27,9 @@ from services.nautobot_helpers.cache_helpers import (
 )
 
 logger = logging.getLogger(__name__)
-router = APIRouter(tags=["nautobot-devices"])  # No prefix - endpoints define their own paths
+router = APIRouter(
+    tags=["nautobot-devices"]
+)  # No prefix - endpoints define their own paths
 
 
 @router.get("/test")
@@ -784,8 +785,18 @@ async def add_device(
         # Initialize workflow status tracking
         workflow_status = {
             "step1_device": {"status": "pending", "message": "", "data": None},
-            "step2_ip_addresses": {"status": "pending", "message": "", "data": [], "errors": []},
-            "step3_interfaces": {"status": "pending", "message": "", "data": [], "errors": []},
+            "step2_ip_addresses": {
+                "status": "pending",
+                "message": "",
+                "data": [],
+                "errors": [],
+            },
+            "step3_interfaces": {
+                "status": "pending",
+                "message": "",
+                "data": [],
+                "errors": [],
+            },
             "step4_primary_ip": {"status": "pending", "message": "", "data": None},
         }
 
@@ -803,56 +814,71 @@ async def add_device(
             }
 
             device_response = await nautobot_service.rest_request(
-                endpoint="dcim/devices/",
-                method="POST",
-                data=device_payload
+                endpoint="dcim/devices/", method="POST", data=device_payload
             )
 
             if not device_response or "id" not in device_response:
                 workflow_status["step1_device"]["status"] = "failed"
-                workflow_status["step1_device"]["message"] = "Failed to create device: No device ID returned"
+                workflow_status["step1_device"]["message"] = (
+                    "Failed to create device: No device ID returned"
+                )
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to create device: No device ID returned"
+                    detail="Failed to create device: No device ID returned",
                 )
 
             device_id = device_response["id"]
             workflow_status["step1_device"]["status"] = "success"
-            workflow_status["step1_device"]["message"] = f"Device '{request.name}' created successfully"
-            workflow_status["step1_device"]["data"] = {"id": device_id, "name": request.name}
+            workflow_status["step1_device"]["message"] = (
+                f"Device '{request.name}' created successfully"
+            )
+            workflow_status["step1_device"]["data"] = {
+                "id": device_id,
+                "name": request.name,
+            }
             logger.info(f"Device created with ID: {device_id}")
 
         except HTTPException:
             raise
         except Exception as e:
             workflow_status["step1_device"]["status"] = "failed"
-            workflow_status["step1_device"]["message"] = f"Error creating device: {str(e)}"
+            workflow_status["step1_device"]["message"] = (
+                f"Error creating device: {str(e)}"
+            )
             logger.error(f"Step 1 failed: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to create device: {str(e)}"
+                detail=f"Failed to create device: {str(e)}",
             )
 
         # Step 2: Create IP addresses for all interfaces
         logger.info("Step 2: Creating IP addresses")
         workflow_status["step2_ip_addresses"]["status"] = "in_progress"
         ip_address_map = {}  # Maps interface name to IP address ID
-        interfaces_with_ips = [iface for iface in request.interfaces if iface.ip_address]
+        interfaces_with_ips = [
+            iface for iface in request.interfaces if iface.ip_address
+        ]
 
         if not interfaces_with_ips:
             workflow_status["step2_ip_addresses"]["status"] = "skipped"
-            workflow_status["step2_ip_addresses"]["message"] = "No IP addresses to create"
+            workflow_status["step2_ip_addresses"]["message"] = (
+                "No IP addresses to create"
+            )
         else:
             for interface in interfaces_with_ips:
                 try:
                     # Validate that namespace is provided
                     if not interface.namespace:
-                        workflow_status["step2_ip_addresses"]["errors"].append({
-                            "interface": interface.name,
-                            "ip_address": interface.ip_address,
-                            "error": "Namespace is required for all IP addresses"
-                        })
-                        logger.error(f"Missing namespace for IP address {interface.ip_address} on interface {interface.name}")
+                        workflow_status["step2_ip_addresses"]["errors"].append(
+                            {
+                                "interface": interface.name,
+                                "ip_address": interface.ip_address,
+                                "error": "Namespace is required for all IP addresses",
+                            }
+                        )
+                        logger.error(
+                            f"Missing namespace for IP address {interface.ip_address} on interface {interface.name}"
+                        )
                         continue
 
                     ip_payload = {
@@ -862,49 +888,65 @@ async def add_device(
                     }
 
                     ip_response = await nautobot_service.rest_request(
-                        endpoint="ipam/ip-addresses/",
-                        method="POST",
-                        data=ip_payload
+                        endpoint="ipam/ip-addresses/", method="POST", data=ip_payload
                     )
 
                     if ip_response and "id" in ip_response:
                         ip_address_map[interface.name] = ip_response["id"]
-                        workflow_status["step2_ip_addresses"]["data"].append({
-                            "interface": interface.name,
-                            "ip_address": interface.ip_address,
-                            "id": ip_response["id"],
-                            "status": "success"
-                        })
-                        logger.info(f"Created IP address {interface.ip_address} with ID: {ip_response['id']}")
+                        workflow_status["step2_ip_addresses"]["data"].append(
+                            {
+                                "interface": interface.name,
+                                "ip_address": interface.ip_address,
+                                "id": ip_response["id"],
+                                "status": "success",
+                            }
+                        )
+                        logger.info(
+                            f"Created IP address {interface.ip_address} with ID: {ip_response['id']}"
+                        )
                     else:
-                        workflow_status["step2_ip_addresses"]["errors"].append({
-                            "interface": interface.name,
-                            "ip_address": interface.ip_address,
-                            "error": "No IP ID returned from Nautobot"
-                        })
-                        logger.warning(f"Failed to create IP address {interface.ip_address} for interface {interface.name}")
+                        workflow_status["step2_ip_addresses"]["errors"].append(
+                            {
+                                "interface": interface.name,
+                                "ip_address": interface.ip_address,
+                                "error": "No IP ID returned from Nautobot",
+                            }
+                        )
+                        logger.warning(
+                            f"Failed to create IP address {interface.ip_address} for interface {interface.name}"
+                        )
 
                 except Exception as e:
                     error_msg = str(e)
-                    workflow_status["step2_ip_addresses"]["errors"].append({
-                        "interface": interface.name,
-                        "ip_address": interface.ip_address,
-                        "error": error_msg
-                    })
-                    logger.error(f"Error creating IP address {interface.ip_address}: {error_msg}")
+                    workflow_status["step2_ip_addresses"]["errors"].append(
+                        {
+                            "interface": interface.name,
+                            "ip_address": interface.ip_address,
+                            "error": error_msg,
+                        }
+                    )
+                    logger.error(
+                        f"Error creating IP address {interface.ip_address}: {error_msg}"
+                    )
 
             success_count = len(workflow_status["step2_ip_addresses"]["data"])
             error_count = len(workflow_status["step2_ip_addresses"]["errors"])
 
             if success_count > 0 and error_count == 0:
                 workflow_status["step2_ip_addresses"]["status"] = "success"
-                workflow_status["step2_ip_addresses"]["message"] = f"Created {success_count} IP address(es) successfully"
+                workflow_status["step2_ip_addresses"]["message"] = (
+                    f"Created {success_count} IP address(es) successfully"
+                )
             elif success_count > 0 and error_count > 0:
                 workflow_status["step2_ip_addresses"]["status"] = "partial"
-                workflow_status["step2_ip_addresses"]["message"] = f"Created {success_count} IP address(es), {error_count} failed"
+                workflow_status["step2_ip_addresses"]["message"] = (
+                    f"Created {success_count} IP address(es), {error_count} failed"
+                )
             else:
                 workflow_status["step2_ip_addresses"]["status"] = "failed"
-                workflow_status["step2_ip_addresses"]["message"] = f"Failed to create all {error_count} IP address(es)"
+                workflow_status["step2_ip_addresses"]["message"] = (
+                    f"Failed to create all {error_count} IP address(es)"
+                )
 
         # Step 3: Create interfaces and assign IP addresses
         logger.info("Step 3: Creating interfaces")
@@ -948,21 +990,21 @@ async def add_device(
                     interface_payload["tags"] = interface.tags
 
                 interface_response = await nautobot_service.rest_request(
-                    endpoint="dcim/interfaces/",
-                    method="POST",
-                    data=interface_payload
+                    endpoint="dcim/interfaces/", method="POST", data=interface_payload
                 )
 
                 if interface_response and "id" in interface_response:
                     interface_id = interface_response["id"]
-                    logger.info(f"Created interface {interface.name} with ID: {interface_id}")
+                    logger.info(
+                        f"Created interface {interface.name} with ID: {interface_id}"
+                    )
 
                     interface_result = {
                         "name": interface.name,
                         "id": interface_id,
                         "status": "success",
                         "ip_assigned": False,
-                        "ip_assignment_error": None
+                        "ip_assignment_error": None,
                     }
 
                     # Assign IP address to interface if we created one
@@ -978,13 +1020,19 @@ async def add_device(
                             await nautobot_service.rest_request(
                                 endpoint="ipam/ip-address-to-interface/",
                                 method="POST",
-                                data=assignment_payload
+                                data=assignment_payload,
                             )
                             interface_result["ip_assigned"] = True
-                            logger.info(f"Assigned IP {interface.ip_address} to interface {interface.name}")
+                            logger.info(
+                                f"Assigned IP {interface.ip_address} to interface {interface.name}"
+                            )
 
                             # Save first IPv4 address for primary IP
-                            if primary_ipv4_id is None and interface.ip_address and "/" in interface.ip_address:
+                            if (
+                                primary_ipv4_id is None
+                                and interface.ip_address
+                                and "/" in interface.ip_address
+                            ):
                                 if ":" not in interface.ip_address:
                                     primary_ipv4_id = ip_id
 
@@ -995,18 +1043,19 @@ async def add_device(
                     workflow_status["step3_interfaces"]["data"].append(interface_result)
                     created_interfaces.append(interface_response)
                 else:
-                    workflow_status["step3_interfaces"]["errors"].append({
-                        "interface": interface.name,
-                        "error": "No interface ID returned from Nautobot"
-                    })
+                    workflow_status["step3_interfaces"]["errors"].append(
+                        {
+                            "interface": interface.name,
+                            "error": "No interface ID returned from Nautobot",
+                        }
+                    )
                     logger.warning(f"Failed to create interface {interface.name}")
 
             except Exception as e:
                 error_msg = str(e)
-                workflow_status["step3_interfaces"]["errors"].append({
-                    "interface": interface.name,
-                    "error": error_msg
-                })
+                workflow_status["step3_interfaces"]["errors"].append(
+                    {"interface": interface.name, "error": error_msg}
+                )
                 logger.error(f"Error creating interface {interface.name}: {error_msg}")
 
         success_count = len(workflow_status["step3_interfaces"]["data"])
@@ -1014,13 +1063,19 @@ async def add_device(
 
         if success_count > 0 and error_count == 0:
             workflow_status["step3_interfaces"]["status"] = "success"
-            workflow_status["step3_interfaces"]["message"] = f"Created {success_count} interface(s) successfully"
+            workflow_status["step3_interfaces"]["message"] = (
+                f"Created {success_count} interface(s) successfully"
+            )
         elif success_count > 0 and error_count > 0:
             workflow_status["step3_interfaces"]["status"] = "partial"
-            workflow_status["step3_interfaces"]["message"] = f"Created {success_count} interface(s), {error_count} failed"
+            workflow_status["step3_interfaces"]["message"] = (
+                f"Created {success_count} interface(s), {error_count} failed"
+            )
         elif success_count == 0 and error_count > 0:
             workflow_status["step3_interfaces"]["status"] = "failed"
-            workflow_status["step3_interfaces"]["message"] = f"Failed to create all {error_count} interface(s)"
+            workflow_status["step3_interfaces"]["message"] = (
+                f"Failed to create all {error_count} interface(s)"
+            )
         else:
             workflow_status["step3_interfaces"]["status"] = "skipped"
             workflow_status["step3_interfaces"]["message"] = "No interfaces to create"
@@ -1033,23 +1088,31 @@ async def add_device(
             success = await _assign_primary_ipv4(device_id, primary_ipv4_id)
             if success:
                 workflow_status["step4_primary_ip"]["status"] = "success"
-                workflow_status["step4_primary_ip"]["message"] = "Primary IPv4 assignment (skeleton)"
+                workflow_status["step4_primary_ip"]["message"] = (
+                    "Primary IPv4 assignment (skeleton)"
+                )
                 workflow_status["step4_primary_ip"]["data"] = {"ip_id": primary_ipv4_id}
                 logger.info(f"Primary IPv4 assigned: {primary_ipv4_id}")
             else:
                 workflow_status["step4_primary_ip"]["status"] = "failed"
-                workflow_status["step4_primary_ip"]["message"] = "Failed to assign primary IPv4"
+                workflow_status["step4_primary_ip"]["message"] = (
+                    "Failed to assign primary IPv4"
+                )
                 logger.warning("Failed to assign primary IPv4")
         else:
             workflow_status["step4_primary_ip"]["status"] = "skipped"
-            workflow_status["step4_primary_ip"]["message"] = "No IPv4 address available for primary IP"
+            workflow_status["step4_primary_ip"]["message"] = (
+                "No IPv4 address available for primary IP"
+            )
             logger.info("No IPv4 address found for primary IP assignment")
 
         # Determine overall success
-        overall_success = (
-            workflow_status["step1_device"]["status"] == "success" and
-            workflow_status["step3_interfaces"]["status"] in ["success", "partial"]
-        )
+        overall_success = workflow_status["step1_device"][
+            "status"
+        ] == "success" and workflow_status["step3_interfaces"]["status"] in [
+            "success",
+            "partial",
+        ]
 
         return {
             "success": overall_success,
@@ -1058,13 +1121,16 @@ async def add_device(
             "device": device_response,
             "workflow_status": workflow_status,
             "summary": {
-                "device_created": workflow_status["step1_device"]["status"] == "success",
+                "device_created": workflow_status["step1_device"]["status"]
+                == "success",
                 "interfaces_created": len(created_interfaces),
                 "interfaces_failed": len(workflow_status["step3_interfaces"]["errors"]),
                 "ip_addresses_created": len(ip_address_map),
-                "ip_addresses_failed": len(workflow_status["step2_ip_addresses"]["errors"]),
+                "ip_addresses_failed": len(
+                    workflow_status["step2_ip_addresses"]["errors"]
+                ),
                 "primary_ipv4_assigned": primary_ipv4_id is not None,
-            }
+            },
         }
 
     except HTTPException:
@@ -1091,7 +1157,9 @@ async def _assign_primary_ipv4(device_id: str, ip_address_id: str) -> bool:
     try:
         # TODO: Implement primary IP assignment
         # This is a skeleton for now - to be implemented later
-        logger.info(f"[SKELETON] Would assign primary IPv4 {ip_address_id} to device {device_id}")
+        logger.info(
+            f"[SKELETON] Would assign primary IPv4 {ip_address_id} to device {device_id}"
+        )
 
         # When implemented, should do:
         # await nautobot_service.rest_request(

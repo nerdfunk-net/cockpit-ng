@@ -190,21 +190,18 @@ def update_user_password(username: str, new_password: str) -> bool:
 
 def delete_user_profile(username: str) -> bool:
     """Delete user profile by username.
-    
+
     Args:
         username: Username whose profile to delete
-        
+
     Returns:
         True if profile was deleted or didn't exist, False on error
     """
     _ensure_profile_table()
-    
+
     try:
         with _get_conn() as conn:
-            cursor = conn.execute(
-                "DELETE FROM user_profiles WHERE username = ?",
-                (username,)
-            )
+            conn.execute("DELETE FROM user_profiles WHERE username = ?", (username,))
             conn.commit()
             return True
     except Exception as e:

@@ -18,7 +18,8 @@ router = APIRouter(prefix="/api/git-compare", tags=["git-compare"])
 
 @router.post("/repos")
 async def compare_files_across_repos(
-    request: dict, current_user: dict = Depends(require_permission("git.operations", "execute"))
+    request: dict,
+    current_user: dict = Depends(require_permission("git.operations", "execute")),
 ):
     """Compare files between different repositories."""
     try:

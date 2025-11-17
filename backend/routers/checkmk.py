@@ -125,7 +125,9 @@ async def test_current_checkmk_connection(
 
 
 @router.get("/stats")
-async def get_checkmk_stats(current_user: dict = Depends(require_permission("checkmk.devices", "read"))):
+async def get_checkmk_stats(
+    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
+):
     """Get CheckMK statistics with 10-minute caching."""
     # Cache configuration
     cache_duration = timedelta(minutes=10)
@@ -292,7 +294,9 @@ def _get_checkmk_client(site_name: str = None):
 
 
 @router.get("/version", response_model=CheckMKVersionResponse)
-async def get_version(current_user: dict = Depends(require_permission("checkmk.devices", "read"))):
+async def get_version(
+    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
+):
     """Get CheckMK version information"""
     try:
         client = _get_checkmk_client()

@@ -7,7 +7,7 @@ interface User {
   email?: string
   role?: string  // Legacy single role (for backward compatibility)
   roles?: string[]  // New RBAC roles array
-  permissions?: number | any[]  // Legacy bitwise OR new RBAC permissions array
+  permissions?: number | Array<{ resource: string; action: string }>  // Legacy bitwise OR new RBAC permissions array
 }
 
 interface AuthState {

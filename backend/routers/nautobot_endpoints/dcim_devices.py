@@ -111,7 +111,9 @@ async def get_dcim_device(
     except Exception as e:
         logger.error(f"Failed to get DCIM device {device_id}: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_404_NOT_FOUND
+            if "404" in str(e)
+            else status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve DCIM device: {str(e)}",
         )
 
@@ -158,19 +160,19 @@ async def create_dcim_device(
     try:
         # Validate required fields
         required_fields = ["name", "device_type", "role", "location", "status"]
-        missing_fields = [field for field in required_fields if field not in device_data]
+        missing_fields = [
+            field for field in required_fields if field not in device_data
+        ]
 
         if missing_fields:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Missing required fields: {', '.join(missing_fields)}"
+                detail=f"Missing required fields: {', '.join(missing_fields)}",
             )
 
         endpoint = "dcim/devices/"
         result = await nautobot_service.rest_request(
-            endpoint,
-            method="POST",
-            data=device_data
+            endpoint, method="POST", data=device_data
         )
 
         logger.info(f"Created device {device_data.get('name')} in Nautobot DCIM")
@@ -223,9 +225,7 @@ async def update_dcim_device(
 
         # Use PATCH for partial updates
         result = await nautobot_service.rest_request(
-            endpoint,
-            method="PATCH",
-            data=device_data
+            endpoint, method="PATCH", data=device_data
         )
 
         logger.info(f"Updated device {device_id} in Nautobot DCIM")
@@ -234,7 +234,9 @@ async def update_dcim_device(
     except Exception as e:
         logger.error(f"Failed to update DCIM device {device_id}: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_404_NOT_FOUND
+            if "404" in str(e)
+            else status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update DCIM device: {str(e)}",
         )
 
@@ -260,6 +262,8 @@ async def delete_dcim_device(
     except Exception as e:
         logger.error(f"Failed to delete DCIM device {device_id}: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_404_NOT_FOUND
+            if "404" in str(e)
+            else status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete DCIM device: {str(e)}",
         )

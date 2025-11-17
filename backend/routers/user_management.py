@@ -37,14 +37,18 @@ def _check_admin_permission(current_user: str):
 
 
 @router.get("", response_model=UserListResponse, deprecated=True)
-async def list_users(current_user: dict = Depends(require_permission("users", "write"))):
+async def list_users(
+    current_user: dict = Depends(require_permission("users", "write")),
+):
     """
     Get all users.
-    
+
     **DEPRECATED**: Use GET /api/rbac/users instead.
     This endpoint will be removed in a future version.
     """
-    logger.warning("DEPRECATED: GET /user-management called. Use GET /api/rbac/users instead.")
+    logger.warning(
+        "DEPRECATED: GET /user-management called. Use GET /api/rbac/users instead."
+    )
     _check_admin_permission(current_user)
 
     try:
@@ -80,15 +84,18 @@ async def list_users(current_user: dict = Depends(require_permission("users", "w
 
 @router.post("", response_model=UserResponse, deprecated=True)
 async def create_new_user(
-    user_data: UserCreate, current_user: dict = Depends(require_permission("users", "write"))
+    user_data: UserCreate,
+    current_user: dict = Depends(require_permission("users", "write")),
 ):
     """
     Create a new user.
-    
+
     **DEPRECATED**: Use POST /api/rbac/users instead.
     This endpoint will be removed in a future version.
     """
-    logger.warning("DEPRECATED: POST /user-management called. Use POST /api/rbac/users instead.")
+    logger.warning(
+        "DEPRECATED: POST /user-management called. Use POST /api/rbac/users instead."
+    )
     _check_admin_permission(current_user)
 
     try:
@@ -128,8 +135,12 @@ async def create_new_user(
 
 
 @router.get("/{user_id}", response_model=UserResponse, deprecated=True)
-async def get_user(user_id: int, current_user: dict = Depends(require_permission("users", "write"))):
-    logger.warning(f"DEPRECATED: GET /user-management/{user_id} called. Use GET /api/rbac/users/{user_id} instead.")
+async def get_user(
+    user_id: int, current_user: dict = Depends(require_permission("users", "write"))
+):
+    logger.warning(
+        f"DEPRECATED: GET /user-management/{user_id} called. Use GET /api/rbac/users/{user_id} instead."
+    )
     """Get a specific user by ID."""
     _check_admin_permission(current_user)
 
@@ -171,11 +182,13 @@ async def update_existing_user(
 ):
     """
     Update an existing user.
-    
+
     **DEPRECATED**: Use PUT /api/rbac/users/{user_id} instead.
     This endpoint will be removed in a future version.
     """
-    logger.warning(f"DEPRECATED: PUT /user-management/{user_id} called. Use PUT /api/rbac/users/{user_id} instead.")
+    logger.warning(
+        f"DEPRECATED: PUT /user-management/{user_id} called. Use PUT /api/rbac/users/{user_id} instead."
+    )
     _check_admin_permission(current_user)
 
     try:
@@ -224,11 +237,13 @@ async def delete_existing_user(
 ):
     """
     Permanently delete a user from the database.
-    
+
     **DEPRECATED**: Use DELETE /api/rbac/users/{user_id} instead.
     This endpoint will be removed in a future version.
     """
-    logger.warning(f"DEPRECATED: DELETE /user-management/{user_id} called. Use DELETE /api/rbac/users/{user_id} instead.")
+    logger.warning(
+        f"DEPRECATED: DELETE /user-management/{user_id} called. Use DELETE /api/rbac/users/{user_id} instead."
+    )
     _check_admin_permission(current_user)
 
     try:
@@ -252,15 +267,18 @@ async def delete_existing_user(
 
 @router.post("/bulk-action", deprecated=True)
 async def perform_bulk_action(
-    action_data: BulkUserAction, current_user: dict = Depends(require_permission("users", "write"))
+    action_data: BulkUserAction,
+    current_user: dict = Depends(require_permission("users", "write")),
 ):
     """
     Perform bulk actions on multiple users.
-    
+
     **DEPRECATED**: Use POST /api/rbac/users/bulk-delete instead.
     This endpoint will be removed in a future version.
     """
-    logger.warning("DEPRECATED: POST /user-management/bulk-action called. Use POST /api/rbac/users/bulk-delete instead.")
+    logger.warning(
+        "DEPRECATED: POST /user-management/bulk-action called. Use POST /api/rbac/users/bulk-delete instead."
+    )
     _check_admin_permission(current_user)
 
     try:
@@ -310,11 +328,13 @@ async def toggle_user_active_status(
 ):
     """
     Toggle user active status (enable/disable login).
-    
+
     **DEPRECATED**: Use PATCH /api/rbac/users/{user_id}/activate instead.
     This endpoint will be removed in a future version.
     """
-    logger.warning(f"DEPRECATED: PATCH /user-management/{user_id}/toggle-status called. Use PATCH /api/rbac/users/{user_id}/activate instead.")
+    logger.warning(
+        f"DEPRECATED: PATCH /user-management/{user_id}/toggle-status called. Use PATCH /api/rbac/users/{user_id}/activate instead."
+    )
     logger.info(f"Toggle status called for user_id: {user_id}")
     _check_admin_permission(current_user)
 

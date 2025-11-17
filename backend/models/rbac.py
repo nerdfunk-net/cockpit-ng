@@ -258,4 +258,6 @@ class UserListResponse(BaseModel):
 class BulkUserDelete(BaseModel):
     """Bulk delete users."""
 
-    user_ids: List[int] = Field(..., min_items=1, description="List of user IDs to delete")
+    user_ids: List[int] = Field(
+        ..., min_items=1, description="List of user IDs to delete"
+    )

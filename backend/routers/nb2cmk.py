@@ -233,7 +233,8 @@ async def get_devices_for_sync(
 
 @router.get("/device/{device_id}/normalized")
 async def get_device_normalized(
-    device_id: str, current_user: dict = Depends(require_permission("checkmk.devices", "read"))
+    device_id: str,
+    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
 ):
     """Get normalized device config from Nautobot for CheckMK comparison."""
     try:
@@ -251,7 +252,9 @@ async def get_device_normalized(
 
 
 @router.get("/get_default_site")
-async def get_default_site(current_user: dict = Depends(require_permission("checkmk.devices", "write"))):
+async def get_default_site(
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
+):
     """Get the default site from CheckMK configuration."""
     try:
         result = nb2cmk_service.get_default_site()
@@ -280,7 +283,8 @@ async def get_devices_diff(
 
 @router.get("/device/{device_id}/compare")
 async def compare_device_config(
-    device_id: str, current_user: dict = Depends(require_permission("checkmk.devices", "read"))
+    device_id: str,
+    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
 ):
     """Compare normalized Nautobot device config with CheckMK host config."""
     try:
@@ -298,7 +302,8 @@ async def compare_device_config(
 
 @router.post("/device/{device_id}/add")
 async def add_device_to_checkmk(
-    device_id: str, current_user: dict = Depends(require_permission("checkmk.devices", "write"))
+    device_id: str,
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Add a device from Nautobot to CheckMK using normalized config."""
     try:
@@ -316,7 +321,8 @@ async def add_device_to_checkmk(
 
 @router.post("/device/{device_id}/update")
 async def update_device_in_checkmk(
-    device_id: str, current_user: dict = Depends(require_permission("checkmk.devices", "write"))
+    device_id: str,
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """Update/sync a device from Nautobot to CheckMK using normalized config."""
     try:

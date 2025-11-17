@@ -20,7 +20,10 @@ router = APIRouter(prefix="/api/git/{repo_id}", tags=["git-version-control"])
 
 
 @router.get("/branches")
-async def get_branches(repo_id: int, current_user: dict = Depends(require_permission("git.operations", "execute"))):
+async def get_branches(
+    repo_id: int,
+    current_user: dict = Depends(require_permission("git.operations", "execute")),
+):
     """Get list of Git branches."""
     try:
         repo = get_git_repo_by_id(repo_id)
@@ -78,7 +81,9 @@ async def create_or_switch_branch(
 
 @router.get("/commits/{branch_name}")
 async def get_commits(
-    repo_id: int, branch_name: str, current_user: dict = Depends(require_permission("git.repositories", "read"))
+    repo_id: int,
+    branch_name: str,
+    current_user: dict = Depends(require_permission("git.repositories", "read")),
 ):
     """Get commits for a specific branch."""
     try:
@@ -174,7 +179,9 @@ async def create_commit(
 
 @router.get("/commits/{commit_hash}/diff")
 async def get_commit_diff(
-    repo_id: int, commit_hash: str, current_user: dict = Depends(require_permission("git.repositories", "read"))
+    repo_id: int,
+    commit_hash: str,
+    current_user: dict = Depends(require_permission("git.repositories", "read")),
 ):
     """Get diff for a specific commit."""
     try:
@@ -219,7 +226,9 @@ async def get_commit_diff(
 
 @router.post("/diff")
 async def compare_commits(
-    repo_id: int, request: dict, current_user: dict = Depends(require_permission("git.operations", "execute"))
+    repo_id: int,
+    request: dict,
+    current_user: dict = Depends(require_permission("git.operations", "execute")),
 ):
     """Compare files between two Git commits."""
     try:

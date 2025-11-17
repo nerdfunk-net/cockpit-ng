@@ -197,7 +197,8 @@ async def scan_import_directory(
 
 @router.post("", response_model=TemplateResponse)
 async def create_template(
-    template_request: TemplateRequest, current_user: dict = Depends(require_permission("network.templates", "write"))
+    template_request: TemplateRequest,
+    current_user: dict = Depends(require_permission("network.templates", "write")),
 ) -> TemplateResponse:
     """Create a new template. Requires write permission."""
     try:
@@ -232,7 +233,8 @@ async def create_template(
 
 @router.get("/{template_id}", response_model=TemplateResponse)
 async def get_template(
-    template_id: int, current_user: dict = Depends(require_permission("network.templates", "read"))
+    template_id: int,
+    current_user: dict = Depends(require_permission("network.templates", "read")),
 ) -> TemplateResponse:
     """Get a specific template by ID."""
     try:
@@ -259,7 +261,8 @@ async def get_template(
 
 @router.get("/name/{template_name}", response_model=TemplateResponse)
 async def get_template_by_name(
-    template_name: str, current_user: dict = Depends(require_permission("network.templates", "read"))
+    template_name: str,
+    current_user: dict = Depends(require_permission("network.templates", "read")),
 ) -> TemplateResponse:
     """Get a template by name."""
     try:
@@ -372,7 +375,8 @@ async def delete_template(
 
 @router.get("/{template_id}/content")
 async def get_template_content(
-    template_id: int, current_user: dict = Depends(require_permission("network.templates", "read"))
+    template_id: int,
+    current_user: dict = Depends(require_permission("network.templates", "read")),
 ) -> Dict[str, str]:
     """Get template content."""
     try:
@@ -460,7 +464,8 @@ async def render_template(
 
 @router.get("/{template_id}/versions")
 async def get_template_versions(
-    template_id: int, current_user: dict = Depends(require_permission("network.templates", "read"))
+    template_id: int,
+    current_user: dict = Depends(require_permission("network.templates", "read")),
 ) -> List[Dict[str, Any]]:
     """Get version history for a template."""
     try:
@@ -541,7 +546,8 @@ async def upload_template_file(
 
 @router.post("/git/test")
 async def test_git_connection(
-    git_test: TemplateGitTestRequest, current_user: dict = Depends(require_permission("network.templates", "write"))
+    git_test: TemplateGitTestRequest,
+    current_user: dict = Depends(require_permission("network.templates", "write")),
 ) -> Dict[str, Any]:
     """Test Git repository connection for templates."""
     try:
@@ -565,7 +571,8 @@ async def test_git_connection(
 
 @router.post("/sync", response_model=TemplateSyncResponse)
 async def sync_templates(
-    sync_request: TemplateSyncRequest, current_user: dict = Depends(require_permission("network.templates", "write"))
+    sync_request: TemplateSyncRequest,
+    current_user: dict = Depends(require_permission("network.templates", "write")),
 ) -> TemplateSyncResponse:
     """Sync templates from Git repositories."""
     try:

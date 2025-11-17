@@ -26,7 +26,8 @@ router = APIRouter(prefix="/api/ansible-inventory", tags=["ansible-inventory"])
 
 @router.post("/preview", response_model=InventoryPreviewResponse)
 async def preview_inventory(
-    request: InventoryPreviewRequest, current_user: dict = Depends(require_permission("network.inventory", "read"))
+    request: InventoryPreviewRequest,
+    current_user: dict = Depends(require_permission("network.inventory", "read")),
 ) -> InventoryPreviewResponse:
     """
     Preview inventory by executing logical operations and returning matching devices.
@@ -78,7 +79,8 @@ async def preview_inventory(
 
 @router.post("/generate", response_model=InventoryGenerateResponse)
 async def generate_inventory(
-    request: InventoryGenerateRequest, current_user: dict = Depends(require_permission("network.inventory", "write"))
+    request: InventoryGenerateRequest,
+    current_user: dict = Depends(require_permission("network.inventory", "write")),
 ) -> InventoryGenerateResponse:
     """
     Generate final Ansible inventory using Jinja2 template.
@@ -119,7 +121,8 @@ async def generate_inventory(
 
 @router.post("/download")
 async def download_inventory(
-    request: InventoryGenerateRequest, current_user: dict = Depends(require_permission("network.inventory", "write"))
+    request: InventoryGenerateRequest,
+    current_user: dict = Depends(require_permission("network.inventory", "write")),
 ):
     """
     Generate and download Ansible inventory as YAML file.
@@ -145,7 +148,9 @@ async def download_inventory(
 
 
 @router.get("/field-options")
-async def get_field_options(current_user: dict = Depends(require_permission("network.inventory", "read"))) -> dict:
+async def get_field_options(
+    current_user: dict = Depends(require_permission("network.inventory", "read")),
+) -> dict:
     """
     Get available field options for building logical operations.
     """
@@ -181,7 +186,9 @@ async def get_field_options(current_user: dict = Depends(require_permission("net
 
 
 @router.get("/custom-fields")
-async def get_custom_fields(current_user: dict = Depends(require_permission("network.inventory", "read"))) -> dict:
+async def get_custom_fields(
+    current_user: dict = Depends(require_permission("network.inventory", "read")),
+) -> dict:
     """
     Get available custom fields for building logical operations.
     """
@@ -199,7 +206,8 @@ async def get_custom_fields(current_user: dict = Depends(require_permission("net
 
 @router.get("/field-values/{field_name}")
 async def get_field_values(
-    field_name: str, current_user: dict = Depends(require_permission("network.inventory", "read"))
+    field_name: str,
+    current_user: dict = Depends(require_permission("network.inventory", "read")),
 ) -> dict:
     """
     Get available values for a specific field for dropdown population.
@@ -257,7 +265,8 @@ async def get_git_repositories(
 
 @router.post("/push-to-git")
 async def push_to_git(
-    request: dict, current_user: dict = Depends(require_permission("network.inventory", "write"))
+    request: dict,
+    current_user: dict = Depends(require_permission("network.inventory", "write")),
 ) -> dict:
     """
     Generate inventory, write to Git repository as inventory.yaml, commit and push.
@@ -422,7 +431,8 @@ def build_commit_message(operations: list, device_count: int) -> str:
 
 @router.post("/save-inventory", response_model=SaveInventoryResponse)
 async def save_inventory(
-    request: SaveInventoryRequest, current_user: dict = Depends(require_permission("network.inventory", "write"))
+    request: SaveInventoryRequest,
+    current_user: dict = Depends(require_permission("network.inventory", "write")),
 ) -> SaveInventoryResponse:
     """
     Save inventory configuration (conditions) to a git repository.
@@ -457,7 +467,8 @@ async def save_inventory(
 
 @router.get("/list-inventories", response_model=ListInventoriesResponse)
 async def list_inventories(
-    repository_id: int, current_user: dict = Depends(require_permission("network.inventory", "read"))
+    repository_id: int,
+    current_user: dict = Depends(require_permission("network.inventory", "read")),
 ) -> ListInventoriesResponse:
     """
     List all saved inventories from a git repository.
