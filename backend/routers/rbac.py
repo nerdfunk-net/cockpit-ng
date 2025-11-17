@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from models.rbac import (
     BulkPermissionAssignment,
     BulkRoleAssignment,
+    BulkUserDelete,
     Permission,
     PermissionCheck,
     PermissionCheckResult,
@@ -27,9 +28,13 @@ from models.rbac import (
     RolePermissionAssignment,
     RoleUpdate,
     RoleWithPermissions,
+    UserCreate,
+    UserListResponse,
     UserPermissionAssignment,
     UserPermissions,
+    UserResponse,
     UserRoleAssignment,
+    UserUpdate,
 )
 
 logger = logging.getLogger(__name__)
@@ -476,3 +481,200 @@ async def check_my_permission(
         "action": check.action,
         "source": source,
     }
+
+
+# ============================================================================
+# User Management Endpoints
+# ============================================================================
+
+
+@router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def create_user(
+    user_data: UserCreate, current_user: dict = Depends(require_role("admin"))
+):
+    """Create a new user with initial role assignments (admin only)."""
+    try:
+        user = rbac.create_user_with_roles(
+            username=user_data.username,
+            realname=user_data.realname,
+            password=user_data.password,
+            email=user_data.email,
+            role_ids=user_data.role_ids,
+            debug=user_data.debug,
+            is_active=user_data.is_active,
+        )
+
+        # Get full user with roles and permissions
+        user_with_rbac = rbac.get_user_with_rbac(user["id"])
+        return user_with_rbac
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating user: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create user: {str(e)}",
+        )
+
+
+@router.get("/users", response_model=UserListResponse)
+async def list_users(
+    include_inactive: bool = True,
+    current_user: dict = Depends(verify_token),
+):
+    """List all users with their roles."""
+    try:
+        users = rbac.list_users_with_rbac(include_inactive)
+        return UserListResponse(users=users, total=len(users))
+    except Exception as e:
+        logger.error(f"Error listing users: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to list users",
+        )
+
+
+@router.get("/users/{user_id}", response_model=UserResponse)
+async def get_user(user_id: int, current_user: dict = Depends(verify_token)):
+    """Get user details with roles and permissions."""
+    try:
+        user = rbac.get_user_with_rbac(user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+        return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting user {user_id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get user",
+        )
+
+
+@router.put("/users/{user_id}", response_model=UserResponse)
+async def update_user(
+    user_id: int,
+    user_data: UserUpdate,
+    current_user: dict = Depends(require_role("admin")),
+):
+    """Update user profile (admin only)."""
+    try:
+        user = rbac.update_user_profile(
+            user_id=user_id,
+            realname=user_data.realname,
+            email=user_data.email,
+            password=user_data.password,
+            debug=user_data.debug,
+            is_active=user_data.is_active,
+        )
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+
+        # Get full user with roles and permissions
+        user_with_rbac = rbac.get_user_with_rbac(user_id)
+        return user_with_rbac
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating user {user_id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update user",
+        )
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(
+    user_id: int, current_user: dict = Depends(require_role("admin"))
+):
+    """Delete a user and all RBAC associations (admin only)."""
+    try:
+        success = rbac.delete_user_with_rbac(user_id)
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting user {user_id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete user",
+        )
+
+
+@router.patch("/users/{user_id}/activate", response_model=UserResponse)
+async def toggle_user_activation(
+    user_id: int, current_user: dict = Depends(require_role("admin"))
+):
+    """Toggle user active status (admin only)."""
+    try:
+        user = rbac.toggle_user_activation(user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+
+        # Get full user with roles and permissions
+        user_with_rbac = rbac.get_user_with_rbac(user_id, include_inactive=True)
+        return user_with_rbac
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error toggling activation for user {user_id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to toggle user activation",
+        )
+
+
+@router.patch("/users/{user_id}/debug", response_model=UserResponse)
+async def toggle_user_debug(
+    user_id: int, current_user: dict = Depends(require_role("admin"))
+):
+    """Toggle user debug mode (admin only)."""
+    try:
+        user = rbac.toggle_user_debug(user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+
+        # Get full user with roles and permissions
+        user_with_rbac = rbac.get_user_with_rbac(user_id)
+        return user_with_rbac
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error toggling debug for user {user_id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to toggle user debug mode",
+        )
+
+
+@router.post("/users/bulk-delete", status_code=status.HTTP_200_OK)
+async def bulk_delete_users(
+    bulk_data: BulkUserDelete, current_user: dict = Depends(require_role("admin"))
+):
+    """Bulk delete users with RBAC cleanup (admin only)."""
+    try:
+        success_count, errors = rbac.bulk_delete_users_with_rbac(bulk_data.user_ids)
+        return {
+            "success_count": success_count,
+            "errors": errors,
+            "message": f"Successfully deleted {success_count} user(s)",
+        }
+    except Exception as e:
+        logger.error(f"Error bulk deleting users: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to bulk delete users",
+        )

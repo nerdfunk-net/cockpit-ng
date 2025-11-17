@@ -84,7 +84,23 @@ export default function LoginPage() {
       }
 
       const data = await response.json()
-      console.log('Login successful:', data)
+      console.log('='.repeat(80))
+      console.log('LOGIN SUCCESS - FULL DATA:')
+      console.log('='.repeat(80))
+      console.log('Token:', data.access_token ? 'PRESENT' : 'MISSING')
+      console.log('User object:', JSON.stringify(data.user, null, 2))
+      console.log('User.roles specifically:', data.user?.roles)
+      console.log('Type of roles:', typeof data.user?.roles, Array.isArray(data.user?.roles) ? 'ARRAY' : 'NOT ARRAY')
+      console.log('='.repeat(80))
+
+      // Store in sessionStorage so we can check it after redirect
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('last_login_data', JSON.stringify({
+          timestamp: new Date().toISOString(),
+          user: data.user,
+          roles: data.user?.roles,
+        }))
+      }
 
       if (data.access_token) {
         login(data.access_token, {
@@ -93,7 +109,10 @@ export default function LoginPage() {
           email: data.user?.email,
           role: data.user?.role,
           permissions: data.user?.permissions,
+          roles: data.user?.roles,  // Pass through RBAC roles
         })
+        
+        console.log('About to redirect to /')
         router.push('/')
       } else {
         throw new Error('No access token received')

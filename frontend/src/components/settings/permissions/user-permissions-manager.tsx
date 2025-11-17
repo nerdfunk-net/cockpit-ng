@@ -57,7 +57,7 @@ export function UserPermissionsManager() {
 
   const loadUsers = useCallback(async () => {
     try {
-      const response = await apiCall<{ users: User[] }>('user-management')
+      const response = await apiCall<{ users: User[] }>('rbac/users')
       setUsers(response.users || [])
     } catch {
       toast({

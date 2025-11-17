@@ -26,11 +26,17 @@ import { UserPlus, Edit, Trash2, RefreshCw, ToggleLeft, ToggleRight } from 'luci
 import { useApi } from '@/hooks/use-api'
 import { useToast } from '@/hooks/use-toast'
 
+interface Role {
+  id: number
+  name: string
+}
+
 interface User {
   id: number
   username: string
   realname: string
   email?: string
+  roles?: Role[]
   debug: boolean
   is_active: boolean
   created_at: string
@@ -64,7 +70,7 @@ export function UsersManager() {
   const loadUsers = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await apiCall<{ users: User[] }>('user-management')
+      const response = await apiCall<{ users: User[] }>('rbac/users')
       setUsers(response.users || [])
     } catch {
       toast({
@@ -128,19 +134,16 @@ export function UsersManager() {
     }
 
     try {
-      const payload = {
-        username: formData.username,
-        realname: formData.realname,
-        email: formData.email,
-        password: formData.password,
-        role: 'user', // Default role for backend compatibility
-        debug: formData.debug,
-        is_active: formData.is_active,
-      }
-
       if (editingUser) {
         // Update existing user
-        await apiCall(`user-management/${editingUser.id}`, {
+        const payload: any = {}
+        if (formData.realname) payload.realname = formData.realname
+        if (formData.email) payload.email = formData.email
+        if (formData.password) payload.password = formData.password
+        payload.debug = formData.debug
+        payload.is_active = formData.is_active
+
+        await apiCall(`rbac/users/${editingUser.id}`, {
           method: 'PUT',
           body: JSON.stringify(payload),
         })
@@ -150,7 +153,17 @@ export function UsersManager() {
         })
       } else {
         // Create new user
-        await apiCall('user-management', {
+        const payload = {
+          username: formData.username,
+          realname: formData.realname,
+          email: formData.email,
+          password: formData.password,
+          role_ids: [], // No roles assigned by default
+          debug: formData.debug,
+          is_active: formData.is_active,
+        }
+        
+        await apiCall('rbac/users', {
           method: 'POST',
           body: JSON.stringify(payload),
         })
@@ -177,7 +190,7 @@ export function UsersManager() {
     }
 
     try {
-      await apiCall(`user-management/${user.id}`, { method: 'DELETE' })
+      await apiCall(`rbac/users/${user.id}`, { method: 'DELETE' })
       toast({
         title: 'Success',
         description: `User "${user.username}" deleted successfully`,
@@ -194,12 +207,10 @@ export function UsersManager() {
 
   const toggleUserStatus = async (user: User) => {
     try {
-      await apiCall(`user-management/${user.id}`, {
-        method: 'PUT',
+      await apiCall(`rbac/users/${user.id}/activate`, {
+        method: 'PATCH',
         body: JSON.stringify({
-          ...user,
           is_active: !user.is_active,
-          role: 'user', // Required by backend
         }),
       })
       toast({

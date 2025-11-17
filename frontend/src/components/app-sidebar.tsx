@@ -118,8 +118,19 @@ export function AppSidebar({ className }: AppSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   
-  // Check if user is admin
-  const isAdmin = user?.role === 'admin' || user?.permissions === 31
+  // Check if user is admin - support both legacy and new RBAC system
+  console.log('[SIDEBAR] Checking admin status for user:', user)
+  console.log('[SIDEBAR] user?.role:', user?.role)
+  console.log('[SIDEBAR] user?.permissions:', user?.permissions)
+  console.log('[SIDEBAR] user?.roles:', user?.roles)
+  console.log('[SIDEBAR] Array.isArray(user?.roles):', Array.isArray(user?.roles))
+  console.log('[SIDEBAR] user?.roles.includes(\'admin\'):', Array.isArray(user?.roles) && user?.roles.includes('admin'))
+  
+  const isAdmin = user?.role === 'admin' || 
+                  user?.permissions === 31 || 
+                  (Array.isArray(user?.roles) && user?.roles.includes('admin'))
+  
+  console.log('[SIDEBAR] Final isAdmin result:', isAdmin)
 
   const toggleSection = (sectionTitle: string) => {
     setCollapsedSections(prev => {

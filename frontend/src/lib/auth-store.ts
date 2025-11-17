@@ -5,8 +5,9 @@ interface User {
   id: string
   username: string
   email?: string
-  role?: string
-  permissions?: number
+  role?: string  // Legacy single role (for backward compatibility)
+  roles?: string[]  // New RBAC roles array
+  permissions?: number | any[]  // Legacy bitwise OR new RBAC permissions array
 }
 
 interface AuthState {
@@ -50,7 +51,18 @@ const setCookieToken = (token: string) => {
 }
 
 const setCookieUser = (user: User) => {
-  Cookies.set('cockpit_user_info', JSON.stringify(user), COOKIE_CONFIG)
+  // Store minimal user data in cookie to avoid size limits (4096 bytes)
+  // Full permissions array can be very large, so we only store essential fields
+  const minimalUser = {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    roles: user.roles,  // Keep roles array (small)
+    // Omit permissions array - too large for cookies
+    // Permissions can be fetched on demand if needed
+  }
+  Cookies.set('cockpit_user_info', JSON.stringify(minimalUser), COOKIE_CONFIG)
 }
 
 const removeCookies = () => {
@@ -70,14 +82,22 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
   isAuthenticated: false,
 
   login: (token: string, user: User) => {
-    // Set cookies
-    setCookieToken(token)
-    setCookieUser(user)
+    // Debug logging
+    console.log('[AUTH] Login called with user:', user)
+    console.log('[AUTH] User role (legacy):', user.role)
+    console.log('[AUTH] User roles (RBAC array):', user.roles)
+    console.log('[AUTH] User permissions count:', Array.isArray(user.permissions) ? user.permissions.length : 0)
+    console.log('[AUTH] Roles is array?', Array.isArray(user.roles))
+    console.log('[AUTH] Has admin in roles?', Array.isArray(user.roles) && user.roles.includes('admin'))
     
-    // Update state
+    // Set cookies with minimal user data (excluding permissions to avoid size limit)
+    setCookieToken(token)
+    setCookieUser(user)  // This now stores only essential fields
+    
+    // Update state with full user object including permissions
     set({
       token,
-      user,
+      user,  // Store full user object in memory
       isAuthenticated: true,
     })
   },
@@ -105,7 +125,24 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
     const token = getCookieToken()
     const user = getCookieUser()
     
+    console.log('[AUTH] Hydrate called')
+    console.log('[AUTH] Token from cookie:', token ? 'exists' : 'missing')
+    console.log('[AUTH] User from cookie:', user)
+    
     if (token && user) {
+      console.log('[AUTH] Hydrating with user role:', user.role)
+      console.log('[AUTH] Hydrating with user roles:', user.roles)
+      console.log('[AUTH] Hydrating with user permissions:', user.permissions)
+      
+      // Migration: If user doesn't have roles array (old cookie format), convert legacy role to roles array
+      if (!user.roles && user.role) {
+        console.log('[AUTH] MIGRATION: Converting legacy role to roles array')
+        user.roles = [user.role]
+        // Update cookie with migrated data
+        setCookieUser(user)
+        console.log('[AUTH] MIGRATION: Updated user with roles:', user.roles)
+      }
+      
       set({
         token,
         user,

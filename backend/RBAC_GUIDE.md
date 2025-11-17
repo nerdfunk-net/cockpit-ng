@@ -170,6 +170,24 @@ POST   /api/rbac/users/{id}/roles         # Assign role to user (admin)
 DELETE /api/rbac/users/{id}/roles/{role_id}  # Remove role (admin)
 ```
 
+### User Management
+
+**New unified user management endpoints (recommended)**:
+
+```http
+GET    /api/rbac/users                    # List all users with roles
+GET    /api/rbac/users/{id}               # Get user details with roles
+POST   /api/rbac/users                    # Create user with role assignments (admin)
+PUT    /api/rbac/users/{id}               # Update user profile and roles (admin)
+DELETE /api/rbac/users/{id}               # Delete user and role assignments (admin)
+POST   /api/rbac/users/bulk-delete        # Delete multiple users (admin)
+PATCH  /api/rbac/users/{id}/activate      # Toggle user activation status (admin)
+PATCH  /api/rbac/users/{id}/debug         # Toggle debug mode (admin)
+```
+
+**Legacy endpoints (deprecated)**:
+- `/user-management/*` - All endpoints deprecated, use `/api/rbac/users` instead
+
 ### User Permissions
 
 ```http

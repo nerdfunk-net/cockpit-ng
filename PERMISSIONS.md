@@ -161,15 +161,33 @@ These routers use the new RBAC permission system and properly enforce granular a
 | GET `/status`, `/info`, `/debug` | `git.operations:execute` | Get status |
 | POST `/sync`, `/remove-and-sync` | `git.operations:execute` | Sync operations |
 
-#### 8. **User Management** (`/user-management`) - ✅ RBAC Protected
+#### 8. **User Management (Legacy)** (`/user-management`) - ✅ RBAC Protected - **DEPRECATED**
+
+**⚠️ DEPRECATED**: All endpoints under `/user-management` are deprecated. Use `/api/rbac/users` instead.
+
+| Endpoint | Permission Required | Description | Migration Path |
+|----------|--------------------|-------------|----------------|
+| GET `/`, `/{id}` | `users:read` | View users | Use `GET /api/rbac/users` |
+| POST `/` | `users:write` | Create user | Use `POST /api/rbac/users` |
+| PUT `/{id}` | `users:write` | Update user | Use `PUT /api/rbac/users/{id}` |
+| DELETE `/{id}` | `users:delete` | Delete user | Use `DELETE /api/rbac/users/{id}` |
+| POST `/bulk-action` | `users:write` | Bulk operations | Use `POST /api/rbac/users/bulk-delete` |
+| PATCH `/{id}/toggle-status` | `users:write` | Toggle status | Use `PATCH /api/rbac/users/{id}/activate` |
+
+#### 8b. **User Management (Modern RBAC)** (`/api/rbac/users`) - ✅ RBAC Protected
+
+**✅ RECOMMENDED**: Use these endpoints for all user management operations.
 
 | Endpoint | Permission Required | Description |
 |----------|--------------------|--------------|
-| GET `/`, `/{id}` | `users:read` | View users |
-| POST `/` | `users:write` | Create user |
-| PUT `/{id}` | `users:write` | Update user |
-| DELETE `/{id}` | `users:delete` | Delete user |
-| POST `/bulk-action` | `users:write` | Bulk operations |
+| GET `/api/rbac/users` | `users:read` | List all users with roles |
+| GET `/api/rbac/users/{id}` | `users:read` | Get user details with roles |
+| POST `/api/rbac/users` | `users:write` | Create user with role assignments |
+| PUT `/api/rbac/users/{id}` | `users:write` | Update user profile and roles |
+| DELETE `/api/rbac/users/{id}` | `users:delete` | Delete user and role assignments |
+| POST `/api/rbac/users/bulk-delete` | `users:delete` | Delete multiple users |
+| PATCH `/api/rbac/users/{id}/activate` | `users:write` | Toggle user activation status |
+| PATCH `/api/rbac/users/{id}/debug` | `users:write` | Toggle debug mode |
 
 #### 9. **Credentials Management** (`/api/credentials`) - ✅ RBAC Protected
 

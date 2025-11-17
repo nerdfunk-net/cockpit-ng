@@ -24,13 +24,22 @@ import {
 } from 'lucide-react'
 import { useApi } from '../../hooks/use-api'
 
+interface Role {
+  id: number
+  name: string
+  description: string
+  is_system: boolean
+  created_at: string
+  updated_at: string
+}
+
 interface User {
   id: number
   username: string
   realname: string
   email?: string
-  role: 'admin' | 'user' | 'viewer' | 'custom'
-  permissions: number
+  roles: Role[]
+  permissions: any[]
   debug: boolean
   is_active: boolean
   created_at: string
@@ -42,7 +51,7 @@ interface UserFormData {
   realname: string
   email?: string
   password: string
-  role: 'admin' | 'user' | 'viewer' | 'custom'
+  role_ids: number[]
   debug: boolean
   is_active: boolean
 }
@@ -52,26 +61,10 @@ interface StatusMessage {
   text: string
 }
 
-// Permission bit flags matching backend
-const PERMISSION_READ = 1
-const PERMISSION_WRITE = 2
-const PERMISSION_ADMIN = 4
-const PERMISSION_DELETE = 8
-const PERMISSION_USER_MANAGE = 16
-
-const PERMISSIONS_VIEWER = PERMISSION_READ
-const PERMISSIONS_USER = PERMISSION_READ | PERMISSION_WRITE
-const PERMISSIONS_ADMIN = PERMISSION_READ | PERMISSION_WRITE | PERMISSION_ADMIN | PERMISSION_DELETE | PERMISSION_USER_MANAGE
-
-const ROLE_PERMISSIONS: Record<string, number> = {
-  viewer: PERMISSIONS_VIEWER,
-  user: PERMISSIONS_USER,
-  admin: PERMISSIONS_ADMIN
-}
-
 export default function UserManagement() {
   const { apiCall } = useApi()
   const [users, setUsers] = useState<User[]>([])
+  const [availableRoles, setAvailableRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(false)
   const [showDialog, setShowDialog] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
@@ -85,7 +78,7 @@ export default function UserManagement() {
     realname: '',
     email: '',
     password: '',
-    role: 'user',
+    role_ids: [],
     debug: false,
     is_active: true
   })
@@ -98,16 +91,24 @@ export default function UserManagement() {
   const loadUsers = useCallback(async () => {
     setLoading(true)
     try {
-      const response = await apiCall<{users: User[], total: number}>('user-management')
+      const response = await apiCall<{users: User[], total: number}>('rbac/users')
       setUsers(response?.users || [])
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      // Show the actual error message (which will be "Admin access required" for 403)
       showMessage(errorMessage, 'error')
     } finally {
       setLoading(false)
     }
   }, [apiCall, showMessage])
+
+  const loadRoles = useCallback(async () => {
+    try {
+      const response = await apiCall<Role[]>('rbac/roles')
+      setAvailableRoles(response || [])
+    } catch (error: unknown) {
+      console.error('Failed to load roles:', error)
+    }
+  }, [apiCall])
 
   const resetForm = () => {
     setFormData({
@@ -115,7 +116,7 @@ export default function UserManagement() {
       realname: '',
       email: '',
       password: '',
-      role: 'user',
+      role_ids: [],
       debug: false,
       is_active: true
     })
@@ -133,7 +134,7 @@ export default function UserManagement() {
       realname: user.realname,
       email: user.email || '',
       password: '',
-      role: user.role,
+      role_ids: user.roles?.map(r => r.id) || [],
       debug: user.debug,
       is_active: user.is_active
     })
@@ -149,24 +150,33 @@ export default function UserManagement() {
 
     setSaving(true)
     try {
-      const payload = {
-        username: formData.username,
-        realname: formData.realname,
-        email: formData.email || undefined,
-        password: formData.password || undefined,
-        role: formData.role,
-        debug: formData.debug,
-        is_active: formData.is_active
-      }
-
       if (editingUser) {
-        await apiCall(`user-management/${editingUser.id}`, {
+        // Update user - only send changed fields
+        const payload: any = {}
+        if (formData.realname) payload.realname = formData.realname
+        if (formData.email) payload.email = formData.email
+        if (formData.password) payload.password = formData.password
+        payload.debug = formData.debug
+        payload.is_active = formData.is_active
+
+        await apiCall(`rbac/users/${editingUser.id}`, {
           method: 'PUT',
           body: JSON.stringify(payload)
         })
         showMessage('User updated successfully')
       } else {
-        await apiCall('user-management', {
+        // Create new user
+        const payload = {
+          username: formData.username,
+          realname: formData.realname,
+          email: formData.email || undefined,
+          password: formData.password,
+          role_ids: formData.role_ids,
+          debug: formData.debug,
+          is_active: formData.is_active
+        }
+
+        await apiCall('rbac/users', {
           method: 'POST',
           body: JSON.stringify(payload)
         })
@@ -193,7 +203,7 @@ export default function UserManagement() {
 
     setDeleting(userId)
     try {
-      await apiCall(`user-management/${userId}`, { method: 'DELETE' })
+      await apiCall(`rbac/users/${userId}`, { method: 'DELETE' })
       showMessage('User deleted successfully')
       await loadUsers()
       setSelectedUsers(prev => {
@@ -238,11 +248,10 @@ export default function UserManagement() {
     if (!window.confirm(`Are you sure you want to delete ${selectedUsers.size} selected user(s)?`)) return
 
     try {
-      await apiCall('user-management/bulk-action', {
+      await apiCall('rbac/users/bulk-delete', {
         method: 'POST',
         body: JSON.stringify({
-          user_ids: Array.from(selectedUsers),
-          action: 'delete'
+          user_ids: Array.from(selectedUsers)
         })
       })
       showMessage(`Successfully deleted ${selectedUsers.size} users`)
@@ -254,39 +263,12 @@ export default function UserManagement() {
     }
   }
 
-  const editSelectedUsers = async () => {
-    if (selectedUsers.size === 0) {
-      showMessage('No users selected', 'error')
-      return
-    }
-
-    // For bulk edit, we'll just update permissions to user level
-    const userPermissions = ROLE_PERMISSIONS.user
-    
-    try {
-      await apiCall('user-management/bulk-action', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_ids: Array.from(selectedUsers),
-          action: 'update_permissions',
-          permissions: userPermissions
-        })
-      })
-      showMessage(`Successfully updated permissions for ${selectedUsers.size} users`)
-      setSelectedUsers(new Set())
-      await loadUsers()
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      showMessage(`Failed to update selected users: ${errorMessage}`, 'error')
-    }
-  }
-
   const toggleUserStatus = async (userId: number, currentStatus: boolean) => {
     if (deleting === userId) return // Prevent multiple clicks
     
     setDeleting(userId)
     try {
-      await apiCall(`user-management/${userId}/toggle-status`, {
+      await apiCall(`rbac/users/${userId}/activate`, {
         method: 'PATCH'
       })
       showMessage(`User ${currentStatus ? 'disabled' : 'enabled'} successfully`)
@@ -301,7 +283,8 @@ export default function UserManagement() {
 
   useEffect(() => {
     loadUsers()
-  }, [loadUsers])
+    loadRoles()
+  }, [loadUsers, loadRoles])
 
   return (
     <div className="space-y-6">
@@ -412,6 +395,37 @@ export default function UserManagement() {
                       />
                     </div>
                     <div>
+                      <Label>Roles</Label>
+                      <div className="space-y-2 mt-2 max-h-40 overflow-y-auto border rounded p-2">
+                        {availableRoles.length === 0 ? (
+                          <p className="text-sm text-gray-500">No roles available</p>
+                        ) : (
+                          availableRoles.map(role => (
+                            <div key={role.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`role-${role.id}`}
+                                checked={formData.role_ids.includes(role.id)}
+                                onCheckedChange={(checked) => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    role_ids: checked 
+                                      ? [...prev.role_ids, role.id]
+                                      : prev.role_ids.filter(id => id !== role.id)
+                                  }))
+                                }}
+                              />
+                              <Label htmlFor={`role-${role.id}`} className="text-sm font-normal cursor-pointer">
+                                {role.name}
+                                {role.description && (
+                                  <span className="text-gray-500 ml-1">- {role.description}</span>
+                                )}
+                              </Label>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    <div>
                       <Label htmlFor="debug">Debug Mode</Label>
                       <div className="flex items-center space-x-2 mt-2">
                         <Checkbox
@@ -474,6 +488,7 @@ export default function UserManagement() {
                     </TableHead>
                     <TableHead>Username</TableHead>
                     <TableHead>Real Name</TableHead>
+                    <TableHead>Roles</TableHead>
                     <TableHead>Debug</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -490,6 +505,19 @@ export default function UserManagement() {
                       </TableCell>
                       <TableCell className="font-medium">{user.username}</TableCell>
                       <TableCell>{user.realname}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {user.roles && user.roles.length > 0 ? (
+                            user.roles.map(role => (
+                              <Badge key={role.id} variant="outline" className="text-xs">
+                                {role.name}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-sm text-gray-400">No roles</span>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant={user.debug ? "destructive" : "secondary"}>
                           {user.debug ? 'On' : 'Off'}
@@ -560,13 +588,6 @@ export default function UserManagement() {
                     {selectedUsers.size} user(s) selected
                   </span>
                   <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={editSelectedUsers}
-                    >
-                      Edit Selected
-                    </Button>
                     <Button
                       variant="destructive"
                       size="sm"

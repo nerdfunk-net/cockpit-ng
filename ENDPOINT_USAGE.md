@@ -62,9 +62,20 @@ How to read this file
   - Frontend proxy strings: `auth/*` (login, refresh, api-key login)
   - Evidence: login flows call `apiCall('auth/login')`, etc. (search frontend for `auth/` usages).
 
-- Backend path: /user-management
+- Backend path: /user-management (DEPRECATED)
   - Frontend proxy string: `user-management/*` (special-case, forwarded to BACKEND_URL/user-management)
-  - Evidence: frontend/src/components/settings/user-management.tsx — `apiCall('user-management')`, `apiCall('user-management/bulk-action')`, `apiCall(`user-management/${id}/toggle-status`)`.
+  - **Status**: DEPRECATED - All endpoints marked deprecated in favor of `/api/rbac/users/*`
+  - Evidence: Previously used by frontend/src/components/settings/user-management.tsx — `apiCall('user-management')`, `apiCall('user-management/bulk-action')`, `apiCall(`user-management/${id}/toggle-status`)`.
+  - **Migration**: Use `/api/rbac/users/*` endpoints instead (see RBAC section below)
+
+- Backend path: /api/rbac/users
+  - Frontend proxy string: `api/rbac/users/*`
+  - Methods: GET (list), POST (create), PUT (update), DELETE (delete), PATCH (activate/debug)
+  - Evidence:
+    - frontend/src/components/settings/user-management.tsx — calls `apiCall('api/rbac/users')`, `apiCall(`api/rbac/users/${id}`)`, `apiCall(`api/rbac/users/${id}/activate`)`, `apiCall(`api/rbac/users/${id}/debug`)`, `apiCall('api/rbac/users/bulk-delete')`.
+    - frontend/src/components/settings/permissions/users-manager.tsx — calls `apiCall('api/rbac/users')`, `apiCall(`api/rbac/users/${id}`)`, `apiCall(`api/rbac/users/${id}/activate`)`.
+    - frontend/src/components/settings/permissions/user-roles-manager.tsx — calls `apiCall('api/rbac/users')`.
+    - frontend/src/components/settings/permissions/user-permissions-manager.tsx — calls `apiCall('api/rbac/users')`.
 
 ---
 

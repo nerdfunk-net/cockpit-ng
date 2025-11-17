@@ -197,3 +197,65 @@ class BulkPermissionAssignment(BaseModel):
         ..., description="List of permission IDs to assign"
     )
     granted: bool = Field(True, description="True to allow, False to deny")
+
+
+# ============================================================================
+# User Management Models
+# ============================================================================
+
+
+class UserBase(BaseModel):
+    """Base user model."""
+
+    username: str = Field(..., min_length=3, max_length=50, description="Username")
+    realname: str = Field(..., min_length=1, max_length=100, description="Real name")
+    email: Optional[str] = Field(None, max_length=255, description="Email address")
+    debug: bool = Field(False, description="Enable debug mode for user")
+    is_active: bool = Field(True, description="User account active status")
+
+
+class UserCreate(UserBase):
+    """Model for creating a new user."""
+
+    password: str = Field(..., min_length=8, description="User password")
+    role_ids: List[int] = Field(
+        default_factory=list, description="Initial roles to assign to user"
+    )
+
+
+class UserUpdate(BaseModel):
+    """Model for updating a user."""
+
+    realname: Optional[str] = Field(None, min_length=1, max_length=100)
+    email: Optional[str] = Field(None, max_length=255)
+    password: Optional[str] = Field(None, min_length=8)
+    debug: Optional[bool] = Field(None, description="Enable/disable debug mode")
+    is_active: Optional[bool] = Field(None, description="Enable/disable account")
+
+
+class UserResponse(UserBase):
+    """Full user model with ID and metadata."""
+
+    id: int
+    created_at: str
+    updated_at: str
+    roles: List[Role] = Field(default_factory=list, description="User's assigned roles")
+    permissions: List[PermissionWithGrant] = Field(
+        default_factory=list, description="User's effective permissions"
+    )
+
+    class Config:
+        from_attributes = True
+
+
+class UserListResponse(BaseModel):
+    """User list response."""
+
+    users: List[UserResponse]
+    total: int
+
+
+class BulkUserDelete(BaseModel):
+    """Bulk delete users."""
+
+    user_ids: List[int] = Field(..., min_items=1, description="List of user IDs to delete")

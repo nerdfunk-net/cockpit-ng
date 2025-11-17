@@ -22,6 +22,8 @@ export async function POST(request: NextRequest) {
     // Get the response data
     const responseData = await backendResponse.json()
     
+    console.log('Backend response data:', JSON.stringify(responseData, null, 2))
+    
     if (!backendResponse.ok) {
       console.log('Backend error response:', responseData)
       return NextResponse.json(

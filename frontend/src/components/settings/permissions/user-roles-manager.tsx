@@ -67,7 +67,7 @@ export function UserRolesManager() {
 
   const loadUsers = async () => {
     try {
-      const response = await apiCall<{ users: User[] }>('user-management')
+      const response = await apiCall<{ users: User[] }>('rbac/users')
       const users = response.users || []
       setUsers(users)
 
