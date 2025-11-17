@@ -10,21 +10,24 @@ const MIN_FONT_SIZE = 8
 const MAX_FONT_SIZE = 20
 const DEFAULT_FONT_SIZE = 12
 
+// Helper function to get initial font size from localStorage
+const getInitialFontSize = (): number => {
+  if (typeof window === 'undefined') return DEFAULT_FONT_SIZE
+  
+  const stored = localStorage.getItem(FONT_SIZE_KEY)
+  if (stored) {
+    const parsedSize = parseInt(stored, 10)
+    if (!isNaN(parsedSize) && parsedSize >= MIN_FONT_SIZE && parsedSize <= MAX_FONT_SIZE) {
+      return parsedSize
+    }
+  }
+  return DEFAULT_FONT_SIZE
+}
+
 export function useDiffNavigation(totalDiffs: number = 0) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [hideUnchanged, setHideUnchanged] = useState(false)
-  const [fontSize, setFontSize] = useState(DEFAULT_FONT_SIZE)
-
-  // Load font size from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem(FONT_SIZE_KEY)
-    if (stored) {
-      const parsedSize = parseInt(stored, 10)
-      if (!isNaN(parsedSize) && parsedSize >= MIN_FONT_SIZE && parsedSize <= MAX_FONT_SIZE) {
-        setFontSize(parsedSize)
-      }
-    }
-  }, [])
+  const [fontSize, setFontSize] = useState(getInitialFontSize)
 
   // Save font size to localStorage whenever it changes
   useEffect(() => {

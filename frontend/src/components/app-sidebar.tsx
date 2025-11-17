@@ -55,6 +55,7 @@ const navigationSections: NavSection[] = [
   {
     title: 'Nautobot',
     items: [
+      { label: 'Add Device', href: '/nautobot-add-device', icon: Plus },
       { label: 'Onboard Device', href: '/onboard-device', icon: Plus },
       { label: 'Sync Devices', href: '/sync-devices', icon: RefreshCw },
       { label: 'Scan & Add', href: '/scan-and-add', icon: Search },

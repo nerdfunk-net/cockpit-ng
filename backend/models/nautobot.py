@@ -50,3 +50,39 @@ class OffboardDeviceRequest(BaseModel):
     remove_interface_ips: bool = True
     remove_from_checkmk: bool = True
     nautobot_integration_mode: Literal["remove", "set-offboarding"] = "remove"
+
+
+class InterfaceData(BaseModel):
+    """Interface data model for add device request."""
+
+    name: str
+    type: str
+    status: str
+    ip_address: Optional[str] = None
+    namespace: str  # Required if ip_address is provided
+    # Optional properties
+    enabled: Optional[bool] = None
+    mgmt_only: Optional[bool] = None
+    description: Optional[str] = None
+    mac_address: Optional[str] = None
+    mtu: Optional[int] = None
+    mode: Optional[str] = None
+    untagged_vlan: Optional[str] = None
+    tagged_vlans: Optional[str] = None
+    parent_interface: Optional[str] = None
+    bridge: Optional[str] = None
+    lag: Optional[str] = None
+    tags: Optional[str] = None
+
+
+class AddDeviceRequest(BaseModel):
+    """Request model for adding a device with interfaces."""
+
+    # Device fields
+    name: str
+    role: str
+    status: str
+    location: str
+    device_type: str
+    # Interfaces array
+    interfaces: list[InterfaceData] = []

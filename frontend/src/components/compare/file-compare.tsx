@@ -145,7 +145,7 @@ export default function FileCompare() {
       leftFileSearch.clearSelection()
       rightFileSearch.clearSelection()
     }
-  }, [selectedRepo, loadFiles, leftFileSearch.clearSelection, rightFileSearch.clearSelection])
+  }, [selectedRepo, loadFiles, leftFileSearch, rightFileSearch])
 
   const canCompare = () => {
     return selectedRepo && leftFileSearch.selectedFile && rightFileSearch.selectedFile

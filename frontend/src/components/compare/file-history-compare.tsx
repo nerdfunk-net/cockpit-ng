@@ -111,7 +111,7 @@ export default function FileHistoryCompare() {
       setGitFiles([])
       fileSearch.clearSelection()
     }
-  }, [selectedRepo, loadFiles, fileSearch.clearSelection])
+  }, [selectedRepo, loadFiles, fileSearch])
 
   const canViewHistory = () => {
     return selectedRepo && leftCommit && leftCommit.trim() !== '' &&

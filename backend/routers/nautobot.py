@@ -14,6 +14,7 @@ from models.nautobot import (
     SyncNetworkDataRequest,
     DeviceFilter,
     OffboardDeviceRequest,
+    AddDeviceRequest,
 )
 from services import nautobot_service, offboarding_service
 from services.cache_service import cache_service
@@ -776,6 +777,378 @@ async def onboard_device(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to onboard device: {str(e)}",
         )
+
+
+@router.post("/add-device")
+async def add_device(
+    request: AddDeviceRequest,
+    current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+):
+    """
+    Orchestrated endpoint to add a device with interfaces to Nautobot.
+    
+    Workflow:
+    1. Create device in Nautobot DCIM
+    2. Create IP addresses for all interfaces (if specified)
+    3. Create interfaces and assign IP addresses
+    4. Assign primary IPv4 address (skeleton only)
+    
+    Request body:
+    {
+        "name": "device-name",
+        "role": "role-id",
+        "status": "status-id",
+        "location": "location-id",
+        "device_type": "device-type-id",
+        "interfaces": [
+            {
+                "name": "eth0",
+                "type": "1000base-t",
+                "status": "active",
+                "ip_address": "192.168.1.1/24",
+                "namespace": "namespace-id",
+                "enabled": true,
+                "mgmt_only": false,
+                "description": "Management interface",
+                "mac_address": "00:11:22:33:44:55",
+                "mtu": 1500,
+                "mode": "access",
+                "untagged_vlan": "vlan-id",
+                "tagged_vlans": "vlan-id1,vlan-id2",
+                "parent_interface": "parent-id",
+                "bridge": "bridge-id",
+                "lag": "lag-id",
+                "tags": "tag1,tag2"
+            }
+        ]
+    }
+    """
+    try:
+        logger.info(f"Starting add-device workflow for: {request.name}")
+        
+        # Initialize workflow status tracking
+        workflow_status = {
+            "step1_device": {"status": "pending", "message": "", "data": None},
+            "step2_ip_addresses": {"status": "pending", "message": "", "data": [], "errors": []},
+            "step3_interfaces": {"status": "pending", "message": "", "data": [], "errors": []},
+            "step4_primary_ip": {"status": "pending", "message": "", "data": None},
+        }
+        
+        # Step 1: Create device in Nautobot
+        logger.info("Step 1: Creating device in Nautobot DCIM")
+        workflow_status["step1_device"]["status"] = "in_progress"
+        
+        try:
+            device_payload = {
+                "name": request.name,
+                "device_type": request.device_type,
+                "role": request.role,
+                "location": request.location,
+                "status": request.status,
+            }
+            
+            device_response = await nautobot_service.rest_request(
+                endpoint="dcim/devices/",
+                method="POST",
+                data=device_payload
+            )
+            
+            if not device_response or "id" not in device_response:
+                workflow_status["step1_device"]["status"] = "failed"
+                workflow_status["step1_device"]["message"] = "Failed to create device: No device ID returned"
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to create device: No device ID returned"
+                )
+            
+            device_id = device_response["id"]
+            workflow_status["step1_device"]["status"] = "success"
+            workflow_status["step1_device"]["message"] = f"Device '{request.name}' created successfully"
+            workflow_status["step1_device"]["data"] = {"id": device_id, "name": request.name}
+            logger.info(f"Device created with ID: {device_id}")
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            workflow_status["step1_device"]["status"] = "failed"
+            workflow_status["step1_device"]["message"] = f"Error creating device: {str(e)}"
+            logger.error(f"Step 1 failed: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to create device: {str(e)}"
+            )
+        
+        # Step 2: Create IP addresses for all interfaces
+        logger.info("Step 2: Creating IP addresses")
+        workflow_status["step2_ip_addresses"]["status"] = "in_progress"
+        ip_address_map = {}  # Maps interface name to IP address ID
+        interfaces_with_ips = [iface for iface in request.interfaces if iface.ip_address]
+        
+        if not interfaces_with_ips:
+            workflow_status["step2_ip_addresses"]["status"] = "skipped"
+            workflow_status["step2_ip_addresses"]["message"] = "No IP addresses to create"
+        else:
+            for interface in interfaces_with_ips:
+                try:
+                    # Validate that namespace is provided
+                    if not interface.namespace:
+                        workflow_status["step2_ip_addresses"]["errors"].append({
+                            "interface": interface.name,
+                            "ip_address": interface.ip_address,
+                            "error": "Namespace is required for all IP addresses"
+                        })
+                        logger.error(f"Missing namespace for IP address {interface.ip_address} on interface {interface.name}")
+                        continue
+                    
+                    ip_payload = {
+                        "address": interface.ip_address,
+                        "status": interface.status,
+                        "namespace": interface.namespace,
+                    }
+                    
+                    ip_response = await nautobot_service.rest_request(
+                        endpoint="ipam/ip-addresses/",
+                        method="POST",
+                        data=ip_payload
+                    )
+                    
+                    if ip_response and "id" in ip_response:
+                        ip_address_map[interface.name] = ip_response["id"]
+                        workflow_status["step2_ip_addresses"]["data"].append({
+                            "interface": interface.name,
+                            "ip_address": interface.ip_address,
+                            "id": ip_response["id"],
+                            "status": "success"
+                        })
+                        logger.info(f"Created IP address {interface.ip_address} with ID: {ip_response['id']}")
+                    else:
+                        workflow_status["step2_ip_addresses"]["errors"].append({
+                            "interface": interface.name,
+                            "ip_address": interface.ip_address,
+                            "error": "No IP ID returned from Nautobot"
+                        })
+                        logger.warning(f"Failed to create IP address {interface.ip_address} for interface {interface.name}")
+                        
+                except Exception as e:
+                    error_msg = str(e)
+                    workflow_status["step2_ip_addresses"]["errors"].append({
+                        "interface": interface.name,
+                        "ip_address": interface.ip_address,
+                        "error": error_msg
+                    })
+                    logger.error(f"Error creating IP address {interface.ip_address}: {error_msg}")
+            
+            success_count = len(workflow_status["step2_ip_addresses"]["data"])
+            error_count = len(workflow_status["step2_ip_addresses"]["errors"])
+            
+            if success_count > 0 and error_count == 0:
+                workflow_status["step2_ip_addresses"]["status"] = "success"
+                workflow_status["step2_ip_addresses"]["message"] = f"Created {success_count} IP address(es) successfully"
+            elif success_count > 0 and error_count > 0:
+                workflow_status["step2_ip_addresses"]["status"] = "partial"
+                workflow_status["step2_ip_addresses"]["message"] = f"Created {success_count} IP address(es), {error_count} failed"
+            else:
+                workflow_status["step2_ip_addresses"]["status"] = "failed"
+                workflow_status["step2_ip_addresses"]["message"] = f"Failed to create all {error_count} IP address(es)"
+        
+        # Step 3: Create interfaces and assign IP addresses
+        logger.info("Step 3: Creating interfaces")
+        workflow_status["step3_interfaces"]["status"] = "in_progress"
+        created_interfaces = []
+        primary_ipv4_id = None
+        
+        for interface in request.interfaces:
+            try:
+                interface_payload = {
+                    "name": interface.name,
+                    "device": device_id,
+                    "type": interface.type,
+                    "status": interface.status,
+                }
+                
+                # Add optional properties if provided
+                if interface.enabled is not None:
+                    interface_payload["enabled"] = interface.enabled
+                if interface.mgmt_only is not None:
+                    interface_payload["mgmt_only"] = interface.mgmt_only
+                if interface.description:
+                    interface_payload["description"] = interface.description
+                if interface.mac_address:
+                    interface_payload["mac_address"] = interface.mac_address
+                if interface.mtu:
+                    interface_payload["mtu"] = interface.mtu
+                if interface.mode:
+                    interface_payload["mode"] = interface.mode
+                if interface.untagged_vlan:
+                    interface_payload["untagged_vlan"] = interface.untagged_vlan
+                if interface.tagged_vlans:
+                    interface_payload["tagged_vlans"] = interface.tagged_vlans
+                if interface.parent_interface:
+                    interface_payload["parent_interface"] = interface.parent_interface
+                if interface.bridge:
+                    interface_payload["bridge"] = interface.bridge
+                if interface.lag:
+                    interface_payload["lag"] = interface.lag
+                if interface.tags:
+                    interface_payload["tags"] = interface.tags
+                
+                interface_response = await nautobot_service.rest_request(
+                    endpoint="dcim/interfaces/",
+                    method="POST",
+                    data=interface_payload
+                )
+                
+                if interface_response and "id" in interface_response:
+                    interface_id = interface_response["id"]
+                    logger.info(f"Created interface {interface.name} with ID: {interface_id}")
+                    
+                    interface_result = {
+                        "name": interface.name,
+                        "id": interface_id,
+                        "status": "success",
+                        "ip_assigned": False,
+                        "ip_assignment_error": None
+                    }
+                    
+                    # Assign IP address to interface if we created one
+                    if interface.name in ip_address_map:
+                        ip_id = ip_address_map[interface.name]
+                        try:
+                            # Use the new IP address to interface assignment endpoint
+                            assignment_payload = {
+                                "ip_address": ip_id,
+                                "interface": interface_id,
+                            }
+                            
+                            await nautobot_service.rest_request(
+                                endpoint="ipam/ip-address-to-interface/",
+                                method="POST",
+                                data=assignment_payload
+                            )
+                            interface_result["ip_assigned"] = True
+                            logger.info(f"Assigned IP {interface.ip_address} to interface {interface.name}")
+                            
+                            # Save first IPv4 address for primary IP
+                            if primary_ipv4_id is None and interface.ip_address and "/" in interface.ip_address:
+                                if ":" not in interface.ip_address:
+                                    primary_ipv4_id = ip_id
+                                    
+                        except Exception as e:
+                            interface_result["ip_assignment_error"] = str(e)
+                            logger.error(f"Failed to assign IP to interface: {str(e)}")
+                    
+                    workflow_status["step3_interfaces"]["data"].append(interface_result)
+                    created_interfaces.append(interface_response)
+                else:
+                    workflow_status["step3_interfaces"]["errors"].append({
+                        "interface": interface.name,
+                        "error": "No interface ID returned from Nautobot"
+                    })
+                    logger.warning(f"Failed to create interface {interface.name}")
+                    
+            except Exception as e:
+                error_msg = str(e)
+                workflow_status["step3_interfaces"]["errors"].append({
+                    "interface": interface.name,
+                    "error": error_msg
+                })
+                logger.error(f"Error creating interface {interface.name}: {error_msg}")
+        
+        success_count = len(workflow_status["step3_interfaces"]["data"])
+        error_count = len(workflow_status["step3_interfaces"]["errors"])
+        
+        if success_count > 0 and error_count == 0:
+            workflow_status["step3_interfaces"]["status"] = "success"
+            workflow_status["step3_interfaces"]["message"] = f"Created {success_count} interface(s) successfully"
+        elif success_count > 0 and error_count > 0:
+            workflow_status["step3_interfaces"]["status"] = "partial"
+            workflow_status["step3_interfaces"]["message"] = f"Created {success_count} interface(s), {error_count} failed"
+        elif success_count == 0 and error_count > 0:
+            workflow_status["step3_interfaces"]["status"] = "failed"
+            workflow_status["step3_interfaces"]["message"] = f"Failed to create all {error_count} interface(s)"
+        else:
+            workflow_status["step3_interfaces"]["status"] = "skipped"
+            workflow_status["step3_interfaces"]["message"] = "No interfaces to create"
+        
+        # Step 4: Assign primary IPv4 address (skeleton)
+        logger.info("Step 4: Assigning primary IPv4 (skeleton)")
+        workflow_status["step4_primary_ip"]["status"] = "in_progress"
+        
+        if primary_ipv4_id:
+            success = await _assign_primary_ipv4(device_id, primary_ipv4_id)
+            if success:
+                workflow_status["step4_primary_ip"]["status"] = "success"
+                workflow_status["step4_primary_ip"]["message"] = "Primary IPv4 assignment (skeleton)"
+                workflow_status["step4_primary_ip"]["data"] = {"ip_id": primary_ipv4_id}
+                logger.info(f"Primary IPv4 assigned: {primary_ipv4_id}")
+            else:
+                workflow_status["step4_primary_ip"]["status"] = "failed"
+                workflow_status["step4_primary_ip"]["message"] = "Failed to assign primary IPv4"
+                logger.warning("Failed to assign primary IPv4")
+        else:
+            workflow_status["step4_primary_ip"]["status"] = "skipped"
+            workflow_status["step4_primary_ip"]["message"] = "No IPv4 address available for primary IP"
+            logger.info("No IPv4 address found for primary IP assignment")
+        
+        # Determine overall success
+        overall_success = (
+            workflow_status["step1_device"]["status"] == "success" and
+            workflow_status["step3_interfaces"]["status"] in ["success", "partial"]
+        )
+        
+        return {
+            "success": overall_success,
+            "message": f"Device '{request.name}' workflow completed",
+            "device_id": device_id,
+            "device": device_response,
+            "workflow_status": workflow_status,
+            "summary": {
+                "device_created": workflow_status["step1_device"]["status"] == "success",
+                "interfaces_created": len(created_interfaces),
+                "interfaces_failed": len(workflow_status["step3_interfaces"]["errors"]),
+                "ip_addresses_created": len(ip_address_map),
+                "ip_addresses_failed": len(workflow_status["step2_ip_addresses"]["errors"]),
+                "primary_ipv4_assigned": primary_ipv4_id is not None,
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to add device: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to add device: {str(e)}",
+        )
+
+
+async def _assign_primary_ipv4(device_id: str, ip_address_id: str) -> bool:
+    """
+    Skeleton function to assign primary IPv4 address to a device.
+    
+    Args:
+        device_id: The Nautobot device ID
+        ip_address_id: The Nautobot IP address ID to set as primary
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        # TODO: Implement primary IP assignment
+        # This is a skeleton for now - to be implemented later
+        logger.info(f"[SKELETON] Would assign primary IPv4 {ip_address_id} to device {device_id}")
+        
+        # When implemented, should do:
+        # await nautobot_service.rest_request(
+        #     endpoint=f"dcim/devices/{device_id}/",
+        #     method="PATCH",
+        #     data={"primary_ip4": ip_address_id}
+        # )
+        
+        return True
+    except Exception as e:
+        logger.error(f"Error in _assign_primary_ipv4: {str(e)}")
+        return False
 
 
 @router.post("/sync-network-data")
@@ -1681,4 +2054,998 @@ async def offboard_device(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Offboarding failed: {str(e)}",
+        )
+
+
+# =============================================================================
+# IPAM Prefix Endpoints
+# =============================================================================
+
+
+@router.get("/ipam/prefixes")
+async def get_ipam_prefixes(
+    prefix: Optional[str] = None,
+    namespace: Optional[str] = None,
+    location: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: Optional[int] = None,
+    offset: Optional[int] = None,
+    current_user: dict = Depends(require_permission("nautobot.locations", "read")),
+):
+    """
+    Get IP prefixes from Nautobot IPAM.
+    
+    Query parameters:
+    - prefix: Filter by prefix (e.g., "10.0.0.0/8")
+    - namespace: Filter by namespace name
+    - location: Filter by location name
+    - status: Filter by status (e.g., "active", "reserved", "deprecated")
+    - limit: Maximum number of results
+    - offset: Pagination offset
+    """
+    try:
+        # Build query parameters
+        params = {}
+        if prefix:
+            params["prefix"] = prefix
+        if namespace:
+            params["namespace"] = namespace
+        if location:
+            params["location"] = location
+        if status:
+            params["status"] = status
+        if limit:
+            params["limit"] = limit
+        if offset:
+            params["offset"] = offset
+        
+        # Build endpoint URL with query parameters
+        endpoint = "ipam/prefixes/"
+        if params:
+            query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+            endpoint = f"{endpoint}?{query_string}"
+        
+        result = await nautobot_service.rest_request(endpoint, method="GET")
+        
+        logger.info(f"Retrieved {result.get('count', 0)} prefixes from Nautobot IPAM")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to get IPAM prefixes: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve IPAM prefixes: {str(e)}",
+        )
+
+
+@router.get("/ipam/prefixes/{prefix_id}")
+async def get_ipam_prefix(
+    prefix_id: str,
+    current_user: dict = Depends(require_permission("nautobot.locations", "read")),
+):
+    """
+    Get a specific IP prefix by ID from Nautobot IPAM.
+    
+    Parameters:
+    - prefix_id: The UUID of the prefix
+    """
+    try:
+        endpoint = f"ipam/prefixes/{prefix_id}/"
+        result = await nautobot_service.rest_request(endpoint, method="GET")
+        
+        logger.info(f"Retrieved prefix {prefix_id} from Nautobot IPAM")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to get IPAM prefix {prefix_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve IPAM prefix: {str(e)}",
+        )
+
+
+@router.post("/ipam/prefixes")
+async def create_ipam_prefix(
+    prefix_data: dict,
+    current_user: dict = Depends(require_permission("nautobot.locations", "write")),
+):
+    """
+    Create a new IP prefix in Nautobot IPAM.
+    
+    Request body should contain:
+    - prefix: The IP prefix (e.g., "10.0.0.0/24")
+    - namespace: Namespace ID or name
+    - status: Status ID or name (e.g., "active")
+    - type: Prefix type (e.g., "network", "pool")
+    - location: (optional) Location ID
+    - description: (optional) Description
+    - tags: (optional) List of tag IDs
+    
+    Example:
+    {
+        "prefix": "10.0.0.0/24",
+        "namespace": "global",
+        "status": "active",
+        "type": "network",
+        "description": "Management network"
+    }
+    """
+    try:
+        # Validate required fields
+        if "prefix" not in prefix_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Missing required field: prefix"
+            )
+        if "namespace" not in prefix_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Missing required field: namespace"
+            )
+        
+        endpoint = "ipam/prefixes/"
+        result = await nautobot_service.rest_request(
+            endpoint, 
+            method="POST", 
+            data=prefix_data
+        )
+        
+        logger.info(f"Created prefix {prefix_data.get('prefix')} in Nautobot IPAM")
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to create IPAM prefix: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create IPAM prefix: {str(e)}",
+        )
+
+
+@router.put("/ipam/prefixes/{prefix_id}")
+@router.patch("/ipam/prefixes/{prefix_id}")
+async def update_ipam_prefix(
+    prefix_id: str,
+    prefix_data: dict,
+    current_user: dict = Depends(require_permission("nautobot.locations", "write")),
+):
+    """
+    Update an existing IP prefix in Nautobot IPAM.
+    
+    Parameters:
+    - prefix_id: The UUID of the prefix to update
+    
+    Request body can contain any updatable fields:
+    - prefix: The IP prefix
+    - namespace: Namespace ID
+    - status: Status ID
+    - type: Prefix type
+    - location: Location ID
+    - description: Description
+    - tags: List of tag IDs
+    """
+    try:
+        endpoint = f"ipam/prefixes/{prefix_id}/"
+        
+        # Use PATCH for partial updates (from @router.patch), PUT for full replacement
+        # Both decorators point to the same function, so we always use PATCH internally
+        result = await nautobot_service.rest_request(
+            endpoint, 
+            method="PATCH",  # Use PATCH for partial updates
+            data=prefix_data
+        )
+        
+        logger.info(f"Updated prefix {prefix_id} in Nautobot IPAM")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to update IPAM prefix {prefix_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update IPAM prefix: {str(e)}",
+        )
+
+
+@router.delete("/ipam/prefixes/{prefix_id}")
+async def delete_ipam_prefix(
+    prefix_id: str,
+    current_user: dict = Depends(require_permission("nautobot.locations", "delete")),
+):
+    """
+    Delete an IP prefix from Nautobot IPAM.
+    
+    Parameters:
+    - prefix_id: The UUID of the prefix to delete
+    """
+    try:
+        endpoint = f"ipam/prefixes/{prefix_id}/"
+        result = await nautobot_service.rest_request(endpoint, method="DELETE")
+        
+        logger.info(f"Deleted prefix {prefix_id} from Nautobot IPAM")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to delete IPAM prefix {prefix_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete IPAM prefix: {str(e)}",
+        )
+
+
+# IPAM IP Address Endpoints
+# =============================================================================
+
+
+@router.get("/ipam/ip-addresses")
+async def get_ipam_ip_addresses(
+    address: Optional[str] = None,
+    namespace: Optional[str] = None,
+    parent: Optional[str] = None,
+    status: Optional[str] = None,
+    dns_name: Optional[str] = None,
+    device: Optional[str] = None,
+    interface: Optional[str] = None,
+    limit: Optional[int] = None,
+    offset: Optional[int] = None,
+    current_user: dict = Depends(require_permission("nautobot.locations", "read")),
+):
+    """
+    Get IP addresses from Nautobot IPAM.
+    
+    Query parameters:
+    - address: Filter by IP address (e.g., "192.168.1.1")
+    - namespace: Filter by namespace name
+    - parent: Filter by parent prefix ID
+    - status: Filter by status (e.g., "active", "reserved", "deprecated")
+    - dns_name: Filter by DNS name
+    - device: Filter by device name or ID
+    - interface: Filter by interface name or ID
+    - limit: Maximum number of results
+    - offset: Pagination offset
+    """
+    try:
+        # Build query parameters
+        params = {}
+        if address:
+            params["address"] = address
+        if namespace:
+            params["namespace"] = namespace
+        if parent:
+            params["parent"] = parent
+        if status:
+            params["status"] = status
+        if dns_name:
+            params["dns_name"] = dns_name
+        if device:
+            params["device"] = device
+        if interface:
+            params["interface"] = interface
+        if limit:
+            params["limit"] = limit
+        if offset:
+            params["offset"] = offset
+        
+        # Build endpoint URL with query parameters
+        endpoint = "ipam/ip-addresses/"
+        if params:
+            query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+            endpoint = f"{endpoint}?{query_string}"
+        
+        result = await nautobot_service.rest_request(endpoint, method="GET")
+        
+        logger.info(f"Retrieved {result.get('count', 0)} IP addresses from Nautobot IPAM")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to get IPAM IP addresses: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve IPAM IP addresses: {str(e)}",
+        )
+
+
+@router.get("/ipam/ip-addresses/{ip_address_id}")
+async def get_ipam_ip_address(
+    ip_address_id: str,
+    current_user: dict = Depends(require_permission("nautobot.locations", "read")),
+):
+    """
+    Get a specific IP address by ID from Nautobot IPAM.
+    
+    Parameters:
+    - ip_address_id: The UUID of the IP address
+    """
+    try:
+        endpoint = f"ipam/ip-addresses/{ip_address_id}/"
+        result = await nautobot_service.rest_request(endpoint, method="GET")
+        
+        logger.info(f"Retrieved IP address {ip_address_id} from Nautobot IPAM")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to get IPAM IP address {ip_address_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve IPAM IP address: {str(e)}",
+        )
+
+
+@router.post("/ipam/ip-addresses")
+async def create_ipam_ip_address(
+    ip_address_data: dict,
+    current_user: dict = Depends(require_permission("nautobot.locations", "write")),
+):
+    """
+    Create a new IP address in Nautobot IPAM.
+    
+    Request body should contain:
+    - address: The IP address with mask (e.g., "192.168.1.1/24" or "192.168.1.1")
+    - namespace: Namespace ID (optional, defaults to Global)
+    - status: Status ID or name (e.g., "active")
+    - type: Address type (e.g., "host", "anycast", "loopback")
+    - parent: (optional) Parent prefix ID
+    - dns_name: (optional) DNS name
+    - description: (optional) Description
+    - tags: (optional) List of tag IDs
+    
+    Example:
+    {
+        "address": "192.168.1.100/24",
+        "namespace": "global",
+        "status": "active",
+        "type": "host",
+        "dns_name": "server.example.com",
+        "description": "Application server"
+    }
+    """
+    try:
+        # Validate required fields
+        if "address" not in ip_address_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Missing required field: address"
+            )
+        
+        endpoint = "ipam/ip-addresses/"
+        result = await nautobot_service.rest_request(
+            endpoint, 
+            method="POST", 
+            data=ip_address_data
+        )
+        
+        logger.info(f"Created IP address {ip_address_data.get('address')} in Nautobot IPAM")
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to create IPAM IP address: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create IPAM IP address: {str(e)}",
+        )
+
+
+@router.put("/ipam/ip-addresses/{ip_address_id}")
+@router.patch("/ipam/ip-addresses/{ip_address_id}")
+async def update_ipam_ip_address(
+    ip_address_id: str,
+    ip_address_data: dict,
+    current_user: dict = Depends(require_permission("nautobot.locations", "write")),
+):
+    """
+    Update an existing IP address in Nautobot IPAM.
+    
+    Parameters:
+    - ip_address_id: The UUID of the IP address to update
+    
+    Request body can contain any updatable fields:
+    - address: The IP address with mask
+    - namespace: Namespace ID
+    - status: Status ID
+    - type: Address type
+    - parent: Parent prefix ID
+    - dns_name: DNS name
+    - description: Description
+    - tags: List of tag IDs
+    """
+    try:
+        endpoint = f"ipam/ip-addresses/{ip_address_id}/"
+        
+        # Use PATCH for partial updates
+        result = await nautobot_service.rest_request(
+            endpoint, 
+            method="PATCH",
+            data=ip_address_data
+        )
+        
+        logger.info(f"Updated IP address {ip_address_id} in Nautobot IPAM")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to update IPAM IP address {ip_address_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update IPAM IP address: {str(e)}",
+        )
+
+
+@router.delete("/ipam/ip-addresses/{ip_address_id}")
+async def delete_ipam_ip_address(
+    ip_address_id: str,
+    current_user: dict = Depends(require_permission("nautobot.locations", "delete")),
+):
+    """
+    Delete an IP address from Nautobot IPAM.
+    
+    Parameters:
+    - ip_address_id: The UUID of the IP address to delete
+    """
+    try:
+        endpoint = f"ipam/ip-addresses/{ip_address_id}/"
+        result = await nautobot_service.rest_request(endpoint, method="DELETE")
+        
+        logger.info(f"Deleted IP address {ip_address_id} from Nautobot IPAM")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to delete IPAM IP address {ip_address_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete IPAM IP address: {str(e)}",
+        )
+
+
+@router.post("/ipam/ip-address-to-interface")
+async def assign_ip_address_to_interface(
+    assignment_data: dict,
+    current_user: dict = Depends(require_permission("nautobot.locations", "write")),
+):
+    """
+    Assign an IP address to an interface in Nautobot.
+    
+    This endpoint creates an IP address to interface assignment using the
+    Nautobot REST API endpoint /api/ipam/ip-address-to-interface/.
+    
+    Request body should contain:
+    - ip_address: IP address ID (UUID)
+    - interface: Interface ID (UUID)
+    
+    Example:
+    {
+        "ip_address": "uuid-of-ip-address",
+        "interface": "uuid-of-interface"
+    }
+    
+    Returns the created assignment object.
+    """
+    try:
+        # Validate required fields
+        if "ip_address" not in assignment_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Missing required field: ip_address"
+            )
+        if "interface" not in assignment_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Missing required field: interface"
+            )
+        
+        endpoint = "ipam/ip-address-to-interface/"
+        result = await nautobot_service.rest_request(
+            endpoint, 
+            method="POST", 
+            data=assignment_data
+        )
+        
+        logger.info(f"Assigned IP address {assignment_data.get('ip_address')} to interface {assignment_data.get('interface')}")
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to assign IP address to interface: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to assign IP address to interface: {str(e)}",
+        )
+
+
+# DCIM Device Endpoints
+# =============================================================================
+
+
+@router.get("/dcim/devices")
+async def get_dcim_devices(
+    name: Optional[str] = None,
+    location: Optional[str] = None,
+    role: Optional[str] = None,
+    device_type: Optional[str] = None,
+    platform: Optional[str] = None,
+    status: Optional[str] = None,
+    tenant: Optional[str] = None,
+    tag: Optional[str] = None,
+    limit: Optional[int] = None,
+    offset: Optional[int] = None,
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
+    """
+    Get devices from Nautobot DCIM.
+    
+    Query parameters:
+    - name: Filter by device name
+    - location: Filter by location name or ID
+    - role: Filter by role name or ID
+    - device_type: Filter by device type name or ID
+    - platform: Filter by platform name or ID
+    - status: Filter by status (e.g., "active", "planned", "offline")
+    - tenant: Filter by tenant name or ID
+    - tag: Filter by tag name
+    - limit: Maximum number of results
+    - offset: Pagination offset
+    """
+    try:
+        # Build query parameters
+        params = {}
+        if name:
+            params["name"] = name
+        if location:
+            params["location"] = location
+        if role:
+            params["role"] = role
+        if device_type:
+            params["device_type"] = device_type
+        if platform:
+            params["platform"] = platform
+        if status:
+            params["status"] = status
+        if tenant:
+            params["tenant"] = tenant
+        if tag:
+            params["tag"] = tag
+        if limit:
+            params["limit"] = limit
+        if offset:
+            params["offset"] = offset
+        
+        # Build endpoint URL with query parameters
+        endpoint = "dcim/devices/"
+        if params:
+            query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+            endpoint = f"{endpoint}?{query_string}"
+        
+        result = await nautobot_service.rest_request(endpoint, method="GET")
+        
+        logger.info(f"Retrieved {result.get('count', 0)} devices from Nautobot DCIM")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to get DCIM devices: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve DCIM devices: {str(e)}",
+        )
+
+
+@router.get("/dcim/devices/{device_id}")
+async def get_dcim_device(
+    device_id: str,
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
+    """
+    Get a specific device by ID from Nautobot DCIM.
+    
+    Parameters:
+    - device_id: The UUID of the device
+    """
+    try:
+        endpoint = f"dcim/devices/{device_id}/"
+        result = await nautobot_service.rest_request(endpoint, method="GET")
+        
+        logger.info(f"Retrieved device {device_id} from Nautobot DCIM")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to get DCIM device {device_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve DCIM device: {str(e)}",
+        )
+
+
+@router.post("/dcim/devices")
+async def create_dcim_device(
+    device_data: dict,
+    current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+):
+    """
+    Create a new device in Nautobot DCIM.
+    
+    Request body should contain:
+    - name: Device name (required)
+    - device_type: Device type ID (required)
+    - role: Role ID (required)
+    - location: Location ID (required)
+    - status: Status ID or name (required)
+    - platform: (optional) Platform ID
+    - serial: (optional) Serial number
+    - asset_tag: (optional) Asset tag
+    - tenant: (optional) Tenant ID
+    - rack: (optional) Rack ID
+    - position: (optional) Rack position
+    - face: (optional) Rack face ("front" or "rear")
+    - primary_ip4: (optional) Primary IPv4 address ID
+    - primary_ip6: (optional) Primary IPv6 address ID
+    - comments: (optional) Comments
+    - tags: (optional) List of tag IDs
+    - custom_fields: (optional) Custom field values
+    
+    Example:
+    {
+        "name": "switch-01",
+        "device_type": "device-type-uuid",
+        "role": "role-uuid",
+        "location": "location-uuid",
+        "status": "active",
+        "platform": "platform-uuid",
+        "serial": "SN123456",
+        "comments": "Main distribution switch"
+    }
+    """
+    try:
+        # Validate required fields
+        required_fields = ["name", "device_type", "role", "location", "status"]
+        missing_fields = [field for field in required_fields if field not in device_data]
+        
+        if missing_fields:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Missing required fields: {', '.join(missing_fields)}"
+            )
+        
+        endpoint = "dcim/devices/"
+        result = await nautobot_service.rest_request(
+            endpoint, 
+            method="POST", 
+            data=device_data
+        )
+        
+        logger.info(f"Created device {device_data.get('name')} in Nautobot DCIM")
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to create DCIM device: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create DCIM device: {str(e)}",
+        )
+
+
+@router.put("/dcim/devices/{device_id}")
+@router.patch("/dcim/devices/{device_id}")
+async def update_dcim_device(
+    device_id: str,
+    device_data: dict,
+    current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+):
+    """
+    Update an existing device in Nautobot DCIM.
+    
+    Parameters:
+    - device_id: The UUID of the device to update
+    
+    Request body can contain any updatable fields:
+    - name: Device name
+    - device_type: Device type ID
+    - role: Role ID
+    - location: Location ID
+    - status: Status ID
+    - platform: Platform ID
+    - serial: Serial number
+    - asset_tag: Asset tag
+    - tenant: Tenant ID
+    - rack: Rack ID
+    - position: Rack position
+    - face: Rack face
+    - primary_ip4: Primary IPv4 address ID
+    - primary_ip6: Primary IPv6 address ID
+    - comments: Comments
+    - tags: List of tag IDs
+    - custom_fields: Custom field values
+    """
+    try:
+        endpoint = f"dcim/devices/{device_id}/"
+        
+        # Use PATCH for partial updates
+        result = await nautobot_service.rest_request(
+            endpoint, 
+            method="PATCH",
+            data=device_data
+        )
+        
+        logger.info(f"Updated device {device_id} in Nautobot DCIM")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to update DCIM device {device_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update DCIM device: {str(e)}",
+        )
+
+
+@router.delete("/dcim/devices/{device_id}")
+async def delete_dcim_device(
+    device_id: str,
+    current_user: dict = Depends(require_permission("nautobot.devices", "delete")),
+):
+    """
+    Delete a device from Nautobot DCIM.
+    
+    Parameters:
+    - device_id: The UUID of the device to delete
+    """
+    try:
+        endpoint = f"dcim/devices/{device_id}/"
+        result = await nautobot_service.rest_request(endpoint, method="DELETE")
+        
+        logger.info(f"Deleted device {device_id} from Nautobot DCIM")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to delete DCIM device {device_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete DCIM device: {str(e)}",
+        )
+
+
+# DCIM Interface Endpoints
+# =============================================================================
+
+
+@router.get("/dcim/interfaces")
+async def get_dcim_interfaces(
+    device: Optional[str] = None,
+    device_id: Optional[str] = None,
+    name: Optional[str] = None,
+    type: Optional[str] = None,
+    enabled: Optional[bool] = None,
+    mgmt_only: Optional[bool] = None,
+    mac_address: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: Optional[int] = None,
+    offset: Optional[int] = None,
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
+    """
+    Get device interfaces from Nautobot DCIM.
+    
+    Query parameters:
+    - device: Filter by device name
+    - device_id: Filter by device ID
+    - name: Filter by interface name
+    - type: Filter by interface type (e.g., "1000base-t", "10gbase-x-sfpp")
+    - enabled: Filter by enabled status (true/false)
+    - mgmt_only: Filter by management-only status (true/false)
+    - mac_address: Filter by MAC address
+    - status: Filter by status
+    - limit: Maximum number of results
+    - offset: Pagination offset
+    """
+    try:
+        # Build query parameters
+        params = {}
+        if device:
+            params["device"] = device
+        if device_id:
+            params["device_id"] = device_id
+        if name:
+            params["name"] = name
+        if type:
+            params["type"] = type
+        if enabled is not None:
+            params["enabled"] = str(enabled).lower()
+        if mgmt_only is not None:
+            params["mgmt_only"] = str(mgmt_only).lower()
+        if mac_address:
+            params["mac_address"] = mac_address
+        if status:
+            params["status"] = status
+        if limit:
+            params["limit"] = limit
+        if offset:
+            params["offset"] = offset
+        
+        # Build endpoint URL with query parameters
+        endpoint = "dcim/interfaces/"
+        if params:
+            query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+            endpoint = f"{endpoint}?{query_string}"
+        
+        result = await nautobot_service.rest_request(endpoint, method="GET")
+        
+        logger.info(f"Retrieved {result.get('count', 0)} interfaces from Nautobot DCIM")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to get DCIM interfaces: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve DCIM interfaces: {str(e)}",
+        )
+
+
+@router.get("/dcim/interfaces/{interface_id}")
+async def get_dcim_interface(
+    interface_id: str,
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
+    """
+    Get a specific interface by ID from Nautobot DCIM.
+    
+    Parameters:
+    - interface_id: The UUID of the interface
+    """
+    try:
+        endpoint = f"dcim/interfaces/{interface_id}/"
+        result = await nautobot_service.rest_request(endpoint, method="GET")
+        
+        logger.info(f"Retrieved interface {interface_id} from Nautobot DCIM")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to get DCIM interface {interface_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve DCIM interface: {str(e)}",
+        )
+
+
+@router.post("/dcim/interfaces")
+async def create_dcim_interface(
+    interface_data: dict,
+    current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+):
+    """
+    Create a new interface in Nautobot DCIM.
+    
+    Request body should contain:
+    - name: Interface name (required)
+    - device: Device ID (required)
+    - type: Interface type (required, e.g., "1000base-t", "10gbase-x-sfpp")
+    - status: Status ID or name (required)
+    - enabled: Enable status (optional, default: true)
+    - mgmt_only: Management-only flag (optional, default: false)
+    - description: Description (optional)
+    - mac_address: MAC address (optional)
+    - mtu: MTU size (optional)
+    - mode: Interface mode (optional, e.g., "access", "tagged")
+    - untagged_vlan: Untagged VLAN ID (optional)
+    - tagged_vlans: List of tagged VLAN IDs (optional)
+    - parent_interface: Parent interface ID for sub-interfaces (optional)
+    - bridge: Bridge interface ID (optional)
+    - lag: LAG interface ID (optional)
+    - tags: List of tag IDs (optional)
+    
+    Example:
+    {
+        "name": "GigabitEthernet0/1",
+        "device": "device-uuid",
+        "type": "1000base-t",
+        "status": "active",
+        "enabled": true,
+        "description": "Uplink to core switch"
+    }
+    """
+    try:
+        # Validate required fields
+        required_fields = ["name", "device", "type", "status"]
+        missing_fields = [field for field in required_fields if field not in interface_data]
+        
+        if missing_fields:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Missing required fields: {', '.join(missing_fields)}"
+            )
+        
+        endpoint = "dcim/interfaces/"
+        result = await nautobot_service.rest_request(
+            endpoint, 
+            method="POST", 
+            data=interface_data
+        )
+        
+        logger.info(f"Created interface {interface_data.get('name')} on device {interface_data.get('device')} in Nautobot DCIM")
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to create DCIM interface: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create DCIM interface: {str(e)}",
+        )
+
+
+@router.put("/dcim/interfaces/{interface_id}")
+@router.patch("/dcim/interfaces/{interface_id}")
+async def update_dcim_interface(
+    interface_id: str,
+    interface_data: dict,
+    current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+):
+    """
+    Update an existing interface in Nautobot DCIM.
+    
+    Parameters:
+    - interface_id: The UUID of the interface to update
+    
+    Request body can contain any updatable fields:
+    - name: Interface name
+    - device: Device ID
+    - type: Interface type
+    - status: Status ID
+    - enabled: Enable status
+    - mgmt_only: Management-only flag
+    - description: Description
+    - mac_address: MAC address
+    - mtu: MTU size
+    - mode: Interface mode
+    - untagged_vlan: Untagged VLAN ID
+    - tagged_vlans: List of tagged VLAN IDs
+    - parent_interface: Parent interface ID
+    - bridge: Bridge interface ID
+    - lag: LAG interface ID
+    - tags: List of tag IDs
+    """
+    try:
+        endpoint = f"dcim/interfaces/{interface_id}/"
+        
+        # Use PATCH for partial updates
+        result = await nautobot_service.rest_request(
+            endpoint, 
+            method="PATCH",
+            data=interface_data
+        )
+        
+        logger.info(f"Updated interface {interface_id} in Nautobot DCIM")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to update DCIM interface {interface_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update DCIM interface: {str(e)}",
+        )
+
+
+@router.delete("/dcim/interfaces/{interface_id}")
+async def delete_dcim_interface(
+    interface_id: str,
+    current_user: dict = Depends(require_permission("nautobot.devices", "delete")),
+):
+    """
+    Delete an interface from Nautobot DCIM.
+    
+    Parameters:
+    - interface_id: The UUID of the interface to delete
+    """
+    try:
+        endpoint = f"dcim/interfaces/{interface_id}/"
+        result = await nautobot_service.rest_request(endpoint, method="DELETE")
+        
+        logger.info(f"Deleted interface {interface_id} from Nautobot DCIM")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to delete DCIM interface {interface_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND if "404" in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete DCIM interface: {str(e)}",
         )

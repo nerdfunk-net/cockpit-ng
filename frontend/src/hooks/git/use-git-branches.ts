@@ -11,9 +11,11 @@ interface UseGitBranchesOptions {
   onBranchChange?: (branch: string) => void
 }
 
+const EMPTY_OPTIONS: UseGitBranchesOptions = {}
+
 export function useGitBranches(
   repoId: number | null,
-  options: UseGitBranchesOptions = {}
+  options: UseGitBranchesOptions = EMPTY_OPTIONS
 ) {
   const [branches, setBranches] = useState<Branch[]>([])
   const [selectedBranch, setSelectedBranch] = useState<string>('')
