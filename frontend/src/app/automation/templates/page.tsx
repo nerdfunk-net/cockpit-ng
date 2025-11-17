@@ -32,7 +32,7 @@ function UserTemplatesContent() {
   const { apiCall } = useApi()
   const user = useAuthStore((state) => state.user)
   const username = user?.username
-  const permissions = user?.permissions || 0
+  const permissions = typeof user?.permissions === 'number' ? user.permissions : 0
   const isAdmin = (permissions & 16) !== 0 // Check admin permission bit
 
   // State

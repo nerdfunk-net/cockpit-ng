@@ -258,6 +258,24 @@ def delete_credential(cred_id: int) -> None:
         conn.commit()
 
 
+def delete_credentials_by_owner(owner: str) -> int:
+    """Delete all credentials owned by a specific user.
+    
+    Args:
+        owner: Username of the credential owner
+        
+    Returns:
+        Number of credentials deleted
+    """
+    with _get_conn() as conn:
+        cursor = conn.execute(
+            "DELETE FROM credentials WHERE owner = ? AND source = 'private'",
+            (owner,)
+        )
+        conn.commit()
+        return cursor.rowcount
+
+
 def get_decrypted_password(cred_id: int) -> str:
     with _get_conn() as conn:
         row = conn.execute(

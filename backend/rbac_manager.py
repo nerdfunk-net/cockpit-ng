@@ -15,9 +15,13 @@ Permission Resolution:
 from __future__ import annotations
 import os
 import sqlite3
+import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 from config import settings as config_settings
+
+# Logger
+logger = logging.getLogger(__name__)
 
 # Database path
 RBAC_DB_PATH = os.path.join(config_settings.data_directory, "settings", "rbac.db")
@@ -720,6 +724,8 @@ def delete_user_with_rbac(user_id: int) -> bool:
     This cascades to remove:
     - All role assignments
     - All permission overrides
+    - Private credentials owned by the user
+    - User profile
     - The user account itself
     
     Args:
@@ -733,6 +739,8 @@ def delete_user_with_rbac(user_id: int) -> bool:
     if not user:
         return False
     
+    username = user.get("username")
+    
     # Remove all role assignments
     roles = get_user_roles(user_id)
     for role in roles:
@@ -742,6 +750,24 @@ def delete_user_with_rbac(user_id: int) -> bool:
     overrides = get_user_permission_overrides(user_id)
     for override in overrides:
         remove_permission_from_user(user_id, override["id"])
+    
+    # Delete user's private credentials
+    if username:
+        try:
+            import credentials_manager
+            deleted_count = credentials_manager.delete_credentials_by_owner(username)
+            logger.info(f"Deleted {deleted_count} private credentials for user {username}")
+        except Exception as e:
+            logger.warning(f"Failed to delete credentials for user {username}: {e}")
+    
+    # Delete user profile
+    if username:
+        try:
+            import profile_manager
+            profile_manager.delete_user_profile(username)
+            logger.info(f"Deleted profile for user {username}")
+        except Exception as e:
+            logger.warning(f"Failed to delete profile for user {username}: {e}")
     
     # Delete user from users.db
     return user_db.hard_delete_user(user_id)
