@@ -813,6 +813,12 @@ async def add_device(
                 "status": request.status,
             }
 
+            # Add optional platform and software_version if provided
+            if request.platform:
+                device_payload["platform"] = request.platform
+            if request.software_version:
+                device_payload["software_version"] = request.software_version
+
             device_response = await nautobot_service.rest_request(
                 endpoint="dcim/devices/", method="POST", data=device_payload
             )
@@ -954,7 +960,19 @@ async def add_device(
         created_interfaces = []
         primary_ipv4_id = None
 
-        for interface in request.interfaces:
+        # Separate LAG interfaces from other interfaces
+        # LAG interfaces must be created first so we can reference them
+        lag_interfaces = [iface for iface in request.interfaces if iface.type == 'lag']
+        other_interfaces = [iface for iface in request.interfaces if iface.type != 'lag']
+
+        # Map frontend interface IDs to Nautobot interface IDs
+        interface_id_map = {}
+
+        # Process LAG interfaces first, then other interfaces
+        sorted_interfaces = lag_interfaces + other_interfaces
+        logger.info(f"Creating {len(lag_interfaces)} LAG interfaces first, then {len(other_interfaces)} other interfaces")
+
+        for interface in sorted_interfaces:
             try:
                 interface_payload = {
                     "name": interface.name,
@@ -979,13 +997,22 @@ async def add_device(
                 if interface.untagged_vlan:
                     interface_payload["untagged_vlan"] = interface.untagged_vlan
                 if interface.tagged_vlans:
-                    interface_payload["tagged_vlans"] = interface.tagged_vlans
+                    # Convert comma-separated string to list for Nautobot API
+                    interface_payload["tagged_vlans"] = [
+                        v.strip() for v in interface.tagged_vlans.split(',') if v.strip()
+                    ]
                 if interface.parent_interface:
                     interface_payload["parent_interface"] = interface.parent_interface
                 if interface.bridge:
                     interface_payload["bridge"] = interface.bridge
                 if interface.lag:
-                    interface_payload["lag"] = interface.lag
+                    # Map frontend interface ID to Nautobot interface ID
+                    lag_nautobot_id = interface_id_map.get(interface.lag)
+                    if lag_nautobot_id:
+                        interface_payload["lag"] = lag_nautobot_id
+                        logger.info(f"Mapping LAG {interface.lag} to Nautobot ID {lag_nautobot_id}")
+                    else:
+                        logger.warning(f"LAG interface {interface.lag} not found in interface_id_map")
                 if interface.tags:
                     interface_payload["tags"] = interface.tags
 
@@ -998,6 +1025,11 @@ async def add_device(
                     logger.info(
                         f"Created interface {interface.name} with ID: {interface_id}"
                     )
+
+                    # Store mapping from frontend ID to Nautobot ID for LAG references
+                    if interface.id:
+                        interface_id_map[interface.id] = interface_id
+                        logger.debug(f"Mapped frontend ID {interface.id} to Nautobot ID {interface_id}")
 
                     interface_result = {
                         "name": interface.name,

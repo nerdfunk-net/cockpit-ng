@@ -55,6 +55,7 @@ class OffboardDeviceRequest(BaseModel):
 class InterfaceData(BaseModel):
     """Interface data model for add device request."""
 
+    id: Optional[str] = None  # Frontend interface ID for LAG mapping
     name: str
     type: str
     status: str
@@ -84,5 +85,7 @@ class AddDeviceRequest(BaseModel):
     status: str
     location: str
     device_type: str
+    platform: Optional[str] = None
+    software_version: Optional[str] = None
     # Interfaces array
     interfaces: list[InterfaceData] = []

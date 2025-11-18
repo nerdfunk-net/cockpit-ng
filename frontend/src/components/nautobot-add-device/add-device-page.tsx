@@ -12,7 +12,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Textarea } from '@/components/ui/textarea'
 import { Plus, Trash2, Server, Network, AlertCircle, CheckCircle2, Info, Settings } from 'lucide-react'
 
 // Type definitions
@@ -28,9 +27,29 @@ interface DeviceType {
   model: string
   manufacturer: {
     id: string
-    name: string
+    name?: string
+    display?: string
   }
   display?: string
+}
+
+interface SoftwareVersion {
+  id: string
+  version: string
+  alias?: string
+  release_date?: string
+  end_of_support_date?: string
+  documentation_url?: string
+  long_term_support?: boolean
+  pre_release?: boolean
+  platform?: {
+    id: string
+    name: string
+  }
+  tags?: Array<{
+    id: string
+    name: string
+  }>
 }
 
 interface LocationItem {
@@ -42,6 +61,21 @@ interface LocationItem {
     name: string
   }
   hierarchicalPath?: string
+}
+
+interface VlanItem {
+  id: string
+  name: string
+  description?: string
+  vid: number
+  role?: {
+    id: string
+    name: string
+  }
+  location?: {
+    id: string
+    name: string
+  }
 }
 
 interface InterfaceData {
@@ -72,9 +106,22 @@ interface StatusMessage {
   message: string
 }
 
+interface NautobotDefaults {
+  location: string
+  platform: string
+  interface_status: string
+  device_status: string
+  ip_address_status: string
+  namespace: string
+  device_role: string
+  secret_group: string
+  csv_delimiter: string
+}
+
 const EMPTY_DROPDOWN_OPTIONS: DropdownOption[] = []
 const EMPTY_DEVICE_TYPES: DeviceType[] = []
 const EMPTY_LOCATIONS: LocationItem[] = []
+const EMPTY_SOFTWARE_VERSIONS: SoftwareVersion[] = []
 
 export function AddDevicePage() {
   const { isAuthenticated } = useAuthStore()
@@ -86,6 +133,7 @@ export function AddDevicePage() {
   const [selectedStatus, setSelectedStatus] = useState('')
   const [selectedLocation, setSelectedLocation] = useState('')
   const [selectedDeviceType, setSelectedDeviceType] = useState('')
+  const [selectedSoftwareVersion, setSelectedSoftwareVersion] = useState('')
 
   // Interface management
   const [interfaces, setInterfaces] = useState<InterfaceData[]>([
@@ -97,6 +145,7 @@ export function AddDevicePage() {
   const [statuses, setStatuses] = useState<DropdownOption[]>(EMPTY_DROPDOWN_OPTIONS)
   const [locations, setLocations] = useState<LocationItem[]>(EMPTY_LOCATIONS)
   const [deviceTypes, setDeviceTypes] = useState<DeviceType[]>(EMPTY_DEVICE_TYPES)
+  const [softwareVersions, setSoftwareVersions] = useState<SoftwareVersion[]>(EMPTY_SOFTWARE_VERSIONS)
   const [interfaceTypes, setInterfaceTypes] = useState<DropdownOption[]>(EMPTY_DROPDOWN_OPTIONS)
   const [interfaceStatuses, setInterfaceStatuses] = useState<DropdownOption[]>(EMPTY_DROPDOWN_OPTIONS)
   const [namespaces, setNamespaces] = useState<DropdownOption[]>(EMPTY_DROPDOWN_OPTIONS)
@@ -106,15 +155,39 @@ export function AddDevicePage() {
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null)
 
+  // Nautobot defaults
+  const [nautobotDefaults, setNautobotDefaults] = useState<NautobotDefaults | null>(null)
+  const hasInitialized = useRef(false)
+
   // Location search state
   const [locationSearch, setLocationSearch] = useState('')
   const [locationFiltered, setLocationFiltered] = useState<LocationItem[]>([])
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
   const locationContainerRef = useRef<HTMLDivElement | null>(null)
 
+  // Device type search state
+  const [deviceTypeSearch, setDeviceTypeSearch] = useState('')
+  const [deviceTypeFiltered, setDeviceTypeFiltered] = useState<DeviceType[]>([])
+  const [showDeviceTypeDropdown, setShowDeviceTypeDropdown] = useState(false)
+  const deviceTypeContainerRef = useRef<HTMLDivElement | null>(null)
+
+  // Software version search state
+  const [softwareVersionSearch, setSoftwareVersionSearch] = useState('')
+  const [softwareVersionFiltered, setSoftwareVersionFiltered] = useState<SoftwareVersion[]>([])
+  const [showSoftwareVersionDropdown, setShowSoftwareVersionDropdown] = useState(false)
+  const softwareVersionContainerRef = useRef<HTMLDivElement | null>(null)
+
   // Properties modal state
   const [showPropertiesModal, setShowPropertiesModal] = useState(false)
   const [currentInterfaceId, setCurrentInterfaceId] = useState<string | null>(null)
+
+  // VLAN state for properties modal
+  const [vlans, setVlans] = useState<VlanItem[]>([])
+  const [isLoadingVlans, setIsLoadingVlans] = useState(false)
+
+  // Interface type search state (per interface)
+  const [interfaceTypeSearch, setInterfaceTypeSearch] = useState<Record<string, string>>({})
+  const [showInterfaceTypeDropdown, setShowInterfaceTypeDropdown] = useState<Record<string, boolean>>({})
 
   // Load all dropdown data on mount
   const loadDropdownData = useCallback(async () => {
@@ -159,6 +232,14 @@ export function AddDevicePage() {
         setDeviceTypes(deviceTypesData)
       }
 
+      // Load software versions
+      const softwareVersionsData = await apiCall<SoftwareVersion[]>('nautobot/software-versions', {
+        method: 'GET'
+      })
+      if (softwareVersionsData && Array.isArray(softwareVersionsData)) {
+        setSoftwareVersions(softwareVersionsData)
+      }
+
       // Load interface statuses
       const interfaceStatusesData = await apiCall<DropdownOption[]>('nautobot/statuses/interface', {
         method: 'GET'
@@ -167,17 +248,13 @@ export function AddDevicePage() {
         setInterfaceStatuses(interfaceStatusesData)
       }
 
-      // Set interface types (hardcoded common types)
-      setInterfaceTypes([
-        { id: '1000base-t', name: '1000BASE-T (1GE)' },
-        { id: '10gbase-x-sfpp', name: '10GBASE-X SFP+' },
-        { id: '25gbase-x-sfp28', name: '25GBASE-X SFP28' },
-        { id: '40gbase-x-qsfpp', name: '40GBASE-X QSFP+' },
-        { id: '100gbase-x-qsfp28', name: '100GBASE-X QSFP28' },
-        { id: 'virtual', name: 'Virtual' },
-        { id: 'lag', name: 'Link Aggregation Group (LAG)' },
-        { id: 'other', name: 'Other' }
-      ])
+      // Load interface types from Nautobot
+      const interfaceTypesData = await apiCall<Array<{value: string, display_name: string}>>('nautobot/interface-types', {
+        method: 'GET'
+      })
+      if (interfaceTypesData && Array.isArray(interfaceTypesData)) {
+        setInterfaceTypes(interfaceTypesData.map(t => ({ id: t.value, name: t.display_name })))
+      }
 
       // Load namespaces
       const namespacesData = await apiCall<DropdownOption[]>('nautobot/namespaces', {
@@ -185,6 +262,14 @@ export function AddDevicePage() {
       })
       if (namespacesData && Array.isArray(namespacesData)) {
         setNamespaces(namespacesData)
+      }
+
+      // Load Nautobot defaults from settings
+      const defaultsResponse = await apiCall<{ success: boolean; data: NautobotDefaults }>('settings/nautobot/defaults', {
+        method: 'GET'
+      })
+      if (defaultsResponse?.success && defaultsResponse.data) {
+        setNautobotDefaults(defaultsResponse.data)
       }
 
     } catch (error) {
@@ -201,6 +286,36 @@ export function AddDevicePage() {
   useEffect(() => {
     loadDropdownData()
   }, [loadDropdownData])
+
+  // Apply defaults when nautobotDefaults loads
+  useEffect(() => {
+    if (!hasInitialized.current && !isLoadingData && nautobotDefaults) {
+      hasInitialized.current = true
+
+      // Apply defaults to form fields
+      if (nautobotDefaults.location) {
+        setSelectedLocation(nautobotDefaults.location)
+        // Set location search display
+        const defaultLocation = locations.find(loc => loc.id === nautobotDefaults.location)
+        if (defaultLocation) {
+          setLocationSearch(defaultLocation.hierarchicalPath || defaultLocation.name)
+        }
+      }
+      if (nautobotDefaults.device_role) {
+        setSelectedRole(nautobotDefaults.device_role)
+      }
+      if (nautobotDefaults.device_status) {
+        setSelectedStatus(nautobotDefaults.device_status)
+      }
+
+      // Apply defaults to initial interface
+      setInterfaces(prev => prev.map(iface => ({
+        ...iface,
+        status: iface.status || nautobotDefaults.interface_status || '',
+        namespace: iface.namespace || nautobotDefaults.namespace || ''
+      })))
+    }
+  }, [isLoadingData, nautobotDefaults, locations])
 
   // Filter locations based on search
   useEffect(() => {
@@ -227,6 +342,57 @@ export function AddDevicePage() {
     return () => document.removeEventListener('mousedown', onClick)
   }, [])
 
+  // Filter device types based on search
+  useEffect(() => {
+    if (deviceTypeSearch.trim()) {
+      setDeviceTypeFiltered(
+        deviceTypes.filter(dt =>
+          (dt.display || dt.model).toLowerCase().includes(deviceTypeSearch.toLowerCase())
+        )
+      )
+    } else {
+      setDeviceTypeFiltered(deviceTypes)
+    }
+  }, [deviceTypeSearch, deviceTypes])
+
+  // Click outside handler to close device type dropdown
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (!deviceTypeContainerRef.current) return
+      if (!deviceTypeContainerRef.current.contains(e.target as Node)) {
+        setShowDeviceTypeDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [])
+
+  // Filter software versions based on search
+  useEffect(() => {
+    if (softwareVersionSearch.trim()) {
+      setSoftwareVersionFiltered(
+        softwareVersions.filter(sv => {
+          const displayText = `${sv.platform?.name || ''} ${sv.version}`.toLowerCase()
+          return displayText.includes(softwareVersionSearch.toLowerCase())
+        })
+      )
+    } else {
+      setSoftwareVersionFiltered(softwareVersions)
+    }
+  }, [softwareVersionSearch, softwareVersions])
+
+  // Click outside handler to close software version dropdown
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (!softwareVersionContainerRef.current) return
+      if (!softwareVersionContainerRef.current.contains(e.target as Node)) {
+        setShowSoftwareVersionDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [])
+
   // Build hierarchical location path
   const buildLocationPath = (location: LocationItem, allLocations: LocationItem[]): string => {
     const path: string[] = [location.name]
@@ -242,27 +408,21 @@ export function AddDevicePage() {
     return path.join(' > ')
   }
 
-  // Grouped device types by manufacturer
-  const groupedDeviceTypes = useMemo(() => {
-    const groups: Record<string, DeviceType[]> = {}
-    deviceTypes.forEach(dt => {
-      const manufacturer = dt.manufacturer.name
-      if (!groups[manufacturer]) {
-        groups[manufacturer] = []
-      }
-      groups[manufacturer].push(dt)
-    })
-    return groups
-  }, [deviceTypes])
-
   // Add new interface
   const handleAddInterface = useCallback(() => {
     const newId = (Math.max(0, ...interfaces.map(i => parseInt(i.id))) + 1).toString()
     setInterfaces(prev => [
       ...prev,
-      { id: newId, name: '', type: '', status: '', ip_address: '' }
+      {
+        id: newId,
+        name: '',
+        type: '',
+        status: nautobotDefaults?.interface_status || '',
+        ip_address: '',
+        namespace: nautobotDefaults?.namespace || ''
+      }
     ])
-  }, [interfaces])
+  }, [interfaces, nautobotDefaults])
 
   // Remove interface
   const handleRemoveInterface = useCallback((id: string) => {
@@ -280,11 +440,35 @@ export function AddDevicePage() {
     )
   }, [])
 
-  // Open properties modal
-  const handleOpenProperties = useCallback((interfaceId: string) => {
+  // Open properties modal and load VLANs
+  const handleOpenProperties = useCallback(async (interfaceId: string) => {
     setCurrentInterfaceId(interfaceId)
     setShowPropertiesModal(true)
-  }, [])
+
+    // Load VLANs for the selected location
+    setIsLoadingVlans(true)
+    try {
+      // Get the location name from the selected location ID
+      const selectedLoc = locations.find(loc => loc.id === selectedLocation)
+      const locationName = selectedLoc?.name
+
+      // Build the API URL with parameters
+      let url = 'nautobot/vlans?get_global_vlans=true'
+      if (locationName) {
+        url += `&location=${encodeURIComponent(locationName)}`
+      }
+
+      const vlansData = await apiCall<VlanItem[]>(url, { method: 'GET' })
+      if (vlansData && Array.isArray(vlansData)) {
+        setVlans(vlansData)
+      }
+    } catch (error) {
+      console.error('Error loading VLANs:', error)
+      setVlans([])
+    } finally {
+      setIsLoadingVlans(false)
+    }
+  }, [apiCall, locations, selectedLocation])
 
   // Close properties modal
   const handleCloseProperties = useCallback(() => {
@@ -313,13 +497,17 @@ export function AddDevicePage() {
       if (!iface.name.trim()) return `Interface ${i + 1}: Name is required`
       if (!iface.type) return `Interface ${i + 1}: Type is required`
       if (!iface.status) return `Interface ${i + 1}: Status is required`
-      if (!iface.ip_address.trim()) return `Interface ${i + 1}: IP Address is required`
-      if (!iface.namespace) return `Interface ${i + 1}: Namespace is required`
-      
-      // Validate IP address format (basic check)
-      const ipPattern = /^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/
-      if (!ipPattern.test(iface.ip_address.trim())) {
-        return `Interface ${i + 1}: Invalid IP address format (use x.x.x.x or x.x.x.x/mask)`
+
+      // IP address is optional (layer 2 interfaces don't have IP)
+      // But if provided, validate format and require namespace
+      if (iface.ip_address.trim()) {
+        if (!iface.namespace) return `Interface ${i + 1}: Namespace is required when IP address is provided`
+
+        // Validate IP address format (basic check)
+        const ipPattern = /^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/
+        if (!ipPattern.test(iface.ip_address.trim())) {
+          return `Interface ${i + 1}: Invalid IP address format (use x.x.x.x or x.x.x.x/mask)`
+        }
       }
     }
 
@@ -344,13 +532,27 @@ export function AddDevicePage() {
       }
 
       // Prepare device data for backend
+      // Get platform ID from selected software version
+      const selectedSV = softwareVersions.find(sv => sv.id === selectedSoftwareVersion)
+      const platformId = selectedSV?.platform?.id
+
+      // Transform interfaces for backend (convert tagged_vlans array to comma-separated string)
+      const transformedInterfaces = interfaces
+        .filter(iface => iface.name && iface.type && iface.status)
+        .map(iface => ({
+          ...iface,
+          tagged_vlans: iface.tagged_vlans?.join(',') || undefined
+        }))
+
       const deviceData = {
         name: deviceName,
         role: selectedRole,
         status: selectedStatus,
         location: selectedLocation,
         device_type: selectedDeviceType,
-        interfaces: interfaces.filter(iface => iface.name && iface.type && iface.status)
+        platform: platformId || undefined,
+        software_version: selectedSoftwareVersion || undefined,
+        interfaces: transformedInterfaces
       }
 
       const response = await fetch('/api/proxy/nautobot/add-device', {
@@ -467,7 +669,7 @@ export function AddDevicePage() {
     } finally {
       setIsLoading(false)
     }
-  }, [validateForm, deviceName, selectedRole, selectedStatus, selectedLocation, selectedDeviceType, interfaces])
+  }, [validateForm, deviceName, selectedRole, selectedStatus, selectedLocation, selectedDeviceType, interfaces, selectedSoftwareVersion, softwareVersions])
 
   if (isLoadingData) {
     return (
@@ -516,7 +718,7 @@ export function AddDevicePage() {
       )}
 
       {/* Device Information Card */}
-      <div className="rounded-xl border shadow-sm overflow-hidden">
+      <div className="rounded-xl border shadow-sm">
         <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
           <div className="flex items-center space-x-2">
             <Server className="h-4 w-4" />
@@ -600,7 +802,7 @@ export function AddDevicePage() {
                 />
                 {showLocationDropdown && locationFiltered.length > 0 && (
                   <div
-                    className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
+                    className="absolute z-[100] mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
                   >
                     {locationFiltered.map(loc => (
                       <div
@@ -621,43 +823,100 @@ export function AddDevicePage() {
             </div>
 
             {/* Device Type */}
-            <div className="space-y-1 md:col-span-2">
+            <div className="space-y-1">
               <Label htmlFor="device-type" className="text-xs font-medium">
                 Device Type <span className="text-destructive">*</span>
               </Label>
-              <Select value={selectedDeviceType} onValueChange={setSelectedDeviceType} disabled={isLoading}>
-                <SelectTrigger id="device-type">
-                  <SelectValue placeholder="Select device type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(groupedDeviceTypes).map(([manufacturer, types]) => (
-                    <div key={manufacturer}>
-                      <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
-                        {manufacturer}
+              <div className="relative" ref={deviceTypeContainerRef}>
+                <Input
+                  id="device-type"
+                  placeholder="Search for device type..."
+                  value={deviceTypeSearch || (selectedDeviceType ? deviceTypes.find(dt => dt.id === selectedDeviceType)?.display || '' : '')}
+                  onChange={(e) => {
+                    const q = e.target.value
+                    setDeviceTypeSearch(q)
+                    setShowDeviceTypeDropdown(true)
+                  }}
+                  onFocus={() => setShowDeviceTypeDropdown(true)}
+                  disabled={isLoading}
+                />
+                {showDeviceTypeDropdown && deviceTypeFiltered.length > 0 && (
+                  <div
+                    className="absolute z-[100] mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
+                  >
+                    {deviceTypeFiltered.map(dt => (
+                      <div
+                        key={dt.id}
+                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                        onClick={() => {
+                          setSelectedDeviceType(dt.id)
+                          setDeviceTypeSearch(dt.display || dt.model)
+                          setShowDeviceTypeDropdown(false)
+                        }}
+                      >
+                        {dt.display || dt.model}
                       </div>
-                      {types.map(dt => (
-                        <SelectItem key={dt.id} value={dt.id}>
-                          {dt.model}
-                        </SelectItem>
-                      ))}
-                    </div>
-                  ))}
-                </SelectContent>
-              </Select>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Software Version */}
+            <div className="space-y-1">
+              <Label htmlFor="software-version" className="text-xs font-medium">
+                Software Version
+              </Label>
+              <div className="relative" ref={softwareVersionContainerRef}>
+                <Input
+                  id="software-version"
+                  placeholder="Search for software version..."
+                  value={softwareVersionSearch || (selectedSoftwareVersion ? (() => {
+                    const sv = softwareVersions.find(s => s.id === selectedSoftwareVersion)
+                    return sv ? `${sv.platform?.name || ''} ${sv.version}`.trim() : ''
+                  })() : '')}
+                  onChange={(e) => {
+                    const q = e.target.value
+                    setSoftwareVersionSearch(q)
+                    setShowSoftwareVersionDropdown(true)
+                  }}
+                  onFocus={() => setShowSoftwareVersionDropdown(true)}
+                  disabled={isLoading}
+                />
+                {showSoftwareVersionDropdown && softwareVersionFiltered.length > 0 && (
+                  <div
+                    className="absolute z-[100] mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
+                  >
+                    {softwareVersionFiltered.map(sv => (
+                      <div
+                        key={sv.id}
+                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                        onClick={() => {
+                          setSelectedSoftwareVersion(sv.id)
+                          setSoftwareVersionSearch(`${sv.platform?.name || ''} ${sv.version}`.trim())
+                          setShowSoftwareVersionDropdown(false)
+                        }}
+                      >
+                        {`${sv.platform?.name || ''} ${sv.version}`.trim()}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Network Interfaces Card */}
-      <div className="rounded-xl border shadow-sm overflow-hidden">
+      <div className="rounded-xl border shadow-sm">
         <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Network className="h-4 w-4" />
               <div>
                 <h3 className="text-sm font-semibold">Network Interfaces</h3>
-                <p className="text-blue-100 text-xs">Add one or more network interfaces with IP addresses. All fields are required for each interface.</p>
+                <p className="text-blue-100 text-xs">Add one or more network interfaces. IP address is optional for layer 2 interfaces.</p>
               </div>
             </div>
             <Button
@@ -723,22 +982,45 @@ export function AddDevicePage() {
                   <Label htmlFor={`interface-type-${iface.id}`} className="text-xs font-medium">
                     Type <span className="text-destructive">*</span>
                   </Label>
-                  <Select
-                    value={iface.type}
-                    onValueChange={(value) => handleUpdateInterface(iface.id, 'type', value)}
-                    disabled={isLoading}
-                  >
-                    <SelectTrigger id={`interface-type-${iface.id}`}>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {interfaceTypes.map(type => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="relative">
+                    <Input
+                      id={`interface-type-${iface.id}`}
+                      placeholder="Search type..."
+                      value={interfaceTypeSearch[iface.id] ?? (iface.type ? interfaceTypes.find(t => t.id === iface.type)?.name || '' : '')}
+                      onChange={(e) => {
+                        setInterfaceTypeSearch(prev => ({ ...prev, [iface.id]: e.target.value }))
+                        setShowInterfaceTypeDropdown(prev => ({ ...prev, [iface.id]: true }))
+                      }}
+                      onFocus={() => setShowInterfaceTypeDropdown(prev => ({ ...prev, [iface.id]: true }))}
+                      onBlur={() => {
+                        // Delay to allow click on dropdown item
+                        setTimeout(() => setShowInterfaceTypeDropdown(prev => ({ ...prev, [iface.id]: false })), 200)
+                      }}
+                      disabled={isLoading}
+                    />
+                    {showInterfaceTypeDropdown[iface.id] && (
+                      <div className="absolute z-[100] mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        {interfaceTypes
+                          .filter(type => {
+                            const search = interfaceTypeSearch[iface.id]?.toLowerCase() || ''
+                            return !search || type.name.toLowerCase().includes(search) || type.id.toLowerCase().includes(search)
+                          })
+                          .map(type => (
+                            <div
+                              key={type.id}
+                              className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                              onMouseDown={() => {
+                                handleUpdateInterface(iface.id, 'type', type.id)
+                                setInterfaceTypeSearch(prev => ({ ...prev, [iface.id]: type.name }))
+                                setShowInterfaceTypeDropdown(prev => ({ ...prev, [iface.id]: false }))
+                              }}
+                            >
+                              {type.name}
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Interface Status */}
@@ -770,7 +1052,7 @@ export function AddDevicePage() {
                 {/* IP Address */}
                 <div className="space-y-1">
                   <Label htmlFor={`interface-ip-${iface.id}`} className="text-xs font-medium">
-                    IP Address <span className="text-destructive">*</span>
+                    IP Address
                   </Label>
                   <Input
                     id={`interface-ip-${iface.id}`}
@@ -784,7 +1066,7 @@ export function AddDevicePage() {
                 {/* Namespace */}
                 <div className="space-y-1">
                   <Label htmlFor={`interface-namespace-${iface.id}`} className="text-xs font-medium">
-                    Namespace <span className="text-destructive">*</span>
+                    Namespace
                   </Label>
                   <Select
                     value={iface.namespace || ''}
@@ -855,7 +1137,7 @@ export function AddDevicePage() {
       {/* Properties Modal */}
       {currentInterface && (
         <Dialog open={showPropertiesModal} onOpenChange={setShowPropertiesModal}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5" />
@@ -867,206 +1149,268 @@ export function AddDevicePage() {
             </DialogHeader>
 
             <div className="space-y-4 py-4">
-              {/* Enabled and Management-Only Checkboxes */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`enabled-${currentInterface.id}`}
-                    checked={currentInterface.enabled ?? true}
-                    onCheckedChange={(checked) =>
-                      handleUpdateInterface(currentInterface.id, 'enabled', checked === true)
-                    }
-                    disabled={isLoading}
-                  />
-                  <Label htmlFor={`enabled-${currentInterface.id}`} className="cursor-pointer">
-                    Enabled
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`mgmt-only-${currentInterface.id}`}
-                    checked={currentInterface.mgmt_only ?? false}
-                    onCheckedChange={(checked) =>
-                      handleUpdateInterface(currentInterface.id, 'mgmt_only', checked === true)
-                    }
-                    disabled={isLoading}
-                  />
-                  <Label htmlFor={`mgmt-only-${currentInterface.id}`} className="cursor-pointer">
-                    Management Only
-                  </Label>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="space-y-1.5">
-                <Label htmlFor={`description-${currentInterface.id}`}>Description</Label>
-                <Textarea
-                  id={`description-${currentInterface.id}`}
-                  placeholder="Enter interface description..."
-                  value={currentInterface.description ?? ''}
-                  onChange={(e) =>
-                    handleUpdateInterface(currentInterface.id, 'description', e.target.value)
-                  }
-                  disabled={isLoading}
-                  rows={3}
-                />
-              </div>
-
-              {/* MAC Address and MTU */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor={`mac-address-${currentInterface.id}`}>MAC Address</Label>
-                  <Input
-                    id={`mac-address-${currentInterface.id}`}
-                    placeholder="e.g., 00:1A:2B:3C:4D:5E"
-                    value={currentInterface.mac_address ?? ''}
-                    onChange={(e) =>
-                      handleUpdateInterface(currentInterface.id, 'mac_address', e.target.value)
-                    }
-                    disabled={isLoading}
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor={`mtu-${currentInterface.id}`}>MTU</Label>
-                  <Input
-                    id={`mtu-${currentInterface.id}`}
-                    type="number"
-                    placeholder="e.g., 1500"
-                    value={currentInterface.mtu ?? ''}
-                    onChange={(e) =>
-                      handleUpdateInterface(
-                        currentInterface.id,
-                        'mtu',
-                        e.target.value ? parseInt(e.target.value) : undefined
-                      )
-                    }
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-
-              {/* Mode */}
-              <div className="space-y-1.5">
-                <Label htmlFor={`mode-${currentInterface.id}`}>Mode</Label>
-                <Select
-                  value={currentInterface.mode ?? ''}
-                  onValueChange={(value) =>
-                    handleUpdateInterface(currentInterface.id, 'mode', value)
-                  }
-                  disabled={isLoading}
-                >
-                  <SelectTrigger id={`mode-${currentInterface.id}`}>
-                    <SelectValue placeholder="Select mode" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="access">Access</SelectItem>
-                    <SelectItem value="tagged">Tagged</SelectItem>
-                    <SelectItem value="tagged-all">Tagged All</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* VLAN Fields */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor={`untagged-vlan-${currentInterface.id}`}>Untagged VLAN ID</Label>
-                  <Input
-                    id={`untagged-vlan-${currentInterface.id}`}
-                    placeholder="e.g., 100"
-                    value={currentInterface.untagged_vlan ?? ''}
-                    onChange={(e) =>
-                      handleUpdateInterface(currentInterface.id, 'untagged_vlan', e.target.value)
-                    }
-                    disabled={isLoading}
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor={`tagged-vlans-${currentInterface.id}`}>
-                    Tagged VLAN IDs (comma-separated)
-                  </Label>
-                  <Input
-                    id={`tagged-vlans-${currentInterface.id}`}
-                    placeholder="e.g., 10,20,30"
-                    value={currentInterface.tagged_vlans?.join(',') ?? ''}
-                    onChange={(e) =>
-                      handleUpdateInterface(
-                        currentInterface.id,
-                        'tagged_vlans',
-                        e.target.value ? e.target.value.split(',').map(v => v.trim()).filter(Boolean) : []
-                      )
-                    }
-                    disabled={isLoading}
-                  />
+              {/* Basic Settings Section */}
+              <div className="rounded-lg border bg-green-50 p-4">
+                <h4 className="text-sm font-semibold text-green-700 mb-3">Basic Settings</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`enabled-${currentInterface.id}`}
+                        checked={currentInterface.enabled ?? true}
+                        onCheckedChange={(checked) =>
+                          handleUpdateInterface(currentInterface.id, 'enabled', checked === true)
+                        }
+                        disabled={isLoading}
+                      />
+                      <Label htmlFor={`enabled-${currentInterface.id}`} className="cursor-pointer text-sm">
+                        Enabled
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`mgmt-only-${currentInterface.id}`}
+                        checked={currentInterface.mgmt_only ?? false}
+                        onCheckedChange={(checked) =>
+                          handleUpdateInterface(currentInterface.id, 'mgmt_only', checked === true)
+                        }
+                        disabled={isLoading}
+                      />
+                      <Label htmlFor={`mgmt-only-${currentInterface.id}`} className="cursor-pointer text-sm">
+                        Management Only
+                      </Label>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor={`mac-address-${currentInterface.id}`} className="text-xs">MAC Address</Label>
+                      <Input
+                        id={`mac-address-${currentInterface.id}`}
+                        placeholder="00:1A:2B:3C:4D:5E"
+                        value={currentInterface.mac_address ?? ''}
+                        onChange={(e) =>
+                          handleUpdateInterface(currentInterface.id, 'mac_address', e.target.value)
+                        }
+                        disabled={isLoading}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor={`mtu-${currentInterface.id}`} className="text-xs">MTU</Label>
+                      <Input
+                        id={`mtu-${currentInterface.id}`}
+                        type="number"
+                        placeholder="1500"
+                        value={currentInterface.mtu ?? ''}
+                        onChange={(e) =>
+                          handleUpdateInterface(
+                            currentInterface.id,
+                            'mtu',
+                            e.target.value ? parseInt(e.target.value) : undefined
+                          )
+                        }
+                        disabled={isLoading}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor={`description-${currentInterface.id}`} className="text-xs">Description</Label>
+                      <Input
+                        id={`description-${currentInterface.id}`}
+                        placeholder="Interface description"
+                        value={currentInterface.description ?? ''}
+                        onChange={(e) =>
+                          handleUpdateInterface(currentInterface.id, 'description', e.target.value)
+                        }
+                        disabled={isLoading}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Parent Interface, Bridge, and LAG */}
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor={`parent-interface-${currentInterface.id}`}>
-                    Parent Interface ID
-                  </Label>
-                  <Input
-                    id={`parent-interface-${currentInterface.id}`}
-                    placeholder="e.g., interface-uuid-123"
-                    value={currentInterface.parent_interface ?? ''}
-                    onChange={(e) =>
-                      handleUpdateInterface(currentInterface.id, 'parent_interface', e.target.value)
-                    }
-                    disabled={isLoading}
-                  />
+              {/* VLAN Configuration Section */}
+              <div className="rounded-lg border bg-blue-50 p-4">
+                <h4 className="text-sm font-semibold text-blue-700 mb-3">VLAN Configuration</h4>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor={`mode-${currentInterface.id}`} className="text-xs">Mode</Label>
+                      <Select
+                        value={currentInterface.mode ?? ''}
+                        onValueChange={(value) =>
+                          handleUpdateInterface(currentInterface.id, 'mode', value)
+                        }
+                        disabled={isLoading}
+                      >
+                        <SelectTrigger id={`mode-${currentInterface.id}`} className="h-8 text-sm">
+                          <SelectValue placeholder="Select mode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="access">Access</SelectItem>
+                          <SelectItem value="tagged">Tagged</SelectItem>
+                          <SelectItem value="tagged-all">Tagged All</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor={`untagged-vlan-${currentInterface.id}`} className="text-xs">Untagged VLAN</Label>
+                      <Select
+                        value={currentInterface.untagged_vlan || 'none'}
+                        onValueChange={(value) =>
+                          handleUpdateInterface(currentInterface.id, 'untagged_vlan', value === 'none' ? '' : value)
+                        }
+                        disabled={isLoading || isLoadingVlans}
+                      >
+                        <SelectTrigger id={`untagged-vlan-${currentInterface.id}`} className="h-8 text-sm">
+                          <SelectValue placeholder={isLoadingVlans ? "Loading..." : "Select VLAN"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {vlans.map(vlan => (
+                            <SelectItem key={vlan.id} value={vlan.id}>
+                              {vlan.vid} - {vlan.name}{vlan.location ? ` (${vlan.location.name})` : ' (Global)'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor={`tagged-vlans-${currentInterface.id}`} className="text-xs">Tagged VLANs</Label>
+                      <Select
+                        value={currentInterface.tagged_vlans?.[0] ?? ''}
+                        onValueChange={(value) => {
+                          const currentTagged = currentInterface.tagged_vlans || []
+                          if (value && !currentTagged.includes(value)) {
+                            handleUpdateInterface(
+                              currentInterface.id,
+                              'tagged_vlans',
+                              [...currentTagged, value]
+                            )
+                          }
+                        }}
+                        disabled={isLoading || isLoadingVlans || currentInterface.mode !== 'tagged'}
+                      >
+                        <SelectTrigger id={`tagged-vlans-${currentInterface.id}`} className="h-8 text-sm">
+                          <SelectValue placeholder={
+                            currentInterface.mode !== 'tagged'
+                              ? "Tagged mode only"
+                              : isLoadingVlans
+                                ? "Loading..."
+                                : "Add VLAN"
+                          } />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {vlans
+                            .filter(vlan => !currentInterface.tagged_vlans?.includes(vlan.id))
+                            .map(vlan => (
+                              <SelectItem key={vlan.id} value={vlan.id}>
+                                {vlan.vid} - {vlan.name}{vlan.location ? ` (${vlan.location.name})` : ' (Global)'}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      {currentInterface.tagged_vlans && currentInterface.tagged_vlans.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {currentInterface.tagged_vlans.map(vlanId => {
+                            const vlan = vlans.find(v => v.id === vlanId)
+                            return (
+                              <Badge
+                                key={vlanId}
+                                variant="secondary"
+                                className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground text-xs"
+                                onClick={() => {
+                                  handleUpdateInterface(
+                                    currentInterface.id,
+                                    'tagged_vlans',
+                                    currentInterface.tagged_vlans?.filter(id => id !== vlanId) || []
+                                  )
+                                }}
+                              >
+                                {vlan ? `${vlan.vid} - ${vlan.name}` : vlanId} ×
+                              </Badge>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor={`bridge-${currentInterface.id}`}>Bridge Interface ID</Label>
+              {/* Advanced Settings Section */}
+              <div className="rounded-lg border bg-purple-50 p-4">
+                <h4 className="text-sm font-semibold text-purple-700 mb-3">Advanced Settings</h4>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor={`parent-interface-${currentInterface.id}`} className="text-xs">Parent Interface</Label>
+                    <Input
+                      id={`parent-interface-${currentInterface.id}`}
+                      placeholder="UUID"
+                      value={currentInterface.parent_interface ?? ''}
+                      onChange={(e) =>
+                        handleUpdateInterface(currentInterface.id, 'parent_interface', e.target.value)
+                      }
+                      disabled={isLoading}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`bridge-${currentInterface.id}`} className="text-xs">Bridge</Label>
                     <Input
                       id={`bridge-${currentInterface.id}`}
-                      placeholder="e.g., bridge-uuid-123"
+                      placeholder="UUID"
                       value={currentInterface.bridge ?? ''}
                       onChange={(e) =>
                         handleUpdateInterface(currentInterface.id, 'bridge', e.target.value)
                       }
                       disabled={isLoading}
+                      className="h-8 text-sm"
                     />
                   </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor={`lag-${currentInterface.id}`}>LAG Interface ID</Label>
-                    <Input
-                      id={`lag-${currentInterface.id}`}
-                      placeholder="e.g., lag-uuid-123"
-                      value={currentInterface.lag ?? ''}
-                      onChange={(e) =>
-                        handleUpdateInterface(currentInterface.id, 'lag', e.target.value)
+                  <div className="space-y-1">
+                    <Label htmlFor={`lag-${currentInterface.id}`} className="text-xs">LAG</Label>
+                    <Select
+                      value={currentInterface.lag || 'none'}
+                      onValueChange={(value) =>
+                        handleUpdateInterface(currentInterface.id, 'lag', value === 'none' ? '' : value)
                       }
                       disabled={isLoading}
-                    />
+                    >
+                      <SelectTrigger id={`lag-${currentInterface.id}`} className="h-8 text-sm">
+                        <SelectValue placeholder="Select LAG interface" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {interfaces
+                          .filter(iface => iface.id !== currentInterface.id && iface.name && iface.type === 'lag')
+                          .map(iface => (
+                            <SelectItem key={iface.id} value={iface.id}>
+                              {iface.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-              </div>
-
-              {/* Tags */}
-              <div className="space-y-1.5">
-                <Label htmlFor={`tags-${currentInterface.id}`}>
-                  Tags (comma-separated)
-                </Label>
-                <Input
-                  id={`tags-${currentInterface.id}`}
-                  placeholder="e.g., production, critical, monitored"
-                  value={currentInterface.tags?.join(',') ?? ''}
-                  onChange={(e) =>
-                    handleUpdateInterface(
-                      currentInterface.id,
-                      'tags',
-                      e.target.value ? e.target.value.split(',').map(v => v.trim()).filter(Boolean) : []
-                    )
-                  }
-                  disabled={isLoading}
-                />
+                <div className="space-y-1 mt-3">
+                  <Label htmlFor={`tags-${currentInterface.id}`} className="text-xs">Tags (comma-separated)</Label>
+                  <Input
+                    id={`tags-${currentInterface.id}`}
+                    placeholder="production, critical, monitored"
+                    value={currentInterface.tags?.join(',') ?? ''}
+                    onChange={(e) =>
+                      handleUpdateInterface(
+                        currentInterface.id,
+                        'tags',
+                        e.target.value ? e.target.value.split(',').map(v => v.trim()).filter(Boolean) : []
+                      )
+                    }
+                    disabled={isLoading}
+                    className="h-8 text-sm"
+                  />
+                </div>
               </div>
             </div>
 
@@ -1076,7 +1420,7 @@ export function AddDevicePage() {
                 variant="outline"
                 disabled={isLoading}
               >
-                Close
+                Save & Close
               </Button>
             </DialogFooter>
           </DialogContent>

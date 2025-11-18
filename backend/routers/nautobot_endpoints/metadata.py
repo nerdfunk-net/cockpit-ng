@@ -417,6 +417,264 @@ async def get_nautobot_tags(
         )
 
 
+@router.get("/software-versions")
+async def get_software_versions(
+    platform: str = None,
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
+    """Get list of software versions from Nautobot.
+
+    Args:
+        platform: Optional platform name to filter software versions
+    """
+    try:
+        # Try in-memory cache first
+        from services.cache_service import cache_service
+        from settings_manager import settings_manager
+
+        cache_key = f"nautobot:software_versions:list:{platform or 'all'}"
+        cached = cache_service.get(cache_key)
+        if cached is not None:
+            return cached
+
+        # Cache miss; fetch from Nautobot and populate cache
+        query = """
+        query (
+            $get_id: Boolean = true,
+            $get_tags: Boolean = true,
+            $get_platform: Boolean = true,
+            $platform_filter: [String]
+        ) {
+            software_versions(platform: $platform_filter) {
+                id @include(if: $get_id)
+                version
+                alias
+                release_date
+                end_of_support_date
+                documentation_url
+                long_term_support
+                pre_release
+                tags @include(if: $get_tags) {
+                    id @include(if: $get_id)
+                    name
+                }
+                platform @include(if: $get_platform) {
+                    id @include(if: $get_id)
+                    name
+                }
+            }
+        }
+        """
+        variables = {
+            "get_id": True,
+            "get_tags": True,
+            "get_platform": True,
+            "platform_filter": [platform] if platform else None
+        }
+        result = await nautobot_service.graphql_query(query, variables)
+
+        if "errors" in result:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"GraphQL errors: {result['errors']}",
+            )
+
+        software_versions = result["data"]["software_versions"]
+        ttl = int(settings_manager.get_cache_settings().get("ttl_seconds", 600))
+        cache_service.set(cache_key, software_versions, ttl)
+        return software_versions
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch software versions: {str(e)}",
+        )
+
+
+@router.get("/vlans")
+async def get_vlans(
+    location: str = None,
+    get_global_vlans: bool = False,
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
+    """Get list of VLANs from Nautobot.
+
+    Args:
+        location: Optional location name to filter VLANs
+        get_global_vlans: If true and location is set, also include VLANs with no location (global VLANs)
+    """
+    try:
+        # Try in-memory cache first
+        from services.cache_service import cache_service
+        from settings_manager import settings_manager
+
+        cache_key = f"nautobot:vlans:list:{location or 'all'}:global_{get_global_vlans}"
+        cached = cache_service.get(cache_key)
+        if cached is not None:
+            return cached
+
+        # Cache miss; fetch from Nautobot and populate cache
+        query = """
+        query (
+            $get_id: Boolean = true,
+            $get_tags: Boolean = true,
+            $get_vlan_groups: Boolean = false,
+            $get_location: Boolean = true,
+            $location_filter: [String]
+        ) {
+            vlans(location: $location_filter) {
+                id @include(if: $get_id)
+                name
+                description
+                vid
+                role {
+                    id @include(if: $get_id)
+                    name
+                }
+                tags @include(if: $get_tags) {
+                    id @include(if: $get_id)
+                    name
+                }
+                location @include(if: $get_location) {
+                    id @include(if: $get_id)
+                    name
+                }
+                vlan_group @include(if: $get_vlan_groups) {
+                    id @include(if: $get_id)
+                    name
+                }
+            }
+        }
+        """
+
+        # If get_global_vlans is true and location is set, fetch all VLANs and filter manually
+        if get_global_vlans and location:
+            variables = {
+                "get_id": True,
+                "get_tags": True,
+                "get_vlan_groups": False,
+                "get_location": True,
+                "location_filter": None  # Get all VLANs
+            }
+            result = await nautobot_service.graphql_query(query, variables)
+
+            if "errors" in result:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"GraphQL errors: {result['errors']}",
+                )
+
+            all_vlans = result["data"]["vlans"]
+            # Filter to keep: global VLANs (no location) OR VLANs matching the specified location
+            vlans = [
+                vlan for vlan in all_vlans
+                if vlan.get("location") is None or vlan.get("location", {}).get("name") == location
+            ]
+        else:
+            # Standard behavior: use GraphQL filter
+            variables = {
+                "get_id": True,
+                "get_tags": True,
+                "get_vlan_groups": False,
+                "get_location": True,
+                "location_filter": [location] if location else None
+            }
+            result = await nautobot_service.graphql_query(query, variables)
+
+            if "errors" in result:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"GraphQL errors: {result['errors']}",
+                )
+
+            vlans = result["data"]["vlans"]
+
+        ttl = int(settings_manager.get_cache_settings().get("ttl_seconds", 600))
+        cache_service.set(cache_key, vlans, ttl)
+        return vlans
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch VLANs: {str(e)}",
+        )
+
+
+@router.get("/interface-types")
+async def get_interface_types(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
+    """Get list of interface type choices from Nautobot.
+
+    Uses OPTIONS request to get field choices from the interfaces endpoint.
+    """
+    try:
+        # Try in-memory cache first
+        from services.cache_service import cache_service
+        from settings_manager import settings_manager
+
+        cache_key = "nautobot:interface_types:list"
+        cached = cache_service.get(cache_key)
+        if cached is not None:
+            return cached
+
+        # Cache miss; fetch from Nautobot using OPTIONS request
+        result = await nautobot_service.rest_request(
+            endpoint="dcim/interfaces/",
+            method="OPTIONS"
+        )
+
+        # Debug: log the full response structure
+        logger.info(f"OPTIONS response keys: {result.keys() if result else 'None'}")
+        if result and "actions" in result:
+            actions = result.get("actions", {})
+            logger.info(f"actions keys: {actions.keys()}")
+            post_actions = actions.get("POST", {})
+            logger.info(f"POST actions keys: {post_actions.keys() if post_actions else 'None'}")
+            if "type" in post_actions:
+                type_field = post_actions.get("type", {})
+                logger.info(f"type field keys: {type_field.keys() if isinstance(type_field, dict) else type(type_field)}")
+                choices = type_field.get("choices", [])
+                logger.info(f"choices type: {type(choices)}, length: {len(choices) if choices else 0}")
+                if choices and len(choices) > 0:
+                    logger.info(f"first choice: {choices[0]}, type: {type(choices[0])}")
+
+        # Extract type choices from the OPTIONS response
+        interface_types = []
+        if result and "actions" in result:
+            actions = result.get("actions", {})
+            post_actions = actions.get("POST", {})
+            type_field = post_actions.get("type", {})
+            choices = type_field.get("choices", [])
+
+            # Format choices as list of {value, display_name}
+            # Filter out empty values and handle different choice structures
+            for choice in choices:
+                if isinstance(choice, dict):
+                    value = choice.get("value", "")
+                    # Nautobot uses 'display' not 'display_name'
+                    display_name = choice.get("display") or choice.get("display_name", "")
+                elif isinstance(choice, (list, tuple)) and len(choice) >= 2:
+                    # Some APIs return choices as [value, display_name] tuples
+                    value = choice[0]
+                    display_name = choice[1]
+                else:
+                    continue
+
+                if value and display_name:
+                    interface_types.append({
+                        "value": value,
+                        "display_name": display_name
+                    })
+
+        ttl = int(settings_manager.get_cache_settings().get("ttl_seconds", 600))
+        cache_service.set(cache_key, interface_types, ttl)
+        return interface_types
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch interface types: {str(e)}",
+        )
+
+
 @router.get("/tags/devices")
 async def get_nautobot_device_tags(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
