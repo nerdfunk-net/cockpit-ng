@@ -35,6 +35,8 @@ export interface ParsedDevice {
   software_version?: string
   serial?: string
   asset_tag?: string
+  tags?: string[]
+  custom_fields?: Record<string, string>
   interfaces: CSVInterfaceData[]
 }
 
@@ -95,6 +97,7 @@ export const NAUTOBOT_DEVICE_FIELDS = [
   { key: 'software_version', label: 'Software Version', required: false },
   { key: 'serial', label: 'Serial Number', required: false },
   { key: 'asset_tag', label: 'Asset Tag', required: false },
+  { key: 'tags', label: 'Tags', required: false },
 ] as const
 
 // Available interface fields for mapping (prefixed with interface_ in CSV)
@@ -140,6 +143,7 @@ export const DEFAULT_COLUMN_MAPPINGS: Record<string, string> = {
   'serial': 'serial',
   'serial_number': 'serial',
   'asset_tag': 'asset_tag',
+  'tags': 'tags',
 
   // Interface fields (with interface_ prefix)
   'interface_name': 'interface_name',

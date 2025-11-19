@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, Trash2, Server, Network, AlertCircle, CheckCircle2, Info, Settings, FileSpreadsheet } from 'lucide-react'
+import { Plus, Trash2, Server, Network, AlertCircle, CheckCircle2, Info, Settings, FileSpreadsheet, Tags, FileText, Loader2 } from 'lucide-react'
 import { useCSVUpload } from './hooks/use-csv-upload'
 import { CSVUploadModal } from './components/csv-upload-modal'
 import { ParsedDevice, DeviceImportResult } from './types'
@@ -109,6 +109,23 @@ interface StatusMessage {
   message: string
 }
 
+interface TagItem {
+  id: string
+  name: string
+  color?: string
+}
+
+interface CustomField {
+  id: string
+  key: string
+  label: string
+  type: {
+    value: string
+  }
+  required: boolean
+  description?: string
+}
+
 interface NautobotDefaults {
   location: string
   platform: string
@@ -192,6 +209,19 @@ export function AddDevicePage() {
   const [interfaceTypeSearch, setInterfaceTypeSearch] = useState<Record<string, string>>({})
   const [showInterfaceTypeDropdown, setShowInterfaceTypeDropdown] = useState<Record<string, boolean>>({})
 
+  // Tags state
+  const [showTagsModal, setShowTagsModal] = useState(false)
+  const [availableTags, setAvailableTags] = useState<TagItem[]>([])
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [isLoadingTags, setIsLoadingTags] = useState(false)
+
+  // Custom fields state
+  const [showCustomFieldsModal, setShowCustomFieldsModal] = useState(false)
+  const [customFields, setCustomFields] = useState<CustomField[]>([])
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({})
+  const [customFieldChoices, setCustomFieldChoices] = useState<Record<string, string[]>>({})
+  const [isLoadingCustomFields, setIsLoadingCustomFields] = useState(false)
+
   // CSV import device handler
   const handleImportDevice = useCallback(async (device: ParsedDevice): Promise<DeviceImportResult> => {
     try {
@@ -271,6 +301,8 @@ export function AddDevicePage() {
         device_type: deviceTypeId,
         serial: device.serial,
         asset_tag: device.asset_tag,
+        tags: device.tags,
+        custom_fields: device.custom_fields,
         interfaces: resolvedInterfaces
       }
 
@@ -317,6 +349,81 @@ export function AddDevicePage() {
     nautobotDefaults,
     onImportDevice: handleImportDevice
   })
+
+  // Open Tags modal and load tags
+  const handleOpenTagsModal = useCallback(async () => {
+    setShowTagsModal(true)
+    setIsLoadingTags(true)
+    try {
+      const tagsData = await apiCall<TagItem[]>('nautobot/tags/devices', { method: 'GET' })
+      if (tagsData && Array.isArray(tagsData)) {
+        setAvailableTags(tagsData)
+      }
+    } catch (error) {
+      console.error('Error loading tags:', error)
+      setAvailableTags([])
+    } finally {
+      setIsLoadingTags(false)
+    }
+  }, [apiCall])
+
+  // Toggle tag selection
+  const handleToggleTag = useCallback((tagId: string) => {
+    setSelectedTags(prev => {
+      const newTags = prev.includes(tagId)
+        ? prev.filter(id => id !== tagId)
+        : [...prev, tagId]
+      console.log('Tag toggled:', tagId, 'New tags:', newTags)
+      return newTags
+    })
+  }, [])
+
+  // Open Custom Fields modal and load custom fields
+  const handleOpenCustomFieldsModal = useCallback(async () => {
+    setShowCustomFieldsModal(true)
+    setIsLoadingCustomFields(true)
+    try {
+      const fieldsData = await apiCall<CustomField[]>('nautobot/custom-fields/devices', { method: 'GET' })
+      if (fieldsData && Array.isArray(fieldsData)) {
+        setCustomFields(fieldsData)
+
+        // Load choices for select-type fields
+        const selectFields = fieldsData.filter(f => f.type?.value === 'select' || f.type?.value === 'multi-select')
+        const choicesPromises = selectFields.map(async (field) => {
+          try {
+            const choices = await apiCall<string[]>(`nautobot/custom-field-choices/${field.key}`, { method: 'GET' })
+            return { key: field.key, choices: choices || [] }
+          } catch {
+            return { key: field.key, choices: [] }
+          }
+        })
+
+        const choicesResults = await Promise.all(choicesPromises)
+        const choicesMap: Record<string, string[]> = {}
+        choicesResults.forEach(result => {
+          choicesMap[result.key] = result.choices
+        })
+        setCustomFieldChoices(choicesMap)
+      }
+    } catch (error) {
+      console.error('Error loading custom fields:', error)
+      setCustomFields([])
+    } finally {
+      setIsLoadingCustomFields(false)
+    }
+  }, [apiCall])
+
+  // Update custom field value
+  const handleUpdateCustomField = useCallback((key: string, value: string) => {
+    setCustomFieldValues(prev => {
+      const newValues = {
+        ...prev,
+        [key]: value
+      }
+      console.log('Custom field updated:', key, '=', value, 'All values:', newValues)
+      return newValues
+    })
+  }, [])
 
   // Load all dropdown data on mount
   const loadDropdownData = useCallback(async () => {
@@ -673,6 +780,11 @@ export function AddDevicePage() {
           tagged_vlans: iface.tagged_vlans?.join(',') || undefined
         }))
 
+      // Filter out empty custom field values
+      const filteredCustomFields = Object.entries(customFieldValues)
+        .filter(([, value]) => value && value.trim() !== '')
+        .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {} as Record<string, string>)
+
       const deviceData = {
         name: deviceName,
         role: selectedRole,
@@ -681,8 +793,19 @@ export function AddDevicePage() {
         device_type: selectedDeviceType,
         platform: platformId || undefined,
         software_version: selectedSoftwareVersion || undefined,
+        tags: selectedTags.length > 0 ? selectedTags : undefined,
+        custom_fields: Object.keys(filteredCustomFields).length > 0 ? filteredCustomFields : undefined,
         interfaces: transformedInterfaces
       }
+
+      // DEBUG: Log device data being sent
+      console.log('=== DEVICE DATA DEBUG ===')
+      console.log('Selected tags state:', selectedTags)
+      console.log('Selected tags length:', selectedTags.length)
+      console.log('Custom field values state:', customFieldValues)
+      console.log('Custom field values keys:', Object.keys(customFieldValues))
+      console.log('Filtered custom fields:', filteredCustomFields)
+      console.log('Device data being sent:', JSON.stringify(deviceData, null, 2))
 
       const response = await fetch('/api/proxy/nautobot/add-device', {
         method: 'POST',
@@ -798,7 +921,7 @@ export function AddDevicePage() {
     } finally {
       setIsLoading(false)
     }
-  }, [validateForm, deviceName, selectedRole, selectedStatus, selectedLocation, selectedDeviceType, interfaces, selectedSoftwareVersion, softwareVersions])
+  }, [validateForm, deviceName, selectedRole, selectedStatus, selectedLocation, selectedDeviceType, interfaces, selectedSoftwareVersion, softwareVersions, selectedTags, customFieldValues])
 
   if (isLoadingData) {
     return (
@@ -859,11 +982,35 @@ export function AddDevicePage() {
       {/* Device Information Card */}
       <div className="rounded-xl border shadow-sm">
         <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
-          <div className="flex items-center space-x-2">
-            <Server className="h-4 w-4" />
-            <div>
-              <h3 className="text-sm font-semibold">Device Information</h3>
-              <p className="text-blue-100 text-xs">Enter the basic information for the device. All fields are required.</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Server className="h-4 w-4" />
+              <div>
+                <h3 className="text-sm font-semibold">Device Information</h3>
+                <p className="text-blue-100 text-xs">Enter the basic information for the device. All fields are required.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleOpenTagsModal}
+                disabled={isLoading}
+                size="sm"
+                variant="outline"
+                className="bg-white text-blue-600 hover:bg-blue-50 border-blue-200"
+              >
+                <Tags className="h-4 w-4 mr-1" />
+                Tags {selectedTags.length > 0 && `(${selectedTags.length})`}
+              </Button>
+              <Button
+                onClick={handleOpenCustomFieldsModal}
+                disabled={isLoading}
+                size="sm"
+                variant="outline"
+                className="bg-white text-blue-600 hover:bg-blue-50 border-blue-200"
+              >
+                <FileText className="h-4 w-4 mr-1" />
+                Custom Fields
+              </Button>
             </div>
           </div>
         </div>
@@ -1591,6 +1738,167 @@ export function AddDevicePage() {
         onShowMappingConfig={csvUpload.setShowMappingConfig}
         onReset={csvUpload.reset}
       />
+
+      {/* Tags Modal */}
+      <Dialog open={showTagsModal} onOpenChange={setShowTagsModal}>
+        <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Tags className="h-5 w-5" />
+              Device Tags
+            </DialogTitle>
+            <DialogDescription>
+              Select tags to apply to this device.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            {isLoadingTags ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : availableTags.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No tags available for devices.
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {availableTags.map(tag => (
+                  <label
+                    key={tag.id}
+                    className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors ${
+                      selectedTags.includes(tag.id)
+                        ? 'bg-primary/10 border-primary'
+                        : 'hover:bg-muted'
+                    }`}
+                  >
+                    <Checkbox
+                      checked={selectedTags.includes(tag.id)}
+                      onCheckedChange={() => handleToggleTag(tag.id)}
+                    />
+                    <span className="text-sm">{tag.name}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTagsModal(false)}>
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Custom Fields Modal */}
+      <Dialog open={showCustomFieldsModal} onOpenChange={setShowCustomFieldsModal}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Custom Fields
+            </DialogTitle>
+            <DialogDescription>
+              Set custom field values for this device.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            {isLoadingCustomFields ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : customFields.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No custom fields available for devices.
+              </p>
+            ) : (
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-muted/50 border-b">
+                      <th className="text-left py-2 px-3 text-sm font-medium">Field Name</th>
+                      <th className="text-left py-2 px-3 text-sm font-medium">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {customFields.map((field, index) => (
+                      <tr key={field.id} className={index % 2 === 0 ? 'bg-white' : 'bg-muted/20'}>
+                        <td className="py-2 px-3 border-r">
+                          <div>
+                            <span className="text-sm font-medium">
+                              {field.label}
+                              {field.required && <span className="text-destructive ml-1">*</span>}
+                            </span>
+                            {field.description && (
+                              <p className="text-xs text-muted-foreground">{field.description}</p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-2 px-3">
+                          {field.type?.value === 'select' && customFieldChoices[field.key] ? (
+                            <Select
+                              value={customFieldValues[field.key] || ''}
+                              onValueChange={(value) => handleUpdateCustomField(field.key, value)}
+                            >
+                              <SelectTrigger className="h-9 bg-white border">
+                                <SelectValue placeholder="Select..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {customFieldChoices[field.key]?.map((choice, idx) => {
+                                  // Handle both string and object choices
+                                  const choiceValue = typeof choice === 'object' && choice !== null
+                                    ? (choice as { value?: string; id?: string }).value || (choice as { value?: string; id?: string }).id || JSON.stringify(choice)
+                                    : String(choice)
+                                  return (
+                                    <SelectItem key={`${field.key}-choice-${idx}`} value={choiceValue}>
+                                      {choiceValue}
+                                    </SelectItem>
+                                  )
+                                })}
+                              </SelectContent>
+                            </Select>
+                          ) : field.type?.value === 'boolean' ? (
+                            <div className="flex items-center h-9">
+                              <Checkbox
+                                checked={customFieldValues[field.key] === 'true'}
+                                onCheckedChange={(checked) =>
+                                  handleUpdateCustomField(field.key, checked ? 'true' : 'false')
+                                }
+                              />
+                            </div>
+                          ) : field.type?.value === 'integer' ? (
+                            <Input
+                              type="number"
+                              value={customFieldValues[field.key] || ''}
+                              onChange={(e) => handleUpdateCustomField(field.key, e.target.value)}
+                              className="h-9 bg-white border"
+                            />
+                          ) : (
+                            <Input
+                              value={customFieldValues[field.key] || ''}
+                              onChange={(e) => handleUpdateCustomField(field.key, e.target.value)}
+                              className="h-9 bg-white border"
+                              placeholder="Enter value..."
+                            />
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCustomFieldsModal(false)}>
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -100,6 +100,9 @@ export function useCSVUpload({ nautobotDefaults, onImportDevice }: UseCSVUploadP
           const mapping = DEFAULT_COLUMN_MAPPINGS[header]
           if (mapping) {
             initialMappings[header] = mapping
+          } else if (header.startsWith('cf_')) {
+            // Custom field mapping (cf_fieldname -> cf_fieldname)
+            initialMappings[header] = header
           }
         })
         setColumnMappings(initialMappings)
@@ -166,9 +169,11 @@ export function useCSVUpload({ nautobotDefaults, onImportDevice }: UseCSVUploadP
             continue
           }
 
-          // Extract device fields and interface fields
+          // Extract device fields, interface fields, tags, and custom fields
           const deviceFields: Partial<ParsedDevice> = { name: deviceName }
           const interfaceFields: Partial<CSVInterfaceData> = {}
+          const customFields: Record<string, string> = {}
+          let tags: string[] = []
 
           for (const [header, value] of Object.entries(row)) {
             if (!value) continue
@@ -179,10 +184,27 @@ export function useCSVUpload({ nautobotDefaults, onImportDevice }: UseCSVUploadP
               // Interface field
               const fieldName = mappedField.replace('interface_', '')
               setInterfaceField(interfaceFields, fieldName, value)
+            } else if (header.startsWith('cf_') || mappedField.startsWith('cf_')) {
+              // Custom field (cf_ prefix)
+              const fieldName = header.startsWith('cf_')
+                ? header.substring(3)
+                : mappedField.substring(3)
+              customFields[fieldName] = value
+            } else if (header === 'tags' || mappedField === 'tags') {
+              // Tags column (comma-separated list)
+              tags = value.split(',').map(t => t.trim()).filter(Boolean)
             } else {
               // Device field
               setDeviceField(deviceFields, mappedField, value)
             }
+          }
+
+          // Add custom fields and tags to device fields
+          if (Object.keys(customFields).length > 0) {
+            deviceFields.custom_fields = customFields
+          }
+          if (tags.length > 0) {
+            deviceFields.tags = tags
           }
 
           // Get or create device entry
@@ -246,6 +268,8 @@ export function useCSVUpload({ nautobotDefaults, onImportDevice }: UseCSVUploadP
             software_version: entry.device.software_version,
             serial: entry.device.serial,
             asset_tag: entry.device.asset_tag,
+            tags: entry.device.tags,
+            custom_fields: entry.device.custom_fields,
             interfaces
           }
           devices.push(device)

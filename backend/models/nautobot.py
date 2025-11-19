@@ -90,5 +90,9 @@ class AddDeviceRequest(BaseModel):
     software_version: Optional[str] = None
     serial: Optional[str] = None
     asset_tag: Optional[str] = None
+    # Tags (list of tag IDs)
+    tags: Optional[list[str]] = None
+    # Custom fields (key-value pairs)
+    custom_fields: Optional[dict[str, str]] = None
     # Interfaces array
     interfaces: list[InterfaceData] = []

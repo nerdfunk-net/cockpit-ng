@@ -815,6 +815,8 @@ async def add_device(
         logger.info(f"Software version: {request.software_version}")
         logger.info(f"Serial: {request.serial}")
         logger.info(f"Asset tag: {request.asset_tag}")
+        logger.info(f"Tags: {request.tags}")
+        logger.info(f"Custom fields: {request.custom_fields}")
         logger.info(f"Interfaces count: {len(request.interfaces)}")
         for i, iface in enumerate(request.interfaces):
             logger.info(f"  Interface {i+1}: name={iface.name}, type={iface.type}, ip={iface.ip_address}, is_primary={iface.is_primary_ipv4}")
@@ -837,6 +839,10 @@ async def add_device(
                 device_payload["serial"] = request.serial
             if request.asset_tag:
                 device_payload["asset_tag"] = request.asset_tag
+            if request.tags:
+                device_payload["tags"] = request.tags
+            if request.custom_fields:
+                device_payload["custom_fields"] = request.custom_fields
 
             logger.info(f"Device payload: {device_payload}")
 

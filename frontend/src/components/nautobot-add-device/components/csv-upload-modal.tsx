@@ -31,7 +31,6 @@ import {
   XCircle,
   AlertCircle,
   Settings2,
-  ArrowRight,
 } from 'lucide-react'
 import {
   CSVParseResult,
@@ -99,9 +98,22 @@ export function CSVUploadModal({
 
   // Build list of all available fields for mapping
   const allNautobotFields = [
-    ...NAUTOBOT_DEVICE_FIELDS.map(f => ({ ...f, key: f.key, isInterface: false })),
-    ...NAUTOBOT_INTERFACE_FIELDS.map(f => ({ ...f, key: `interface_${f.key}`, isInterface: true })),
+    ...NAUTOBOT_DEVICE_FIELDS.map(f => ({ ...f, key: f.key, isInterface: false, isCustom: false })),
+    ...NAUTOBOT_INTERFACE_FIELDS.map(f => ({ ...f, key: `interface_${f.key}`, isInterface: true, isCustom: false })),
   ]
+
+  // Get display label for a mapping value
+  const getMappingLabel = (value: string) => {
+    if (value === 'unmapped') return '-- Unmapped --'
+    if (value.startsWith('cf_')) {
+      return `[Custom] ${value.substring(3)}`
+    }
+    const field = allNautobotFields.find(f => f.key === value)
+    if (field) {
+      return field.isInterface ? `[Interface] ${field.label}` : field.label
+    }
+    return value
+  }
 
   // Helper functions to resolve UUIDs to display names
   const getRoleName = (roleIdOrName: string | undefined) => {
@@ -215,10 +227,18 @@ export function CSVUploadModal({
                             onValueChange={(value) => onUpdateMapping(header, value)}
                           >
                             <SelectTrigger className="h-8 text-xs">
-                              <SelectValue />
+                              <SelectValue>
+                                {getMappingLabel(columnMappings[header] || 'unmapped')}
+                              </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="unmapped">-- Unmapped --</SelectItem>
+                              {/* Show custom field option if header starts with cf_ */}
+                              {header.startsWith('cf_') && (
+                                <SelectItem value={header}>
+                                  [Custom] {header.substring(3)}
+                                </SelectItem>
+                              )}
                               {allNautobotFields.map(field => (
                                 <SelectItem key={field.key} value={field.key}>
                                   {field.isInterface ? `[Interface] ${field.label}` : field.label}
