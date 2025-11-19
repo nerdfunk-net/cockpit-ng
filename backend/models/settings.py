@@ -4,7 +4,7 @@ Settings-related Pydantic models.
 
 from __future__ import annotations
 from pydantic import BaseModel
-from typing import Optional, Dict
+from typing import Optional, Dict, Literal
 
 
 class NautobotSettingsRequest(BaseModel):
@@ -115,3 +115,74 @@ class DeviceOffboardingRequest(BaseModel):
     custom_field_settings: Optional[Dict[str, str]] = (
         None  # custom_field_name -> value or "clear"
     )
+
+
+# ============================================================================
+# Compliance Settings Models
+# ============================================================================
+
+
+class RegexPatternRequest(BaseModel):
+    """Regex pattern request model."""
+
+    pattern: str
+    description: Optional[str] = None
+    pattern_type: Literal["must_match", "must_not_match"]
+    is_active: bool = True
+
+
+class RegexPatternUpdateRequest(BaseModel):
+    """Regex pattern update request model."""
+
+    pattern: Optional[str] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class LoginCredentialRequest(BaseModel):
+    """Login credential request model."""
+
+    username: str
+    password: str
+    description: Optional[str] = None
+    is_active: bool = True
+
+
+class LoginCredentialUpdateRequest(BaseModel):
+    """Login credential update request model."""
+
+    username: Optional[str] = None
+    password: Optional[str] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class SNMPMappingRequest(BaseModel):
+    """SNMP mapping request model."""
+
+    device_type: str
+    snmp_version: Literal["v1", "v2c", "v3"]
+    snmp_community: Optional[str] = None
+    snmp_v3_user: Optional[str] = None
+    snmp_v3_auth_protocol: Optional[str] = None
+    snmp_v3_auth_password: Optional[str] = None
+    snmp_v3_priv_protocol: Optional[str] = None
+    snmp_v3_priv_password: Optional[str] = None
+    description: Optional[str] = None
+    is_active: bool = True
+
+
+class SNMPMappingUpdateRequest(BaseModel):
+    """SNMP mapping update request model."""
+
+    device_type: Optional[str] = None
+    snmp_version: Optional[Literal["v1", "v2c", "v3"]] = None
+    snmp_community: Optional[str] = None
+    snmp_v3_user: Optional[str] = None
+    snmp_v3_auth_protocol: Optional[str] = None
+    snmp_v3_auth_password: Optional[str] = None
+    snmp_v3_priv_protocol: Optional[str] = None
+    snmp_v3_priv_password: Optional[str] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+

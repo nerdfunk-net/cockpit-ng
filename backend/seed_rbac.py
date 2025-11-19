@@ -28,6 +28,10 @@ def seed_permissions():
         ("checkmk.devices", "delete", "Delete CheckMK devices"),
         ("settings.checkmk", "read", "View CheckMK settings"),
         ("settings.checkmk", "write", "Modify CheckMK settings"),
+        # Compliance permissions
+        ("settings.compliance", "read", "View compliance settings"),
+        ("settings.compliance", "write", "Modify compliance settings"),
+        ("compliance.check", "execute", "Execute compliance checks"),
         # Config permissions
         ("configs", "read", "View device configurations"),
         ("configs.backup", "execute", "Execute configuration backups"),
@@ -146,6 +150,10 @@ def assign_permissions_to_roles(roles):
         "checkmk.devices:write",
         "checkmk.devices:delete",
         "settings.checkmk:read",
+        # Compliance
+        "settings.compliance:read",
+        "settings.compliance:write",
+        "compliance.check:execute",
         # Configs
         "configs:read",
         "configs.backup:execute",
@@ -186,6 +194,9 @@ def assign_permissions_to_roles(roles):
         # CheckMK
         "checkmk.devices:read",
         "checkmk.devices:write",
+        # Compliance
+        "settings.compliance:read",
+        "compliance.check:execute",
         # Configs (full access)
         "configs:read",
         "configs.backup:execute",

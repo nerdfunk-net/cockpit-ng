@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/lib/auth-store'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useSidebar } from './sidebar-context'
@@ -30,6 +30,7 @@ import {
   Eye,
   Minus,
   Terminal,
+  CheckCircle,
 } from 'lucide-react'
 
 interface NavItem {
@@ -90,6 +91,7 @@ const navigationSections: NavSection[] = [
           { label: 'Templates', href: '/automation/templates', icon: FileText },
         ],
       },
+      { label: 'Compliance Check', href: '/compliance', icon: CheckCircle },
     ],
   },
   {
@@ -97,6 +99,7 @@ const navigationSections: NavSection[] = [
     items: [
       { label: 'Nautobot', href: '/settings/nautobot', icon: Database },
       { label: 'CheckMK', href: '/settings/checkmk', icon: Shield },
+      { label: 'Compliance', href: '/settings/compliance', icon: CheckCircle },
       { label: 'Templates', href: '/settings/templates', icon: FileText },
       { label: 'Git Management', href: '/settings/git', icon: GitBranch },
       { label: 'Cache', href: '/settings/cache', icon: Zap },
@@ -113,7 +116,10 @@ interface AppSidebarProps {
 
 export function AppSidebar({ className }: AppSidebarProps) {
   const { isCollapsed, toggleCollapsed } = useSidebar()
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
+  // Initialize with all sections collapsed except "General"
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
+    new Set(navigationSections.filter(s => s.title !== 'General').map(s => s.title))
+  )
   const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set())
   const { user, logout } = useAuthStore()
   const pathname = usePathname()
@@ -156,6 +162,44 @@ export function AppSidebar({ className }: AppSidebarProps) {
       return newSet
     })
   }
+
+  // Auto-expand section containing current active page
+  useEffect(() => {
+    // Find which section contains the current pathname
+    for (const section of navigationSections) {
+      for (const item of section.items) {
+        // Check if direct item matches
+        if (item.href === pathname) {
+          setCollapsedSections(prev => {
+            const newSet = new Set(prev)
+            newSet.delete(section.title)
+            return newSet
+          })
+          return
+        }
+        // Check if any child matches
+        if (item.children) {
+          for (const child of item.children) {
+            if (child.href === pathname) {
+              setCollapsedSections(prev => {
+                const newSet = new Set(prev)
+                newSet.delete(section.title)
+                return newSet
+              })
+              // Also expand the parent item
+              const itemKey = `${section.title}-${item.label}`
+              setCollapsedItems(prev => {
+                const newSet = new Set(prev)
+                newSet.delete(itemKey)
+                return newSet
+              })
+              return
+            }
+          }
+        }
+      }
+    }
+  }, [pathname])
 
   const sidebarWidth = isCollapsed ? 'w-16' : 'w-64'
 
