@@ -78,9 +78,7 @@ class DeviceQueryService:
         # Route to appropriate query method based on filter type
         if filter_type and filter_value:
             if filter_type == "name":
-                return await self._query_by_name(
-                    filter_value, limit, offset, cache_key
-                )
+                return await self._query_by_name(filter_value, limit, offset, cache_key)
             elif filter_type == "location":
                 return await self._query_by_location(
                     filter_value, limit, offset, cache_key
@@ -140,8 +138,13 @@ class DeviceQueryService:
 
         devices = result["data"]["devices"]
         return self._build_response(
-            devices, total_count, limit, offset, cache_key,
-            filter_type="name", filter_value=name_filter
+            devices,
+            total_count,
+            limit,
+            offset,
+            cache_key,
+            filter_type="name",
+            filter_value=name_filter,
         )
 
     async def _query_by_location(
@@ -184,8 +187,13 @@ class DeviceQueryService:
                 devices.append(device)
 
         return self._build_response(
-            devices, len(devices), limit, offset, cache_key,
-            filter_type="location", filter_value=location_filter
+            devices,
+            len(devices),
+            limit,
+            offset,
+            cache_key,
+            filter_type="location",
+            filter_value=location_filter,
         )
 
     async def _query_by_prefix(
@@ -232,8 +240,13 @@ class DeviceQueryService:
 
         devices = list(devices_dict.values())
         return self._build_response(
-            devices, len(devices), limit, offset, cache_key,
-            filter_type="prefix", filter_value=prefix_filter
+            devices,
+            len(devices),
+            limit,
+            offset,
+            cache_key,
+            filter_type="prefix",
+            filter_value=prefix_filter,
         )
 
     async def _query_all_devices(
@@ -274,12 +287,12 @@ class DeviceQueryService:
             """
             count_result = await nautobot_service.graphql_query(count_query, {})
             if "errors" in count_result:
-                raise Exception(f"GraphQL errors in count query: {count_result['errors']}")
+                raise Exception(
+                    f"GraphQL errors in count query: {count_result['errors']}"
+                )
             total_count = len(count_result["data"]["devices"])
 
-        return self._build_response(
-            devices, total_count, limit, offset, cache_key
-        )
+        return self._build_response(devices, total_count, limit, offset, cache_key)
 
     def _build_response(
         self,

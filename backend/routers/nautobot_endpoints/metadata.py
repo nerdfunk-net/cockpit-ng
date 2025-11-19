@@ -469,7 +469,7 @@ async def get_software_versions(
             "get_id": True,
             "get_tags": True,
             "get_platform": True,
-            "platform_filter": [platform] if platform else None
+            "platform_filter": [platform] if platform else None,
         }
         result = await nautobot_service.graphql_query(query, variables)
 
@@ -553,7 +553,7 @@ async def get_vlans(
                 "get_tags": True,
                 "get_vlan_groups": False,
                 "get_location": True,
-                "location_filter": None  # Get all VLANs
+                "location_filter": None,  # Get all VLANs
             }
             result = await nautobot_service.graphql_query(query, variables)
 
@@ -566,8 +566,10 @@ async def get_vlans(
             all_vlans = result["data"]["vlans"]
             # Filter to keep: global VLANs (no location) OR VLANs matching the specified location
             vlans = [
-                vlan for vlan in all_vlans
-                if vlan.get("location") is None or vlan.get("location", {}).get("name") == location
+                vlan
+                for vlan in all_vlans
+                if vlan.get("location") is None
+                or vlan.get("location", {}).get("name") == location
             ]
         else:
             # Standard behavior: use GraphQL filter
@@ -576,7 +578,7 @@ async def get_vlans(
                 "get_tags": True,
                 "get_vlan_groups": False,
                 "get_location": True,
-                "location_filter": [location] if location else None
+                "location_filter": [location] if location else None,
             }
             result = await nautobot_service.graphql_query(query, variables)
 
@@ -618,8 +620,7 @@ async def get_interface_types(
 
         # Cache miss; fetch from Nautobot using OPTIONS request
         result = await nautobot_service.rest_request(
-            endpoint="dcim/interfaces/",
-            method="OPTIONS"
+            endpoint="dcim/interfaces/", method="OPTIONS"
         )
 
         # Debug: log the full response structure
@@ -628,12 +629,18 @@ async def get_interface_types(
             actions = result.get("actions", {})
             logger.info(f"actions keys: {actions.keys()}")
             post_actions = actions.get("POST", {})
-            logger.info(f"POST actions keys: {post_actions.keys() if post_actions else 'None'}")
+            logger.info(
+                f"POST actions keys: {post_actions.keys() if post_actions else 'None'}"
+            )
             if "type" in post_actions:
                 type_field = post_actions.get("type", {})
-                logger.info(f"type field keys: {type_field.keys() if isinstance(type_field, dict) else type(type_field)}")
+                logger.info(
+                    f"type field keys: {type_field.keys() if isinstance(type_field, dict) else type(type_field)}"
+                )
                 choices = type_field.get("choices", [])
-                logger.info(f"choices type: {type(choices)}, length: {len(choices) if choices else 0}")
+                logger.info(
+                    f"choices type: {type(choices)}, length: {len(choices) if choices else 0}"
+                )
                 if choices and len(choices) > 0:
                     logger.info(f"first choice: {choices[0]}, type: {type(choices[0])}")
 
@@ -651,7 +658,9 @@ async def get_interface_types(
                 if isinstance(choice, dict):
                     value = choice.get("value", "")
                     # Nautobot uses 'display' not 'display_name'
-                    display_name = choice.get("display") or choice.get("display_name", "")
+                    display_name = choice.get("display") or choice.get(
+                        "display_name", ""
+                    )
                 elif isinstance(choice, (list, tuple)) and len(choice) >= 2:
                     # Some APIs return choices as [value, display_name] tuples
                     value = choice[0]
@@ -660,10 +669,9 @@ async def get_interface_types(
                     continue
 
                 if value and display_name:
-                    interface_types.append({
-                        "value": value,
-                        "display_name": display_name
-                    })
+                    interface_types.append(
+                        {"value": value, "display_name": display_name}
+                    )
 
         ttl = int(settings_manager.get_cache_settings().get("ttl_seconds", 600))
         cache_service.set(cache_key, interface_types, ttl)

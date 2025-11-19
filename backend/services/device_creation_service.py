@@ -15,9 +15,7 @@ logger = logging.getLogger(__name__)
 class DeviceCreationService:
     """Service for creating devices in Nautobot with a multi-step workflow."""
 
-    async def create_device_with_interfaces(
-        self, request: AddDeviceRequest
-    ) -> dict:
+    async def create_device_with_interfaces(self, request: AddDeviceRequest) -> dict:
         """
         Orchestrated workflow to add a device with interfaces to Nautobot.
 
@@ -62,9 +60,7 @@ class DeviceCreationService:
         )
 
         # Step 2: Create IP addresses
-        ip_address_map = await self._step2_create_ip_addresses(
-            request, workflow_status
-        )
+        ip_address_map = await self._step2_create_ip_addresses(request, workflow_status)
 
         # Step 3: Create interfaces and assign IPs
         created_interfaces, primary_ipv4_id = await self._step3_create_interfaces(
@@ -72,15 +68,15 @@ class DeviceCreationService:
         )
 
         # Step 4: Assign primary IPv4
-        await self._step4_assign_primary_ip(
-            device_id, primary_ipv4_id, workflow_status
-        )
+        await self._step4_assign_primary_ip(device_id, primary_ipv4_id, workflow_status)
 
         # Determine overall success
-        overall_success = (
-            workflow_status["step1_device"]["status"] == "success"
-            and workflow_status["step3_interfaces"]["status"] in ["success", "partial"]
-        )
+        overall_success = workflow_status["step1_device"][
+            "status"
+        ] == "success" and workflow_status["step3_interfaces"]["status"] in [
+            "success",
+            "partial",
+        ]
 
         return {
             "success": overall_success,
@@ -89,11 +85,14 @@ class DeviceCreationService:
             "device": device_response,
             "workflow_status": workflow_status,
             "summary": {
-                "device_created": workflow_status["step1_device"]["status"] == "success",
+                "device_created": workflow_status["step1_device"]["status"]
+                == "success",
                 "interfaces_created": len(created_interfaces),
                 "interfaces_failed": len(workflow_status["step3_interfaces"]["errors"]),
                 "ip_addresses_created": len(ip_address_map),
-                "ip_addresses_failed": len(workflow_status["step2_ip_addresses"]["errors"]),
+                "ip_addresses_failed": len(
+                    workflow_status["step2_ip_addresses"]["errors"]
+                ),
                 "primary_ipv4_assigned": primary_ipv4_id is not None,
             },
         }
@@ -115,7 +114,7 @@ class DeviceCreationService:
         logger.info(f"Interfaces count: {len(request.interfaces)}")
         for i, iface in enumerate(request.interfaces):
             logger.info(
-                f"  Interface {i+1}: name={iface.name}, type={iface.type}, "
+                f"  Interface {i + 1}: name={iface.name}, type={iface.type}, "
                 f"ip={iface.ip_address}, is_primary={iface.is_primary_ipv4}"
             )
 
@@ -201,17 +200,21 @@ class DeviceCreationService:
 
         if not interfaces_with_ips:
             workflow_status["step2_ip_addresses"]["status"] = "skipped"
-            workflow_status["step2_ip_addresses"]["message"] = "No IP addresses to create"
+            workflow_status["step2_ip_addresses"]["message"] = (
+                "No IP addresses to create"
+            )
             return ip_address_map
 
         for interface in interfaces_with_ips:
             try:
                 if not interface.namespace:
-                    workflow_status["step2_ip_addresses"]["errors"].append({
-                        "interface": interface.name,
-                        "ip_address": interface.ip_address,
-                        "error": "Namespace is required for all IP addresses",
-                    })
+                    workflow_status["step2_ip_addresses"]["errors"].append(
+                        {
+                            "interface": interface.name,
+                            "ip_address": interface.ip_address,
+                            "error": "Namespace is required for all IP addresses",
+                        }
+                    )
                     logger.error(
                         f"Missing namespace for IP address {interface.ip_address} "
                         f"on interface {interface.name}"
@@ -230,21 +233,25 @@ class DeviceCreationService:
 
                 if ip_response and "id" in ip_response:
                     ip_address_map[interface.name] = ip_response["id"]
-                    workflow_status["step2_ip_addresses"]["data"].append({
-                        "interface": interface.name,
-                        "ip_address": interface.ip_address,
-                        "id": ip_response["id"],
-                        "status": "success",
-                    })
+                    workflow_status["step2_ip_addresses"]["data"].append(
+                        {
+                            "interface": interface.name,
+                            "ip_address": interface.ip_address,
+                            "id": ip_response["id"],
+                            "status": "success",
+                        }
+                    )
                     logger.info(
                         f"Created IP address {interface.ip_address} with ID: {ip_response['id']}"
                     )
                 else:
-                    workflow_status["step2_ip_addresses"]["errors"].append({
-                        "interface": interface.name,
-                        "ip_address": interface.ip_address,
-                        "error": "No IP ID returned from Nautobot",
-                    })
+                    workflow_status["step2_ip_addresses"]["errors"].append(
+                        {
+                            "interface": interface.name,
+                            "ip_address": interface.ip_address,
+                            "error": "No IP ID returned from Nautobot",
+                        }
+                    )
                     logger.warning(
                         f"Failed to create IP address {interface.ip_address} "
                         f"for interface {interface.name}"
@@ -252,12 +259,16 @@ class DeviceCreationService:
 
             except Exception as e:
                 error_msg = str(e)
-                workflow_status["step2_ip_addresses"]["errors"].append({
-                    "interface": interface.name,
-                    "ip_address": interface.ip_address,
-                    "error": error_msg,
-                })
-                logger.error(f"Error creating IP address {interface.ip_address}: {error_msg}")
+                workflow_status["step2_ip_addresses"]["errors"].append(
+                    {
+                        "interface": interface.name,
+                        "ip_address": interface.ip_address,
+                        "error": error_msg,
+                    }
+                )
+                logger.error(
+                    f"Error creating IP address {interface.ip_address}: {error_msg}"
+                )
 
         # Update status based on results
         success_count = len(workflow_status["step2_ip_addresses"]["data"])
@@ -301,7 +312,9 @@ class DeviceCreationService:
 
         # Separate LAG interfaces from other interfaces (LAGs must be created first)
         lag_interfaces = [iface for iface in request.interfaces if iface.type == "lag"]
-        other_interfaces = [iface for iface in request.interfaces if iface.type != "lag"]
+        other_interfaces = [
+            iface for iface in request.interfaces if iface.type != "lag"
+        ]
 
         # Map frontend interface IDs to Nautobot interface IDs
         interface_id_map = {}
@@ -338,7 +351,9 @@ class DeviceCreationService:
                     interface_payload["untagged_vlan"] = interface.untagged_vlan
                 if interface.tagged_vlans:
                     interface_payload["tagged_vlans"] = [
-                        v.strip() for v in interface.tagged_vlans.split(",") if v.strip()
+                        v.strip()
+                        for v in interface.tagged_vlans.split(",")
+                        if v.strip()
                     ]
                 if interface.parent_interface:
                     interface_payload["parent_interface"] = interface.parent_interface
@@ -348,9 +363,13 @@ class DeviceCreationService:
                     lag_nautobot_id = interface_id_map.get(interface.lag)
                     if lag_nautobot_id:
                         interface_payload["lag"] = lag_nautobot_id
-                        logger.info(f"Mapping LAG {interface.lag} to Nautobot ID {lag_nautobot_id}")
+                        logger.info(
+                            f"Mapping LAG {interface.lag} to Nautobot ID {lag_nautobot_id}"
+                        )
                     else:
-                        logger.warning(f"LAG interface {interface.lag} not found in interface_id_map")
+                        logger.warning(
+                            f"LAG interface {interface.lag} not found in interface_id_map"
+                        )
                 if interface.tags:
                     interface_payload["tags"] = interface.tags
 
@@ -360,12 +379,16 @@ class DeviceCreationService:
 
                 if interface_response and "id" in interface_response:
                     interface_id = interface_response["id"]
-                    logger.info(f"Created interface {interface.name} with ID: {interface_id}")
+                    logger.info(
+                        f"Created interface {interface.name} with ID: {interface_id}"
+                    )
 
                     # Store mapping for LAG references
                     if interface.id:
                         interface_id_map[interface.id] = interface_id
-                        logger.debug(f"Mapped frontend ID {interface.id} to Nautobot ID {interface_id}")
+                        logger.debug(
+                            f"Mapped frontend ID {interface.id} to Nautobot ID {interface_id}"
+                        )
 
                     interface_result = {
                         "name": interface.name,
@@ -401,7 +424,9 @@ class DeviceCreationService:
                             ):
                                 if interface.is_primary_ipv4:
                                     primary_ipv4_id = ip_id
-                                    logger.info(f"Interface {interface.name} marked as primary IPv4")
+                                    logger.info(
+                                        f"Interface {interface.name} marked as primary IPv4"
+                                    )
                                 elif primary_ipv4_id is None:
                                     primary_ipv4_id = ip_id
 
@@ -412,18 +437,22 @@ class DeviceCreationService:
                     workflow_status["step3_interfaces"]["data"].append(interface_result)
                     created_interfaces.append(interface_response)
                 else:
-                    workflow_status["step3_interfaces"]["errors"].append({
-                        "interface": interface.name,
-                        "error": "No interface ID returned from Nautobot",
-                    })
+                    workflow_status["step3_interfaces"]["errors"].append(
+                        {
+                            "interface": interface.name,
+                            "error": "No interface ID returned from Nautobot",
+                        }
+                    )
                     logger.warning(f"Failed to create interface {interface.name}")
 
             except Exception as e:
                 error_msg = str(e)
-                workflow_status["step3_interfaces"]["errors"].append({
-                    "interface": interface.name,
-                    "error": error_msg,
-                })
+                workflow_status["step3_interfaces"]["errors"].append(
+                    {
+                        "interface": interface.name,
+                        "error": error_msg,
+                    }
+                )
                 logger.error(f"Error creating interface {interface.name}: {error_msg}")
 
         # Update status based on results
@@ -507,7 +536,9 @@ class DeviceCreationService:
             )
             return True
         except Exception as e:
-            logger.error(f"Error assigning primary IPv4 to device {device_id}: {str(e)}")
+            logger.error(
+                f"Error assigning primary IPv4 to device {device_id}: {str(e)}"
+            )
             return False
 
 

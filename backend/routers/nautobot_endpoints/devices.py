@@ -16,16 +16,11 @@ from models.nautobot import (
     AddDeviceRequest,
 )
 from services import nautobot_service
-from services.cache_service import cache_service
 from services.device_creation_service import device_creation_service
 from services.device_query_service import device_query_service
 from services.nautobot_helpers.cache_helpers import (
-    DEVICE_CACHE_TTL,
-    get_device_list_cache_key,
     cache_device,
     get_cached_device,
-    cache_device_list,
-    get_cached_device_list,
 )
 
 logger = logging.getLogger(__name__)
