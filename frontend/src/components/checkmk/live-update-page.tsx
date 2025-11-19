@@ -593,7 +593,6 @@ export default function LiveUpdatePage() {
   // Authentication effect - wait for auth before loading data
   useEffect(() => {
     if (isAuthenticated && token) {
-      console.log('LiveUpdate: Authentication ready, loading devices')
       setAuthReady(true)
       loadDevices()
     }

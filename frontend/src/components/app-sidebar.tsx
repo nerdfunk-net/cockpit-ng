@@ -126,18 +126,9 @@ export function AppSidebar({ className }: AppSidebarProps) {
   const router = useRouter()
   
   // Check if user is admin - support both legacy and new RBAC system
-  console.log('[SIDEBAR] Checking admin status for user:', user)
-  console.log('[SIDEBAR] user?.role:', user?.role)
-  console.log('[SIDEBAR] user?.permissions:', user?.permissions)
-  console.log('[SIDEBAR] user?.roles:', user?.roles)
-  console.log('[SIDEBAR] Array.isArray(user?.roles):', Array.isArray(user?.roles))
-  console.log('[SIDEBAR] user?.roles.includes(\'admin\'):', Array.isArray(user?.roles) && user?.roles.includes('admin'))
-  
   const isAdmin = user?.role === 'admin' || 
                   user?.permissions === 31 || 
                   (Array.isArray(user?.roles) && user?.roles.includes('admin'))
-  
-  console.log('[SIDEBAR] Final isAdmin result:', isAdmin)
 
   const toggleSection = (sectionTitle: string) => {
     setCollapsedSections(prev => {
@@ -171,9 +162,12 @@ export function AppSidebar({ className }: AppSidebarProps) {
         // Check if direct item matches
         if (item.href === pathname) {
           setCollapsedSections(prev => {
-            const newSet = new Set(prev)
-            newSet.delete(section.title)
-            return newSet
+            if (prev.has(section.title)) {
+              const newSet = new Set(prev)
+              newSet.delete(section.title)
+              return newSet
+            }
+            return prev
           })
           return
         }
@@ -182,16 +176,22 @@ export function AppSidebar({ className }: AppSidebarProps) {
           for (const child of item.children) {
             if (child.href === pathname) {
               setCollapsedSections(prev => {
-                const newSet = new Set(prev)
-                newSet.delete(section.title)
-                return newSet
+                if (prev.has(section.title)) {
+                  const newSet = new Set(prev)
+                  newSet.delete(section.title)
+                  return newSet
+                }
+                return prev
               })
               // Also expand the parent item
               const itemKey = `${section.title}-${item.label}`
               setCollapsedItems(prev => {
-                const newSet = new Set(prev)
-                newSet.delete(itemKey)
-                return newSet
+                if (prev.has(itemKey)) {
+                  const newSet = new Set(prev)
+                  newSet.delete(itemKey)
+                  return newSet
+                }
+                return prev
               })
               return
             }

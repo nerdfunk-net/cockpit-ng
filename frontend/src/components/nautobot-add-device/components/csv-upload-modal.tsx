@@ -304,7 +304,7 @@ export function CSVUploadModal({
                   <h4 className="font-medium text-sm mb-2">Validation Issues</h4>
                   <ul className="space-y-1 text-xs">
                     {parseResult.validationErrors.map((error, index) => (
-                      <li key={index} className="flex items-start gap-2">
+                      <li key={`${error.deviceName}-${error.field}-${index}`} className="flex items-start gap-2">
                         {error.severity === 'error' ? (
                           <XCircle className="h-3 w-3 text-red-500 mt-0.5 flex-shrink-0" />
                         ) : (
@@ -535,7 +535,7 @@ test-1;virtual;12345;testnet;tag-1;eth1;192.168.100.2/24;1000BASE-T (1GE);testde
                 </pre>
               </div>
               <p className="text-muted-foreground text-xs mt-2">
-                Note: This example shows a device "test-1" with two interfaces. Both rows have the same device_type, serial, etc., but different interface details.
+                Note: This example shows a device &quot;test-1&quot; with two interfaces. Both rows have the same device_type, serial, etc., but different interface details.
               </p>
             </div>
 
@@ -547,7 +547,7 @@ test-1;virtual;12345;testnet;tag-1;eth1;192.168.100.2/24;1000BASE-T (1GE);testde
                   <ul className="list-disc list-inside space-y-1">
                     <li>Device fields must be identical across all rows for the same device</li>
                     <li>If only one interface, set_primary_ipv4 will auto-set to true</li>
-                    <li>Configure column mapping if your headers don't match the standard names</li>
+                    <li>Configure column mapping if your headers don&apos;t match the standard names</li>
                     <li>Use the mapping configuration to handle custom column names</li>
                   </ul>
                 </div>

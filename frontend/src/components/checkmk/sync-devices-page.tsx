@@ -383,31 +383,6 @@ export function CheckMKSyncDevicesPage() {
       if (response.ok) {
         const data = await response.json()
         
-        console.log('=== CHECKMK JOB RESULT DEBUG ===')
-        console.log('RAW API RESPONSE:', data)
-        console.log('Full job result:', data.job)
-        console.log('Device results count:', data.job?.device_results?.length || 0)
-        if (data.job?.device_results && data.job.device_results.length > 0) {
-          console.log('First device result sample:', data.job.device_results[0])
-          console.log('Device result keys:', Object.keys(data.job.device_results[0]))
-          
-          // Check for enhanced data
-          const firstDevice = data.job.device_results[0]
-          console.log('Enhanced data check:')
-          console.log('  - role:', firstDevice.role, typeof firstDevice.role)
-          console.log('  - location:', firstDevice.location, typeof firstDevice.location) 
-          console.log('  - device_status:', firstDevice.device_status, typeof firstDevice.device_status)
-          console.log('  - primary_ip4:', firstDevice.primary_ip4, typeof firstDevice.primary_ip4)
-          console.log('  - result_data:', firstDevice.result_data, typeof firstDevice.result_data)
-          if (firstDevice.result_data) {
-            console.log('  - result_data keys:', Object.keys(firstDevice.result_data))
-            console.log('  - result_data.data?.result:', firstDevice.result_data.data?.result)
-            console.log('  - result_data.comparison_result:', firstDevice.result_data.comparison_result)
-            console.log('  - result_data.status:', firstDevice.result_data.status)
-          }
-        }
-        console.log('=== END DEBUG ===')
-        
         // Extract device results from the new job format
         const deviceResults = data.job?.device_results || []
         // Convert device results to the expected devices format

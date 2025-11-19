@@ -344,7 +344,6 @@ export default function BackupPage() {
   // Authentication effect - wait for auth before loading data
   useEffect(() => {
     if (isAuthenticated && token) {
-      console.log('Backup: Authentication ready, loading devices')
       setAuthReady(true)
       loadDevices()
     }
