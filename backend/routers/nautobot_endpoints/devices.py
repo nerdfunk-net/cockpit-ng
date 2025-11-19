@@ -804,6 +804,21 @@ async def add_device(
         logger.info("Step 1: Creating device in Nautobot DCIM")
         workflow_status["step1_device"]["status"] = "in_progress"
 
+        # DEBUG: Log incoming request data
+        logger.info("=== ADD DEVICE DEBUG ===")
+        logger.info(f"Device name: {request.name}")
+        logger.info(f"Device type: {request.device_type}")
+        logger.info(f"Role: {request.role}")
+        logger.info(f"Location: {request.location}")
+        logger.info(f"Status: {request.status}")
+        logger.info(f"Platform: {request.platform}")
+        logger.info(f"Software version: {request.software_version}")
+        logger.info(f"Serial: {request.serial}")
+        logger.info(f"Asset tag: {request.asset_tag}")
+        logger.info(f"Interfaces count: {len(request.interfaces)}")
+        for i, iface in enumerate(request.interfaces):
+            logger.info(f"  Interface {i+1}: name={iface.name}, type={iface.type}, ip={iface.ip_address}, is_primary={iface.is_primary_ipv4}")
+
         try:
             device_payload = {
                 "name": request.name,
@@ -813,11 +828,17 @@ async def add_device(
                 "status": request.status,
             }
 
-            # Add optional platform and software_version if provided
+            # Add optional fields if provided
             if request.platform:
                 device_payload["platform"] = request.platform
             if request.software_version:
                 device_payload["software_version"] = request.software_version
+            if request.serial:
+                device_payload["serial"] = request.serial
+            if request.asset_tag:
+                device_payload["asset_tag"] = request.asset_tag
+
+            logger.info(f"Device payload: {device_payload}")
 
             device_response = await nautobot_service.rest_request(
                 endpoint="dcim/devices/", method="POST", data=device_payload
@@ -1059,13 +1080,14 @@ async def add_device(
                                 f"Assigned IP {interface.ip_address} to interface {interface.name}"
                             )
 
-                            # Save first IPv4 address for primary IP
-                            if (
-                                primary_ipv4_id is None
-                                and interface.ip_address
-                                and "/" in interface.ip_address
-                            ):
-                                if ":" not in interface.ip_address:
+                            # Use is_primary_ipv4 flag to set primary IP, or fallback to first IPv4
+                            if interface.ip_address and "/" in interface.ip_address and ":" not in interface.ip_address:
+                                if interface.is_primary_ipv4:
+                                    # Explicitly marked as primary
+                                    primary_ipv4_id = ip_id
+                                    logger.info(f"Interface {interface.name} marked as primary IPv4")
+                                elif primary_ipv4_id is None:
+                                    # Fallback: use first IPv4 if none explicitly set
                                     primary_ipv4_id = ip_id
 
                         except Exception as e:

@@ -60,7 +60,8 @@ class InterfaceData(BaseModel):
     type: str
     status: str
     ip_address: Optional[str] = None
-    namespace: str  # Required if ip_address is provided
+    namespace: Optional[str] = None  # Required if ip_address is provided
+    is_primary_ipv4: Optional[bool] = None  # Set this interface's IP as device primary
     # Optional properties
     enabled: Optional[bool] = None
     mgmt_only: Optional[bool] = None
@@ -87,5 +88,7 @@ class AddDeviceRequest(BaseModel):
     device_type: str
     platform: Optional[str] = None
     software_version: Optional[str] = None
+    serial: Optional[str] = None
+    asset_tag: Optional[str] = None
     # Interfaces array
     interfaces: list[InterfaceData] = []

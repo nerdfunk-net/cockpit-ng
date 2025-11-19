@@ -12,7 +12,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, Trash2, Server, Network, AlertCircle, CheckCircle2, Info, Settings } from 'lucide-react'
+import { Plus, Trash2, Server, Network, AlertCircle, CheckCircle2, Info, Settings, FileSpreadsheet } from 'lucide-react'
+import { useCSVUpload } from './hooks/use-csv-upload'
+import { CSVUploadModal } from './components/csv-upload-modal'
+import { ParsedDevice, DeviceImportResult } from './types'
 
 // Type definitions
 interface DropdownOption {
@@ -188,6 +191,132 @@ export function AddDevicePage() {
   // Interface type search state (per interface)
   const [interfaceTypeSearch, setInterfaceTypeSearch] = useState<Record<string, string>>({})
   const [showInterfaceTypeDropdown, setShowInterfaceTypeDropdown] = useState<Record<string, boolean>>({})
+
+  // CSV import device handler
+  const handleImportDevice = useCallback(async (device: ParsedDevice): Promise<DeviceImportResult> => {
+    try {
+      const token = Cookies.get('cockpit_auth_token')
+      if (!token) {
+        return {
+          deviceName: device.name,
+          status: 'error',
+          message: 'No authentication token found'
+        }
+      }
+
+      // Resolve IDs from names for device fields
+      const roleId = device.role ? roles.find(r => r.name === device.role || r.id === device.role)?.id : selectedRole
+      const statusId = device.status ? statuses.find(s => s.name === device.status || s.id === device.status)?.id : selectedStatus
+      const locationId = device.location ? locations.find(l => l.name === device.location || l.id === device.location || l.hierarchicalPath === device.location)?.id : selectedLocation
+      const deviceTypeId = device.device_type ? deviceTypes.find(dt => dt.model === device.device_type || dt.id === device.device_type || dt.display === device.device_type)?.id : undefined
+
+      // Resolve interface type and status IDs
+      const resolvedInterfaces = device.interfaces.map((iface, index) => {
+        const typeId = interfaceTypes.find(t => t.name === iface.type || t.id === iface.type)?.id || iface.type
+        const statusId = interfaceStatuses.find(s => s.name === iface.status || s.id === iface.status)?.id || iface.status
+        const namespaceId = iface.namespace ? namespaces.find(ns => ns.name === iface.namespace || ns.id === iface.namespace)?.id : nautobotDefaults?.namespace
+
+        return {
+          id: (index + 1).toString(),
+          name: iface.name,
+          type: typeId,
+          status: statusId,
+          ip_address: iface.ip_address || '',
+          namespace: namespaceId,
+          is_primary_ipv4: iface.is_primary_ipv4,
+          enabled: iface.enabled,
+          mgmt_only: iface.mgmt_only,
+          description: iface.description,
+          mac_address: iface.mac_address,
+          mtu: iface.mtu,
+          mode: iface.mode,
+          untagged_vlan: iface.untagged_vlan,
+          tagged_vlans: iface.tagged_vlans?.join(','),
+          parent_interface: iface.parent_interface,
+          bridge: iface.bridge,
+          lag: iface.lag,
+          tags: iface.tags,
+        }
+      })
+
+      if (!deviceTypeId) {
+        return {
+          deviceName: device.name,
+          status: 'error',
+          message: `Device type "${device.device_type}" not found in Nautobot`
+        }
+      }
+
+      if (!roleId) {
+        return {
+          deviceName: device.name,
+          status: 'error',
+          message: `Role "${device.role}" not found in Nautobot`
+        }
+      }
+
+      if (!locationId) {
+        return {
+          deviceName: device.name,
+          status: 'error',
+          message: `Location "${device.location}" not found in Nautobot`
+        }
+      }
+
+      const deviceData = {
+        name: device.name,
+        role: roleId,
+        status: statusId || nautobotDefaults?.device_status,
+        location: locationId,
+        device_type: deviceTypeId,
+        serial: device.serial,
+        asset_tag: device.asset_tag,
+        interfaces: resolvedInterfaces
+      }
+
+      const response = await fetch('/api/proxy/nautobot/add-device', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(deviceData)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        return {
+          deviceName: device.name,
+          status: 'error',
+          message: errorData.detail || 'Failed to add device'
+        }
+      }
+
+      const result = await response.json()
+
+      return {
+        deviceName: device.name,
+        status: result.success ? 'success' : 'error',
+        message: result.success
+          ? `Device created (${result.summary?.interfaces_created || 0} interfaces)`
+          : result.message || 'Unknown error',
+        deviceId: result.device_id,
+        workflowStatus: result.workflow_status
+      }
+    } catch (error) {
+      return {
+        deviceName: device.name,
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  }, [roles, statuses, locations, deviceTypes, interfaceTypes, interfaceStatuses, namespaces, nautobotDefaults, selectedRole, selectedStatus, selectedLocation])
+
+  // CSV Upload hook
+  const csvUpload = useCSVUpload({
+    nautobotDefaults,
+    onImportDevice: handleImportDevice
+  })
 
   // Load all dropdown data on mount
   const loadDropdownData = useCallback(async () => {
@@ -685,14 +814,24 @@ export function AddDevicePage() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Server className="h-6 w-6 text-primary" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Server className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Add Device to Nautobot</h1>
+            <p className="text-muted-foreground">Add a new network device or bare metal server</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Add Device to Nautobot</h1>
-          <p className="text-muted-foreground">Add a new network device or bare metal server</p>
-        </div>
+        <Button
+          variant="outline"
+          onClick={() => csvUpload.setShowModal(true)}
+          disabled={isLoading}
+        >
+          <FileSpreadsheet className="h-4 w-4 mr-2" />
+          Import from CSV
+        </Button>
       </div>
 
       {/* Status Messages */}
@@ -1426,6 +1565,32 @@ export function AddDevicePage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* CSV Upload Modal */}
+      <CSVUploadModal
+        showModal={csvUpload.showModal}
+        onClose={csvUpload.closeModal}
+        csvFile={csvUpload.csvFile}
+        parseResult={csvUpload.parseResult}
+        isParsing={csvUpload.isParsing}
+        parseError={csvUpload.parseError}
+        isImporting={csvUpload.isImporting}
+        importProgress={csvUpload.importProgress}
+        importSummary={csvUpload.importSummary}
+        columnMappings={csvUpload.columnMappings}
+        showMappingConfig={csvUpload.showMappingConfig}
+        lookupData={{
+          roles,
+          locations,
+          deviceTypes
+        }}
+        onFileSelect={csvUpload.parseCSV}
+        onImport={csvUpload.importDevices}
+        onUpdateMapping={csvUpload.updateMapping}
+        onApplyMappings={csvUpload.applyMappings}
+        onShowMappingConfig={csvUpload.setShowMappingConfig}
+        onReset={csvUpload.reset}
+      />
     </div>
   )
 }
