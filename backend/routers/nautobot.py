@@ -25,7 +25,7 @@ from routers.nautobot_endpoints import (
 )
 
 # Create main Nautobot router
-router = APIRouter(prefix="/api/nautobot", tags=["nautobot"])
+router = APIRouter(prefix="/api/nautobot")
 
 # Include all sub-routers
 router.include_router(devices_router)

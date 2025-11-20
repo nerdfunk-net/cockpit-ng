@@ -179,23 +179,6 @@ async def get_device(
         )
 
 
-@router.put("/devices/{device_id}")
-async def update_device(
-    device_id: str,
-    update_data: dict,
-    current_user: dict = Depends(require_permission("nautobot.devices", "write")),
-):
-    """Update device in Nautobot."""
-
-
-@router.post("/devices/search")
-async def search_devices(
-    filters: DeviceFilter,
-    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
-):
-    """Search devices in Nautobot with complex filters."""
-
-
 @router.post("/check-ip")
 async def check_ip(
     request: CheckIPRequest,
