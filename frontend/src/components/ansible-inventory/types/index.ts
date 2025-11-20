@@ -14,10 +14,10 @@ export interface DeviceInfo {
   name: string
   location?: string
   role?: string
-  device_type?: string
+  device_type?: { name: string } | string
   manufacturer?: string
-  platform?: string
-  primary_ip4?: string
+  platform?: { name: string } | string
+  primary_ip4?: { address: string } | string
   status?: string
   tags: string[]
 }

@@ -137,7 +137,9 @@ export function TemplateSelectionPanel({
                         <SelectContent>
                           {selectedDevices.map((device) => (
                             <SelectItem key={device.id} value={device.id}>
-                              {device.name} ({device.primary_ip4 || 'No IP'})
+                              {device.name} ({typeof device.primary_ip4 === 'object' && device.primary_ip4?.address
+                                ? device.primary_ip4.address.split('/')[0]
+                                : (device.primary_ip4 as string) || 'No IP'})
                             </SelectItem>
                           ))}
                         </SelectContent>

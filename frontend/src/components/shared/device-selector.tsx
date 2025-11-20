@@ -41,10 +41,10 @@ export interface DeviceInfo {
   name: string
   location?: string
   role?: string
-  device_type?: string
+  device_type?: { name: string } | string
   manufacturer?: string
-  platform?: string
-  primary_ip4?: string
+  platform?: { name: string } | string
+  primary_ip4?: { address: string } | string
   status?: string
   tags: string[]
 }
@@ -660,8 +660,12 @@ export function DeviceSelector({
     }
   }
 
-  const formatDeviceValue = (value: string | undefined) => {
-    return value || 'N/A'
+  const formatDeviceValue = (value: string | { name?: string; address?: string } | undefined) => {
+    if (!value) return 'N/A'
+    if (typeof value === 'object') {
+      return value.name || value.address?.split('/')[0] || 'N/A'
+    }
+    return value
   }
 
   // Pagination calculations

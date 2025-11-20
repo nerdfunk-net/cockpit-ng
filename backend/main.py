@@ -33,6 +33,7 @@ from routers.jobs import router as jobs_router
 from routers.netmiko import router as netmiko_router
 from routers.rbac import router as rbac_router
 from routers.compliance import router as compliance_router
+from routers.compliance_check import router as compliance_check_router
 from health import router as health_router
 
 # APScheduler service (optional for testing)
@@ -79,6 +80,7 @@ app.include_router(jobs_router)
 app.include_router(netmiko_router)
 app.include_router(rbac_router)
 app.include_router(compliance_router)
+app.include_router(compliance_check_router)
 app.include_router(health_router)
 
 

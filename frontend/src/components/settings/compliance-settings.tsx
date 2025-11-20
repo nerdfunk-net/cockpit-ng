@@ -43,6 +43,8 @@ import {
   FileText,
   Key,
   Network,
+  Upload,
+  Download,
 } from 'lucide-react'
 
 const EMPTY_ARRAY: never[] = []
@@ -64,6 +66,7 @@ interface RegexPattern {
 
 interface LoginCredential {
   id: number
+  name: string
   username: string
   password: string
   description?: string
@@ -74,6 +77,7 @@ interface LoginCredential {
 
 interface SNMPMapping {
   id: number
+  name: string
   device_type: string
   snmp_version: 'v1' | 'v2c' | 'v3'
   snmp_community?: string
@@ -111,6 +115,7 @@ export default function ComplianceSettingsForm() {
   const [showLoginDialog, setShowLoginDialog] = useState(false)
   const [editingLogin, setEditingLogin] = useState<LoginCredential | null>(null)
   const [loginForm, setLoginForm] = useState({
+    name: '',
     username: '',
     password: '',
     description: '',
@@ -121,6 +126,7 @@ export default function ComplianceSettingsForm() {
   const [showSnmpDialog, setShowSnmpDialog] = useState(false)
   const [editingSnmp, setEditingSnmp] = useState<SNMPMapping | null>(null)
   const [snmpForm, setSnmpForm] = useState({
+    name: '',
     device_type: '',
     snmp_version: 'v2c' as 'v1' | 'v2c' | 'v3',
     snmp_community: '',
@@ -131,6 +137,11 @@ export default function ComplianceSettingsForm() {
     snmp_v3_priv_password: '',
     description: '',
   })
+  
+  // SNMP Import state
+  const [showImportDialog, setShowImportDialog] = useState(false)
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [isImporting, setIsImporting] = useState(false)
 
   const showMessage = useCallback((msg: string, type: 'success' | 'error') => {
     setMessage(msg)
@@ -241,13 +252,14 @@ export default function ComplianceSettingsForm() {
 
   const handleAddLogin = useCallback(() => {
     setEditingLogin(null)
-    setLoginForm({ username: '', password: '', description: '' })
+    setLoginForm({ name: '', username: '', password: '', description: '' })
     setShowLoginDialog(true)
   }, [])
 
   const handleEditLogin = useCallback((credential: LoginCredential) => {
     setEditingLogin(credential)
     setLoginForm({
+      name: credential.name || '',
       username: credential.username,
       password: '', // Don't pre-fill password
       description: credential.description || '',
@@ -317,15 +329,122 @@ export default function ComplianceSettingsForm() {
         setSnmpMappings(response.data)
       }
       setStatus('idle')
-    } catch (error) {
-      console.error('Error loading SNMP mappings:', error)
+    } catch {
       showMessage('Failed to load SNMP mappings', 'error')
     }
   }, [apiCall, showMessage])
 
+  const handleImportFromCheckMK = useCallback(async () => {
+    try {
+      setIsImporting(true)
+      // Load the CheckMK SNMP mapping YAML file
+      const yamlResponse = (await apiCall(
+        'config/snmp_mapping.yaml'
+      )) as { success?: boolean; data?: string }
+      
+      if (!yamlResponse.success || !yamlResponse.data) {
+        showMessage('Failed to load CheckMK SNMP mapping file', 'error')
+        return
+      }
+      
+      // Send the YAML content to backend for parsing and import
+      const response = (await apiCall(
+        'settings/compliance/snmp-mappings/import',
+        {
+          method: 'POST',
+          body: { yaml_content: yamlResponse.data },
+        }
+      )) as ApiResponse<{ imported: number; errors: number }>
+      
+      if (response.success) {
+        const data = response.data
+        if (data && data.errors > 0) {
+          showMessage(
+            `Imported ${data.imported} mappings with ${data.errors} errors`,
+            'success'
+          )
+        } else {
+          showMessage(
+            `Successfully imported ${data?.imported || 0} SNMP mappings`,
+            'success'
+          )
+        }
+        await loadSnmpMappings()
+      } else {
+        showMessage('Failed to import SNMP mappings', 'error')
+      }
+    } catch {
+      showMessage('Error importing from CheckMK', 'error')
+    } finally {
+      setIsImporting(false)
+    }
+  }, [apiCall, showMessage, loadSnmpMappings])
+
+  const handleImportFromYAML = useCallback(() => {
+    setShowImportDialog(true)
+    setImportFile(null)
+  }, [])
+
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0]) {
+        setImportFile(e.target.files[0])
+      }
+    },
+    []
+  )
+
+  const handleImportSubmit = useCallback(async () => {
+    if (!importFile) {
+      showMessage('Please select a YAML file', 'error')
+      return
+    }
+
+    try {
+      setIsImporting(true)
+      
+      // Read file content
+      const fileContent = await importFile.text()
+      
+      // Send to backend
+      const response = (await apiCall(
+        'settings/compliance/snmp-mappings/import',
+        {
+          method: 'POST',
+          body: { yaml_content: fileContent },
+        }
+      )) as ApiResponse<{ imported: number; errors: number }>
+      
+      if (response.success) {
+        const data = response.data
+        if (data && data.errors > 0) {
+          showMessage(
+            `Imported ${data.imported} mappings with ${data.errors} errors`,
+            'success'
+          )
+        } else {
+          showMessage(
+            `Successfully imported ${data?.imported || 0} SNMP mappings`,
+            'success'
+          )
+        }
+        setShowImportDialog(false)
+        setImportFile(null)
+        await loadSnmpMappings()
+      } else {
+        showMessage('Failed to import SNMP mappings', 'error')
+      }
+    } catch {
+      showMessage('Error importing YAML file', 'error')
+    } finally {
+      setIsImporting(false)
+    }
+  }, [importFile, apiCall, showMessage, loadSnmpMappings])
+
   const handleAddSnmp = useCallback(() => {
     setEditingSnmp(null)
     setSnmpForm({
+      name: '',
       device_type: '',
       snmp_version: 'v2c',
       snmp_community: '',
@@ -342,6 +461,7 @@ export default function ComplianceSettingsForm() {
   const handleEditSnmp = useCallback((mapping: SNMPMapping) => {
     setEditingSnmp(mapping)
     setSnmpForm({
+      name: mapping.name || '',
       device_type: mapping.device_type,
       snmp_version: mapping.snmp_version,
       snmp_community: mapping.snmp_community || '',
@@ -675,6 +795,7 @@ export default function ComplianceSettingsForm() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Name</TableHead>
                       <TableHead>Username</TableHead>
                       <TableHead>Password</TableHead>
                       <TableHead>Description</TableHead>
@@ -686,6 +807,9 @@ export default function ComplianceSettingsForm() {
                     {loginCredentials.map((credential) => (
                       <TableRow key={credential.id}>
                         <TableCell className="font-medium">
+                          {credential.name || credential.username}
+                        </TableCell>
+                        <TableCell>
                           {credential.username}
                         </TableCell>
                         <TableCell className="font-mono text-sm">
@@ -737,10 +861,32 @@ export default function ComplianceSettingsForm() {
                     Map device types to SNMP credentials
                   </CardDescription>
                 </div>
-                <Button onClick={handleAddSnmp}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Mapping
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleImportFromCheckMK}
+                    disabled={isImporting}
+                  >
+                    {isImporting ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
+                    Import from CheckMK
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleImportFromYAML}
+                    disabled={isImporting}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import from YAML
+                  </Button>
+                  <Button onClick={handleAddSnmp}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Mapping
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -756,6 +902,7 @@ export default function ComplianceSettingsForm() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Name</TableHead>
                       <TableHead>Device Type</TableHead>
                       <TableHead>SNMP Version</TableHead>
                       <TableHead>Community/User</TableHead>
@@ -768,6 +915,9 @@ export default function ComplianceSettingsForm() {
                     {snmpMappings.map((mapping) => (
                       <TableRow key={mapping.id}>
                         <TableCell className="font-medium">
+                          {mapping.name || mapping.device_type}
+                        </TableCell>
+                        <TableCell>
                           {mapping.device_type}
                         </TableCell>
                         <TableCell>
@@ -814,18 +964,23 @@ export default function ComplianceSettingsForm() {
 
       {/* Regex Pattern Dialog */}
       <Dialog open={showRegexDialog} onOpenChange={setShowRegexDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="max-w-2xl p-0">
+          <DialogHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white px-6 py-4 rounded-t-lg">
+            <DialogTitle className="flex items-center gap-2 text-white text-lg">
+              <FileText className="h-5 w-5" />
               {editingRegex ? 'Edit' : 'Add'} Regex Pattern
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-blue-50">
               Configure a regular expression pattern for compliance checking
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="pattern">Pattern *</Label>
+          <div className="space-y-6 px-6 pb-6">
+            {/* Pattern Input */}
+            <div className="space-y-2">
+              <Label htmlFor="pattern" className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                Pattern
+                <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="pattern"
                 value={regexForm.pattern}
@@ -833,61 +988,124 @@ export default function ComplianceSettingsForm() {
                   setRegexForm({ ...regexForm, pattern: e.target.value })
                 }
                 placeholder="^logging.*"
-                className="font-mono"
+                className="font-mono bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
+              <p className="text-xs text-gray-500">
+                Enter a regular expression pattern to match against device configurations
+              </p>
             </div>
-            <div>
-              <Label htmlFor="pattern-type">Type *</Label>
+
+            {/* Pattern Type */}
+            <div className="space-y-2">
+              <Label htmlFor="pattern-type" className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                Type
+                <span className="text-red-500">*</span>
+              </Label>
               <Select
                 value={regexForm.pattern_type}
                 onValueChange={(value: 'must_match' | 'must_not_match') =>
                   setRegexForm({ ...regexForm, pattern_type: value })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-gray-50 border-gray-300 focus:border-purple-500 focus:ring-purple-500">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="must_match">Must Match</SelectItem>
-                  <SelectItem value="must_not_match">Must Not Match</SelectItem>
+                  <SelectItem value="must_match">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <span>Must Match</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="must_not_match">
+                    <div className="flex items-center gap-2">
+                      <XCircle className="h-4 w-4 text-red-600" />
+                      <span>Must Not Match</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-gray-500">
+                {regexForm.pattern_type === 'must_match'
+                  ? 'Configuration must contain lines matching this pattern'
+                  : 'Configuration must not contain lines matching this pattern'}
+              </p>
             </div>
-            <div>
-              <Label htmlFor="pattern-description">Description</Label>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="pattern-description" className="text-sm font-semibold text-gray-700">
+                Description
+              </Label>
               <Textarea
                 id="pattern-description"
                 value={regexForm.description}
                 onChange={(e) =>
                   setRegexForm({ ...regexForm, description: e.target.value })
                 }
-                placeholder="Describe what this pattern checks for"
+                placeholder="Describe what this pattern checks for (e.g., 'Ensure logging is enabled')" 
+                rows={3}
+                className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRegexDialog(false)}>
+          <DialogFooter className="gap-2 px-6 pb-6 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => setShowRegexDialog(false)}
+              className="border-gray-300 hover:bg-gray-50"
+            >
               Cancel
             </Button>
-            <Button onClick={handleSaveRegex}>Save</Button>
+            <Button
+              onClick={handleSaveRegex}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {editingRegex ? 'Update Pattern' : 'Add Pattern'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Login Credential Dialog */}
       <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="max-w-2xl p-0">
+          <DialogHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white px-6 py-4 rounded-t-lg">
+            <DialogTitle className="flex items-center gap-2 text-white text-lg">
+              <Key className="h-5 w-5" />
               {editingLogin ? 'Edit' : 'Add'} Login Credential
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-blue-50">
               Configure a username and password for compliance checks
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="username">Username *</Label>
+          <div className="space-y-6 px-6 pb-6">
+            {/* Name Input */}
+            <div className="space-y-2">
+              <Label htmlFor="credential-name" className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                Credential Name
+                <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="credential-name"
+                value={loginForm.name}
+                onChange={(e) =>
+                  setLoginForm({ ...loginForm, name: e.target.value })
+                }
+                placeholder="Production Admin"
+                className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              />
+              <p className="text-xs text-gray-500">
+                A friendly name to identify this credential (e.g., &quot;Production Admin&quot;, &quot;ReadOnly User&quot;)
+              </p>
+            </div>
+
+            {/* Username Input */}
+            <div className="space-y-2">
+              <Label htmlFor="username" className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                Username
+                <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="username"
                 value={loginForm.username}
@@ -895,11 +1113,18 @@ export default function ComplianceSettingsForm() {
                   setLoginForm({ ...loginForm, username: e.target.value })
                 }
                 placeholder="admin"
+                className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
+              <p className="text-xs text-gray-500">
+                Username for device authentication during compliance checks
+              </p>
             </div>
-            <div>
-              <Label htmlFor="password">
-                Password * {editingLogin && '(leave empty to keep current)'}
+
+            {/* Password Input */}
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                Password
+                <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="password"
@@ -908,11 +1133,21 @@ export default function ComplianceSettingsForm() {
                 onChange={(e) =>
                   setLoginForm({ ...loginForm, password: e.target.value })
                 }
-                placeholder={editingLogin ? '(unchanged)' : 'Enter password'}
+                placeholder={editingLogin ? '(leave blank to keep current)' : 'Enter password'}
+                className="bg-gray-50 border-gray-300 focus:border-green-500 focus:ring-green-500"
               />
+              {editingLogin && (
+                <p className="text-xs text-amber-600">
+                  Leave blank to keep the existing password unchanged
+                </p>
+              )}
             </div>
-            <div>
-              <Label htmlFor="login-description">Description</Label>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="login-description" className="text-sm font-semibold text-gray-700">
+                Description
+              </Label>
               <Textarea
                 id="login-description"
                 value={loginForm.description}
@@ -920,30 +1155,68 @@ export default function ComplianceSettingsForm() {
                   setLoginForm({ ...loginForm, description: e.target.value })
                 }
                 placeholder="Describe this credential"
+                rows={3}
+                className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowLoginDialog(false)}>
+          <DialogFooter className="gap-2 px-6 pb-6 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => setShowLoginDialog(false)}
+              className="border-gray-300 hover:bg-gray-50"
+            >
               Cancel
             </Button>
-            <Button onClick={handleSaveLogin}>Save</Button>
+            <Button
+              onClick={handleSaveLogin}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {editingLogin ? 'Update Credential' : 'Add Credential'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* SNMP Mapping Dialog */}
       <Dialog open={showSnmpDialog} onOpenChange={setShowSnmpDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editingSnmp ? 'Edit' : 'Add'} SNMP Mapping</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+          <DialogHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white px-6 py-4 rounded-t-lg sticky top-0">
+            <DialogTitle className="flex items-center gap-2 text-white text-lg">
+              <Network className="h-5 w-5" />
+              {editingSnmp ? 'Edit' : 'Add'} SNMP Mapping
+            </DialogTitle>
+            <DialogDescription className="text-blue-50">
               Map a device type to SNMP credentials
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="device-type">Device Type *</Label>
+          <div className="space-y-6 px-6 pb-6">
+            {/* SNMP Name */}
+            <div className="space-y-2">
+              <Label htmlFor="snmp-name" className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                SNMP Mapping Name
+                <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="snmp-name"
+                value={snmpForm.name}
+                onChange={(e) =>
+                  setSnmpForm({ ...snmpForm, name: e.target.value })
+                }
+                placeholder="Cisco Production SNMP"
+                className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              />
+              <p className="text-xs text-gray-500">
+                A friendly name to identify this SNMP mapping (e.g., &quot;Cisco Production SNMP&quot;, &quot;Lab SNMPv3&quot;)
+              </p>
+            </div>
+
+            {/* Device Type */}
+            <div className="space-y-2">
+              <Label htmlFor="device-type" className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                Device Type
+                <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="device-type"
                 value={snmpForm.device_type}
@@ -951,30 +1224,42 @@ export default function ComplianceSettingsForm() {
                   setSnmpForm({ ...snmpForm, device_type: e.target.value })
                 }
                 placeholder="cisco-ios, juniper-junos, etc."
+                className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
+              <p className="text-xs text-gray-500">
+                Device type identifier (e.g., vendor-os or platform name)
+              </p>
             </div>
-            <div>
-              <Label htmlFor="snmp-version">SNMP Version *</Label>
+
+            {/* SNMP Version */}
+            <div className="space-y-2">
+              <Label htmlFor="snmp-version" className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                SNMP Version
+                <span className="text-red-500">*</span>
+              </Label>
               <Select
                 value={snmpForm.snmp_version}
                 onValueChange={(value: 'v1' | 'v2c' | 'v3') =>
                   setSnmpForm({ ...snmpForm, snmp_version: value })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="v1">v1</SelectItem>
-                  <SelectItem value="v2c">v2c</SelectItem>
-                  <SelectItem value="v3">v3</SelectItem>
+                  <SelectItem value="v1">SNMP v1</SelectItem>
+                  <SelectItem value="v2c">SNMP v2c</SelectItem>
+                  <SelectItem value="v3">SNMP v3 (Recommended)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {(snmpForm.snmp_version === 'v1' || snmpForm.snmp_version === 'v2c') && (
-              <div>
-                <Label htmlFor="snmp-community">Community String *</Label>
+              <div className="space-y-2 p-4 bg-amber-50 border border-amber-200 rounded-md">
+                <Label htmlFor="snmp-community" className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                  Community String
+                  <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="snmp-community"
                   type="password"
@@ -983,14 +1268,21 @@ export default function ComplianceSettingsForm() {
                     setSnmpForm({ ...snmpForm, snmp_community: e.target.value })
                   }
                   placeholder="public"
+                  className="bg-white border-amber-300 focus:border-amber-500 focus:ring-amber-500"
                 />
+                <p className="text-xs text-amber-700">
+                  Community string for SNMP v1 or v2c authentication (usually &quot;public&quot; for read-only)
+                </p>
               </div>
             )}
 
             {snmpForm.snmp_version === 'v3' && (
-              <>
-                <div>
-                  <Label htmlFor="snmp-v3-user">SNMPv3 User *</Label>
+              <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="space-y-2">
+                  <Label htmlFor="snmp-v3-user" className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                    SNMPv3 User
+                    <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="snmp-v3-user"
                     value={snmpForm.snmp_v3_user}
@@ -998,102 +1290,199 @@ export default function ComplianceSettingsForm() {
                       setSnmpForm({ ...snmpForm, snmp_v3_user: e.target.value })
                     }
                     placeholder="snmpuser"
+                    className="bg-white border-blue-300 focus:border-blue-500 focus:ring-blue-500"
                   />
+                  <p className="text-xs text-blue-700">
+                    Username for SNMPv3 authentication
+                  </p>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="auth-protocol">Auth Protocol</Label>
-                    <Select
-                      value={snmpForm.snmp_v3_auth_protocol}
-                      onValueChange={(value) =>
-                        setSnmpForm({ ...snmpForm, snmp_v3_auth_protocol: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="MD5">MD5</SelectItem>
-                        <SelectItem value="SHA">SHA</SelectItem>
-                        <SelectItem value="SHA-224">SHA-224</SelectItem>
-                        <SelectItem value="SHA-256">SHA-256</SelectItem>
-                        <SelectItem value="SHA-384">SHA-384</SelectItem>
-                        <SelectItem value="SHA-512">SHA-512</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="auth-password">Auth Password</Label>
-                    <Input
-                      id="auth-password"
-                      type="password"
-                      value={snmpForm.snmp_v3_auth_password}
-                      onChange={(e) =>
-                        setSnmpForm({
-                          ...snmpForm,
-                          snmp_v3_auth_password: e.target.value,
-                        })
-                      }
-                      placeholder={editingSnmp ? '(unchanged)' : ''}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="priv-protocol">Priv Protocol</Label>
-                    <Select
-                      value={snmpForm.snmp_v3_priv_protocol}
-                      onValueChange={(value) =>
-                        setSnmpForm({ ...snmpForm, snmp_v3_priv_protocol: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="DES">DES</SelectItem>
-                        <SelectItem value="AES">AES</SelectItem>
-                        <SelectItem value="AES-192">AES-192</SelectItem>
-                        <SelectItem value="AES-256">AES-256</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="priv-password">Priv Password</Label>
-                    <Input
-                      id="priv-password"
-                      type="password"
-                      value={snmpForm.snmp_v3_priv_password}
-                      onChange={(e) =>
-                        setSnmpForm({
-                          ...snmpForm,
-                          snmp_v3_priv_password: e.target.value,
-                        })
-                      }
-                      placeholder={editingSnmp ? '(unchanged)' : ''}
-                    />
+
+                {/* Authentication Section */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-gray-700">Authentication</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="auth-protocol" className="text-sm font-medium text-gray-700">
+                        Auth Protocol
+                      </Label>
+                      <Select
+                        value={snmpForm.snmp_v3_auth_protocol}
+                        onValueChange={(value) =>
+                          setSnmpForm({ ...snmpForm, snmp_v3_auth_protocol: value })
+                        }
+                      >
+                        <SelectTrigger className="bg-white border-blue-300 focus:border-blue-500 focus:ring-blue-500">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="MD5">MD5 (Less Secure)</SelectItem>
+                          <SelectItem value="SHA">SHA</SelectItem>
+                          <SelectItem value="SHA-224">SHA-224</SelectItem>
+                          <SelectItem value="SHA-256">SHA-256 (Recommended)</SelectItem>
+                          <SelectItem value="SHA-384">SHA-384</SelectItem>
+                          <SelectItem value="SHA-512">SHA-512</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="auth-password" className="text-sm font-medium text-gray-700">
+                        Auth Password
+                      </Label>
+                      <Input
+                        id="auth-password"
+                        type="password"
+                        value={snmpForm.snmp_v3_auth_password}
+                        onChange={(e) =>
+                          setSnmpForm({
+                            ...snmpForm,
+                            snmp_v3_auth_password: e.target.value,
+                          })
+                        }
+                        placeholder={editingSnmp ? '(unchanged)' : 'Authentication password'}
+                        className="bg-white border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                      />
+                    </div>
                   </div>
                 </div>
-              </>
+
+                {/* Privacy Section */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-gray-700">Privacy (Encryption)</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="priv-protocol" className="text-sm font-medium text-gray-700">
+                        Priv Protocol
+                      </Label>
+                      <Select
+                        value={snmpForm.snmp_v3_priv_protocol}
+                        onValueChange={(value) =>
+                          setSnmpForm({ ...snmpForm, snmp_v3_priv_protocol: value })
+                        }
+                      >
+                        <SelectTrigger className="bg-white border-blue-300 focus:border-blue-500 focus:ring-blue-500">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="DES">DES (Legacy)</SelectItem>
+                          <SelectItem value="AES">AES-128</SelectItem>
+                          <SelectItem value="AES-192">AES-192</SelectItem>
+                          <SelectItem value="AES-256">AES-256 (Recommended)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="priv-password" className="text-sm font-medium text-gray-700">
+                        Priv Password
+                      </Label>
+                      <Input
+                        id="priv-password"
+                        type="password"
+                        value={snmpForm.snmp_v3_priv_password}
+                        onChange={(e) =>
+                          setSnmpForm({
+                            ...snmpForm,
+                            snmp_v3_priv_password: e.target.value,
+                          })
+                        }
+                        placeholder={editingSnmp ? '(unchanged)' : 'Privacy password'}
+                        className="bg-white border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-blue-700">
+                    Privacy protocol encrypts SNMP messages for enhanced security
+                  </p>
+                </div>
+              </div>
             )}
 
-            <div>
-              <Label htmlFor="snmp-description">Description</Label>
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="snmp-description" className="text-sm font-semibold text-gray-700">
+                Description
+              </Label>
               <Textarea
                 id="snmp-description"
                 value={snmpForm.description}
                 onChange={(e) =>
                   setSnmpForm({ ...snmpForm, description: e.target.value })
                 }
-                placeholder="Describe this SNMP mapping"
+                placeholder="Describe this SNMP mapping (optional)"
+                className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-h-[80px]"
               />
+              <p className="text-xs text-gray-500">
+                Add notes about when to use this mapping or special configuration details
+              </p>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 px-6 pb-6 pt-4 border-t">
             <Button variant="outline" onClick={() => setShowSnmpDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSaveSnmp}>Save</Button>
+            <Button 
+              onClick={handleSaveSnmp}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {editingSnmp ? 'Update' : 'Add'} Mapping
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* YAML Import Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Import SNMP Mappings from YAML</DialogTitle>
+            <DialogDescription>
+              Upload a YAML file containing SNMP mappings in CheckMK format
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="yaml-file">YAML File *</Label>
+              <Input
+                id="yaml-file"
+                type="file"
+                accept=".yaml,.yml"
+                onChange={handleFileChange}
+                className="cursor-pointer"
+              />
+              <p className="text-sm text-muted-foreground mt-2">
+                Select a YAML file with SNMP configuration mappings
+              </p>
+            </div>
+            {importFile && (
+              <div className="bg-muted p-3 rounded-md">
+                <p className="text-sm font-medium">Selected file:</p>
+                <p className="text-sm text-muted-foreground">{importFile.name}</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowImportDialog(false)
+                setImportFile(null)
+              }}
+              disabled={isImporting}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleImportSubmit} disabled={!importFile || isImporting}>
+              {isImporting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import
+                </>
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -8,6 +8,7 @@ import base64
 import hashlib
 import os
 import sqlite3
+import yaml
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from cryptography.fernet import Fernet, InvalidToken
@@ -71,6 +72,7 @@ def _ensure_tables() -> None:
             """
             CREATE TABLE IF NOT EXISTS login_credentials (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
                 username TEXT NOT NULL,
                 password_encrypted BLOB NOT NULL,
                 description TEXT,
@@ -86,6 +88,7 @@ def _ensure_tables() -> None:
             """
             CREATE TABLE IF NOT EXISTS snmp_mapping (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
                 device_type TEXT NOT NULL,
                 snmp_community TEXT,
                 snmp_version TEXT NOT NULL CHECK(snmp_version IN ('v1','v2c','v3')),
@@ -102,7 +105,39 @@ def _ensure_tables() -> None:
             """
         )
 
+        # Migrate existing tables to add 'name' column if it doesn't exist
+        _migrate_add_name_columns(conn)
+
         conn.commit()
+
+
+def _migrate_add_name_columns(conn) -> None:
+    """Add 'name' column to existing tables if they don't have it."""
+    try:
+        # Check if login_credentials has 'name' column
+        cursor = conn.execute("PRAGMA table_info(login_credentials)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if 'name' not in columns:
+            # Add name column and populate with username
+            conn.execute("ALTER TABLE login_credentials ADD COLUMN name TEXT")
+            conn.execute("UPDATE login_credentials SET name = username WHERE name IS NULL")
+            conn.execute("UPDATE login_credentials SET name = username || ' (' || id || ')' WHERE name IS NULL OR name = ''")
+    except Exception as e:
+        # Table might not exist yet, which is fine
+        pass
+
+    try:
+        # Check if snmp_mapping has 'name' column
+        cursor = conn.execute("PRAGMA table_info(snmp_mapping)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if 'name' not in columns:
+            # Add name column and populate with device_type
+            conn.execute("ALTER TABLE snmp_mapping ADD COLUMN name TEXT")
+            conn.execute("UPDATE snmp_mapping SET name = device_type WHERE name IS NULL")
+            conn.execute("UPDATE snmp_mapping SET name = device_type || ' (' || id || ')' WHERE name IS NULL OR name = ''")
+    except Exception as e:
+        # Table might not exist yet, which is fine
+        pass
 
 
 # Initialize database on module import
@@ -229,7 +264,7 @@ def get_all_login_credentials(decrypt_passwords: bool = False) -> List[Dict[str,
     with _get_conn() as conn:
         rows = conn.execute(
             """
-            SELECT id, username, password_encrypted, description, is_active, created_at, updated_at
+            SELECT id, name, username, password_encrypted, description, is_active, created_at, updated_at
             FROM login_credentials
             ORDER BY created_at DESC
             """
@@ -260,7 +295,7 @@ def get_login_credential_by_id(
     with _get_conn() as conn:
         row = conn.execute(
             """
-            SELECT id, username, password_encrypted, description, is_active, created_at, updated_at
+            SELECT id, name, username, password_encrypted, description, is_active, created_at, updated_at
             FROM login_credentials
             WHERE id = ?
             """,
@@ -284,7 +319,7 @@ def get_login_credential_by_id(
 
 
 def create_login_credential(
-    username: str, password: str, description: Optional[str] = None
+    name: str, username: str, password: str, description: Optional[str] = None
 ) -> int:
     """Create a new login credential with encrypted password."""
     encrypted_password = encryption_service.encrypt(password)
@@ -293,10 +328,10 @@ def create_login_credential(
     with _get_conn() as conn:
         cursor = conn.execute(
             """
-            INSERT INTO login_credentials (username, password_encrypted, description, is_active, created_at, updated_at)
-            VALUES (?, ?, ?, 1, ?, ?)
+            INSERT INTO login_credentials (name, username, password_encrypted, description, is_active, created_at, updated_at)
+            VALUES (?, ?, ?, ?, 1, ?, ?)
             """,
-            (username, encrypted_password, description, now, now),
+            (name, username, encrypted_password, description, now, now),
         )
         conn.commit()
         return cursor.lastrowid
@@ -304,6 +339,7 @@ def create_login_credential(
 
 def update_login_credential(
     credential_id: int,
+    name: Optional[str] = None,
     username: Optional[str] = None,
     password: Optional[str] = None,
     description: Optional[str] = None,
@@ -313,6 +349,9 @@ def update_login_credential(
     updates = []
     values = []
 
+    if name is not None:
+        updates.append("name = ?")
+        values.append(name)
     if username is not None:
         updates.append("username = ?")
         values.append(username)
@@ -362,12 +401,12 @@ def get_all_snmp_mappings(decrypt_passwords: bool = False) -> List[Dict[str, Any
     with _get_conn() as conn:
         rows = conn.execute(
             """
-            SELECT id, device_type, snmp_community, snmp_version,
+            SELECT id, name, device_type, snmp_community, snmp_version,
                    snmp_v3_user, snmp_v3_auth_protocol, snmp_v3_auth_password_encrypted,
                    snmp_v3_priv_protocol, snmp_v3_priv_password_encrypted,
                    description, is_active, created_at, updated_at
             FROM snmp_mapping
-            ORDER BY device_type
+            ORDER BY name
             """
         ).fetchall()
 
@@ -409,7 +448,7 @@ def get_snmp_mapping_by_id(
     with _get_conn() as conn:
         row = conn.execute(
             """
-            SELECT id, device_type, snmp_community, snmp_version,
+            SELECT id, name, device_type, snmp_community, snmp_version,
                    snmp_v3_user, snmp_v3_auth_protocol, snmp_v3_auth_password_encrypted,
                    snmp_v3_priv_protocol, snmp_v3_priv_password_encrypted,
                    description, is_active, created_at, updated_at
@@ -451,6 +490,7 @@ def get_snmp_mapping_by_id(
 
 
 def create_snmp_mapping(
+    name: str,
     device_type: str,
     snmp_version: str,
     snmp_community: Optional[str] = None,
@@ -482,14 +522,15 @@ def create_snmp_mapping(
         cursor = conn.execute(
             """
             INSERT INTO snmp_mapping (
-                device_type, snmp_community, snmp_version,
+                name, device_type, snmp_community, snmp_version,
                 snmp_v3_user, snmp_v3_auth_protocol, snmp_v3_auth_password_encrypted,
                 snmp_v3_priv_protocol, snmp_v3_priv_password_encrypted,
                 description, is_active, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
             """,
             (
+                name,
                 device_type,
                 snmp_community,
                 snmp_version,
@@ -509,6 +550,7 @@ def create_snmp_mapping(
 
 def update_snmp_mapping(
     mapping_id: int,
+    name: Optional[str] = None,
     device_type: Optional[str] = None,
     snmp_version: Optional[str] = None,
     snmp_community: Optional[str] = None,
@@ -524,6 +566,9 @@ def update_snmp_mapping(
     updates = []
     values = []
 
+    if name is not None:
+        updates.append("name = ?")
+        values.append(name)
     if device_type is not None:
         updates.append("device_type = ?")
         values.append(device_type)
@@ -580,3 +625,96 @@ def delete_snmp_mapping(mapping_id: int) -> bool:
         cursor = conn.execute("DELETE FROM snmp_mapping WHERE id = ?", (mapping_id,))
         conn.commit()
         return cursor.rowcount > 0
+
+
+def import_snmp_mappings_from_yaml(yaml_content: str) -> Dict[str, Any]:
+    """Import SNMP mappings from YAML content (CheckMK format or custom format).
+    
+    Expected YAML format:
+    snmp-id-1:
+      version: v3
+      type: v3_auth_privacy
+      username: user
+      group: group
+      auth_protocol: SHA
+      auth_password: authpass
+      privacy_protocol: AES
+      privacy_password: privpass
+    
+    Args:
+      yaml_content: YAML string content to parse
+    
+    Returns:
+      Dict with success count, error count, and list of errors
+    """
+    _ensure_tables()
+    
+    try:
+        yaml_data = yaml.safe_load(yaml_content)
+        if not isinstance(yaml_data, dict):
+            return {
+                "imported": 0,
+                "errors": 1,
+                "error_details": ["Invalid YAML format: expected dictionary"]
+            }
+    except yaml.YAMLError as e:
+        return {
+            "imported": 0,
+            "errors": 1,
+            "error_details": [f"YAML parsing error: {str(e)}"]
+        }
+    
+    imported = 0
+    errors = []
+    
+    for snmp_id, snmp_config in yaml_data.items():
+        try:
+            # Extract device type from SNMP ID or use the ID itself
+            device_type = snmp_id
+            
+            # Determine SNMP version
+            version_str = snmp_config.get('version', 'v2c')
+            if version_str not in ['v1', 'v2c', 'v3']:
+                # Try to parse from type field
+                type_field = snmp_config.get('type', '')
+                if 'v3' in type_field:
+                    version_str = 'v3'
+                elif 'v2c' in type_field:
+                    version_str = 'v2c'
+                else:
+                    version_str = 'v2c'
+            
+            # Common fields
+            snmp_community = snmp_config.get('community', '')
+            description = snmp_config.get('description', f'Imported from YAML: {snmp_id}')
+            
+            # v3 specific fields
+            snmp_v3_user = snmp_config.get('username', '')
+            auth_protocol = snmp_config.get('auth_protocol', '')
+            auth_password = snmp_config.get('auth_password', '')
+            priv_protocol = snmp_config.get('privacy_protocol', snmp_config.get('priv_protocol', ''))
+            priv_password = snmp_config.get('privacy_password', snmp_config.get('priv_password', ''))
+            
+            # Create the SNMP mapping
+            create_snmp_mapping(
+                device_type=device_type,
+                snmp_version=version_str,
+                snmp_community=snmp_community if snmp_community else None,
+                snmp_v3_user=snmp_v3_user if snmp_v3_user else None,
+                snmp_v3_auth_protocol=auth_protocol if auth_protocol else None,
+                snmp_v3_auth_password=auth_password if auth_password else None,
+                snmp_v3_priv_protocol=priv_protocol if priv_protocol else None,
+                snmp_v3_priv_password=priv_password if priv_password else None,
+                description=description,
+            )
+            imported += 1
+            
+        except Exception as e:
+            error_msg = f"Error importing {snmp_id}: {str(e)}"
+            errors.append(error_msg)
+    
+    return {
+        "imported": imported,
+        "errors": len(errors),
+        "error_details": errors
+    }

@@ -4,7 +4,7 @@ Compliance settings router for configuration management.
 
 from __future__ import annotations
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from typing import List
 
 from core.auth import require_permission
@@ -212,6 +212,7 @@ async def create_login_credential(
     """Create a new login credential."""
     try:
         credential_id = compliance.create_login_credential(
+            name=credential_request.name,
             username=credential_request.username,
             password=credential_request.password,
             description=credential_request.description,
@@ -242,6 +243,7 @@ async def update_login_credential(
     try:
         success = compliance.update_login_credential(
             credential_id=credential_id,
+            name=credential_request.name,
             username=credential_request.username,
             password=credential_request.password,
             description=credential_request.description,
@@ -347,6 +349,7 @@ async def create_snmp_mapping(
     """Create a new SNMP mapping."""
     try:
         mapping_id = compliance.create_snmp_mapping(
+            name=mapping_request.name,
             device_type=mapping_request.device_type,
             snmp_version=mapping_request.snmp_version,
             snmp_community=mapping_request.snmp_community,
@@ -388,6 +391,7 @@ async def update_snmp_mapping(
     try:
         success = compliance.update_snmp_mapping(
             mapping_id=mapping_id,
+            name=mapping_request.name,
             device_type=mapping_request.device_type,
             snmp_version=mapping_request.snmp_version,
             snmp_community=mapping_request.snmp_community,
@@ -448,4 +452,46 @@ async def delete_snmp_mapping(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete SNMP mapping: {str(e)}",
+        )
+
+
+@router.post("/snmp-mappings/import")
+async def import_snmp_mappings(
+    yaml_content: str = Body(..., embed=True),
+    current_user: dict = Depends(require_permission("settings.compliance", "write")),
+):
+    """Import SNMP mappings from YAML content.
+    
+    Accepts YAML content in CheckMK format or custom format.
+    
+    Request body:
+    {
+      "yaml_content": "snmp-id-1:\n  version: v3\n  ..."
+    }
+    """
+    try:
+        result = compliance.import_snmp_mappings_from_yaml(yaml_content)
+        
+        if result["errors"] > 0:
+            return {
+                "success": True,
+                "message": f"Imported {result['imported']} SNMP mappings with {result['errors']} errors",
+                "data": result,
+            }
+        
+        return {
+            "success": True,
+            "message": f"Successfully imported {result['imported']} SNMP mappings",
+            "data": result,
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.error(f"Error importing SNMP mappings: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to import SNMP mappings: {str(e)}",
         )

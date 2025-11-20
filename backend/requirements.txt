@@ -19,3 +19,4 @@ pyyaml
 apscheduler
 sqlalchemy
 python-jose[cryptography]
+pysnmp>=7.0.0

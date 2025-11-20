@@ -142,6 +142,7 @@ class RegexPatternUpdateRequest(BaseModel):
 class LoginCredentialRequest(BaseModel):
     """Login credential request model."""
 
+    name: str
     username: str
     password: str
     description: Optional[str] = None
@@ -151,6 +152,7 @@ class LoginCredentialRequest(BaseModel):
 class LoginCredentialUpdateRequest(BaseModel):
     """Login credential update request model."""
 
+    name: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
     description: Optional[str] = None
@@ -160,6 +162,7 @@ class LoginCredentialUpdateRequest(BaseModel):
 class SNMPMappingRequest(BaseModel):
     """SNMP mapping request model."""
 
+    name: str
     device_type: str
     snmp_version: Literal["v1", "v2c", "v3"]
     snmp_community: Optional[str] = None
@@ -175,6 +178,7 @@ class SNMPMappingRequest(BaseModel):
 class SNMPMappingUpdateRequest(BaseModel):
     """SNMP mapping update request model."""
 
+    name: Optional[str] = None
     device_type: Optional[str] = None
     snmp_version: Optional[Literal["v1", "v2c", "v3"]] = None
     snmp_community: Optional[str] = None
@@ -185,4 +189,31 @@ class SNMPMappingUpdateRequest(BaseModel):
     snmp_v3_priv_password: Optional[str] = None
     description: Optional[str] = None
     is_active: Optional[bool] = None
+
+
+# ============================================================================
+# Compliance Check Models
+# ============================================================================
+
+
+class DeviceCheckRequest(BaseModel):
+    """Device information for compliance checking."""
+
+    id: str
+    name: str
+    primary_ip4: Optional[str] = None
+    device_type: Optional[str] = None
+    platform: Optional[str] = None
+
+
+class ComplianceCheckRequest(BaseModel):
+    """Compliance check request model."""
+
+    devices: list[DeviceCheckRequest]
+    check_ssh_logins: bool = False
+    check_snmp_credentials: bool = False
+    check_configuration: bool = False
+    selected_login_ids: list[int] = []
+    selected_snmp_ids: list[int] = []
+    selected_regex_ids: list[int] = []
 
