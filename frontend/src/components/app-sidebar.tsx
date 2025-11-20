@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/lib/auth-store'
-import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useSidebar } from './sidebar-context'
@@ -115,15 +114,17 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ className }: AppSidebarProps) {
-  const { isCollapsed, toggleCollapsed } = useSidebar()
+  const {
+    isCollapsed,
+    toggleCollapsed,
+    collapsedSections,
+    setCollapsedSections,
+    collapsedItems,
+    setCollapsedItems
+  } = useSidebar()
   const { user, logout } = useAuthStore()
   const pathname = usePathname()
   const router = useRouter()
-
-  // Local state for UI only - starts with all sections and items expanded
-  // Does NOT persist across navigation
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
-  const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set())
 
   // Check if user is admin - support both legacy and new RBAC system
   const isAdmin = user?.role === 'admin' ||
