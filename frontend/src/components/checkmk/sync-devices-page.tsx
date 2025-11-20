@@ -402,8 +402,6 @@ export function CheckMKSyncDevicesPage() {
           diff: result.result_data?.data?.diff || result.result_data?.diff
         }))
         
-        console.log('Converted devices sample:', devices[0])
-        console.log('Converted device keys:', devices.length > 0 ? Object.keys(devices[0]) : 'No devices')
         setDevices(devices)
         setStatusMessage({
           type: 'success',
@@ -556,21 +554,10 @@ export function CheckMKSyncDevicesPage() {
                     'Content-Type': 'application/json'
                   }
                 })
-                
+
                 if (resultResponse.ok) {
                   const resultData = await resultResponse.json()
-                  
-                  console.log('=== CHECKMK useEffect storage load DEBUG ===')
-                  if (resultData.job?.device_results && resultData.job.device_results.length > 0) {
-                    console.log('First device result from storage load:', resultData.job.device_results[0])
-                    const firstDevice = resultData.job.device_results[0]
-                    console.log('Enhanced data in useEffect storage load:')
-                    console.log('  - role:', firstDevice.role, typeof firstDevice.role)
-                    console.log('  - location:', firstDevice.location, typeof firstDevice.location) 
-                    console.log('  - device_status:', firstDevice.device_status, typeof firstDevice.device_status)
-                  }
-                  console.log('=== END useEffect storage load DEBUG ===')
-                  
+
                   // Extract device results from the new job format and convert to expected format
                   const deviceResults = resultData.job?.device_results || []
                   const devices = deviceResults.map((result: DeviceResult, index: number) => ({
@@ -584,8 +571,7 @@ export function CheckMKSyncDevicesPage() {
                     processed_at: result.processed_at,
                     checkmk_status: result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown' // Extract result from data.result
                   }))
-                  
-                  console.log('Converted devices in useEffect storage load sample:', devices[0])
+
                   setDevices(devices)
                 }
               }
@@ -740,7 +726,6 @@ export function CheckMKSyncDevicesPage() {
       
       if (response.ok) {
         const result = await response.json()
-        console.log('Job started:', result)
         setStatusMessage({
           type: 'success',
           message: `Device comparison job started with ID: ${result.job_id}`
@@ -864,19 +849,7 @@ export function CheckMKSyncDevicesPage() {
 
       if (response.ok) {
         const data = await response.json()
-        
-        console.log('=== CHECKMK handleViewDiff DEBUG ===')
-        console.log('Full job result:', data.job)
-        if (data.job?.device_results && data.job.device_results.length > 0) {
-          console.log('First device result sample:', data.job.device_results[0])
-          const firstDevice = data.job.device_results[0]
-          console.log('Enhanced data in handleViewDiff:')
-          console.log('  - role:', firstDevice.role, typeof firstDevice.role)
-          console.log('  - location:', firstDevice.location, typeof firstDevice.location) 
-          console.log('  - device_status:', firstDevice.device_status, typeof firstDevice.device_status)
-        }
-        console.log('=== END handleViewDiff DEBUG ===')
-        
+
         // Extract device results from the new job format and convert to expected format
         const deviceResults = data.job?.device_results || []
         const devices = deviceResults.map((result: DeviceResult, index: number) => ({
@@ -894,8 +867,7 @@ export function CheckMKSyncDevicesPage() {
           checkmk_config: result.result_data?.data?.checkmk_config || result.result_data?.checkmk_config,
           diff: result.result_data?.data?.diff || result.result_data?.diff
         }))
-        
-        console.log('Converted devices in handleViewDiff sample:', devices[0])
+
         setDevices(devices)
         
         if (!silent) {

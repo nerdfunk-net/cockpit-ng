@@ -84,7 +84,7 @@ async def test_current_nautobot_connection(
         )
 
 
-@router.get("/devices")
+@router.get("/devices", summary="🔷 GraphQL: List Devices")
 async def get_devices(
     limit: Optional[int] = None,
     offset: Optional[int] = None,
@@ -94,6 +94,8 @@ async def get_devices(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get list of devices from Nautobot with optional filtering and pagination.
+    
+    **🔷 This endpoint uses GraphQL** to query Nautobot for device data.
 
     Args:
         limit: Number of devices per page (default: no limit for full data load)
@@ -118,12 +120,15 @@ async def get_devices(
         )
 
 
-@router.get("/devices/{device_id}")
+@router.get("/devices/{device_id}", summary="🔷 GraphQL: Get Device Details")
 async def get_device(
     device_id: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
-    """Get device details from Nautobot by device ID."""
+    """Get device details from Nautobot by device ID.
+    
+    **🔷 This endpoint uses GraphQL** to fetch detailed device information.
+    """
     try:
         # Check cache first
         cached_device = get_cached_device(device_id)
@@ -179,12 +184,15 @@ async def get_device(
         )
 
 
-@router.post("/check-ip")
+@router.post("/check-ip", summary="🔷 GraphQL: Check IP Address")
 async def check_ip(
     request: CheckIPRequest,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
-    """Check if an IP address exists in Nautobot."""
+    """Check if an IP address exists in Nautobot.
+    
+    **🔷 This endpoint uses GraphQL** to query IP address availability.
+    """
     try:
         # Use GraphQL query as specified in nautobot_access.md
         query = """
@@ -234,12 +242,15 @@ async def check_ip(
         )
 
 
-@router.post("/devices/onboard")
+@router.post("/devices/onboard", summary="⚙️ Nautobot Job: Onboard Device")
 async def onboard_device(
     request: DeviceOnboardRequest,
     current_user: dict = Depends(require_permission("devices.onboard", "execute")),
 ):
-    """Onboard a new device to Nautobot."""
+    """Onboard a new device to Nautobot.
+    
+    **⚙️ This endpoint triggers a Nautobot Job** (Sync Devices From Network).
+    """
     try:
         # Get nautobot config
         try:
@@ -332,13 +343,15 @@ async def onboard_device(
         )
 
 
-@router.post("/add-device")
+@router.post("/add-device", summary="🔶 REST: Add Device with Interfaces")
 async def add_device(
     request: AddDeviceRequest,
     current_user: dict = Depends(require_permission("nautobot.devices", "write")),
 ):
     """
     Orchestrated endpoint to add a device with interfaces to Nautobot.
+    
+    **🔶 This endpoint uses REST API** to create devices via Nautobot's REST endpoints.
 
     Workflow:
     1. Create device in Nautobot DCIM
@@ -357,12 +370,15 @@ async def add_device(
         )
 
 
-@router.post("/sync-network-data")
+@router.post("/sync-network-data", summary="⚙️ Nautobot Job: Sync Network Data")
 async def sync_network_data(
     request: SyncNetworkDataRequest,
     current_user: dict = Depends(require_permission("nautobot.devices", "write")),
 ):
-    """Sync network data with Nautobot."""
+    """Sync network data with Nautobot.
+    
+    **⚙️ This endpoint triggers a Nautobot Job** (Sync Network Data From Network).
+    """
     try:
         # Get nautobot config
         try:

@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/lib/auth-store'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useSidebar } from './sidebar-context'
@@ -116,18 +116,18 @@ interface AppSidebarProps {
 
 export function AppSidebar({ className }: AppSidebarProps) {
   const { isCollapsed, toggleCollapsed } = useSidebar()
-  // Initialize with all sections collapsed except "General"
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
-    new Set(navigationSections.filter(s => s.title !== 'General').map(s => s.title))
-  )
-  const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set())
   const { user, logout } = useAuthStore()
   const pathname = usePathname()
   const router = useRouter()
-  
+
+  // Local state for UI only - starts with all sections and items expanded
+  // Does NOT persist across navigation
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
+  const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set())
+
   // Check if user is admin - support both legacy and new RBAC system
-  const isAdmin = user?.role === 'admin' || 
-                  user?.permissions === 31 || 
+  const isAdmin = user?.role === 'admin' ||
+                  user?.permissions === 31 ||
                   (Array.isArray(user?.roles) && user?.roles.includes('admin'))
 
   const toggleSection = (sectionTitle: string) => {
@@ -154,53 +154,6 @@ export function AppSidebar({ className }: AppSidebarProps) {
     })
   }
 
-  // Auto-expand section containing current active page
-  useEffect(() => {
-    // Find which section contains the current pathname
-    for (const section of navigationSections) {
-      for (const item of section.items) {
-        // Check if direct item matches
-        if (item.href === pathname) {
-          setCollapsedSections(prev => {
-            if (prev.has(section.title)) {
-              const newSet = new Set(prev)
-              newSet.delete(section.title)
-              return newSet
-            }
-            return prev
-          })
-          return
-        }
-        // Check if any child matches
-        if (item.children) {
-          for (const child of item.children) {
-            if (child.href === pathname) {
-              setCollapsedSections(prev => {
-                if (prev.has(section.title)) {
-                  const newSet = new Set(prev)
-                  newSet.delete(section.title)
-                  return newSet
-                }
-                return prev
-              })
-              // Also expand the parent item
-              const itemKey = `${section.title}-${item.label}`
-              setCollapsedItems(prev => {
-                if (prev.has(itemKey)) {
-                  const newSet = new Set(prev)
-                  newSet.delete(itemKey)
-                  return newSet
-                }
-                return prev
-              })
-              return
-            }
-          }
-        }
-      }
-    }
-  }, [pathname])
-
   const sidebarWidth = isCollapsed ? 'w-16' : 'w-64'
 
   // Filter navigation sections based on user role
@@ -221,7 +174,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
     return false
   }
 
-  // Recursive component to render menu items
+  // Recursive component to render menu items with collapsible submenus
   const renderMenuItem = (item: NavItem, sectionTitle: string, depth: number = 0) => {
     const itemKey = `${sectionTitle}-${item.label}`
     const isItemCollapsed = collapsedItems.has(itemKey)
@@ -231,7 +184,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
     const paddingLeft = depth > 0 ? `${12 + depth * 16}px` : '12px'
 
     if (hasChildren) {
-      // Item with submenu - don't highlight parent items
+      // Item with submenu - clickable to collapse/expand
       return (
         <div key={itemKey}>
           <Button
@@ -340,10 +293,10 @@ export function AppSidebar({ className }: AppSidebarProps) {
           <nav className="space-y-4">
             {visibleSections.map((section) => {
               const isSectionCollapsed = collapsedSections.has(section.title)
-              
+
               return (
                 <div key={section.title} className="px-6">
-                    {!isCollapsed && (
+                  {!isCollapsed && (
                     <button
                       onClick={() => toggleSection(section.title)}
                       className="flex items-center justify-between w-full text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-700 transition-colors group"

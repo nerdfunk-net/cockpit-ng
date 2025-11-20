@@ -19,7 +19,7 @@ router = APIRouter(prefix="/ipam/prefixes", tags=["nautobot-ipam-prefixes"])
 # =============================================================================
 
 
-@router.get("")
+@router.get("", summary="🔶 REST: List IP Prefixes")
 async def get_ipam_prefixes(
     prefix: Optional[str] = None,
     namespace: Optional[str] = None,
@@ -31,6 +31,8 @@ async def get_ipam_prefixes(
 ):
     """
     Get IP prefixes from Nautobot IPAM.
+    
+    **🔶 This endpoint uses REST API** to query Nautobot IPAM prefixes.
 
     Query parameters:
     - prefix: Filter by prefix (e.g., "10.0.0.0/8")
@@ -75,7 +77,7 @@ async def get_ipam_prefixes(
         )
 
 
-@router.get("/{prefix_id}")
+@router.get("/{prefix_id}", summary="🔶 REST: Get IP Prefix")
 async def get_ipam_prefix(
     prefix_id: str,
     current_user: dict = Depends(require_permission("nautobot.locations", "read")),
@@ -103,7 +105,7 @@ async def get_ipam_prefix(
         )
 
 
-@router.post("")
+@router.post("", summary="🔶 REST: Create IP Prefix")
 async def create_ipam_prefix(
     prefix_data: dict,
     current_user: dict = Depends(require_permission("nautobot.locations", "write")),
@@ -160,8 +162,8 @@ async def create_ipam_prefix(
         )
 
 
-@router.put("/{prefix_id}")
-@router.patch("/{prefix_id}")
+@router.put("/{prefix_id}", summary="🔶 REST: Update IP Prefix (Full)")
+@router.patch("/{prefix_id}", summary="🔶 REST: Update IP Prefix (Partial)")
 async def update_ipam_prefix(
     prefix_id: str,
     prefix_data: dict,
@@ -206,7 +208,7 @@ async def update_ipam_prefix(
         )
 
 
-@router.delete("/{prefix_id}")
+@router.delete("/{prefix_id}", summary="🔶 REST: Delete IP Prefix")
 async def delete_ipam_prefix(
     prefix_id: str,
     current_user: dict = Depends(require_permission("nautobot.locations", "delete")),

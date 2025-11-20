@@ -18,7 +18,7 @@ router = APIRouter(prefix="/dcim/interfaces", tags=["nautobot-dcim-interfaces"])
 # =============================================================================
 
 
-@router.get("")
+@router.get("", summary="🔶 REST: List Device Interfaces")
 async def get_dcim_interfaces(
     device: Optional[str] = None,
     device_id: Optional[str] = None,
@@ -34,6 +34,8 @@ async def get_dcim_interfaces(
 ):
     """
     Get device interfaces from Nautobot DCIM.
+    
+    **🔶 This endpoint uses REST API** to query Nautobot DCIM interfaces.
 
     Query parameters:
     - device: Filter by device name
@@ -90,7 +92,7 @@ async def get_dcim_interfaces(
         )
 
 
-@router.get("/{interface_id}")
+@router.get("/{interface_id}", summary="🔶 REST: Get Device Interface")
 async def get_dcim_interface(
     interface_id: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
@@ -118,7 +120,7 @@ async def get_dcim_interface(
         )
 
 
-@router.post("")
+@router.post("", summary="🔶 REST: Create Device Interface")
 async def create_dcim_interface(
     interface_data: dict,
     current_user: dict = Depends(require_permission("nautobot.devices", "write")),
@@ -187,8 +189,8 @@ async def create_dcim_interface(
         )
 
 
-@router.put("/{interface_id}")
-@router.patch("/{interface_id}")
+@router.put("/{interface_id}", summary="🔶 REST: Update Device Interface (Full)")
+@router.patch("/{interface_id}", summary="🔶 REST: Update Device Interface (Partial)")
 async def update_dcim_interface(
     interface_id: str,
     interface_data: dict,
@@ -239,7 +241,7 @@ async def update_dcim_interface(
         )
 
 
-@router.delete("/{interface_id}")
+@router.delete("/{interface_id}", summary="🔶 REST: Delete Device Interface")
 async def delete_dcim_interface(
     interface_id: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "delete")),

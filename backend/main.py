@@ -28,7 +28,7 @@ from routers.ansible_inventory import router as ansible_inventory_router
 from routers.scan_and_add import router as scan_and_add_router
 from routers.cache import router as cache_router
 from routers.profile import router as profile_router
-from routers.git_repositories import router as git_repositories_router
+# git_repositories_router is included via git_router - no need to import separately
 from routers.jobs import router as jobs_router
 from routers.netmiko import router as netmiko_router
 from routers.rbac import router as rbac_router
@@ -65,7 +65,7 @@ app.include_router(oidc_router)
 app.include_router(nautobot_router)
 app.include_router(checkmk_router)
 app.include_router(nb2cmk_router)
-app.include_router(git_router)
+app.include_router(git_router)  # This includes git_repositories_router internally
 app.include_router(file_compare_router)
 app.include_router(config_router)
 app.include_router(settings_router)
@@ -75,7 +75,7 @@ app.include_router(credentials_router)
 app.include_router(scan_and_add_router)
 app.include_router(cache_router)
 app.include_router(profile_router)
-app.include_router(git_repositories_router)
+# git_repositories_router removed - already included via git_router
 app.include_router(jobs_router)
 app.include_router(netmiko_router)
 app.include_router(rbac_router)

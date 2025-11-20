@@ -20,11 +20,14 @@ router = APIRouter(
 DEVICE_CACHE_TTL = 30 * 60  # 30 minutes in seconds
 
 
-@router.get("/locations")
+@router.get("/locations", summary="🔷 GraphQL: List Locations")
 async def get_locations(
     current_user: dict = Depends(require_permission("nautobot.locations", "read")),
 ):
-    """Get list of locations from Nautobot with parent and children relationships."""
+    """Get list of locations from Nautobot with parent and children relationships.
+    
+    **🔷 This endpoint uses GraphQL** to fetch hierarchical location data.
+    """
     try:
         # Try in-memory cache first
         from services.cache_service import cache_service
@@ -74,11 +77,14 @@ async def get_locations(
         )
 
 
-@router.get("/namespaces")
+@router.get("/namespaces", summary="🔷 GraphQL: List Namespaces")
 async def get_namespaces(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
-    """Get list of namespaces from Nautobot."""
+    """Get list of namespaces from Nautobot.
+    
+    **🔷 This endpoint uses GraphQL** to fetch namespace data.
+    """
     try:
         query = """
         query {
@@ -105,11 +111,14 @@ async def get_namespaces(
         )
 
 
-@router.get("/stats")
+@router.get("/stats", summary="🔶 REST: Get Nautobot Statistics")
 async def get_nautobot_stats(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
-    """Get Nautobot statistics with 10-minute caching."""
+    """Get Nautobot statistics with 10-minute caching.
+    
+    **🔶 This endpoint uses REST API** to fetch aggregated statistics.
+    """
     from datetime import datetime, timezone, timedelta
     import json
     import os
@@ -199,11 +208,14 @@ async def get_nautobot_stats(
         )
 
 
-@router.get("/roles")
+@router.get("/roles", summary="🔶 REST: List Roles")
 async def get_nautobot_roles(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
-    """Get Nautobot device roles."""
+    """Get Nautobot device roles.
+    
+    **🔶 This endpoint uses REST API** to fetch roles.
+    """
     try:
         result = await nautobot_service.rest_request("extras/roles/")
         return result.get("results", [])
@@ -214,7 +226,7 @@ async def get_nautobot_roles(
         )
 
 
-@router.get("/roles/devices")
+@router.get("/roles/devices", summary="🔶 REST: List Device Roles")
 async def get_nautobot_device_roles(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
@@ -231,7 +243,7 @@ async def get_nautobot_device_roles(
         )
 
 
-@router.get("/platforms")
+@router.get("/platforms", summary="🔶 REST: List Platforms")
 async def get_nautobot_platforms(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
@@ -246,7 +258,7 @@ async def get_nautobot_platforms(
         )
 
 
-@router.get("/statuses")
+@router.get("/statuses", summary="🔶 REST: List All Statuses")
 async def get_nautobot_statuses(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
@@ -261,7 +273,7 @@ async def get_nautobot_statuses(
         )
 
 
-@router.get("/statuses/device")
+@router.get("/statuses/device", summary="🔶 REST: List Device Statuses")
 async def get_nautobot_device_statuses(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
@@ -278,7 +290,7 @@ async def get_nautobot_device_statuses(
         )
 
 
-@router.get("/statuses/interface")
+@router.get("/statuses/interface", summary="🔶 REST: List Interface Statuses")
 async def get_nautobot_interface_statuses(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
@@ -295,7 +307,7 @@ async def get_nautobot_interface_statuses(
         )
 
 
-@router.get("/statuses/ipaddress")
+@router.get("/statuses/ipaddress", summary="🔶 REST: List IP Address Statuses")
 async def get_nautobot_ipaddress_statuses(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
@@ -312,7 +324,7 @@ async def get_nautobot_ipaddress_statuses(
         )
 
 
-@router.get("/statuses/prefix")
+@router.get("/statuses/prefix", summary="🔶 REST: List Prefix Statuses")
 async def get_nautobot_prefix_statuses(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
@@ -329,7 +341,7 @@ async def get_nautobot_prefix_statuses(
         )
 
 
-@router.get("/statuses/combined")
+@router.get("/statuses/combined", summary="🔶 REST: List All Statuses (Combined)")
 async def get_nautobot_combined_statuses(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
@@ -344,11 +356,14 @@ async def get_nautobot_combined_statuses(
         )
 
 
-@router.get("/secret-groups")
+@router.get("/secret-groups", summary="🔷 GraphQL: List Secret Groups")
 async def get_nautobot_secret_groups(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
-    """Get Nautobot secret groups."""
+    """Get Nautobot secret groups.
+    
+    **🔷 This endpoint uses GraphQL** to fetch secret groups.
+    """
     try:
         # Use GraphQL query as specified in nautobot_access.md
         query = """
@@ -372,7 +387,7 @@ async def get_nautobot_secret_groups(
         return []
 
 
-@router.get("/device-types")
+@router.get("/device-types", summary="🔶 REST: List Device Types")
 async def get_nautobot_device_types(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
@@ -387,7 +402,7 @@ async def get_nautobot_device_types(
         )
 
 
-@router.get("/manufacturers")
+@router.get("/manufacturers", summary="🔶 REST: List Manufacturers")
 async def get_nautobot_manufacturers(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
@@ -402,7 +417,7 @@ async def get_nautobot_manufacturers(
         )
 
 
-@router.get("/tags")
+@router.get("/tags", summary="🔶 REST: List Tags")
 async def get_nautobot_tags(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
@@ -417,12 +432,14 @@ async def get_nautobot_tags(
         )
 
 
-@router.get("/software-versions")
+@router.get("/software-versions", summary="🔷 GraphQL: List Software Versions")
 async def get_software_versions(
     platform: str = None,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get list of software versions from Nautobot.
+    
+    **🔷 This endpoint uses GraphQL** to fetch software versions.
 
     Args:
         platform: Optional platform name to filter software versions
@@ -490,13 +507,15 @@ async def get_software_versions(
         )
 
 
-@router.get("/vlans")
+@router.get("/vlans", summary="🔷 GraphQL: List VLANs")
 async def get_vlans(
     location: str = None,
     get_global_vlans: bool = False,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get list of VLANs from Nautobot.
+    
+    **🔷 This endpoint uses GraphQL** to fetch VLANs.
 
     Args:
         location: Optional location name to filter VLANs
@@ -600,11 +619,13 @@ async def get_vlans(
         )
 
 
-@router.get("/interface-types")
+@router.get("/interface-types", summary="🔶 REST: List Interface Types")
 async def get_interface_types(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get list of interface type choices from Nautobot.
+    
+    **🔶 This endpoint uses REST API** (OPTIONS method) to fetch interface type choices.
 
     Uses OPTIONS request to get field choices from the interfaces endpoint.
     """
@@ -683,7 +704,7 @@ async def get_interface_types(
         )
 
 
-@router.get("/tags/devices")
+@router.get("/tags/devices", summary="🔶 REST: List Device Tags")
 async def get_nautobot_device_tags(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
@@ -700,7 +721,7 @@ async def get_nautobot_device_tags(
         )
 
 
-@router.get("/custom-fields/devices")
+@router.get("/custom-fields/devices", summary="🔶 REST: List Device Custom Fields")
 async def get_nautobot_device_custom_fields(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
@@ -735,12 +756,15 @@ async def get_nautobot_custom_field_choices(
         )
 
 
-@router.get("/jobs/{job_id}/results")
+@router.get("/jobs/{job_id}/results", summary="🔶 REST: Get Job Results")
 async def get_job_results(
     job_id: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
-    """Get job results from Nautobot."""
+    """Get job results from Nautobot.
+    
+    **🔶 This endpoint uses REST API** to fetch job execution results.
+    """
     try:
         result = await nautobot_service.rest_request(f"extras/job-results/{job_id}/")
 
@@ -765,11 +789,14 @@ async def get_job_results(
         )
 
 
-@router.get("/health-check")
+@router.get("/health-check", summary="🔶 REST: Health Check")
 async def nautobot_health_check(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
-    """Simple health check to verify Nautobot connectivity."""
+    """Simple health check to verify Nautobot connectivity.
+    
+    **🔶 This endpoint uses REST API** to verify connection.
+    """
     try:
         # Use the same test approach as the nautobot service - query devices with limit 1
         result = await nautobot_service.rest_request("dcim/devices/?limit=1")
@@ -809,12 +836,15 @@ async def nautobot_health_check(
             )
 
 
-@router.get("/devices/{device_id}/details")
+@router.get("/devices/{device_id}/details", summary="🔷 GraphQL: Get Detailed Device Info")
 async def get_device_details(
     device_id: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
-    """Get detailed device information using the comprehensive devices.md query."""
+    """Get detailed device information using the comprehensive devices.md query.
+    
+    **🔷 This endpoint uses GraphQL** to fetch comprehensive device details.
+    """
     try:
         # Start with a simplified query based on the working get_device method, then add more fields
         query = """
@@ -995,7 +1025,7 @@ async def get_device_details(
         )
 
 
-@router.delete("/devices/{device_id}")
+@router.delete("/devices/{device_id}", summary="🔶 REST: Delete Device")
 async def delete_device(
     device_id: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "delete")),
@@ -1041,7 +1071,7 @@ async def delete_device(
         )
 
 
-@router.delete("/ip-address/{ip_id}")
+@router.delete("/ip-address/{ip_id}", summary="🔶 REST: Delete IP Address")
 async def delete_ip_address(
     ip_id: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "delete")),
@@ -1080,13 +1110,16 @@ async def delete_ip_address(
         )
 
 
-@router.post("/offboard/{device_id}")
+@router.post("/offboard/{device_id}", summary="🟠 Mixed API: Offboard Device")
 async def offboard_device(
     device_id: str,
     request: OffboardDeviceRequest,
     current_user: dict = Depends(require_permission("devices.offboard", "execute")),
 ):
-    """Offboard a device by removing it or applying configured offboarding values."""
+    """Offboard a device by removing it or applying configured offboarding values.
+    
+    **🟠 This endpoint uses multiple APIs** including GraphQL and REST for device offboarding.
+    """
     try:
         return await offboarding_service.offboard_device(
             device_id=device_id,

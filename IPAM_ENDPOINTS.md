@@ -454,10 +454,25 @@ Consider adding:
 
 ## DCIM Device Endpoints
 
-### 11. List Devices
+> **Note:** The `/api/nautobot/dcim/devices` endpoints documented below were previously available as internal wrapper endpoints but have been **removed as of November 2025**. Cockpit-NG now uses direct Nautobot REST API calls via `nautobot_service.rest_request()` for all device operations.
+> 
+> **Backend Implementation:**
+> - Device creation: `device_creation_service.py` calls Nautobot directly
+> - Device operations: `offboarding_service.py` calls Nautobot directly
+> - Device queries: `metadata.py` router calls Nautobot directly
+> 
+> **For device management**, use:
+> - `/api/nautobot/devices` - GraphQL-based device operations (onboarding, sync, etc.)
+> - Direct Nautobot REST API - For advanced CRUD operations
+>
+> This section is kept for reference purposes only.
+
+### 11. List Devices (DEPRECATED - Reference Only)
 ```
 GET /api/nautobot/dcim/devices
 ```
+
+**Status:** Removed - Use direct Nautobot REST API
 
 **Query Parameters:**
 - `name` - Filter by device name
@@ -470,8 +485,6 @@ GET /api/nautobot/dcim/devices
 - `tag` - Filter by tag name
 - `limit` - Maximum number of results
 - `offset` - Pagination offset
-
-**Permission Required:** `nautobot.devices:read`
 
 **Example Response:**
 ```json
@@ -509,27 +522,22 @@ GET /api/nautobot/dcim/devices
 }
 ```
 
-### 12. Get Single Device
+### 12. Get Single Device (DEPRECATED - Reference Only)
 ```
 GET /api/nautobot/dcim/devices/{device_id}
 ```
 
+**Status:** Removed - Use direct Nautobot REST API
+
 **Parameters:**
 - `device_id` - The UUID of the device
 
-**Permission Required:** `nautobot.devices:read`
-
-**Example:**
-```bash
-GET /api/nautobot/dcim/devices/3ec64b79-aa33-46be-b9c2-6a5aa9ea6381
-```
-
-### 13. Create Device
+### 13. Create Device (DEPRECATED - Reference Only)
 ```
 POST /api/nautobot/dcim/devices
 ```
 
-**Permission Required:** `nautobot.devices:write`
+**Status:** Removed - Use `/api/nautobot/devices/add-device` or direct Nautobot REST API
 
 **Request Body:**
 ```json
@@ -567,117 +575,26 @@ POST /api/nautobot/dcim/devices
 - `tags` - List of tag IDs
 - `custom_fields` - Custom field values object
 
-### 14. Update Device
+### 14. Update Device (DEPRECATED - Reference Only)
 ```
 PUT /api/nautobot/dcim/devices/{device_id}
 PATCH /api/nautobot/dcim/devices/{device_id}
 ```
 
+**Status:** Removed - Use direct Nautobot REST API
+
 **Parameters:**
 - `device_id` - The UUID of the device to update
 
-**Permission Required:** `nautobot.devices:write`
-
-**Request Body:**
-Can contain any updatable fields:
-```json
-{
-  "name": "switch-01-updated",
-  "status": "planned",
-  "comments": "Scheduled for maintenance",
-  "custom_fields": {
-    "last_backup": "2025-11-17T10:00:00Z"
-  }
-}
-```
-
-**Note:** Both PUT and PATCH routes use PATCH internally for partial updates.
-
-### 15. Delete Device
+### 15. Delete Device (DEPRECATED - Reference Only)
 ```
 DELETE /api/nautobot/dcim/devices/{device_id}
 ```
 
+**Status:** Removed - Use direct Nautobot REST API
+
 **Parameters:**
 - `device_id` - The UUID of the device to delete
-
-**Permission Required:** `nautobot.devices:delete`
-
-**Success Response:**
-```json
-{
-  "status": "success",
-  "message": "Resource deleted successfully"
-}
-```
-
-## DCIM Frontend Usage Examples
-
-```typescript
-// List devices with filters
-const response = await fetch('/api/proxy/nautobot/dcim/devices?location=datacenter1&status=active&limit=50', {
-  headers: {
-    'Authorization': `Bearer ${token}`
-  }
-})
-
-// Get single device
-const device = await fetch(`/api/proxy/nautobot/dcim/devices/${deviceId}`, {
-  headers: {
-    'Authorization': `Bearer ${token}`
-  }
-})
-
-// Create device
-const newDevice = await fetch('/api/proxy/nautobot/dcim/devices', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    name: 'switch-01',
-    device_type: deviceTypeId,
-    role: roleId,
-    location: locationId,
-    status: 'active',
-    platform: platformId,
-    serial: 'SN123456'
-  })
-})
-
-// Update device
-const updated = await fetch(`/api/proxy/nautobot/dcim/devices/${deviceId}`, {
-  method: 'PATCH',
-  headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    status: 'offline',
-    comments: 'Device under maintenance'
-  })
-})
-
-// Delete device
-const deleted = await fetch(`/api/proxy/nautobot/dcim/devices/${deviceId}`, {
-  method: 'DELETE',
-  headers: {
-    'Authorization': `Bearer ${token}`
-  }
-})
-```
-
-## Updated Implementation Details
-
-**File:** `/backend/routers/nautobot.py` (lines 1688-2360+)
-
-**DCIM Devices:**
-- `Retrieved N devices from Nautobot DCIM`
-- `Retrieved device {id} from Nautobot DCIM`
-- `Created device {name} in Nautobot DCIM`
-- `Updated device {id} in Nautobot DCIM`
-- `Deleted device {id} from Nautobot DCIM`
 
 ---
 

@@ -43,7 +43,6 @@ export default function AnsibleInventoryPage() {
   // Authentication effect
   useEffect(() => {
     if (isAuthenticated && token && !authReady) {
-      console.log('Ansible Inventory: Authentication ready')
       setAuthReady(true)
     }
   }, [isAuthenticated, token, authReady])

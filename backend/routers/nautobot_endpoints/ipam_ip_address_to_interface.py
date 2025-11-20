@@ -13,13 +13,15 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ipam", tags=["nautobot-ipam-addresses"])
 
 
-@router.post("/ip-address-to-interface")
+@router.post("/ip-address-to-interface", summary="🔶 REST: Assign IP to Interface")
 async def assign_ip_address_to_interface(
     assignment_data: dict,
     current_user: dict = Depends(require_permission("nautobot.locations", "write")),
 ):
     """
     Assign an IP address to an interface in Nautobot.
+    
+    **🔶 This endpoint uses REST API** to create IP address to interface assignments.
 
     This endpoint creates an IP address to interface assignment using the
     Nautobot REST API endpoint /api/ipam/ip-address-to-interface/.

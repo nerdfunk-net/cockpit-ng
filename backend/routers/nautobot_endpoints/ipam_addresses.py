@@ -18,7 +18,7 @@ router = APIRouter(prefix="/ipam/ip-addresses", tags=["nautobot-ipam-addresses"]
 # =============================================================================
 
 
-@router.get("")
+@router.get("", summary="🔶 REST: List IP Addresses")
 async def get_ipam_ip_addresses(
     address: Optional[str] = None,
     namespace: Optional[str] = None,
@@ -33,6 +33,8 @@ async def get_ipam_ip_addresses(
 ):
     """
     Get IP addresses from Nautobot IPAM.
+    
+    **🔶 This endpoint uses REST API** to query Nautobot IPAM IP addresses.
 
     Query parameters:
     - address: Filter by IP address (e.g., "192.168.1.1")
@@ -88,7 +90,7 @@ async def get_ipam_ip_addresses(
         )
 
 
-@router.get("/{ip_address_id}")
+@router.get("/{ip_address_id}", summary="🔶 REST: Get IP Address")
 async def get_ipam_ip_address(
     ip_address_id: str,
     current_user: dict = Depends(require_permission("nautobot.locations", "read")),
@@ -116,7 +118,7 @@ async def get_ipam_ip_address(
         )
 
 
-@router.post("")
+@router.post("", summary="🔶 REST: Create IP Address")
 async def create_ipam_ip_address(
     ip_address_data: dict,
     current_user: dict = Depends(require_permission("nautobot.locations", "write")),
@@ -172,8 +174,8 @@ async def create_ipam_ip_address(
         )
 
 
-@router.put("/{ip_address_id}")
-@router.patch("/{ip_address_id}")
+@router.put("/{ip_address_id}", summary="🔶 REST: Update IP Address (Full)")
+@router.patch("/{ip_address_id}", summary="🔶 REST: Update IP Address (Partial)")
 async def update_ipam_ip_address(
     ip_address_id: str,
     ip_address_data: dict,
@@ -216,7 +218,7 @@ async def update_ipam_ip_address(
         )
 
 
-@router.delete("/{ip_address_id}")
+@router.delete("/{ip_address_id}", summary="🔶 REST: Delete IP Address")
 async def delete_ipam_ip_address(
     ip_address_id: str,
     current_user: dict = Depends(require_permission("nautobot.locations", "delete")),
