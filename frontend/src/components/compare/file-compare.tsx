@@ -145,7 +145,8 @@ export default function FileCompare() {
       leftFileSearch.clearSelection()
       rightFileSearch.clearSelection()
     }
-  }, [selectedRepo, loadFiles, leftFileSearch, rightFileSearch])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRepo, loadFiles])
 
   const canCompare = () => {
     return selectedRepo && leftFileSearch.selectedFile && rightFileSearch.selectedFile

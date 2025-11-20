@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import UserManagement from '../../../components/settings/user-management'
+import UserManagement from '@/components/settings/user-management'
 
 export const metadata: Metadata = {
   title: 'User Management - Cockpit',

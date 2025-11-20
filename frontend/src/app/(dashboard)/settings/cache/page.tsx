@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import CacheManagement from '../../../components/settings/cache-management'
+import CacheManagement from '@/components/settings/cache-management'
 
 export const metadata: Metadata = {
   title: 'Cache Settings - Cockpit',
