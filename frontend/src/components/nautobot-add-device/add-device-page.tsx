@@ -981,7 +981,7 @@ export function AddDevicePage() {
 
       {/* Device Information Card */}
       <div className="rounded-xl border shadow-sm">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 rounded-t-xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Server className="h-4 w-4" />
@@ -1196,7 +1196,7 @@ export function AddDevicePage() {
 
       {/* Network Interfaces Card */}
       <div className="rounded-xl border shadow-sm">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 rounded-t-xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Network className="h-4 w-4" />
