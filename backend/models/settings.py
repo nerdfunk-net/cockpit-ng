@@ -216,4 +216,3 @@ class ComplianceCheckRequest(BaseModel):
     selected_login_ids: list[int] = []
     selected_snmp_ids: list[int] = []
     selected_regex_ids: list[int] = []
-

@@ -40,7 +40,7 @@ class ComplianceCheckService:
         device_type: str,
         username: str,
         password: str,
-        timeout: int = 10
+        timeout: int = 10,
     ) -> Dict[str, Any]:
         """
         Check if SSH login is successful for a device.
@@ -58,12 +58,12 @@ class ComplianceCheckService:
         try:
             # Prepare Netmiko connection parameters
             device_params = {
-                'device_type': device_type,
-                'host': device_ip,
-                'username': username,
-                'password': password,
-                'timeout': timeout,
-                'conn_timeout': timeout,
+                "device_type": device_type,
+                "host": device_ip,
+                "username": username,
+                "password": password,
+                "timeout": timeout,
+                "conn_timeout": timeout,
             }
 
             # Attempt to connect
@@ -72,39 +72,41 @@ class ComplianceCheckService:
                 prompt = connection.find_prompt()
 
                 return {
-                    'success': True,
-                    'status': 'pass',
-                    'message': f'SSH login successful',
-                    'details': {
-                        'prompt': prompt,
-                        'username': username,
-                    }
+                    "success": True,
+                    "status": "pass",
+                    "message": "SSH login successful",
+                    "details": {
+                        "prompt": prompt,
+                        "username": username,
+                    },
                 }
 
         except Exception as e:
             error_msg = str(e)
-            logger.warning(f"SSH login failed for {device_ip} with user {username}: {error_msg}")
+            logger.warning(
+                f"SSH login failed for {device_ip} with user {username}: {error_msg}"
+            )
 
             return {
-                'success': False,
-                'status': 'fail',
-                'message': f'SSH login failed: {error_msg}',
-                'details': {
-                    'username': username,
-                    'error': error_msg,
-                }
+                "success": False,
+                "status": "fail",
+                "message": f"SSH login failed: {error_msg}",
+                "details": {
+                    "username": username,
+                    "error": error_msg,
+                },
             }
 
     @staticmethod
     def _get_snmp_auth_protocol(protocol: str):
         """Map protocol string to pysnmp auth protocol."""
         protocol_map = {
-            'MD5': usmHMACMD5AuthProtocol,
-            'SHA': usmHMACSHAAuthProtocol,
-            'SHA-224': usmHMACSHAAuthProtocol,  # Use SHA for now
-            'SHA-256': usmHMACSHAAuthProtocol,  # Use SHA for now
-            'SHA-384': usmHMACSHAAuthProtocol,  # Use SHA for now
-            'SHA-512': usmHMACSHAAuthProtocol,  # Use SHA for now
+            "MD5": usmHMACMD5AuthProtocol,
+            "SHA": usmHMACSHAAuthProtocol,
+            "SHA-224": usmHMACSHAAuthProtocol,  # Use SHA for now
+            "SHA-256": usmHMACSHAAuthProtocol,  # Use SHA for now
+            "SHA-384": usmHMACSHAAuthProtocol,  # Use SHA for now
+            "SHA-512": usmHMACSHAAuthProtocol,  # Use SHA for now
         }
         return protocol_map.get(protocol, usmNoAuthProtocol)
 
@@ -112,20 +114,17 @@ class ComplianceCheckService:
     def _get_snmp_priv_protocol(protocol: str):
         """Map protocol string to pysnmp privacy protocol."""
         protocol_map = {
-            'DES': usmDESPrivProtocol,
-            'AES': usmAesCfb128Protocol,
-            'AES-128': usmAesCfb128Protocol,
-            'AES-192': usmAesCfb192Protocol,
-            'AES-256': usmAesCfb256Protocol,
+            "DES": usmDESPrivProtocol,
+            "AES": usmAesCfb128Protocol,
+            "AES-128": usmAesCfb128Protocol,
+            "AES-192": usmAesCfb192Protocol,
+            "AES-256": usmAesCfb256Protocol,
         }
         return protocol_map.get(protocol, usmNoPrivProtocol)
 
     @staticmethod
     async def check_snmp_v1_v2c_async(
-        device_ip: str,
-        community: str,
-        version: int = 2,
-        timeout: int = 5
+        device_ip: str, community: str, version: int = 2, timeout: int = 5
     ) -> Dict[str, Any]:
         """
         Check SNMP v1 or v2c access to a device (async).
@@ -146,7 +145,7 @@ class ComplianceCheckService:
                 CommunityData(community, mpModel=version - 1),  # 0 for v1, 1 for v2c
                 await UdpTransportTarget.create((device_ip, 161), timeout=timeout),
                 ContextData(),
-                ObjectType(ObjectIdentity('SNMPv2-MIB', 'sysDescr', 0)),
+                ObjectType(ObjectIdentity("SNMPv2-MIB", "sysDescr", 0)),
                 lookupMib=False,
                 lexicographicMode=False,
             )
@@ -154,25 +153,25 @@ class ComplianceCheckService:
             # Check for errors
             if error_indication:
                 return {
-                    'success': False,
-                    'status': 'fail',
-                    'message': f'SNMP query failed: {error_indication}',
-                    'details': {
-                        'community': community,
-                        'version': f'v{version}',
-                        'error': str(error_indication),
-                    }
+                    "success": False,
+                    "status": "fail",
+                    "message": f"SNMP query failed: {error_indication}",
+                    "details": {
+                        "community": community,
+                        "version": f"v{version}",
+                        "error": str(error_indication),
+                    },
                 }
             elif error_status:
                 return {
-                    'success': False,
-                    'status': 'fail',
-                    'message': f'SNMP error: {error_status.prettyPrint()} at {error_index}',
-                    'details': {
-                        'community': community,
-                        'version': f'v{version}',
-                        'error': error_status.prettyPrint(),
-                    }
+                    "success": False,
+                    "status": "fail",
+                    "message": f"SNMP error: {error_status.prettyPrint()} at {error_index}",
+                    "details": {
+                        "community": community,
+                        "version": f"v{version}",
+                        "error": error_status.prettyPrint(),
+                    },
                 }
             else:
                 # Extract system description
@@ -181,14 +180,14 @@ class ComplianceCheckService:
                     sys_descr = var_bind[1].prettyPrint()
 
                 return {
-                    'success': True,
-                    'status': 'pass',
-                    'message': 'SNMP query successful',
-                    'details': {
-                        'community': community,
-                        'version': f'v{version}',
-                        'sysDescr': sys_descr,
-                    }
+                    "success": True,
+                    "status": "pass",
+                    "message": "SNMP query successful",
+                    "details": {
+                        "community": community,
+                        "version": f"v{version}",
+                        "sysDescr": sys_descr,
+                    },
                 }
 
         except Exception as e:
@@ -196,28 +195,27 @@ class ComplianceCheckService:
             logger.warning(f"SNMP v{version} check failed for {device_ip}: {error_msg}")
 
             return {
-                'success': False,
-                'status': 'fail',
-                'message': f'SNMP v{version} check failed: {error_msg}',
-                'details': {
-                    'community': community,
-                    'version': f'v{version}',
-                    'error': error_msg,
-                }
+                "success": False,
+                "status": "fail",
+                "message": f"SNMP v{version} check failed: {error_msg}",
+                "details": {
+                    "community": community,
+                    "version": f"v{version}",
+                    "error": error_msg,
+                },
             }
 
     @staticmethod
     def check_snmp_v1_v2c(
-        device_ip: str,
-        community: str,
-        version: int = 2,
-        timeout: int = 5
+        device_ip: str, community: str, version: int = 2, timeout: int = 5
     ) -> Dict[str, Any]:
         """
         Check SNMP v1 or v2c access to a device (synchronous wrapper).
         """
         return asyncio.run(
-            ComplianceCheckService.check_snmp_v1_v2c_async(device_ip, community, version, timeout)
+            ComplianceCheckService.check_snmp_v1_v2c_async(
+                device_ip, community, version, timeout
+            )
         )
 
     @staticmethod
@@ -228,7 +226,7 @@ class ComplianceCheckService:
         auth_password: Optional[str] = None,
         priv_protocol: Optional[str] = None,
         priv_password: Optional[str] = None,
-        timeout: int = 5
+        timeout: int = 5,
     ) -> Dict[str, Any]:
         """
         Check SNMP v3 access to a device (async).
@@ -247,8 +245,16 @@ class ComplianceCheckService:
         """
         try:
             # Determine authentication and privacy levels
-            auth_proto = ComplianceCheckService._get_snmp_auth_protocol(auth_protocol) if auth_protocol else usmNoAuthProtocol
-            priv_proto = ComplianceCheckService._get_snmp_priv_protocol(priv_protocol) if priv_protocol else usmNoPrivProtocol
+            auth_proto = (
+                ComplianceCheckService._get_snmp_auth_protocol(auth_protocol)
+                if auth_protocol
+                else usmNoAuthProtocol
+            )
+            priv_proto = (
+                ComplianceCheckService._get_snmp_priv_protocol(priv_protocol)
+                if priv_protocol
+                else usmNoPrivProtocol
+            )
 
             # Debug logging
             logger.debug(f"SNMPv3 check for {device_ip}")
@@ -276,37 +282,41 @@ class ComplianceCheckService:
                 usm_user,
                 await UdpTransportTarget.create((device_ip, 161), timeout=timeout),
                 ContextData(),
-                ObjectType(ObjectIdentity('SNMPv2-MIB', 'sysName', 0)),
+                ObjectType(ObjectIdentity("SNMPv2-MIB", "sysName", 0)),
                 lookupMib=False,
                 lexicographicMode=False,
             )
 
             # Check for errors
             if error_indication:
-                logger.warning(f"  SNMPv3 query failed with error_indication: {error_indication}")
+                logger.warning(
+                    f"  SNMPv3 query failed with error_indication: {error_indication}"
+                )
                 return {
-                    'success': False,
-                    'status': 'fail',
-                    'message': f'SNMP v3 query failed: {error_indication}',
-                    'details': {
-                        'username': username,
-                        'auth_protocol': auth_protocol,
-                        'priv_protocol': priv_protocol,
-                        'error': str(error_indication),
-                    }
+                    "success": False,
+                    "status": "fail",
+                    "message": f"SNMP v3 query failed: {error_indication}",
+                    "details": {
+                        "username": username,
+                        "auth_protocol": auth_protocol,
+                        "priv_protocol": priv_protocol,
+                        "error": str(error_indication),
+                    },
                 }
             elif error_status:
-                logger.warning(f"  SNMPv3 query failed with error_status: {error_status.prettyPrint()} at index {error_index}")
+                logger.warning(
+                    f"  SNMPv3 query failed with error_status: {error_status.prettyPrint()} at index {error_index}"
+                )
                 return {
-                    'success': False,
-                    'status': 'fail',
-                    'message': f'SNMP v3 error: {error_status.prettyPrint()} at {error_index}',
-                    'details': {
-                        'username': username,
-                        'auth_protocol': auth_protocol,
-                        'priv_protocol': priv_protocol,
-                        'error': error_status.prettyPrint(),
-                    }
+                    "success": False,
+                    "status": "fail",
+                    "message": f"SNMP v3 error: {error_status.prettyPrint()} at {error_index}",
+                    "details": {
+                        "username": username,
+                        "auth_protocol": auth_protocol,
+                        "priv_protocol": priv_protocol,
+                        "error": error_status.prettyPrint(),
+                    },
                 }
             else:
                 # Extract system description
@@ -314,34 +324,38 @@ class ComplianceCheckService:
                 for var_bind in var_binds:
                     sys_descr = var_bind[1].prettyPrint()
 
-                logger.debug(f"  SNMPv3 query successful! sysDescr: {sys_descr[:50] if sys_descr else 'N/A'}...")
+                logger.debug(
+                    f"  SNMPv3 query successful! sysDescr: {sys_descr[:50] if sys_descr else 'N/A'}..."
+                )
 
                 return {
-                    'success': True,
-                    'status': 'pass',
-                    'message': 'SNMP v3 query successful',
-                    'details': {
-                        'username': username,
-                        'auth_protocol': auth_protocol,
-                        'priv_protocol': priv_protocol,
-                        'sysDescr': sys_descr,
-                    }
+                    "success": True,
+                    "status": "pass",
+                    "message": "SNMP v3 query successful",
+                    "details": {
+                        "username": username,
+                        "auth_protocol": auth_protocol,
+                        "priv_protocol": priv_protocol,
+                        "sysDescr": sys_descr,
+                    },
                 }
 
         except Exception as e:
             error_msg = str(e)
-            logger.warning(f"SNMP v3 check failed for {device_ip} with user {username}: {error_msg}")
+            logger.warning(
+                f"SNMP v3 check failed for {device_ip} with user {username}: {error_msg}"
+            )
 
             return {
-                'success': False,
-                'status': 'fail',
-                'message': f'SNMP v3 check failed: {error_msg}',
-                'details': {
-                    'username': username,
-                    'auth_protocol': auth_protocol,
-                    'priv_protocol': priv_protocol,
-                    'error': error_msg,
-                }
+                "success": False,
+                "status": "fail",
+                "message": f"SNMP v3 check failed: {error_msg}",
+                "details": {
+                    "username": username,
+                    "auth_protocol": auth_protocol,
+                    "priv_protocol": priv_protocol,
+                    "error": error_msg,
+                },
             }
 
     @staticmethod
@@ -352,15 +366,20 @@ class ComplianceCheckService:
         auth_password: Optional[str] = None,
         priv_protocol: Optional[str] = None,
         priv_password: Optional[str] = None,
-        timeout: int = 5
+        timeout: int = 5,
     ) -> Dict[str, Any]:
         """
         Check SNMP v3 access to a device (synchronous wrapper).
         """
         return asyncio.run(
             ComplianceCheckService.check_snmp_v3_async(
-                device_ip, username, auth_protocol, auth_password,
-                priv_protocol, priv_password, timeout
+                device_ip,
+                username,
+                auth_protocol,
+                auth_password,
+                priv_protocol,
+                priv_password,
+                timeout,
             )
         )
 
@@ -370,7 +389,7 @@ class ComplianceCheckService:
         configuration: str,
         pattern: str,
         pattern_type: str,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Check if a configuration pattern matches or doesn't match (mock implementation).
@@ -390,94 +409,94 @@ class ComplianceCheckService:
             regex = re.compile(pattern, re.MULTILINE)
             matches = regex.findall(configuration)
 
-            if pattern_type == 'must_match':
+            if pattern_type == "must_match":
                 # Pattern MUST be present
                 if matches:
                     return {
-                        'success': True,
-                        'status': 'pass',
-                        'message': f'Pattern matched as expected',
-                        'details': {
-                            'pattern': pattern,
-                            'pattern_type': pattern_type,
-                            'description': description,
-                            'matches': len(matches),
-                            'match_samples': matches[:3],  # First 3 matches
-                        }
+                        "success": True,
+                        "status": "pass",
+                        "message": "Pattern matched as expected",
+                        "details": {
+                            "pattern": pattern,
+                            "pattern_type": pattern_type,
+                            "description": description,
+                            "matches": len(matches),
+                            "match_samples": matches[:3],  # First 3 matches
+                        },
                     }
                 else:
                     return {
-                        'success': False,
-                        'status': 'fail',
-                        'message': f'Required pattern not found in configuration',
-                        'details': {
-                            'pattern': pattern,
-                            'pattern_type': pattern_type,
-                            'description': description,
-                            'matches': 0,
-                        }
+                        "success": False,
+                        "status": "fail",
+                        "message": "Required pattern not found in configuration",
+                        "details": {
+                            "pattern": pattern,
+                            "pattern_type": pattern_type,
+                            "description": description,
+                            "matches": 0,
+                        },
                     }
             else:  # must_not_match
                 # Pattern MUST NOT be present
                 if matches:
                     return {
-                        'success': False,
-                        'status': 'fail',
-                        'message': f'Forbidden pattern found in configuration',
-                        'details': {
-                            'pattern': pattern,
-                            'pattern_type': pattern_type,
-                            'description': description,
-                            'matches': len(matches),
-                            'match_samples': matches[:3],  # First 3 matches
-                        }
+                        "success": False,
+                        "status": "fail",
+                        "message": "Forbidden pattern found in configuration",
+                        "details": {
+                            "pattern": pattern,
+                            "pattern_type": pattern_type,
+                            "description": description,
+                            "matches": len(matches),
+                            "match_samples": matches[:3],  # First 3 matches
+                        },
                     }
                 else:
                     return {
-                        'success': True,
-                        'status': 'pass',
-                        'message': f'Forbidden pattern not found (as expected)',
-                        'details': {
-                            'pattern': pattern,
-                            'pattern_type': pattern_type,
-                            'description': description,
-                            'matches': 0,
-                        }
+                        "success": True,
+                        "status": "pass",
+                        "message": "Forbidden pattern not found (as expected)",
+                        "details": {
+                            "pattern": pattern,
+                            "pattern_type": pattern_type,
+                            "description": description,
+                            "matches": 0,
+                        },
                     }
 
         except re.error as e:
             return {
-                'success': False,
-                'status': 'error',
-                'message': f'Invalid regex pattern: {str(e)}',
-                'details': {
-                    'pattern': pattern,
-                    'pattern_type': pattern_type,
-                    'description': description,
-                    'error': str(e),
-                }
+                "success": False,
+                "status": "error",
+                "message": f"Invalid regex pattern: {str(e)}",
+                "details": {
+                    "pattern": pattern,
+                    "pattern_type": pattern_type,
+                    "description": description,
+                    "error": str(e),
+                },
             }
         except Exception as e:
             error_msg = str(e)
-            logger.error(f"Configuration pattern check failed for {device_ip}: {error_msg}")
+            logger.error(
+                f"Configuration pattern check failed for {device_ip}: {error_msg}"
+            )
 
             return {
-                'success': False,
-                'status': 'error',
-                'message': f'Pattern check failed: {error_msg}',
-                'details': {
-                    'pattern': pattern,
-                    'pattern_type': pattern_type,
-                    'description': description,
-                    'error': error_msg,
-                }
+                "success": False,
+                "status": "error",
+                "message": f"Pattern check failed: {error_msg}",
+                "details": {
+                    "pattern": pattern,
+                    "pattern_type": pattern_type,
+                    "description": description,
+                    "error": error_msg,
+                },
             }
 
     @staticmethod
     def check_configuration_mock(
-        device_ip: str,
-        device_name: str,
-        patterns: List[Dict[str, Any]]
+        device_ip: str, device_name: str, patterns: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """
         Mock implementation of configuration checking.
@@ -518,22 +537,22 @@ end
             result = ComplianceCheckService.check_configuration_pattern(
                 device_ip=device_ip,
                 configuration=mock_config,
-                pattern=pattern_info['pattern'],
-                pattern_type=pattern_info['pattern_type'],
-                description=pattern_info.get('description')
+                pattern=pattern_info["pattern"],
+                pattern_type=pattern_info["pattern_type"],
+                description=pattern_info.get("description"),
             )
             pattern_results.append(result)
 
         # Calculate overall status
-        all_passed = all(r['success'] for r in pattern_results)
+        all_passed = all(r["success"] for r in pattern_results)
 
         return {
-            'success': all_passed,
-            'status': 'pass' if all_passed else 'fail',
-            'message': f'Configuration check {"passed" if all_passed else "failed"}',
-            'total_patterns': len(patterns),
-            'passed': sum(1 for r in pattern_results if r['success']),
-            'failed': sum(1 for r in pattern_results if not r['success']),
-            'pattern_results': pattern_results,
-            'note': 'This is a mock implementation using sample configuration'
+            "success": all_passed,
+            "status": "pass" if all_passed else "fail",
+            "message": f"Configuration check {'passed' if all_passed else 'failed'}",
+            "total_patterns": len(patterns),
+            "passed": sum(1 for r in pattern_results if r["success"]),
+            "failed": sum(1 for r in pattern_results if not r["success"]),
+            "pattern_results": pattern_results,
+            "note": "This is a mock implementation using sample configuration",
         }

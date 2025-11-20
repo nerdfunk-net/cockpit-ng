@@ -5,7 +5,6 @@ Compliance settings router for configuration management.
 from __future__ import annotations
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Body
-from typing import List
 
 from core.auth import require_permission
 from models.settings import (
@@ -461,9 +460,9 @@ async def import_snmp_mappings(
     current_user: dict = Depends(require_permission("settings.compliance", "write")),
 ):
     """Import SNMP mappings from YAML content.
-    
+
     Accepts YAML content in CheckMK format or custom format.
-    
+
     Request body:
     {
       "yaml_content": "snmp-id-1:\n  version: v3\n  ..."
@@ -471,14 +470,14 @@ async def import_snmp_mappings(
     """
     try:
         result = compliance.import_snmp_mappings_from_yaml(yaml_content)
-        
+
         if result["errors"] > 0:
             return {
                 "success": True,
                 "message": f"Imported {result['imported']} SNMP mappings with {result['errors']} errors",
                 "data": result,
             }
-        
+
         return {
             "success": True,
             "message": f"Successfully imported {result['imported']} SNMP mappings",

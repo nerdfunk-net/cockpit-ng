@@ -117,12 +117,16 @@ def _migrate_add_name_columns(conn) -> None:
         # Check if login_credentials has 'name' column
         cursor = conn.execute("PRAGMA table_info(login_credentials)")
         columns = [row[1] for row in cursor.fetchall()]
-        if 'name' not in columns:
+        if "name" not in columns:
             # Add name column and populate with username
             conn.execute("ALTER TABLE login_credentials ADD COLUMN name TEXT")
-            conn.execute("UPDATE login_credentials SET name = username WHERE name IS NULL")
-            conn.execute("UPDATE login_credentials SET name = username || ' (' || id || ')' WHERE name IS NULL OR name = ''")
-    except Exception as e:
+            conn.execute(
+                "UPDATE login_credentials SET name = username WHERE name IS NULL"
+            )
+            conn.execute(
+                "UPDATE login_credentials SET name = username || ' (' || id || ')' WHERE name IS NULL OR name = ''"
+            )
+    except Exception:
         # Table might not exist yet, which is fine
         pass
 
@@ -130,12 +134,16 @@ def _migrate_add_name_columns(conn) -> None:
         # Check if snmp_mapping has 'name' column
         cursor = conn.execute("PRAGMA table_info(snmp_mapping)")
         columns = [row[1] for row in cursor.fetchall()]
-        if 'name' not in columns:
+        if "name" not in columns:
             # Add name column and populate with device_type
             conn.execute("ALTER TABLE snmp_mapping ADD COLUMN name TEXT")
-            conn.execute("UPDATE snmp_mapping SET name = device_type WHERE name IS NULL")
-            conn.execute("UPDATE snmp_mapping SET name = device_type || ' (' || id || ')' WHERE name IS NULL OR name = ''")
-    except Exception as e:
+            conn.execute(
+                "UPDATE snmp_mapping SET name = device_type WHERE name IS NULL"
+            )
+            conn.execute(
+                "UPDATE snmp_mapping SET name = device_type || ' (' || id || ')' WHERE name IS NULL OR name = ''"
+            )
+    except Exception:
         # Table might not exist yet, which is fine
         pass
 
@@ -196,7 +204,9 @@ def create_regex_pattern(
 ) -> int:
     """Create a new regex pattern."""
     if pattern_type not in ["must_match", "must_not_match"]:
-        raise ValueError("Invalid pattern_type. Must be 'must_match' or 'must_not_match'")
+        raise ValueError(
+            "Invalid pattern_type. Must be 'must_match' or 'must_not_match'"
+        )
 
     now = datetime.utcnow().isoformat()
     with _get_conn() as conn:
@@ -308,7 +318,9 @@ def get_login_credential_by_id(
         cred = dict(row)
         if decrypt_password:
             try:
-                cred["password"] = encryption_service.decrypt(cred["password_encrypted"])
+                cred["password"] = encryption_service.decrypt(
+                    cred["password_encrypted"]
+                )
             except Exception as e:
                 cred["password"] = f"[Decryption Error: {str(e)}]"
         else:
@@ -629,7 +641,7 @@ def delete_snmp_mapping(mapping_id: int) -> bool:
 
 def import_snmp_mappings_from_yaml(yaml_content: str) -> Dict[str, Any]:
     """Import SNMP mappings from YAML content (CheckMK format or custom format).
-    
+
     Expected YAML format:
     snmp-id-1:
       version: v3
@@ -640,61 +652,67 @@ def import_snmp_mappings_from_yaml(yaml_content: str) -> Dict[str, Any]:
       auth_password: authpass
       privacy_protocol: AES
       privacy_password: privpass
-    
+
     Args:
       yaml_content: YAML string content to parse
-    
+
     Returns:
       Dict with success count, error count, and list of errors
     """
     _ensure_tables()
-    
+
     try:
         yaml_data = yaml.safe_load(yaml_content)
         if not isinstance(yaml_data, dict):
             return {
                 "imported": 0,
                 "errors": 1,
-                "error_details": ["Invalid YAML format: expected dictionary"]
+                "error_details": ["Invalid YAML format: expected dictionary"],
             }
     except yaml.YAMLError as e:
         return {
             "imported": 0,
             "errors": 1,
-            "error_details": [f"YAML parsing error: {str(e)}"]
+            "error_details": [f"YAML parsing error: {str(e)}"],
         }
-    
+
     imported = 0
     errors = []
-    
+
     for snmp_id, snmp_config in yaml_data.items():
         try:
             # Extract device type from SNMP ID or use the ID itself
             device_type = snmp_id
-            
+
             # Determine SNMP version
-            version_str = snmp_config.get('version', 'v2c')
-            if version_str not in ['v1', 'v2c', 'v3']:
+            version_str = snmp_config.get("version", "v2c")
+            if version_str not in ["v1", "v2c", "v3"]:
                 # Try to parse from type field
-                type_field = snmp_config.get('type', '')
-                if 'v3' in type_field:
-                    version_str = 'v3'
-                elif 'v2c' in type_field:
-                    version_str = 'v2c'
+                type_field = snmp_config.get("type", "")
+                if "v3" in type_field:
+                    version_str = "v3"
+                elif "v2c" in type_field:
+                    version_str = "v2c"
                 else:
-                    version_str = 'v2c'
-            
+                    version_str = "v2c"
+
             # Common fields
-            snmp_community = snmp_config.get('community', '')
-            description = snmp_config.get('description', f'Imported from YAML: {snmp_id}')
-            
+            snmp_community = snmp_config.get("community", "")
+            description = snmp_config.get(
+                "description", f"Imported from YAML: {snmp_id}"
+            )
+
             # v3 specific fields
-            snmp_v3_user = snmp_config.get('username', '')
-            auth_protocol = snmp_config.get('auth_protocol', '')
-            auth_password = snmp_config.get('auth_password', '')
-            priv_protocol = snmp_config.get('privacy_protocol', snmp_config.get('priv_protocol', ''))
-            priv_password = snmp_config.get('privacy_password', snmp_config.get('priv_password', ''))
-            
+            snmp_v3_user = snmp_config.get("username", "")
+            auth_protocol = snmp_config.get("auth_protocol", "")
+            auth_password = snmp_config.get("auth_password", "")
+            priv_protocol = snmp_config.get(
+                "privacy_protocol", snmp_config.get("priv_protocol", "")
+            )
+            priv_password = snmp_config.get(
+                "privacy_password", snmp_config.get("priv_password", "")
+            )
+
             # Create the SNMP mapping
             create_snmp_mapping(
                 device_type=device_type,
@@ -708,13 +726,9 @@ def import_snmp_mappings_from_yaml(yaml_content: str) -> Dict[str, Any]:
                 description=description,
             )
             imported += 1
-            
+
         except Exception as e:
             error_msg = f"Error importing {snmp_id}: {str(e)}"
             errors.append(error_msg)
-    
-    return {
-        "imported": imported,
-        "errors": len(errors),
-        "error_details": errors
-    }
+
+    return {"imported": imported, "errors": len(errors), "error_details": errors}

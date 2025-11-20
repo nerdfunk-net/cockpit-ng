@@ -33,7 +33,7 @@ async def get_ipam_ip_addresses(
 ):
     """
     Get IP addresses from Nautobot IPAM.
-    
+
     **🔶 This endpoint uses REST API** to query Nautobot IPAM IP addresses.
 
     Query parameters:

@@ -12,7 +12,6 @@ from models.nautobot import (
     CheckIPRequest,
     DeviceOnboardRequest,
     SyncNetworkDataRequest,
-    DeviceFilter,
     AddDeviceRequest,
 )
 from services import nautobot_service
@@ -94,7 +93,7 @@ async def get_devices(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get list of devices from Nautobot with optional filtering and pagination.
-    
+
     **🔷 This endpoint uses GraphQL** to query Nautobot for device data.
 
     Args:
@@ -126,7 +125,7 @@ async def get_device(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get device details from Nautobot by device ID.
-    
+
     **🔷 This endpoint uses GraphQL** to fetch detailed device information.
     """
     try:
@@ -190,7 +189,7 @@ async def check_ip(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Check if an IP address exists in Nautobot.
-    
+
     **🔷 This endpoint uses GraphQL** to query IP address availability.
     """
     try:
@@ -248,7 +247,7 @@ async def onboard_device(
     current_user: dict = Depends(require_permission("devices.onboard", "execute")),
 ):
     """Onboard a new device to Nautobot.
-    
+
     **⚙️ This endpoint triggers a Nautobot Job** (Sync Devices From Network).
     """
     try:
@@ -350,7 +349,7 @@ async def add_device(
 ):
     """
     Orchestrated endpoint to add a device with interfaces to Nautobot.
-    
+
     **🔶 This endpoint uses REST API** to create devices via Nautobot's REST endpoints.
 
     Workflow:
@@ -376,7 +375,7 @@ async def sync_network_data(
     current_user: dict = Depends(require_permission("nautobot.devices", "write")),
 ):
     """Sync network data with Nautobot.
-    
+
     **⚙️ This endpoint triggers a Nautobot Job** (Sync Network Data From Network).
     """
     try:

@@ -34,7 +34,7 @@ async def get_dcim_interfaces(
 ):
     """
     Get device interfaces from Nautobot DCIM.
-    
+
     **🔶 This endpoint uses REST API** to query Nautobot DCIM interfaces.
 
     Query parameters:

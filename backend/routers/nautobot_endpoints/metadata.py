@@ -25,7 +25,7 @@ async def get_locations(
     current_user: dict = Depends(require_permission("nautobot.locations", "read")),
 ):
     """Get list of locations from Nautobot with parent and children relationships.
-    
+
     **🔷 This endpoint uses GraphQL** to fetch hierarchical location data.
     """
     try:
@@ -82,7 +82,7 @@ async def get_namespaces(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get list of namespaces from Nautobot.
-    
+
     **🔷 This endpoint uses GraphQL** to fetch namespace data.
     """
     try:
@@ -116,7 +116,7 @@ async def get_nautobot_stats(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get Nautobot statistics with 10-minute caching.
-    
+
     **🔶 This endpoint uses REST API** to fetch aggregated statistics.
     """
     from datetime import datetime, timezone, timedelta
@@ -213,7 +213,7 @@ async def get_nautobot_roles(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get Nautobot device roles.
-    
+
     **🔶 This endpoint uses REST API** to fetch roles.
     """
     try:
@@ -361,7 +361,7 @@ async def get_nautobot_secret_groups(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get Nautobot secret groups.
-    
+
     **🔷 This endpoint uses GraphQL** to fetch secret groups.
     """
     try:
@@ -438,7 +438,7 @@ async def get_software_versions(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get list of software versions from Nautobot.
-    
+
     **🔷 This endpoint uses GraphQL** to fetch software versions.
 
     Args:
@@ -514,7 +514,7 @@ async def get_vlans(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get list of VLANs from Nautobot.
-    
+
     **🔷 This endpoint uses GraphQL** to fetch VLANs.
 
     Args:
@@ -624,7 +624,7 @@ async def get_interface_types(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get list of interface type choices from Nautobot.
-    
+
     **🔶 This endpoint uses REST API** (OPTIONS method) to fetch interface type choices.
 
     Uses OPTIONS request to get field choices from the interfaces endpoint.
@@ -762,7 +762,7 @@ async def get_job_results(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get job results from Nautobot.
-    
+
     **🔶 This endpoint uses REST API** to fetch job execution results.
     """
     try:
@@ -794,7 +794,7 @@ async def nautobot_health_check(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Simple health check to verify Nautobot connectivity.
-    
+
     **🔶 This endpoint uses REST API** to verify connection.
     """
     try:
@@ -836,13 +836,15 @@ async def nautobot_health_check(
             )
 
 
-@router.get("/devices/{device_id}/details", summary="🔷 GraphQL: Get Detailed Device Info")
+@router.get(
+    "/devices/{device_id}/details", summary="🔷 GraphQL: Get Detailed Device Info"
+)
 async def get_device_details(
     device_id: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """Get detailed device information using the comprehensive devices.md query.
-    
+
     **🔷 This endpoint uses GraphQL** to fetch comprehensive device details.
     """
     try:
@@ -1117,7 +1119,7 @@ async def offboard_device(
     current_user: dict = Depends(require_permission("devices.offboard", "execute")),
 ):
     """Offboard a device by removing it or applying configured offboarding values.
-    
+
     **🟠 This endpoint uses multiple APIs** including GraphQL and REST for device offboarding.
     """
     try:

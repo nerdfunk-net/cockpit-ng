@@ -31,7 +31,7 @@ async def get_ipam_prefixes(
 ):
     """
     Get IP prefixes from Nautobot IPAM.
-    
+
     **🔶 This endpoint uses REST API** to query Nautobot IPAM prefixes.
 
     Query parameters:

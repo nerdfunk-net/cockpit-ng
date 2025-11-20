@@ -20,7 +20,7 @@ async def assign_ip_address_to_interface(
 ):
     """
     Assign an IP address to an interface in Nautobot.
-    
+
     **🔶 This endpoint uses REST API** to create IP address to interface assignments.
 
     This endpoint creates an IP address to interface assignment using the
