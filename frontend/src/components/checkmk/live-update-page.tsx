@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Search, X, ChevronLeft, ChevronRight, RotateCcw, GitCompare, RefreshCw, ChevronDown } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useApi } from '@/hooks/use-api'
 import { useAuthStore } from '@/lib/auth-store'
+import { SearchableDropdown } from '@/components/shared/searchable-dropdown'
 
 // Types
 interface Device {
@@ -162,12 +163,8 @@ export default function LiveUpdatePage() {
   // Multi-select role filter state (checkbox-based)
   const [roleFilters, setRoleFilters] = useState<Record<string, boolean>>({})
 
-  // Location filter state - searchable dropdown (like Nautobot Sync Devices)
-  const [locationSearch, setLocationSearch] = useState<string>('')
-  const [showLocationDropdown, setShowLocationDropdown] = useState<boolean>(false)
-  const [selectedLocationId, setSelectedLocationId] = useState<string>('')
-  const [locationFiltered, setLocationFiltered] = useState<string[]>([])
-  const locationContainerRef = useRef<HTMLDivElement | null>(null)
+  // Location filter state - searchable dropdown
+  const [selectedLocation, setSelectedLocation] = useState<string>('')
 
   // Sorting state
   const [sortColumn, setSortColumn] = useState('')
@@ -274,8 +271,6 @@ export default function LiveUpdatePage() {
           })
           setRoleFilters(initialRoleFilters)
 
-          // Initialize location filtered list with all locations
-          setLocationFiltered(Array.from(newFilterOptions.locations))
         }
 
         setStatusMessage(null)
@@ -315,9 +310,9 @@ export default function LiveUpdatePage() {
       }
 
       // Location search filter (text-based searchable dropdown)
-      if (selectedLocationId && locationSearch) {
+      if (selectedLocation) {
         const deviceLocation = device.location?.name || ''
-        if (deviceLocation !== locationSearch) return false
+        if (deviceLocation !== selectedLocation) return false
       }
 
       // Header filters (keeping status filter as simple select)
@@ -348,7 +343,7 @@ export default function LiveUpdatePage() {
 
     setFilteredDevices(filtered)
     setCurrentPage(0) // Reset to first page when filters change
-  }, [devices, deviceNameFilter, roleFilters, locationSearch, selectedLocationId, statusFilter, sortColumn, sortOrder])
+  }, [devices, deviceNameFilter, roleFilters, selectedLocation, statusFilter, sortColumn, sortOrder])
 
   // Reset all filters
   const resetFilters = useCallback(() => {
@@ -368,11 +363,8 @@ export default function LiveUpdatePage() {
     setRoleFilters(resetRoleFilters)
 
     // Reset location search
-    setLocationSearch('')
-    setSelectedLocationId('')
-    setShowLocationDropdown(false)
-    setLocationFiltered(Array.from(filterOptions.locations))
-  }, [devices, filterOptions.roles, filterOptions.locations])
+    setSelectedLocation('')
+  }, [devices, filterOptions.roles])
 
   // Actions
   const handleGetDiff = useCallback(async (device: Device) => {
@@ -619,23 +611,7 @@ export default function LiveUpdatePage() {
 
   useEffect(() => {
     applyFilters()
-  }, [applyFilters, devices, deviceNameFilter, locationSearch, selectedLocationId, roleFilter, sortColumn, sortOrder, statusFilter])
-
-  // Click outside to close location dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (locationContainerRef.current && !locationContainerRef.current.contains(event.target as Node)) {
-        setShowLocationDropdown(false)
-      }
-    }
-
-    if (showLocationDropdown) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
-    }
-
-    return undefined
-  }, [showLocationDropdown])
+  }, [applyFilters, devices, deviceNameFilter, selectedLocation, roleFilter, sortColumn, sortOrder, statusFilter])
 
   // Helper functions
   const getStatusBadgeVariant = (status: string) => {
@@ -659,7 +635,7 @@ export default function LiveUpdatePage() {
     deviceNameFilter,
     roleFilter,
     statusFilter,
-    locationSearch
+    selectedLocation
   ].filter(Boolean).length +
   // Add count for role filters (if any are deselected)
   (Object.keys(roleFilters).length > 0 && Object.values(roleFilters).filter(Boolean).length < filterOptions.roles.size ? 1 : 0)
@@ -893,56 +869,14 @@ export default function LiveUpdatePage() {
                     </div>
                   </th>
                   <th className="text-left p-2 font-medium">
-                    <div className="space-y-1">
-                      <div>Location</div>
-                      <div className="relative" ref={locationContainerRef}>
-                        <Input
-                          placeholder="Filter by location..."
-                          value={locationSearch}
-                          onChange={(e) => {
-                            const q = e.target.value
-                            setLocationSearch(q)
-                            if (!q.trim()) {
-                              setLocationFiltered(Array.from(filterOptions.locations))
-                              setSelectedLocationId('')
-                            } else {
-                              setLocationFiltered(
-                                Array.from(filterOptions.locations).filter(loc =>
-                                  loc.toLowerCase().includes(q.toLowerCase())
-                                )
-                              )
-                            }
-                            setShowLocationDropdown(true)
-                          }}
-                          onFocus={() => setShowLocationDropdown(true)}
-                          className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
-                        />
-                        {showLocationDropdown && locationFiltered.length > 0 && (
-                          <div
-                            className="fixed z-[99999] mt-1 bg-white border border-gray-300 rounded-md shadow-xl max-h-60 overflow-y-auto min-w-[200px]"
-                            style={{
-                              top: locationContainerRef.current?.getBoundingClientRect().bottom ?? 0,
-                              left: locationContainerRef.current?.getBoundingClientRect().left ?? 0,
-                              width: locationContainerRef.current?.getBoundingClientRect().width ?? 'auto'
-                            }}
-                          >
-                            {locationFiltered.map(loc => (
-                              <div
-                                key={`live-update-location-${loc}`}
-                                className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
-                                onClick={() => {
-                                  setSelectedLocationId(loc)
-                                  setLocationSearch(loc)
-                                  setShowLocationDropdown(false)
-                                }}
-                              >
-                                {loc}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <SearchableDropdown
+                      label="Location"
+                      placeholder="Filter by location..."
+                      options={Array.from(filterOptions.locations).sort()}
+                      value={selectedLocation}
+                      onSelect={setSelectedLocation}
+                      onClear={() => setSelectedLocation('')}
+                    />
                   </th>
                   <th className="text-left p-2 font-medium">
                     <div className="space-y-1">

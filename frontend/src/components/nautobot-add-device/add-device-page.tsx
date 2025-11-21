@@ -1846,7 +1846,7 @@ export function AddDevicePage() {
                                 <SelectValue placeholder="Select..." />
                               </SelectTrigger>
                               <SelectContent>
-                                {customFieldChoices[field.key]?.map((choice, idx) => {
+                                {customFieldChoices[field.key]?.map((choice) => {
                                   // Handle both string and object choices
                                   const choiceValue = typeof choice === 'object' && choice !== null
                                     ? (choice as { value?: string; id?: string }).value || (choice as { value?: string; id?: string }).id || JSON.stringify(choice)

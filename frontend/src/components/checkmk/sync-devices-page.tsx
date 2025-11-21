@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuItem
 } from '@/components/ui/dropdown-menu'
+import { SearchableDropdown } from '@/components/shared/searchable-dropdown'
 
 interface Device {
   id: string
@@ -203,12 +204,8 @@ export function CheckMKSyncDevicesPage() {
   const [statusFilters, setStatusFilters] = useState<Record<string, boolean>>({})
   const [siteFilters, setSiteFilters] = useState<Record<string, boolean>>({})
 
-  // Location filter state - searchable dropdown (like Nautobot Sync Devices)
-  const [locationSearch, setLocationSearch] = useState<string>('')
-  const [showLocationDropdown, setShowLocationDropdown] = useState<boolean>(false)
-  const [selectedLocationId, setSelectedLocationId] = useState<string>('')
-  const [locationFiltered, setLocationFiltered] = useState<string[]>([])
-  const locationContainerRef = useRef<HTMLDivElement | null>(null)
+  // Location filter state - searchable dropdown
+  const [selectedLocation, setSelectedLocation] = useState<string>('')
   const [defaultSite, setDefaultSite] = useState<string>('cmk')
   const [selectedDeviceForView, setSelectedDeviceForView] = useState<Device | null>(null)
   const [selectedDeviceForDiff, setSelectedDeviceForDiff] = useState<Device | null>(null)
@@ -478,10 +475,7 @@ export function CheckMKSyncDevicesPage() {
       setCheckmkStatusFilters({ equal: true, diff: true, missing: true })
       setRoleFilters({})
       setStatusFilters({})
-      setLocationSearch('')
-      setSelectedLocationId('')
-      setShowLocationDropdown(false)
-      setLocationFiltered([])
+      setSelectedLocation('')
       setSiteFilters({})
       setSelectedDeviceForView(null)
       setSelectedDeviceForDiff(null)
@@ -663,12 +657,6 @@ export function CheckMKSyncDevicesPage() {
     }
   }, [availableStatuses])
 
-  useEffect(() => {
-    if (availableLocations.length > 0) {
-      // Initialize location filtered list with all locations
-      setLocationFiltered(availableLocations)
-    }
-  }, [availableLocations])
 
   useEffect(() => {
     if (availableSites.length > 0) {
@@ -702,21 +690,6 @@ export function CheckMKSyncDevicesPage() {
     setSelectedDevices(newSelected)
   }
 
-  // Click outside to close location dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (locationContainerRef.current && !locationContainerRef.current.contains(event.target as Node)) {
-        setShowLocationDropdown(false)
-      }
-    }
-
-    if (showLocationDropdown) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
-    }
-
-    return undefined
-  }, [showLocationDropdown])
 
   // Background job functions
   // Start new device comparison job using the APScheduler service
@@ -1124,7 +1097,7 @@ export function CheckMKSyncDevicesPage() {
       const statusMatch = Object.keys(statusFilters).length === 0 || statusFilters[device.status] === true
 
       // Check location search filter (text-based searchable dropdown)
-      const locationMatch = !selectedLocationId || !locationSearch || device.location === locationSearch
+      const locationMatch = !selectedLocation || device.location === selectedLocation
 
       // Check site checkbox filters
       const deviceSite = getSiteFromDevice(device, defaultSite)
@@ -1139,7 +1112,7 @@ export function CheckMKSyncDevicesPage() {
         checkmkStatusMatch
       )
     })
-  }, [devices, filters, checkmkStatusFilters, roleFilters, statusFilters, locationSearch, selectedLocationId, siteFilters, defaultSite])
+  }, [devices, filters, checkmkStatusFilters, roleFilters, statusFilters, selectedLocation, siteFilters, defaultSite])
 
   // Pagination logic (use filtered devices)
   const totalPages = Math.ceil(filteredDevices.length / itemsPerPage)
@@ -1180,10 +1153,7 @@ export function CheckMKSyncDevicesPage() {
     }, {})
     setStatusFilters(resetStatusFilters)
     // Reset location search
-    setLocationSearch('')
-    setSelectedLocationId('')
-    setShowLocationDropdown(false)
-    setLocationFiltered(availableLocations)
+    setSelectedLocation('')
     // Reset site filters to all true
     const resetSiteFilters = availableSites.reduce((acc: Record<string, boolean>, site: string) => {
       acc[site] = true
@@ -1406,56 +1376,14 @@ export function CheckMKSyncDevicesPage() {
 
                     {/* Location Filter - searchable dropdown */}
                     <td className="px-4 py-3 w-40">
-                      <div className="space-y-1 relative" ref={locationContainerRef}>
-                        <Label className="text-xs font-medium text-gray-600">Location</Label>
-                        <div className="relative">
-                          <Input
-                            placeholder="Filter by location..."
-                            value={locationSearch}
-                            onChange={(e) => {
-                              const q = e.target.value
-                              setLocationSearch(q)
-                              if (!q.trim()) {
-                                setLocationFiltered(availableLocations)
-                                setSelectedLocationId('')
-                              } else {
-                                setLocationFiltered(
-                                  availableLocations.filter(loc =>
-                                    loc.toLowerCase().includes(q.toLowerCase())
-                                  )
-                                )
-                              }
-                              setShowLocationDropdown(true)
-                            }}
-                            onFocus={() => setShowLocationDropdown(true)}
-                            className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
-                          />
-                          {showLocationDropdown && locationFiltered.length > 0 && (
-                            <div
-                              className="fixed z-[99999] mt-1 bg-white border border-gray-300 rounded-md shadow-xl max-h-60 overflow-y-auto min-w-[200px]"
-                              style={{
-                                top: locationContainerRef.current?.getBoundingClientRect().bottom ?? 0,
-                                left: locationContainerRef.current?.getBoundingClientRect().left ?? 0,
-                                width: locationContainerRef.current?.getBoundingClientRect().width ?? 'auto'
-                              }}
-                            >
-                              {locationFiltered.map(loc => (
-                                <div
-                                  key={loc}
-                                  className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
-                                  onClick={() => {
-                                    setSelectedLocationId(loc)
-                                    setLocationSearch(loc)
-                                    setShowLocationDropdown(false)
-                                  }}
-                                >
-                                  {loc}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                      <SearchableDropdown
+                        label="Location"
+                        placeholder="Filter by location..."
+                        options={availableLocations}
+                        value={selectedLocation}
+                        onSelect={setSelectedLocation}
+                        onClear={() => setSelectedLocation('')}
+                      />
                     </td>
 
                     {/* CheckMK Status Filter */}
