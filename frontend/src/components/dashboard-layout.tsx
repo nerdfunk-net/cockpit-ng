@@ -36,30 +36,9 @@ function DashboardLayoutInner({ children, className }: DashboardLayoutProps) {
         setIsLoading(false)
 
         const currentState = useAuthStore.getState()
-        
-        // Debug: Check sessionStorage for login data
-        if (typeof window !== 'undefined') {
-          const lastLogin = sessionStorage.getItem('last_login_data')
-          if (lastLogin) {
-            console.log('='.repeat(80))
-            console.log('DASHBOARD LAYOUT - Last login data from sessionStorage:')
-            console.log(lastLogin)
-            console.log('='.repeat(80))
-          }
-        }
-        
-        console.log('[DASHBOARD] Current auth state:', {
-          isAuthenticated: currentState.isAuthenticated,
-          hasToken: !!currentState.token,
-          hasUser: !!currentState.user,
-          userRoles: currentState.user?.roles,
-        })
-        
+
         if (typeof window !== 'undefined' && !currentState.isAuthenticated && !currentState.token) {
-          console.log('[DASHBOARD] No authentication found, redirecting to login')
           window.location.href = '/login'
-        } else {
-          console.log('[DASHBOARD] Authentication OK, staying on page')
         }
       }, 500) // Increased timeout for async login
     }

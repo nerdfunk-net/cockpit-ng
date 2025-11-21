@@ -432,10 +432,53 @@ def ensure_admin_user_permissions() -> None:
             conn.commit()
 
 
-def create_default_admin() -> Optional[Dict[str, Any]]:
-    """Create a default admin user if no users exist."""
-    _ensure_users_database()
+def _ensure_admin_role_assigned(user_id: Optional[int] = None) -> None:
+    """Ensure admin user has admin role assigned in RBAC system.
 
+    Args:
+        user_id: User ID to assign admin role to. If None, looks up admin user.
+    """
+    try:
+        # Avoid circular import
+        import rbac_manager as rbac
+
+        # Get admin user ID if not provided
+        if user_id is None:
+            admin_user = get_user_by_username("admin")
+            if not admin_user:
+                return
+            user_id = admin_user["id"]
+
+        # Get or create admin role
+        admin_role = rbac.get_role_by_name("admin")
+        if not admin_role:
+            # Run seed script to create roles and permissions (silently)
+            try:
+                import seed_rbac
+                seed_rbac.main(verbose=False)
+                admin_role = rbac.get_role_by_name("admin")
+                import logging
+                logging.getLogger(__name__).info("Initialized RBAC system with default roles and permissions")
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Failed to seed RBAC: {e}")
+                return
+
+        if admin_role:
+            # Check if user already has admin role
+            user_roles = rbac.get_user_roles(user_id)
+            if not any(role["name"] == "admin" for role in user_roles):
+                # Assign admin role
+                rbac.assign_role_to_user(user_id, admin_role["id"])
+                import logging
+                logging.getLogger(__name__).info(f"Assigned admin role to user ID {user_id}")
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to ensure admin role assignment: {e}")
+
+
+def _create_default_admin_without_rbac() -> Optional[Dict[str, Any]]:
+    """Create default admin user without RBAC assignment (to avoid circular imports at module init)."""
     # Check if any users exist
     with _get_conn() as conn:
         count = conn.execute(
@@ -456,13 +499,28 @@ def create_default_admin() -> Optional[Dict[str, Any]]:
             permissions=PERMISSIONS_ADMIN,
             debug=True,
         )
+        import logging
+        logging.getLogger(__name__).info(f"Created default admin user (RBAC role will be assigned at startup)")
         return admin_user
-    except Exception:
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to create default admin: {e}")
         return None
+
+
+def ensure_admin_has_rbac_role() -> None:
+    """Ensure admin user has admin role assigned - called at app startup to avoid circular imports."""
+    try:
+        admin_user = get_user_by_username("admin")
+        if admin_user:
+            _ensure_admin_role_assigned(admin_user["id"])
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to ensure admin RBAC role: {e}")
 
 
 # Initialize database on import
 _ensure_users_database()
 
-# Create default admin if no users exist
-create_default_admin()
+# Create default admin if no users exist (but don't assign RBAC role yet - that happens at app startup)
+_create_default_admin_without_rbac()

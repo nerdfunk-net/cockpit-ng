@@ -303,8 +303,8 @@ export function CSVUploadModal({
                 <div className="border rounded-lg p-3 bg-muted/20 max-h-40 overflow-y-auto">
                   <h4 className="font-medium text-sm mb-2">Validation Issues</h4>
                   <ul className="space-y-1 text-xs">
-                    {parseResult.validationErrors.map((error, index) => (
-                      <li key={`${error.deviceName}-${error.field}-${index}`} className="flex items-start gap-2">
+                    {parseResult.validationErrors.map((error) => (
+                      <li key={`${error.deviceName}-${error.field}-${error.message}`} className="flex items-start gap-2">
                         {error.severity === 'error' ? (
                           <XCircle className="h-3 w-3 text-red-500 mt-0.5 flex-shrink-0" />
                         ) : (

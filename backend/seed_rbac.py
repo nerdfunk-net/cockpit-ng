@@ -9,9 +9,10 @@ This script initializes the RBAC system with:
 import rbac_manager as rbac
 
 
-def seed_permissions():
+def seed_permissions(verbose: bool = True):
     """Create all default permissions."""
-    print("Creating permissions...")
+    if verbose:
+        print("Creating permissions...")
 
     permissions = [
         # Nautobot permissions
@@ -78,16 +79,20 @@ def seed_permissions():
         try:
             rbac.create_permission(resource, action, description)
             created_count += 1
-            print(f"  ✓ Created permission: {resource}:{action}")
+            if verbose:
+                print(f"  ✓ Created permission: {resource}:{action}")
         except ValueError as e:
-            print(f"  - Skipped: {e}")
+            if verbose:
+                print(f"  - Skipped: {e}")
 
-    print(f"\nCreated {created_count} permissions\n")
+    if verbose:
+        print(f"\nCreated {created_count} permissions\n")
 
 
-def seed_roles():
+def seed_roles(verbose: bool = True):
     """Create default system roles."""
-    print("Creating roles...")
+    if verbose:
+        print("Creating roles...")
 
     roles = [
         ("admin", "Full system administrator with all permissions", True),
@@ -109,34 +114,41 @@ def seed_roles():
         try:
             role = rbac.create_role(name, description, is_system)
             role_objects[name] = role
-            print(f"  ✓ Created role: {name}")
+            if verbose:
+                print(f"  ✓ Created role: {name}")
         except ValueError as e:
-            print(f"  - Skipped: {e}")
+            if verbose:
+                print(f"  - Skipped: {e}")
             role = rbac.get_role_by_name(name)
             role_objects[name] = role
 
-    print(f"\nCreated {len(role_objects)} roles\n")
+    if verbose:
+        print(f"\nCreated {len(role_objects)} roles\n")
     return role_objects
 
 
-def assign_permissions_to_roles(roles):
+def assign_permissions_to_roles(roles, verbose: bool = True):
     """Assign permissions to roles."""
-    print("Assigning permissions to roles...")
+    if verbose:
+        print("Assigning permissions to roles...")
 
     # Get all permissions
     all_permissions = rbac.list_permissions()
     perm_map = {f"{p['resource']}:{p['action']}": p["id"] for p in all_permissions}
 
     # Admin: Full access to everything
-    print("\n  Assigning permissions to 'admin' role...")
+    if verbose:
+        print("\n  Assigning permissions to 'admin' role...")
     admin_count = 0
     for perm_id in perm_map.values():
         rbac.assign_permission_to_role(roles["admin"]["id"], perm_id, granted=True)
         admin_count += 1
-    print(f"    ✓ Assigned {admin_count} permissions")
+    if verbose:
+        print(f"    ✓ Assigned {admin_count} permissions")
 
     # Operator: Manage devices and configs, read settings
-    print("\n  Assigning permissions to 'operator' role...")
+    if verbose:
+        print("\n  Assigning permissions to 'operator' role...")
     operator_perms = [
         # Nautobot
         "nautobot.devices:read",
@@ -181,10 +193,12 @@ def assign_permissions_to_roles(roles):
                 roles["operator"]["id"], perm_map[perm_key], granted=True
             )
             operator_count += 1
-    print(f"    ✓ Assigned {operator_count} permissions")
+    if verbose:
+        print(f"    ✓ Assigned {operator_count} permissions")
 
     # Network Engineer: Full network tools, read-only for system
-    print("\n  Assigning permissions to 'network_engineer' role...")
+    if verbose:
+        print("\n  Assigning permissions to 'network_engineer' role...")
     network_engineer_perms = [
         # Nautobot
         "nautobot.devices:read",
@@ -229,10 +243,12 @@ def assign_permissions_to_roles(roles):
                 roles["network_engineer"]["id"], perm_map[perm_key], granted=True
             )
             network_count += 1
-    print(f"    ✓ Assigned {network_count} permissions")
+    if verbose:
+        print(f"    ✓ Assigned {network_count} permissions")
 
     # Viewer: Read-only access to everything except user management
-    print("\n  Assigning permissions to 'viewer' role...")
+    if verbose:
+        print("\n  Assigning permissions to 'viewer' role...")
     viewer_count = 0
     for perm_key, perm_id in perm_map.items():
         # Grant all read permissions, skip write/delete/execute
@@ -244,39 +260,47 @@ def assign_permissions_to_roles(roles):
         ):
             rbac.assign_permission_to_role(roles["viewer"]["id"], perm_id, granted=True)
             viewer_count += 1
-    print(f"    ✓ Assigned {viewer_count} permissions")
+    if verbose:
+        print(f"    ✓ Assigned {viewer_count} permissions")
 
-    print("\n✅ Permission assignment complete\n")
+    if verbose:
+        print("\n✅ Permission assignment complete\n")
 
 
-def main():
-    """Run the seeding process."""
-    print("\n" + "=" * 60)
-    print("RBAC System Initialization")
-    print("=" * 60 + "\n")
+def main(verbose: bool = True):
+    """Run the seeding process.
+
+    Args:
+        verbose: If True, print progress messages. If False, run silently.
+    """
+    if verbose:
+        print("\n" + "=" * 60)
+        print("RBAC System Initialization")
+        print("=" * 60 + "\n")
 
     # Create permissions
-    seed_permissions()
+    seed_permissions(verbose=verbose)
 
     # Create roles
-    roles = seed_roles()
+    roles = seed_roles(verbose=verbose)
 
     # Assign permissions to roles
-    assign_permissions_to_roles(roles)
+    assign_permissions_to_roles(roles, verbose=verbose)
 
-    print("=" * 60)
-    print("✅ RBAC system seeded successfully!")
-    print("=" * 60 + "\n")
+    if verbose:
+        print("=" * 60)
+        print("✅ RBAC system seeded successfully!")
+        print("=" * 60 + "\n")
 
-    # Print summary
-    print("Summary:")
-    print(f"  - Permissions: {len(rbac.list_permissions())}")
-    print(f"  - Roles: {len(rbac.list_roles())}")
-    print("\nAvailable roles:")
-    for role in rbac.list_roles():
-        perms = rbac.get_role_permissions(role["id"])
-        print(f"  - {role['name']}: {len(perms)} permissions")
-    print()
+        # Print summary
+        print("Summary:")
+        print(f"  - Permissions: {len(rbac.list_permissions())}")
+        print(f"  - Roles: {len(rbac.list_roles())}")
+        print("\nAvailable roles:")
+        for role in rbac.list_roles():
+            perms = rbac.get_role_permissions(role["id"])
+            print(f"  - {role['name']}: {len(perms)} permissions")
+        print()
 
 
 if __name__ == "__main__":

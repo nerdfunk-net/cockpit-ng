@@ -1852,7 +1852,7 @@ export function AddDevicePage() {
                                     ? (choice as { value?: string; id?: string }).value || (choice as { value?: string; id?: string }).id || JSON.stringify(choice)
                                     : String(choice)
                                   return (
-                                    <SelectItem key={`${field.key}-choice-${idx}`} value={choiceValue}>
+                                    <SelectItem key={`${field.key}-${choiceValue}`} value={choiceValue}>
                                       {choiceValue}
                                     </SelectItem>
                                   )

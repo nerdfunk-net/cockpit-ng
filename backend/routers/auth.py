@@ -33,13 +33,6 @@ async def login(user_data: UserLogin):
             # Get user with RBAC roles
             user_with_roles = rbac.get_user_with_rbac(user["id"])
 
-            logger.info(f"get_user_with_rbac returned: {user_with_roles is not None}")
-            if user_with_roles:
-                logger.info(f"user_with_roles keys: {user_with_roles.keys()}")
-                logger.info(
-                    f"Roles in user_with_roles: {user_with_roles.get('roles', [])}"
-                )
-
             if not user_with_roles:
                 logger.warning(
                     f"get_user_with_rbac returned None for user_id={user['id']}, using base user"
@@ -48,13 +41,22 @@ async def login(user_data: UserLogin):
                 user_with_roles["roles"] = []
                 user_with_roles["permissions"] = []
 
-            logger.info(
-                f"Login for user {user['username']}: roles from DB = {user_with_roles.get('roles', [])}"
-            )
-
             # Extract role names for the response
             role_names = [r["name"] for r in user_with_roles.get("roles", [])]
-            logger.info(f"Role names to return: {role_names}")
+
+            # Set primary role (for legacy compatibility)
+            # Priority: admin > operator > network_engineer > viewer > first role
+            primary_role = None
+            if "admin" in role_names:
+                primary_role = "admin"
+            elif "operator" in role_names:
+                primary_role = "operator"
+            elif "network_engineer" in role_names:
+                primary_role = "network_engineer"
+            elif "viewer" in role_names:
+                primary_role = "viewer"
+            elif role_names:
+                primary_role = role_names[0]
 
             access_token_expires = timedelta(
                 minutes=settings.access_token_expire_minutes
@@ -74,15 +76,13 @@ async def login(user_data: UserLogin):
                 "username": user_with_roles["username"],
                 "realname": user_with_roles["realname"],
                 "email": user_with_roles.get("email"),
-                "role": user_with_roles.get("role"),  # Legacy field for compatibility
+                "role": primary_role,  # Legacy field for compatibility
                 "roles": role_names,  # New RBAC roles array
                 "permissions": user_with_roles.get(
                     "permissions", []
                 ),  # New RBAC permissions
                 "debug": user_with_roles.get("debug", False),
             }
-
-            logger.info(f"Response user object: {response_user}")
 
             return LoginResponse(
                 access_token=access_token,

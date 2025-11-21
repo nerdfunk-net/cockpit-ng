@@ -202,6 +202,14 @@ async def startup_services():
     """Initialize all services on startup."""
     logger.info("=== Application startup - initializing services ===")
 
+    # Ensure admin user has RBAC role assigned (must happen before other services)
+    try:
+        import user_db_manager
+        user_db_manager.ensure_admin_has_rbac_role()
+        logger.info("Admin RBAC role assignment completed")
+    except Exception as e:
+        logger.error(f"Failed to ensure admin RBAC role: {e}")
+
     # Initialize APScheduler service first
     try:
         global apscheduler_service

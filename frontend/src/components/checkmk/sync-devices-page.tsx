@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
 import { Button } from '@/components/ui/button'
@@ -201,8 +201,14 @@ export function CheckMKSyncDevicesPage() {
   })
   const [roleFilters, setRoleFilters] = useState<Record<string, boolean>>({})
   const [statusFilters, setStatusFilters] = useState<Record<string, boolean>>({})
-  const [locationFilters, setLocationFilters] = useState<Record<string, boolean>>({})
   const [siteFilters, setSiteFilters] = useState<Record<string, boolean>>({})
+
+  // Location filter state - searchable dropdown (like Nautobot Sync Devices)
+  const [locationSearch, setLocationSearch] = useState<string>('')
+  const [showLocationDropdown, setShowLocationDropdown] = useState<boolean>(false)
+  const [selectedLocationId, setSelectedLocationId] = useState<string>('')
+  const [locationFiltered, setLocationFiltered] = useState<string[]>([])
+  const locationContainerRef = useRef<HTMLDivElement | null>(null)
   const [defaultSite, setDefaultSite] = useState<string>('cmk')
   const [selectedDeviceForView, setSelectedDeviceForView] = useState<Device | null>(null)
   const [selectedDeviceForDiff, setSelectedDeviceForDiff] = useState<Device | null>(null)
@@ -472,7 +478,10 @@ export function CheckMKSyncDevicesPage() {
       setCheckmkStatusFilters({ equal: true, diff: true, missing: true })
       setRoleFilters({})
       setStatusFilters({})
-      setLocationFilters({})
+      setLocationSearch('')
+      setSelectedLocationId('')
+      setShowLocationDropdown(false)
+      setLocationFiltered([])
       setSiteFilters({})
       setSelectedDeviceForView(null)
       setSelectedDeviceForDiff(null)
@@ -656,15 +665,8 @@ export function CheckMKSyncDevicesPage() {
 
   useEffect(() => {
     if (availableLocations.length > 0) {
-      setLocationFilters(prev => {
-        const newFilters = { ...prev }
-        availableLocations.forEach(location => {
-          if (!(location in newFilters)) {
-            newFilters[location] = true // Default to selected
-          }
-        })
-        return newFilters
-      })
+      // Initialize location filtered list with all locations
+      setLocationFiltered(availableLocations)
     }
   }, [availableLocations])
 
@@ -699,6 +701,22 @@ export function CheckMKSyncDevicesPage() {
     }
     setSelectedDevices(newSelected)
   }
+
+  // Click outside to close location dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (locationContainerRef.current && !locationContainerRef.current.contains(event.target as Node)) {
+        setShowLocationDropdown(false)
+      }
+    }
+
+    if (showLocationDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+
+    return undefined
+  }, [showLocationDropdown])
 
   // Background job functions
   // Start new device comparison job using the APScheduler service
@@ -1104,10 +1122,10 @@ export function CheckMKSyncDevicesPage() {
       
       // Check status checkbox filters
       const statusMatch = Object.keys(statusFilters).length === 0 || statusFilters[device.status] === true
-      
-      // Check location checkbox filters
-      const locationMatch = Object.keys(locationFilters).length === 0 || locationFilters[device.location] === true
-      
+
+      // Check location search filter (text-based searchable dropdown)
+      const locationMatch = !selectedLocationId || !locationSearch || device.location === locationSearch
+
       // Check site checkbox filters
       const deviceSite = getSiteFromDevice(device, defaultSite)
       const siteMatch = Object.keys(siteFilters).length === 0 || siteFilters[deviceSite] === true
@@ -1121,7 +1139,7 @@ export function CheckMKSyncDevicesPage() {
         checkmkStatusMatch
       )
     })
-  }, [devices, filters, checkmkStatusFilters, roleFilters, statusFilters, locationFilters, siteFilters, defaultSite])
+  }, [devices, filters, checkmkStatusFilters, roleFilters, statusFilters, locationSearch, selectedLocationId, siteFilters, defaultSite])
 
   // Pagination logic (use filtered devices)
   const totalPages = Math.ceil(filteredDevices.length / itemsPerPage)
@@ -1161,12 +1179,11 @@ export function CheckMKSyncDevicesPage() {
       return acc
     }, {})
     setStatusFilters(resetStatusFilters)
-    // Reset location filters to all true
-    const resetLocationFilters = availableLocations.reduce((acc: Record<string, boolean>, location: string) => {
-      acc[location] = true
-      return acc
-    }, {})
-    setLocationFilters(resetLocationFilters)
+    // Reset location search
+    setLocationSearch('')
+    setSelectedLocationId('')
+    setShowLocationDropdown(false)
+    setLocationFiltered(availableLocations)
     // Reset site filters to all true
     const resetSiteFilters = availableSites.reduce((acc: Record<string, boolean>, site: string) => {
       acc[site] = true
@@ -1387,52 +1404,57 @@ export function CheckMKSyncDevicesPage() {
                       </div>
                     </td>
 
-                    {/* Location Filter */}
+                    {/* Location Filter - searchable dropdown */}
                     <td className="px-4 py-3 w-40">
-                      <div className="space-y-1">
+                      <div className="space-y-1 relative" ref={locationContainerRef}>
                         <Label className="text-xs font-medium text-gray-600">Location</Label>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-8 text-xs justify-between w-full">
-                              Location Filter
-                              {Object.values(locationFilters).filter(Boolean).length < availableLocations.length && (
-                                <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
-                                  {Object.values(locationFilters).filter(Boolean).length}
-                                </Badge>
-                              )}
-                              <ChevronDown className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" className="w-40">
-                            <DropdownMenuLabel className="text-xs">Filter by Location</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="cursor-pointer text-red-600 hover:bg-red-50"
-                              onSelect={() => {
-                                const resetLocationFilters = availableLocations.reduce((acc: Record<string, boolean>, location: string) => {
-                                  acc[location] = false
-                                  return acc
-                                }, {})
-                                setLocationFilters(resetLocationFilters)
-                                setCurrentPage(1)
+                        <div className="relative">
+                          <Input
+                            placeholder="Filter by location..."
+                            value={locationSearch}
+                            onChange={(e) => {
+                              const q = e.target.value
+                              setLocationSearch(q)
+                              if (!q.trim()) {
+                                setLocationFiltered(availableLocations)
+                                setSelectedLocationId('')
+                              } else {
+                                setLocationFiltered(
+                                  availableLocations.filter(loc =>
+                                    loc.toLowerCase().includes(q.toLowerCase())
+                                  )
+                                )
+                              }
+                              setShowLocationDropdown(true)
+                            }}
+                            onFocus={() => setShowLocationDropdown(true)}
+                            className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                          />
+                          {showLocationDropdown && locationFiltered.length > 0 && (
+                            <div
+                              className="fixed z-[99999] mt-1 bg-white border border-gray-300 rounded-md shadow-xl max-h-60 overflow-y-auto min-w-[200px]"
+                              style={{
+                                top: locationContainerRef.current?.getBoundingClientRect().bottom ?? 0,
+                                left: locationContainerRef.current?.getBoundingClientRect().left ?? 0,
+                                width: locationContainerRef.current?.getBoundingClientRect().width ?? 'auto'
                               }}
                             >
-                              Deselect all
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            {availableLocations.map((location) => (
-                              <DropdownMenuCheckboxItem
-                                key={location}
-                                checked={locationFilters[location] || false}
-                                onCheckedChange={(checked) =>
-                                  setLocationFilters(prev => ({ ...prev, [location]: !!checked }))
-                                }
-                              >
-                                {location}
-                              </DropdownMenuCheckboxItem>
-                            ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              {locationFiltered.map(loc => (
+                                <div
+                                  key={loc}
+                                  className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                                  onClick={() => {
+                                    setSelectedLocationId(loc)
+                                    setLocationSearch(loc)
+                                    setShowLocationDropdown(false)
+                                  }}
+                                >
+                                  {loc}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
 
