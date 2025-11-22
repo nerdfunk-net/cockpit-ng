@@ -918,24 +918,29 @@ export function CheckMKSyncDevicesPage() {
     try {
       const selectedDeviceList = Array.from(selectedDevices)
       const selectedDeviceData = devices.filter(device => selectedDeviceList.includes(device.id))
-      const deviceNames = selectedDeviceData.map(device => device.name)
+
+      // Separate devices into missing and existing
+      // Missing includes both 'missing' and 'host_not_found' statuses
+      const missingDevices = selectedDeviceData.filter(d => 
+        d.checkmk_status === 'missing' || d.checkmk_status === 'host_not_found'
+      )
+      const existingDevices = selectedDeviceData.filter(d => 
+        d.checkmk_status !== 'missing' && d.checkmk_status !== 'host_not_found'
+      )
 
       setStatusMessage({
         type: 'info',
-        message: `Syncing ${selectedDevices.size} devices: ${deviceNames.join(', ')}...`
+        message: `Processing ${selectedDevices.size} devices: ${existingDevices.length} to update, ${missingDevices.length} to add...`
       })
       setShowStatusModal(true)
 
       let syncedCount = 0
+      let addedCount = 0
       let errorCount = 0
       const syncErrors: string[] = []
 
-      // Sync each device individually
-      for (const deviceId of selectedDeviceList) {
-        const device = devices.find(d => d.id === deviceId)
-        if (!device) continue
-
-
+      // First, update existing devices
+      for (const device of existingDevices) {
         try {
           const response = await fetch(`/api/proxy/nb2cmk/device/${device.id}/update`, {
             method: 'POST',
@@ -963,13 +968,40 @@ export function CheckMKSyncDevicesPage() {
         } catch (error) {
           errorCount++
           const message = error instanceof Error ? error.message : 'Unknown error'
-          
-          // Check if it's a 404 error (device not found in CheckMK)
-          if (message.includes('404') || message.includes('Not Found') || message.includes('not found')) {
-            syncErrors.push(`${device.name}: Device not found in CheckMK (use Add instead of Sync)`)
+          syncErrors.push(`${device.name}: ${message}`)
+        }
+      }
+
+      // Then, add missing devices
+      for (const device of missingDevices) {
+        try {
+          const response = await fetch(`/api/proxy/nb2cmk/device/${device.id}/add`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          })
+
+          if (response.ok) {
+            addedCount++
+            // Update device status to 'equal' since it's now added
+            setDevices(prevDevices => 
+              prevDevices.map(d => 
+                d.id === device.id 
+                  ? { ...d, checkmk_status: 'equal' }
+                  : d
+              )
+            )
           } else {
-            syncErrors.push(`${device.name}: ${message}`)
+            const errorData = await response.json()
+            errorCount++
+            syncErrors.push(`${device.name}: ${errorData.detail || 'Unknown error'}`)
           }
+        } catch (error) {
+          errorCount++
+          const message = error instanceof Error ? error.message : 'Unknown error'
+          syncErrors.push(`${device.name}: ${message}`)
         }
       }
 
@@ -977,15 +1009,22 @@ export function CheckMKSyncDevicesPage() {
       setSelectedDevices(new Set())
 
       // Show final result
-      if (syncedCount > 0 && errorCount === 0) {
+      const totalSuccess = syncedCount + addedCount
+      if (totalSuccess > 0 && errorCount === 0) {
+        const successParts = []
+        if (syncedCount > 0) successParts.push(`updated ${syncedCount}`)
+        if (addedCount > 0) successParts.push(`added ${addedCount}`)
         setStatusMessage({
           type: 'success',
-          message: `Successfully synced all ${syncedCount} selected devices`
+          message: `Successfully ${successParts.join(' and ')} devices`
         })
-      } else if (syncedCount > 0 && errorCount > 0) {
+      } else if (totalSuccess > 0 && errorCount > 0) {
+        const successParts = []
+        if (syncedCount > 0) successParts.push(`updated ${syncedCount}`)
+        if (addedCount > 0) successParts.push(`added ${addedCount}`)
         setStatusMessage({
           type: 'warning',
-          message: `Synced ${syncedCount} devices, ${errorCount} failed. Errors: ${syncErrors.join('; ')}`
+          message: `Successfully ${successParts.join(' and ')} devices, ${errorCount} failed. Errors: ${syncErrors.join('; ')}`
         })
       } else {
         setStatusMessage({
@@ -996,7 +1035,7 @@ export function CheckMKSyncDevicesPage() {
       setShowStatusModal(true)
 
       // Auto-hide success message after 5 seconds
-      if (syncedCount > 0) {
+      if (totalSuccess > 0) {
         setTimeout(() => {
           setStatusMessage(null)
           setShowStatusModal(false)
@@ -1788,15 +1827,6 @@ export function CheckMKSyncDevicesPage() {
       {/* Show Diff Dialog */}
       <Dialog open={!!selectedDeviceForDiff} onOpenChange={(open) => {
         if (!open) setSelectedDeviceForDiff(null);
-        if (open && selectedDeviceForDiff) {
-          console.log('=== DIFF MODAL DEBUG ===', {
-            device: selectedDeviceForDiff,
-            normalized_config: selectedDeviceForDiff.normalized_config,
-            checkmk_config: selectedDeviceForDiff.checkmk_config,
-            diff: selectedDeviceForDiff.diff,
-            result_data: selectedDeviceForDiff.result_data
-          });
-        }
       }}>
         <DialogContent className="max-w-[95vw] w-[95vw] max-h-[90vh] overflow-hidden flex flex-col" style={{ resize: 'both', minWidth: '800px', minHeight: '500px' }}>
           <DialogHeader>
