@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
+import yaml
 
 from core.auth import require_permission
 
@@ -19,6 +20,60 @@ CONFIG_BASE_PATH = Path(__file__).parent.parent.parent / "config"
 
 class ConfigFileContent(BaseModel):
     content: str
+
+
+@router.post("/validate")
+async def validate_yaml_content(
+    file_content: ConfigFileContent,
+    current_user: dict = Depends(require_permission("configs.backup", "execute")),
+):
+    """Validate YAML content syntax.
+    
+    Args:
+        file_content: ConfigFileContent with YAML content to validate
+        current_user: Current authenticated user
+        
+    Returns:
+        Dict with validation result
+    """
+    try:
+        # Try to parse the YAML content
+        yaml.safe_load(file_content.content)
+        
+        logger.info(f"YAML validation successful for user: {current_user}")
+        return {
+            "success": True,
+            "valid": True,
+            "message": "YAML syntax is valid",
+        }
+        
+    except yaml.YAMLError as e:
+        # Get detailed error information
+        error_message = str(e)
+        error_line = None
+        error_column = None
+        
+        if hasattr(e, "problem_mark"):
+            mark = e.problem_mark
+            error_line = mark.line + 1  # +1 because line numbers are 0-based
+            error_column = mark.column + 1  # +1 because columns are 0-based
+            
+        logger.info(f"YAML validation failed for user: {current_user} - {error_message}")
+        return {
+            "success": True,
+            "valid": False,
+            "message": "YAML syntax error detected",
+            "error": error_message,
+            "line": error_line,
+            "column": error_column,
+        }
+        
+    except Exception as e:
+        logger.error(f"Unexpected error during YAML validation: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error validating YAML content: {str(e)}",
+        )
 
 
 @router.get("/{filename}")

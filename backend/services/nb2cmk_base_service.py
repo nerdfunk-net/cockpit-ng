@@ -118,33 +118,44 @@ class NautobotToCheckMKService:
             from services.nautobot import nautobot_service
 
             # Fetch device data from Nautobot including custom fields
-            query = """
-            query getDevice($deviceId: ID!) {
-              device(id: $deviceId) {
-                id
-                name
-                primary_ip4 {
-                  address
+            # Load query from configuration file
+            query = config_service.get_query("get_device_normalized")
+            if not query:
+                # Fallback to default query if not found in config
+                logger.warning(
+                    "Query 'get_device_normalized' not found in config, using fallback query"
+                )
+                query = """
+                query getDevice($deviceId: ID!) {
+                  device(id: $deviceId) {
+                    id
+                    name
+                    primary_ip4 {
+                      address
+                    }
+                    location {
+                      name
+                      parent {
+                        name
+                      }
+                    }
+                    role {
+                      name
+                    }
+                    platform {
+                      name
+                    }
+                    status {
+                      name
+                    }
+                    _custom_field_data
+                    tags {
+                      name
+                    }
+                  }
                 }
-                location {
-                  name
-                }
-                role {
-                  name
-                }
-                platform {
-                  name
-                }
-                status {
-                  name
-                }
-                _custom_field_data
-                tags {
-                  name
-                }
-              }
-            }
-            """
+                """
+            
             variables = {"deviceId": device_id}
             result = await nautobot_service.graphql_query(query, variables)
 

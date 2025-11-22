@@ -309,6 +309,8 @@ class DeviceNormalizationService:
                 f"Processing mapping config for device '{device_name}': {mapping_config}"
             )
 
+            logger.debug(f"Full device data: {device_data}")
+
             # Log device data structure for debugging
             logger.info(f"Device data keys: {list(device_data.keys())}")
             if "_custom_field_data" in device_data:

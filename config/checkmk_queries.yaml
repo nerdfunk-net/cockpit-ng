@@ -1,0 +1,32 @@
+---
+queries:
+  get_device_normalized: >
+    query getDevice($deviceId: ID!) {
+      device(id: $deviceId) {
+        id
+        name
+        primary_ip4 {
+          address
+        }
+        location {
+          name
+          parent {
+            name
+          }
+        }
+        role {
+          name
+        }
+        platform {
+          name
+        }
+        status {
+          name
+        }
+        _custom_field_data
+        tags {
+          name
+        }
+      }
+    }
+            

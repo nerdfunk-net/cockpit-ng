@@ -8,9 +8,16 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
-import { Loader2, CheckCircle, XCircle, Server, Settings, RotateCcw, Shield, FileText, Network } from 'lucide-react'
+import { Loader2, CheckCircle, XCircle, Server, Settings, RotateCcw, Shield, FileText, Network, AlertCircle } from 'lucide-react'
 
 interface CheckMKSettings {
   url: string
@@ -45,8 +52,17 @@ export default function CheckMKSettingsForm() {
   // YAML content states
   const [checkmkYaml, setCheckmkYaml] = useState('')
   const [snmpMappingYaml, setSnmpMappingYaml] = useState('')
+  const [checkmkQueriesYaml, setCheckmkQueriesYaml] = useState('')
   const [yamlLoading, setYamlLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('connection')
+  const [validating, setValidating] = useState(false)
+  const [validationError, setValidationError] = useState<{
+    message: string
+    error?: string
+    line?: number
+    column?: number
+  } | null>(null)
+  const [showValidationDialog, setShowValidationDialog] = useState(false)
 
   const showMessage = useCallback((msg: string, type: 'success' | 'error') => {
     setMessage(msg)
@@ -76,16 +92,20 @@ export default function CheckMKSettingsForm() {
   const loadYamlFiles = useCallback(async () => {
     try {
       setYamlLoading(true)
-      const [checkmkResponse, snmpResponse] = await Promise.all([
+      const [checkmkResponse, snmpResponse, queriesResponse] = await Promise.all([
         apiCall('config/checkmk.yaml'),
-        apiCall('config/snmp_mapping.yaml')
-      ]) as [{ success?: boolean; data?: string }, { success?: boolean; data?: string }]
+        apiCall('config/snmp_mapping.yaml'),
+        apiCall('config/checkmk_queries.yaml')
+      ]) as [{ success?: boolean; data?: string }, { success?: boolean; data?: string }, { success?: boolean; data?: string }]
       
       if (checkmkResponse.success) {
         setCheckmkYaml(checkmkResponse.data || '')
       }
       if (snmpResponse.success) {
         setSnmpMappingYaml(snmpResponse.data || '')
+      }
+      if (queriesResponse.success) {
+        setCheckmkQueriesYaml(queriesResponse.data || '')
       }
     } catch (error) {
       console.error('Error loading YAML files:', error)
@@ -169,7 +189,7 @@ export default function CheckMKSettingsForm() {
     setSettings(prev => ({ ...prev, [key]: value }))
   }
 
-  const saveYamlFile = async (filename: 'checkmk.yaml' | 'snmp_mapping.yaml', content: string) => {
+  const saveYamlFile = async (filename: 'checkmk.yaml' | 'snmp_mapping.yaml' | 'checkmk_queries.yaml', content: string) => {
     try {
       setYamlLoading(true)
       const response = await apiCall(`config/${filename}`, {
@@ -187,6 +207,37 @@ export default function CheckMKSettingsForm() {
       showMessage(`Error saving ${filename}`, 'error')
     } finally {
       setYamlLoading(false)
+    }
+  }
+
+  const validateYaml = async (content: string, filename: string) => {
+    try {
+      setValidating(true)
+      const response = await apiCall('config/validate', {
+        method: 'POST',
+        body: { content }
+      }) as { success?: boolean; valid?: boolean; message?: string; error?: string; line?: number; column?: number }
+      
+      if (response.success && response.valid) {
+        showMessage(`${filename} is valid YAML!`, 'success')
+        setValidationError(null)
+      } else if (response.success && !response.valid) {
+        // Show validation error in dialog
+        setValidationError({
+          message: response.message || 'YAML syntax error',
+          error: response.error,
+          line: response.line,
+          column: response.column
+        })
+        setShowValidationDialog(true)
+      } else {
+        showMessage(response.message || 'Validation failed', 'error')
+      }
+    } catch (error) {
+      console.error(`Error validating ${filename}:`, error)
+      showMessage(`Error validating ${filename}`, 'error')
+    } finally {
+      setValidating(false)
     }
   }
 
@@ -229,7 +280,7 @@ export default function CheckMKSettingsForm() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-3 w-full">
+        <TabsList className="grid grid-cols-4 w-full">
           <TabsTrigger value="connection" className="flex items-center space-x-2">
             <Settings className="h-4 w-4" />
             <span>Connection</span>
@@ -241,6 +292,10 @@ export default function CheckMKSettingsForm() {
           <TabsTrigger value="snmp-mapping" className="flex items-center space-x-2">
             <Network className="h-4 w-4" />
             <span>SNMP Mapping</span>
+          </TabsTrigger>
+          <TabsTrigger value="queries" className="flex items-center space-x-2">
+            <FileText className="h-4 w-4" />
+            <span>Queries</span>
           </TabsTrigger>
         </TabsList>
 
@@ -451,7 +506,7 @@ export default function CheckMKSettingsForm() {
                   type="button"
                   variant="outline"
                   onClick={loadYamlFiles}
-                  disabled={yamlLoading}
+                  disabled={yamlLoading || validating}
                   className="flex items-center space-x-2"
                 >
                   {yamlLoading ? (
@@ -463,8 +518,22 @@ export default function CheckMKSettingsForm() {
                 </Button>
                 <Button
                   type="button"
+                  variant="outline"
+                  onClick={() => validateYaml(checkmkYaml, 'checkmk.yaml')}
+                  disabled={yamlLoading || validating || !checkmkYaml}
+                  className="flex items-center space-x-2"
+                >
+                  {validating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4" />
+                  )}
+                  <span>Check YAML</span>
+                </Button>
+                <Button
+                  type="button"
                   onClick={() => saveYamlFile('checkmk.yaml', checkmkYaml)}
-                  disabled={yamlLoading}
+                  disabled={yamlLoading || validating}
                   className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white"
                 >
                   {yamlLoading ? (
@@ -507,7 +576,7 @@ export default function CheckMKSettingsForm() {
                   type="button"
                   variant="outline"
                   onClick={loadYamlFiles}
-                  disabled={yamlLoading}
+                  disabled={yamlLoading || validating}
                   className="flex items-center space-x-2"
                 >
                   {yamlLoading ? (
@@ -519,8 +588,22 @@ export default function CheckMKSettingsForm() {
                 </Button>
                 <Button
                   type="button"
+                  variant="outline"
+                  onClick={() => validateYaml(snmpMappingYaml, 'snmp_mapping.yaml')}
+                  disabled={yamlLoading || validating || !snmpMappingYaml}
+                  className="flex items-center space-x-2"
+                >
+                  {validating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4" />
+                  )}
+                  <span>Check YAML</span>
+                </Button>
+                <Button
+                  type="button"
                   onClick={() => saveYamlFile('snmp_mapping.yaml', snmpMappingYaml)}
-                  disabled={yamlLoading}
+                  disabled={yamlLoading || validating}
                   className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white"
                 >
                   {yamlLoading ? (
@@ -534,7 +617,136 @@ export default function CheckMKSettingsForm() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Queries Tab */}
+        <TabsContent value="queries" className="space-y-6">
+          <Card className="shadow-lg border-0 overflow-hidden p-0">
+            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
+              <CardTitle className="flex items-center space-x-2 text-sm font-medium">
+                <FileText className="h-4 w-4" />
+                <span>CheckMK Queries Configuration (checkmk_queries.yaml)</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Queries Content</Label>
+                <Textarea
+                  value={checkmkQueriesYaml}
+                  onChange={(e) => setCheckmkQueriesYaml(e.target.value)}
+                  placeholder="YAML content will be loaded here..."
+                  className="w-full h-96 font-mono text-sm border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500">
+                  Edit the CheckMK queries configuration YAML file. This defines custom queries and filters for CheckMK.
+                </p>
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={loadYamlFiles}
+                  disabled={yamlLoading || validating}
+                  className="flex items-center space-x-2"
+                >
+                  {yamlLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RotateCcw className="h-4 w-4" />
+                  )}
+                  <span>Reload</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => validateYaml(checkmkQueriesYaml, 'checkmk_queries.yaml')}
+                  disabled={yamlLoading || validating || !checkmkQueriesYaml}
+                  className="flex items-center space-x-2"
+                >
+                  {validating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4" />
+                  )}
+                  <span>Check YAML</span>
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => saveYamlFile('checkmk_queries.yaml', checkmkQueriesYaml)}
+                  disabled={yamlLoading || validating}
+                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white"
+                >
+                  {yamlLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileText className="h-4 w-4" />
+                  )}
+                  <span>Save Queries</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* YAML Validation Error Dialog */}
+      <Dialog open={showValidationDialog} onOpenChange={setShowValidationDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              <span>YAML Validation Error</span>
+            </DialogTitle>
+            <DialogDescription>
+              The YAML content contains syntax errors that need to be fixed.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {validationError && (
+              <>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-red-800 mb-2">Error Details:</h4>
+                  <div className="space-y-2 text-sm">
+                    {validationError.line && validationError.column && (
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium text-red-700">Location:</span>
+                        <span className="text-red-900">
+                          Line {validationError.line}, Column {validationError.column}
+                        </span>
+                      </div>
+                    )}
+                    {validationError.error && (
+                      <div className="space-y-1">
+                        <span className="font-medium text-red-700">Error Message:</span>
+                        <pre className="bg-white border border-red-300 rounded p-3 text-xs overflow-x-auto text-red-900 whitespace-pre-wrap">
+                          {validationError.error}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-blue-800 mb-2">Common YAML Issues:</h4>
+                  <ul className="text-sm text-blue-900 space-y-1 list-disc list-inside">
+                    <li>Check for proper indentation (use spaces, not tabs)</li>
+                    <li>Ensure colons are followed by a space</li>
+                    <li>Verify quotes are properly closed</li>
+                    <li>Check for special characters that need escaping</li>
+                  </ul>
+                </div>
+              </>
+            )}
+            <div className="flex justify-end">
+              <Button
+                onClick={() => setShowValidationDialog(false)}
+                variant="outline"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -19,6 +19,7 @@ class ConfigService:
     def __init__(self):
         self._checkmk_config: Optional[Dict[str, Any]] = None
         self._snmp_mapping: Optional[Dict[str, Any]] = None
+        self._queries: Optional[Dict[str, Any]] = None
         self._config_dir = Path(__file__).parent.parent.parent / "config"
 
     def load_checkmk_config(self, force_reload: bool = False) -> Dict[str, Any]:
@@ -78,6 +79,57 @@ class ConfigService:
 
         return self._snmp_mapping
 
+    def load_queries(self, force_reload: bool = False) -> Dict[str, Any]:
+        """Load GraphQL queries from checkmk_queries.yaml file.
+
+        Args:
+            force_reload: If True, forces reading from file even if cached
+
+        Returns:
+            Dictionary containing GraphQL queries
+
+        Raises:
+            FileNotFoundError: If configuration file is not found
+            yaml.YAMLError: If YAML parsing fails
+        """
+        if self._queries is None or force_reload:
+            config_path = self._config_dir / "checkmk_queries.yaml"
+
+            try:
+                with open(config_path, "r") as f:
+                    self._queries = yaml.safe_load(f) or {}
+                logger.info(f"Loaded queries configuration from {config_path}")
+            except FileNotFoundError:
+                logger.error(f"Queries configuration file not found: {config_path}")
+                raise
+            except yaml.YAMLError as e:
+                logger.error(f"Error parsing queries configuration YAML: {e}")
+                raise
+
+        return self._queries
+
+    def get_query(self, query_name: str) -> Optional[str]:
+        """Get a specific GraphQL query by name.
+
+        Args:
+            query_name: Name of the query to retrieve
+
+        Returns:
+            Query string or None if not found
+        """
+        try:
+            queries_config = self.load_queries()
+            queries = queries_config.get("queries", {})
+            query = queries.get(query_name)
+            if query:
+                # Strip extra whitespace and normalize the query
+                return query.strip()
+            logger.warning(f"Query '{query_name}' not found in queries configuration")
+            return None
+        except Exception as e:
+            logger.error(f"Error getting query '{query_name}': {e}")
+            return None
+
     def get_default_site(self) -> str:
         """Get the default CheckMK site from configuration.
 
@@ -122,6 +174,7 @@ class ConfigService:
         """Reload all cached configuration files."""
         self._checkmk_config = None
         self._snmp_mapping = None
+        self._queries = None
         logger.info("Configuration cache cleared, will reload on next access")
 
 

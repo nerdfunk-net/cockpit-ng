@@ -60,6 +60,7 @@ mapping:
   # the value is the name in checkmk
   name: alias
   location.name: location
+  location.parent.name: city
 
 compare:
   # only compare the following attributes
