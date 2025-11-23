@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,7 @@ import {
   TableRow
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Upload, FileSpreadsheet, Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { Upload, FileSpreadsheet, Loader2, CheckCircle2, XCircle, HelpCircle, AlertCircle } from 'lucide-react'
 import type { ParsedCSVRow, BulkOnboardingResult } from '../types'
 
 interface CSVUploadModalProps {
@@ -49,6 +50,8 @@ export function CSVUploadModal({
   onFileSelect,
   onUpload
 }: CSVUploadModalProps) {
+  const [showHelp, setShowHelp] = useState(false)
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -63,10 +66,20 @@ export function CSVUploadModal({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <FileSpreadsheet className="h-5 w-5" />
-            <span>Bulk Device Onboarding via CSV</span>
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center space-x-2">
+              <FileSpreadsheet className="h-5 w-5" />
+              <span>Bulk Device Onboarding via CSV</span>
+            </DialogTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowHelp(true)}
+              className="h-8 w-8 p-0"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </Button>
+          </div>
           <DialogDescription>
             Upload a CSV file with device information to onboard multiple devices at once.
             Required columns: ip_address, location, namespace, role, status
@@ -215,6 +228,87 @@ export function CSVUploadModal({
           )}
         </DialogFooter>
       </DialogContent>
+
+      {/* Help Dialog */}
+      <Dialog open={showHelp} onOpenChange={setShowHelp}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <HelpCircle className="h-5 w-5" />
+              CSV File Format Guide
+            </DialogTitle>
+            <DialogDescription>
+              Learn how to format your CSV file for device onboarding
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4 text-sm">
+            <div>
+              <h4 className="font-semibold mb-2">File Format</h4>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                <li>First row must contain column headers</li>
+                <li>Delimiter: comma (,)</li>
+                <li>Each row represents one device to onboard</li>
+                <li>Empty or malformed rows will be skipped</li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-semibold mb-2">Required Columns</h4>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                <li><code className="bg-muted px-1 py-0.5 rounded">ip_address</code> - Device IP address (IPv4 format)</li>
+                <li><code className="bg-muted px-1 py-0.5 rounded">location</code> - Location name or ID</li>
+                <li><code className="bg-muted px-1 py-0.5 rounded">namespace</code> - Namespace name or ID</li>
+                <li><code className="bg-muted px-1 py-0.5 rounded">role</code> - Device role name or ID</li>
+                <li><code className="bg-muted px-1 py-0.5 rounded">status</code> - Device status name or ID</li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-semibold mb-2">Optional Columns</h4>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground text-xs">
+                <li><code className="bg-muted px-1 py-0.5 rounded">platform</code> - Platform name or ID (e.g., cisco_ios, juniper_junos)</li>
+                <li><code className="bg-muted px-1 py-0.5 rounded">port</code> - SSH port number (default: 22)</li>
+                <li><code className="bg-muted px-1 py-0.5 rounded">timeout</code> - Connection timeout in seconds (default: 30)</li>
+                <li><code className="bg-muted px-1 py-0.5 rounded">interface_status</code> - Default interface status</li>
+                <li><code className="bg-muted px-1 py-0.5 rounded">ip_address_status</code> - Default IP address status</li>
+                <li><code className="bg-muted px-1 py-0.5 rounded">secret_groups</code> - Secret group name or ID</li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-semibold mb-2">Example CSV</h4>
+              <div className="bg-muted p-3 rounded-md overflow-x-auto">
+                <pre className="text-xs font-mono whitespace-pre">
+{`ip_address,location,namespace,role,status,platform,port,timeout
+192.168.1.1,datacenter-1,global,access-switch,active,cisco_ios,22,30
+192.168.1.2,datacenter-1,global,core-router,active,cisco_ios,22,30
+10.0.0.1,branch-office,global,firewall,active,paloalto_panos,22,60`}
+                </pre>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex gap-2">
+                <AlertCircle className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-blue-800">
+                  <p className="font-semibold mb-1">Important Notes:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>All devices will be onboarded asynchronously using background jobs</li>
+                    <li>You can track onboarding progress using the Job ID returned for each device</li>
+                    <li>Ensure the IP addresses are reachable and credentials are configured in Nautobot</li>
+                    <li>Location, namespace, role, and status must exist in Nautobot before importing</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setShowHelp(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   )
 }
