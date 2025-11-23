@@ -96,7 +96,7 @@ async def submit_progress_test_task(request: ProgressTaskRequest):
 @router.get("/tasks/{task_id}", response_model=TaskStatusResponse)
 async def get_task_status(
     task_id: str,
-    current_user: dict = Depends(require_permission("settings", "read"))
+    current_user: dict = Depends(require_permission("settings.celery", "read"))
 ):
     """
     Get the status and result of a Celery task.
@@ -139,7 +139,7 @@ async def get_task_status(
 @router.delete("/tasks/{task_id}")
 async def cancel_task(
     task_id: str,
-    current_user: dict = Depends(require_permission("settings", "write"))
+    current_user: dict = Depends(require_permission("settings.celery", "write"))
 ):
     """
     Cancel a running or queued task.
@@ -163,7 +163,7 @@ async def cancel_task(
 
 @router.get("/workers")
 async def list_workers(
-    current_user: dict = Depends(require_permission("settings", "read"))
+    current_user: dict = Depends(require_permission("settings.celery", "read"))
 ):
     """
     List active Celery workers and their status.
@@ -193,7 +193,7 @@ async def list_workers(
 
 @router.get("/schedules")
 async def list_schedules(
-    current_user: dict = Depends(require_permission("settings", "read"))
+    current_user: dict = Depends(require_permission("settings.celery", "read"))
 ):
     """
     List all periodic task schedules configured in Celery Beat.
@@ -226,24 +226,31 @@ async def list_schedules(
 
 @router.get("/beat/status")
 async def beat_status(
-    current_user: dict = Depends(require_permission("settings", "read"))
+    current_user: dict = Depends(require_permission("settings.celery", "read"))
 ):
     """
     Get Celery Beat scheduler status.
     """
     try:
         # Check if beat is running by inspecting Redis
-        # Beat stores its heartbeat in Redis with redbeat
+        # RedBeat stores lock and schedule keys when running
         r = redis.from_url(settings.redis_url)
-        beat_key = "cockpit-ng:beat:celerybeat-schedule"
 
-        # Check if beat schedule exists in Redis
-        exists = r.exists(beat_key)
+        # Check for the lock key that beat holds when running
+        beat_lock_key = "cockpit-ng:beat::lock"
+        lock_exists = r.exists(beat_lock_key)
+
+        # Also check for schedule key
+        beat_schedule_key = "cockpit-ng:beat::schedule"
+        schedule_exists = r.exists(beat_schedule_key)
+
+        # Beat is running if either key exists (lock is most reliable)
+        beat_running = bool(lock_exists or schedule_exists)
 
         return {
             "success": True,
-            "beat_running": bool(exists),
-            "message": "Beat is running" if exists else "Beat not detected"
+            "beat_running": beat_running,
+            "message": "Beat is running" if beat_running else "Beat not detected"
         }
 
     except Exception as e:
@@ -256,7 +263,7 @@ async def beat_status(
 
 @router.get("/status")
 async def celery_status(
-    current_user: dict = Depends(require_permission("settings", "read"))
+    current_user: dict = Depends(require_permission("settings.celery", "read"))
 ):
     """
     Get overall Celery system status.
@@ -286,8 +293,9 @@ async def celery_status(
         # Check Beat status
         try:
             r = redis.from_url(settings.redis_url)
-            beat_key = "cockpit-ng:beat:celerybeat-schedule"
-            beat_running = bool(r.exists(beat_key))
+            # Check for the lock key that beat holds when running
+            beat_lock_key = "cockpit-ng:beat::lock"
+            beat_running = bool(r.exists(beat_lock_key))
         except:
             beat_running = False
 
@@ -306,4 +314,70 @@ async def celery_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get celery status: {str(e)}"
+        )
+
+
+@router.get("/config")
+async def get_celery_config(
+    current_user: dict = Depends(require_permission("settings.celery", "read"))
+):
+    """
+    Get current Celery configuration (read-only).
+    Configuration is set via environment variables and cannot be changed at runtime.
+    """
+    try:
+        import os
+
+        # Get Redis configuration (mask password for security)
+        redis_host = os.getenv("COCKPIT_REDIS_HOST", "localhost")
+        redis_port = os.getenv("COCKPIT_REDIS_PORT", "6379")
+        redis_password = os.getenv("COCKPIT_REDIS_PASSWORD", "")
+        has_password = bool(redis_password)
+
+        # Get Celery configuration from celery_app
+        conf = celery_app.conf
+
+        return {
+            "success": True,
+            "config": {
+                # Redis Configuration
+                "redis": {
+                    "host": redis_host,
+                    "port": redis_port,
+                    "has_password": has_password,
+                    "database": "0"
+                },
+                # Worker Configuration
+                "worker": {
+                    "max_concurrency": settings.celery_max_workers,
+                    "prefetch_multiplier": conf.worker_prefetch_multiplier,
+                    "max_tasks_per_child": conf.worker_max_tasks_per_child,
+                },
+                # Task Configuration
+                "task": {
+                    "time_limit": conf.task_time_limit,
+                    "serializer": conf.task_serializer,
+                    "track_started": conf.task_track_started,
+                },
+                # Result Configuration
+                "result": {
+                    "expires": conf.result_expires,
+                    "serializer": conf.result_serializer,
+                },
+                # Beat Configuration
+                "beat": {
+                    "scheduler": conf.beat_scheduler,
+                    "schedule_count": len(conf.beat_schedule) if conf.beat_schedule else 0,
+                },
+                # General
+                "timezone": conf.timezone,
+                "enable_utc": conf.enable_utc,
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get celery config: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get celery config: {str(e)}"
         )

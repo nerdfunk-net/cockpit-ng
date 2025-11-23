@@ -30,6 +30,7 @@ import {
   Minus,
   Terminal,
   CheckCircle,
+  Server,
 } from 'lucide-react'
 
 interface NavItem {
@@ -102,6 +103,7 @@ const navigationSections: NavSection[] = [
       { label: 'Templates', href: '/settings/templates', icon: FileText },
       { label: 'Git Management', href: '/settings/git', icon: GitBranch },
       { label: 'Cache', href: '/settings/cache', icon: Zap },
+      { label: 'Celery', href: '/settings/celery', icon: Server },
       { label: 'Credentials', href: '/settings/credentials', icon: Key },
       { label: 'Users & Permissions', href: '/settings/permissions', icon: Shield },
       { label: 'Jobs', href: '/settings/jobs', icon: Activity },

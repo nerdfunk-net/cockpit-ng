@@ -59,8 +59,12 @@ async function handleRequest(
     const searchParams = request.nextUrl.searchParams.toString()
     
     // Handle auth and profile endpoints differently - they don't use /api/ prefix
+    // Also don't add /api/ if the path already starts with api/
     let url: string
     if (pathAfterProxy.startsWith('auth/') || pathAfterProxy.startsWith('profile')) {
+      url = `${BACKEND_URL}/${pathAfterProxy}${searchParams ? `?${searchParams}` : ''}`
+    } else if (pathAfterProxy.startsWith('api/')) {
+      // Path already has /api/ prefix, don't add it again
       url = `${BACKEND_URL}/${pathAfterProxy}${searchParams ? `?${searchParams}` : ''}`
     } else {
       url = `${BACKEND_URL}/api/${pathAfterProxy}${searchParams ? `?${searchParams}` : ''}`

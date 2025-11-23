@@ -56,6 +56,8 @@ def seed_permissions(verbose: bool = True):
         # Settings permissions
         ("settings.cache", "read", "View cache settings"),
         ("settings.cache", "write", "Modify cache settings"),
+        ("settings.celery", "read", "View Celery task queue status"),
+        ("settings.celery", "write", "Manage Celery tasks and workers"),
         ("settings.credentials", "read", "View credentials"),
         ("settings.credentials", "write", "Create/modify credentials"),
         ("settings.credentials", "delete", "Delete credentials"),
