@@ -2,7 +2,13 @@
 
 ## Overview
 
-This document describes the architecture and implementation strategy for integrating Celery with Redis as the task queue system for Cockpit-NG. The goal is to offload long-running tasks from the main FastAPI application to background workers.
+This document describes the architecture and implementation strategy for integrating Celery with Redis as the task queue system for Cockpit-NG. The goal is to offload long-running tasks from the main FastAPI application to background workers and handle periodic task scheduling.
+
+**Key Components:**
+- **Celery Workers**: Execute background tasks asynchronously
+- **Celery Beat**: Schedule and trigger periodic tasks (replaces APScheduler)
+- **Redis**: Message broker and result backend
+- **FastAPI**: Main application with `/api/celery/*` endpoints
 
 ## Architecture Principles
 
@@ -10,44 +16,47 @@ This document describes the architecture and implementation strategy for integra
 
 - **Main Application**: FastAPI application handling HTTP requests
 - **Celery Workers**: Separate processes handling background tasks
+- **Celery Beat**: Scheduler process for periodic tasks
 - **Redis**: Message broker and result backend
 - **Shared Code**: Business logic and services shared between main app and workers
 
 ### 2. Communication Pattern
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Cockpit-NG Application                   │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                   │
-│  ┌──────────────────┐              ┌──────────────────┐         │
-│  │   FastAPI Main   │              │  Celery Workers  │         │
-│  │   Application    │              │   (Separate      │         │
-│  │   (Port 8000)    │              │    Processes)    │         │
-│  └────────┬─────────┘              └────────┬─────────┘         │
-│           │                                  │                   │
-│           │  /api/celery/* endpoints        │                   │
-│           │  Submit tasks to queue           │                   │
-│           │                                  │                   │
-│           └──────────┬──────────────────────┘                   │
-│                      │                                            │
-│                      ▼                                            │
-│           ┌─────────────────────┐                                │
-│           │    Redis Server     │                                │
-│           │  (Message Broker    │                                │
-│           │   Result Backend)   │                                │
-│           └─────────────────────┘                                │
-│                      │                                            │
-│                      │                                            │
-│  ┌───────────────────┴────────────────────────────────┐         │
-│  │          Shared Business Logic Layer                │         │
-│  │  (Services, Managers, Database Operations)          │         │
-│  │  - services/*.py                                     │         │
-│  │  - *_manager.py                                      │         │
-│  │  - Direct database access (no HTTP calls)           │         │
-│  └─────────────────────────────────────────────────────┘         │
-│                                                                   │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         Cockpit-NG Application                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                           │
+│  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐  │
+│  │   FastAPI Main   │    │  Celery Workers  │    │   Celery Beat    │  │
+│  │   Application    │    │   (Separate      │    │   (Scheduler)    │  │
+│  │   (Port 8000)    │    │    Processes)    │    │   (Separate      │  │
+│  └────────┬─────────┘    └────────┬─────────┘    │    Process)      │  │
+│           │                        │              └────────┬─────────┘  │
+│           │                        │                       │             │
+│           │  /api/celery/*         │                       │             │
+│           │  Submit tasks          │                       │ Schedules   │
+│           │                        │                       │ periodic    │
+│           └───────┬────────────────┘                       │ tasks       │
+│                   │                                        │             │
+│                   ▼                                        ▼             │
+│           ┌──────────────────────────────────────────────────────────┐  │
+│           │              Redis Server                                 │  │
+│           │  - Message Broker (task queue)                           │  │
+│           │  - Result Backend (task results)                         │  │
+│           │  - Beat Schedule Store (periodic task schedules)         │  │
+│           └──────────────────────────────────────────────────────────┘  │
+│                                      │                                   │
+│                                      │                                   │
+│  ┌───────────────────────────────────┴─────────────────────────────┐   │
+│  │              Shared Business Logic Layer                         │   │
+│  │  (Services, Managers, Database Operations)                       │   │
+│  │  - services/*.py                                                 │   │
+│  │  - *_manager.py                                                  │   │
+│  │  - Direct database access (no HTTP calls)                       │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                           │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 3. Code Organization
@@ -57,7 +66,9 @@ backend/
 ├── main.py                      # FastAPI application entry point
 ├── celery_app.py               # Celery application configuration
 ├── celery_worker.py            # Celery worker entry point
-├── requirements.txt            # Add celery, redis dependencies
+├── celery_beat.py              # Celery Beat scheduler entry point
+├── beat_schedule.py            # Periodic task schedule definitions
+├── requirements.txt            # Add celery, redis, celery-redbeat
 │
 ├── routers/
 │   └── celery_api.py           # /api/celery/* endpoints
@@ -66,8 +77,9 @@ backend/
 │   ├── __init__.py            # Import all tasks
 │   ├── device_tasks.py        # Device onboarding tasks
 │   ├── config_tasks.py        # Configuration backup tasks
-│   ├── sync_tasks.py          # Nautobot/CheckMK sync tasks
-│   └── compliance_tasks.py    # Compliance check tasks
+│   ├── sync_tasks.py          # Nautobot/CheckMK sync tasks (periodic)
+│   ├── compliance_tasks.py    # Compliance check tasks
+│   └── periodic_tasks.py      # Periodic maintenance tasks
 │
 ├── services/                   # Shared business logic (existing)
 │   ├── nautobot.py            # Used by both main app and workers
@@ -90,6 +102,7 @@ backend/
 Celery application configuration.
 """
 from celery import Celery
+from celery.schedules import crontab
 from config import settings
 
 # Create Celery application
@@ -112,7 +125,16 @@ celery_app.conf.update(
     result_expires=86400,                # Results expire after 24 hours
     worker_prefetch_multiplier=1,        # One task at a time per worker
     worker_max_tasks_per_child=100,      # Restart worker after 100 tasks
+
+    # Celery Beat settings
+    beat_scheduler='redbeat.RedBeatScheduler',  # Use Redis-based scheduler
+    redbeat_redis_url=settings.redis_url,       # Redis URL for beat schedule
+    redbeat_key_prefix='cockpit-ng:beat:',      # Prefix for beat keys in Redis
 )
+
+# Import beat schedule (periodic tasks)
+from beat_schedule import CELERY_BEAT_SCHEDULE
+celery_app.conf.beat_schedule = CELERY_BEAT_SCHEDULE
 ```
 
 ### 2. Celery Worker Entry Point
@@ -133,7 +155,324 @@ if __name__ == '__main__':
     celery_app.start()
 ```
 
-### 3. Task Definition Pattern
+### 3. Celery Beat Scheduler Entry Point
+
+**File**: `backend/celery_beat.py`
+
+```python
+"""
+Celery Beat scheduler entry point.
+Run with: celery -A celery_beat beat --loglevel=info
+"""
+from celery_app import celery_app
+
+# Import all tasks and schedules to register them
+from tasks import *
+from beat_schedule import CELERY_BEAT_SCHEDULE
+
+if __name__ == '__main__':
+    celery_app.start()
+```
+
+### 4. Beat Schedule Configuration
+
+**File**: `backend/beat_schedule.py`
+
+```python
+"""
+Celery Beat periodic task schedule configuration.
+Replaces APScheduler for scheduled tasks.
+"""
+from celery.schedules import crontab
+
+# Define periodic task schedule
+CELERY_BEAT_SCHEDULE = {
+    # Nautobot to CheckMK sync - every 15 minutes
+    'sync-nautobot-to-checkmk': {
+        'task': 'tasks.sync_nautobot_to_checkmk',
+        'schedule': crontab(minute='*/15'),  # Every 15 minutes
+        'options': {
+            'expires': 600,  # Task expires after 10 minutes if not picked up
+        }
+    },
+
+    # Configuration backup - daily at 2 AM
+    'backup-all-configs': {
+        'task': 'tasks.backup_all_device_configs',
+        'schedule': crontab(hour=2, minute=0),  # Daily at 2:00 AM
+        'options': {
+            'expires': 3600,
+        }
+    },
+
+    # Cleanup old task results - daily at 3 AM
+    'cleanup-old-results': {
+        'task': 'tasks.cleanup_old_task_results',
+        'schedule': crontab(hour=3, minute=0),  # Daily at 3:00 AM
+        'options': {
+            'expires': 3600,
+        }
+    },
+
+    # Git repository sync - every 30 minutes
+    'sync-git-repositories': {
+        'task': 'tasks.sync_git_repositories',
+        'schedule': crontab(minute='*/30'),  # Every 30 minutes
+        'options': {
+            'expires': 1200,
+        }
+    },
+
+    # Cache refresh - configurable interval (default 15 minutes)
+    'refresh-nautobot-cache': {
+        'task': 'tasks.refresh_nautobot_cache',
+        'schedule': crontab(minute='*/15'),  # Every 15 minutes
+        'options': {
+            'expires': 600,
+        }
+    },
+
+    # Health check for workers - every 5 minutes
+    'worker-health-check': {
+        'task': 'tasks.worker_health_check',
+        'schedule': crontab(minute='*/5'),  # Every 5 minutes
+        'options': {
+            'expires': 240,
+        }
+    },
+}
+
+# Schedule examples using different patterns:
+#
+# Every X minutes:
+#   crontab(minute='*/15')
+#
+# Specific time daily:
+#   crontab(hour=2, minute=30)
+#
+# Multiple times per day:
+#   crontab(hour='0,6,12,18', minute=0)
+#
+# Specific day of week (0=Sunday, 6=Saturday):
+#   crontab(hour=0, minute=0, day_of_week=0)
+#
+# First day of month:
+#   crontab(hour=0, minute=0, day_of_month=1)
+#
+# Using timedelta for simple intervals:
+#   from datetime import timedelta
+#   schedule = timedelta(minutes=30)
+```
+
+### 5. Periodic Task Definitions
+
+**File**: `backend/tasks/periodic_tasks.py`
+
+```python
+"""
+Periodic tasks executed by Celery Beat.
+These tasks run on a schedule defined in beat_schedule.py
+"""
+from celery_app import celery_app
+from services.nb2cmk_background_service import Nb2CmkBackgroundService
+from services.git_utils import GitService
+from services.cache_service import CacheService
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+@celery_app.task(name='tasks.sync_nautobot_to_checkmk')
+def sync_nautobot_to_checkmk() -> dict:
+    """
+    Periodic task: Sync devices from Nautobot to CheckMK.
+
+    Replaces APScheduler background sync.
+    Runs every 15 minutes (configured in beat_schedule.py)
+
+    Returns:
+        dict: Sync results with counts
+    """
+    try:
+        logger.info("Starting Nautobot to CheckMK sync")
+
+        # Use shared service directly
+        sync_service = Nb2CmkBackgroundService()
+        result = sync_service.run_sync()
+
+        logger.info(f"Sync completed: {result}")
+        return {
+            'success': True,
+            'synced': result.get('synced', 0),
+            'errors': result.get('errors', 0),
+            'message': 'Nautobot to CheckMK sync completed'
+        }
+
+    except Exception as e:
+        logger.error(f"Sync failed: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'message': f'Sync failed: {str(e)}'
+        }
+
+
+@celery_app.task(name='tasks.backup_all_device_configs')
+def backup_all_device_configs() -> dict:
+    """
+    Periodic task: Backup all device configurations.
+
+    Runs daily at 2:00 AM (configured in beat_schedule.py)
+
+    Returns:
+        dict: Backup results
+    """
+    try:
+        logger.info("Starting device config backups")
+
+        # Implementation here
+        # Use services to get all devices and backup configs
+
+        return {
+            'success': True,
+            'backed_up': 0,
+            'message': 'Device backups completed'
+        }
+
+    except Exception as e:
+        logger.error(f"Backup failed: {e}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
+@celery_app.task(name='tasks.cleanup_old_task_results')
+def cleanup_old_task_results() -> dict:
+    """
+    Periodic task: Clean up old Celery task results from Redis.
+
+    Runs daily at 3:00 AM (configured in beat_schedule.py)
+    Removes task results older than 24 hours.
+
+    Returns:
+        dict: Cleanup results
+    """
+    try:
+        logger.info("Cleaning up old task results")
+
+        # Celery automatically expires results based on result_expires config
+        # This task can do additional cleanup if needed
+
+        return {
+            'success': True,
+            'message': 'Cleanup completed'
+        }
+
+    except Exception as e:
+        logger.error(f"Cleanup failed: {e}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
+@celery_app.task(name='tasks.sync_git_repositories')
+def sync_git_repositories() -> dict:
+    """
+    Periodic task: Pull latest changes from Git repositories.
+
+    Runs every 30 minutes (configured in beat_schedule.py)
+
+    Returns:
+        dict: Sync results
+    """
+    try:
+        logger.info("Syncing Git repositories")
+
+        git_service = GitService()
+        # Implementation here
+
+        return {
+            'success': True,
+            'message': 'Git repositories synced'
+        }
+
+    except Exception as e:
+        logger.error(f"Git sync failed: {e}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
+@celery_app.task(name='tasks.refresh_nautobot_cache')
+def refresh_nautobot_cache() -> dict:
+    """
+    Periodic task: Refresh Nautobot data cache.
+
+    Runs every 15 minutes (configured in beat_schedule.py)
+
+    Returns:
+        dict: Cache refresh results
+    """
+    try:
+        logger.info("Refreshing Nautobot cache")
+
+        cache_service = CacheService()
+        result = cache_service.refresh_all()
+
+        return {
+            'success': True,
+            'refreshed': result.get('refreshed', 0),
+            'message': 'Cache refreshed'
+        }
+
+    except Exception as e:
+        logger.error(f"Cache refresh failed: {e}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
+@celery_app.task(name='tasks.worker_health_check')
+def worker_health_check() -> dict:
+    """
+    Periodic task: Health check for Celery workers.
+
+    Runs every 5 minutes (configured in beat_schedule.py)
+    Monitors worker health and logs status.
+
+    Returns:
+        dict: Health check results
+    """
+    try:
+        inspect = celery_app.control.inspect()
+
+        # Get active workers
+        active = inspect.active()
+        stats = inspect.stats()
+
+        active_workers = len(stats) if stats else 0
+
+        logger.info(f"Health check: {active_workers} workers active")
+
+        return {
+            'success': True,
+            'active_workers': active_workers,
+            'message': f'{active_workers} workers active'
+        }
+
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
+```
+
+### 6. Task Definition Pattern
 
 **Example File**: `backend/tasks/device_tasks.py`
 
@@ -420,6 +759,72 @@ async def list_workers(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get worker info: {str(e)}"
         )
+
+
+@router.get("/schedules")
+async def list_schedules(
+    current_user: dict = Depends(require_permission("settings", "read"))
+):
+    """
+    List all periodic task schedules configured in Celery Beat.
+    """
+    try:
+        # Get beat schedule from celery_app config
+        beat_schedule = celery_app.conf.beat_schedule or {}
+
+        schedules = []
+        for name, config in beat_schedule.items():
+            schedules.append({
+                "name": name,
+                "task": config.get("task"),
+                "schedule": str(config.get("schedule")),
+                "options": config.get("options", {}),
+            })
+
+        return {
+            "success": True,
+            "schedules": schedules
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get schedules: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get schedules: {str(e)}"
+        )
+
+
+@router.get("/beat/status")
+async def beat_status(
+    current_user: dict = Depends(require_permission("settings", "read"))
+):
+    """
+    Get Celery Beat scheduler status.
+    """
+    try:
+        # Check if beat is running by inspecting Redis
+        # Beat stores its heartbeat in Redis with redbeat
+        import redis
+        from config import settings
+
+        r = redis.from_url(settings.redis_url)
+        beat_key = "cockpit-ng:beat:celerybeat-schedule"
+
+        # Check if beat schedule exists in Redis
+        exists = r.exists(beat_key)
+
+        return {
+            "success": True,
+            "beat_running": bool(exists),
+            "message": "Beat is running" if exists else "Beat not detected"
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get beat status: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get beat status: {str(e)}"
+        )
 ```
 
 ### 5. Configuration
@@ -437,20 +842,29 @@ class Settings(BaseSettings):
     celery_max_workers: int = Field(default=4)
 ```
 
-### 6. Dependencies
+### 7. Dependencies
 
 **Add to `backend/requirements.txt`**:
 
 ```
 celery>=5.4.0
 redis>=5.0.0
+celery-redbeat>=2.2.0  # Redis-based Beat scheduler
 ```
+
+**Why celery-redbeat?**
+- Stores beat schedule in Redis (not local file)
+- Allows dynamic schedule updates
+- Works in distributed/containerized environments
+- Multiple beat instances can run (only one active at a time)
 
 ## Running the System
 
 ### Development
 
-1. **Start Redis** (if not already running):
+Run all components in separate terminals:
+
+1. **Start Redis** (Terminal 1):
    ```bash
    # Using Docker
    docker run -d -p 6379:6379 redis:latest
@@ -459,23 +873,38 @@ redis>=5.0.0
    redis-server
    ```
 
-2. **Start Celery Worker**:
+2. **Start Celery Worker** (Terminal 2):
    ```bash
    cd backend
    celery -A celery_worker worker --loglevel=info
    ```
 
-3. **Start FastAPI Application**:
+3. **Start Celery Beat Scheduler** (Terminal 3):
+   ```bash
+   cd backend
+   celery -A celery_beat beat --loglevel=info
+   ```
+
+4. **Start FastAPI Application** (Terminal 4):
    ```bash
    cd backend
    python start.py
    ```
 
+**Optional: Start Flower for monitoring** (Terminal 5):
+   ```bash
+   cd backend
+   celery -A celery_worker flower --port=5555
+   # Access at http://localhost:5555
+   ```
+
 ### Production
 
-Use process managers for both:
+Use systemd services for all components:
 
 1. **Celery Worker (systemd service)**:
+
+   **File**: `/etc/systemd/system/cockpit-celery-worker.service`
    ```ini
    [Unit]
    Description=Cockpit-NG Celery Worker
@@ -489,22 +918,60 @@ Use process managers for both:
    ExecStart=/app/venv/bin/celery -A celery_worker worker \
              --loglevel=info \
              --concurrency=4 \
-             --pidfile=/var/run/celery/worker.pid
+             --pidfile=/var/run/celery/worker.pid \
+             --logfile=/var/log/celery/worker.log
    Restart=always
+   RestartSec=10
 
    [Install]
    WantedBy=multi-user.target
    ```
 
-2. **FastAPI Application** (existing systemd service)
+2. **Celery Beat (systemd service)**:
+
+   **File**: `/etc/systemd/system/cockpit-celery-beat.service`
+   ```ini
+   [Unit]
+   Description=Cockpit-NG Celery Beat Scheduler
+   After=network.target redis.service
+
+   [Service]
+   Type=simple
+   User=cockpit-ng
+   Group=cockpit-ng
+   WorkingDirectory=/app/backend
+   ExecStart=/app/venv/bin/celery -A celery_beat beat \
+             --loglevel=info \
+             --pidfile=/var/run/celery/beat.pid \
+             --logfile=/var/log/celery/beat.log
+   Restart=always
+   RestartSec=10
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+   **Important**: Only run ONE beat instance per environment!
+
+3. **FastAPI Application** (existing systemd service)
+
+**Enable and start services**:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable cockpit-celery-worker cockpit-celery-beat
+sudo systemctl start cockpit-celery-worker cockpit-celery-beat
+sudo systemctl status cockpit-celery-worker cockpit-celery-beat
+```
 
 ## Migration Strategy
 
 ### Phase 1: Infrastructure Setup
 - [ ] Install Redis
-- [ ] Create Celery configuration files
-- [ ] Set up task directory structure
-- [ ] Update dependencies
+- [ ] Install Celery and dependencies (`celery`, `redis`, `celery-redbeat`)
+- [ ] Create Celery configuration files (`celery_app.py`, `celery_worker.py`, `celery_beat.py`)
+- [ ] Create beat schedule file (`beat_schedule.py`)
+- [ ] Set up task directory structure (`tasks/`)
+- [ ] Update dependencies in requirements.txt
 
 ### Phase 2: Task Migration
 Convert existing background jobs to Celery tasks:
@@ -512,18 +979,23 @@ Convert existing background jobs to Celery tasks:
 1. **Device Onboarding** (`/nautobot/devices/onboard`)
    - Current: APScheduler job
    - New: Celery task `tasks.onboard_device`
+   - Type: On-demand (triggered by API)
 
 2. **Configuration Backup** (`/git/*`)
    - Current: Synchronous operations
    - New: Celery task `tasks.backup_device_config`
+   - Type: On-demand (triggered by API)
 
 3. **Nautobot/CheckMK Sync** (`/nb2cmk/*`)
-   - Current: APScheduler background service
-   - New: Celery periodic tasks
+   - Current: APScheduler background service (`nb2cmk_background_service.py`)
+   - New: Celery Beat periodic task `tasks.sync_nautobot_to_checkmk`
+   - Schedule: Every 15 minutes (configurable in `beat_schedule.py`)
+   - **Action**: Remove APScheduler service, replace with Beat task
 
 4. **Compliance Checks** (`/compliance-check/*`)
    - Current: Synchronous multi-device checks
-   - New: Celery group tasks
+   - New: Celery group tasks (parallel execution)
+   - Type: On-demand (triggered by API)
 
 ### Phase 3: API Integration
 - [ ] Create `/api/celery/*` router
@@ -531,11 +1003,134 @@ Convert existing background jobs to Celery tasks:
 - [ ] Implement task status endpoints
 - [ ] Add task cancellation support
 
-### Phase 4: Frontend Integration
+### Phase 3: Beat Schedule Management
+- [ ] Create periodic tasks in `tasks/periodic_tasks.py`
+- [ ] Define schedules in `beat_schedule.py`
+- [ ] Add Beat monitoring endpoints (`/api/celery/beat/status`, `/api/celery/schedules`)
+- [ ] Test Beat scheduler functionality
+- [ ] **Remove APScheduler dependencies and code**
+
+### Phase 4: API Integration
+- [ ] Create `/api/celery/*` router
+- [ ] Implement task submission endpoints
+- [ ] Implement task status endpoints
+- [ ] Add task cancellation support
+- [ ] Add Beat schedule listing endpoints
+
+### Phase 5: Frontend Integration
 - [ ] Update frontend to submit tasks via `/api/celery/*`
 - [ ] Add task status polling
 - [ ] Show progress updates in UI
 - [ ] Handle task completion/errors
+- [ ] Display Beat schedule status
+
+## Replacing APScheduler with Celery Beat
+
+### Why Replace APScheduler?
+
+**Current Issues with APScheduler:**
+- Runs inside FastAPI application (single point of failure)
+- No distributed execution support
+- Limited monitoring and management
+- Schedule stored in memory (lost on restart)
+- Cannot scale horizontally
+
+**Benefits of Celery Beat:**
+- ✅ Separate process (isolated from main app)
+- ✅ Redis-backed schedule (persistent, survives restarts)
+- ✅ Dynamic schedule updates (no code changes needed)
+- ✅ Built-in monitoring via Flower
+- ✅ Distributed-ready (works in containerized environments)
+- ✅ Task history and retry support
+- ✅ Better error handling and logging
+
+### Migration Mapping
+
+| APScheduler Component | Celery Beat Equivalent |
+|----------------------|------------------------|
+| `BackgroundScheduler` | `celery beat` process |
+| `@scheduler.scheduled_job()` | Beat schedule in `beat_schedule.py` |
+| `scheduler.add_job()` | Add entry to `CELERY_BEAT_SCHEDULE` |
+| `scheduler.start()` | `celery -A celery_beat beat` |
+| Job interval | `crontab()` or `timedelta()` |
+| Job execution | Celery worker picks up task |
+
+### Example Migration
+
+**Before (APScheduler):**
+```python
+# In main.py or separate service file
+from apscheduler.schedulers.background import BackgroundScheduler
+
+scheduler = BackgroundScheduler()
+
+def sync_devices():
+    # Sync logic here
+    pass
+
+scheduler.add_job(
+    sync_devices,
+    'interval',
+    minutes=15,
+    id='sync_nautobot_to_checkmk'
+)
+
+scheduler.start()
+```
+
+**After (Celery Beat):**
+
+1. Define task in `tasks/periodic_tasks.py`:
+```python
+@celery_app.task(name='tasks.sync_nautobot_to_checkmk')
+def sync_nautobot_to_checkmk():
+    # Sync logic here (uses shared services)
+    pass
+```
+
+2. Add schedule in `beat_schedule.py`:
+```python
+CELERY_BEAT_SCHEDULE = {
+    'sync-nautobot-to-checkmk': {
+        'task': 'tasks.sync_nautobot_to_checkmk',
+        'schedule': crontab(minute='*/15'),
+    }
+}
+```
+
+3. Start Beat scheduler:
+```bash
+celery -A celery_beat beat --loglevel=info
+```
+
+### Monitoring Beat Tasks
+
+**Via Flower:**
+```bash
+celery -A celery_worker flower
+# Navigate to http://localhost:5555/tasks
+```
+
+**Via API:**
+```bash
+# List all schedules
+curl http://localhost:8000/api/celery/schedules
+
+# Check beat status
+curl http://localhost:8000/api/celery/beat/status
+
+# Check recent task executions
+curl http://localhost:8000/api/celery/tasks
+```
+
+**Via Logs:**
+```bash
+# Beat scheduler logs
+tail -f /var/log/celery/beat.log
+
+# Worker logs (shows executed periodic tasks)
+tail -f /var/log/celery/worker.log
+```
 
 ## Key Principles
 
@@ -628,6 +1223,7 @@ def my_task():
 
 ## Benefits
 
+### Celery Workers
 1. **Scalability**: Add more workers to handle increased load
 2. **Reliability**: Task retries, failure handling, and monitoring
 3. **Performance**: Non-blocking API responses
@@ -635,9 +1231,27 @@ def my_task():
 5. **Flexibility**: Easy to add new background tasks
 6. **Monitoring**: Built-in task tracking and status
 
+### Celery Beat
+1. **Persistent Schedules**: Redis-backed, survives restarts
+2. **Dynamic Updates**: Modify schedules without code deployment
+3. **Distributed Ready**: Works in containerized/cloud environments
+4. **Centralized Scheduling**: All periodic tasks in one place
+5. **Better Monitoring**: Flower UI shows all scheduled tasks
+6. **No Memory Leaks**: Separate process, can restart independently
+7. **Timezone Support**: Built-in UTC/local timezone handling
+
+### Overall System
+1. **Unified Platform**: Single system for on-demand and periodic tasks
+2. **Production Ready**: Battle-tested in large-scale deployments
+3. **Rich Ecosystem**: Plugins, monitoring tools, integrations
+4. **Active Development**: Regular updates and security patches
+
 ## References
 
 - [Celery Documentation](https://docs.celeryq.dev/)
+- [Celery Beat Documentation](https://docs.celeryq.dev/en/stable/userguide/periodic-tasks.html)
+- [Celery RedBeat (Redis Beat Scheduler)](https://github.com/sibson/redbeat)
 - [Redis Documentation](https://redis.io/docs/)
 - [FastAPI Background Tasks](https://fastapi.tiangolo.com/tutorial/background-tasks/)
 - [Celery Best Practices](https://docs.celeryq.dev/en/stable/userguide/tasks.html#best-practices)
+- [Flower - Celery Monitoring Tool](https://flower.readthedocs.io/)
