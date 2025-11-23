@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,17 +19,14 @@ import {
   CheckCircle,
   XCircle,
   RefreshCw,
-  Loader2,
   Clock,
   Server,
-  AlertCircle,
   Database,
-  PlayCircle,
-  Zap
+  PlayCircle
 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 
-const EMPTY_ARRAY: any[] = []
+const EMPTY_ARRAY: Schedule[] = []
 
 interface CeleryStatus {
   redis_connected: boolean
@@ -38,25 +35,25 @@ interface CeleryStatus {
   beat_running: boolean
 }
 
-interface Worker {
-  name: string
-  active_tasks: number
-  stats: Record<string, any>
-}
-
 interface Schedule {
   name: string
   task: string
   schedule: string
-  options: Record<string, any>
+  options: Record<string, unknown>
 }
 
 interface TaskStatus {
   task_id: string
   status: string
-  result?: any
+  result?: Record<string, unknown>
   error?: string
-  progress?: any
+  progress?: Record<string, unknown>
+}
+
+interface WorkersData {
+  active_tasks?: Record<string, unknown[]>
+  stats?: Record<string, unknown>
+  registered_tasks?: Record<string, string[]>
 }
 
 export function CelerySettingsPage() {
@@ -64,18 +61,18 @@ export function CelerySettingsPage() {
 
   // State
   const [celeryStatus, setCeleryStatus] = useState<CeleryStatus | null>(null)
-  const [workers, setWorkers] = useState<any>(null)
+  const [workers, setWorkers] = useState<WorkersData | null>(null)
   const [schedules, setSchedules] = useState<Schedule[]>(EMPTY_ARRAY)
   const [testTaskId, setTestTaskId] = useState<string>('')
   const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+  const [message, setMessage] = useState<{type: 'success' | 'error'; text: string} | null>(null)
 
   // Load Celery status
   const loadStatus = useCallback(async () => {
     setIsLoading(true)
     try {
-      const response = await apiCall('/api/celery/status')
+      const response = await apiCall('/api/celery/status') as { success: boolean; status: CeleryStatus }
       if (response.success) {
         setCeleryStatus(response.status)
       }
@@ -89,7 +86,7 @@ export function CelerySettingsPage() {
   // Load workers
   const loadWorkers = useCallback(async () => {
     try {
-      const response = await apiCall('/api/celery/workers')
+      const response = await apiCall('/api/celery/workers') as { success: boolean; workers: WorkersData }
       if (response.success) {
         setWorkers(response.workers)
       }
@@ -101,7 +98,7 @@ export function CelerySettingsPage() {
   // Load schedules
   const loadSchedules = useCallback(async () => {
     try {
-      const response = await apiCall('/api/celery/schedules')
+      const response = await apiCall('/api/celery/schedules') as { success: boolean; schedules?: Schedule[] }
       if (response.success) {
         setSchedules(response.schedules || [])
       }
@@ -116,13 +113,13 @@ export function CelerySettingsPage() {
       const response = await apiCall('/api/celery/test', {
         method: 'POST',
         body: { message: 'Test from Settings UI' }
-      })
+      }) as { task_id?: string }
 
       if (response.task_id) {
         setTestTaskId(response.task_id)
         setMessage({ type: 'success', text: `Test task submitted: ${response.task_id}` })
       }
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'Failed to submit test task' })
     }
   }, [apiCall])
@@ -132,7 +129,7 @@ export function CelerySettingsPage() {
     if (!testTaskId) return
 
     try {
-      const response = await apiCall(`/api/celery/tasks/${testTaskId}`)
+      const response = await apiCall(`/api/celery/tasks/${testTaskId}`) as TaskStatus
       setTaskStatus(response)
     } catch (error) {
       console.error('Failed to check task status:', error)
@@ -152,6 +149,7 @@ export function CelerySettingsPage() {
       const interval = setInterval(checkTaskStatus, 2000)
       return () => clearInterval(interval)
     }
+    return undefined
   }, [testTaskId, taskStatus, checkTaskStatus])
 
   return (
@@ -314,16 +312,20 @@ export function CelerySettingsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {Object.entries(workers.stats).map(([name, stats]: [string, any]) => (
-                      <TableRow key={name}>
-                        <TableCell className="font-mono text-sm">{name}</TableCell>
-                        <TableCell>
-                          <Badge variant="default">Active</Badge>
-                        </TableCell>
-                        <TableCell>{stats?.pool?.['max-concurrency'] || 'N/A'}</TableCell>
-                        <TableCell>{stats?.pool?.implementation || 'N/A'}</TableCell>
-                      </TableRow>
-                    ))}
+                    {Object.entries(workers.stats).map(([name, stats]: [string, unknown]) => {
+                      const workerStats = stats as Record<string, unknown> | undefined
+                      const pool = workerStats?.pool as Record<string, unknown> | undefined
+                      return (
+                        <TableRow key={name}>
+                          <TableCell className="font-mono text-sm">{name}</TableCell>
+                          <TableCell>
+                            <Badge variant="default">Active</Badge>
+                          </TableCell>
+                          <TableCell>{pool?.['max-concurrency'] || 'N/A'}</TableCell>
+                          <TableCell>{pool?.implementation || 'N/A'}</TableCell>
+                        </TableRow>
+                      )
+                    })}
                   </TableBody>
                 </Table>
               ) : (
