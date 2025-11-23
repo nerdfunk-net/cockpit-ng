@@ -78,7 +78,6 @@ interface LoginCredential {
 interface SNMPMapping {
   id: number
   name: string
-  device_type: string
   snmp_version: 'v1' | 'v2c' | 'v3'
   snmp_community?: string
   snmp_v3_user?: string
@@ -127,7 +126,6 @@ export default function ComplianceSettingsForm() {
   const [editingSnmp, setEditingSnmp] = useState<SNMPMapping | null>(null)
   const [snmpForm, setSnmpForm] = useState({
     name: '',
-    device_type: '',
     snmp_version: 'v2c' as 'v1' | 'v2c' | 'v3',
     snmp_community: '',
     snmp_v3_user: '',
@@ -354,21 +352,12 @@ export default function ComplianceSettingsForm() {
           method: 'POST',
           body: { yaml_content: yamlResponse.data },
         }
-      )) as ApiResponse<{ imported: number; errors: number }>
-      
+      )) as ApiResponse<{ imported: number; skipped?: number; errors: number }> & { message?: string }
+
       if (response.success) {
-        const data = response.data
-        if (data && data.errors > 0) {
-          showMessage(
-            `Imported ${data.imported} mappings with ${data.errors} errors`,
-            'success'
-          )
-        } else {
-          showMessage(
-            `Successfully imported ${data?.imported || 0} SNMP mappings`,
-            'success'
-          )
-        }
+        // Use the message from the backend if available
+        const message = response.message || `Successfully imported ${response.data?.imported || 0} SNMP mappings`
+        showMessage(message, 'success')
         await loadSnmpMappings()
       } else {
         showMessage('Failed to import SNMP mappings', 'error')
@@ -413,21 +402,12 @@ export default function ComplianceSettingsForm() {
           method: 'POST',
           body: { yaml_content: fileContent },
         }
-      )) as ApiResponse<{ imported: number; errors: number }>
-      
+      )) as ApiResponse<{ imported: number; skipped?: number; errors: number }> & { message?: string }
+
       if (response.success) {
-        const data = response.data
-        if (data && data.errors > 0) {
-          showMessage(
-            `Imported ${data.imported} mappings with ${data.errors} errors`,
-            'success'
-          )
-        } else {
-          showMessage(
-            `Successfully imported ${data?.imported || 0} SNMP mappings`,
-            'success'
-          )
-        }
+        // Use the message from the backend if available
+        const message = response.message || `Successfully imported ${response.data?.imported || 0} SNMP mappings`
+        showMessage(message, 'success')
         setShowImportDialog(false)
         setImportFile(null)
         await loadSnmpMappings()
@@ -445,7 +425,6 @@ export default function ComplianceSettingsForm() {
     setEditingSnmp(null)
     setSnmpForm({
       name: '',
-      device_type: '',
       snmp_version: 'v2c',
       snmp_community: '',
       snmp_v3_user: '',
@@ -462,7 +441,6 @@ export default function ComplianceSettingsForm() {
     setEditingSnmp(mapping)
     setSnmpForm({
       name: mapping.name || '',
-      device_type: mapping.device_type,
       snmp_version: mapping.snmp_version,
       snmp_community: mapping.snmp_community || '',
       snmp_v3_user: mapping.snmp_v3_user || '',
@@ -856,9 +834,9 @@ export default function ComplianceSettingsForm() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>SNMP Mapping</CardTitle>
+                  <CardTitle>SNMP Credentials</CardTitle>
                   <CardDescription>
-                    Map device types to SNMP credentials
+                    Configure SNMP credentials for compliance checks (device-type independent)
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
@@ -903,7 +881,6 @@ export default function ComplianceSettingsForm() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
-                      <TableHead>Device Type</TableHead>
                       <TableHead>SNMP Version</TableHead>
                       <TableHead>Community/User</TableHead>
                       <TableHead>Description</TableHead>
@@ -915,10 +892,7 @@ export default function ComplianceSettingsForm() {
                     {snmpMappings.map((mapping) => (
                       <TableRow key={mapping.id}>
                         <TableCell className="font-medium">
-                          {mapping.name || mapping.device_type}
-                        </TableCell>
-                        <TableCell>
-                          {mapping.device_type}
+                          {mapping.name}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">{mapping.snmp_version}</Badge>
@@ -1184,10 +1158,10 @@ export default function ComplianceSettingsForm() {
           <DialogHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white px-6 py-4 rounded-t-lg sticky top-0">
             <DialogTitle className="flex items-center gap-2 text-white text-lg">
               <Network className="h-5 w-5" />
-              {editingSnmp ? 'Edit' : 'Add'} SNMP Mapping
+              {editingSnmp ? 'Edit' : 'Add'} SNMP Credential
             </DialogTitle>
             <DialogDescription className="text-blue-50">
-              Map a device type to SNMP credentials
+              Configure SNMP credentials for compliance checks
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 px-6 pb-6">
@@ -1203,31 +1177,11 @@ export default function ComplianceSettingsForm() {
                 onChange={(e) =>
                   setSnmpForm({ ...snmpForm, name: e.target.value })
                 }
-                placeholder="Cisco Production SNMP"
+                placeholder="snmp-prod-1"
                 className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
               <p className="text-xs text-gray-500">
-                A friendly name to identify this SNMP mapping (e.g., &quot;Cisco Production SNMP&quot;, &quot;Lab SNMPv3&quot;)
-              </p>
-            </div>
-
-            {/* Device Type */}
-            <div className="space-y-2">
-              <Label htmlFor="device-type" className="text-sm font-semibold text-gray-700 flex items-center gap-1">
-                Device Type
-                <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="device-type"
-                value={snmpForm.device_type}
-                onChange={(e) =>
-                  setSnmpForm({ ...snmpForm, device_type: e.target.value })
-                }
-                placeholder="cisco-ios, juniper-junos, etc."
-                className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-              />
-              <p className="text-xs text-gray-500">
-                Device type identifier (e.g., vendor-os or platform name)
+                A unique identifier for this SNMP credential (e.g., &quot;snmp-prod-1&quot;, &quot;lab-snmpv3&quot;). SNMP credentials are device-type independent.
               </p>
             </div>
 

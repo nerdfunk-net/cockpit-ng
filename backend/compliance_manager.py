@@ -83,13 +83,12 @@ def _ensure_tables() -> None:
             """
         )
 
-        # SNMP mapping table - similar to CheckMK SNMP mapping
+        # SNMP mapping table - SNMP credentials are device-type independent
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS snmp_mapping (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                device_type TEXT NOT NULL,
+                name TEXT NOT NULL UNIQUE,
                 snmp_community TEXT,
                 snmp_version TEXT NOT NULL CHECK(snmp_version IN ('v1','v2c','v3')),
                 snmp_v3_user TEXT,
@@ -105,8 +104,9 @@ def _ensure_tables() -> None:
             """
         )
 
-        # Migrate existing tables to add 'name' column if it doesn't exist
+        # Migrate existing tables
         _migrate_add_name_columns(conn)
+        _migrate_remove_device_type(conn)
 
         conn.commit()
 
@@ -135,16 +135,84 @@ def _migrate_add_name_columns(conn) -> None:
         cursor = conn.execute("PRAGMA table_info(snmp_mapping)")
         columns = [row[1] for row in cursor.fetchall()]
         if "name" not in columns:
-            # Add name column and populate with device_type
+            # Add name column and populate with device_type or id
             conn.execute("ALTER TABLE snmp_mapping ADD COLUMN name TEXT")
+            # Try to use device_type if it exists, otherwise use id
+            try:
+                conn.execute(
+                    "UPDATE snmp_mapping SET name = device_type WHERE name IS NULL"
+                )
+            except Exception:
+                conn.execute(
+                    "UPDATE snmp_mapping SET name = 'snmp-' || id WHERE name IS NULL"
+                )
             conn.execute(
-                "UPDATE snmp_mapping SET name = device_type WHERE name IS NULL"
-            )
-            conn.execute(
-                "UPDATE snmp_mapping SET name = device_type || ' (' || id || ')' WHERE name IS NULL OR name = ''"
+                "UPDATE snmp_mapping SET name = 'snmp-' || id WHERE name IS NULL OR name = ''"
             )
     except Exception:
         # Table might not exist yet, which is fine
+        pass
+
+
+def _migrate_remove_device_type(conn) -> None:
+    """Remove device_type column from snmp_mapping table.
+
+    SQLite doesn't support DROP COLUMN directly, so we need to:
+    1. Create a new table without device_type
+    2. Copy data from old table to new table
+    3. Drop old table
+    4. Rename new table to original name
+    """
+    try:
+        # Check if snmp_mapping has 'device_type' column
+        cursor = conn.execute("PRAGMA table_info(snmp_mapping)")
+        columns = [row[1] for row in cursor.fetchall()]
+
+        if "device_type" in columns:
+            # Create new table without device_type
+            conn.execute(
+                """
+                CREATE TABLE snmp_mapping_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL UNIQUE,
+                    snmp_community TEXT,
+                    snmp_version TEXT NOT NULL CHECK(snmp_version IN ('v1','v2c','v3')),
+                    snmp_v3_user TEXT,
+                    snmp_v3_auth_protocol TEXT,
+                    snmp_v3_auth_password_encrypted BLOB,
+                    snmp_v3_priv_protocol TEXT,
+                    snmp_v3_priv_password_encrypted BLOB,
+                    description TEXT,
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+                """
+            )
+
+            # Copy data from old table (excluding device_type)
+            conn.execute(
+                """
+                INSERT INTO snmp_mapping_new
+                (id, name, snmp_community, snmp_version, snmp_v3_user,
+                 snmp_v3_auth_protocol, snmp_v3_auth_password_encrypted,
+                 snmp_v3_priv_protocol, snmp_v3_priv_password_encrypted,
+                 description, is_active, created_at, updated_at)
+                SELECT id, name, snmp_community, snmp_version, snmp_v3_user,
+                       snmp_v3_auth_protocol, snmp_v3_auth_password_encrypted,
+                       snmp_v3_priv_protocol, snmp_v3_priv_password_encrypted,
+                       description, is_active, created_at, updated_at
+                FROM snmp_mapping
+                """
+            )
+
+            # Drop old table
+            conn.execute("DROP TABLE snmp_mapping")
+
+            # Rename new table to original name
+            conn.execute("ALTER TABLE snmp_mapping_new RENAME TO snmp_mapping")
+    except Exception:
+        # Table might not exist yet or migration already completed
         pass
 
 
@@ -413,7 +481,7 @@ def get_all_snmp_mappings(decrypt_passwords: bool = False) -> List[Dict[str, Any
     with _get_conn() as conn:
         rows = conn.execute(
             """
-            SELECT id, name, device_type, snmp_community, snmp_version,
+            SELECT id, name, snmp_community, snmp_version,
                    snmp_v3_user, snmp_v3_auth_protocol, snmp_v3_auth_password_encrypted,
                    snmp_v3_priv_protocol, snmp_v3_priv_password_encrypted,
                    description, is_active, created_at, updated_at
@@ -460,7 +528,7 @@ def get_snmp_mapping_by_id(
     with _get_conn() as conn:
         row = conn.execute(
             """
-            SELECT id, name, device_type, snmp_community, snmp_version,
+            SELECT id, name, snmp_community, snmp_version,
                    snmp_v3_user, snmp_v3_auth_protocol, snmp_v3_auth_password_encrypted,
                    snmp_v3_priv_protocol, snmp_v3_priv_password_encrypted,
                    description, is_active, created_at, updated_at
@@ -503,7 +571,6 @@ def get_snmp_mapping_by_id(
 
 def create_snmp_mapping(
     name: str,
-    device_type: str,
     snmp_version: str,
     snmp_community: Optional[str] = None,
     snmp_v3_user: Optional[str] = None,
@@ -534,16 +601,15 @@ def create_snmp_mapping(
         cursor = conn.execute(
             """
             INSERT INTO snmp_mapping (
-                name, device_type, snmp_community, snmp_version,
+                name, snmp_community, snmp_version,
                 snmp_v3_user, snmp_v3_auth_protocol, snmp_v3_auth_password_encrypted,
                 snmp_v3_priv_protocol, snmp_v3_priv_password_encrypted,
                 description, is_active, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
             """,
             (
                 name,
-                device_type,
                 snmp_community,
                 snmp_version,
                 snmp_v3_user,
@@ -563,7 +629,6 @@ def create_snmp_mapping(
 def update_snmp_mapping(
     mapping_id: int,
     name: Optional[str] = None,
-    device_type: Optional[str] = None,
     snmp_version: Optional[str] = None,
     snmp_community: Optional[str] = None,
     snmp_v3_user: Optional[str] = None,
@@ -581,9 +646,6 @@ def update_snmp_mapping(
     if name is not None:
         updates.append("name = ?")
         values.append(name)
-    if device_type is not None:
-        updates.append("device_type = ?")
-        values.append(device_type)
     if snmp_version is not None:
         if snmp_version not in ["v1", "v2c", "v3"]:
             raise ValueError("Invalid snmp_version. Must be 'v1', 'v2c', or 'v3'")
@@ -639,10 +701,38 @@ def delete_snmp_mapping(mapping_id: int) -> bool:
         return cursor.rowcount > 0
 
 
+def get_snmp_mapping_by_name(name: str) -> Optional[Dict[str, Any]]:
+    """Get a specific SNMP mapping by name.
+
+    Args:
+        name: The name of the SNMP mapping
+
+    Returns:
+        SNMP mapping dict if found, None otherwise
+    """
+    with _get_conn() as conn:
+        row = conn.execute(
+            """
+            SELECT id, name, snmp_community, snmp_version,
+                   snmp_v3_user, snmp_v3_auth_protocol, snmp_v3_auth_password_encrypted,
+                   snmp_v3_priv_protocol, snmp_v3_priv_password_encrypted,
+                   description, is_active, created_at, updated_at
+            FROM snmp_mapping
+            WHERE name = ?
+            """,
+            (name,),
+        ).fetchone()
+
+        if not row:
+            return None
+
+        return dict(row)
+
+
 def import_snmp_mappings_from_yaml(yaml_content: str) -> Dict[str, Any]:
     """Import SNMP mappings from YAML content (CheckMK format or custom format).
 
-    Expected YAML format:
+    Expected YAML format (CheckMK style):
     snmp-id-1:
       version: v3
       type: v3_auth_privacy
@@ -652,6 +742,9 @@ def import_snmp_mappings_from_yaml(yaml_content: str) -> Dict[str, Any]:
       auth_password: authpass
       privacy_protocol: AES
       privacy_password: privpass
+
+    The YAML key (e.g., "snmp-id-1") is used as the SNMP mapping name identifier.
+    SNMP credentials are device-type independent.
 
     Args:
       yaml_content: YAML string content to parse
@@ -677,12 +770,20 @@ def import_snmp_mappings_from_yaml(yaml_content: str) -> Dict[str, Any]:
         }
 
     imported = 0
+    skipped = 0
     errors = []
 
     for snmp_id, snmp_config in yaml_data.items():
         try:
-            # Extract device type from SNMP ID or use the ID itself
-            device_type = snmp_id
+            # Use the YAML key (snmp_id) as the SNMP mapping name identifier
+            name = snmp_id
+
+            # Check if this name already exists
+            existing = get_snmp_mapping_by_name(name)
+            if existing:
+                skipped += 1
+                errors.append(f"Skipped {snmp_id}: Name already exists")
+                continue
 
             # Determine SNMP version
             version_str = snmp_config.get("version", "v2c")
@@ -699,7 +800,7 @@ def import_snmp_mappings_from_yaml(yaml_content: str) -> Dict[str, Any]:
             # Common fields
             snmp_community = snmp_config.get("community", "")
             description = snmp_config.get(
-                "description", f"Imported from YAML: {snmp_id}"
+                "description", f"Imported from CheckMK: {snmp_id}"
             )
 
             # v3 specific fields
@@ -713,9 +814,9 @@ def import_snmp_mappings_from_yaml(yaml_content: str) -> Dict[str, Any]:
                 "privacy_password", snmp_config.get("priv_password", "")
             )
 
-            # Create the SNMP mapping
+            # Create the SNMP mapping with the YAML key as the name
             create_snmp_mapping(
-                device_type=device_type,
+                name=name,
                 snmp_version=version_str,
                 snmp_community=snmp_community if snmp_community else None,
                 snmp_v3_user=snmp_v3_user if snmp_v3_user else None,
@@ -731,4 +832,9 @@ def import_snmp_mappings_from_yaml(yaml_content: str) -> Dict[str, Any]:
             error_msg = f"Error importing {snmp_id}: {str(e)}"
             errors.append(error_msg)
 
-    return {"imported": imported, "errors": len(errors), "error_details": errors}
+    return {
+        "imported": imported,
+        "skipped": skipped,
+        "errors": len(errors) - skipped,  # Don't count skips as errors
+        "error_details": errors,
+    }

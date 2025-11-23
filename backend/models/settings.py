@@ -160,10 +160,9 @@ class LoginCredentialUpdateRequest(BaseModel):
 
 
 class SNMPMappingRequest(BaseModel):
-    """SNMP mapping request model."""
+    """SNMP mapping request model. SNMP credentials are device-type independent."""
 
     name: str
-    device_type: str
     snmp_version: Literal["v1", "v2c", "v3"]
     snmp_community: Optional[str] = None
     snmp_v3_user: Optional[str] = None
@@ -176,10 +175,9 @@ class SNMPMappingRequest(BaseModel):
 
 
 class SNMPMappingUpdateRequest(BaseModel):
-    """SNMP mapping update request model."""
+    """SNMP mapping update request model. SNMP credentials are device-type independent."""
 
     name: Optional[str] = None
-    device_type: Optional[str] = None
     snmp_version: Optional[Literal["v1", "v2c", "v3"]] = None
     snmp_community: Optional[str] = None
     snmp_v3_user: Optional[str] = None

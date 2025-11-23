@@ -349,7 +349,6 @@ async def create_snmp_mapping(
     try:
         mapping_id = compliance.create_snmp_mapping(
             name=mapping_request.name,
-            device_type=mapping_request.device_type,
             snmp_version=mapping_request.snmp_version,
             snmp_community=mapping_request.snmp_community,
             snmp_v3_user=mapping_request.snmp_v3_user,
@@ -391,7 +390,6 @@ async def update_snmp_mapping(
         success = compliance.update_snmp_mapping(
             mapping_id=mapping_id,
             name=mapping_request.name,
-            device_type=mapping_request.device_type,
             snmp_version=mapping_request.snmp_version,
             snmp_community=mapping_request.snmp_community,
             snmp_v3_user=mapping_request.snmp_v3_user,
@@ -471,16 +469,20 @@ async def import_snmp_mappings(
     try:
         result = compliance.import_snmp_mappings_from_yaml(yaml_content)
 
+        # Build status message
+        parts = []
+        if result["imported"] > 0:
+            parts.append(f"imported {result['imported']}")
+        if result.get("skipped", 0) > 0:
+            parts.append(f"skipped {result['skipped']} (already exist)")
         if result["errors"] > 0:
-            return {
-                "success": True,
-                "message": f"Imported {result['imported']} SNMP mappings with {result['errors']} errors",
-                "data": result,
-            }
+            parts.append(f"{result['errors']} errors")
+
+        message = f"SNMP mappings: {', '.join(parts)}" if parts else "No mappings imported"
 
         return {
             "success": True,
-            "message": f"Successfully imported {result['imported']} SNMP mappings",
+            "message": message,
             "data": result,
         }
     except ValueError as e:
