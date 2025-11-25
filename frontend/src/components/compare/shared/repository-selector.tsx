@@ -3,6 +3,7 @@
  * Used across all compare pages for consistent repository selection
  */
 
+import { useCallback, useRef } from 'react'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { GitRepository } from '@/types/git'
@@ -22,21 +23,27 @@ export function RepositorySelector({
   disabled = false,
   className = ''
 }: RepositorySelectorProps) {
+  // Memoize the callback - use ref to access current repositories without re-creating callback
+  const repositoriesRef = useRef(repositories)
+  repositoriesRef.current = repositories
+  
+  const handleValueChange = useCallback((value: string) => {
+    if (value === '__none__') {
+      onSelectRepo(null)
+    } else {
+      const repo = repositoriesRef.current.find(r => r.id.toString() === value)
+      if (repo) {
+        onSelectRepo(repo)
+      }
+    }
+  }, [onSelectRepo])
+
   return (
     <div className={`space-y-2 ${className}`}>
       <Label>Repository</Label>
       <Select
         value={selectedRepo?.id.toString() || '__none__'}
-        onValueChange={(value) => {
-          if (value === '__none__') {
-            onSelectRepo(null)
-          } else {
-            const repo = repositories.find(r => r.id.toString() === value)
-            if (repo) {
-              onSelectRepo(repo)
-            }
-          }
-        }}
+        onValueChange={handleValueChange}
         disabled={disabled}
       >
         <SelectTrigger className="w-full border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
