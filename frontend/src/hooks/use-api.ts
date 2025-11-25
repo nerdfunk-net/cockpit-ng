@@ -1,6 +1,6 @@
 import { useAuthStore } from '@/lib/auth-store'
 import { useRouter } from 'next/navigation'
-import { useCallback } from 'react'
+import { useCallback, useRef, useEffect, useMemo } from 'react'
 
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
@@ -14,6 +14,18 @@ const EMPTY_HEADERS: Record<string, string> = {}
 export function useApi() {
   const { token, logout } = useAuthStore()
   const router = useRouter()
+  
+  // Use refs to access current values without recreating apiCall
+  const tokenRef = useRef(token)
+  const logoutRef = useRef(logout)
+  const routerRef = useRef(router)
+  
+  // Keep refs in sync with current values
+  useEffect(() => {
+    tokenRef.current = token
+    logoutRef.current = logout
+    routerRef.current = router
+  }, [token, logout, router])
 
   const apiCall = useCallback(async <T = unknown>(endpoint: string, options: ApiOptions = EMPTY_OPTIONS): Promise<T> => {
     const { method = 'GET', body, headers = EMPTY_HEADERS } = options
@@ -23,8 +35,9 @@ export function useApi() {
       ...headers
     }
 
-    if (token) {
-      defaultHeaders.Authorization = `Bearer ${token}`
+    // Use ref to get current token value
+    if (tokenRef.current) {
+      defaultHeaders.Authorization = `Bearer ${tokenRef.current}`
     }
 
     const fetchOptions: RequestInit = {
@@ -43,10 +56,10 @@ export function useApi() {
       
       // Handle authentication failures (401) - redirect to login
       if (response.status === 401) {
-        logout() // Clear invalid token
+        logoutRef.current() // Clear invalid token
         // Small delay to ensure logout completes
         setTimeout(() => {
-          router.push('/login')
+          routerRef.current.push('/login')
         }, 100)
         // Return a rejected promise that components can handle gracefully
         return Promise.reject(new Error('Session expired, redirecting to login...'))
@@ -74,7 +87,8 @@ export function useApi() {
     } else {
       return {} as T
     }
-  }, [logout, router, token])
+  }, []) // Empty dependencies - all values accessed via refs
 
-  return { apiCall }
+  // Memoize the return object to ensure stable reference
+  return useMemo(() => ({ apiCall }), [apiCall])
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -61,11 +61,17 @@ export default function FileHistoryCompare() {
     setShowComparison(false)
   }, [])
 
+  // IMPORTANT: Memoize options object to ensure stable reference
+  const branchOptions = useMemo(() => ({ 
+    onBranchChange: handleBranchChange 
+  }), [handleBranchChange])
+
   // Use custom hooks for repository, branch, and commit management
   const { repositories, selectedRepo, setSelectedRepo } = useGitRepositories()
-  const { branches, selectedBranch, setSelectedBranch } = useGitBranches(selectedRepo?.id || null, {
-    onBranchChange: handleBranchChange
-  })
+  const { branches, selectedBranch, setSelectedBranch } = useGitBranches(
+    selectedRepo?.id || null, 
+    branchOptions
+  )
   const { commits } = useGitCommits(selectedRepo?.id || null, selectedBranch)
 
   // File selection state
@@ -73,6 +79,10 @@ export default function FileHistoryCompare() {
   const fileSearch = useFileSearch(gitFiles)
   const [loading, setLoading] = useState(false)
   const diffNav = useDiffNavigation()
+  
+  // Extract stable references to avoid putting entire fileSearch object in deps
+  const clearFileSelection = fileSearch.clearSelection
+  const selectedFile = fileSearch.selectedFile
   
   // File history state
   const [fileHistory, setFileHistory] = useState<FileHistoryCommit[]>([])
@@ -109,22 +119,22 @@ export default function FileHistoryCompare() {
       loadFiles()
     } else {
       setGitFiles([])
-      fileSearch.clearSelection()
+      clearFileSelection()
     }
-  }, [selectedRepo, loadFiles, fileSearch])
+  }, [selectedRepo, loadFiles, clearFileSelection])
 
   const canViewHistory = () => {
     return selectedRepo && leftCommit && leftCommit.trim() !== '' &&
-           fileSearch.selectedFile
+           selectedFile
   }
 
   const handleViewHistory = async () => {
-    if (!fileSearch.selectedFile || !leftCommit || !selectedRepo) return
+    if (!selectedFile || !leftCommit || !selectedRepo) return
 
     setHistoryLoading(true)
     try {
       // Get file history for the selected file starting from the selected source commit
-      const response = await apiCall<{commits: FileHistoryCommit[]}>(`git/${selectedRepo.id}/files/${encodeURIComponent(fileSearch.selectedFile.path)}/complete-history?from_commit=${encodeURIComponent(leftCommit)}`)
+      const response = await apiCall<{commits: FileHistoryCommit[]}>(`git/${selectedRepo.id}/files/${encodeURIComponent(selectedFile.path)}/complete-history?from_commit=${encodeURIComponent(leftCommit)}`)
       setFileHistory(response.commits)
       setShowHistory(true)
       setSelectedCommits([])
@@ -152,7 +162,7 @@ export default function FileHistoryCompare() {
   }
 
   const handleShowChanges = async (commitHash: string) => {
-    if (!fileSearch.selectedFile || !selectedRepo) return
+    if (!selectedFile || !selectedRepo) return
 
     setLoading(true)
     try {
@@ -162,7 +172,7 @@ export default function FileHistoryCompare() {
         body: JSON.stringify({
           commit1: `${commitHash}^`, // Parent commit
           commit2: commitHash,
-          file_path: fileSearch.selectedFile.path
+          file_path: selectedFile.path
         })
       })
 
@@ -188,7 +198,7 @@ export default function FileHistoryCompare() {
   }
 
   const handleCompareSelected = async () => {
-    if (selectedCommits.length !== 2 || !fileSearch.selectedFile || !selectedRepo) return
+    if (selectedCommits.length !== 2 || !selectedFile || !selectedRepo) return
 
     setLoading(true)
     try {
@@ -197,7 +207,7 @@ export default function FileHistoryCompare() {
         body: JSON.stringify({
           commit1: selectedCommits[0], // First selected (Selected 1) - left side
           commit2: selectedCommits[1], // Second selected (Selected 2) - right side
-          file_path: fileSearch.selectedFile.path
+          file_path: selectedFile.path
         })
       })
 
@@ -211,19 +221,19 @@ export default function FileHistoryCompare() {
     }
   }
 
-  const handleDownloadFile = async (commitHash: string) => {
-    if (!fileSearch.selectedFile || !selectedRepo) return
+  const handleDownloadCommitVersion = async (commitHash: string) => {
+    if (!selectedFile || !selectedRepo) return
 
     try {
-      // Get file content from the specific commit
-      const response = await apiCall<{content: string}>(`git/${selectedRepo.id}/files/${commitHash}/commit?file_path=${encodeURIComponent(fileSearch.selectedFile.path)}`)
+      // Get file content at specific commit
+      const response = await apiCall<{content: string}>(`git/${selectedRepo.id}/files/${commitHash}/commit?file_path=${encodeURIComponent(selectedFile.path)}`)
 
-      // Create blob and download
+      // Create download
       const blob = new Blob([response.content], { type: 'text/plain' })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `${fileSearch.selectedFile.name}_${commitHash.substring(0, 8)}.txt`
+      link.download = `${selectedFile.name}_${commitHash.substring(0, 8)}.txt`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -233,13 +243,13 @@ export default function FileHistoryCompare() {
     }
   }
 
-  const handleViewFile = async (commitHash: string) => {
-    if (!fileSearch.selectedFile || !selectedRepo) return
+  const handleViewCommitVersion = async (commitHash: string) => {
+    if (!selectedFile || !selectedRepo) return
 
     setLoading(true)
     try {
-      // Get file content from the specific commit
-      const response = await apiCall<{content: string}>(`git/${selectedRepo.id}/files/${commitHash}/commit?file_path=${encodeURIComponent(fileSearch.selectedFile.path)}`)
+      // Get file content at specific commit
+      const response = await apiCall<{content: string}>(`git/${selectedRepo.id}/files/${commitHash}/commit?file_path=${encodeURIComponent(selectedFile.path)}`)
 
       // Find the commit info for the header
       const commit = fileHistory.find(c => c.hash === commitHash)
@@ -405,7 +415,7 @@ export default function FileHistoryCompare() {
                 <span className="text-sm font-medium">File History</span>
               </div>
               <div key="unique-id-fhc-history-desc" className="text-xs text-blue-100 mt-1">
-                History of changes for {fileSearch.selectedFile?.path}
+                History of changes for {selectedFile?.path}
               </div>
             </div>
             <div key="unique-id-fhc-history-actions" className="flex items-center gap-2">
@@ -485,7 +495,7 @@ export default function FileHistoryCompare() {
                       variant="outline"
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleViewFile(commit.hash)
+                        handleViewCommitVersion(commit.hash)
                       }}
                       disabled={loading}
                       className="flex items-center gap-1 h-7 px-2"
@@ -497,7 +507,7 @@ export default function FileHistoryCompare() {
                       variant="outline"
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleDownloadFile(commit.hash)
+                        handleDownloadCommitVersion(commit.hash)
                       }}
                       disabled={loading}
                       className="flex items-center gap-1 h-7 px-2"
@@ -546,7 +556,7 @@ export default function FileHistoryCompare() {
                   <span key="unique-id-fhc-file-view-text">File Content</span>
                 </CardTitle>
                 <div key="unique-id-fhc-file-view-desc" className="text-blue-50 mt-1 text-sm">
-                  {viewingCommit.message}, ({viewingCommit.short_hash}), {fileSearch.selectedFile?.name}
+                  {viewingCommit.message}, ({viewingCommit.short_hash}), {selectedFile?.name}
                 </div>
               </div>
               <div key="unique-id-fhc-file-view-actions" className="flex items-center gap-2">
@@ -678,12 +688,12 @@ export default function FileHistoryCompare() {
                   {selectedCommits.length === 2 ? (
                     <>Selected 1 {(() => {
                       const commit = fileHistory.find(c => c.hash === selectedCommits[0])
-                      return commit ? `${commit.message}, (${commit.short_hash}), ${fileSearch.selectedFile?.name}` : `${comparisonResult.commit1}: ${comparisonResult.left_file}`
+                      return commit ? `${commit.message}, (${commit.short_hash}), ${selectedFile?.name}` : `${comparisonResult.commit1}: ${comparisonResult.left_file}`
                     })()}</>
                   ) : comparisonResult.current_commit ? (
                     comparisonResult.parent_commit ?
-                      `${comparisonResult.parent_commit.message}, (${comparisonResult.parent_commit.short_hash}), ${fileSearch.selectedFile?.name}` :
-                      `Previous version, (${comparisonResult.commit1.substring(0, 8)}), ${fileSearch.selectedFile?.name}`
+                      `${comparisonResult.parent_commit.message}, (${comparisonResult.parent_commit.short_hash}), ${selectedFile?.name}` :
+                      `Previous version, (${comparisonResult.commit1.substring(0, 8)}), ${selectedFile?.name}`
                   ) : (
                     `${comparisonResult.commit1}: ${comparisonResult.left_file}`
                   )}
@@ -692,10 +702,10 @@ export default function FileHistoryCompare() {
                   {selectedCommits.length === 2 ? (
                     <>Selected 2 {(() => {
                       const commit = fileHistory.find(c => c.hash === selectedCommits[1])
-                      return commit ? `${commit.message}, (${commit.short_hash}), ${fileSearch.selectedFile?.name}` : `${comparisonResult.commit2}: ${comparisonResult.right_file}`
+                      return commit ? `${commit.message}, (${commit.short_hash}), ${selectedFile?.name}` : `${comparisonResult.commit2}: ${comparisonResult.right_file}`
                     })()}</>
                   ) : comparisonResult.current_commit ? (
-                    `${comparisonResult.current_commit.message}, (${comparisonResult.current_commit.short_hash}), ${fileSearch.selectedFile?.name}`
+                    `${comparisonResult.current_commit.message}, (${comparisonResult.current_commit.short_hash}), ${selectedFile?.name}`
                   ) : (
                     `${comparisonResult.commit2}: ${comparisonResult.right_file}`
                   )}

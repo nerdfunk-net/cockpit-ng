@@ -3,6 +3,7 @@
  * Used across all compare pages for file selection with autocomplete
  */
 
+import { useCallback } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { FileItem } from '@/types/git'
@@ -34,6 +35,22 @@ export function FileSearchInput({
   disabled = false,
   className = ''
 }: FileSearchInputProps) {
+  // Memoize callbacks to prevent creating new functions on every render
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onSearchQueryChange(e.target.value)
+    onShowResultsChange(e.target.value.length > 0)
+  }, [onSearchQueryChange, onShowResultsChange])
+
+  const handleFocus = useCallback(() => {
+    onShowResultsChange(searchQuery.length > 0)
+  }, [onShowResultsChange, searchQuery])
+
+  const handleFileClick = useCallback((file: FileItem) => {
+    onFileSelect(file)
+    onSearchQueryChange(file.name)
+    onShowResultsChange(false)
+  }, [onFileSelect, onSearchQueryChange, onShowResultsChange])
+
   return (
     <div className={`space-y-2 ${className}`} ref={searchRef}>
       <Label>{label}</Label>
@@ -41,11 +58,8 @@ export function FileSearchInput({
         <Input
           placeholder={placeholder}
           value={searchQuery}
-          onChange={(e) => {
-            onSearchQueryChange(e.target.value)
-            onShowResultsChange(e.target.value.length > 0)
-          }}
-          onFocus={() => onShowResultsChange(searchQuery.length > 0)}
+          onChange={handleInputChange}
+          onFocus={handleFocus}
           disabled={disabled}
           className="border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
         />
@@ -55,11 +69,7 @@ export function FileSearchInput({
               <div
                 key={file.path}
                 className="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                onClick={() => {
-                  onFileSelect(file)
-                  onSearchQueryChange(file.name)
-                  onShowResultsChange(false)
-                }}
+                onClick={() => handleFileClick(file)}
               >
                 <div className="font-medium text-sm">{file.name}</div>
                 <div className="text-xs text-gray-500">{file.path}</div>

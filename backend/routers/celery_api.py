@@ -381,3 +381,163 @@ async def get_celery_config(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get celery config: {str(e)}"
         )
+
+
+# Background job task endpoints
+@router.post("/tasks/cache-devices", response_model=TaskResponse)
+async def trigger_cache_devices(
+    current_user: dict = Depends(require_permission("settings.celery", "write"))
+):
+    """
+    Manually trigger the cache_all_devices background task.
+    This fetches all devices from Nautobot and caches them in Redis.
+    """
+    try:
+        from services.background_jobs.device_cache_jobs import cache_all_devices_task
+
+        # Trigger the task asynchronously
+        task = cache_all_devices_task.delay()
+
+        return TaskResponse(
+            task_id=task.id,
+            status='queued',
+            message=f"Device caching task queued: {task.id}"
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to trigger cache devices task: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to trigger task: {str(e)}"
+        )
+
+
+@router.post("/tasks/cache-locations", response_model=TaskResponse)
+async def trigger_cache_locations(
+    current_user: dict = Depends(require_permission("settings.celery", "write"))
+):
+    """
+    Manually trigger the cache_all_locations background task.
+    This fetches all locations from Nautobot and caches them in Redis.
+    """
+    try:
+        from services.background_jobs.location_cache_jobs import cache_all_locations_task
+
+        # Trigger the task asynchronously
+        task = cache_all_locations_task.delay()
+
+        return TaskResponse(
+            task_id=task.id,
+            status='queued',
+            message=f"Location caching task queued: {task.id}"
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to trigger cache locations task: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to trigger task: {str(e)}"
+        )
+
+
+# CheckMK device management task endpoints
+@router.post("/tasks/add-device-to-checkmk", response_model=TaskResponse)
+async def trigger_add_device_to_checkmk(
+    device_id: str,
+    current_user: dict = Depends(require_permission("checkmk.devices", "write"))
+):
+    """
+    Manually trigger the add_device_to_checkmk background task.
+    This adds a device from Nautobot to CheckMK.
+
+    Query Parameters:
+        device_id: Nautobot device ID to add to CheckMK
+    """
+    try:
+        from services.background_jobs.checkmk_device_jobs import add_device_to_checkmk_task
+
+        # Trigger the task asynchronously
+        task = add_device_to_checkmk_task.delay(device_id)
+
+        return TaskResponse(
+            task_id=task.id,
+            status='queued',
+            message=f"Add device task queued for device {device_id}: {task.id}"
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to trigger add device task: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to trigger task: {str(e)}"
+        )
+
+
+@router.post("/tasks/update-device-in-checkmk", response_model=TaskResponse)
+async def trigger_update_device_in_checkmk(
+    device_id: str,
+    current_user: dict = Depends(require_permission("checkmk.devices", "write"))
+):
+    """
+    Manually trigger the update_device_in_checkmk background task.
+    This syncs/updates a device from Nautobot to CheckMK.
+
+    Query Parameters:
+        device_id: Nautobot device ID to update in CheckMK
+    """
+    try:
+        from services.background_jobs.checkmk_device_jobs import update_device_in_checkmk_task
+
+        # Trigger the task asynchronously
+        task = update_device_in_checkmk_task.delay(device_id)
+
+        return TaskResponse(
+            task_id=task.id,
+            status='queued',
+            message=f"Update device task queued for device {device_id}: {task.id}"
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to trigger update device task: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to trigger task: {str(e)}"
+        )
+
+
+@router.post("/tasks/sync-devices-to-checkmk", response_model=TaskResponse)
+async def trigger_sync_devices_to_checkmk(
+    device_ids: list[str],
+    current_user: dict = Depends(require_permission("checkmk.devices", "write"))
+):
+    """
+    Manually trigger the sync_devices_to_checkmk background task.
+    This syncs multiple devices from Nautobot to CheckMK.
+
+    Request Body:
+        device_ids: List of Nautobot device IDs to sync
+    """
+    try:
+        from services.background_jobs.checkmk_device_jobs import sync_devices_to_checkmk_task
+
+        if not device_ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="device_ids list cannot be empty"
+            )
+
+        # Trigger the task asynchronously
+        task = sync_devices_to_checkmk_task.delay(device_ids)
+
+        return TaskResponse(
+            task_id=task.id,
+            status='queued',
+            message=f"Sync devices task queued for {len(device_ids)} devices: {task.id}"
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to trigger sync devices task: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to trigger task: {str(e)}"
+        )

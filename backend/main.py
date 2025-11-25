@@ -32,6 +32,7 @@ from routers.celery_api import router as celery_router
 
 # git_repositories_router is included via git_router - no need to import separately
 from routers.jobs import router as jobs_router
+from routers.job_schedules import router as job_schedules_router
 from routers.netmiko import router as netmiko_router
 from routers.rbac import router as rbac_router
 from routers.compliance import router as compliance_router
@@ -80,6 +81,7 @@ app.include_router(profile_router)
 app.include_router(celery_router)
 # git_repositories_router removed - already included via git_router
 app.include_router(jobs_router)
+app.include_router(job_schedules_router)
 app.include_router(netmiko_router)
 app.include_router(rbac_router)
 app.include_router(compliance_router)

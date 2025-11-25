@@ -6,7 +6,7 @@ from celery.schedules import crontab
 
 # Define periodic task schedule
 CELERY_BEAT_SCHEDULE = {
-    # Example: Worker health check - every 5 minutes
+    # Worker health check - every 5 minutes
     'worker-health-check': {
         'task': 'tasks.worker_health_check',
         'schedule': crontab(minute='*/5'),  # Every 5 minutes
@@ -15,8 +15,23 @@ CELERY_BEAT_SCHEDULE = {
         }
     },
 
-    # Add more periodic tasks here as needed
-    # See doc/CELERY_ARCHITECTURE.md for examples
+    # Cache all devices from Nautobot - runs every hour
+    'cache-devices-hourly': {
+        'task': 'cache_all_devices',
+        'schedule': crontab(minute=0),  # Every hour at :00
+        'options': {
+            'expires': 3000,  # Task expires after 50 minutes if not picked up
+        },
+    },
+
+    # Cache all locations from Nautobot - runs every 10 minutes
+    'cache-locations-every-10min': {
+        'task': 'cache_all_locations',
+        'schedule': crontab(minute='*/10'),  # Every 10 minutes
+        'options': {
+            'expires': 540,  # Task expires after 9 minutes if not picked up
+        },
+    },
 }
 
 # Schedule examples using different patterns:

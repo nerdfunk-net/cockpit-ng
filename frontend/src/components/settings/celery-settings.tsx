@@ -321,8 +321,8 @@ export function CelerySettingsPage() {
                           <TableCell>
                             <Badge variant="default">Active</Badge>
                           </TableCell>
-                          <TableCell>{pool?.['max-concurrency'] || 'N/A'}</TableCell>
-                          <TableCell>{pool?.implementation || 'N/A'}</TableCell>
+                          <TableCell>{String(pool?.['max-concurrency'] ?? 'N/A')}</TableCell>
+                          <TableCell>{String(pool?.implementation || 'N/A')}</TableCell>
                         </TableRow>
                       )
                     })}

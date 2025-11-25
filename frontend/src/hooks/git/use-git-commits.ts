@@ -3,7 +3,7 @@
  * Handles loading commits for a specific branch in a repository
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useApi } from '@/hooks/use-api'
 import type { Commit } from '@/types/git'
 
@@ -12,6 +12,10 @@ export function useGitCommits(repoId: number | null, branch: string) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { apiCall } = useApi()
+  
+  // Use ref to avoid recreating loadCommits when apiCall changes
+  const apiCallRef = useRef(apiCall)
+  apiCallRef.current = apiCall
 
   const loadCommits = useCallback(async () => {
     if (!repoId || !branch) {
@@ -23,7 +27,7 @@ export function useGitCommits(repoId: number | null, branch: string) {
     setError(null)
     try {
       console.log('Loading commits for branch:', branch, 'in repo:', repoId)
-      const response = await apiCall<Commit[]>(
+      const response = await apiCallRef.current<Commit[]>(
         `git/${repoId}/commits/${encodeURIComponent(branch)}`
       )
       console.log('Commits loaded:', response.length, 'commits')
@@ -35,13 +39,14 @@ export function useGitCommits(repoId: number | null, branch: string) {
     } finally {
       setLoading(false)
     }
-  }, [repoId, branch, apiCall])
+  }, [repoId, branch])
 
   // Load commits when repository or branch changes
   useEffect(() => {
     loadCommits()
-  }, [loadCommits])
+  }, [repoId, branch, loadCommits])
 
+  // Memoize the return object to ensure stable reference
   return useMemo(() => ({
     commits,
     loading,
