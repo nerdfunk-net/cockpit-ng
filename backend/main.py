@@ -206,6 +206,15 @@ async def startup_services():
     """Initialize all services on startup."""
     logger.info("=== Application startup - initializing services ===")
 
+    # Initialize database tables first
+    try:
+        from core.database import init_db
+        init_db()
+        logger.info("Database tables initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize database tables: {e}")
+        raise
+
     # Ensure admin user has RBAC role assigned (must happen before other services)
     try:
         import user_db_manager

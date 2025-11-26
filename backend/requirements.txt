@@ -18,6 +18,7 @@ napalm
 pyyaml
 apscheduler
 sqlalchemy
+psycopg2-binary
 python-jose[cryptography]
 pysnmp>=7.0.0
 

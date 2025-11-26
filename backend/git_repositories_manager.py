@@ -1,102 +1,55 @@
 """
 Git repository management system.
+Database: PostgreSQL (cockpit database)
+Table: git_repositories
 """
 
-import sqlite3
 import logging
 from datetime import datetime
 from typing import List, Optional, Dict, Any
-from pathlib import Path
+from repositories import GitRepositoryRepository
+from core.models import GitRepository
 
 logger = logging.getLogger(__name__)
 
 
 class GitRepositoryManager:
-    """Manages Git repositories in SQLite database."""
+    """Manages Git repositories in PostgreSQL database."""
 
     def __init__(self, db_path: str = None):
-        if db_path is None:
-            # Use data directory from configuration
-            from config import settings as config_settings
-
-            data_dir = Path(config_settings.data_directory) / "settings"
-            data_dir.mkdir(parents=True, exist_ok=True)
-            db_path = data_dir / "git_repositories.db"
-
-        self.db_path = str(db_path)
-        self.init_database()
+        # db_path parameter kept for backward compatibility but not used
+        self.repo = GitRepositoryRepository()
 
     def init_database(self):
-        """Initialize the database with required tables."""
-        try:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.execute("""
-                    CREATE TABLE IF NOT EXISTS git_repositories (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT UNIQUE NOT NULL,
-                        category TEXT NOT NULL CHECK (category IN ('configs', 'templates', 'onboarding', 'inventory')),
-                        url TEXT NOT NULL,
-                        branch TEXT NOT NULL DEFAULT 'main',
-                        credential_name TEXT,
-                        path TEXT,
-                        verify_ssl BOOLEAN NOT NULL DEFAULT 1,
-                        description TEXT,
-                        is_active BOOLEAN NOT NULL DEFAULT 1,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        last_sync TIMESTAMP,
-                        sync_status TEXT
-                    )
-                """)
-
-                # Create indexes for better performance
-                conn.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_git_repos_category ON git_repositories (category)"
-                )
-                conn.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_git_repos_active ON git_repositories (is_active)"
-                )
-
-                conn.commit()
-                logger.info(f"Git repositories database initialized at {self.db_path}")
-        except Exception as e:
-            logger.error(f"Error initializing git repositories database: {e}")
-            raise
+        """No-op for backward compatibility. Table created via models."""
+        pass
 
     def create_repository(self, repo_data: Dict[str, Any]) -> int:
         """Create a new git repository."""
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.execute(
-                    """
-                    INSERT INTO git_repositories 
-                    (name, category, url, branch, credential_name, path, verify_ssl, description, is_active)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                    (
-                        repo_data["name"],
-                        repo_data["category"],
-                        repo_data["url"],
-                        repo_data.get("branch", "main"),
-                        repo_data.get("credential_name"),
-                        repo_data.get("path"),
-                        repo_data.get("verify_ssl", True),
-                        repo_data.get("description"),
-                        repo_data.get("is_active", True),
-                    ),
-                )
-                repo_id = cursor.lastrowid
-                conn.commit()
-
-                logger.info(
-                    f"Created git repository: {repo_data['name']} (ID: {repo_id})"
-                )
-                return repo_id
-        except sqlite3.IntegrityError as e:
-            if "UNIQUE constraint failed" in str(e):
+            # Check if name already exists
+            if self.repo.name_exists(repo_data["name"]):
                 raise ValueError(
                     f"Repository with name '{repo_data['name']}' already exists"
                 )
+            
+            new_repo = self.repo.create(
+                name=repo_data["name"],
+                category=repo_data["category"],
+                url=repo_data["url"],
+                branch=repo_data.get("branch", "main"),
+                credential_name=repo_data.get("credential_name"),
+                path=repo_data.get("path"),
+                verify_ssl=repo_data.get("verify_ssl", True),
+                description=repo_data.get("description"),
+                is_active=repo_data.get("is_active", True),
+            )
+            
+            logger.info(
+                f"Created git repository: {repo_data['name']} (ID: {new_repo.id})"
+            )
+            return new_repo.id
+        except ValueError:
             raise
         except Exception as e:
             logger.error(f"Error creating git repository: {e}")
@@ -105,19 +58,10 @@ class GitRepositoryManager:
     def get_repository(self, repo_id: int) -> Optional[Dict[str, Any]]:
         """Get a git repository by ID."""
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.execute(
-                    """
-                    SELECT * FROM git_repositories WHERE id = ?
-                """,
-                    (repo_id,),
-                )
-                row = cursor.fetchone()
-
-                if row:
-                    return dict(row)
-                return None
+            repo = self.repo.get_by_id(repo_id)
+            if repo:
+                return self._model_to_dict(repo)
+            return None
         except Exception as e:
             logger.error(f"Error getting git repository {repo_id}: {e}")
             raise
@@ -127,25 +71,14 @@ class GitRepositoryManager:
     ) -> List[Dict[str, Any]]:
         """Get all git repositories, optionally filtered by category and active status."""
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.row_factory = sqlite3.Row
-
-                query = "SELECT * FROM git_repositories WHERE 1=1"
-                params = []
-
-                if category:
-                    query += " AND category = ?"
-                    params.append(category)
-
-                if active_only:
-                    query += " AND is_active = 1"
-
-                query += " ORDER BY name"
-
-                cursor = conn.execute(query, params)
-                rows = cursor.fetchall()
-
-                return [dict(row) for row in rows]
+            if category:
+                repos = self.repo.get_by_category(category, active_only)
+            elif active_only:
+                repos = self.repo.get_all_active()
+            else:
+                repos = self.repo.get_all()
+            
+            return [self._model_to_dict(r) for r in repos]
         except Exception as e:
             logger.error(f"Error getting git repositories: {e}")
             raise
@@ -153,10 +86,8 @@ class GitRepositoryManager:
     def update_repository(self, repo_id: int, repo_data: Dict[str, Any]) -> bool:
         """Update a git repository."""
         try:
-            # Build dynamic update query
-            set_clauses = []
-            params = []
-
+            # Filter valid fields
+            update_kwargs = {}
             for field in [
                 "name",
                 "category",
@@ -169,31 +100,25 @@ class GitRepositoryManager:
                 "is_active",
             ]:
                 if field in repo_data:
-                    set_clauses.append(f"{field} = ?")
-                    params.append(repo_data[field])
+                    update_kwargs[field] = repo_data[field]
 
-            if not set_clauses:
+            if not update_kwargs:
                 return False
+            
+            # Check for name conflict
+            if "name" in update_kwargs:
+                existing = self.repo.get_by_name(update_kwargs["name"])
+                if existing and existing.id != repo_id:
+                    raise ValueError(
+                        f"Repository with name '{update_kwargs['name']}' already exists"
+                    )
 
-            set_clauses.append("updated_at = CURRENT_TIMESTAMP")
-            params.append(repo_id)
-
-            with sqlite3.connect(self.db_path) as conn:
-                query = (
-                    f"UPDATE git_repositories SET {', '.join(set_clauses)} WHERE id = ?"
-                )
-                cursor = conn.execute(query, params)
-                updated = cursor.rowcount > 0
-                conn.commit()
-
-                if updated:
-                    logger.info(f"Updated git repository ID: {repo_id}")
-                return updated
-        except sqlite3.IntegrityError as e:
-            if "UNIQUE constraint failed" in str(e):
-                raise ValueError(
-                    f"Repository with name '{repo_data.get('name')}' already exists"
-                )
+            update_kwargs["updated_at"] = datetime.utcnow()
+            self.repo.update(repo_id, **update_kwargs)
+            
+            logger.info(f"Updated git repository ID: {repo_id}")
+            return True
+        except ValueError:
             raise
         except Exception as e:
             logger.error(f"Error updating git repository {repo_id}: {e}")
@@ -202,28 +127,15 @@ class GitRepositoryManager:
     def delete_repository(self, repo_id: int, hard_delete: bool = True) -> bool:
         """Delete a git repository."""
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                if hard_delete:
-                    cursor = conn.execute(
-                        "DELETE FROM git_repositories WHERE id = ?", (repo_id,)
-                    )
-                else:
-                    cursor = conn.execute(
-                        """
-                        UPDATE git_repositories 
-                        SET is_active = 0, updated_at = CURRENT_TIMESTAMP 
-                        WHERE id = ?
-                    """,
-                        (repo_id,),
-                    )
-
-                deleted = cursor.rowcount > 0
-                conn.commit()
-
-                if deleted:
-                    action = "Deleted" if hard_delete else "Deactivated"
-                    logger.info(f"{action} git repository ID: {repo_id}")
-                return deleted
+            if hard_delete:
+                self.repo.delete(repo_id)
+                action = "Deleted"
+            else:
+                self.repo.update(repo_id, is_active=False, updated_at=datetime.utcnow())
+                action = "Deactivated"
+            
+            logger.info(f"{action} git repository ID: {repo_id}")
+            return True
         except Exception as e:
             logger.error(f"Error deleting git repository {repo_id}: {e}")
             raise
@@ -233,22 +145,16 @@ class GitRepositoryManager:
     ) -> bool:
         """Update the sync status of a repository."""
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                if last_sync is None:
-                    last_sync = datetime.now()
-
-                cursor = conn.execute(
-                    """
-                    UPDATE git_repositories 
-                    SET sync_status = ?, last_sync = ?, updated_at = CURRENT_TIMESTAMP 
-                    WHERE id = ?
-                """,
-                    (status, last_sync.isoformat(), repo_id),
-                )
-
-                updated = cursor.rowcount > 0
-                conn.commit()
-                return updated
+            if last_sync is None:
+                last_sync = datetime.utcnow()
+            
+            self.repo.update(
+                repo_id,
+                sync_status=status,
+                last_sync=last_sync,
+                updated_at=datetime.utcnow()
+            )
+            return True
         except Exception as e:
             logger.error(f"Error updating sync status for repository {repo_id}: {e}")
             raise
@@ -256,31 +162,43 @@ class GitRepositoryManager:
     def get_repositories_by_category(self, category: str) -> List[Dict[str, Any]]:
         """Get all active repositories for a specific category."""
         return self.get_repositories(category=category, active_only=True)
+    
+    def _model_to_dict(self, repo: GitRepository) -> Dict[str, Any]:
+        """Convert GitRepository model to dictionary."""
+        return {
+            "id": repo.id,
+            "name": repo.name,
+            "category": repo.category,
+            "url": repo.url,
+            "branch": repo.branch,
+            "credential_name": repo.credential_name,
+            "path": repo.path,
+            "verify_ssl": repo.verify_ssl,
+            "description": repo.description,
+            "is_active": repo.is_active,
+            "last_sync": repo.last_sync.isoformat() if repo.last_sync else None,
+            "sync_status": repo.sync_status,
+            "created_at": repo.created_at.isoformat() if repo.created_at else None,
+            "updated_at": repo.updated_at.isoformat() if repo.updated_at else None,
+        }
 
     def health_check(self) -> Dict[str, Any]:
         """Check the health of the git repository management system."""
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.execute(
-                    "SELECT COUNT(*) as total, category FROM git_repositories GROUP BY category"
-                )
-                category_counts = {row[1]: row[0] for row in cursor.fetchall()}
+            all_repos = self.repo.get_all()
+            active_repos = [r for r in all_repos if r.is_active]
+            
+            category_counts = {}
+            for repo in all_repos:
+                category_counts[repo.category] = category_counts.get(repo.category, 0) + 1
 
-                cursor = conn.execute(
-                    "SELECT COUNT(*) FROM git_repositories WHERE is_active = 1"
-                )
-                active_count = cursor.fetchone()[0]
-
-                cursor = conn.execute("SELECT COUNT(*) FROM git_repositories")
-                total_count = cursor.fetchone()[0]
-
-                return {
-                    "status": "healthy",
-                    "total_repositories": total_count,
-                    "active_repositories": active_count,
-                    "categories": category_counts,
-                    "database_path": self.db_path,
-                }
+            return {
+                "status": "healthy",
+                "total_repositories": len(all_repos),
+                "active_repositories": len(active_repos),
+                "categories": category_counts,
+                "database": "PostgreSQL",
+            }
         except Exception as e:
             logger.error(f"Health check failed: {e}")
-            return {"status": "error", "error": str(e), "database_path": self.db_path}
+            return {"status": "error", "error": str(e), "database": "PostgreSQL"}

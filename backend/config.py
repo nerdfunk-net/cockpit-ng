@@ -110,6 +110,26 @@ class Settings:
 
     celery_max_workers: int = int(os.getenv("CELERY_MAX_WORKERS", "4"))
 
+    # PostgreSQL Database Configuration
+    database_host: str = os.getenv("COCKPIT_DATABASE_HOST", "localhost")
+    database_port: int = int(os.getenv("COCKPIT_DATABASE_PORT", "5432"))
+    database_name: str = os.getenv("COCKPIT_DATABASE_NAME", "cockpit")
+    database_username: str = os.getenv("COCKPIT_DATABASE_USERNAME", "postgres")
+    database_password: str = os.getenv("COCKPIT_DATABASE_PASSWORD", "postgres")
+    database_ssl: bool = get_env_bool("COCKPIT_DATABASE_SSL", False)
+
+    @property
+    def database_url(self) -> str:
+        """Build PostgreSQL database URL."""
+        # Basic connection string
+        url = f"postgresql://{self.database_username}:{self.database_password}@{self.database_host}:{self.database_port}/{self.database_name}"
+        
+        # Add SSL mode if required
+        if self.database_ssl:
+            url += "?sslmode=require"
+        
+        return url
+
 
 # Global settings instance
 settings = Settings()
