@@ -238,6 +238,35 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
                 oidc_provider=provider_id,
             )
 
+        # Get user with RBAC roles and permissions
+        logger.debug("[OIDC Debug] Fetching user RBAC roles and permissions...")
+        import rbac_manager as rbac
+        user_with_roles = rbac.get_user_with_rbac(user["id"])
+        
+        if not user_with_roles:
+            logger.warning(
+                f"get_user_with_rbac returned None for user_id={user['id']}, using base user"
+            )
+            user_with_roles = user
+            user_with_roles["roles"] = []
+            user_with_roles["permissions"] = []
+
+        # Extract role names for the response
+        role_names = [r["name"] for r in user_with_roles.get("roles", [])]
+        
+        # Determine primary role for legacy compatibility
+        primary_role = "user"  # Default role
+        if "admin" in role_names:
+            primary_role = "admin"
+        elif "operator" in role_names:
+            primary_role = "operator"
+        elif "network_engineer" in role_names:
+            primary_role = "network_engineer"
+        elif "viewer" in role_names:
+            primary_role = "viewer"
+        elif role_names:
+            primary_role = role_names[0]
+
         # Create internal JWT token
         logger.debug("[OIDC Debug] Creating application access token...")
         access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
@@ -245,7 +274,7 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
             data={
                 "sub": user["username"],
                 "user_id": user["id"],
-                "permissions": user["permissions"],
+                "permissions": user["permissions"],  # Legacy bitwise for token
                 "oidc": True,  # Mark as OIDC authenticated
                 "oidc_provider": provider_id,  # Track which provider was used
             },
@@ -256,18 +285,23 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
             f"[OIDC Debug] User '{user['username']}' authenticated successfully via OIDC provider '{provider_id}'"
         )
 
+        # Build response user object with RBAC roles
+        response_user = {
+            "id": user_with_roles["id"],
+            "username": user_with_roles["username"],
+            "realname": user_with_roles["realname"],
+            "email": user_with_roles.get("email"),
+            "role": primary_role,  # Legacy field for compatibility
+            "roles": role_names,  # New RBAC roles array
+            "permissions": user_with_roles.get("permissions", []),  # New RBAC permissions
+            "debug": user_with_roles.get("debug", False),
+        }
+
         return LoginResponse(
             access_token=access_token,
             token_type="bearer",
             expires_in=settings.access_token_expire_minutes * 60,
-            user={
-                "id": user["id"],
-                "username": user["username"],
-                "realname": user["realname"],
-                "role": user["role"],
-                "permissions": user["permissions"],
-                "debug": user.get("debug", False),
-            },
+            user=response_user,
             oidc_provider=provider_id,  # Include which provider was used
         )
 
