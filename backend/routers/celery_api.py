@@ -541,3 +541,43 @@ async def trigger_sync_devices_to_checkmk(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to trigger task: {str(e)}"
         )
+
+
+@router.post("/tasks/compare-nautobot-and-checkmk", response_model=TaskResponse)
+async def trigger_compare_nautobot_and_checkmk(
+    device_ids: list[str] = None,
+    current_user: dict = Depends(require_permission("jobs", "read"))
+):
+    """
+    Compare all devices (or specified devices) between Nautobot and CheckMK.
+
+    This task compares device configurations and stores the results in the job database
+    for later retrieval and display in the frontend.
+
+    Request Body (optional):
+        device_ids: List of Nautobot device IDs to compare. If empty or null, compares all devices.
+
+    Returns:
+        TaskResponse with task_id for tracking progress
+    """
+    try:
+        from services.background_jobs.checkmk_device_jobs import compare_nautobot_and_checkmk_task
+
+        # Trigger the task asynchronously
+        # If device_ids is None or empty list, the task will fetch all devices
+        task = compare_nautobot_and_checkmk_task.delay(device_ids)
+
+        device_count_msg = f"{len(device_ids)} devices" if device_ids else "all devices"
+
+        return TaskResponse(
+            task_id=task.id,
+            status='queued',
+            message=f"Device comparison task queued for {device_count_msg}: {task.id}"
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to trigger comparison task: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to trigger task: {str(e)}"
+        )

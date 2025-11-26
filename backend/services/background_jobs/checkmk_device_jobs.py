@@ -5,8 +5,9 @@ Background jobs for adding and updating devices in CheckMK from Nautobot.
 
 import asyncio
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List
 from celery import shared_task
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -150,10 +151,8 @@ def update_device_in_checkmk_task(self, device_id: str) -> Dict[str, Any]:
             "device_id": result.device_id,
             "hostname": result.hostname,
             "site": result.site,
+            "folder": result.folder,
             "folder_changed": result.folder_changed,
-            "attributes_updated": result.attributes_updated,
-            "old_folder": result.old_folder,
-            "new_folder": result.new_folder,
             "checkmk_response": result.checkmk_response,
         }
 
@@ -295,4 +294,204 @@ def sync_devices_to_checkmk_task(self, device_ids: list[str]) -> Dict[str, Any]:
             "error": str(e),
             "success_count": 0,
             "failed_count": len(device_ids),
+        }
+
+
+@shared_task(bind=True, name="compare_nautobot_and_checkmk")
+def compare_nautobot_and_checkmk_task(
+    self, device_ids: List[str] = None
+) -> Dict[str, Any]:
+    """
+    Celery task to compare all devices between Nautobot and CheckMK.
+
+    This task:
+    1. Fetches all devices from Nautobot (or uses provided device_ids)
+    2. For each device, compares Nautobot config with CheckMK config
+    3. Stores comparison results in job database for later retrieval
+    4. Provides progress updates during execution
+
+    Args:
+        device_ids: Optional list of device IDs to compare. If None, compares all devices.
+
+    Returns:
+        Dictionary with task results (total, completed, failed, etc.)
+    """
+    try:
+        from services.nb2cmk_base_service import nb2cmk_service
+        from services.job_database_service import job_db_service, JobType, JobStatus
+
+        logger.info("Starting compare_nautobot_and_checkmk task")
+
+        # If no device IDs provided, fetch all devices from Nautobot
+        if not device_ids:
+            logger.info("No device IDs provided, fetching all devices from Nautobot")
+            try:
+                devices_result = asyncio.run(nb2cmk_service.get_devices_for_sync())
+                if devices_result and hasattr(devices_result, "devices"):
+                    device_ids = [device.get("id") for device in devices_result.devices]
+                    logger.info(f"Fetched {len(device_ids)} devices from Nautobot")
+                else:
+                    logger.warning("No devices found in Nautobot")
+                    device_ids = []
+            except Exception as e:
+                logger.error(f"Failed to fetch devices from Nautobot: {e}")
+                return {
+                    "status": "failed",
+                    "error": f"Failed to fetch devices: {str(e)}",
+                    "total": 0,
+                    "completed": 0,
+                    "failed": 0,
+                }
+
+        if not device_ids:
+            return {
+                "status": "completed",
+                "message": "No devices to compare",
+                "total": 0,
+                "completed": 0,
+                "failed": 0,
+            }
+
+        total_devices = len(device_ids)
+        completed_count = 0
+        failed_count = 0
+        results = []
+
+        # Create a job ID for storing results in database
+        job_id = f"celery_compare_{self.request.id}"
+
+        # Create job in database
+        job_db_service.create_job(
+            job_id=job_id,
+            job_type=JobType.DEVICE_COMPARISON,
+            started_by="celery",
+            metadata={"task_id": self.request.id, "total_devices": total_devices},
+        )
+
+        # Update job status to running
+        job_db_service.update_job_status(job_id, JobStatus.RUNNING)
+
+        logger.info(
+            f"Starting comparison of {total_devices} devices, job_id: {job_id}"
+        )
+
+        # Process each device
+        for i, device_id in enumerate(device_ids):
+            try:
+                # Update progress
+                self.update_state(
+                    state="PROGRESS",
+                    meta={
+                        "current": i + 1,
+                        "total": total_devices,
+                        "status": f"Comparing device {i + 1}/{total_devices}",
+                        "completed": completed_count,
+                        "failed": failed_count,
+                    },
+                )
+
+                # Update job progress in database
+                job_db_service.update_job_progress(
+                    job_id,
+                    current=i + 1,
+                    total=total_devices,
+                    message=f"Comparing device {i + 1}/{total_devices}",
+                )
+
+                # Compare device configuration
+                try:
+                    comparison_result = asyncio.run(
+                        nb2cmk_service.compare_device_config(device_id)
+                    )
+                except RuntimeError:
+                    # If already in event loop
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        comparison_result = loop.run_until_complete(
+                            nb2cmk_service.compare_device_config(device_id)
+                        )
+                    finally:
+                        loop.close()
+
+                # Extract device name from comparison result or fetch it
+                device_name = f"device_{i + 1}"  # Default fallback
+                if hasattr(comparison_result, "model_dump"):
+                    comp_data = comparison_result.model_dump()
+                    # Try to get hostname from normalized config
+                    if "normalized_config" in comp_data:
+                        internal = comp_data["normalized_config"].get("internal", {})
+                        device_name = internal.get("hostname", device_name)
+
+                # Store result in database
+                job_db_service.add_device_result(
+                    job_id=job_id,
+                    device_name=device_name,
+                    status="completed",
+                    result_data={
+                        "data": comparison_result.model_dump()
+                        if hasattr(comparison_result, "model_dump")
+                        else str(comparison_result),
+                        "timestamp": datetime.now().isoformat(),
+                        "comparison_result": comparison_result.result
+                        if hasattr(comparison_result, "result")
+                        else "unknown",
+                    },
+                    error_message=None,
+                )
+
+                completed_count += 1
+                logger.info(f"Successfully compared device {device_name} ({device_id})")
+
+            except Exception as e:
+                failed_count += 1
+                error_msg = str(e)
+                logger.error(f"Failed to compare device {device_id}: {error_msg}")
+
+                # Store failure in database
+                job_db_service.add_device_result(
+                    job_id=job_id,
+                    device_name=f"device_{device_id}",
+                    status="error",
+                    result_data={
+                        "timestamp": datetime.now().isoformat(),
+                        "comparison_result": "error",
+                    },
+                    error_message=error_msg,
+                )
+
+        # Update final job status
+        if failed_count == 0:
+            job_status = JobStatus.COMPLETED
+            error_message = None
+        elif completed_count > 0:
+            job_status = JobStatus.COMPLETED  # Partial success
+            error_message = f"{failed_count} devices failed"
+        else:
+            job_status = JobStatus.FAILED
+            error_message = f"All {failed_count} devices failed"
+
+        job_db_service.update_job_status(job_id, job_status, error_message)
+
+        logger.info(
+            f"Comparison task completed: {completed_count} succeeded, {failed_count} failed"
+        )
+
+        return {
+            "status": "completed",
+            "total": total_devices,
+            "completed": completed_count,
+            "failed": failed_count,
+            "job_id": job_id,  # Return job_id so frontend can fetch detailed results
+            "message": f"Compared {completed_count}/{total_devices} devices successfully",
+        }
+
+    except Exception as e:
+        logger.error(f"Comparison task failed: {e}", exc_info=True)
+        return {
+            "status": "failed",
+            "error": str(e),
+            "total": len(device_ids) if device_ids else 0,
+            "completed": 0,
+            "failed": len(device_ids) if device_ids else 0,
         }

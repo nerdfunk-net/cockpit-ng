@@ -215,31 +215,6 @@ class ParallelJobRequest(BaseModel):
 # APScheduler Job Management Endpoints
 
 
-@router.post("/compare-devices", response_model=JobStartResponse)
-async def start_devices_compare_job(
-    request: ParallelJobRequest,
-    current_user: dict = Depends(require_permission("jobs", "read")),
-    scheduler_service: APSchedulerJobService = Depends(get_scheduler_service),
-):
-    """Start a parallel device comparison job using APScheduler"""
-    try:
-        username = current_user.get("sub", "unknown")
-        result = await scheduler_service.start_devices_compare_job(
-            username=username,
-            devices=request.devices,
-            max_concurrent=request.max_concurrent,
-        )
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error starting APScheduler job: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to start APScheduler job: {str(e)}",
-        )
-
-
 @router.get("/scheduler-status")
 async def get_scheduler_status(
     _: dict = Depends(require_permission("jobs", "read")),
