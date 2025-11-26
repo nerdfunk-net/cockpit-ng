@@ -364,178 +364,199 @@ export function JobsManagePage() {
               New Job Schedule
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>{editingJob ? "Edit Job Schedule" : "Create Job Schedule"}</DialogTitle>
-              <DialogDescription>
-                {editingJob ? "Update job schedule settings" : "Schedule a new automated task"}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-5 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="job-type" className="text-sm font-semibold">Job Type</Label>
-                <Select value={formJobType} onValueChange={setFormJobType} disabled={!!editingJob}>
-                  <SelectTrigger id="job-type" className="h-11">
-                    <SelectValue placeholder="Select job type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {jobTypes.map((type) => (
-                      <SelectItem key={type.identifier} value={type.identifier}>
-                        <div className="flex flex-col">
+          <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 px-6 py-4">
+              <DialogHeader className="text-white">
+                <DialogTitle className="text-lg font-semibold text-white">
+                  {editingJob ? "Edit Job Schedule" : "Create Job Schedule"}
+                </DialogTitle>
+                <DialogDescription className="text-blue-50">
+                  {editingJob ? "Update job schedule settings" : "Schedule a new automated task"}
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+            
+            {/* Form content */}
+            <div className="px-6 py-4 space-y-4">
+              {/* Job Type and Name in grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="job-type" className="text-sm font-medium text-gray-700">Job Type</Label>
+                  <Select value={formJobType} onValueChange={setFormJobType} disabled={!!editingJob}>
+                    <SelectTrigger id="job-type" className="h-9 bg-white">
+                      <SelectValue placeholder="Select job type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {jobTypes.map((type) => (
+                        <SelectItem key={type.identifier} value={type.identifier}>
                           <span className="font-medium">{type.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="job-name" className="text-sm font-medium text-gray-700">Job Name</Label>
+                  <Input
+                    id="job-name"
+                    placeholder="Enter a descriptive name"
+                    value={formJobName}
+                    onChange={(e) => setFormJobName(e.target.value)}
+                    className="h-9 bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Job description */}
+              {formJobType && (
+                <div className="px-3 py-2 rounded-md bg-gray-50 border border-gray-200 text-sm text-gray-600">
+                  {jobTypes.find(t => t.identifier === formJobType)?.description}
+                </div>
+              )}
+
+              {/* Schedule and timing in grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="schedule-type" className="text-sm font-medium text-gray-700">Schedule</Label>
+                  <Select
+                    value={formScheduleType}
+                    onValueChange={(value) => setFormScheduleType(value as JobSchedule["schedule_type"])}
+                  >
+                    <SelectTrigger id="schedule-type" className="h-9 bg-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="now">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-blue-500" />
+                          <span>Run Once</span>
                         </div>
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {formJobType && (
-                  <div className="p-3 rounded-md bg-muted/50 border">
-                    <p className="text-sm text-muted-foreground">
-                      {jobTypes.find(t => t.identifier === formJobType)?.description}
-                    </p>
+                      <SelectItem value="interval">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-cyan-500" />
+                          <span>Every X Minutes</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="hourly">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-green-500" />
+                          <span>Hourly</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="daily">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-purple-500" />
+                          <span>Daily</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="weekly">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-orange-500" />
+                          <span>Weekly</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="monthly">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-pink-500" />
+                          <span>Monthly</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Conditional timing field */}
+                {formScheduleType === "interval" && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="interval-minutes" className="text-sm font-medium text-gray-700">
+                      Interval (minutes)
+                    </Label>
+                    <Input
+                      id="interval-minutes"
+                      type="number"
+                      min="1"
+                      max="1440"
+                      placeholder="60"
+                      value={formIntervalMinutes}
+                      onChange={(e) => setFormIntervalMinutes(parseInt(e.target.value) || 60)}
+                      className="h-9 bg-white"
+                    />
+                  </div>
+                )}
+
+                {["hourly", "daily", "weekly", "monthly"].includes(formScheduleType) && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="start-time" className="text-sm font-medium text-gray-700">Start Time</Label>
+                    <Input
+                      id="start-time"
+                      type="time"
+                      value={formStartTime}
+                      onChange={(e) => setFormStartTime(e.target.value)}
+                      className="h-9 bg-white"
+                    />
+                  </div>
+                )}
+
+                {/* Empty placeholder when "now" is selected to maintain grid alignment */}
+                {formScheduleType === "now" && <div />}
+              </div>
+
+              {/* Timing hint */}
+              {formScheduleType === "interval" && (
+                <p className="text-xs text-gray-500">
+                  Run every {formIntervalMinutes} minute{formIntervalMinutes !== 1 ? 's' : ''}
+                  {formIntervalMinutes >= 60 && ` (${Math.floor(formIntervalMinutes / 60)}h ${formIntervalMinutes % 60}m)`}
+                </p>
+              )}
+              {["hourly", "daily", "weekly", "monthly"].includes(formScheduleType) && (
+                <p className="text-xs text-gray-500">First run at {formStartTime}</p>
+              )}
+
+              {/* Options section with inline switches */}
+              <div className="flex items-center gap-6 pt-3 border-t border-gray-200">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="is-active"
+                    checked={formIsActive}
+                    onCheckedChange={setFormIsActive}
+                  />
+                  <Label htmlFor="is-active" className="text-sm font-medium text-gray-700 cursor-pointer">
+                    Active
+                  </Label>
+                </div>
+
+                {user?.role === "admin" && (
+                  <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
+                    <Switch
+                      id="is-global"
+                      checked={formIsGlobal}
+                      onCheckedChange={setFormIsGlobal}
+                    />
+                    <Label htmlFor="is-global" className="text-sm font-medium text-gray-700 cursor-pointer flex items-center gap-2">
+                      Global Job
+                      <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-100">Admin</Badge>
+                    </Label>
                   </div>
                 )}
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="job-name" className="text-sm font-semibold">Job Name</Label>
-                <Input
-                  id="job-name"
-                  placeholder="Enter a descriptive name"
-                  value={formJobName}
-                  onChange={(e) => setFormJobName(e.target.value)}
-                  className="h-11"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="schedule-type" className="text-sm font-semibold">Schedule</Label>
-                <Select
-                  value={formScheduleType}
-                  onValueChange={(value) => setFormScheduleType(value as JobSchedule["schedule_type"])}
-                >
-                  <SelectTrigger id="schedule-type" className="h-11">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="now">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-blue-500" />
-                        <span>Run Once</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="interval">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-cyan-500" />
-                        <span>Every X Minutes</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="hourly">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-green-500" />
-                        <span>Hourly</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="daily">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-purple-500" />
-                        <span>Daily</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="weekly">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-orange-500" />
-                        <span>Weekly</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="monthly">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-pink-500" />
-                        <span>Monthly</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {formScheduleType === "interval" && (
-                <div className="space-y-2">
-                  <Label htmlFor="interval-minutes" className="text-sm font-semibold">Interval (minutes)</Label>
-                  <Input
-                    id="interval-minutes"
-                    type="number"
-                    min="1"
-                    max="1440"
-                    placeholder="60"
-                    value={formIntervalMinutes}
-                    onChange={(e) => setFormIntervalMinutes(parseInt(e.target.value) || 60)}
-                    className="h-11"
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Run every {formIntervalMinutes} minute{formIntervalMinutes !== 1 ? 's' : ''}
-                    {formIntervalMinutes >= 60 && ` (${Math.floor(formIntervalMinutes / 60)}h ${formIntervalMinutes % 60}m)`}
-                  </p>
-                </div>
-              )}
-
-              {["hourly", "daily", "weekly", "monthly"].includes(formScheduleType) && (
-                <div className="space-y-2">
-                  <Label htmlFor="start-time" className="text-sm font-semibold">Start Time</Label>
-                  <Input
-                    id="start-time"
-                    type="time"
-                    value={formStartTime}
-                    onChange={(e) => setFormStartTime(e.target.value)}
-                    className="h-11"
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    First run at {formStartTime}
-                  </p>
-                </div>
-              )}
-
-              <div className="border-t pt-4">
-                <p className="text-sm font-semibold mb-3 text-muted-foreground">Options</p>
-              </div>
-
-              <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
-                <div className="space-y-0.5">
-                  <Label htmlFor="is-active" className="text-base font-medium">Active</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Enable this job schedule
-                  </p>
-                </div>
-                <Switch
-                  id="is-active"
-                  checked={formIsActive}
-                  onCheckedChange={setFormIsActive}
-                />
-              </div>
-
-              {user?.role === "admin" && (
-                <div className="flex items-center justify-between p-4 rounded-lg border bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="is-global" className="text-base font-medium flex items-center gap-2">
-                      Global Job
-                      <Badge variant="secondary" className="text-xs">Admin</Badge>
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Visible to all users
-                    </p>
-                  </div>
-                  <Switch
-                    id="is-global"
-                    checked={formIsGlobal}
-                    onCheckedChange={setFormIsGlobal}
-                  />
-                </div>
-              )}
             </div>
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="min-w-[100px]">
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 px-6 py-3 bg-gray-50 border-t border-gray-200">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsDialogOpen(false)} 
+                className="h-9 px-4 border-gray-300 text-gray-700 hover:bg-gray-100"
+              >
                 Cancel
               </Button>
-              <Button onClick={handleSaveJob} className="min-w-[140px]">
+              <Button 
+                onClick={handleSaveJob} 
+                className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white"
+              >
                 {editingJob ? (
                   <>
                     <Edit className="mr-2 h-4 w-4" />

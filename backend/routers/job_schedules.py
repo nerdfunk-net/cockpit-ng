@@ -33,10 +33,12 @@ async def create_job_schedule(
     try:
         # Check permissions for global jobs
         if job_data.is_global:
-            # For global jobs, require permission
-            from core.auth import require_permission
-            user_check = await require_permission("jobs", "write")(current_user)
-            if not user_check:
+            # For global jobs, require admin role or jobs:write permission
+            import rbac_manager
+            has_permission = rbac_manager.has_permission(
+                current_user["user_id"], "jobs", "write"
+            )
+            if not has_permission and current_user.get("role") != "admin":
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Permission denied: jobs:write required for global jobs"
@@ -159,9 +161,11 @@ async def update_job_schedule(
         # Check permissions
         if job.get("is_global"):
             # Global jobs require write permission
-            from core.auth import require_permission
-            user_check = await require_permission("jobs", "write")(current_user)
-            if not user_check:
+            import rbac_manager
+            has_permission = rbac_manager.has_permission(
+                current_user["user_id"], "jobs", "write"
+            )
+            if not has_permission and current_user.get("role") != "admin":
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Permission denied: jobs:write required for global jobs"
@@ -219,9 +223,11 @@ async def delete_job_schedule(
         # Check permissions
         if job.get("is_global"):
             # Global jobs require write permission
-            from core.auth import require_permission
-            user_check = await require_permission("jobs", "write")(current_user)
-            if not user_check:
+            import rbac_manager
+            has_permission = rbac_manager.has_permission(
+                current_user["user_id"], "jobs", "write"
+            )
+            if not has_permission and current_user.get("role") != "admin":
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Permission denied: jobs:write required for global jobs"
