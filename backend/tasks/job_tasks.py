@@ -192,11 +192,13 @@ def dispatch_job(
         )
         
         # Mark as completed or failed based on result
-        if result.get('success'):
+        # Check for success: either explicit 'success: true' or 'status: completed'
+        is_success = result.get('success') or result.get('status') == 'completed'
+        if is_success:
             job_run_manager.mark_completed(job_run_id, result=result)
             logger.info(f"Job {job_name} completed successfully")
         else:
-            error_msg = result.get('error', 'Unknown error')
+            error_msg = result.get('error', result.get('message', 'Unknown error'))
             job_run_manager.mark_failed(job_run_id, error_msg)
             logger.warning(f"Job {job_name} failed: {error_msg}")
         

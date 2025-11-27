@@ -722,13 +722,11 @@ export function CheckMKSyncDevicesPage() {
           }
           setIsJobRunning(false)
 
-          // Get the job_id from the result to load the data
+          // Get the job_id from the result for reference
           if (data.status === 'SUCCESS' && data.result?.job_id) {
             setCurrentJobId(data.result.job_id)
-            // Auto-load results
-            setTimeout(() => {
-              handleViewDiff(data.result.job_id, true)
-            }, 1000)
+            // Set the selected job so user can click "Load Results" to view
+            setSelectedJobId(data.result.job_id)
           }
 
           // Refresh available jobs
