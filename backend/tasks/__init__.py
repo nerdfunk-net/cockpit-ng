@@ -1,16 +1,32 @@
 """
-Celery tasks module.
-Import all task modules here to register them with Celery.
+Celery tasks package.
+Tasks are organized by function:
+- scheduling: Schedule checking and job dispatching
+- execution: Job type executors
+- legacy: Deprecated tasks (will be removed)
+- utils: Helper functions
 """
 
-# Import task modules here
-# from . import device_tasks
-# from . import config_tasks
-# from . import sync_tasks
-# from . import compliance_tasks
-from . import periodic_tasks
-from . import test_tasks
-from . import job_tasks
+# Import scheduling tasks
+from .scheduling import check_job_schedules_task, dispatch_job
+
+# Import legacy tasks (for backwards compatibility)
+from .legacy import (
+    cache_devices_task,
+    sync_checkmk_task,
+    backup_configs_task,
+    ansible_playbook_task
+)
+
+# Import test tasks
+from .test_tasks import test_task, test_progress_task
+
+# Import periodic tasks
+from .periodic_tasks import (
+    worker_health_check,
+    load_cache_schedules_task,
+    dispatch_cache_task
+)
 
 # Import background job tasks (outside tasks package)
 from services.background_jobs import (  # noqa: F401
@@ -22,4 +38,23 @@ from services.background_jobs import (  # noqa: F401
     sync_devices_to_checkmk_task,
 )
 
-__all__ = ['periodic_tasks', 'test_tasks', 'job_tasks']
+__all__ = [
+    # Active tasks
+    'check_job_schedules_task',
+    'dispatch_job',
+
+    # Legacy tasks (deprecated)
+    'cache_devices_task',
+    'sync_checkmk_task',
+    'backup_configs_task',
+    'ansible_playbook_task',
+
+    # Test tasks
+    'test_task',
+    'test_progress_task',
+
+    # Periodic tasks
+    'worker_health_check',
+    'load_cache_schedules_task',
+    'dispatch_cache_task',
+]
