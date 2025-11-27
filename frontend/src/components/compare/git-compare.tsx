@@ -67,14 +67,13 @@ export default function GitCompare() {
   )
 
   // Memoized callback for repository changes
-  // NOTE: setSelectedRepo is a setState function and is stable, so we can safely omit it
   const handleRepoChange = useCallback((repo: GitRepository | null) => {
     setSelectedRepo(repo)
     setLeftCommit('')
     setRightCommit('')
     setComparisonResult(null)
     setShowComparison(false)
-  }, [])
+  }, [setSelectedRepo])
   const { commits } = useGitCommits(selectedRepo?.id || null, selectedBranch)
   const diffNav = useDiffNavigation()
 

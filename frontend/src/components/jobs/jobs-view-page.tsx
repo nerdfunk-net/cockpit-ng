@@ -49,7 +49,7 @@ interface JobRun {
   completed_at: string | null
   duration_seconds: number | null
   error_message: string | null
-  result: Record<string, unknown> | null
+  result: Record<string, React.ReactNode> | null
   target_devices: string[] | null
   executed_by: string | null
   schedule_name: string | null
@@ -696,65 +696,68 @@ export function JobsViewPage() {
               {viewingResult?.job_type} • Completed {viewingResult?.completed_at ? new Date(viewingResult.completed_at).toLocaleString() : 'N/A'}
             </DialogDescription>
           </DialogHeader>
-          
-          {viewingResult?.result && (
-            <div className="space-y-4">
+
+          {viewingResult?.result && (() => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const result = viewingResult.result as Record<string, any>
+
+            return ((<div className="space-y-4" key="result-content">
               {/* Summary */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-gray-50 rounded-lg p-3 text-center">
                   <p className="text-xs text-gray-500 uppercase tracking-wide">Status</p>
-                  <p className={`text-lg font-semibold ${(viewingResult.result as Record<string, unknown>).success ? 'text-green-600' : 'text-red-600'}`}>
-                    {(viewingResult.result as Record<string, unknown>).success ? 'Success' : 'Failed'}
+                  <p className={`text-lg font-semibold ${result.success ? 'text-green-600' : 'text-red-600'}`}>
+                    {result.success ? 'Success' : 'Failed'}
                   </p>
                 </div>
-                {(viewingResult.result as Record<string, unknown>).total !== undefined && (
+                {result.total !== undefined && (
                   <div className="bg-gray-50 rounded-lg p-3 text-center">
                     <p className="text-xs text-gray-500 uppercase tracking-wide">Total</p>
-                    <p className="text-lg font-semibold text-gray-700">{(viewingResult.result as Record<string, unknown>).total as number}</p>
+                    <p className="text-lg font-semibold text-gray-700">{String(result.total)}</p>
                   </div>
                 )}
-                {(viewingResult.result as Record<string, unknown>).success_count !== undefined && (
+                {result.success_count !== undefined && (
                   <div className="bg-green-50 rounded-lg p-3 text-center">
                     <p className="text-xs text-green-600 uppercase tracking-wide">Success</p>
-                    <p className="text-lg font-semibold text-green-700">{(viewingResult.result as Record<string, unknown>).success_count as number}</p>
+                    <p className="text-lg font-semibold text-green-700">{String(result.success_count)}</p>
                   </div>
                 )}
-                {(viewingResult.result as Record<string, unknown>).failed_count !== undefined && (
+                {result.failed_count !== undefined && (
                   <div className="bg-red-50 rounded-lg p-3 text-center">
                     <p className="text-xs text-red-600 uppercase tracking-wide">Failed</p>
-                    <p className="text-lg font-semibold text-red-700">{(viewingResult.result as Record<string, unknown>).failed_count as number}</p>
+                    <p className="text-lg font-semibold text-red-700">{String(result.failed_count)}</p>
                   </div>
                 )}
-                {(viewingResult.result as Record<string, unknown>).completed !== undefined && (
+                {result.completed !== undefined && (
                   <div className="bg-green-50 rounded-lg p-3 text-center">
                     <p className="text-xs text-green-600 uppercase tracking-wide">Completed</p>
-                    <p className="text-lg font-semibold text-green-700">{(viewingResult.result as Record<string, unknown>).completed as number}</p>
+                    <p className="text-lg font-semibold text-green-700">{String(result.completed)}</p>
                   </div>
                 )}
-                {(viewingResult.result as Record<string, unknown>).failed !== undefined && (
+                {result.failed !== undefined && (
                   <div className="bg-red-50 rounded-lg p-3 text-center">
                     <p className="text-xs text-red-600 uppercase tracking-wide">Failed</p>
-                    <p className="text-lg font-semibold text-red-700">{(viewingResult.result as Record<string, unknown>).failed as number}</p>
+                    <p className="text-lg font-semibold text-red-700">{String(result.failed)}</p>
                   </div>
                 )}
-                {(viewingResult.result as Record<string, unknown>).differences_found !== undefined && (
+                {result.differences_found !== undefined && (
                   <div className="bg-amber-50 rounded-lg p-3 text-center">
                     <p className="text-xs text-amber-600 uppercase tracking-wide">Differences</p>
-                    <p className="text-lg font-semibold text-amber-700">{(viewingResult.result as Record<string, unknown>).differences_found as number}</p>
+                    <p className="text-lg font-semibold text-amber-700">{String(result.differences_found)}</p>
                   </div>
                 )}
               </div>
 
               {/* Message */}
-              {(viewingResult.result as Record<string, unknown>).message && (
+              {result.message && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <p className="text-sm text-blue-800">{(viewingResult.result as Record<string, unknown>).message as string}</p>
+                  <p className="text-sm text-blue-800">{String(result.message)}</p>
                 </div>
               )}
 
               {/* Device Results Table */}
-              {Array.isArray((viewingResult.result as Record<string, unknown>).results) && 
-               ((viewingResult.result as Record<string, unknown>).results as unknown[]).length > 0 && (
+              {Array.isArray(result.results) && 
+               (result.results as unknown[]).length > 0 && (
                 <div className="border rounded-lg overflow-hidden">
                   <div className="bg-gray-50 px-4 py-2 border-b">
                     <h4 className="text-sm font-semibold text-gray-700">Device Results</h4>
@@ -770,14 +773,14 @@ export function JobsViewPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {((viewingResult.result as Record<string, unknown>).results as Array<Record<string, unknown>>).map((deviceResult, index) => (
-                          <TableRow key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                        {(result.results as Array<Record<string, unknown>>).map((deviceResult, index) => (
+                          <TableRow key={String(deviceResult.device_id || deviceResult.hostname || index)} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
                             <TableCell className="text-sm font-medium">
-                              {(deviceResult.hostname as string) || (deviceResult.device_id as string)?.slice(0, 8) || '-'}
+                              {String(deviceResult.hostname || '').slice(0, 100) || String(deviceResult.device_id || '').slice(0, 8) || '-'}
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline" className="text-xs">
-                                {(deviceResult.operation as string) || '-'}
+                                {String(deviceResult.operation || '-')}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -796,10 +799,10 @@ export function JobsViewPage() {
                             <TableCell className="text-xs text-gray-600 max-w-[200px] truncate">
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className="cursor-help">{(deviceResult.message as string) || '-'}</span>
+                                  <span className="cursor-help">{String(deviceResult.message || '-')}</span>
                                 </TooltipTrigger>
                                 <TooltipContent side="left" className="max-w-sm">
-                                  <p className="text-xs">{(deviceResult.message as string) || '-'}</p>
+                                  <p className="text-xs">{String(deviceResult.message || '-')}</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TableCell>
@@ -812,12 +815,12 @@ export function JobsViewPage() {
               )}
 
               {/* Error Message (for failed jobs) */}
-              {(viewingResult.result as Record<string, unknown>).error && (
+              {result.error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
                   <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-medium text-red-800">Error</p>
-                    <p className="text-sm text-red-700">{(viewingResult.result as Record<string, unknown>).error as string}</p>
+                    <p className="text-sm text-red-700">{String(result.error)}</p>
                   </div>
                 </div>
               )}
@@ -828,11 +831,11 @@ export function JobsViewPage() {
                   View Raw JSON
                 </summary>
                 <pre className="p-4 bg-gray-900 text-gray-100 text-xs overflow-x-auto rounded-b-lg">
-                  {JSON.stringify(viewingResult.result, null, 2)}
+                  {JSON.stringify(result, null, 2)}
                 </pre>
               </details>
-            </div>
-          )}
+            </div>) as React.ReactNode)
+          })()}
         </DialogContent>
       </Dialog>
     </div>

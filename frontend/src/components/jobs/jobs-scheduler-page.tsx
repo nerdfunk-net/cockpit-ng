@@ -122,6 +122,17 @@ export function JobsSchedulerPage() {
     fetchJobTemplates()
   }, [fetchJobSchedules, fetchJobTemplates])
 
+  const resetForm = useCallback(() => {
+    setFormTemplateId("")
+    setFormIdentifier("")
+    setFormScheduleType("daily")
+    setFormIntervalMinutes(60)
+    setFormStartTime("00:00")
+    setFormIsActive(true)
+    setFormIsGlobal(false)
+    setEditingJob(null)
+  }, [])
+
   const handleSaveJob = useCallback(async () => {
     if (!token || !formIdentifier) return
 
@@ -205,7 +216,7 @@ export function JobsSchedulerPage() {
         variant: "destructive"
       })
     }
-  }, [token, editingJob, formTemplateId, formIdentifier, formScheduleType, formIntervalMinutes, formStartTime, formIsActive, formIsGlobal, fetchJobSchedules, toast])
+  }, [token, editingJob, formTemplateId, formIdentifier, formScheduleType, formIntervalMinutes, formStartTime, formIsActive, formIsGlobal, fetchJobSchedules, toast, resetForm])
 
   const handleToggleActive = useCallback(async (job: JobSchedule) => {
     if (!token) return
@@ -298,17 +309,6 @@ export function JobsSchedulerPage() {
     setFormIsActive(job.is_active)
     setFormIsGlobal(job.is_global)
     setIsDialogOpen(true)
-  }, [])
-
-  const resetForm = useCallback(() => {
-    setFormTemplateId("")
-    setFormIdentifier("")
-    setFormScheduleType("daily")
-    setFormIntervalMinutes(60)
-    setFormStartTime("00:00")
-    setFormIsActive(true)
-    setFormIsGlobal(false)
-    setEditingJob(null)
   }, [])
 
   const getScheduleTypeLabel = (type: JobSchedule["schedule_type"], job?: JobSchedule) => {

@@ -116,7 +116,7 @@ export default function FileCompare() {
     setSelectedRepo(repo)
     leftFileSearch.clearSelection()
     rightFileSearch.clearSelection()
-  }, [])
+  }, [setSelectedRepo, leftFileSearch, rightFileSearch])
 
   // Comparison state
   const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null)

@@ -58,19 +58,6 @@ interface NautobotDeviceRecord {
   device_type?: { model?: string } | null
 }
 
-interface JobResult {
-  id: string
-  type: string
-  status: string
-  started_at: string
-  created_at: string
-  processed_devices: number
-  progress?: {
-    processed: number
-    total: number
-  }
-}
-
 interface DeviceResult {
   id?: number
   job_id?: string
@@ -118,6 +105,26 @@ interface DeviceResult {
   primary_ip4?: { address: string }
   device_status?: { name: string }
   device_id?: string
+  checkmk_status?: string
+  normalized_config?: {
+    folder?: string
+    attributes?: Record<string, unknown>
+    internal?: {
+      hostname?: string
+      role?: string
+      status?: string
+      location?: string
+    }
+  }
+  checkmk_config?: {
+    folder?: string
+    attributes?: Record<string, unknown>
+    effective_attributes?: Record<string, unknown> | null
+    is_cluster?: boolean
+    is_offline?: boolean
+    cluster_nodes?: unknown[] | null
+  }
+  diff?: string
 }
 
 interface AttributeConfig {
@@ -226,7 +233,7 @@ export function CheckMKSyncDevicesPage() {
   // Background job state (Celery)
   const [currentJobId, setCurrentJobId] = useState<string | null>(null)
   const [celeryTaskId, setCeleryTaskId] = useState<string | null>(null)
-  const [isJobRunning, setIsJobRunning] = useState(false)
+  const [_isJobRunning, setIsJobRunning] = useState(false)
   const [jobProgress, setJobProgress] = useState<{
     processed: number
     total: number
@@ -339,12 +346,6 @@ export function CheckMKSyncDevicesPage() {
       localStorage.removeItem('nb2cmk_current_job_id')
       localStorage.removeItem('nb2cmk_is_job_running')
     }
-  }
-
-  const loadJobStateFromStorage = () => {
-    const savedJobId = localStorage.getItem('nb2cmk_current_job_id')
-    const savedIsRunning = localStorage.getItem('nb2cmk_is_job_running') === 'true'
-    return { savedJobId, savedIsRunning }
   }
 
   // Fetch available completed jobs from backend (NB2CMK database)

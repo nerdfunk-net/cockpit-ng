@@ -264,14 +264,11 @@ export default function LiveUpdatePage() {
 
       if (response) {
         let shouldStopPolling = false
-        let taskInfo: DeviceTask | undefined
 
         // Update task in activeTasks and check if we should stop polling
         setActiveTasks(prev => {
           const task = prev.get(taskId)
           if (!task) return prev
-
-          taskInfo = task
 
           const updated = new Map(prev)
 
@@ -279,8 +276,8 @@ export default function LiveUpdatePage() {
           const batchProgress = response.progress?.current && response.progress?.total ? {
             current: response.progress.current,
             total: response.progress.total,
-            success: response.progress.success || 0,
-            failed: response.progress.failed || 0
+            success: Number(response.progress.success) || 0,
+            failed: Number(response.progress.failed) || 0
           } : undefined
 
           updated.set(taskId, {
@@ -333,7 +330,7 @@ export default function LiveUpdatePage() {
         pollingIntervalsRef.current.delete(taskId)
       }
     }
-  }, [apiCall, showMessage])
+  }, [apiCall])
 
   // Start tracking a Celery task
   const trackTask = useCallback((
@@ -410,9 +407,10 @@ export default function LiveUpdatePage() {
 
   // Cleanup all polling intervals on unmount
   useEffect(() => {
+    const intervals = pollingIntervalsRef.current
     return () => {
-      pollingIntervalsRef.current.forEach(interval => clearInterval(interval))
-      pollingIntervalsRef.current.clear()
+      intervals.forEach(interval => clearInterval(interval))
+      intervals.clear()
     }
   }, [])
 
@@ -779,7 +777,7 @@ export default function LiveUpdatePage() {
     } finally {
       setIsSyncingSelected(false)
     }
-  }, [selectedDevices, devices, apiCall, showMessage, trackTask])
+  }, [selectedDevices, apiCall, showMessage, trackTask])
 
   const handlePageChange = useCallback((newPage: number) => {
     setCurrentPage(Math.max(0, Math.min(newPage, totalPages - 1)))
