@@ -40,6 +40,34 @@ class DeviceNormalizationService:
 
         # Set hostname in internal dict (needed for CheckMK queries but not for comparison)
         extensions.internal["hostname"] = device_data.get("name", "")
+        
+        # Store device metadata in internal dict (for UI display, not for comparison)
+        # Extract role name
+        role = device_data.get("role")
+        if isinstance(role, dict):
+            extensions.internal["role"] = role.get("name", "")
+        elif isinstance(role, str):
+            extensions.internal["role"] = role
+        else:
+            extensions.internal["role"] = ""
+        
+        # Extract status name
+        status = device_data.get("status")
+        if isinstance(status, dict):
+            extensions.internal["status"] = status.get("name", "")
+        elif isinstance(status, str):
+            extensions.internal["status"] = status
+        else:
+            extensions.internal["status"] = ""
+        
+        # Extract location name
+        location = device_data.get("location")
+        if isinstance(location, dict):
+            extensions.internal["location"] = location.get("name", "")
+        elif isinstance(location, str):
+            extensions.internal["location"] = location
+        else:
+            extensions.internal["location"] = ""
 
         # Set site using utility function
         extensions.attributes["site"] = get_monitored_site(device_data, None)

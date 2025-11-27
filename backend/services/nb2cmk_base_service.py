@@ -404,10 +404,16 @@ class NautobotToCheckMKService:
                 result = "equal"
                 diff_text = ""
 
+            # Include internal section in the response for UI display purposes
+            # The comparison was done without it, but we need it for device metadata
+            nb_config_with_internal = nb_config_for_comparison.copy()
+            if "internal" in normalized_config:
+                nb_config_with_internal["internal"] = normalized_config["internal"]
+
             return DeviceComparison(
                 result=result,
                 diff=diff_text,
-                normalized_config=nb_config_for_comparison,
+                normalized_config=nb_config_with_internal,
                 checkmk_config=cmk_config_for_comparison,
                 ignored_attributes=config_service.get_ignore_attributes(),
             )

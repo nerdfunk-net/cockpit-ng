@@ -23,6 +23,7 @@ async def list_job_runs(
     job_type: Optional[str] = Query(None, description="Filter by job type"),
     triggered_by: Optional[str] = Query(None, description="Filter by trigger type"),
     schedule_id: Optional[int] = Query(None, description="Filter by schedule ID"),
+    template_id: Optional[int] = Query(None, description="Filter by template ID"),
     current_user: dict = Depends(require_permission("jobs", "read"))
 ):
     """
@@ -41,11 +42,27 @@ async def list_job_runs(
             status=status,
             job_type=job_type,
             triggered_by=triggered_by,
-            schedule_id=schedule_id
+            schedule_id=schedule_id,
+            template_id=template_id
         )
         return result
     except Exception as e:
         logger.error(f"Error listing job runs: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/templates")
+async def get_distinct_templates(
+    current_user: dict = Depends(require_permission("jobs", "read"))
+):
+    """
+    Get distinct templates used in job runs (for filter dropdown).
+    """
+    try:
+        templates = job_run_manager.get_distinct_templates()
+        return {"templates": templates}
+    except Exception as e:
+        logger.error(f"Error getting templates: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -195,6 +212,50 @@ async def clear_all_runs(
         return {"message": f"Cleared {count} job runs", "deleted_count": count}
     except Exception as e:
         logger.error(f"Error clearing job runs: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/clear-filtered")
+async def clear_filtered_runs(
+    status: Optional[str] = Query(None, description="Filter by status"),
+    job_type: Optional[str] = Query(None, description="Filter by job type"),
+    triggered_by: Optional[str] = Query(None, description="Filter by trigger type"),
+    template_id: Optional[int] = Query(None, description="Filter by template ID"),
+    current_user: dict = Depends(require_permission("jobs", "write"))
+):
+    """
+    Clear job runs matching the specified filters.
+    Does not delete pending or running jobs.
+    """
+    try:
+        count = job_run_manager.clear_filtered_runs(
+            status=status,
+            job_type=job_type,
+            triggered_by=triggered_by,
+            template_id=template_id
+        )
+        filters = []
+        if status:
+            filters.append(f"status={status}")
+        if job_type:
+            filters.append(f"type={job_type}")
+        if triggered_by:
+            filters.append(f"trigger={triggered_by}")
+        if template_id:
+            filters.append(f"template={template_id}")
+        filter_desc = ", ".join(filters) if filters else "all completed"
+        return {
+            "message": f"Cleared {count} job runs ({filter_desc})",
+            "deleted_count": count,
+            "filters": {
+                "status": status,
+                "job_type": job_type,
+                "triggered_by": triggered_by,
+                "template_id": template_id
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error clearing filtered job runs: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

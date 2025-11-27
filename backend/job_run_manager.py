@@ -62,7 +62,8 @@ def list_job_runs(
     status: Optional[str] = None,
     job_type: Optional[str] = None,
     triggered_by: Optional[str] = None,
-    schedule_id: Optional[int] = None
+    schedule_id: Optional[int] = None,
+    template_id: Optional[int] = None
 ) -> Dict[str, Any]:
     """List job runs with pagination and filters"""
     items, total = repo.get_paginated(
@@ -71,7 +72,8 @@ def list_job_runs(
         status=status,
         job_type=job_type,
         triggered_by=triggered_by,
-        schedule_id=schedule_id
+        schedule_id=schedule_id,
+        template_id=template_id
     )
     
     total_pages = (total + page_size - 1) // page_size  # Ceiling division
@@ -172,6 +174,38 @@ def clear_all_runs() -> int:
     count = repo.clear_all()
     logger.info(f"Cleared all job runs ({count} deleted)")
     return count
+
+
+def clear_filtered_runs(
+    status: Optional[str] = None,
+    job_type: Optional[str] = None,
+    triggered_by: Optional[str] = None,
+    template_id: Optional[int] = None
+) -> int:
+    """Delete job runs matching filters (excludes pending/running jobs)"""
+    count = repo.clear_filtered(
+        status=status,
+        job_type=job_type,
+        triggered_by=triggered_by,
+        template_id=template_id
+    )
+    filters = []
+    if status:
+        filters.append(f"status={status}")
+    if job_type:
+        filters.append(f"job_type={job_type}")
+    if triggered_by:
+        filters.append(f"triggered_by={triggered_by}")
+    if template_id:
+        filters.append(f"template_id={template_id}")
+    filter_desc = ", ".join(filters) if filters else "all"
+    logger.info(f"Cleared {count} job runs (filter: {filter_desc})")
+    return count
+
+
+def get_distinct_templates() -> List[Dict[str, Any]]:
+    """Get distinct templates used in job runs"""
+    return repo.get_distinct_templates()
 
 
 def delete_job_run(run_id: int) -> bool:

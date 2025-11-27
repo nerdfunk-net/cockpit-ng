@@ -130,7 +130,8 @@ class JobRunRepository(BaseRepository[JobRun]):
         status: Optional[str] = None,
         job_type: Optional[str] = None,
         triggered_by: Optional[str] = None,
-        schedule_id: Optional[int] = None
+        schedule_id: Optional[int] = None,
+        template_id: Optional[int] = None
     ) -> tuple[List[Dict[str, Any]], int]:
         """Get paginated job runs with filters. Returns (items, total_count)"""
         from core.database import get_db_session
@@ -146,6 +147,8 @@ class JobRunRepository(BaseRepository[JobRun]):
                 query = query.filter(self.model.triggered_by == triggered_by)
             if schedule_id:
                 query = query.filter(self.model.job_schedule_id == schedule_id)
+            if template_id:
+                query = query.filter(self.model.job_template_id == template_id)
             
             total = query.count()
             
@@ -295,6 +298,65 @@ class JobRunRepository(BaseRepository[JobRun]):
         except Exception:
             session.rollback()
             raise
+        finally:
+            session.close()
+
+    def clear_filtered(
+        self,
+        status: Optional[str] = None,
+        job_type: Optional[str] = None,
+        triggered_by: Optional[str] = None,
+        template_id: Optional[int] = None
+    ) -> int:
+        """Delete job runs matching filters. Returns count deleted."""
+        from core.database import get_db_session
+        session = get_db_session()
+        try:
+            query = session.query(self.model)
+            
+            # Don't delete running or pending jobs
+            query = query.filter(self.model.status.notin_(['pending', 'running']))
+            
+            if status:
+                query = query.filter(self.model.status == status)
+            if job_type:
+                query = query.filter(self.model.job_type == job_type)
+            if triggered_by:
+                query = query.filter(self.model.triggered_by == triggered_by)
+            if template_id:
+                query = query.filter(self.model.job_template_id == template_id)
+            
+            result = query.delete(synchronize_session='fetch')
+            session.commit()
+            return result
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def get_distinct_templates(self) -> List[Dict[str, Any]]:
+        """Get distinct templates used in job runs."""
+        from core.database import get_db_session
+        from sqlalchemy import func
+        session = get_db_session()
+        try:
+            # Get distinct template_id and template_name combinations
+            results = session.query(
+                self.model.job_template_id,
+                func.max(self.model.template_name).label('template_name')
+            ).filter(
+                self.model.job_template_id.isnot(None)
+            ).group_by(
+                self.model.job_template_id
+            ).order_by(
+                func.max(self.model.template_name)
+            ).all()
+            
+            return [
+                {"id": r.job_template_id, "name": r.template_name or f"Template {r.job_template_id}"}
+                for r in results
+            ]
         finally:
             session.close()
 

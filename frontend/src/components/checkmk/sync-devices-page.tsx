@@ -394,22 +394,27 @@ export function CheckMKSyncDevicesPage() {
         // Extract device results from the NB2CMK job format
         const deviceResults = data.job?.device_results || []
         // Convert device results to the expected devices format
-        const devices = deviceResults.map((result: DeviceResult, index: number) => ({
-          id: result.device_id || result.device_name || `device_${index}`, // Use device UUID as ID, fallback to device name or index
-          name: result.device_name || result.device || `device_${index}`, // Use device name for display, fallback to device UUID
-          role: (typeof result.role === 'object' && result.role?.name) || result.role || 'Unknown', // Extract name from object or use string directly
-          status: result.device_status?.name || result.status || 'Unknown', // Use device_status for device status, fallback to job status
-          location: (typeof result.location === 'object' && result.location?.name) || result.location || 'Unknown', // Extract name from object or use string directly
-          result_data: result.result_data,
-          error_message: result.error_message,
-          processed_at: result.processed_at,
-          // For NB2CMK format, checkmk_status is directly on the result
-          checkmk_status: result.checkmk_status || result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown',
-          // normalized_config and checkmk_config are directly on the result for NB2CMK format
-          normalized_config: result.normalized_config || result.result_data?.data?.normalized_config || result.result_data?.normalized_config,
-          checkmk_config: result.checkmk_config || result.result_data?.data?.checkmk_config || result.result_data?.checkmk_config,
-          diff: result.diff || result.result_data?.data?.diff || result.result_data?.diff
-        }))
+        const devices = deviceResults.map((result: DeviceResult, index: number) => {
+          // Get internal data from normalized_config for device metadata
+          const internalData = result.normalized_config?.internal || {}
+          
+          return {
+            id: result.device_id || result.device_name || `device_${index}`, // Use device UUID as ID, fallback to device name or index
+            name: internalData.hostname || result.device_name || result.device || `device_${index}`, // Use hostname from internal data
+            role: internalData.role || (typeof result.role === 'object' && result.role?.name) || result.role || 'Unknown', // Get role from internal data
+            status: internalData.status || result.device_status?.name || result.status || 'Unknown', // Get status from internal data
+            location: internalData.location || (typeof result.location === 'object' && result.location?.name) || result.location || 'Unknown', // Get location from internal data
+            result_data: result.result_data,
+            error_message: result.error_message,
+            processed_at: result.processed_at,
+            // For NB2CMK format, checkmk_status is directly on the result
+            checkmk_status: result.checkmk_status || result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown',
+            // normalized_config and checkmk_config are directly on the result for NB2CMK format
+            normalized_config: result.normalized_config || result.result_data?.data?.normalized_config || result.result_data?.normalized_config,
+            checkmk_config: result.checkmk_config || result.result_data?.data?.checkmk_config || result.result_data?.checkmk_config,
+            diff: result.diff || result.result_data?.data?.diff || result.result_data?.diff
+          }
+        })
         
         setDevices(devices)
         setStatusMessage({

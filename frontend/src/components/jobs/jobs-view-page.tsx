@@ -4,6 +4,13 @@ import { useEffect, useState, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   Table,
   TableBody,
   TableCell,
@@ -24,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { History, RefreshCw, XCircle, ChevronLeft, ChevronRight, Trash2 } from "lucide-react"
+import { History, RefreshCw, XCircle, ChevronLeft, ChevronRight, Trash2, Eye, CheckCircle2, XCircle as XCircleIcon, AlertCircle } from "lucide-react"
 import { useAuthStore } from "@/lib/auth-store"
 import { useToast } from "@/hooks/use-toast"
 
@@ -70,9 +77,36 @@ export function JobsViewPage() {
   const [total, setTotal] = useState(0)
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [jobTypeFilter, setJobTypeFilter] = useState<string>("all")
+  const [triggerFilter, setTriggerFilter] = useState<string>("all")
+  const [templateFilter, setTemplateFilter] = useState<string>("all")
+  const [availableTemplates, setAvailableTemplates] = useState<Array<{id: number, name: string}>>([])
   const [cancellingId, setCancellingId] = useState<number | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [clearing, setClearing] = useState(false)
+  const [viewingResult, setViewingResult] = useState<JobRun | null>(null)
+
+  // Fetch available templates for filter dropdown
+  const fetchTemplates = useCallback(async () => {
+    if (!token) return
+    try {
+      const response = await fetch("/api/proxy/job-runs/templates", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setAvailableTemplates(data.templates || [])
+      }
+    } catch (error) {
+      console.error("Error fetching templates:", error)
+    }
+  }, [token])
+
+  useEffect(() => {
+    fetchTemplates()
+  }, [fetchTemplates])
 
   const fetchJobRuns = useCallback(async () => {
     if (!token) return
@@ -89,6 +123,12 @@ export function JobsViewPage() {
       }
       if (jobTypeFilter && jobTypeFilter !== "all") {
         params.append("job_type", jobTypeFilter)
+      }
+      if (triggerFilter && triggerFilter !== "all") {
+        params.append("triggered_by", triggerFilter)
+      }
+      if (templateFilter && templateFilter !== "all") {
+        params.append("template_id", templateFilter)
       }
 
       const response = await fetch(`/api/proxy/job-runs?${params.toString()}`, {
@@ -109,7 +149,7 @@ export function JobsViewPage() {
     } finally {
       setLoading(false)
     }
-  }, [token, page, pageSize, statusFilter, jobTypeFilter])
+  }, [token, page, pageSize, statusFilter, jobTypeFilter, triggerFilter, templateFilter])
 
   const cancelJobRun = useCallback(async (runId: number) => {
     if (!token) return
@@ -189,13 +229,45 @@ export function JobsViewPage() {
     }
   }, [token, toast, fetchJobRuns])
 
+  const hasActiveFilters = statusFilter !== "all" || jobTypeFilter !== "all" || triggerFilter !== "all" || templateFilter !== "all"
+
+  const getFilterDescription = useCallback(() => {
+    const parts: string[] = []
+    if (statusFilter !== "all") parts.push(`status: ${statusFilter}`)
+    if (jobTypeFilter !== "all") parts.push(`type: ${jobTypeFilter}`)
+    if (triggerFilter !== "all") parts.push(`trigger: ${triggerFilter}`)
+    if (templateFilter !== "all") {
+      const template = availableTemplates.find(t => t.id.toString() === templateFilter)
+      parts.push(`template: ${template?.name || templateFilter}`)
+    }
+    return parts.length > 0 ? parts.join(", ") : "all"
+  }, [statusFilter, jobTypeFilter, triggerFilter, templateFilter, availableTemplates])
+
   const clearHistory = useCallback(async () => {
     if (!token) return
-    if (!confirm("Are you sure you want to clear all job history? This cannot be undone.")) return
+    
+    const filterDesc = getFilterDescription()
+    const confirmMsg = hasActiveFilters
+      ? `Are you sure you want to clear job history matching: ${filterDesc}? This cannot be undone.`
+      : "Are you sure you want to clear all job history? This cannot be undone."
+    
+    if (!confirm(confirmMsg)) return
 
     try {
       setClearing(true)
-      const response = await fetch("/api/proxy/job-runs/clear-all", {
+      
+      // Build query params based on active filters
+      const params = new URLSearchParams()
+      if (statusFilter !== "all") params.append("status", statusFilter)
+      if (jobTypeFilter !== "all") params.append("job_type", jobTypeFilter)
+      if (triggerFilter !== "all") params.append("triggered_by", triggerFilter)
+      if (templateFilter !== "all") params.append("template_id", templateFilter)
+      
+      const endpoint = hasActiveFilters
+        ? `/api/proxy/job-runs/clear-filtered?${params.toString()}`
+        : "/api/proxy/job-runs/clear-all"
+      
+      const response = await fetch(endpoint, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -205,13 +277,10 @@ export function JobsViewPage() {
 
       if (response.ok) {
         const data = await response.json()
-        setJobRuns([])
-        setTotal(0)
-        setTotalPages(1)
-        setPage(1)
+        await fetchJobRuns() // Refresh to show remaining jobs
         toast({
           title: "History cleared",
-          description: data.message || "All job history has been cleared.",
+          description: data.message || "Job history has been cleared.",
         })
       } else {
         const error = await response.json()
@@ -231,7 +300,7 @@ export function JobsViewPage() {
     } finally {
       setClearing(false)
     }
-  }, [token, toast])
+  }, [token, toast, statusFilter, jobTypeFilter, triggerFilter, templateFilter, hasActiveFilters, getFilterDescription, fetchJobRuns])
 
   useEffect(() => {
     fetchJobRuns()
@@ -316,8 +385,9 @@ export function JobsViewPage() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <TooltipProvider>
+        <div className="flex items-center justify-between">
+          <div>
           <h1 className="text-3xl font-bold text-gray-900">Job History</h1>
           <p className="text-gray-600 mt-1">View running and completed background jobs</p>
         </div>
@@ -353,23 +423,57 @@ export function JobsViewPage() {
             </SelectContent>
           </Select>
 
+          <Select value={triggerFilter} onValueChange={(value) => { setTriggerFilter(value); setPage(1); }}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Trigger" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Triggers</SelectItem>
+              <SelectItem value="manual">Manual</SelectItem>
+              <SelectItem value="schedule">Schedule</SelectItem>
+              <SelectItem value="system">System</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={templateFilter} onValueChange={(value) => { setTemplateFilter(value); setPage(1); }}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Template" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Templates</SelectItem>
+              {availableTemplates.map((template) => (
+                <SelectItem key={template.id} value={template.id.toString()}>
+                  {template.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Button onClick={fetchJobRuns} variant="outline" size="sm" disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
           
-          <Button 
-            onClick={clearHistory} 
-            variant="outline" 
-            size="sm" 
-            disabled={clearing || jobRuns.length === 0}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-          >
-            <Trash2 className={`mr-2 h-4 w-4 ${clearing ? 'animate-spin' : ''}`} />
-            Clear History
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                onClick={clearHistory} 
+                variant="outline" 
+                size="sm" 
+                disabled={clearing || jobRuns.length === 0}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+              >
+                <Trash2 className={`mr-2 h-4 w-4 ${clearing ? 'animate-spin' : ''}`} />
+                {hasActiveFilters ? "Clear Filtered" : "Clear All"}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{hasActiveFilters ? `Clear jobs matching: ${getFilterDescription()}` : "Clear all job history"}</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
+      </TooltipProvider>
 
       {jobRuns.length === 0 ? (
         <div className="rounded-xl border shadow-sm overflow-hidden">
@@ -484,6 +588,23 @@ export function JobsViewPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {run.status === "completed" && run.result && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                  onClick={() => setViewingResult(run)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>View result</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
                           {(run.status === "pending" || run.status === "running") && (
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -562,6 +683,158 @@ export function JobsViewPage() {
           )}
         </div>
       )}
+
+      {/* View Result Dialog */}
+      <Dialog open={viewingResult !== null} onOpenChange={(open) => !open && setViewingResult(null)}>
+        <DialogContent className="sm:max-w-6xl w-[90vw] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-blue-500" />
+              Job Result: {viewingResult?.job_name}
+            </DialogTitle>
+            <DialogDescription>
+              {viewingResult?.job_type} • Completed {viewingResult?.completed_at ? new Date(viewingResult.completed_at).toLocaleString() : 'N/A'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {viewingResult?.result && (
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Status</p>
+                  <p className={`text-lg font-semibold ${(viewingResult.result as Record<string, unknown>).success ? 'text-green-600' : 'text-red-600'}`}>
+                    {(viewingResult.result as Record<string, unknown>).success ? 'Success' : 'Failed'}
+                  </p>
+                </div>
+                {(viewingResult.result as Record<string, unknown>).total !== undefined && (
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Total</p>
+                    <p className="text-lg font-semibold text-gray-700">{(viewingResult.result as Record<string, unknown>).total as number}</p>
+                  </div>
+                )}
+                {(viewingResult.result as Record<string, unknown>).success_count !== undefined && (
+                  <div className="bg-green-50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-green-600 uppercase tracking-wide">Success</p>
+                    <p className="text-lg font-semibold text-green-700">{(viewingResult.result as Record<string, unknown>).success_count as number}</p>
+                  </div>
+                )}
+                {(viewingResult.result as Record<string, unknown>).failed_count !== undefined && (
+                  <div className="bg-red-50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-red-600 uppercase tracking-wide">Failed</p>
+                    <p className="text-lg font-semibold text-red-700">{(viewingResult.result as Record<string, unknown>).failed_count as number}</p>
+                  </div>
+                )}
+                {(viewingResult.result as Record<string, unknown>).completed !== undefined && (
+                  <div className="bg-green-50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-green-600 uppercase tracking-wide">Completed</p>
+                    <p className="text-lg font-semibold text-green-700">{(viewingResult.result as Record<string, unknown>).completed as number}</p>
+                  </div>
+                )}
+                {(viewingResult.result as Record<string, unknown>).failed !== undefined && (
+                  <div className="bg-red-50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-red-600 uppercase tracking-wide">Failed</p>
+                    <p className="text-lg font-semibold text-red-700">{(viewingResult.result as Record<string, unknown>).failed as number}</p>
+                  </div>
+                )}
+                {(viewingResult.result as Record<string, unknown>).differences_found !== undefined && (
+                  <div className="bg-amber-50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-amber-600 uppercase tracking-wide">Differences</p>
+                    <p className="text-lg font-semibold text-amber-700">{(viewingResult.result as Record<string, unknown>).differences_found as number}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Message */}
+              {(viewingResult.result as Record<string, unknown>).message && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">{(viewingResult.result as Record<string, unknown>).message as string}</p>
+                </div>
+              )}
+
+              {/* Device Results Table */}
+              {Array.isArray((viewingResult.result as Record<string, unknown>).results) && 
+               ((viewingResult.result as Record<string, unknown>).results as unknown[]).length > 0 && (
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="bg-gray-50 px-4 py-2 border-b">
+                    <h4 className="text-sm font-semibold text-gray-700">Device Results</h4>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50">
+                          <TableHead className="text-xs font-semibold">Device</TableHead>
+                          <TableHead className="text-xs font-semibold">Operation</TableHead>
+                          <TableHead className="text-xs font-semibold">Status</TableHead>
+                          <TableHead className="text-xs font-semibold">Message</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {((viewingResult.result as Record<string, unknown>).results as Array<Record<string, unknown>>).map((deviceResult, index) => (
+                          <TableRow key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                            <TableCell className="text-sm font-medium">
+                              {(deviceResult.hostname as string) || (deviceResult.device_id as string)?.slice(0, 8) || '-'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-xs">
+                                {(deviceResult.operation as string) || '-'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {deviceResult.success ? (
+                                <span className="flex items-center gap-1 text-green-600">
+                                  <CheckCircle2 className="h-4 w-4" />
+                                  <span className="text-xs">Success</span>
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1 text-red-600">
+                                  <XCircleIcon className="h-4 w-4" />
+                                  <span className="text-xs">Failed</span>
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-gray-600 max-w-[200px] truncate">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="cursor-help">{(deviceResult.message as string) || '-'}</span>
+                                </TooltipTrigger>
+                                <TooltipContent side="left" className="max-w-sm">
+                                  <p className="text-xs">{(deviceResult.message as string) || '-'}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Message (for failed jobs) */}
+              {(viewingResult.result as Record<string, unknown>).error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                  <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-red-800">Error</p>
+                    <p className="text-sm text-red-700">{(viewingResult.result as Record<string, unknown>).error as string}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Raw JSON (collapsible) */}
+              <details className="border rounded-lg">
+                <summary className="px-4 py-2 cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50">
+                  View Raw JSON
+                </summary>
+                <pre className="p-4 bg-gray-900 text-gray-100 text-xs overflow-x-auto rounded-b-lg">
+                  {JSON.stringify(viewingResult.result, null, 2)}
+                </pre>
+              </details>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
