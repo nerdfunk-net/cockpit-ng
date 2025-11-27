@@ -1,0 +1,303 @@
+"""
+JobRun Repository
+Handles database operations for job run tracking.
+"""
+
+from typing import Optional, List, Dict, Any
+from datetime import datetime
+from sqlalchemy import desc
+from sqlalchemy.orm import make_transient
+from core.models import JobRun, JobSchedule, JobTemplate
+from .base import BaseRepository
+
+
+def _to_dict(job_run: JobRun) -> Dict[str, Any]:
+    """Convert JobRun to dictionary while session is still active"""
+    return {
+        "id": job_run.id,
+        "job_schedule_id": job_run.job_schedule_id,
+        "job_template_id": job_run.job_template_id,
+        "celery_task_id": job_run.celery_task_id,
+        "job_name": job_run.job_name,
+        "job_type": job_run.job_type,
+        "status": job_run.status,
+        "triggered_by": job_run.triggered_by,
+        "queued_at": job_run.queued_at,
+        "started_at": job_run.started_at,
+        "completed_at": job_run.completed_at,
+        "error_message": job_run.error_message,
+        "result": job_run.result,
+        "target_devices": job_run.target_devices,
+        "executed_by": job_run.executed_by,
+    }
+
+
+class JobRunRepository(BaseRepository[JobRun]):
+    """Repository for job run operations"""
+    
+    def __init__(self):
+        super().__init__(JobRun)
+    
+    def create(self, **kwargs) -> Dict[str, Any]:
+        """Create a new job run and return as dict"""
+        from core.database import get_db_session
+        session = get_db_session()
+        try:
+            instance = self.model(**kwargs)
+            session.add(instance)
+            session.commit()
+            session.refresh(instance)
+            return _to_dict(instance)
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+    
+    def get_by_id(self, id: int) -> Optional[Dict[str, Any]]:
+        """Get job run by ID and return as dict"""
+        from core.database import get_db_session
+        session = get_db_session()
+        try:
+            job_run = session.query(self.model).filter(self.model.id == id).first()
+            return _to_dict(job_run) if job_run else None
+        finally:
+            session.close()
+    
+    def get_by_celery_task_id(self, celery_task_id: str) -> Optional[Dict[str, Any]]:
+        """Get job run by Celery task ID"""
+        from core.database import get_db_session
+        session = get_db_session()
+        try:
+            job_run = session.query(self.model).filter(
+                self.model.celery_task_id == celery_task_id
+            ).first()
+            return _to_dict(job_run) if job_run else None
+        finally:
+            session.close()
+    
+    def get_by_schedule(
+        self,
+        schedule_id: int,
+        limit: int = 50,
+        status: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get job runs for a specific schedule"""
+        from core.database import get_db_session
+        session = get_db_session()
+        try:
+            query = session.query(self.model).filter(
+                self.model.job_schedule_id == schedule_id
+            )
+            
+            if status:
+                query = query.filter(self.model.status == status)
+            
+            items = query.order_by(desc(self.model.queued_at)).limit(limit).all()
+            return [_to_dict(item) for item in items]
+        finally:
+            session.close()
+    
+    def get_recent_runs(
+        self,
+        limit: int = 50,
+        status: Optional[str] = None,
+        job_type: Optional[str] = None,
+        triggered_by: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get recent job runs with optional filters"""
+        from core.database import get_db_session
+        session = get_db_session()
+        try:
+            query = session.query(self.model)
+            
+            if status:
+                query = query.filter(self.model.status == status)
+            if job_type:
+                query = query.filter(self.model.job_type == job_type)
+            if triggered_by:
+                query = query.filter(self.model.triggered_by == triggered_by)
+            
+            items = query.order_by(desc(self.model.queued_at)).limit(limit).all()
+            return [_to_dict(item) for item in items]
+        finally:
+            session.close()
+    
+    def get_paginated(
+        self,
+        page: int = 1,
+        page_size: int = 25,
+        status: Optional[str] = None,
+        job_type: Optional[str] = None,
+        triggered_by: Optional[str] = None,
+        schedule_id: Optional[int] = None
+    ) -> tuple[List[Dict[str, Any]], int]:
+        """Get paginated job runs with filters. Returns (items, total_count)"""
+        from core.database import get_db_session
+        session = get_db_session()
+        try:
+            query = session.query(self.model)
+            
+            if status:
+                query = query.filter(self.model.status == status)
+            if job_type:
+                query = query.filter(self.model.job_type == job_type)
+            if triggered_by:
+                query = query.filter(self.model.triggered_by == triggered_by)
+            if schedule_id:
+                query = query.filter(self.model.job_schedule_id == schedule_id)
+            
+            total = query.count()
+            
+            offset = (page - 1) * page_size
+            items = query.order_by(desc(self.model.queued_at)).offset(offset).limit(page_size).all()
+            
+            return [_to_dict(item) for item in items], total
+        finally:
+            session.close()
+    
+    def get_running_count(self) -> int:
+        """Get count of currently running jobs"""
+        from core.database import get_db_session
+        session = get_db_session()
+        try:
+            return session.query(self.model).filter(
+                self.model.status == 'running'
+            ).count()
+        finally:
+            session.close()
+    
+    def get_pending_count(self) -> int:
+        """Get count of pending jobs"""
+        from core.database import get_db_session
+        session = get_db_session()
+        try:
+            return session.query(self.model).filter(
+                self.model.status == 'pending'
+            ).count()
+        finally:
+            session.close()
+    
+    def mark_started(self, job_run_id: int, celery_task_id: str) -> Optional[Dict[str, Any]]:
+        """Mark a job run as started"""
+        from core.database import get_db_session
+        session = get_db_session()
+        try:
+            job_run = session.query(self.model).filter(self.model.id == job_run_id).first()
+            if job_run:
+                job_run.status = 'running'
+                job_run.started_at = datetime.utcnow()
+                job_run.celery_task_id = celery_task_id
+                session.commit()
+                session.refresh(job_run)
+                return _to_dict(job_run)
+            return None
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+    
+    def mark_completed(
+        self,
+        job_run_id: int,
+        result: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Mark a job run as completed"""
+        from core.database import get_db_session
+        session = get_db_session()
+        try:
+            job_run = session.query(self.model).filter(self.model.id == job_run_id).first()
+            if job_run:
+                job_run.status = 'completed'
+                job_run.completed_at = datetime.utcnow()
+                if result:
+                    job_run.result = result
+                session.commit()
+                session.refresh(job_run)
+                return _to_dict(job_run)
+            return None
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+    
+    def mark_failed(
+        self,
+        job_run_id: int,
+        error_message: str
+    ) -> Optional[Dict[str, Any]]:
+        """Mark a job run as failed"""
+        from core.database import get_db_session
+        session = get_db_session()
+        try:
+            job_run = session.query(self.model).filter(self.model.id == job_run_id).first()
+            if job_run:
+                job_run.status = 'failed'
+                job_run.completed_at = datetime.utcnow()
+                job_run.error_message = error_message
+                session.commit()
+                session.refresh(job_run)
+                return _to_dict(job_run)
+            return None
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+    
+    def mark_cancelled(self, job_run_id: int) -> Optional[Dict[str, Any]]:
+        """Mark a job run as cancelled"""
+        from core.database import get_db_session
+        session = get_db_session()
+        try:
+            job_run = session.query(self.model).filter(self.model.id == job_run_id).first()
+            if job_run:
+                job_run.status = 'cancelled'
+                job_run.completed_at = datetime.utcnow()
+                session.commit()
+                session.refresh(job_run)
+                return _to_dict(job_run)
+            return None
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+    
+    def cleanup_old_runs(self, days: int = 30) -> int:
+        """Delete job runs older than specified days. Returns count deleted."""
+        from core.database import get_db_session
+        from datetime import timedelta
+        session = get_db_session()
+        try:
+            cutoff = datetime.utcnow() - timedelta(days=days)
+            result = session.query(self.model).filter(
+                self.model.queued_at < cutoff
+            ).delete()
+            session.commit()
+            return result
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+    
+    def clear_all(self) -> int:
+        """Delete all job runs. Returns count deleted."""
+        from core.database import get_db_session
+        session = get_db_session()
+        try:
+            result = session.query(self.model).delete()
+            session.commit()
+            return result
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+
+# Singleton instance
+job_run_repository = JobRunRepository()

@@ -71,6 +71,8 @@ def init_db():
         # Import all models to ensure they're registered with Base.metadata
         from core import models
         Base.metadata.create_all(bind=engine)
+        # Run migrations for existing tables
+        migrate_cache_settings_table()
         # Commit the DDL changes
         engine.dispose()
         logger.info(f"Database tables initialized successfully ({len(Base.metadata.tables)} tables)")
@@ -103,3 +105,41 @@ def check_connection():
     except Exception as e:
         logger.error(f"Database connection failed: {e}")
         return False
+
+
+def migrate_cache_settings_table():
+    """
+    Add new columns to cache_settings table if they don't exist.
+    Called during application startup.
+    """
+    from sqlalchemy import text, inspect
+    
+    columns_to_add = [
+        ("devices_cache_interval_minutes", "INTEGER DEFAULT 60 NOT NULL"),
+        ("locations_cache_interval_minutes", "INTEGER DEFAULT 10 NOT NULL"),
+        ("git_commits_cache_interval_minutes", "INTEGER DEFAULT 15 NOT NULL"),
+    ]
+    
+    try:
+        # Use inspector to check existing columns
+        inspector = inspect(engine)
+        
+        # Check if table exists
+        if 'cache_settings' not in inspector.get_table_names():
+            logger.debug("cache_settings table doesn't exist yet, skipping migration")
+            return
+        
+        existing_columns = {col['name'] for col in inspector.get_columns('cache_settings')}
+        
+        with engine.connect() as conn:
+            for column_name, column_def in columns_to_add:
+                if column_name not in existing_columns:
+                    logger.info(f"Adding column {column_name} to cache_settings table")
+                    conn.execute(text(f"ALTER TABLE cache_settings ADD COLUMN {column_name} {column_def}"))
+                    conn.commit()
+                    logger.info(f"Successfully added column {column_name}")
+                else:
+                    logger.debug(f"Column {column_name} already exists in cache_settings")
+                    
+    except Exception as e:
+        logger.warning(f"Could not migrate cache_settings table: {e}")

@@ -307,7 +307,7 @@ def compare_nautobot_and_checkmk_task(
     This task:
     1. Fetches all devices from Nautobot (or uses provided device_ids)
     2. For each device, compares Nautobot config with CheckMK config
-    3. Stores comparison results in job database for later retrieval
+    3. Stores comparison results in NB2CMK database for later retrieval
     4. Provides progress updates during execution
 
     Args:
@@ -318,7 +318,7 @@ def compare_nautobot_and_checkmk_task(
     """
     try:
         from services.nb2cmk_base_service import nb2cmk_service
-        from services.job_database_service import job_db_service, JobType, JobStatus
+        from services.nb2cmk_database_service import nb2cmk_db_service, JobStatus
 
         logger.info("Starting compare_nautobot_and_checkmk task")
 
@@ -357,19 +357,13 @@ def compare_nautobot_and_checkmk_task(
         failed_count = 0
         results = []
 
-        # Create a job ID for storing results in database
+        # Create a job ID for storing results in NB2CMK database
         job_id = f"celery_compare_{self.request.id}"
 
-        # Create job in database
-        job_db_service.create_job(
-            job_id=job_id,
-            job_type=JobType.DEVICE_COMPARISON,
-            started_by="celery",
-            metadata={"task_id": self.request.id, "total_devices": total_devices},
-        )
-
-        # Update job status to running
-        job_db_service.update_job_status(job_id, JobStatus.RUNNING)
+        # Create job in NB2CMK database
+        nb2cmk_db_service.create_job(username="celery", job_id=job_id)
+        nb2cmk_db_service.update_job_status(job_id, JobStatus.RUNNING)
+        nb2cmk_db_service.update_job_progress(job_id, 0, total_devices, "Starting comparison...")
 
         logger.info(
             f"Starting comparison of {total_devices} devices, job_id: {job_id}"
@@ -390,11 +384,11 @@ def compare_nautobot_and_checkmk_task(
                     },
                 )
 
-                # Update job progress in database
-                job_db_service.update_job_progress(
+                # Update job progress in NB2CMK database
+                nb2cmk_db_service.update_job_progress(
                     job_id,
-                    current=i + 1,
-                    total=total_devices,
+                    processed_devices=i + 1,
+                    total_devices=total_devices,
                     message=f"Comparing device {i + 1}/{total_devices}",
                 )
 
@@ -423,21 +417,15 @@ def compare_nautobot_and_checkmk_task(
                         internal = comp_data["normalized_config"].get("internal", {})
                         device_name = internal.get("hostname", device_name)
 
-                # Store result in database
-                job_db_service.add_device_result(
+                # Store result in NB2CMK database using add_device_result
+                nb2cmk_db_service.add_device_result(
                     job_id=job_id,
+                    device_id=device_id,
                     device_name=device_name,
-                    status="completed",
-                    result_data={
-                        "data": comparison_result.model_dump()
-                        if hasattr(comparison_result, "model_dump")
-                        else str(comparison_result),
-                        "timestamp": datetime.now().isoformat(),
-                        "comparison_result": comparison_result.result
-                        if hasattr(comparison_result, "result")
-                        else "unknown",
-                    },
-                    error_message=None,
+                    checkmk_status=comparison_result.result if hasattr(comparison_result, "result") else "unknown",
+                    diff=comparison_result.diff if hasattr(comparison_result, "diff") else "",
+                    normalized_config=comparison_result.normalized_config if hasattr(comparison_result, "normalized_config") else {},
+                    checkmk_config=comparison_result.checkmk_config if hasattr(comparison_result, "checkmk_config") else None,
                 )
 
                 completed_count += 1
@@ -448,16 +436,15 @@ def compare_nautobot_and_checkmk_task(
                 error_msg = str(e)
                 logger.error(f"Failed to compare device {device_id}: {error_msg}")
 
-                # Store failure in database
-                job_db_service.add_device_result(
+                # Store failure in NB2CMK database
+                nb2cmk_db_service.add_device_result(
                     job_id=job_id,
-                    device_name=f"device_{device_id}",
-                    status="error",
-                    result_data={
-                        "timestamp": datetime.now().isoformat(),
-                        "comparison_result": "error",
-                    },
-                    error_message=error_msg,
+                    device_id=device_id,
+                    device_name=device_id,
+                    checkmk_status="error",
+                    diff=f"Error: {error_msg}",
+                    normalized_config={},
+                    checkmk_config=None,
                 )
 
         # Update final job status
@@ -471,7 +458,7 @@ def compare_nautobot_and_checkmk_task(
             job_status = JobStatus.FAILED
             error_message = f"All {failed_count} devices failed"
 
-        job_db_service.update_job_status(job_id, job_status, error_message)
+        nb2cmk_db_service.update_job_status(job_id, job_status, error_message)
 
         logger.info(
             f"Comparison task completed: {completed_count} succeeded, {failed_count} failed"

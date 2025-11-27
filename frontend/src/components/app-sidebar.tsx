@@ -98,7 +98,8 @@ const navigationSections: NavSection[] = [
   {
     title: 'Jobs',
     items: [
-      { label: 'Manage', href: '/jobs/manage', icon: Calendar },
+      { label: 'Job Templates', href: '/jobs/templates', icon: FileText },
+      { label: 'Scheduler', href: '/jobs/scheduler', icon: Calendar },
       { label: 'View', href: '/jobs/view', icon: History },
     ],
   },

@@ -9,14 +9,16 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { Plus, Play, Pause, Trash2, Edit, Calendar, Clock } from "lucide-react"
+import { Plus, Play, Pause, Trash2, Edit, Calendar, Clock, Globe, User } from "lucide-react"
 import { useAuthStore } from "@/lib/auth-store"
 import { useToast } from "@/hooks/use-toast"
 
 interface JobSchedule {
   id: number
   job_identifier: string
-  job_name: string
+  job_template_id: number
+  template_name?: string
+  template_job_type?: string
   schedule_type: "now" | "interval" | "hourly" | "daily" | "weekly" | "monthly" | "custom"
   cron_expression?: string
   interval_minutes?: number
@@ -26,37 +28,45 @@ interface JobSchedule {
   is_global: boolean
   user_id?: number
   credential_id?: number
-  job_parameters?: Record<string, any>
+  job_parameters?: Record<string, unknown>
   created_at: string
   updated_at: string
   last_run?: string
   next_run?: string
 }
 
-interface JobType {
-  identifier: string
+interface JobTemplate {
+  id: number
   name: string
-  description: string
-  requires_credentials: boolean
-  is_global_only: boolean
+  job_type: string
+  description?: string
+  inventory_source: string
+  inventory_repository_id?: number
+  inventory_name?: string
+  command_template_name?: string
+  is_global: boolean
+  user_id?: number
+  created_by?: string
+  created_at: string
+  updated_at: string
 }
 
 const EMPTY_SCHEDULES: JobSchedule[] = []
-const EMPTY_TYPES: JobType[] = []
+const EMPTY_TEMPLATES: JobTemplate[] = []
 
-export function JobsManagePage() {
+export function JobsSchedulerPage() {
   const token = useAuthStore(state => state.token)
   const user = useAuthStore(state => state.user)
   const { toast } = useToast()
   const [jobSchedules, setJobSchedules] = useState<JobSchedule[]>(EMPTY_SCHEDULES)
-  const [jobTypes, setJobTypes] = useState<JobType[]>(EMPTY_TYPES)
+  const [jobTemplates, setJobTemplates] = useState<JobTemplate[]>(EMPTY_TEMPLATES)
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingJob, setEditingJob] = useState<JobSchedule | null>(null)
 
   // Form state
-  const [formJobType, setFormJobType] = useState("")
-  const [formJobName, setFormJobName] = useState("")
+  const [formTemplateId, setFormTemplateId] = useState<string>("")
+  const [formIdentifier, setFormIdentifier] = useState("")
   const [formScheduleType, setFormScheduleType] = useState<JobSchedule["schedule_type"]>("daily")
   const [formIntervalMinutes, setFormIntervalMinutes] = useState(60)
   const [formStartTime, setFormStartTime] = useState("00:00")
@@ -86,12 +96,12 @@ export function JobsManagePage() {
     }
   }, [token])
 
-  // Fetch available job types
-  const fetchJobTypes = useCallback(async () => {
+  // Fetch available job templates
+  const fetchJobTemplates = useCallback(async () => {
     if (!token) return
 
     try {
-      const response = await fetch("/api/proxy/api/job-schedules/available/types", {
+      const response = await fetch("/api/proxy/api/job-templates", {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -100,20 +110,20 @@ export function JobsManagePage() {
 
       if (response.ok) {
         const data = await response.json()
-        setJobTypes(data.job_types || [])
+        setJobTemplates(data.templates || [])
       }
     } catch (error) {
-      console.error("Error fetching job types:", error)
+      console.error("Error fetching job templates:", error)
     }
   }, [token])
 
   useEffect(() => {
     fetchJobSchedules()
-    fetchJobTypes()
-  }, [fetchJobSchedules, fetchJobTypes])
+    fetchJobTemplates()
+  }, [fetchJobSchedules, fetchJobTemplates])
 
   const handleSaveJob = useCallback(async () => {
-    if (!token || !formJobName) return
+    if (!token || !formIdentifier) return
 
     try {
       if (editingJob) {
@@ -125,7 +135,7 @@ export function JobsManagePage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            job_name: formJobName,
+            job_identifier: formIdentifier,
             schedule_type: formScheduleType,
             interval_minutes: formScheduleType === "interval" ? formIntervalMinutes : undefined,
             start_time: ["hourly", "daily", "weekly", "monthly"].includes(formScheduleType) ? formStartTime : undefined,
@@ -138,20 +148,20 @@ export function JobsManagePage() {
           resetForm()
           fetchJobSchedules()
           toast({
-            title: "Job Updated",
-            description: `Job schedule "${formJobName}" has been updated successfully.`,
+            title: "Schedule Updated",
+            description: `Schedule "${formIdentifier}" has been updated successfully.`,
             variant: "default"
           })
         } else {
           toast({
             title: "Update Failed",
-            description: "Failed to update job schedule. Please try again.",
+            description: "Failed to update schedule. Please try again.",
             variant: "destructive"
           })
         }
       } else {
         // Create new job
-        if (!formJobType) return
+        if (!formTemplateId) return
 
         const response = await fetch("/api/proxy/api/job-schedules", {
           method: "POST",
@@ -160,8 +170,8 @@ export function JobsManagePage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            job_identifier: formJobType,
-            job_name: formJobName,
+            job_identifier: formIdentifier,
+            job_template_id: parseInt(formTemplateId),
             schedule_type: formScheduleType,
             interval_minutes: formScheduleType === "interval" ? formIntervalMinutes : undefined,
             start_time: ["hourly", "daily", "weekly", "monthly"].includes(formScheduleType) ? formStartTime : undefined,
@@ -175,14 +185,14 @@ export function JobsManagePage() {
           resetForm()
           fetchJobSchedules()
           toast({
-            title: "Job Created",
-            description: `Job schedule "${formJobName}" has been created successfully.`,
+            title: "Schedule Created",
+            description: `Schedule "${formIdentifier}" has been created successfully.`,
             variant: "default"
           })
         } else {
           toast({
             title: "Creation Failed",
-            description: "Failed to create job schedule. Please try again.",
+            description: "Failed to create schedule. Please try again.",
             variant: "destructive"
           })
         }
@@ -195,7 +205,7 @@ export function JobsManagePage() {
         variant: "destructive"
       })
     }
-  }, [token, editingJob, formJobType, formJobName, formScheduleType, formIsActive, formIsGlobal, fetchJobSchedules, toast])
+  }, [token, editingJob, formTemplateId, formIdentifier, formScheduleType, formIntervalMinutes, formStartTime, formIsActive, formIsGlobal, fetchJobSchedules, toast])
 
   const handleToggleActive = useCallback(async (job: JobSchedule) => {
     if (!token) return
@@ -240,34 +250,31 @@ export function JobsManagePage() {
     }
   }, [token, fetchJobSchedules])
 
-  const handleRunNow = useCallback(async (jobId: number, jobName: string) => {
+  const handleRunNow = useCallback(async (jobId: number, jobIdentifier: string) => {
     if (!token) return
 
     try {
-      const response = await fetch("/api/proxy/api/job-schedules/execute", {
+      const response = await fetch(`/api/proxy/job-runs/execute/${jobId}`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          job_schedule_id: jobId,
-        }),
       })
 
       if (response.ok) {
-        const data = await response.json()
         toast({
           title: "Job Started",
-          description: `Job "${jobName}" has been queued for execution. Task ID: ${data.celery_task_id}`,
+          description: `Schedule "${jobIdentifier}" has been queued for execution.`,
           variant: "default"
         })
         // Refresh to update last_run timestamp
         fetchJobSchedules()
       } else {
+        const error = await response.json()
         toast({
           title: "Execution Failed",
-          description: "Failed to start job execution. Please try again.",
+          description: error.detail || "Failed to start job execution. Please try again.",
           variant: "destructive"
         })
       }
@@ -283,8 +290,8 @@ export function JobsManagePage() {
 
   const handleEditJob = useCallback((job: JobSchedule) => {
     setEditingJob(job)
-    setFormJobType(job.job_identifier)
-    setFormJobName(job.job_name)
+    setFormTemplateId(job.job_template_id.toString())
+    setFormIdentifier(job.job_identifier)
     setFormScheduleType(job.schedule_type)
     setFormIntervalMinutes(job.interval_minutes || 60)
     setFormStartTime(job.start_time || "00:00")
@@ -294,8 +301,8 @@ export function JobsManagePage() {
   }, [])
 
   const resetForm = useCallback(() => {
-    setFormJobType("")
-    setFormJobName("")
+    setFormTemplateId("")
+    setFormIdentifier("")
     setFormScheduleType("daily")
     setFormIntervalMinutes(60)
     setFormStartTime("00:00")
@@ -340,6 +347,19 @@ export function JobsManagePage() {
     return colors[type]
   }
 
+  const getJobTypeLabel = (jobType: string) => {
+    const labels: Record<string, string> = {
+      backup: "Backup",
+      compare_devices: "Compare Devices",
+      run_commands: "Run Commands",
+      cache_devices: "Cache Devices",
+      sync_devices: "Sync Devices",
+    }
+    return labels[jobType] || jobType
+  }
+
+  const selectedTemplate = jobTemplates.find(t => t.id.toString() === formTemplateId)
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -352,45 +372,53 @@ export function JobsManagePage() {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Job Schedules</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Job Scheduler</h1>
           <p className="text-muted-foreground">
-            Manage and schedule automated tasks
+            Schedule automated tasks using job templates
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
               <Plus className="mr-2 h-4 w-4" />
-              New Job Schedule
+              New Schedule
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
+          <DialogContent className="max-w-4xl p-0 gap-0 overflow-hidden">
             {/* Header with gradient */}
             <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 px-6 py-4">
               <DialogHeader className="text-white">
                 <DialogTitle className="text-lg font-semibold text-white">
-                  {editingJob ? "Edit Job Schedule" : "Create Job Schedule"}
+                  {editingJob ? "Edit Schedule" : "Create Schedule"}
                 </DialogTitle>
                 <DialogDescription className="text-blue-50">
-                  {editingJob ? "Update job schedule settings" : "Schedule a new automated task"}
+                  {editingJob ? "Update schedule settings" : "Schedule a job template to run automatically"}
                 </DialogDescription>
               </DialogHeader>
             </div>
             
             {/* Form content */}
             <div className="px-6 py-4 space-y-4">
-              {/* Job Type and Name in grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="job-type" className="text-sm font-medium text-gray-700">Job Type</Label>
-                  <Select value={formJobType} onValueChange={setFormJobType} disabled={!!editingJob}>
-                    <SelectTrigger id="job-type" className="h-9 bg-white">
-                      <SelectValue placeholder="Select job type" />
+              {/* Job Template and Identifier in grid */}
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-1.5 min-w-0">
+                  <Label htmlFor="job-template" className="text-sm font-medium text-gray-700">Job Template</Label>
+                  <Select value={formTemplateId} onValueChange={setFormTemplateId} disabled={!!editingJob}>
+                    <SelectTrigger id="job-template" className="h-9 bg-white w-full truncate">
+                      <SelectValue placeholder="Select a template" />
                     </SelectTrigger>
                     <SelectContent>
-                      {jobTypes.map((type) => (
-                        <SelectItem key={type.identifier} value={type.identifier}>
-                          <span className="font-medium">{type.name}</span>
+                      {jobTemplates.map((template) => (
+                        <SelectItem key={template.id} value={template.id.toString()}>
+                          <div className="flex items-center gap-2">
+                            {template.is_global ? (
+                              <Globe className="h-3.5 w-3.5 text-blue-500" />
+                            ) : (
+                              <User className="h-3.5 w-3.5 text-gray-400" />
+                            )}
+                            <span className="font-medium">{template.name}</span>
+                            <span className="text-xs text-muted-foreground">({getJobTypeLabel(template.job_type)})</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -398,21 +426,31 @@ export function JobsManagePage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="job-name" className="text-sm font-medium text-gray-700">Job Name</Label>
+                  <Label htmlFor="identifier" className="text-sm font-medium text-gray-700">Schedule Identifier</Label>
                   <Input
-                    id="job-name"
-                    placeholder="Enter a descriptive name"
-                    value={formJobName}
-                    onChange={(e) => setFormJobName(e.target.value)}
+                    id="identifier"
+                    placeholder="e.g., daily-backup-core"
+                    value={formIdentifier}
+                    onChange={(e) => setFormIdentifier(e.target.value)}
                     className="h-9 bg-white"
                   />
                 </div>
               </div>
 
-              {/* Job description */}
-              {formJobType && (
+              {/* Template description */}
+              {selectedTemplate && (
                 <div className="px-3 py-2 rounded-md bg-gray-50 border border-gray-200 text-sm text-gray-600">
-                  {jobTypes.find(t => t.identifier === formJobType)?.description}
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge variant="outline" className="text-xs">
+                      {getJobTypeLabel(selectedTemplate.job_type)}
+                    </Badge>
+                    {selectedTemplate.is_global ? (
+                      <Badge className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-100">Global</Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-xs">Private</Badge>
+                    )}
+                  </div>
+                  {selectedTemplate.description || "No description provided"}
                 </div>
               )}
 
@@ -528,7 +566,7 @@ export function JobsManagePage() {
                   </Label>
                 </div>
 
-                {user?.role === "admin" && (
+                {user?.role === "admin" && !editingJob && (
                   <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
                     <Switch
                       id="is-global"
@@ -536,7 +574,7 @@ export function JobsManagePage() {
                       onCheckedChange={setFormIsGlobal}
                     />
                     <Label htmlFor="is-global" className="text-sm font-medium text-gray-700 cursor-pointer flex items-center gap-2">
-                      Global Job
+                      Global Schedule
                       <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-100">Admin</Badge>
                     </Label>
                   </div>
@@ -555,6 +593,7 @@ export function JobsManagePage() {
               </Button>
               <Button 
                 onClick={handleSaveJob} 
+                disabled={!formIdentifier || (!editingJob && !formTemplateId)}
                 className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white"
               >
                 {editingJob ? (
@@ -578,14 +617,20 @@ export function JobsManagePage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center h-96">
             <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-xl font-semibold mb-2">No job schedules yet</p>
+            <p className="text-xl font-semibold mb-2">No schedules yet</p>
             <p className="text-muted-foreground mb-4">
-              Create your first job schedule to automate tasks
+              Create your first schedule using a job template
             </p>
-            <Button onClick={() => setIsDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Job Schedule
-            </Button>
+            {jobTemplates.length === 0 ? (
+              <p className="text-sm text-amber-600">
+                Create a job template first in Jobs → Job Templates
+              </p>
+            ) : (
+              <Button onClick={() => setIsDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Schedule
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -596,14 +641,26 @@ export function JobsManagePage() {
                 <div className="flex items-start justify-between">
                   <div className="space-y-1 flex-1">
                     <CardTitle className="flex items-center gap-2">
-                      {job.job_name}
+                      {job.job_identifier}
                       {job.is_global && (
                         <Badge variant="secondary" className="text-xs">
                           Global
                         </Badge>
                       )}
                     </CardTitle>
-                    <CardDescription>{job.job_identifier}</CardDescription>
+                    <CardDescription className="flex items-center gap-2">
+                      {job.template_name && (
+                        <>
+                          <span className="font-medium">{job.template_name}</span>
+                          <span className="text-xs">•</span>
+                        </>
+                      )}
+                      {job.template_job_type && (
+                        <Badge variant="outline" className="text-xs">
+                          {getJobTypeLabel(job.template_job_type)}
+                        </Badge>
+                      )}
+                    </CardDescription>
                   </div>
                   {job.is_active ? (
                     <Badge className="bg-green-500">Active</Badge>
@@ -631,7 +688,7 @@ export function JobsManagePage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleRunNow(job.id, job.job_name)}
+                    onClick={() => handleRunNow(job.id, job.job_identifier)}
                     className="flex-1"
                   >
                     <Play className="mr-2 h-4 w-4" />

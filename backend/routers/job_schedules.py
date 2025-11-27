@@ -50,7 +50,7 @@ async def create_job_schedule(
         # Create the job schedule
         job_schedule = jobs_manager.create_job_schedule(
             job_identifier=job_data.job_identifier,
-            job_name=job_data.job_name,
+            job_template_id=job_data.job_template_id,
             schedule_type=job_data.schedule_type,
             cron_expression=job_data.cron_expression,
             interval_minutes=job_data.interval_minutes,
@@ -181,7 +181,7 @@ async def update_job_schedule(
         # Update the job
         updated_job = jobs_manager.update_job_schedule(
             job_id=job_id,
-            job_name=job_update.job_name,
+            job_identifier=job_update.job_identifier,
             schedule_type=job_update.schedule_type,
             cron_expression=job_update.cron_expression,
             interval_minutes=job_update.interval_minutes,
@@ -348,44 +348,3 @@ async def execute_job(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to execute job: {str(e)}"
         )
-
-
-@router.get("/available/types")
-async def get_available_job_types(current_user: dict = Depends(verify_token)):
-    """
-    Get list of available job types that can be scheduled
-
-    Returns predefined job types with their identifiers and descriptions
-    """
-    job_types = [
-        {
-            "identifier": "cache_devices",
-            "name": "Cache Devices",
-            "description": "Update device cache from Nautobot",
-            "requires_credentials": False,
-            "is_global_only": True
-        },
-        {
-            "identifier": "sync_checkmk",
-            "name": "Sync CheckMK",
-            "description": "Synchronize devices to CheckMK",
-            "requires_credentials": False,
-            "is_global_only": True
-        },
-        {
-            "identifier": "backup_configs",
-            "name": "Backup Configurations",
-            "description": "Backup device configurations",
-            "requires_credentials": True,
-            "is_global_only": False
-        },
-        {
-            "identifier": "ansible_playbook",
-            "name": "Run Ansible Playbook",
-            "description": "Execute Ansible playbook",
-            "requires_credentials": True,
-            "is_global_only": False
-        }
-    ]
-
-    return {"job_types": job_types}

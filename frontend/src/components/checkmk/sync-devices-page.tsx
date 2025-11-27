@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { RefreshCw, Search, Eye, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown, BarChart3, Download } from 'lucide-react'
+import { RefreshCw, Search, Eye, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown, BarChart3, Download, Trash2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import {
@@ -347,10 +347,10 @@ export function CheckMKSyncDevicesPage() {
     return { savedJobId, savedIsRunning }
   }
 
-  // Fetch available completed jobs from backend
+  // Fetch available completed jobs from backend (NB2CMK database)
   const fetchAvailableJobs = useCallback(async () => {
     try {
-      const response = await fetch('/api/proxy/jobs/', {
+      const response = await fetch('/api/proxy/nb2cmk/jobs?limit=50', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -358,16 +358,15 @@ export function CheckMKSyncDevicesPage() {
       })
       if (response.ok) {
         const data = await response.json()
-        // Filter only completed Device Comparison jobs with device results
-        const completedJobs = data.jobs.filter((job: JobResult) =>
+        // Filter only completed jobs with processed devices
+        const completedJobs = data.jobs.filter((job: { status: string; processed_devices: number }) =>
           job.status === 'completed' && 
-          job.type === 'device-comparison' &&
-          (job.progress?.processed || 0) > 0
-        ).map((job: JobResult) => ({
+          (job.processed_devices || 0) > 0
+        ).map((job: { id: string; status: string; started_at: string; processed_devices: number }) => ({
           id: job.id,
           status: job.status,
           created_at: job.started_at,
-          processed_devices: job.progress?.processed || 0
+          processed_devices: job.processed_devices || 0
         }))
         setAvailableJobs(completedJobs)
       }
@@ -381,7 +380,8 @@ export function CheckMKSyncDevicesPage() {
     
     setLoadingResults(true)
     try {
-      const response = await fetch(`/api/proxy/jobs/${selectedJobId}`, {
+      // Use NB2CMK jobs endpoint for comparison results
+      const response = await fetch(`/api/proxy/nb2cmk/jobs/${selectedJobId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -391,7 +391,7 @@ export function CheckMKSyncDevicesPage() {
       if (response.ok) {
         const data = await response.json()
         
-        // Extract device results from the new job format
+        // Extract device results from the NB2CMK job format
         const deviceResults = data.job?.device_results || []
         // Convert device results to the expected devices format
         const devices = deviceResults.map((result: DeviceResult, index: number) => ({
@@ -403,11 +403,12 @@ export function CheckMKSyncDevicesPage() {
           result_data: result.result_data,
           error_message: result.error_message,
           processed_at: result.processed_at,
-          checkmk_status: result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown', // Extract result from data.result
-          // Extract normalized_config and checkmk_config from result_data
-          normalized_config: result.result_data?.data?.normalized_config || result.result_data?.normalized_config,
-          checkmk_config: result.result_data?.data?.checkmk_config || result.result_data?.checkmk_config,
-          diff: result.result_data?.data?.diff || result.result_data?.diff
+          // For NB2CMK format, checkmk_status is directly on the result
+          checkmk_status: result.checkmk_status || result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown',
+          // normalized_config and checkmk_config are directly on the result for NB2CMK format
+          normalized_config: result.normalized_config || result.result_data?.data?.normalized_config || result.result_data?.normalized_config,
+          checkmk_config: result.checkmk_config || result.result_data?.data?.checkmk_config || result.result_data?.checkmk_config,
+          diff: result.diff || result.result_data?.data?.diff || result.result_data?.diff
         }))
         
         setDevices(devices)
@@ -439,6 +440,64 @@ export function CheckMKSyncDevicesPage() {
       setShowStatusModal(true)
     } finally {
       setLoadingResults(false)
+    }
+  }
+
+  // Clear all comparison results from the database
+  const handleClearResults = async () => {
+    if (!token) return
+    
+    // Confirm before clearing
+    if (!confirm('Are you sure you want to delete all comparison results? This action cannot be undone.')) {
+      return
+    }
+    
+    try {
+      const response = await fetch('/api/proxy/nb2cmk/jobs/clear', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Refresh the job list
+        await fetchAvailableJobs()
+        
+        // Clear current selection and devices if they were from a deleted job
+        setSelectedJobId('')
+        setDevices([])
+        setCurrentJobId(null)
+        
+        setStatusMessage({
+          type: 'success',
+          message: data.message || 'All comparison results cleared'
+        })
+        setShowStatusModal(true)
+        
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+          setStatusMessage(null)
+          setShowStatusModal(false)
+        }, 3000)
+      } else {
+        const errorData = await response.json()
+        setStatusMessage({
+          type: 'error',
+          message: `Failed to clear results: ${errorData.detail || 'Unknown error'}`
+        })
+        setShowStatusModal(true)
+      }
+    } catch (error) {
+      console.error('Error clearing results:', error)
+      setStatusMessage({
+        type: 'error',
+        message: 'Error clearing comparison results'
+      })
+      setShowStatusModal(true)
     }
   }
 
@@ -798,7 +857,8 @@ export function CheckMKSyncDevicesPage() {
     }
 
     try {
-      const response = await fetch(`/api/proxy/jobs/${targetJobId}`, {
+      // Use NB2CMK jobs endpoint for comparison results
+      const response = await fetch(`/api/proxy/nb2cmk/jobs/${targetJobId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -808,7 +868,7 @@ export function CheckMKSyncDevicesPage() {
       if (response.ok) {
         const data = await response.json()
 
-        // Extract device results from the new job format and convert to expected format
+        // Extract device results from the NB2CMK job format and convert to expected format
         const deviceResults = data.job?.device_results || []
         const devices = deviceResults.map((result: DeviceResult, index: number) => ({
           id: result.device_id || result.device_name || `device_${index}`, // Use device UUID as ID, fallback to device name or index
@@ -819,11 +879,12 @@ export function CheckMKSyncDevicesPage() {
           result_data: result.result_data,
           error_message: result.error_message,
           processed_at: result.processed_at,
-          checkmk_status: result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown', // Extract result from data.result
-          // Extract normalized_config and checkmk_config from result_data
-          normalized_config: result.result_data?.data?.normalized_config || result.result_data?.normalized_config,
-          checkmk_config: result.result_data?.data?.checkmk_config || result.result_data?.checkmk_config,
-          diff: result.result_data?.data?.diff || result.result_data?.diff
+          // For NB2CMK format, checkmk_status is directly on the result
+          checkmk_status: result.checkmk_status || result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown',
+          // normalized_config and checkmk_config are directly on the result for NB2CMK format
+          normalized_config: result.normalized_config || result.result_data?.data?.normalized_config || result.result_data?.normalized_config,
+          checkmk_config: result.checkmk_config || result.result_data?.data?.checkmk_config || result.result_data?.checkmk_config,
+          diff: result.diff || result.result_data?.data?.diff || result.result_data?.diff
         }))
 
         setDevices(devices)
@@ -1694,6 +1755,17 @@ export function CheckMKSyncDevicesPage() {
                 >
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh Jobs
+                </Button>
+                <Button 
+                  onClick={handleClearResults}
+                  variant="outline"
+                  size="sm"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  title="Clear all comparison results"
+                  disabled={availableJobs.length === 0}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear Results
                 </Button>
               </div>
             </div>

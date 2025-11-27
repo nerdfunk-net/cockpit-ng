@@ -57,6 +57,10 @@ class CacheSettingsRequest(BaseModel):
     max_commits: int = 500
     # Optional map of prefetchable items toggles, e.g., {"git": true, "locations": false}
     prefetch_items: Optional[Dict[str, bool]] = None
+    # Background cache task intervals
+    devices_cache_interval_minutes: int = 60
+    locations_cache_interval_minutes: int = 10
+    git_commits_cache_interval_minutes: int = 15
 
 
 class ConnectionTestRequest(BaseModel):

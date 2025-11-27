@@ -33,6 +33,8 @@ from routers.celery_api import router as celery_router
 # git_repositories_router is included via git_router - no need to import separately
 from routers.jobs import router as jobs_router
 from routers.job_schedules import router as job_schedules_router
+from routers.job_templates import router as job_templates_router
+from routers.job_runs import router as job_runs_router
 from routers.netmiko import router as netmiko_router
 from routers.rbac import router as rbac_router
 from routers.compliance import router as compliance_router
@@ -82,6 +84,8 @@ app.include_router(celery_router)
 # git_repositories_router removed - already included via git_router
 app.include_router(jobs_router)
 app.include_router(job_schedules_router)
+app.include_router(job_templates_router)
+app.include_router(job_runs_router)
 app.include_router(netmiko_router)
 app.include_router(rbac_router)
 app.include_router(compliance_router)
@@ -222,6 +226,15 @@ async def startup_services():
         logger.info("Admin RBAC role assignment completed")
     except Exception as e:
         logger.error(f"Failed to ensure admin RBAC role: {e}")
+
+    # Initialize next_run for job schedules that don't have one
+    try:
+        import jobs_manager
+        result = jobs_manager.initialize_schedule_next_runs()
+        if result['initialized_count'] > 0:
+            logger.info(f"Initialized next_run for {result['initialized_count']} job schedules")
+    except Exception as e:
+        logger.error(f"Failed to initialize job schedule next_runs: {e}")
 
     # Initialize APScheduler service first
     try:

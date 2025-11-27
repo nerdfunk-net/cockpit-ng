@@ -64,15 +64,20 @@ class CheckMKSettings:
 
 @dataclass
 class CacheSettings:
-    """Cache configuration for Git data"""
+    """Cache configuration for Git data and Nautobot resources"""
 
     enabled: bool = True
     ttl_seconds: int = 600  # 10 minutes
     prefetch_on_startup: bool = True
-    refresh_interval_minutes: int = 15  # background refresh cadence
+    refresh_interval_minutes: int = 15  # background refresh cadence (for git commits)
     max_commits: int = 500  # limit per branch
     # Map of items to prefetch on startup, e.g., {"git": true, "locations": false}
     prefetch_items: Dict[str, bool] = None
+    
+    # Cache task intervals (in minutes) - 0 means disabled
+    devices_cache_interval_minutes: int = 60  # Cache devices every hour
+    locations_cache_interval_minutes: int = 10  # Cache locations every 10 minutes
+    git_commits_cache_interval_minutes: int = 15  # Cache git commits every 15 minutes
 
 
 @dataclass
@@ -220,6 +225,9 @@ class SettingsManager:
                     "prefetch_items": json.loads(settings.prefetch_items)
                     if settings.prefetch_items
                     else {"git": True, "locations": False},
+                    "devices_cache_interval_minutes": getattr(settings, 'devices_cache_interval_minutes', self.default_cache.devices_cache_interval_minutes),
+                    "locations_cache_interval_minutes": getattr(settings, 'locations_cache_interval_minutes', self.default_cache.locations_cache_interval_minutes),
+                    "git_commits_cache_interval_minutes": getattr(settings, 'git_commits_cache_interval_minutes', self.default_cache.git_commits_cache_interval_minutes),
                 }
             return asdict(self.default_cache)
         except Exception as e:
@@ -236,25 +244,22 @@ class SettingsManager:
                 settings.get("prefetch_items") or {"git": True, "locations": False}
             )
             
+            update_kwargs = {
+                "enabled": settings.get("enabled", self.default_cache.enabled),
+                "ttl_seconds": settings.get("ttl_seconds", self.default_cache.ttl_seconds),
+                "prefetch_on_startup": settings.get("prefetch_on_startup", self.default_cache.prefetch_on_startup),
+                "refresh_interval_minutes": settings.get("refresh_interval_minutes", self.default_cache.refresh_interval_minutes),
+                "max_commits": settings.get("max_commits", self.default_cache.max_commits),
+                "prefetch_items": prefetch_items_json,
+                "devices_cache_interval_minutes": settings.get("devices_cache_interval_minutes", self.default_cache.devices_cache_interval_minutes),
+                "locations_cache_interval_minutes": settings.get("locations_cache_interval_minutes", self.default_cache.locations_cache_interval_minutes),
+                "git_commits_cache_interval_minutes": settings.get("git_commits_cache_interval_minutes", self.default_cache.git_commits_cache_interval_minutes),
+            }
+            
             if existing:
-                repo.update(
-                    existing.id,
-                    enabled=settings.get("enabled", self.default_cache.enabled),
-                    ttl_seconds=settings.get("ttl_seconds", self.default_cache.ttl_seconds),
-                    prefetch_on_startup=settings.get("prefetch_on_startup", self.default_cache.prefetch_on_startup),
-                    refresh_interval_minutes=settings.get("refresh_interval_minutes", self.default_cache.refresh_interval_minutes),
-                    max_commits=settings.get("max_commits", self.default_cache.max_commits),
-                    prefetch_items=prefetch_items_json
-                )
+                repo.update(existing.id, **update_kwargs)
             else:
-                repo.create(
-                    enabled=settings.get("enabled", self.default_cache.enabled),
-                    ttl_seconds=settings.get("ttl_seconds", self.default_cache.ttl_seconds),
-                    prefetch_on_startup=settings.get("prefetch_on_startup", self.default_cache.prefetch_on_startup),
-                    refresh_interval_minutes=settings.get("refresh_interval_minutes", self.default_cache.refresh_interval_minutes),
-                    max_commits=settings.get("max_commits", self.default_cache.max_commits),
-                    prefetch_items=prefetch_items_json
-                )
+                repo.create(**update_kwargs)
             
             logger.info("Cache settings updated successfully")
             return True

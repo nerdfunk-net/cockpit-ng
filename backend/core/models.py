@@ -238,7 +238,7 @@ class JobSchedule(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     job_identifier = Column(String(255), nullable=False, index=True)
-    job_name = Column(String(255), nullable=False)
+    job_template_id = Column(Integer, ForeignKey('job_templates.id'), nullable=False)
     schedule_type = Column(String(50), nullable=False)
     cron_expression = Column(String(255))
     interval_minutes = Column(Integer)
@@ -253,6 +253,74 @@ class JobSchedule(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     last_run = Column(DateTime(timezone=True))
     next_run = Column(DateTime(timezone=True))
+    
+    # Relationship to JobTemplate
+    template = relationship("JobTemplate", backref="schedules")
+
+
+class JobTemplate(Base):
+    """Job templates define reusable job configurations"""
+    __tablename__ = "job_templates"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    job_type = Column(String(50), nullable=False)  # backup, compare_devices, run_commands, cache_devices, sync_devices
+    description = Column(Text)
+    inventory_source = Column(String(50), nullable=False, default='all')  # all, inventory
+    inventory_repository_id = Column(Integer)  # Reference to git repository for inventory
+    inventory_name = Column(String(255))  # Name of the stored inventory
+    command_template_name = Column(String(255))  # Name of command template (for run_commands)
+    is_global = Column(Boolean, nullable=False, default=False, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), index=True)
+    created_by = Column(String(255))  # Username of creator
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    
+    __table_args__ = (
+        Index('idx_job_templates_type', 'job_type'),
+        Index('idx_job_templates_user', 'user_id'),
+    )
+
+
+class JobRun(Base):
+    """Tracks individual job executions"""
+    __tablename__ = "job_runs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    job_schedule_id = Column(Integer, ForeignKey('job_schedules.id', ondelete='SET NULL'), nullable=True, index=True)
+    job_template_id = Column(Integer, ForeignKey('job_templates.id', ondelete='SET NULL'), nullable=True, index=True)
+    celery_task_id = Column(String(255), unique=True, index=True)  # Celery task UUID
+    
+    # Job info snapshot (in case template/schedule is deleted)
+    job_name = Column(String(255), nullable=False)  # Snapshot of schedule's job_identifier
+    job_type = Column(String(50), nullable=False)  # Snapshot of template's job_type
+    
+    # Execution status
+    status = Column(String(50), nullable=False, default='pending', index=True)  # pending, running, completed, failed, cancelled
+    triggered_by = Column(String(50), nullable=False, default='schedule')  # schedule, manual
+    
+    # Timing
+    queued_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    started_at = Column(DateTime(timezone=True))
+    completed_at = Column(DateTime(timezone=True))
+    
+    # Results
+    error_message = Column(Text)
+    result = Column(Text)  # JSON string for structured results
+    
+    # Execution context snapshot
+    target_devices = Column(Text)  # JSON array of device names targeted
+    executed_by = Column(String(255))  # Username who triggered (for manual runs)
+    
+    # Relationships
+    schedule = relationship("JobSchedule", backref="runs")
+    template = relationship("JobTemplate", backref="runs")
+    
+    __table_args__ = (
+        Index('idx_job_runs_status', 'status'),
+        Index('idx_job_runs_queued_at', 'queued_at'),
+        Index('idx_job_runs_triggered_by', 'triggered_by'),
+    )
 
 
 # ============================================================================
@@ -609,7 +677,7 @@ class CheckMKSetting(Base):
 
 
 class CacheSetting(Base):
-    """Cache configuration for Git data."""
+    """Cache configuration for Git data and Nautobot resources."""
     __tablename__ = 'cache_settings'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -619,6 +687,10 @@ class CacheSetting(Base):
     refresh_interval_minutes = Column(Integer, nullable=False, default=15)
     max_commits = Column(Integer, nullable=False, default=500)
     prefetch_items = Column(Text)  # JSON string
+    # Cache task intervals (in minutes) - 0 means disabled
+    devices_cache_interval_minutes = Column(Integer, nullable=False, default=60)
+    locations_cache_interval_minutes = Column(Integer, nullable=False, default=10)
+    git_commits_cache_interval_minutes = Column(Integer, nullable=False, default=15)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 

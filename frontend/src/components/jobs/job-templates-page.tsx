@@ -1,0 +1,812 @@
+"use client"
+
+import { useEffect, useState, useCallback } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { 
+  Plus, 
+  Trash2, 
+  Edit, 
+  FileText, 
+  Globe, 
+  Lock, 
+  Terminal, 
+  Loader2
+} from "lucide-react"
+import { useAuthStore } from "@/lib/auth-store"
+import { useToast } from "@/hooks/use-toast"
+
+interface JobTemplate {
+  id: number
+  name: string
+  job_type: string
+  description?: string
+  inventory_source: "all" | "inventory"
+  inventory_repository_id?: number
+  inventory_name?: string
+  command_template_name?: string
+  is_global: boolean
+  user_id?: number
+  created_by?: string
+  created_at: string
+  updated_at: string
+}
+
+interface JobType {
+  value: string
+  label: string
+  description: string
+}
+
+interface InventoryRepository {
+  id: number
+  name: string
+  url: string
+  branch: string
+}
+
+interface SavedInventory {
+  name: string
+  description?: string
+}
+
+interface CommandTemplate {
+  id: number
+  name: string
+  category: string
+}
+
+const EMPTY_TEMPLATES: JobTemplate[] = []
+const EMPTY_TYPES: JobType[] = []
+const EMPTY_REPOS: InventoryRepository[] = []
+const EMPTY_INVENTORIES: SavedInventory[] = []
+const EMPTY_CMD_TEMPLATES: CommandTemplate[] = []
+
+export function JobTemplatesPage() {
+  const token = useAuthStore(state => state.token)
+  const user = useAuthStore(state => state.user)
+  const { toast } = useToast()
+  
+  const [templates, setTemplates] = useState<JobTemplate[]>(EMPTY_TEMPLATES)
+  const [jobTypes, setJobTypes] = useState<JobType[]>(EMPTY_TYPES)
+  const [inventoryRepos, setInventoryRepos] = useState<InventoryRepository[]>(EMPTY_REPOS)
+  const [savedInventories, setSavedInventories] = useState<SavedInventory[]>(EMPTY_INVENTORIES)
+  const [commandTemplates, setCommandTemplates] = useState<CommandTemplate[]>(EMPTY_CMD_TEMPLATES)
+  
+  const [loading, setLoading] = useState(true)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [editingTemplate, setEditingTemplate] = useState<JobTemplate | null>(null)
+  const [loadingInventories, setLoadingInventories] = useState(false)
+
+  // Form state
+  const [formName, setFormName] = useState("")
+  const [formJobType, setFormJobType] = useState("")
+  const [formDescription, setFormDescription] = useState("")
+  const [formInventorySource, setFormInventorySource] = useState<"all" | "inventory">("all")
+  const [formInventoryRepoId, setFormInventoryRepoId] = useState<number | null>(null)
+  const [formInventoryName, setFormInventoryName] = useState("")
+  const [formCommandTemplate, setFormCommandTemplate] = useState("")
+  const [formIsGlobal, setFormIsGlobal] = useState(false)
+
+  // Get job type label
+  const getJobTypeLabel = (jobType: string) => {
+    const type = jobTypes.find(t => t.value === jobType)
+    return type?.label || jobType
+  }
+
+  // Get job type color
+  const getJobTypeColor = (jobType: string) => {
+    switch (jobType) {
+      case "backup":
+        return "bg-blue-500"
+      case "compare_devices":
+        return "bg-purple-500"
+      case "run_commands":
+        return "bg-green-500"
+      case "cache_devices":
+        return "bg-cyan-500"
+      case "sync_devices":
+        return "bg-orange-500"
+      default:
+        return "bg-gray-500"
+    }
+  }
+
+  // Fetch templates
+  const fetchTemplates = useCallback(async () => {
+    if (!token) return
+
+    try {
+      const response = await fetch("/api/proxy/api/job-templates", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setTemplates(data.templates || [])
+      }
+    } catch (error) {
+      console.error("Error fetching job templates:", error)
+    } finally {
+      setLoading(false)
+    }
+  }, [token])
+
+  // Fetch job types
+  const fetchJobTypes = useCallback(async () => {
+    if (!token) return
+
+    try {
+      const response = await fetch("/api/proxy/api/job-templates/types", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setJobTypes(data || [])
+      }
+    } catch (error) {
+      console.error("Error fetching job types:", error)
+    }
+  }, [token])
+
+  // Fetch inventory repositories
+  const fetchInventoryRepos = useCallback(async () => {
+    if (!token) return
+
+    try {
+      const response = await fetch("/api/proxy/git-repositories?category=inventory", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setInventoryRepos(data.repositories || [])
+      }
+    } catch (error) {
+      console.error("Error fetching inventory repositories:", error)
+    }
+  }, [token])
+
+  // Fetch saved inventories for a repository
+  const fetchSavedInventories = useCallback(async (repoId: number) => {
+    if (!token) return
+
+    setLoadingInventories(true)
+    try {
+      const response = await fetch(`/api/proxy/ansible-inventory/list-inventories?repository_id=${repoId}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setSavedInventories(data.inventories || [])
+      }
+    } catch (error) {
+      console.error("Error fetching saved inventories:", error)
+      setSavedInventories([])
+    } finally {
+      setLoadingInventories(false)
+    }
+  }, [token])
+
+  // Fetch command templates
+  const fetchCommandTemplates = useCallback(async () => {
+    if (!token) return
+
+    try {
+      const response = await fetch("/api/proxy/api/templates", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setCommandTemplates(data.templates || [])
+      }
+    } catch (error) {
+      console.error("Error fetching command templates:", error)
+    }
+  }, [token])
+
+  useEffect(() => {
+    fetchTemplates()
+    fetchJobTypes()
+    fetchInventoryRepos()
+    fetchCommandTemplates()
+  }, [fetchTemplates, fetchJobTypes, fetchInventoryRepos, fetchCommandTemplates])
+
+  // When inventory repo changes, fetch inventories
+  useEffect(() => {
+    if (formInventoryRepoId && formInventorySource === "inventory") {
+      fetchSavedInventories(formInventoryRepoId)
+    }
+  }, [formInventoryRepoId, formInventorySource, fetchSavedInventories])
+
+  const resetForm = useCallback(() => {
+    setFormName("")
+    setFormJobType("")
+    setFormDescription("")
+    setFormInventorySource("all")
+    setFormInventoryRepoId(null)
+    setFormInventoryName("")
+    setFormCommandTemplate("")
+    setFormIsGlobal(false)
+    setEditingTemplate(null)
+    setSavedInventories([])
+  }, [])
+
+  const handleEditTemplate = useCallback((template: JobTemplate) => {
+    setEditingTemplate(template)
+    setFormName(template.name)
+    setFormJobType(template.job_type)
+    setFormDescription(template.description || "")
+    setFormInventorySource(template.inventory_source)
+    setFormInventoryRepoId(template.inventory_repository_id || null)
+    setFormInventoryName(template.inventory_name || "")
+    setFormCommandTemplate(template.command_template_name || "")
+    setFormIsGlobal(template.is_global)
+    setIsDialogOpen(true)
+  }, [])
+
+  const handleSaveTemplate = useCallback(async () => {
+    if (!token || !formName || !formJobType) {
+      toast({
+        title: "Validation Error",
+        description: "Name and Type are required fields.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Validate inventory selection
+    if (formInventorySource === "inventory" && (!formInventoryRepoId || !formInventoryName)) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a repository and inventory when using 'Use Inventory'.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Validate command template for run_commands
+    if (formJobType === "run_commands" && !formCommandTemplate) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a command template for 'Run Commands' type.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const payload = {
+        name: formName,
+        job_type: formJobType,
+        description: formDescription || undefined,
+        inventory_source: formInventorySource,
+        inventory_repository_id: formInventorySource === "inventory" ? formInventoryRepoId : undefined,
+        inventory_name: formInventorySource === "inventory" ? formInventoryName : undefined,
+        command_template_name: formJobType === "run_commands" ? formCommandTemplate : undefined,
+        is_global: formIsGlobal
+      }
+
+      if (editingTemplate) {
+        // Update existing template
+        const response = await fetch(`/api/proxy/api/job-templates/${editingTemplate.id}`, {
+          method: "PUT",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        })
+
+        if (response.ok) {
+          setIsDialogOpen(false)
+          resetForm()
+          fetchTemplates()
+          toast({
+            title: "Template Updated",
+            description: `Job template "${formName}" has been updated successfully.`,
+          })
+        } else {
+          const error = await response.json()
+          toast({
+            title: "Update Failed",
+            description: error.detail || "Failed to update template.",
+            variant: "destructive"
+          })
+        }
+      } else {
+        // Create new template
+        const response = await fetch("/api/proxy/api/job-templates", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        })
+
+        if (response.ok) {
+          setIsDialogOpen(false)
+          resetForm()
+          fetchTemplates()
+          toast({
+            title: "Template Created",
+            description: `Job template "${formName}" has been created successfully.`,
+          })
+        } else {
+          const error = await response.json()
+          toast({
+            title: "Creation Failed",
+            description: error.detail || "Failed to create template.",
+            variant: "destructive"
+          })
+        }
+      }
+    } catch (error) {
+      console.error("Error saving template:", error)
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive"
+      })
+    }
+  }, [token, formName, formJobType, formDescription, formInventorySource, formInventoryRepoId, formInventoryName, formCommandTemplate, formIsGlobal, editingTemplate, resetForm, fetchTemplates, toast])
+
+  const handleDeleteTemplate = useCallback(async (templateId: number) => {
+    if (!token) return
+
+    if (!confirm("Are you sure you want to delete this template?")) return
+
+    try {
+      const response = await fetch(`/api/proxy/api/job-templates/${templateId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (response.ok) {
+        fetchTemplates()
+        toast({
+          title: "Template Deleted",
+          description: "Job template has been deleted successfully.",
+        })
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Delete Failed",
+          description: error.detail || "Failed to delete template.",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error("Error deleting template:", error)
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive"
+      })
+    }
+  }, [token, fetchTemplates, toast])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Job Templates</h1>
+          <p className="text-gray-600">Create and manage reusable job templates for the scheduler</p>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
+          <DialogTrigger asChild>
+            <Button className="bg-blue-600 hover:bg-blue-700" onClick={resetForm}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Template
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 px-6 py-4">
+              <DialogHeader className="text-white">
+                <DialogTitle className="text-lg font-semibold text-white">
+                  {editingTemplate ? "Edit Job Template" : "Create Job Template"}
+                </DialogTitle>
+                <DialogDescription className="text-blue-50">
+                  {editingTemplate ? "Update job template settings" : "Create a new reusable job template"}
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+            
+            {/* Form content */}
+            <div className="px-6 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+              {/* Name and Type in grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="template-name" className="text-sm font-medium text-gray-700">
+                    Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="template-name"
+                    placeholder="Enter template name"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    className="h-9 bg-white"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="job-type" className="text-sm font-medium text-gray-700">
+                    Type <span className="text-red-500">*</span>
+                  </Label>
+                  <Select 
+                    value={formJobType} 
+                    onValueChange={setFormJobType}
+                    disabled={!!editingTemplate}
+                  >
+                    <SelectTrigger id="job-type" className="h-9 bg-white">
+                      <SelectValue placeholder="Select job type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {jobTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          <div className="flex items-center gap-2">
+                            <div className={`h-2 w-2 rounded-full ${getJobTypeColor(type.value)}`} />
+                            <span>{type.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-1.5">
+                <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+                  Description
+                </Label>
+                <Textarea
+                  id="description"
+                  placeholder="Enter a description for this template"
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  className="bg-white resize-none"
+                  rows={2}
+                />
+              </div>
+
+              {/* Inventory Section */}
+              <div className="space-y-3 pt-3 border-t border-gray-200">
+                <Label className="text-sm font-medium text-gray-700">Inventory</Label>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="inventory-source" className="text-xs text-gray-500">Source</Label>
+                    <Select 
+                      value={formInventorySource} 
+                      onValueChange={(v) => setFormInventorySource(v as "all" | "inventory")}
+                    >
+                      <SelectTrigger id="inventory-source" className="h-9 bg-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">
+                          <div className="flex items-center gap-2">
+                            <Globe className="h-4 w-4 text-blue-500" />
+                            <span>All Devices</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="inventory">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-green-500" />
+                            <span>Use Inventory</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {formInventorySource === "inventory" && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="inventory-repo" className="text-xs text-gray-500">Repository</Label>
+                      <Select 
+                        value={formInventoryRepoId?.toString() || ""} 
+                        onValueChange={(v) => {
+                          setFormInventoryRepoId(parseInt(v))
+                          setFormInventoryName("")
+                        }}
+                      >
+                        <SelectTrigger id="inventory-repo" className="h-9 bg-white">
+                          <SelectValue placeholder="Select repository" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {inventoryRepos.map((repo) => (
+                            <SelectItem key={repo.id} value={repo.id.toString()}>
+                              {repo.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+
+                {formInventorySource === "inventory" && formInventoryRepoId && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="inventory-name" className="text-xs text-gray-500">Inventory</Label>
+                    {loadingInventories ? (
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading inventories...
+                      </div>
+                    ) : (
+                      <Select 
+                        value={formInventoryName} 
+                        onValueChange={setFormInventoryName}
+                      >
+                        <SelectTrigger id="inventory-name" className="h-9 bg-white">
+                          <SelectValue placeholder="Select inventory" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {savedInventories.map((inv) => (
+                            <SelectItem key={inv.name} value={inv.name}>
+                              {inv.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Command Template Section (only for run_commands) */}
+              {formJobType === "run_commands" && (
+                <div className="space-y-3 pt-3 border-t border-gray-200">
+                  <Label className="text-sm font-medium text-gray-700">Command Template</Label>
+                  <Select 
+                    value={formCommandTemplate} 
+                    onValueChange={setFormCommandTemplate}
+                  >
+                    <SelectTrigger className="h-9 bg-white">
+                      <SelectValue placeholder="Select command template" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {commandTemplates.map((template) => (
+                        <SelectItem key={template.id} value={template.name}>
+                          <div className="flex items-center gap-2">
+                            <Terminal className="h-4 w-4 text-gray-500" />
+                            <span>{template.name}</span>
+                            {template.category && (
+                              <Badge variant="secondary" className="text-xs">
+                                {template.category}
+                              </Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">
+                    Templates can be created in Network / Automation / Templates
+                  </p>
+                </div>
+              )}
+
+              {/* Global/Private Switch */}
+              <div className="flex items-center gap-6 pt-3 border-t border-gray-200">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="is-global"
+                    checked={formIsGlobal}
+                    onCheckedChange={setFormIsGlobal}
+                    disabled={user?.role !== "admin"}
+                  />
+                  <Label htmlFor="is-global" className="text-sm font-medium text-gray-700 cursor-pointer flex items-center gap-2">
+                    {formIsGlobal ? (
+                      <>
+                        <Globe className="h-4 w-4 text-blue-500" />
+                        Global Template
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="h-4 w-4 text-gray-500" />
+                        Private Template
+                      </>
+                    )}
+                  </Label>
+                </div>
+                {user?.role === "admin" && (
+                  <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-100">
+                    Admin
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-gray-500">
+                {formIsGlobal 
+                  ? "Global templates can be scheduled by all users"
+                  : "Private templates can only be scheduled by you"}
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 px-6 py-3 bg-gray-50 border-t border-gray-200">
+              <Button 
+                variant="outline" 
+                onClick={() => { setIsDialogOpen(false); resetForm(); }} 
+                className="h-9 px-4 border-gray-300 text-gray-700 hover:bg-gray-100"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSaveTemplate} 
+                className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {editingTemplate ? (
+                  <>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Update Template
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Template
+                  </>
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Templates Table */}
+      {templates.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center h-64">
+            <FileText className="h-12 w-12 text-gray-400 mb-4" />
+            <p className="text-xl font-semibold text-gray-700 mb-2">No job templates yet</p>
+            <p className="text-gray-500 mb-4">
+              Create your first job template to use in the scheduler
+            </p>
+            <Button onClick={() => setIsDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Job Template
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="rounded-xl border shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+            <div className="flex items-center space-x-2">
+              <FileText className="h-4 w-4" />
+              <div>
+                <h3 className="text-sm font-semibold">Job Templates ({templates.length})</h3>
+                <p className="text-blue-100 text-xs">Reusable job configurations for the scheduler</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50">
+                <TableHead className="font-semibold text-gray-700">Name</TableHead>
+                <TableHead className="font-semibold text-gray-700">Type</TableHead>
+                <TableHead className="font-semibold text-gray-700">Inventory</TableHead>
+                <TableHead className="font-semibold text-gray-700">Scope</TableHead>
+                <TableHead className="font-semibold text-gray-700">Created By</TableHead>
+                <TableHead className="font-semibold text-gray-700 w-24">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {templates.map((template) => (
+                <TableRow key={template.id} className="hover:bg-gray-50">
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-gray-900">{template.name}</span>
+                      {template.description && (
+                        <span className="text-xs text-gray-500 truncate max-w-xs">
+                          {template.description}
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className={`h-2 w-2 rounded-full ${getJobTypeColor(template.job_type)}`} />
+                      <span className="text-gray-700">{getJobTypeLabel(template.job_type)}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {template.inventory_source === "all" ? (
+                      <Badge variant="outline" className="text-blue-600 border-blue-200">
+                        <Globe className="h-3 w-3 mr-1" />
+                        All Devices
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-green-600 border-green-200">
+                        <FileText className="h-3 w-3 mr-1" />
+                        {template.inventory_name || "Inventory"}
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {template.is_global ? (
+                      <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+                        <Globe className="h-3 w-3 mr-1" />
+                        Global
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="bg-gray-100 text-gray-600">
+                        <Lock className="h-3 w-3 mr-1" />
+                        Private
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-gray-600 text-sm">
+                    {template.created_by || "-"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleEditTemplate(template)}
+                        className="h-8 w-8 p-0 text-gray-500 hover:text-blue-600"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDeleteTemplate(template.id)}
+                        className="h-8 w-8 p-0 text-gray-500 hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

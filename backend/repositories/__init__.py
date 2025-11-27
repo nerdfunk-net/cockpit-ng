@@ -14,6 +14,8 @@ from .profile_repository import ProfileRepository
 from .template_repository import TemplateRepository
 from .git_repository_repository import GitRepositoryRepository
 from .job_schedule_repository import JobScheduleRepository
+from .job_template_repository import JobTemplateRepository
+from .job_run_repository import JobRunRepository, job_run_repository
 from .compliance_repository import (
     RegexPatternRepository,
     LoginCredentialRepository,
@@ -29,6 +31,9 @@ __all__ = [
     'TemplateRepository',
     'GitRepositoryRepository',
     'JobScheduleRepository',
+    'JobTemplateRepository',
+    'JobRunRepository',
+    'job_run_repository',
     'RegexPatternRepository',
     'LoginCredentialRepository',
     'SNMPMappingRepository',

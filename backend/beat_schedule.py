@@ -1,11 +1,24 @@
 """
 Celery Beat periodic task schedule configuration.
 Replaces APScheduler for scheduled tasks.
+
+Note: Cache tasks (devices, locations, git commits) are dynamically scheduled
+based on settings in Settings -> Cache. See get_dynamic_cache_schedule().
 """
 from celery.schedules import crontab
 
-# Define periodic task schedule
+# Define periodic task schedule for SYSTEM tasks only
+# User-configurable cache tasks are loaded dynamically
 CELERY_BEAT_SCHEDULE = {
+    # Job schedule checker - runs every minute
+    'check-job-schedules': {
+        'task': 'tasks.check_job_schedules',
+        'schedule': crontab(minute='*'),  # Every minute
+        'options': {
+            'expires': 50,  # Task expires after 50 seconds if not picked up
+        }
+    },
+    
     # Worker health check - every 5 minutes
     'worker-health-check': {
         'task': 'tasks.worker_health_check',
@@ -14,23 +27,14 @@ CELERY_BEAT_SCHEDULE = {
             'expires': 240,  # Task expires after 4 minutes if not picked up
         }
     },
-
-    # Cache all devices from Nautobot - runs every hour
-    'cache-devices-hourly': {
-        'task': 'cache_all_devices',
-        'schedule': crontab(minute=0),  # Every hour at :00
+    
+    # Dynamic cache schedule loader - runs every minute to check for schedule changes
+    'load-cache-schedules': {
+        'task': 'tasks.load_cache_schedules',
+        'schedule': crontab(minute='*'),  # Every minute
         'options': {
-            'expires': 3000,  # Task expires after 50 minutes if not picked up
-        },
-    },
-
-    # Cache all locations from Nautobot - runs every 10 minutes
-    'cache-locations-every-10min': {
-        'task': 'cache_all_locations',
-        'schedule': crontab(minute='*/10'),  # Every 10 minutes
-        'options': {
-            'expires': 540,  # Task expires after 9 minutes if not picked up
-        },
+            'expires': 50,
+        }
     },
 }
 
