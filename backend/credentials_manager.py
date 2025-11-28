@@ -100,6 +100,21 @@ def list_credentials(
     return items
 
 
+def get_credential_by_id(cred_id: int) -> Optional[Dict[str, Any]]:
+    """Get a credential by ID.
+
+    Args:
+        cred_id: The credential ID
+
+    Returns:
+        Credential dictionary or None if not found
+    """
+    cred = _creds_repo.get_by_id(cred_id)
+    if not cred:
+        return None
+    return _credential_to_dict(cred)
+
+
 def create_credential(
     name: str,
     username: str,

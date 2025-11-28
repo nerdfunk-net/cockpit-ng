@@ -31,7 +31,6 @@ from routers.profile import router as profile_router
 from routers.celery_api import router as celery_router
 
 # git_repositories_router is included via git_router - no need to import separately
-from routers.jobs import router as jobs_router
 from routers.job_schedules import router as job_schedules_router
 from routers.job_templates import router as job_templates_router
 from routers.job_runs import router as job_runs_router
@@ -40,9 +39,6 @@ from routers.rbac import router as rbac_router
 from routers.compliance import router as compliance_router
 from routers.compliance_check import router as compliance_check_router
 from health import router as health_router
-
-# APScheduler service (optional for testing)
-from services.apscheduler_job_service import APSchedulerJobService
 
 # Import auth dependency
 from core.auth import verify_token
@@ -60,9 +56,6 @@ app = FastAPI(
     redoc_url="/redoc",
     redirect_slashes=True,
 )
-
-# Global APScheduler service instance
-apscheduler_service: Optional[APSchedulerJobService] = None
 
 # Include routers
 app.include_router(auth_router)
@@ -82,7 +75,6 @@ app.include_router(cache_router)
 app.include_router(profile_router)
 app.include_router(celery_router)
 # git_repositories_router removed - already included via git_router
-app.include_router(jobs_router)
 app.include_router(job_schedules_router)
 app.include_router(job_templates_router)
 app.include_router(job_runs_router)
@@ -235,26 +227,6 @@ async def startup_services():
             logger.info(f"Initialized next_run for {result['initialized_count']} job schedules")
     except Exception as e:
         logger.error(f"Failed to initialize job schedule next_runs: {e}")
-
-    # Initialize APScheduler service first
-    try:
-        global apscheduler_service
-        if apscheduler_service is None:
-            logger.info("Initializing APScheduler service...")
-            apscheduler_service = APSchedulerJobService(
-                max_workers=10,
-                max_parallel_jobs=5,
-                data_dir="./data/jobs",
-                cleanup_after_days=7,
-            )
-            await apscheduler_service.start()
-            logger.info("APScheduler service initialized and started successfully")
-        else:
-            logger.info("APScheduler service already initialized")
-    except Exception as e:
-        logger.error(f"Failed to initialize APScheduler service: {e}")
-        logger.exception("Full APScheduler initialization error:")
-        apscheduler_service = None
 
     # Initialize cache prefetch
     try:

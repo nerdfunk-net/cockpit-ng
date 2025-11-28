@@ -29,6 +29,7 @@ interface JobTemplate {
   name: string
   job_type: string
   description?: string
+  config_repository_id?: number
   inventory_source: "all" | "inventory"
   inventory_repository_id?: number
   inventory_name?: string
@@ -46,11 +47,12 @@ interface JobType {
   description: string
 }
 
-interface InventoryRepository {
+interface GitRepository {
   id: number
   name: string
   url: string
   branch: string
+  category: string
 }
 
 interface SavedInventory {
@@ -66,7 +68,7 @@ interface CommandTemplate {
 
 const EMPTY_TEMPLATES: JobTemplate[] = []
 const EMPTY_TYPES: JobType[] = []
-const EMPTY_REPOS: InventoryRepository[] = []
+const EMPTY_REPOS: GitRepository[] = []
 const EMPTY_INVENTORIES: SavedInventory[] = []
 const EMPTY_CMD_TEMPLATES: CommandTemplate[] = []
 
@@ -77,10 +79,11 @@ export function JobTemplatesPage() {
   
   const [templates, setTemplates] = useState<JobTemplate[]>(EMPTY_TEMPLATES)
   const [jobTypes, setJobTypes] = useState<JobType[]>(EMPTY_TYPES)
-  const [inventoryRepos, setInventoryRepos] = useState<InventoryRepository[]>(EMPTY_REPOS)
+  const [configRepos, setConfigRepos] = useState<GitRepository[]>(EMPTY_REPOS)
+  const [inventoryRepos, setInventoryRepos] = useState<GitRepository[]>(EMPTY_REPOS)
   const [savedInventories, setSavedInventories] = useState<SavedInventory[]>(EMPTY_INVENTORIES)
   const [commandTemplates, setCommandTemplates] = useState<CommandTemplate[]>(EMPTY_CMD_TEMPLATES)
-  
+
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<JobTemplate | null>(null)
@@ -90,6 +93,7 @@ export function JobTemplatesPage() {
   const [formName, setFormName] = useState("")
   const [formJobType, setFormJobType] = useState("")
   const [formDescription, setFormDescription] = useState("")
+  const [formConfigRepoId, setFormConfigRepoId] = useState<number | null>(null)
   const [formInventorySource, setFormInventorySource] = useState<"all" | "inventory">("all")
   const [formInventoryRepoId, setFormInventoryRepoId] = useState<number | null>(null)
   const [formInventoryName, setFormInventoryName] = useState("")
@@ -164,12 +168,33 @@ export function JobTemplatesPage() {
     }
   }, [token])
 
+  // Fetch config repositories
+  const fetchConfigRepos = useCallback(async () => {
+    if (!token) return
+
+    try {
+      const response = await fetch("/api/proxy/api/git-repositories?category=configs", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setConfigRepos(data.repositories || [])
+      }
+    } catch (error) {
+      console.error("Error fetching config repositories:", error)
+    }
+  }, [token])
+
   // Fetch inventory repositories
   const fetchInventoryRepos = useCallback(async () => {
     if (!token) return
 
     try {
-      const response = await fetch("/api/proxy/git-repositories?category=inventory", {
+      const response = await fetch("/api/proxy/api/git-repositories?category=inventory", {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -234,9 +259,10 @@ export function JobTemplatesPage() {
   useEffect(() => {
     fetchTemplates()
     fetchJobTypes()
+    fetchConfigRepos()
     fetchInventoryRepos()
     fetchCommandTemplates()
-  }, [fetchTemplates, fetchJobTypes, fetchInventoryRepos, fetchCommandTemplates])
+  }, [fetchTemplates, fetchJobTypes, fetchConfigRepos, fetchInventoryRepos, fetchCommandTemplates])
 
   // When inventory repo changes, fetch inventories
   useEffect(() => {
@@ -249,6 +275,7 @@ export function JobTemplatesPage() {
     setFormName("")
     setFormJobType("")
     setFormDescription("")
+    setFormConfigRepoId(null)
     setFormInventorySource("all")
     setFormInventoryRepoId(null)
     setFormInventoryName("")
@@ -263,6 +290,7 @@ export function JobTemplatesPage() {
     setFormName(template.name)
     setFormJobType(template.job_type)
     setFormDescription(template.description || "")
+    setFormConfigRepoId(template.config_repository_id || null)
     setFormInventorySource(template.inventory_source)
     setFormInventoryRepoId(template.inventory_repository_id || null)
     setFormInventoryName(template.inventory_name || "")
@@ -306,6 +334,7 @@ export function JobTemplatesPage() {
         name: formName,
         job_type: formJobType,
         description: formDescription || undefined,
+        config_repository_id: formConfigRepoId || undefined,
         inventory_source: formInventorySource,
         inventory_repository_id: formInventorySource === "inventory" ? formInventoryRepoId : undefined,
         inventory_name: formInventorySource === "inventory" ? formInventoryName : undefined,
@@ -376,7 +405,7 @@ export function JobTemplatesPage() {
         variant: "destructive"
       })
     }
-  }, [token, formName, formJobType, formDescription, formInventorySource, formInventoryRepoId, formInventoryName, formCommandTemplate, formIsGlobal, editingTemplate, resetForm, fetchTemplates, toast])
+  }, [token, formName, formJobType, formDescription, formConfigRepoId, formInventorySource, formInventoryRepoId, formInventoryName, formCommandTemplate, formIsGlobal, editingTemplate, resetForm, fetchTemplates, toast])
 
   const handleDeleteTemplate = useCallback(async (templateId: number) => {
     if (!token) return
@@ -509,6 +538,35 @@ export function JobTemplatesPage() {
                   rows={2}
                 />
               </div>
+
+              {/* Config Repository Section - Show when job type is selected */}
+              {formJobType && (
+                <div className="space-y-3 pt-3 border-t border-gray-200">
+                  <Label className="text-sm font-medium text-gray-700">Configuration Repository (Optional)</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="config-repo" className="text-xs text-gray-500">Git Repository (category=configs)</Label>
+                    <Select
+                      value={formConfigRepoId?.toString() || "none"}
+                      onValueChange={(v) => setFormConfigRepoId(v === "none" ? null : parseInt(v))}
+                    >
+                      <SelectTrigger id="config-repo" className="h-9 bg-white">
+                        <SelectValue placeholder="Select config repository (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {configRepos.map((repo) => (
+                          <SelectItem key={repo.id} value={repo.id.toString()}>
+                            {repo.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500">
+                      Select a Git repository with configuration files
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Inventory Section */}
               <div className="space-y-3 pt-3 border-t border-gray-200">

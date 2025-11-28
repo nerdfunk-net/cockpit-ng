@@ -10,6 +10,113 @@ This document describes the architecture and implementation strategy for integra
 - **Redis**: Message broker and result backend
 - **FastAPI**: Main application with `/api/celery/*` endpoints
 
+## Request Flow Diagram
+
+This diagram shows the step-by-step flow when a user triggers a background job from the frontend:
+
+```
+Frontend                    Backend API                   Redis Broker              Celery Worker
+   │                            │                             │                          │
+   │ POST /api/celery/tasks/    │                             │                          │
+   │      cache-devices         │                             │                          │
+   ├───────────────────────────►│                             │                          │
+   │                            │                             │                          │
+   │                            │ task.delay()                │                          │
+   │                            ├────────────────────────────►│                          │
+   │                            │                             │ (queue message)          │
+   │◄───────────────────────────┤                             │                          │
+   │  { task_id, status }       │                             │                          │
+   │                            │                             │                          │
+   │                            │                             │      pop task            │
+   │                            │                             │◄─────────────────────────┤
+   │                            │                             │                          │
+   │                            │                             │      execute task        │
+   │                            │                             │      ──────────────────► │
+   │                            │                             │                          │
+   │ GET /api/celery/tasks/     │                             │                          │
+   │     {task_id}              │                             │                          │
+   ├───────────────────────────►│                             │                          │
+   │                            │ AsyncResult(task_id)        │                          │
+   │                            ├────────────────────────────►│                          │
+   │                            │◄────────────────────────────┤                          │
+   │◄───────────────────────────┤  { status: PENDING }        │                          │
+   │  (poll every 2s)           │                             │                          │
+   │                            │                             │                          │
+   │                            │                             │      task completes      │
+   │                            │                             │      store result        │
+   │                            │                             │◄─────────────────────────┤
+   │                            │                             │                          │
+   │ GET /api/celery/tasks/     │                             │                          │
+   │     {task_id}              │                             │                          │
+   ├───────────────────────────►│                             │                          │
+   │                            │ AsyncResult(task_id)        │                          │
+   │                            ├────────────────────────────►│                          │
+   │                            │◄────────────────────────────┤                          │
+   │◄───────────────────────────┤  { status: SUCCESS,         │                          │
+   │                            │    result: {...} }          │                          │
+   │                            │                             │                          │
+```
+
+### Periodic Task Flow (Celery Beat)
+
+This diagram shows how scheduled tasks are triggered by Celery Beat:
+
+```
+Celery Beat                 Redis Broker              Celery Worker              Database
+   │                            │                          │                        │
+   │  (reads schedule from      │                          │                        │
+   │   beat_schedule.py or      │                          │                        │
+   │   job_schedules table)     │                          │                        │
+   │                            │                          │                        │
+   │ Schedule triggers          │                          │                        │
+   │ (e.g., every 15 min)       │                          │                        │
+   ├───────────────────────────►│                          │                        │
+   │  queue task                │                          │                        │
+   │                            │      pop task            │                        │
+   │                            │◄─────────────────────────┤                        │
+   │                            │                          │                        │
+   │                            │      dispatch_job()      │                        │
+   │                            │      ──────────────────► │                        │
+   │                            │                          │                        │
+   │                            │                          │ create job_run record  │
+   │                            │                          ├───────────────────────►│
+   │                            │                          │                        │
+   │                            │                          │ execute job task       │
+   │                            │                          │ ───────────────────► │
+   │                            │                          │                        │
+   │                            │                          │ update job_run status  │
+   │                            │                          ├───────────────────────►│
+   │                            │                          │                        │
+   │                            │      store result        │                        │
+   │                            │◄─────────────────────────┤                        │
+   │                            │                          │                        │
+```
+
+### Key API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/celery/tasks/{task_id}` | GET | Poll task status and result |
+| `/api/celery/tasks/{task_id}` | DELETE | Cancel a running task |
+| `/api/celery/tasks/cache-devices` | POST | Trigger device caching |
+| `/api/celery/tasks/cache-locations` | POST | Trigger location caching |
+| `/api/celery/tasks/sync-devices-to-checkmk` | POST | Trigger CheckMK sync |
+| `/api/celery/workers` | GET | List active workers |
+| `/api/celery/schedules` | GET | List periodic schedules |
+| `/api/celery/status` | GET | Overall Celery status |
+
+### Task Status Values
+
+| Status | Description |
+|--------|-------------|
+| `PENDING` | Task is queued, waiting to start |
+| `STARTED` | Task has started execution |
+| `PROGRESS` | Task is running and has sent progress updates |
+| `SUCCESS` | Task completed successfully |
+| `FAILURE` | Task failed with error |
+| `RETRY` | Task is being retried |
+| `REVOKED` | Task was cancelled |
+
 ## Architecture Principles
 
 ### 1. Separation of Concerns

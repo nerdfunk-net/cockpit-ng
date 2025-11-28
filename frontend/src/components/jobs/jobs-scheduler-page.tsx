@@ -51,8 +51,18 @@ interface JobTemplate {
   updated_at: string
 }
 
+interface Credential {
+  id: number
+  name: string
+  username: string
+  type: string
+  source: string
+  owner?: string
+}
+
 const EMPTY_SCHEDULES: JobSchedule[] = []
 const EMPTY_TEMPLATES: JobTemplate[] = []
+const EMPTY_CREDENTIALS: Credential[] = []
 
 export function JobsSchedulerPage() {
   const token = useAuthStore(state => state.token)
@@ -60,6 +70,7 @@ export function JobsSchedulerPage() {
   const { toast } = useToast()
   const [jobSchedules, setJobSchedules] = useState<JobSchedule[]>(EMPTY_SCHEDULES)
   const [jobTemplates, setJobTemplates] = useState<JobTemplate[]>(EMPTY_TEMPLATES)
+  const [credentials, setCredentials] = useState<Credential[]>(EMPTY_CREDENTIALS)
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingJob, setEditingJob] = useState<JobSchedule | null>(null)
@@ -72,6 +83,7 @@ export function JobsSchedulerPage() {
   const [formStartTime, setFormStartTime] = useState("00:00")
   const [formIsActive, setFormIsActive] = useState(true)
   const [formIsGlobal, setFormIsGlobal] = useState(false)
+  const [formCredentialId, setFormCredentialId] = useState<number | null>(null)
 
   // Fetch job schedules
   const fetchJobSchedules = useCallback(async () => {
@@ -117,10 +129,32 @@ export function JobsSchedulerPage() {
     }
   }, [token])
 
+  // Fetch credentials (global + user's private)
+  const fetchCredentials = useCallback(async () => {
+    if (!token) return
+
+    try {
+      const response = await fetch("/api/proxy/api/credentials", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setCredentials(data || [])
+      }
+    } catch (error) {
+      console.error("Error fetching credentials:", error)
+    }
+  }, [token])
+
   useEffect(() => {
     fetchJobSchedules()
     fetchJobTemplates()
-  }, [fetchJobSchedules, fetchJobTemplates])
+    fetchCredentials()
+  }, [fetchJobSchedules, fetchJobTemplates, fetchCredentials])
 
   const resetForm = useCallback(() => {
     setFormTemplateId("")
@@ -130,6 +164,7 @@ export function JobsSchedulerPage() {
     setFormStartTime("00:00")
     setFormIsActive(true)
     setFormIsGlobal(false)
+    setFormCredentialId(null)
     setEditingJob(null)
   }, [])
 
@@ -151,6 +186,7 @@ export function JobsSchedulerPage() {
             interval_minutes: formScheduleType === "interval" ? formIntervalMinutes : undefined,
             start_time: ["hourly", "daily", "weekly", "monthly"].includes(formScheduleType) ? formStartTime : undefined,
             is_active: formIsActive,
+            credential_id: formCredentialId || undefined,
           }),
         })
 
@@ -188,6 +224,7 @@ export function JobsSchedulerPage() {
             start_time: ["hourly", "daily", "weekly", "monthly"].includes(formScheduleType) ? formStartTime : undefined,
             is_active: formIsActive,
             is_global: formIsGlobal,
+            credential_id: formCredentialId || undefined,
           }),
         })
 
@@ -216,7 +253,7 @@ export function JobsSchedulerPage() {
         variant: "destructive"
       })
     }
-  }, [token, editingJob, formTemplateId, formIdentifier, formScheduleType, formIntervalMinutes, formStartTime, formIsActive, formIsGlobal, fetchJobSchedules, toast, resetForm])
+  }, [token, editingJob, formTemplateId, formIdentifier, formScheduleType, formIntervalMinutes, formStartTime, formIsActive, formIsGlobal, formCredentialId, fetchJobSchedules, toast, resetForm])
 
   const handleToggleActive = useCallback(async (job: JobSchedule) => {
     if (!token) return
@@ -551,6 +588,51 @@ export function JobsSchedulerPage() {
               )}
               {["hourly", "daily", "weekly", "monthly"].includes(formScheduleType) && (
                 <p className="text-xs text-gray-500">First run at {formStartTime}</p>
+              )}
+
+              {/* Credential selector for backup jobs */}
+              {selectedTemplate && selectedTemplate.job_type === "backup" && (
+                <div className="pt-3 border-t border-gray-200">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="credential" className="text-sm font-medium text-gray-700">
+                      Device Credentials <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={formCredentialId?.toString() || "none"}
+                      onValueChange={(v) => setFormCredentialId(v === "none" ? null : parseInt(v))}
+                    >
+                      <SelectTrigger id="credential" className="h-9 bg-white">
+                        <SelectValue placeholder="Select credentials for device login" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">
+                          <span className="text-gray-400">No credential selected</span>
+                        </SelectItem>
+                        {credentials.map((cred) => (
+                          <SelectItem key={cred.id} value={cred.id.toString()}>
+                            <div className="flex items-center gap-2">
+                              {cred.source === "general" ? (
+                                <Globe className="h-3.5 w-3.5 text-blue-500" />
+                              ) : (
+                                <User className="h-3.5 w-3.5 text-gray-400" />
+                              )}
+                              <span className="font-medium">{cred.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                ({cred.username})
+                              </span>
+                              {cred.source === "general" && (
+                                <Badge variant="secondary" className="text-xs ml-auto">Global</Badge>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500">
+                      Required for connecting to devices via SSH
+                    </p>
+                  </div>
+                </div>
               )}
 
               {/* Options section with inline switches */}

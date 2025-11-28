@@ -6,7 +6,27 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, validator
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from services.job_database_service import JobStatus, JobType
+from enum import Enum
+
+
+class JobStatus(str, Enum):
+    """Job status enumeration"""
+
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class JobType(str, Enum):
+    """Job type enumeration"""
+
+    DEVICE_COMPARISON = "device-comparison"
+    DEVICE_SYNC = "device-sync"
+    DEVICE_CACHE = "device-cache"
+    BACKUP = "backup"
+    NETWORK_SCAN = "network-scan"
 
 
 class JobProgress(BaseModel):

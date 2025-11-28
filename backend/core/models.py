@@ -261,11 +261,12 @@ class JobSchedule(Base):
 class JobTemplate(Base):
     """Job templates define reusable job configurations"""
     __tablename__ = "job_templates"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     job_type = Column(String(50), nullable=False)  # backup, compare_devices, run_commands, cache_devices, sync_devices
     description = Column(Text)
+    config_repository_id = Column(Integer)  # Reference to git repository for config (type=config)
     inventory_source = Column(String(50), nullable=False, default='all')  # all, inventory
     inventory_repository_id = Column(Integer)  # Reference to git repository for inventory
     inventory_name = Column(String(255))  # Name of the stored inventory
@@ -500,58 +501,6 @@ class NB2CMKJobResult(Base):
     __table_args__ = (
         Index('idx_nb2cmk_job_results_job_id', 'job_id'),
         Index('idx_nb2cmk_job_results_device_id', 'device_id'),
-    )
-
-
-# ============================================================================
-# APScheduler Job Tracking Models
-# ============================================================================
-
-class APSchedulerJob(Base):
-    """APScheduler job execution tracking (runtime jobs)."""
-    __tablename__ = 'apscheduler_jobs'
-
-    id = Column(String(255), primary_key=True)  # job_id
-    type = Column(String(50), nullable=False)  # device-comparison, backup, etc.
-    status = Column(String(50), nullable=False)  # pending, running, completed, failed, cancelled
-    started_by = Column(String(255))
-    started_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    completed_at = Column(DateTime(timezone=True))
-    progress_current = Column(Integer, default=0, nullable=False)
-    progress_total = Column(Integer, default=0, nullable=False)
-    progress_message = Column(Text)
-    result_summary = Column(Text)
-    error_message = Column(Text)
-    job_metadata = Column('metadata', Text)  # JSON - renamed to avoid SQLAlchemy conflict
-
-    # Relationship to job results
-    results = relationship('APSchedulerJobResult', back_populates='job', cascade='all, delete-orphan')
-
-    __table_args__ = (
-        Index('idx_apscheduler_jobs_status', 'status'),
-        Index('idx_apscheduler_jobs_type', 'type'),
-        Index('idx_apscheduler_jobs_started_at', 'started_at'),
-    )
-
-
-class APSchedulerJobResult(Base):
-    """Individual device result within an APScheduler job."""
-    __tablename__ = 'apscheduler_job_results'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    job_id = Column(String(255), ForeignKey('apscheduler_jobs.id', ondelete='CASCADE'), nullable=False)
-    device_name = Column(String(255), nullable=False)
-    status = Column(String(50), nullable=False)
-    result_data = Column(Text)  # JSON
-    error_message = Column(Text)
-    processed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-
-    # Relationship to job
-    job = relationship('APSchedulerJob', back_populates='results')
-
-    __table_args__ = (
-        Index('idx_apscheduler_job_results_job_id', 'job_id'),
-        Index('idx_apscheduler_job_results_device_name', 'device_name'),
     )
 
 

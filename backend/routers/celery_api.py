@@ -466,3 +466,62 @@ async def trigger_compare_nautobot_and_checkmk(
         message=f"Device comparison task queued for {device_count_msg}: {task.id}"
     )
 
+
+# Backup request model
+class BackupDevicesRequest(BaseModel):
+    inventory: List[str]
+    config_repository_id: Optional[int] = None
+    credential_id: Optional[int] = None
+
+
+@router.post("/tasks/backup-devices", response_model=TaskResponse)
+@handle_celery_errors("backup devices")
+async def trigger_backup_devices(
+    request: BackupDevicesRequest,
+    current_user: dict = Depends(require_permission("jobs", "write"))
+):
+    """
+    Backup device configurations to Git repository.
+
+    This task:
+    1. Converts inventory to device list
+    2. Checks/clones/pulls Git repository
+    3. Connects to each device via Netmiko
+    4. Executes 'show running-config' and 'show startup-config'
+    5. Saves configs to Git repository
+    6. Commits and pushes changes
+
+    Request Body:
+        inventory: List of device IDs to backup
+        config_repository_id: ID of Git repository for configs (category=configs)
+        credential_id: Optional ID of credential for device authentication
+
+    Returns:
+        TaskResponse with task_id for tracking progress
+    """
+    from tasks.backup_tasks import backup_devices_task
+
+    if not request.inventory:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="inventory list cannot be empty"
+        )
+
+    if not request.config_repository_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="config_repository_id is required"
+        )
+
+    # Trigger the task asynchronously
+    task = backup_devices_task.delay(
+        inventory=request.inventory,
+        config_repository_id=request.config_repository_id,
+        credential_id=request.credential_id
+    )
+
+    return TaskResponse(
+        task_id=task.id,
+        status='queued',
+        message=f"Backup task queued for {len(request.inventory)} devices: {task.id}"
+    )

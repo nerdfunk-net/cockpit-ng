@@ -341,16 +341,16 @@ class JobRunRepository(BaseRepository[JobRun]):
         from sqlalchemy import func
         session = get_db_session()
         try:
-            # Get distinct template_id and template_name combinations
+            # Get distinct template_id and job_name combinations
             results = session.query(
                 self.model.job_template_id,
-                func.max(self.model.template_name).label('template_name')
+                func.max(self.model.job_name).label('template_name')
             ).filter(
                 self.model.job_template_id.isnot(None)
             ).group_by(
                 self.model.job_template_id
             ).order_by(
-                func.max(self.model.template_name)
+                func.max(self.model.job_name)
             ).all()
             
             return [

@@ -73,6 +73,7 @@ def init_db():
         Base.metadata.create_all(bind=engine)
         # Run migrations for existing tables
         migrate_cache_settings_table()
+        migrate_job_templates_table()
         # Commit the DDL changes
         engine.dispose()
         logger.info(f"Database tables initialized successfully ({len(Base.metadata.tables)} tables)")
@@ -113,24 +114,24 @@ def migrate_cache_settings_table():
     Called during application startup.
     """
     from sqlalchemy import text, inspect
-    
+
     columns_to_add = [
         ("devices_cache_interval_minutes", "INTEGER DEFAULT 60 NOT NULL"),
         ("locations_cache_interval_minutes", "INTEGER DEFAULT 10 NOT NULL"),
         ("git_commits_cache_interval_minutes", "INTEGER DEFAULT 15 NOT NULL"),
     ]
-    
+
     try:
         # Use inspector to check existing columns
         inspector = inspect(engine)
-        
+
         # Check if table exists
         if 'cache_settings' not in inspector.get_table_names():
             logger.debug("cache_settings table doesn't exist yet, skipping migration")
             return
-        
+
         existing_columns = {col['name'] for col in inspector.get_columns('cache_settings')}
-        
+
         with engine.connect() as conn:
             for column_name, column_def in columns_to_add:
                 if column_name not in existing_columns:
@@ -140,6 +141,42 @@ def migrate_cache_settings_table():
                     logger.info(f"Successfully added column {column_name}")
                 else:
                     logger.debug(f"Column {column_name} already exists in cache_settings")
-                    
+
     except Exception as e:
         logger.warning(f"Could not migrate cache_settings table: {e}")
+
+
+def migrate_job_templates_table():
+    """
+    Add new columns to job_templates table if they don't exist.
+    Called during application startup.
+    """
+    from sqlalchemy import text, inspect
+
+    columns_to_add = [
+        ("config_repository_id", "INTEGER"),
+    ]
+
+    try:
+        # Use inspector to check existing columns
+        inspector = inspect(engine)
+
+        # Check if table exists
+        if 'job_templates' not in inspector.get_table_names():
+            logger.debug("job_templates table doesn't exist yet, skipping migration")
+            return
+
+        existing_columns = {col['name'] for col in inspector.get_columns('job_templates')}
+
+        with engine.connect() as conn:
+            for column_name, column_def in columns_to_add:
+                if column_name not in existing_columns:
+                    logger.info(f"Adding column {column_name} to job_templates table")
+                    conn.execute(text(f"ALTER TABLE job_templates ADD COLUMN {column_name} {column_def}"))
+                    conn.commit()
+                    logger.info(f"Successfully added column {column_name}")
+                else:
+                    logger.debug(f"Column {column_name} already exists in job_templates")
+
+    except Exception as e:
+        logger.warning(f"Could not migrate job_templates table: {e}")

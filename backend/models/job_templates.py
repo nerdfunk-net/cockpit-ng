@@ -18,6 +18,7 @@ class JobTemplateBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="Name of the job template")
     job_type: JobTemplateType = Field(..., description="Type of job this template represents")
     description: Optional[str] = Field(None, max_length=1000, description="Description of what this template does")
+    config_repository_id: Optional[int] = Field(None, description="Git repository ID for configuration (type=config)")
     inventory_source: InventorySource = Field("all", description="Whether to use all devices or a stored inventory")
     inventory_repository_id: Optional[int] = Field(None, description="Git repository ID for inventory (when inventory_source='inventory')")
     inventory_name: Optional[str] = Field(None, description="Name of the stored inventory to use")
@@ -34,6 +35,7 @@ class JobTemplateUpdate(BaseModel):
     """Model for updating a job template"""
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=1000)
+    config_repository_id: Optional[int] = None
     inventory_source: Optional[InventorySource] = None
     inventory_repository_id: Optional[int] = None
     inventory_name: Optional[str] = None

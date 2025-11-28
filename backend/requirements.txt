@@ -16,7 +16,6 @@ netmiko
 ntc-templates
 napalm
 pyyaml
-apscheduler
 sqlalchemy
 psycopg2-binary
 python-jose[cryptography]

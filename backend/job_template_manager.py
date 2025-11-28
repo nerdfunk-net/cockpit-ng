@@ -19,6 +19,7 @@ def create_job_template(
     user_id: int,
     created_by: str,
     description: Optional[str] = None,
+    config_repository_id: Optional[int] = None,
     inventory_source: str = "all",
     inventory_repository_id: Optional[int] = None,
     inventory_name: Optional[str] = None,
@@ -26,15 +27,16 @@ def create_job_template(
     is_global: bool = False
 ) -> Dict[str, Any]:
     """Create a new job template"""
-    
+
     # Check for duplicate name
     if repo.check_name_exists(name, user_id if not is_global else None):
         raise ValueError(f"A job template with name '{name}' already exists")
-    
+
     template = repo.create(
         name=name,
         job_type=job_type,
         description=description,
+        config_repository_id=config_repository_id,
         inventory_source=inventory_source,
         inventory_repository_id=inventory_repository_id,
         inventory_name=inventory_name,
@@ -43,7 +45,7 @@ def create_job_template(
         user_id=user_id if not is_global else None,
         created_by=created_by
     )
-    
+
     logger.info(f"Created job template: {name} (ID: {template.id})")
     return _model_to_dict(template)
 
@@ -87,6 +89,7 @@ def update_job_template(
     template_id: int,
     name: Optional[str] = None,
     description: Optional[str] = None,
+    config_repository_id: Optional[int] = None,
     inventory_source: Optional[str] = None,
     inventory_repository_id: Optional[int] = None,
     inventory_name: Optional[str] = None,
@@ -95,19 +98,21 @@ def update_job_template(
     user_id: Optional[int] = None
 ) -> Optional[Dict[str, Any]]:
     """Update a job template"""
-    
+
     # Check for duplicate name if name is being updated
     if name is not None:
         if repo.check_name_exists(name, user_id, exclude_id=template_id):
             raise ValueError(f"A job template with name '{name}' already exists")
-    
+
     # Build update kwargs
     update_data = {}
-    
+
     if name is not None:
         update_data['name'] = name
     if description is not None:
         update_data['description'] = description
+    if config_repository_id is not None:
+        update_data['config_repository_id'] = config_repository_id
     if inventory_source is not None:
         update_data['inventory_source'] = inventory_source
     if inventory_repository_id is not None:
@@ -122,11 +127,11 @@ def update_job_template(
             update_data['user_id'] = None
         elif user_id is not None:
             update_data['user_id'] = user_id
-    
+
     if not update_data:
         # Nothing to update, return current state
         return get_job_template(template_id)
-    
+
     template = repo.update(template_id, **update_data)
     if template:
         logger.info(f"Updated job template: {template.name} (ID: {template_id})")
@@ -177,6 +182,7 @@ def _model_to_dict(template) -> Dict[str, Any]:
         "name": template.name,
         "job_type": template.job_type,
         "description": template.description,
+        "config_repository_id": template.config_repository_id,
         "inventory_source": template.inventory_source,
         "inventory_repository_id": template.inventory_repository_id,
         "inventory_name": template.inventory_name,
