@@ -4,6 +4,7 @@ API endpoints for managing scheduled jobs (different from APScheduler jobs route
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional
+from datetime import datetime, timezone
 from core.auth import verify_token, require_permission
 import jobs_manager
 from models.jobs import (
@@ -347,4 +348,131 @@ async def execute_job(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to execute job: {str(e)}"
+        )
+
+
+@router.get("/debug/scheduler-status")
+async def get_scheduler_debug_status(
+    current_user: dict = Depends(verify_token)
+):
+    """
+    Get detailed scheduler debug information.
+    
+    Returns:
+    - Current server time (UTC and local)
+    - All schedules with their next_run times
+    - Whether Celery Beat is running
+    - Recent schedule check results
+    """
+    try:
+        now_utc = datetime.now(timezone.utc)
+        now_local = datetime.now()
+        
+        # Get all schedules
+        all_schedules = jobs_manager.list_job_schedules()
+        active_schedules = [s for s in all_schedules if s.get('is_active')]
+        
+        # Check which schedules are due
+        due_schedules = []
+        upcoming_schedules = []
+        
+        for schedule in active_schedules:
+            next_run = schedule.get('next_run')
+            if next_run:
+                # Parse next_run if it's a string
+                if isinstance(next_run, str):
+                    next_run_dt = datetime.fromisoformat(next_run.replace('Z', '+00:00'))
+                else:
+                    next_run_dt = next_run
+                
+                # Calculate time until next run
+                if next_run_dt.tzinfo is None:
+                    next_run_dt = next_run_dt.replace(tzinfo=timezone.utc)
+                
+                time_diff = (next_run_dt - now_utc).total_seconds()
+                
+                schedule_info = {
+                    'id': schedule['id'],
+                    'job_identifier': schedule['job_identifier'],
+                    'schedule_type': schedule['schedule_type'],
+                    'start_time': schedule.get('start_time'),
+                    'next_run': schedule.get('next_run'),
+                    'next_run_local': next_run_dt.astimezone().isoformat() if next_run_dt else None,
+                    'last_run': schedule.get('last_run'),
+                    'seconds_until_next_run': int(time_diff),
+                    'is_due': time_diff <= 0,
+                    'template_name': schedule.get('template_name'),
+                }
+                
+                if time_diff <= 0:
+                    due_schedules.append(schedule_info)
+                else:
+                    upcoming_schedules.append(schedule_info)
+        
+        # Sort upcoming by next_run
+        upcoming_schedules.sort(key=lambda x: x['seconds_until_next_run'])
+        
+        # Check Celery Beat status
+        celery_beat_status = "unknown"
+        try:
+            from celery_app import celery_app
+            inspect = celery_app.control.inspect()
+            
+            # Check if there are any active workers
+            active_workers = inspect.active()
+            if active_workers:
+                celery_beat_status = "workers_active"
+            else:
+                celery_beat_status = "no_workers_detected"
+        except Exception as e:
+            celery_beat_status = f"error: {str(e)}"
+        
+        return {
+            "server_time": {
+                "utc": now_utc.isoformat(),
+                "local": now_local.isoformat(),
+                "timezone_offset_hours": (now_local.astimezone().utcoffset().total_seconds() / 3600) if now_local.astimezone().utcoffset() else 0,
+            },
+            "schedule_summary": {
+                "total_schedules": len(all_schedules),
+                "active_schedules": len(active_schedules),
+                "due_now": len(due_schedules),
+                "upcoming": len(upcoming_schedules),
+            },
+            "due_schedules": due_schedules,
+            "upcoming_schedules": upcoming_schedules[:10],  # Next 10 upcoming
+            "celery_status": celery_beat_status,
+            "note": "Times are displayed in UTC. 'start_time' is interpreted as UTC, not local time. For European time (UTC+1), subtract 1 hour from start_time.",
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting scheduler debug status: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get scheduler status: {str(e)}"
+        )
+
+
+@router.post("/debug/recalculate-next-runs")
+async def recalculate_all_next_runs(
+    current_user: dict = Depends(require_permission("jobs", "write"))
+):
+    """
+    Recalculate next_run for all active schedules.
+    Useful when schedules seem stuck or out of sync.
+    """
+    try:
+        result = jobs_manager.initialize_schedule_next_runs()
+        
+        return {
+            "success": True,
+            "message": f"Recalculated next_run for {result['initialized_count']} schedules",
+            "details": result
+        }
+        
+    except Exception as e:
+        logger.error(f"Error recalculating next runs: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to recalculate next runs: {str(e)}"
         )

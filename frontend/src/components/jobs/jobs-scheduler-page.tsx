@@ -9,9 +9,63 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { Plus, Play, Pause, Trash2, Edit, Calendar, Clock, Globe, User } from "lucide-react"
+import { Plus, Play, Pause, Trash2, Edit, Calendar, Clock, Globe, User, Bug, AlertTriangle, CheckCircle2, RefreshCw, Server } from "lucide-react"
 import { useAuthStore } from "@/lib/auth-store"
 import { useToast } from "@/hooks/use-toast"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
+interface SchedulerDebugInfo {
+  server_time: {
+    utc: string
+    local: string
+    timezone_offset_hours: number
+  }
+  schedule_summary: {
+    total_schedules: number
+    active_schedules: number
+    due_now: number
+    upcoming: number
+  }
+  due_schedules: Array<{
+    id: number
+    job_identifier: string
+    schedule_type: string
+    start_time: string | null
+    next_run: string | null
+    next_run_local: string | null
+    last_run: string | null
+    seconds_until_next_run: number
+    is_due: boolean
+    template_name: string | null
+  }>
+  upcoming_schedules: Array<{
+    id: number
+    job_identifier: string
+    schedule_type: string
+    start_time: string | null
+    next_run: string | null
+    next_run_local: string | null
+    last_run: string | null
+    seconds_until_next_run: number
+    is_due: boolean
+    template_name: string | null
+  }>
+  celery_status: string
+  note: string
+}
 
 interface JobSchedule {
   id: number
@@ -74,6 +128,11 @@ export function JobsSchedulerPage() {
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingJob, setEditingJob] = useState<JobSchedule | null>(null)
+  
+  // Debug dialog state
+  const [isDebugDialogOpen, setIsDebugDialogOpen] = useState(false)
+  const [debugInfo, setDebugInfo] = useState<SchedulerDebugInfo | null>(null)
+  const [debugLoading, setDebugLoading] = useState(false)
 
   // Form state
   const [formTemplateId, setFormTemplateId] = useState<string>("")
@@ -149,6 +208,75 @@ export function JobsSchedulerPage() {
       console.error("Error fetching credentials:", error)
     }
   }, [token])
+
+  // Fetch scheduler debug info
+  const fetchSchedulerDebug = useCallback(async () => {
+    if (!token) return
+
+    try {
+      setDebugLoading(true)
+      const response = await fetch("/api/proxy/api/job-schedules/debug/scheduler-status", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setDebugInfo(data)
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to fetch scheduler debug info",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching scheduler debug:", error)
+      toast({
+        title: "Error",
+        description: "Failed to fetch scheduler debug info",
+        variant: "destructive"
+      })
+    } finally {
+      setDebugLoading(false)
+    }
+  }, [token, toast])
+
+  // Recalculate all next runs
+  const handleRecalculateNextRuns = useCallback(async () => {
+    if (!token) return
+
+    try {
+      const response = await fetch("/api/proxy/api/job-schedules/debug/recalculate-next-runs", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        toast({
+          title: "Success",
+          description: data.message,
+        })
+        // Refresh debug info and schedules
+        fetchSchedulerDebug()
+        fetchJobSchedules()
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to recalculate next runs",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error("Error recalculating next runs:", error)
+    }
+  }, [token, toast, fetchSchedulerDebug, fetchJobSchedules])
 
   useEffect(() => {
     fetchJobSchedules()
@@ -414,13 +542,198 @@ export function JobsSchedulerPage() {
             Schedule automated tasks using job templates
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Schedule
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          {/* Debug Dialog */}
+          <Dialog open={isDebugDialogOpen} onOpenChange={(open) => {
+            setIsDebugDialogOpen(open)
+            if (open) fetchSchedulerDebug()
+          }}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Bug className="mr-2 h-4 w-4" />
+                Debug Scheduler
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Server className="h-5 w-5 text-blue-500" />
+                  Scheduler Debug Info
+                </DialogTitle>
+                <DialogDescription>
+                  View scheduler database state and diagnose scheduling issues
+                </DialogDescription>
+              </DialogHeader>
+
+              {debugLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
+                  <span className="ml-2 text-gray-600">Loading scheduler info...</span>
+                </div>
+              ) : debugInfo ? (
+                <div className="space-y-4">
+                  {/* Server Time Info */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Server Time
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-blue-600">UTC:</span>
+                        <span className="ml-2 font-mono">{new Date(debugInfo.server_time.utc).toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-blue-600">Offset:</span>
+                        <span className="ml-2 font-mono">UTC{debugInfo.server_time.timezone_offset_hours >= 0 ? '+' : ''}{debugInfo.server_time.timezone_offset_hours}h</span>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs text-blue-600">
+                      ⚠️ Note: {debugInfo.note}
+                    </p>
+                  </div>
+
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="bg-gray-50 rounded-lg p-3 text-center">
+                      <p className="text-xs text-gray-500 uppercase">Total</p>
+                      <p className="text-2xl font-bold text-gray-700">{debugInfo.schedule_summary.total_schedules}</p>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-3 text-center">
+                      <p className="text-xs text-green-600 uppercase">Active</p>
+                      <p className="text-2xl font-bold text-green-700">{debugInfo.schedule_summary.active_schedules}</p>
+                    </div>
+                    <div className={`${debugInfo.schedule_summary.due_now > 0 ? 'bg-amber-50' : 'bg-gray-50'} rounded-lg p-3 text-center`}>
+                      <p className={`text-xs uppercase ${debugInfo.schedule_summary.due_now > 0 ? 'text-amber-600' : 'text-gray-500'}`}>Due Now</p>
+                      <p className={`text-2xl font-bold ${debugInfo.schedule_summary.due_now > 0 ? 'text-amber-700' : 'text-gray-400'}`}>{debugInfo.schedule_summary.due_now}</p>
+                    </div>
+                    <div className="bg-purple-50 rounded-lg p-3 text-center">
+                      <p className="text-xs text-purple-600 uppercase">Celery</p>
+                      <p className={`text-sm font-medium ${debugInfo.celery_status.includes('active') ? 'text-green-600' : 'text-red-600'}`}>
+                        {debugInfo.celery_status.includes('active') ? '✓ Active' : '✗ ' + debugInfo.celery_status}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Due Schedules (if any) */}
+                  {debugInfo.due_schedules.length > 0 && (
+                    <div className="border border-amber-200 rounded-lg overflow-hidden">
+                      <div className="bg-amber-100 px-4 py-2 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        <h4 className="font-semibold text-amber-800">Due Schedules (Should Be Running)</h4>
+                      </div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-amber-50">
+                            <TableHead className="text-xs">ID</TableHead>
+                            <TableHead className="text-xs">Name</TableHead>
+                            <TableHead className="text-xs">Type</TableHead>
+                            <TableHead className="text-xs">Start Time (UTC)</TableHead>
+                            <TableHead className="text-xs">Next Run (UTC)</TableHead>
+                            <TableHead className="text-xs">Overdue By</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {debugInfo.due_schedules.map((schedule) => (
+                            <TableRow key={schedule.id} className="bg-amber-50/50">
+                              <TableCell className="font-mono text-xs">{schedule.id}</TableCell>
+                              <TableCell className="font-medium">{schedule.job_identifier}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="text-xs">{schedule.schedule_type}</Badge>
+                              </TableCell>
+                              <TableCell className="font-mono text-xs">{schedule.start_time || '-'}</TableCell>
+                              <TableCell className="font-mono text-xs">{schedule.next_run ? new Date(schedule.next_run).toLocaleString() : '-'}</TableCell>
+                              <TableCell className="text-amber-700 font-medium">
+                                {Math.abs(Math.round(schedule.seconds_until_next_run / 60))} min
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+
+                  {/* Upcoming Schedules */}
+                  {debugInfo.upcoming_schedules.length > 0 && (
+                    <div className="border rounded-lg overflow-hidden">
+                      <div className="bg-gray-50 px-4 py-2 flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-gray-600" />
+                        <h4 className="font-semibold text-gray-700">Upcoming Schedules</h4>
+                      </div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-xs">ID</TableHead>
+                            <TableHead className="text-xs">Name</TableHead>
+                            <TableHead className="text-xs">Template</TableHead>
+                            <TableHead className="text-xs">Start Time (UTC)</TableHead>
+                            <TableHead className="text-xs">Next Run</TableHead>
+                            <TableHead className="text-xs">Time Until</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {debugInfo.upcoming_schedules.map((schedule, idx) => (
+                            <TableRow key={schedule.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                              <TableCell className="font-mono text-xs">{schedule.id}</TableCell>
+                              <TableCell className="font-medium">{schedule.job_identifier}</TableCell>
+                              <TableCell className="text-xs text-gray-600">{schedule.template_name || '-'}</TableCell>
+                              <TableCell className="font-mono text-xs">{schedule.start_time || '-'}</TableCell>
+                              <TableCell className="font-mono text-xs">
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      {schedule.next_run ? new Date(schedule.next_run).toLocaleTimeString() : '-'}
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="text-xs">UTC: {schedule.next_run}</p>
+                                      <p className="text-xs">Local: {schedule.next_run_local}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </TableCell>
+                              <TableCell className="text-green-600 font-medium">
+                                {schedule.seconds_until_next_run < 60 
+                                  ? `${schedule.seconds_until_next_run}s`
+                                  : schedule.seconds_until_next_run < 3600
+                                    ? `${Math.round(schedule.seconds_until_next_run / 60)}m`
+                                    : `${Math.round(schedule.seconds_until_next_run / 3600)}h`
+                                }
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <Button variant="outline" size="sm" onClick={fetchSchedulerDebug}>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Refresh
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={handleRecalculateNextRuns}>
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Recalculate All Next Runs
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No debug information available
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+          
+          {/* New Schedule Dialog */}
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm}>
+                <Plus className="mr-2 h-4 w-4" />
+                New Schedule
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-4xl p-0 gap-0 overflow-hidden">
             {/* Header with gradient */}
             <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 px-6 py-4">
@@ -564,7 +877,7 @@ export function JobsSchedulerPage() {
 
                 {["hourly", "daily", "weekly", "monthly"].includes(formScheduleType) && (
                   <div className="space-y-1.5">
-                    <Label htmlFor="start-time" className="text-sm font-medium text-gray-700">Start Time</Label>
+                    <Label htmlFor="start-time" className="text-sm font-medium text-gray-700">Start Time (UTC)</Label>
                     <Input
                       id="start-time"
                       type="time"
@@ -579,6 +892,28 @@ export function JobsSchedulerPage() {
                 {formScheduleType === "now" && <div />}
               </div>
 
+              {/* Timezone notice */}
+              {["hourly", "daily", "weekly", "monthly"].includes(formScheduleType) && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-blue-50 border border-blue-200 text-sm">
+                  <Globe className="h-4 w-4 text-blue-500 shrink-0" />
+                  <p className="text-blue-700">
+                    <span className="font-medium">All times are in UTC.</span>
+                    {' '}Your local time is currently UTC{new Date().getTimezoneOffset() <= 0 ? '+' : ''}{-new Date().getTimezoneOffset() / 60}h.
+                    {' '}For {formStartTime} UTC, that&apos;s{' '}
+                    <span className="font-mono font-medium">
+                      {(() => {
+                        const parts = formStartTime.split(':').map(Number)
+                        const h = parts[0] ?? 0
+                        const m = parts[1] ?? 0
+                        const localH = (h - new Date().getTimezoneOffset() / 60 + 24) % 24
+                        return `${String(Math.floor(localH)).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+                      })()}
+                    </span>
+                    {' '}local time.
+                  </p>
+                </div>
+              )}
+
               {/* Timing hint */}
               {formScheduleType === "interval" && (
                 <p className="text-xs text-gray-500">
@@ -587,7 +922,7 @@ export function JobsSchedulerPage() {
                 </p>
               )}
               {["hourly", "daily", "weekly", "monthly"].includes(formScheduleType) && (
-                <p className="text-xs text-gray-500">First run at {formStartTime}</p>
+                <p className="text-xs text-gray-500">First run at {formStartTime} UTC</p>
               )}
 
               {/* Credential selector for backup jobs */}
@@ -693,6 +1028,7 @@ export function JobsSchedulerPage() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {jobSchedules.length === 0 ? (
