@@ -2,6 +2,7 @@
 Periodic tasks executed by Celery Beat.
 These tasks run on a schedule defined in beat_schedule.py
 """
+from celery import shared_task
 from celery_app import celery_app
 import logging
 from datetime import datetime, timezone
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 _last_cache_runs: Dict[str, datetime] = {}
 
 
-@celery_app.task(name='tasks.worker_health_check')
+@shared_task(name='tasks.worker_health_check')
 def worker_health_check() -> dict:
     """
     Periodic task: Health check for Celery workers.
@@ -49,7 +50,7 @@ def worker_health_check() -> dict:
         }
 
 
-@celery_app.task(name='tasks.load_cache_schedules')
+@shared_task(name='tasks.load_cache_schedules')
 def load_cache_schedules_task() -> dict:
     """
     Periodic task: Check cache settings and dispatch cache tasks when due.
@@ -133,7 +134,7 @@ def load_cache_schedules_task() -> dict:
         return {'success': False, 'error': str(e)}
 
 
-@celery_app.task(name='tasks.dispatch_cache_task', bind=True)
+@shared_task(bind=True, name='tasks.dispatch_cache_task')
 def dispatch_cache_task(self, cache_type: str, task_name: str) -> dict:
     """
     Dispatch a cache task and track it in job_runs.

@@ -1,14 +1,14 @@
 """
 Test tasks for Celery functionality verification.
 """
-from celery_app import celery_app
+from celery import shared_task
 import logging
 import time
 
 logger = logging.getLogger(__name__)
 
 
-@celery_app.task(name='tasks.test_task')
+@shared_task(name='tasks.test_task')
 def test_task(message: str = "Hello from Celery!") -> dict:
     """
     Simple test task to verify Celery is working.
@@ -37,7 +37,7 @@ def test_task(message: str = "Hello from Celery!") -> dict:
         }
 
 
-@celery_app.task(bind=True, name='tasks.test_progress_task')
+@shared_task(bind=True, name='tasks.test_progress_task')
 def test_progress_task(self, duration: int = 10) -> dict:
     """
     Test task that reports progress updates.
