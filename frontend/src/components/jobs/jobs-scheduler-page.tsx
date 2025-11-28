@@ -473,6 +473,7 @@ export function JobsSchedulerPage() {
     setFormStartTime(job.start_time || "00:00")
     setFormIsActive(job.is_active)
     setFormIsGlobal(job.is_global)
+    setFormCredentialId(job.credential_id ?? null)
     setIsDialogOpen(true)
   }, [])
 
