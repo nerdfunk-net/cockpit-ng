@@ -14,6 +14,7 @@ from repositories.settings_repository import (
     GitSettingRepository,
     CheckMKSettingRepository,
     CacheSettingRepository,
+    CelerySettingRepository,
     NautobotDefaultRepository,
     DeviceOffboardingSettingRepository,
     SettingsMetadataRepository
@@ -81,6 +82,17 @@ class CacheSettings:
 
 
 @dataclass
+class CelerySettings:
+    """Celery task queue settings"""
+    
+    max_workers: int = 4  # Worker concurrency (requires restart)
+    cleanup_enabled: bool = True  # Enable automatic cleanup
+    cleanup_interval_hours: int = 6  # Run cleanup every 6 hours
+    cleanup_age_hours: int = 24  # Remove data older than 24 hours
+    result_expires_hours: int = 24  # Celery result expiry
+
+
+@dataclass
 class NautobotDefaults:
     """Default values for Nautobot device creation"""
 
@@ -128,6 +140,7 @@ class SettingsManager:
         self.default_checkmk = CheckMKSettings()
         self.default_nautobot_defaults = NautobotDefaults()
         self.default_cache = CacheSettings()
+        self.default_celery = CelerySettings()
 
         # PostgreSQL tables are created by alembic/SQLAlchemy
         # No database initialization needed
@@ -265,6 +278,50 @@ class SettingsManager:
             return True
         except Exception as e:
             logger.error(f"Error updating Cache settings: {e}")
+            return False
+
+    def get_celery_settings(self) -> Dict[str, Any]:
+        """Get current Celery settings"""
+        try:
+            repo = CelerySettingRepository()
+            settings = repo.get_settings()
+
+            if settings:
+                return {
+                    "max_workers": settings.max_workers,
+                    "cleanup_enabled": settings.cleanup_enabled,
+                    "cleanup_interval_hours": settings.cleanup_interval_hours,
+                    "cleanup_age_hours": settings.cleanup_age_hours,
+                    "result_expires_hours": settings.result_expires_hours,
+                }
+            return asdict(self.default_celery)
+        except Exception as e:
+            logger.error(f"Error getting Celery settings: {e}")
+            return asdict(self.default_celery)
+
+    def update_celery_settings(self, settings: Dict[str, Any]) -> bool:
+        """Update Celery settings"""
+        try:
+            repo = CelerySettingRepository()
+            existing = repo.get_settings()
+            
+            update_kwargs = {
+                "max_workers": settings.get("max_workers", self.default_celery.max_workers),
+                "cleanup_enabled": settings.get("cleanup_enabled", self.default_celery.cleanup_enabled),
+                "cleanup_interval_hours": settings.get("cleanup_interval_hours", self.default_celery.cleanup_interval_hours),
+                "cleanup_age_hours": settings.get("cleanup_age_hours", self.default_celery.cleanup_age_hours),
+                "result_expires_hours": settings.get("result_expires_hours", self.default_celery.result_expires_hours),
+            }
+            
+            if existing:
+                repo.update(existing.id, **update_kwargs)
+            else:
+                repo.create(**update_kwargs)
+            
+            logger.info("Celery settings updated successfully")
+            return True
+        except Exception as e:
+            logger.error(f"Error updating Celery settings: {e}")
             return False
 
     def update_nautobot_settings(self, settings: Dict[str, Any]) -> bool:

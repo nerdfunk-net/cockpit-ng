@@ -287,6 +287,26 @@ class JobRunRepository(BaseRepository[JobRun]):
         finally:
             session.close()
     
+    def cleanup_old_runs_hours(self, hours: int = 24) -> int:
+        """Delete job runs older than specified hours. Returns count deleted."""
+        from core.database import get_db_session
+        from datetime import timedelta
+        session = get_db_session()
+        try:
+            cutoff = datetime.utcnow() - timedelta(hours=hours)
+            result = session.query(self.model).filter(
+                self.model.queued_at < cutoff,
+                # Only delete completed/failed runs, not running ones
+                self.model.status.in_(['completed', 'failed', 'cancelled'])
+            ).delete(synchronize_session=False)
+            session.commit()
+            return result
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+    
     def clear_all(self) -> int:
         """Delete all job runs. Returns count deleted."""
         from core.database import get_db_session

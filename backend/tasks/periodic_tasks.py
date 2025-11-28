@@ -191,3 +191,93 @@ def dispatch_cache_task(self, cache_type: str, task_name: str) -> dict:
     except Exception as e:
         logger.error(f"Error dispatching cache task {cache_type}: {e}", exc_info=True)
         return {'success': False, 'error': str(e)}
+
+
+@shared_task(name='tasks.cleanup_celery_data')
+def cleanup_celery_data_task() -> dict:
+    """
+    Cleanup old Celery task results and job run data.
+    
+    This task:
+    1. Reads cleanup_age_hours from Celery settings
+    2. Removes task results from Redis older than the configured age
+    3. Removes old job run records from database
+    
+    Returns:
+        dict: Cleanup results with counts of removed items
+    """
+    try:
+        from settings_manager import settings_manager
+        from datetime import datetime, timezone, timedelta
+        from config import settings
+        import redis
+        import json
+        
+        # Get cleanup settings
+        celery_settings = settings_manager.get_celery_settings()
+        cleanup_age_hours = celery_settings.get('cleanup_age_hours', 24)
+        
+        if not celery_settings.get('cleanup_enabled', True):
+            return {
+                'success': True,
+                'message': 'Cleanup is disabled',
+                'removed_results': 0,
+                'removed_job_runs': 0
+            }
+        
+        cutoff_time = datetime.now(timezone.utc) - timedelta(hours=cleanup_age_hours)
+        
+        logger.info(f"Starting Celery cleanup: removing data older than {cleanup_age_hours} hours")
+        
+        # Connect to Redis
+        r = redis.from_url(settings.redis_url)
+        
+        # Count and remove old task results
+        removed_results = 0
+        result_keys = list(r.scan_iter("celery-task-meta-*"))
+        
+        for key in result_keys:
+            try:
+                # Get the result data
+                data = r.get(key)
+                if data:
+                    result_data = json.loads(data)
+                    # Check if task has a date_done field
+                    date_done = result_data.get('date_done')
+                    if date_done:
+                        # Parse the date (Celery stores it as ISO format)
+                        if isinstance(date_done, str):
+                            task_time = datetime.fromisoformat(date_done.replace('Z', '+00:00'))
+                            if task_time < cutoff_time:
+                                r.delete(key)
+                                removed_results += 1
+            except Exception as e:
+                logger.debug(f"Error processing key {key}: {e}")
+                continue
+        
+        # Remove old job runs from database
+        removed_job_runs = 0
+        try:
+            import job_run_manager
+            # Use the hours-based cleanup function
+            removed_job_runs = job_run_manager.cleanup_old_runs_hours(cleanup_age_hours)
+        except Exception as e:
+            logger.warning(f"Error cleaning up job runs: {e}")
+        
+        logger.info(f"Cleanup completed: {removed_results} results, {removed_job_runs} job runs removed")
+        
+        return {
+            'success': True,
+            'message': f'Cleanup completed',
+            'cleanup_age_hours': cleanup_age_hours,
+            'cutoff_time': cutoff_time.isoformat(),
+            'removed_results': removed_results,
+            'removed_job_runs': removed_job_runs
+        }
+        
+    except Exception as e:
+        logger.error(f"Cleanup task failed: {e}")
+        return {
+            'success': False,
+            'error': str(e)
+        }

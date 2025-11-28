@@ -663,6 +663,23 @@ class NautobotDefault(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
 
+class CelerySetting(Base):
+    """Celery task queue settings."""
+    __tablename__ = 'celery_settings'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    # Worker settings (require restart to take effect)
+    max_workers = Column(Integer, nullable=False, default=4)
+    # Cleanup settings
+    cleanup_enabled = Column(Boolean, nullable=False, default=True)
+    cleanup_interval_hours = Column(Integer, nullable=False, default=6)  # Run cleanup every 6 hours
+    cleanup_age_hours = Column(Integer, nullable=False, default=24)  # Remove data older than 24 hours
+    # Result expiry
+    result_expires_hours = Column(Integer, nullable=False, default=24)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
 class DeviceOffboardingSetting(Base):
     """Device offboarding settings."""
     __tablename__ = 'device_offboarding_settings'

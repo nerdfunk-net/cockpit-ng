@@ -525,3 +525,131 @@ async def trigger_backup_devices(
         status='queued',
         message=f"Backup task queued for {len(request.inventory)} devices: {task.id}"
     )
+
+
+# ============================================================================
+# Celery Settings Endpoints
+# ============================================================================
+
+class CelerySettingsRequest(BaseModel):
+    max_workers: Optional[int] = None
+    cleanup_enabled: Optional[bool] = None
+    cleanup_interval_hours: Optional[int] = None
+    cleanup_age_hours: Optional[int] = None
+    result_expires_hours: Optional[int] = None
+
+
+@router.get("/settings")
+@handle_celery_errors("get celery settings")
+async def get_celery_settings(
+    current_user: dict = Depends(require_permission("settings.celery", "read"))
+):
+    """
+    Get current Celery settings from database.
+    """
+    from settings_manager import settings_manager
+    
+    celery_settings = settings_manager.get_celery_settings()
+    
+    return {
+        "success": True,
+        "settings": celery_settings
+    }
+
+
+@router.put("/settings")
+@handle_celery_errors("update celery settings")
+async def update_celery_settings(
+    request: CelerySettingsRequest,
+    current_user: dict = Depends(require_permission("settings.celery", "write"))
+):
+    """
+    Update Celery settings.
+    
+    Note: max_workers changes require restarting the Celery worker to take effect.
+    """
+    from settings_manager import settings_manager
+    
+    # Get current settings and merge with updates
+    current = settings_manager.get_celery_settings()
+    updates = request.model_dump(exclude_unset=True)
+    merged = {**current, **updates}
+    
+    success = settings_manager.update_celery_settings(merged)
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update Celery settings"
+        )
+    
+    # Get updated settings
+    updated = settings_manager.get_celery_settings()
+    
+    return {
+        "success": True,
+        "settings": updated,
+        "message": "Celery settings updated. Worker restart required for max_workers changes."
+    }
+
+
+@router.post("/cleanup", response_model=TaskResponse)
+@handle_celery_errors("trigger cleanup task")
+async def trigger_cleanup(
+    current_user: dict = Depends(require_permission("settings.celery", "write"))
+):
+    """
+    Manually trigger the Celery cleanup task.
+    
+    This removes old task results and logs based on the configured cleanup_age_hours.
+    """
+    from tasks.periodic_tasks import cleanup_celery_data_task
+    
+    task = cleanup_celery_data_task.delay()
+    
+    return TaskResponse(
+        task_id=task.id,
+        status='queued',
+        message=f"Cleanup task triggered: {task.id}"
+    )
+
+
+@router.get("/cleanup/stats")
+@handle_celery_errors("get cleanup stats")
+async def get_cleanup_stats(
+    current_user: dict = Depends(require_permission("settings.celery", "read"))
+):
+    """
+    Get statistics about data that would be cleaned up.
+    """
+    from settings_manager import settings_manager
+    from datetime import datetime, timezone, timedelta
+    
+    celery_settings = settings_manager.get_celery_settings()
+    cleanup_age_hours = celery_settings.get('cleanup_age_hours', 24)
+    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=cleanup_age_hours)
+    
+    # Count old task results in Redis
+    r = redis.from_url(settings.redis_url)
+    
+    # Count celery task result keys
+    result_keys = list(r.scan_iter("celery-task-meta-*"))
+    old_results = 0
+    
+    for key in result_keys:
+        try:
+            # Try to get the result and check its timestamp
+            # This is approximate as we can't easily get the task completion time
+            old_results += 1  # Count all for now
+        except Exception:
+            pass
+    
+    return {
+        "success": True,
+        "stats": {
+            "cleanup_age_hours": cleanup_age_hours,
+            "cutoff_time": cutoff_time.isoformat(),
+            "total_result_keys": len(result_keys),
+            "message": f"Cleanup will remove task results older than {cleanup_age_hours} hours"
+        }
+    }

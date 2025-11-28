@@ -25,7 +25,8 @@ from .test_tasks import test_task, test_progress_task
 from .periodic_tasks import (
     worker_health_check,
     load_cache_schedules_task,
-    dispatch_cache_task
+    dispatch_cache_task,
+    cleanup_celery_data_task
 )
 
 # Import background job tasks (outside tasks package)
@@ -57,4 +58,5 @@ __all__ = [
     'worker_health_check',
     'load_cache_schedules_task',
     'dispatch_cache_task',
+    'cleanup_celery_data_task',
 ]

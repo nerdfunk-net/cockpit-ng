@@ -9,6 +9,7 @@ from core.models import (
     GitSetting,
     CheckMKSetting,
     CacheSetting,
+    CelerySetting,
     NautobotDefault,
     DeviceOffboardingSetting,
     SettingsMetadata
@@ -76,6 +77,21 @@ class CacheSettingRepository(BaseRepository[CacheSetting]):
         session = get_db_session()
         try:
             return session.query(CacheSetting).first()
+        finally:
+            session.close()
+
+
+class CelerySettingRepository(BaseRepository[CelerySetting]):
+    """Repository for Celery settings."""
+
+    def __init__(self):
+        super().__init__(CelerySetting)
+
+    def get_settings(self) -> Optional[CelerySetting]:
+        """Get the first (and should be only) Celery settings record."""
+        session = get_db_session()
+        try:
+            return session.query(CelerySetting).first()
         finally:
             session.close()
 

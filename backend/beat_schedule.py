@@ -36,6 +36,16 @@ CELERY_BEAT_SCHEDULE = {
             'expires': 50,
         }
     },
+    
+    # Celery data cleanup - runs every 6 hours by default
+    # Actual interval is read from celery_settings in database
+    'cleanup-celery-data': {
+        'task': 'tasks.cleanup_celery_data',
+        'schedule': crontab(hour='*/6', minute=0),  # Every 6 hours
+        'options': {
+            'expires': 3600,  # Task expires after 1 hour if not picked up
+        }
+    },
 }
 
 # Schedule examples using different patterns:
