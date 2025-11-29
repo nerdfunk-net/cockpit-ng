@@ -94,7 +94,7 @@ async def get_job_stats(
 ):
     """
     Get job queue statistics.
-    
+
     Returns counts of running and pending jobs.
     """
     try:
@@ -102,6 +102,25 @@ async def get_job_stats(
         return stats
     except Exception as e:
         logger.error(f"Error getting job stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/dashboard/stats")
+async def get_dashboard_stats(
+    current_user: dict = Depends(require_permission("jobs", "read"))
+):
+    """
+    Get dashboard statistics for job runs.
+
+    Returns:
+    - Job run statistics (total, success, failed, running)
+    - Backup device statistics (total devices backed up, success, failed)
+    """
+    try:
+        stats = job_run_manager.get_dashboard_stats()
+        return stats
+    except Exception as e:
+        logger.error(f"Error getting dashboard stats: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

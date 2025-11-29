@@ -162,6 +162,73 @@ def get_queue_stats() -> Dict[str, Any]:
     }
 
 
+def get_dashboard_stats() -> Dict[str, Any]:
+    """
+    Get dashboard statistics for job runs and backup devices.
+
+    Returns:
+        dict: Statistics including:
+            - job_runs: total, success, failed, running counts
+            - backup_devices: total_devices, successful_devices, failed_devices
+    """
+    import json
+    from core.database import get_db_session
+    from sqlalchemy import text
+
+    session = get_db_session()
+
+    try:
+        # Get job run statistics
+        job_stats = session.execute(text("""
+            SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+                SUM(CASE WHEN status = 'running' THEN 1 ELSE 0 END) as running
+            FROM job_runs
+        """)).fetchone()
+
+        # Get backup device statistics from the last 30 days
+        backup_stats = session.execute(text("""
+            SELECT
+                result
+            FROM job_runs
+            WHERE job_type = 'backup'
+                AND status = 'completed'
+                AND queued_at >= NOW() - INTERVAL '30 days'
+        """)).fetchall()
+
+        # Parse backup results to count devices
+        total_backed_up = 0
+        total_failed = 0
+
+        for row in backup_stats:
+            if row[0]:  # result exists
+                try:
+                    result = json.loads(row[0])
+                    total_backed_up += result.get('devices_backed_up', 0)
+                    total_failed += result.get('devices_failed', 0)
+                except (json.JSONDecodeError, AttributeError):
+                    pass
+
+        return {
+            "job_runs": {
+                "total": job_stats[0] or 0,
+                "completed": job_stats[1] or 0,
+                "failed": job_stats[2] or 0,
+                "running": job_stats[3] or 0
+            },
+            "backup_devices": {
+                "total_devices": total_backed_up + total_failed,
+                "successful_devices": total_backed_up,
+                "failed_devices": total_failed
+            }
+        }
+
+    finally:
+        session.close()
+
+
 def cleanup_old_runs(days: int = 30) -> int:
     """Delete job runs older than specified days"""
     count = repo.cleanup_old_runs(days)

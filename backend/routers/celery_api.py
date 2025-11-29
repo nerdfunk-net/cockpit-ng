@@ -41,6 +41,24 @@ class TaskStatusResponse(BaseModel):
     progress: Optional[dict] = None
 
 
+class DeviceBackupStatus(BaseModel):
+    device_id: str
+    device_name: str
+    last_backup_success: bool
+    last_backup_time: Optional[str] = None
+    total_successful_backups: int
+    total_failed_backups: int
+    last_error: Optional[str] = None
+
+
+class BackupCheckResponse(BaseModel):
+    total_devices: int
+    devices_with_successful_backup: int
+    devices_with_failed_backup: int
+    devices_never_backed_up: int
+    devices: List[DeviceBackupStatus]
+
+
 # Test endpoint (no auth required for testing)
 @router.post("/test", response_model=TaskResponse)
 @handle_celery_errors("submit test task")
@@ -653,3 +671,159 @@ async def get_cleanup_stats(
             "message": f"Cleanup will remove task results older than {cleanup_age_hours} hours"
         }
     }
+
+
+@router.get("/device-backup-status", response_model=BackupCheckResponse)
+async def check_device_backups(
+    force_refresh: bool = False,
+    current_user: dict = Depends(require_permission("jobs", "read"))
+):
+    """
+    Analyze device-level backup status with caching.
+
+    This endpoint provides critical operational visibility by analyzing
+    which specific devices have successful backups and which don't.
+
+    Unlike aggregate statistics, this tracks the last backup status per device,
+    ensuring no device falls through the cracks.
+
+    Args:
+        force_refresh: If True, bypass cache and recalculate
+
+    Returns:
+        - Total devices that have been backed up
+        - Devices with successful last backup
+        - Devices with failed last backup
+        - Detailed per-device backup history
+
+    Cache: Results are cached for 5 minutes to improve dashboard performance
+    """
+    import json
+    from core.database import get_db_session
+    from sqlalchemy import text
+    from collections import defaultdict
+    from datetime import datetime, timedelta
+
+    CACHE_KEY = "backup_check_devices"
+    CACHE_DURATION_SECONDS = 300  # 5 minutes
+
+    # Try to get from cache first
+    if not force_refresh:
+        try:
+            r = redis.Redis.from_url(settings.redis_url, decode_responses=True)
+            cached = r.get(CACHE_KEY)
+            if cached:
+                logger.info("Returning cached device backup status")
+                return BackupCheckResponse(**json.loads(cached))
+        except Exception as e:
+            logger.warning(f"Cache read failed, proceeding with fresh data: {e}")
+
+    session = get_db_session()
+
+    try:
+        # Get all backup job results
+        backup_jobs = session.execute(text("""
+            SELECT
+                result,
+                completed_at,
+                status
+            FROM job_runs
+            WHERE job_type = 'backup'
+                AND status IN ('completed', 'failed')
+            ORDER BY completed_at DESC
+        """)).fetchall()
+
+        # Track device backup status
+        device_status = {}  # device_id -> DeviceBackupStatus data
+
+        for row in backup_jobs:
+            result_json = row[0]
+            completed_at = row[1]
+            job_status = row[2]
+
+            if not result_json:
+                continue
+
+            try:
+                result = json.loads(result_json)
+
+                # Process successful backups
+                backed_up_devices = result.get('backed_up_devices', [])
+                for device in backed_up_devices:
+                    device_id = device.get('device_id')
+                    device_name = device.get('device_name', device_id)
+
+                    if device_id not in device_status:
+                        device_status[device_id] = {
+                            'device_id': device_id,
+                            'device_name': device_name,
+                            'last_backup_success': True,
+                            'last_backup_time': completed_at.isoformat() if completed_at else None,
+                            'total_successful_backups': 1,
+                            'total_failed_backups': 0,
+                            'last_error': None
+                        }
+                    else:
+                        # Only update if this is more recent than what we have
+                        if not device_status[device_id].get('last_backup_time') or \
+                           (completed_at and completed_at.isoformat() > device_status[device_id]['last_backup_time']):
+                            device_status[device_id]['last_backup_success'] = True
+                            device_status[device_id]['last_backup_time'] = completed_at.isoformat() if completed_at else None
+                            device_status[device_id]['last_error'] = None
+                        device_status[device_id]['total_successful_backups'] += 1
+
+                # Process failed backups
+                failed_devices = result.get('failed_devices', [])
+                for device in failed_devices:
+                    device_id = device.get('device_id')
+                    device_name = device.get('device_name', device_id)
+                    error = device.get('error', 'Unknown error')
+
+                    if device_id not in device_status:
+                        device_status[device_id] = {
+                            'device_id': device_id,
+                            'device_name': device_name,
+                            'last_backup_success': False,
+                            'last_backup_time': completed_at.isoformat() if completed_at else None,
+                            'total_successful_backups': 0,
+                            'total_failed_backups': 1,
+                            'last_error': error
+                        }
+                    else:
+                        # Only update if this is more recent than what we have
+                        if not device_status[device_id].get('last_backup_time') or \
+                           (completed_at and completed_at.isoformat() > device_status[device_id]['last_backup_time']):
+                            device_status[device_id]['last_backup_success'] = False
+                            device_status[device_id]['last_backup_time'] = completed_at.isoformat() if completed_at else None
+                            device_status[device_id]['last_error'] = error
+                        device_status[device_id]['total_failed_backups'] += 1
+
+            except (json.JSONDecodeError, KeyError, AttributeError) as e:
+                logger.warning(f"Failed to parse backup job result: {e}")
+                continue
+
+        # Calculate summary statistics
+        devices_list = list(device_status.values())
+        devices_with_success = sum(1 for d in devices_list if d['last_backup_success'])
+        devices_with_failure = sum(1 for d in devices_list if not d['last_backup_success'])
+
+        response = BackupCheckResponse(
+            total_devices=len(devices_list),
+            devices_with_successful_backup=devices_with_success,
+            devices_with_failed_backup=devices_with_failure,
+            devices_never_backed_up=0,  # Would need Nautobot integration to calculate this
+            devices=devices_list
+        )
+
+        # Cache the result
+        try:
+            r = redis.Redis.from_url(settings.redis_url, decode_responses=True)
+            r.setex(CACHE_KEY, CACHE_DURATION_SECONDS, response.model_dump_json())
+            logger.info(f"Cached device backup status for {CACHE_DURATION_SECONDS} seconds")
+        except Exception as e:
+            logger.warning(f"Failed to cache device backup status: {e}")
+
+        return response
+
+    finally:
+        session.close()
