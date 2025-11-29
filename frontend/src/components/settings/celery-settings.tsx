@@ -26,7 +26,6 @@ import {
   Server,
   Database,
   PlayCircle,
-  Settings,
   Trash2,
   AlertTriangle,
   Save

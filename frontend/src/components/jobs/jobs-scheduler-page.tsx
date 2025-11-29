@@ -466,7 +466,7 @@ export function JobsSchedulerPage() {
 
   const handleEditJob = useCallback((job: JobSchedule) => {
     setEditingJob(job)
-    setFormTemplateId(job.job_template_id.toString())
+    setFormTemplateId(job.job_template_id ? job.job_template_id.toString() : "")
     setFormIdentifier(job.job_identifier)
     setFormScheduleType(job.schedule_type)
     setFormIntervalMinutes(job.interval_minutes || 60)

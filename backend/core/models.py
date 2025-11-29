@@ -271,12 +271,14 @@ class JobTemplate(Base):
     inventory_repository_id = Column(Integer)  # Reference to git repository for inventory
     inventory_name = Column(String(255))  # Name of the stored inventory
     command_template_name = Column(String(255))  # Name of command template (for run_commands)
+    backup_running_config_path = Column(String(500))  # Path template for running config backups (supports Nautobot variables)
+    backup_startup_config_path = Column(String(500))  # Path template for startup config backups (supports Nautobot variables)
     is_global = Column(Boolean, nullable=False, default=False, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), index=True)
     created_by = Column(String(255))  # Username of creator
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
-    
+
     __table_args__ = (
         Index('idx_job_templates_type', 'job_type'),
         Index('idx_job_templates_user', 'user_id'),

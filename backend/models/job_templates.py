@@ -23,6 +23,8 @@ class JobTemplateBase(BaseModel):
     inventory_repository_id: Optional[int] = Field(None, description="Git repository ID for inventory (when inventory_source='inventory')")
     inventory_name: Optional[str] = Field(None, description="Name of the stored inventory to use")
     command_template_name: Optional[str] = Field(None, description="Name of the command template to execute (for run_commands type)")
+    backup_running_config_path: Optional[str] = Field(None, max_length=500, description="Path template for running config backups (supports Nautobot variables like {device_name}, {location.name})")
+    backup_startup_config_path: Optional[str] = Field(None, max_length=500, description="Path template for startup config backups (supports Nautobot variables like {device_name}, {location.name})")
     is_global: bool = Field(False, description="Whether this template is global (available to all users) or private")
 
 
@@ -40,6 +42,8 @@ class JobTemplateUpdate(BaseModel):
     inventory_repository_id: Optional[int] = None
     inventory_name: Optional[str] = None
     command_template_name: Optional[str] = None
+    backup_running_config_path: Optional[str] = Field(None, max_length=500)
+    backup_startup_config_path: Optional[str] = Field(None, max_length=500)
     is_global: Optional[bool] = None
 
 

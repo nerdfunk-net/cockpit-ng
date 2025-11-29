@@ -11,15 +11,17 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { 
-  Plus, 
-  Trash2, 
-  Edit, 
-  FileText, 
-  Globe, 
-  Lock, 
-  Terminal, 
-  Loader2
+import {
+  Plus,
+  Trash2,
+  Edit,
+  FileText,
+  Globe,
+  Lock,
+  Terminal,
+  Loader2,
+  HardDrive,
+  FolderGit2
 } from "lucide-react"
 import { useAuthStore } from "@/lib/auth-store"
 import { useToast } from "@/hooks/use-toast"
@@ -34,6 +36,8 @@ interface JobTemplate {
   inventory_repository_id?: number
   inventory_name?: string
   command_template_name?: string
+  backup_running_config_path?: string
+  backup_startup_config_path?: string
   is_global: boolean
   user_id?: number
   created_by?: string
@@ -98,6 +102,8 @@ export function JobTemplatesPage() {
   const [formInventoryRepoId, setFormInventoryRepoId] = useState<number | null>(null)
   const [formInventoryName, setFormInventoryName] = useState("")
   const [formCommandTemplate, setFormCommandTemplate] = useState("")
+  const [formBackupRunningConfigPath, setFormBackupRunningConfigPath] = useState("")
+  const [formBackupStartupConfigPath, setFormBackupStartupConfigPath] = useState("")
   const [formIsGlobal, setFormIsGlobal] = useState(false)
 
   // Get job type label
@@ -280,12 +286,19 @@ export function JobTemplatesPage() {
     setFormInventoryRepoId(null)
     setFormInventoryName("")
     setFormCommandTemplate("")
+    setFormBackupRunningConfigPath("")
+    setFormBackupStartupConfigPath("")
     setFormIsGlobal(false)
     setEditingTemplate(null)
     setSavedInventories([])
   }, [])
 
   const handleEditTemplate = useCallback((template: JobTemplate) => {
+    console.log("Editing template:", template)
+    console.log("Backup paths:", {
+      running: template.backup_running_config_path,
+      startup: template.backup_startup_config_path
+    })
     setEditingTemplate(template)
     setFormName(template.name)
     setFormJobType(template.job_type)
@@ -295,6 +308,8 @@ export function JobTemplatesPage() {
     setFormInventoryRepoId(template.inventory_repository_id || null)
     setFormInventoryName(template.inventory_name || "")
     setFormCommandTemplate(template.command_template_name || "")
+    setFormBackupRunningConfigPath(template.backup_running_config_path || "")
+    setFormBackupStartupConfigPath(template.backup_startup_config_path || "")
     setFormIsGlobal(template.is_global)
     setIsDialogOpen(true)
   }, [])
@@ -329,6 +344,24 @@ export function JobTemplatesPage() {
       return
     }
 
+    // Validate backup paths for backup job type (optional - will use defaults if not specified)
+    if (formJobType === "backup" && formBackupRunningConfigPath && !formBackupStartupConfigPath) {
+      toast({
+        title: "Validation Error",
+        description: "If you specify a running config path, you must also specify a startup config path.",
+        variant: "destructive"
+      })
+      return
+    }
+    if (formJobType === "backup" && !formBackupRunningConfigPath && formBackupStartupConfigPath) {
+      toast({
+        title: "Validation Error",
+        description: "If you specify a startup config path, you must also specify a running config path.",
+        variant: "destructive"
+      })
+      return
+    }
+
     try {
       const payload = {
         name: formName,
@@ -339,6 +372,8 @@ export function JobTemplatesPage() {
         inventory_repository_id: formInventorySource === "inventory" ? formInventoryRepoId : undefined,
         inventory_name: formInventorySource === "inventory" ? formInventoryName : undefined,
         command_template_name: formJobType === "run_commands" ? formCommandTemplate : undefined,
+        backup_running_config_path: formJobType === "backup" ? formBackupRunningConfigPath : undefined,
+        backup_startup_config_path: formJobType === "backup" ? formBackupStartupConfigPath : undefined,
         is_global: formIsGlobal
       }
 
@@ -405,7 +440,7 @@ export function JobTemplatesPage() {
         variant: "destructive"
       })
     }
-  }, [token, formName, formJobType, formDescription, formConfigRepoId, formInventorySource, formInventoryRepoId, formInventoryName, formCommandTemplate, formIsGlobal, editingTemplate, resetForm, fetchTemplates, toast])
+  }, [token, formName, formJobType, formDescription, formConfigRepoId, formInventorySource, formInventoryRepoId, formInventoryName, formCommandTemplate, formBackupRunningConfigPath, formBackupStartupConfigPath, formIsGlobal, editingTemplate, resetForm, fetchTemplates, toast])
 
   const handleDeleteTemplate = useCallback(async (templateId: number) => {
     if (!token) return
@@ -468,7 +503,7 @@ export function JobTemplatesPage() {
               New Template
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
+          <DialogContent className="!max-w-6xl sm:!max-w-6xl p-0 gap-0 overflow-hidden w-full">
             {/* Header with gradient */}
             <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 px-6 py-4">
               <DialogHeader className="text-white">
@@ -482,7 +517,7 @@ export function JobTemplatesPage() {
             </div>
             
             {/* Form content */}
-            <div className="px-6 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+            <div className="px-6 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
               {/* Name and Type in grid */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -539,17 +574,58 @@ export function JobTemplatesPage() {
                 />
               </div>
 
+              {/* Global/Private Switch - Moved to top */}
+              <div className="rounded-lg border border-indigo-200 bg-indigo-50/30 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      id="is-global"
+                      checked={formIsGlobal}
+                      onCheckedChange={setFormIsGlobal}
+                      disabled={user?.role !== "admin"}
+                    />
+                    <Label htmlFor="is-global" className="text-sm font-medium text-indigo-900 cursor-pointer flex items-center gap-2">
+                      {formIsGlobal ? (
+                        <>
+                          <Globe className="h-4 w-4 text-indigo-600" />
+                          Global Template
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="h-4 w-4 text-indigo-600" />
+                          Private Template
+                        </>
+                      )}
+                    </Label>
+                  </div>
+                  {user?.role === "admin" && (
+                    <Badge variant="secondary" className="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-100">
+                      Admin
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-indigo-600">
+                  {formIsGlobal
+                    ? "Global templates can be scheduled by all users"
+                    : "Private templates can only be scheduled by you"}
+                </p>
+              </div>
+
               {/* Config Repository Section - Show when job type is selected */}
               {formJobType && (
-                <div className="space-y-3 pt-3 border-t border-gray-200">
-                  <Label className="text-sm font-medium text-gray-700">Configuration Repository (Optional)</Label>
+                <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <FolderGit2 className="h-4 w-4 text-slate-600" />
+                    <Label className="text-sm font-semibold text-slate-700">Configuration Repository</Label>
+                    <span className="text-xs text-slate-500">(Optional)</span>
+                  </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="config-repo" className="text-xs text-gray-500">Git Repository (category=configs)</Label>
+                    <Label htmlFor="config-repo" className="text-xs text-slate-600">Git Repository (category=configs)</Label>
                     <Select
                       value={formConfigRepoId?.toString() || "none"}
                       onValueChange={(v) => setFormConfigRepoId(v === "none" ? null : parseInt(v))}
                     >
-                      <SelectTrigger id="config-repo" className="h-9 bg-white">
+                      <SelectTrigger id="config-repo" className="h-9 bg-white border-slate-200">
                         <SelectValue placeholder="Select config repository (optional)" />
                       </SelectTrigger>
                       <SelectContent>
@@ -561,7 +637,7 @@ export function JobTemplatesPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-slate-500">
                       Select a Git repository with configuration files
                     </p>
                   </div>
@@ -569,17 +645,20 @@ export function JobTemplatesPage() {
               )}
 
               {/* Inventory Section */}
-              <div className="space-y-3 pt-3 border-t border-gray-200">
-                <Label className="text-sm font-medium text-gray-700">Inventory</Label>
-                
-                <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50/30 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <HardDrive className="h-4 w-4 text-emerald-600" />
+                  <Label className="text-sm font-semibold text-emerald-900">Inventory</Label>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="inventory-source" className="text-xs text-gray-500">Source</Label>
-                    <Select 
-                      value={formInventorySource} 
+                    <Label htmlFor="inventory-source" className="text-xs text-emerald-700">Source</Label>
+                    <Select
+                      value={formInventorySource}
                       onValueChange={(v) => setFormInventorySource(v as "all" | "inventory")}
                     >
-                      <SelectTrigger id="inventory-source" className="h-9 bg-white">
+                      <SelectTrigger id="inventory-source" className="h-9 bg-white border-emerald-200">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -599,45 +678,46 @@ export function JobTemplatesPage() {
                     </Select>
                   </div>
 
-                  {formInventorySource === "inventory" && (
-                    <div className="space-y-1.5">
-                      <Label htmlFor="inventory-repo" className="text-xs text-gray-500">Repository</Label>
-                      <Select 
-                        value={formInventoryRepoId?.toString() || ""} 
-                        onValueChange={(v) => {
-                          setFormInventoryRepoId(parseInt(v))
-                          setFormInventoryName("")
-                        }}
-                      >
-                        <SelectTrigger id="inventory-repo" className="h-9 bg-white">
-                          <SelectValue placeholder="Select repository" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {inventoryRepos.map((repo) => (
-                            <SelectItem key={repo.id} value={repo.id.toString()}>
-                              {repo.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                </div>
-
-                {formInventorySource === "inventory" && formInventoryRepoId && (
                   <div className="space-y-1.5">
-                    <Label htmlFor="inventory-name" className="text-xs text-gray-500">Inventory</Label>
+                    <Label htmlFor="inventory-repo" className="text-xs text-emerald-700">
+                      Repository {formInventorySource === "inventory" && <span className="text-red-500">*</span>}
+                    </Label>
+                    <Select
+                      value={formInventoryRepoId?.toString() || ""}
+                      onValueChange={(v) => {
+                        setFormInventoryRepoId(parseInt(v))
+                        setFormInventoryName("")
+                      }}
+                      disabled={formInventorySource === "all"}
+                    >
+                      <SelectTrigger id="inventory-repo" className="h-9 bg-white border-emerald-200 disabled:opacity-50">
+                        <SelectValue placeholder="Select repository" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {inventoryRepos.map((repo) => (
+                          <SelectItem key={repo.id} value={repo.id.toString()}>
+                            {repo.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="inventory-name" className="text-xs text-emerald-700">
+                      Inventory {formInventorySource === "inventory" && <span className="text-red-500">*</span>}
+                    </Label>
                     {loadingInventories ? (
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Loading inventories...
+                      <div className="flex items-center justify-center h-9 bg-white border border-emerald-200 rounded-md">
+                        <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
                       </div>
                     ) : (
-                      <Select 
-                        value={formInventoryName} 
+                      <Select
+                        value={formInventoryName}
                         onValueChange={setFormInventoryName}
+                        disabled={formInventorySource === "all" || !formInventoryRepoId}
                       >
-                        <SelectTrigger id="inventory-name" className="h-9 bg-white">
+                        <SelectTrigger id="inventory-name" className="h-9 bg-white border-emerald-200 disabled:opacity-50">
                           <SelectValue placeholder="Select inventory" />
                         </SelectTrigger>
                         <SelectContent>
@@ -650,18 +730,21 @@ export function JobTemplatesPage() {
                       </Select>
                     )}
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Command Template Section (only for run_commands) */}
               {formJobType === "run_commands" && (
-                <div className="space-y-3 pt-3 border-t border-gray-200">
-                  <Label className="text-sm font-medium text-gray-700">Command Template</Label>
-                  <Select 
-                    value={formCommandTemplate} 
+                <div className="rounded-lg border border-violet-200 bg-violet-50/30 p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="h-4 w-4 text-violet-600" />
+                    <Label className="text-sm font-semibold text-violet-900">Command Template</Label>
+                  </div>
+                  <Select
+                    value={formCommandTemplate}
                     onValueChange={setFormCommandTemplate}
                   >
-                    <SelectTrigger className="h-9 bg-white">
+                    <SelectTrigger className="h-9 bg-white border-violet-200">
                       <SelectValue placeholder="Select command template" />
                     </SelectTrigger>
                     <SelectContent>
@@ -680,46 +763,67 @@ export function JobTemplatesPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-violet-600">
                     Templates can be created in Network / Automation / Templates
                   </p>
                 </div>
               )}
 
-              {/* Global/Private Switch */}
-              <div className="flex items-center gap-6 pt-3 border-t border-gray-200">
-                <div className="flex items-center gap-3">
-                  <Switch
-                    id="is-global"
-                    checked={formIsGlobal}
-                    onCheckedChange={setFormIsGlobal}
-                    disabled={user?.role !== "admin"}
-                  />
-                  <Label htmlFor="is-global" className="text-sm font-medium text-gray-700 cursor-pointer flex items-center gap-2">
-                    {formIsGlobal ? (
-                      <>
-                        <Globe className="h-4 w-4 text-blue-500" />
-                        Global Template
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="h-4 w-4 text-gray-500" />
-                        Private Template
-                      </>
-                    )}
-                  </Label>
+              {/* Backup Paths Section (only for backup) */}
+              {formJobType === "backup" && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50/30 p-4 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-amber-600" />
+                    <Label className="text-sm font-semibold text-amber-900">Backup Configuration Paths</Label>
+                  </div>
+
+                  <div className="bg-amber-100/50 border border-amber-200 rounded-md px-3 py-2 space-y-1">
+                    <p className="text-xs text-amber-800 leading-relaxed">
+                      <span className="font-semibold">Available variables</span> (leave empty to use defaults):
+                    </p>
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      Device: {"{device_name}"}, {"{hostname}"}, {"{serial}"}, {"{asset_tag}"}
+                    </p>
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      Location: {"{location.name}"}, {"{location.parent.name}"}, {"{location.parent.parent.name}"}
+                    </p>
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      Platform: {"{platform.name}"}, {"{platform.manufacturer.name}"}, {"{device_type.model}"}
+                    </p>
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      Other: {"{role.name}"}, {"{status.name}"}, {"{tenant.name}"}, {"{rack.name}"}, {"{custom_field_data.FIELD_NAME}"}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="running-config-path" className="text-sm text-amber-900 font-medium flex items-center gap-1">
+                        Running Config Path <span className="text-xs text-amber-600 font-normal">(optional)</span>
+                      </Label>
+                      <Input
+                        id="running-config-path"
+                        placeholder="{custom_field_data.cf_net}/{location.name}/{device_name}.running_config"
+                        value={formBackupRunningConfigPath}
+                        onChange={(e) => setFormBackupRunningConfigPath(e.target.value)}
+                        className="h-9 bg-white border-amber-200 font-mono text-sm focus:ring-amber-500 focus:border-amber-500"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="startup-config-path" className="text-sm text-amber-900 font-medium flex items-center gap-1">
+                        Startup Config Path <span className="text-xs text-amber-600 font-normal">(optional)</span>
+                      </Label>
+                      <Input
+                        id="startup-config-path"
+                        placeholder="{custom_field_data.cf_net}/{location.name}/{device_name}.startup_config"
+                        value={formBackupStartupConfigPath}
+                        onChange={(e) => setFormBackupStartupConfigPath(e.target.value)}
+                        className="h-9 bg-white border-amber-200 font-mono text-sm focus:ring-amber-500 focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
                 </div>
-                {user?.role === "admin" && (
-                  <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-100">
-                    Admin
-                  </Badge>
-                )}
-              </div>
-              <p className="text-xs text-gray-500">
-                {formIsGlobal 
-                  ? "Global templates can be scheduled by all users"
-                  : "Private templates can only be scheduled by you"}
-              </p>
+              )}
             </div>
 
             {/* Footer */}

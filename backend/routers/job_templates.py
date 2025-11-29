@@ -55,6 +55,8 @@ async def create_job_template(
             inventory_repository_id=template_data.inventory_repository_id,
             inventory_name=template_data.inventory_name,
             command_template_name=template_data.command_template_name,
+            backup_running_config_path=template_data.backup_running_config_path,
+            backup_startup_config_path=template_data.backup_startup_config_path,
             is_global=template_data.is_global
         )
 
@@ -189,6 +191,8 @@ async def update_job_template(
             inventory_repository_id=update_data.inventory_repository_id,
             inventory_name=update_data.inventory_name,
             command_template_name=update_data.command_template_name,
+            backup_running_config_path=update_data.backup_running_config_path,
+            backup_startup_config_path=update_data.backup_startup_config_path,
             is_global=update_data.is_global,
             user_id=current_user["user_id"]
         )

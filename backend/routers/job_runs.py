@@ -304,19 +304,26 @@ async def execute_job_manually(
         import jobs_manager
         import job_template_manager
         from tasks.job_tasks import dispatch_job
-        
+
         # Get the schedule
+        logger.info(f"Executing schedule {schedule_id} manually")
         schedule = jobs_manager.get_job_schedule(schedule_id)
         if not schedule:
+            logger.error(f"Schedule {schedule_id} not found")
             raise HTTPException(status_code=404, detail=f"Schedule {schedule_id} not found")
-        
+
+        logger.info(f"Schedule found: {schedule.get('job_identifier')}")
+
         # Get the template
         template_id = schedule.get('job_template_id')
         if not template_id:
-            raise HTTPException(status_code=400, detail="Schedule has no associated template")
-        
+            logger.error(f"Schedule {schedule_id} has no associated template. Schedule data: {schedule}")
+            raise HTTPException(status_code=400, detail="Schedule has no associated template. Please edit the schedule and select a job template.")
+
+        logger.info(f"Template ID: {template_id}")
         template = job_template_manager.get_job_template(template_id)
         if not template:
+            logger.error(f"Template {template_id} not found in database")
             raise HTTPException(status_code=404, detail=f"Template {template_id} not found")
         
         # Dispatch the job

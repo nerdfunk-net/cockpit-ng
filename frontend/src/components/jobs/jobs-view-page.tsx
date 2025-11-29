@@ -107,6 +107,8 @@ interface BackupJobResult {
   }
   repository?: string
   commit_date?: string
+  // Index signature for compatibility with Record<string, unknown>
+  [key: string]: unknown
 }
 
 // Helper to check if result is a backup job result

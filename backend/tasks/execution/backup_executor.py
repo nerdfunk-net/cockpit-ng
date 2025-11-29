@@ -77,8 +77,10 @@ def execute_backup(
         import jobs_manager
         import job_template_manager
 
-        # Get config_repository_id from job_parameters or template
+        # Get config_repository_id and backup paths from job_parameters or template
         config_repository_id = None
+        backup_running_config_path = None
+        backup_startup_config_path = None
 
         if job_parameters:
             config_repository_id = job_parameters.get('config_repository_id')
@@ -96,7 +98,11 @@ def execute_backup(
                     template = job_template_manager.get_job_template(template_id)
                     if template:
                         config_repository_id = template.get('config_repository_id')
+                        backup_running_config_path = template.get('backup_running_config_path')
+                        backup_startup_config_path = template.get('backup_startup_config_path')
                         logger.info(f"Config repository ID from template: {config_repository_id}")
+                        logger.info(f"Running config path template: {backup_running_config_path}")
+                        logger.info(f"Startup config path template: {backup_startup_config_path}")
 
         if not config_repository_id:
             logger.error("ERROR: No config_repository_id found")
@@ -344,17 +350,89 @@ def execute_backup(
                     }
                 )
 
-                # Get device details from Nautobot
+                # Get device details from Nautobot (including location and custom field data for path templating)
                 logger.info(f"[{idx}] Fetching device details from Nautobot...")
                 query = """
                 query getDevice($deviceId: ID!) {
                   device(id: $deviceId) {
                     id
                     name
+                    hostname: name
+                    asset_tag
+                    serial
+                    _custom_field_data
+                    custom_field_data: _custom_field_data
                     primary_ip4 {
+                      id
                       address
+                      host
+                      mask_length
                     }
                     platform {
+                      id
+                      name
+                      manufacturer {
+                        id
+                        name
+                      }
+                    }
+                    device_type {
+                      id
+                      model
+                      manufacturer {
+                        id
+                        name
+                      }
+                    }
+                    role {
+                      id
+                      name
+                    }
+                    location {
+                      id
+                      name
+                      description
+                      location_type {
+                        id
+                        name
+                      }
+                      parent {
+                        id
+                        name
+                        description
+                        location_type {
+                          id
+                          name
+                        }
+                        parent {
+                          id
+                          name
+                          description
+                        }
+                      }
+                    }
+                    tenant {
+                      id
+                      name
+                      tenant_group {
+                        id
+                        name
+                      }
+                    }
+                    rack {
+                      id
+                      name
+                      rack_group {
+                        id
+                        name
+                      }
+                    }
+                    status {
+                      id
+                      name
+                    }
+                    tags {
+                      id
                       name
                     }
                   }
@@ -383,6 +461,7 @@ def execute_backup(
                 logger.info(f"[{idx}]   - Name: {device_name}")
                 logger.info(f"[{idx}]   - IP: {primary_ip or 'NOT SET'}")
                 logger.info(f"[{idx}]   - Platform: {platform}")
+                logger.info(f"[{idx}]   - Custom field data: {device.get('custom_field_data')}")
 
                 if not primary_ip:
                     logger.error(f"[{idx}] ✗ No primary IP")
@@ -440,19 +519,42 @@ def execute_backup(
                     device_backup_info['startup_config_bytes'] = len(startup_config)
                     logger.info(f"[{idx}] ✓ Startup config: {len(startup_config)} bytes")
 
-                # Save configs
-                config_dir = repo_dir / 'backups'
-                config_dir.mkdir(exist_ok=True)
+                # Generate file paths using templates or defaults
+                from utils.path_template import replace_template_variables
 
-                running_file = config_dir / f'{device_name}.{current_date}.running-config'
-                startup_file = config_dir / f'{device_name}.{current_date}.startup-config'
+                if backup_running_config_path:
+                    running_path = replace_template_variables(backup_running_config_path, device)
+                    # Strip leading slash to ensure path is relative to repo_dir
+                    running_path = running_path.lstrip('/')
+                    logger.info(f"[{idx}] Using templated running config path: {running_path}")
+                else:
+                    running_path = f'backups/{device_name}.{current_date}.running-config'
+                    logger.info(f"[{idx}] Using default running config path: {running_path}")
 
+                if backup_startup_config_path:
+                    startup_path = replace_template_variables(backup_startup_config_path, device)
+                    # Strip leading slash to ensure path is relative to repo_dir
+                    startup_path = startup_path.lstrip('/')
+                    logger.info(f"[{idx}] Using templated startup config path: {startup_path}")
+                else:
+                    startup_path = f'backups/{device_name}.{current_date}.startup-config'
+                    logger.info(f"[{idx}] Using default startup config path: {startup_path}")
+
+                # Create full paths (relative to repository directory)
+                running_file = repo_dir / running_path
+                startup_file = repo_dir / startup_path
+
+                # Ensure parent directories exist
+                running_file.parent.mkdir(parents=True, exist_ok=True)
+                startup_file.parent.mkdir(parents=True, exist_ok=True)
+
+                # Write configs
                 running_file.write_text(running_config)
-                logger.info(f"[{idx}] Wrote: {running_file.name}")
+                logger.info(f"[{idx}] Wrote: {running_file.relative_to(repo_dir)}")
 
                 if startup_config:
                     startup_file.write_text(startup_config)
-                    logger.info(f"[{idx}] Wrote: {startup_file.name}")
+                    logger.info(f"[{idx}] Wrote: {startup_file.relative_to(repo_dir)}")
 
                 logger.info(f"[{idx}] ✓ Backup complete")
 
