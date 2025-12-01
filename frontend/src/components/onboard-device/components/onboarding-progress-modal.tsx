@@ -299,7 +299,7 @@ export function OnboardingProgressModal({
           {process.env.NODE_ENV === 'development' && taskStatus && (
             <details className="text-xs">
               <summary className="cursor-pointer text-muted-foreground">Debug Info</summary>
-              <pre className="mt-2 p-2 bg-muted rounded overflow-auto max-h-40">
+              <pre className="mt-2 p-2 bg-muted rounded overflow-x-auto overflow-y-auto max-h-40 whitespace-pre-wrap break-all text-[10px]">
                 {JSON.stringify(taskStatus, null, 2)}
               </pre>
             </details>
