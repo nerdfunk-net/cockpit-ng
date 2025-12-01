@@ -9,7 +9,6 @@ import base64
 import hashlib
 import os
 import yaml
-from datetime import datetime
 from typing import Any, Dict, List, Optional
 from cryptography.fernet import Fernet, InvalidToken
 from config import settings as config_settings
@@ -59,55 +58,60 @@ encryption_service = EncryptionService()
 # Helper Functions
 # ============================================================================
 
+
 def _regex_pattern_to_dict(pattern) -> Dict[str, Any]:
     """Convert RegexPattern model to dictionary"""
     return {
-        'id': pattern.id,
-        'pattern': pattern.pattern,
-        'description': pattern.description,
-        'pattern_type': pattern.pattern_type,
-        'is_active': pattern.is_active,
-        'created_at': pattern.created_at.isoformat() if pattern.created_at else None,
-        'updated_at': pattern.updated_at.isoformat() if pattern.updated_at else None,
+        "id": pattern.id,
+        "pattern": pattern.pattern,
+        "description": pattern.description,
+        "pattern_type": pattern.pattern_type,
+        "is_active": pattern.is_active,
+        "created_at": pattern.created_at.isoformat() if pattern.created_at else None,
+        "updated_at": pattern.updated_at.isoformat() if pattern.updated_at else None,
     }
 
 
 def _login_credential_to_dict(cred, decrypt_password: bool = False) -> Dict[str, Any]:
     """Convert LoginCredential model to dictionary"""
     result = {
-        'id': cred.id,
-        'name': cred.name,
-        'username': cred.username,
-        'description': cred.description,
-        'is_active': cred.is_active,
-        'created_at': cred.created_at.isoformat() if cred.created_at else None,
-        'updated_at': cred.updated_at.isoformat() if cred.updated_at else None,
+        "id": cred.id,
+        "name": cred.name,
+        "username": cred.username,
+        "description": cred.description,
+        "is_active": cred.is_active,
+        "created_at": cred.created_at.isoformat() if cred.created_at else None,
+        "updated_at": cred.updated_at.isoformat() if cred.updated_at else None,
     }
     if decrypt_password and cred.password_encrypted:
-        result['password'] = encryption_service.decrypt(cred.password_encrypted)
+        result["password"] = encryption_service.decrypt(cred.password_encrypted)
     return result
 
 
 def _snmp_mapping_to_dict(mapping, decrypt_passwords: bool = False) -> Dict[str, Any]:
     """Convert SNMPMapping model to dictionary"""
     result = {
-        'id': mapping.id,
-        'name': mapping.name,
-        'snmp_community': mapping.snmp_community,
-        'snmp_version': mapping.snmp_version,
-        'snmp_v3_user': mapping.snmp_v3_user,
-        'snmp_v3_auth_protocol': mapping.snmp_v3_auth_protocol,
-        'snmp_v3_priv_protocol': mapping.snmp_v3_priv_protocol,
-        'description': mapping.description,
-        'is_active': mapping.is_active,
-        'created_at': mapping.created_at.isoformat() if mapping.created_at else None,
-        'updated_at': mapping.updated_at.isoformat() if mapping.updated_at else None,
+        "id": mapping.id,
+        "name": mapping.name,
+        "snmp_community": mapping.snmp_community,
+        "snmp_version": mapping.snmp_version,
+        "snmp_v3_user": mapping.snmp_v3_user,
+        "snmp_v3_auth_protocol": mapping.snmp_v3_auth_protocol,
+        "snmp_v3_priv_protocol": mapping.snmp_v3_priv_protocol,
+        "description": mapping.description,
+        "is_active": mapping.is_active,
+        "created_at": mapping.created_at.isoformat() if mapping.created_at else None,
+        "updated_at": mapping.updated_at.isoformat() if mapping.updated_at else None,
     }
     if decrypt_passwords:
         if mapping.snmp_v3_auth_password_encrypted:
-            result['snmp_v3_auth_password'] = encryption_service.decrypt(mapping.snmp_v3_auth_password_encrypted)
+            result["snmp_v3_auth_password"] = encryption_service.decrypt(
+                mapping.snmp_v3_auth_password_encrypted
+            )
         if mapping.snmp_v3_priv_password_encrypted:
-            result['snmp_v3_priv_password'] = encryption_service.decrypt(mapping.snmp_v3_priv_password_encrypted)
+            result["snmp_v3_priv_password"] = encryption_service.decrypt(
+                mapping.snmp_v3_priv_password_encrypted
+            )
     return result
 
 
@@ -147,7 +151,7 @@ def create_regex_pattern(
         pattern=pattern,
         description=description,
         pattern_type=pattern_type,
-        is_active=True
+        is_active=True,
     )
     return new_pattern.id
 
@@ -162,11 +166,11 @@ def update_regex_pattern(
     update_data = {}
 
     if pattern is not None:
-        update_data['pattern'] = pattern
+        update_data["pattern"] = pattern
     if description is not None:
-        update_data['description'] = description
+        update_data["description"] = description
     if is_active is not None:
-        update_data['is_active'] = is_active
+        update_data["is_active"] = is_active
 
     if not update_data:
         return False
@@ -192,7 +196,7 @@ def get_all_login_credentials(decrypt_passwords: bool = False) -> List[Dict[str,
     for cred in credentials:
         cred_dict = _login_credential_to_dict(cred, decrypt_password=decrypt_passwords)
         if not decrypt_passwords:
-            cred_dict['password'] = '********'
+            cred_dict["password"] = "********"
         result.append(cred_dict)
     return result
 
@@ -204,10 +208,10 @@ def get_login_credential_by_id(
     cred = login_repo.get_by_id(credential_id)
     if not cred:
         return None
-    
+
     cred_dict = _login_credential_to_dict(cred, decrypt_password=decrypt_password)
     if not decrypt_password:
-        cred_dict['password'] = '********'
+        cred_dict["password"] = "********"
     return cred_dict
 
 
@@ -216,13 +220,13 @@ def create_login_credential(
 ) -> int:
     """Create a new login credential with encrypted password."""
     encrypted_password = encryption_service.encrypt(password)
-    
+
     new_cred = login_repo.create(
         name=name,
         username=username,
         password_encrypted=encrypted_password,
         description=description,
-        is_active=True
+        is_active=True,
     )
     return new_cred.id
 
@@ -239,15 +243,15 @@ def update_login_credential(
     update_data = {}
 
     if name is not None:
-        update_data['name'] = name
+        update_data["name"] = name
     if username is not None:
-        update_data['username'] = username
+        update_data["username"] = username
     if password is not None:
-        update_data['password_encrypted'] = encryption_service.encrypt(password)
+        update_data["password_encrypted"] = encryption_service.encrypt(password)
     if description is not None:
-        update_data['description'] = description
+        update_data["description"] = description
     if is_active is not None:
-        update_data['is_active'] = is_active
+        update_data["is_active"] = is_active
 
     if not update_data:
         return False
@@ -271,10 +275,16 @@ def get_all_snmp_mappings(decrypt_passwords: bool = False) -> List[Dict[str, Any
     mappings = snmp_repo.get_all()
     result = []
     for mapping in mappings:
-        mapping_dict = _snmp_mapping_to_dict(mapping, decrypt_passwords=decrypt_passwords)
+        mapping_dict = _snmp_mapping_to_dict(
+            mapping, decrypt_passwords=decrypt_passwords
+        )
         if not decrypt_passwords:
-            mapping_dict['snmp_v3_auth_password'] = '********' if mapping.snmp_v3_auth_password_encrypted else None
-            mapping_dict['snmp_v3_priv_password'] = '********' if mapping.snmp_v3_priv_password_encrypted else None
+            mapping_dict["snmp_v3_auth_password"] = (
+                "********" if mapping.snmp_v3_auth_password_encrypted else None
+            )
+            mapping_dict["snmp_v3_priv_password"] = (
+                "********" if mapping.snmp_v3_priv_password_encrypted else None
+            )
         result.append(mapping_dict)
     return result
 
@@ -286,11 +296,15 @@ def get_snmp_mapping_by_id(
     mapping = snmp_repo.get_by_id(mapping_id)
     if not mapping:
         return None
-    
+
     mapping_dict = _snmp_mapping_to_dict(mapping, decrypt_passwords=decrypt_passwords)
     if not decrypt_passwords:
-        mapping_dict['snmp_v3_auth_password'] = '********' if mapping.snmp_v3_auth_password_encrypted else None
-        mapping_dict['snmp_v3_priv_password'] = '********' if mapping.snmp_v3_priv_password_encrypted else None
+        mapping_dict["snmp_v3_auth_password"] = (
+            "********" if mapping.snmp_v3_auth_password_encrypted else None
+        )
+        mapping_dict["snmp_v3_priv_password"] = (
+            "********" if mapping.snmp_v3_priv_password_encrypted else None
+        )
     return mapping_dict
 
 
@@ -331,7 +345,7 @@ def create_snmp_mapping(
         snmp_v3_priv_protocol=snmp_v3_priv_protocol,
         snmp_v3_priv_password_encrypted=priv_password_encrypted,
         description=description,
-        is_active=True
+        is_active=True,
     )
     return new_mapping.id
 
@@ -353,27 +367,31 @@ def update_snmp_mapping(
     update_data = {}
 
     if name is not None:
-        update_data['name'] = name
+        update_data["name"] = name
     if snmp_version is not None:
         if snmp_version not in ["v1", "v2c", "v3"]:
             raise ValueError("Invalid snmp_version. Must be 'v1', 'v2c', or 'v3'")
-        update_data['snmp_version'] = snmp_version
+        update_data["snmp_version"] = snmp_version
     if snmp_community is not None:
-        update_data['snmp_community'] = snmp_community
+        update_data["snmp_community"] = snmp_community
     if snmp_v3_user is not None:
-        update_data['snmp_v3_user'] = snmp_v3_user
+        update_data["snmp_v3_user"] = snmp_v3_user
     if snmp_v3_auth_protocol is not None:
-        update_data['snmp_v3_auth_protocol'] = snmp_v3_auth_protocol
+        update_data["snmp_v3_auth_protocol"] = snmp_v3_auth_protocol
     if snmp_v3_auth_password is not None:
-        update_data['snmp_v3_auth_password_encrypted'] = encryption_service.encrypt(snmp_v3_auth_password)
+        update_data["snmp_v3_auth_password_encrypted"] = encryption_service.encrypt(
+            snmp_v3_auth_password
+        )
     if snmp_v3_priv_protocol is not None:
-        update_data['snmp_v3_priv_protocol'] = snmp_v3_priv_protocol
+        update_data["snmp_v3_priv_protocol"] = snmp_v3_priv_protocol
     if snmp_v3_priv_password is not None:
-        update_data['snmp_v3_priv_password_encrypted'] = encryption_service.encrypt(snmp_v3_priv_password)
+        update_data["snmp_v3_priv_password_encrypted"] = encryption_service.encrypt(
+            snmp_v3_priv_password
+        )
     if description is not None:
-        update_data['description'] = description
+        update_data["description"] = description
     if is_active is not None:
-        update_data['is_active'] = is_active
+        update_data["is_active"] = is_active
 
     if not update_data:
         return False
@@ -399,11 +417,15 @@ def get_snmp_mapping_by_name(name: str) -> Optional[Dict[str, Any]]:
     mapping = snmp_repo.get_by_name(name)
     if not mapping:
         return None
-    
+
     # Don't decrypt passwords for this function
     mapping_dict = _snmp_mapping_to_dict(mapping, decrypt_passwords=False)
-    mapping_dict['snmp_v3_auth_password'] = '********' if mapping.snmp_v3_auth_password_encrypted else None
-    mapping_dict['snmp_v3_priv_password'] = '********' if mapping.snmp_v3_priv_password_encrypted else None
+    mapping_dict["snmp_v3_auth_password"] = (
+        "********" if mapping.snmp_v3_auth_password_encrypted else None
+    )
+    mapping_dict["snmp_v3_priv_password"] = (
+        "********" if mapping.snmp_v3_priv_password_encrypted else None
+    )
     return mapping_dict
 
 

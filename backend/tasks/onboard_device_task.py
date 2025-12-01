@@ -1,16 +1,17 @@
 """
 Celery task for device onboarding.
 """
+
 from celery import shared_task
 import logging
 import time
 import asyncio
-from typing import Dict, Any, List, Optional
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 
-@shared_task(bind=True, name='tasks.onboard_device_task')
+@shared_task(bind=True, name="tasks.onboard_device_task")
 def onboard_device_task(
     self,
     ip_address: str,
@@ -60,12 +61,12 @@ def onboard_device_task(
 
         # Update progress
         self.update_state(
-            state='PROGRESS',
+            state="PROGRESS",
             meta={
-                'stage': 'onboarding',
-                'status': f'Initiating onboarding for {ip_address}',
-                'progress': 10
-            }
+                "stage": "onboarding",
+                "status": f"Initiating onboarding for {ip_address}",
+                "progress": 10,
+            },
         )
 
         # Step 1: Call Nautobot onboarding job
@@ -80,19 +81,19 @@ def onboard_device_task(
             secret_groups_id=secret_groups_id,
             platform_id=platform_id,
             port=port,
-            timeout=timeout
+            timeout=timeout,
         )
 
         logger.info(f"Nautobot onboarding job started: {job_id}")
         self.update_state(
-            state='PROGRESS',
+            state="PROGRESS",
             meta={
-                'stage': 'waiting',
-                'status': f'Waiting for onboarding job {job_id} to complete',
-                'progress': 30,
-                'job_id': job_id,
-                'job_url': job_url
-            }
+                "stage": "waiting",
+                "status": f"Waiting for onboarding job {job_id} to complete",
+                "progress": 30,
+                "job_id": job_id,
+                "job_url": job_url,
+            },
         )
 
         # Step 2: Wait for job completion (max 90 seconds)
@@ -102,21 +103,21 @@ def onboard_device_task(
             error_msg = f"Onboarding job failed or timed out: {job_result}"
             logger.error(error_msg)
             return {
-                'success': False,
-                'error': error_msg,
-                'job_id': job_id,
-                'job_url': job_url,
-                'stage': 'onboarding_failed'
+                "success": False,
+                "error": error_msg,
+                "job_id": job_id,
+                "job_url": job_url,
+                "stage": "onboarding_failed",
             }
 
         logger.info(f"Onboarding job completed successfully: {job_id}")
         self.update_state(
-            state='PROGRESS',
+            state="PROGRESS",
             meta={
-                'stage': 'device_lookup',
-                'status': f'Device onboarded, retrieving device ID',
-                'progress': 60
-            }
+                "stage": "device_lookup",
+                "status": "Device onboarded, retrieving device ID",
+                "progress": 60,
+            },
         )
 
         # Step 3: Get device UUID from IP address
@@ -126,23 +127,23 @@ def onboard_device_task(
             error_msg = f"Failed to retrieve device ID for IP {ip_address}"
             logger.error(error_msg)
             return {
-                'success': False,
-                'error': error_msg,
-                'job_id': job_id,
-                'job_url': job_url,
-                'stage': 'device_lookup_failed'
+                "success": False,
+                "error": error_msg,
+                "job_id": job_id,
+                "job_url": job_url,
+                "stage": "device_lookup_failed",
             }
 
         logger.info(f"Found device: {device_name} (ID: {device_id})")
         self.update_state(
-            state='PROGRESS',
+            state="PROGRESS",
             meta={
-                'stage': 'updating',
-                'status': f'Updating device {device_name} with tags and custom fields',
-                'progress': 80,
-                'device_id': device_id,
-                'device_name': device_name
-            }
+                "stage": "updating",
+                "status": f"Updating device {device_name} with tags and custom fields",
+                "progress": 80,
+                "device_id": device_id,
+                "device_name": device_name,
+            },
         )
 
         # Step 4: Update device with tags and custom fields
@@ -154,40 +155,42 @@ def onboard_device_task(
             update_results.append(tag_result)
 
         if custom_fields and len(custom_fields) > 0:
-            logger.info(f"Updating device {device_name} with {len(custom_fields)} custom fields")
+            logger.info(
+                f"Updating device {device_name} with {len(custom_fields)} custom fields"
+            )
             cf_result = _update_device_custom_fields(device_id, custom_fields)
             update_results.append(cf_result)
 
         # Check if all updates succeeded
-        all_updates_success = all(r.get('success', False) for r in update_results)
+        all_updates_success = all(r.get("success", False) for r in update_results)
 
         if not all_updates_success:
-            failed_updates = [r for r in update_results if not r.get('success', False)]
+            failed_updates = [r for r in update_results if not r.get("success", False)]
             error_msg = f"Some device updates failed: {failed_updates}"
             logger.warning(error_msg)
             return {
-                'success': False,
-                'warning': error_msg,
-                'job_id': job_id,
-                'job_url': job_url,
-                'device_id': device_id,
-                'device_name': device_name,
-                'update_results': update_results,
-                'stage': 'update_partial_success'
+                "success": False,
+                "warning": error_msg,
+                "job_id": job_id,
+                "job_url": job_url,
+                "device_id": device_id,
+                "device_name": device_name,
+                "update_results": update_results,
+                "stage": "update_partial_success",
             }
 
         logger.info(f"Device {device_name} onboarded and updated successfully")
 
         # Step 5: Sync network data from device
         self.update_state(
-            state='PROGRESS',
+            state="PROGRESS",
             meta={
-                'stage': 'syncing',
-                'status': f'Syncing network data from device {device_name}',
-                'progress': 90,
-                'device_id': device_id,
-                'device_name': device_name
-            }
+                "stage": "syncing",
+                "status": f"Syncing network data from device {device_name}",
+                "progress": 90,
+                "device_id": device_id,
+                "device_name": device_name,
+            },
         )
 
         logger.info(f"Starting network data sync for device {device_name}")
@@ -196,32 +199,28 @@ def onboard_device_task(
             namespace_id=namespace_id,
             status_id=status_id,
             interface_status_id=interface_status_id,
-            ip_address_status_id=ip_address_status_id
+            ip_address_status_id=ip_address_status_id,
         )
 
         return {
-            'success': True,
-            'message': f'Device {device_name} successfully onboarded, configured, and synced',
-            'job_id': job_id,
-            'job_url': job_url,
-            'device_id': device_id,
-            'device_name': device_name,
-            'ip_address': ip_address,
-            'tags_applied': len(tags) if tags else 0,
-            'custom_fields_applied': len(custom_fields) if custom_fields else 0,
-            'update_results': update_results,
-            'sync_result': sync_result,
-            'stage': 'completed'
+            "success": True,
+            "message": f"Device {device_name} successfully onboarded, configured, and synced",
+            "job_id": job_id,
+            "job_url": job_url,
+            "device_id": device_id,
+            "device_name": device_name,
+            "ip_address": ip_address,
+            "tags_applied": len(tags) if tags else 0,
+            "custom_fields_applied": len(custom_fields) if custom_fields else 0,
+            "update_results": update_results,
+            "sync_result": sync_result,
+            "stage": "completed",
         }
 
     except Exception as e:
         error_msg = f"Unexpected error during device onboarding: {str(e)}"
         logger.error(error_msg, exc_info=True)
-        return {
-            'success': False,
-            'error': error_msg,
-            'stage': 'exception'
-        }
+        return {"success": False, "error": error_msg, "stage": "exception"}
 
 
 def _trigger_nautobot_onboarding(
@@ -235,7 +234,7 @@ def _trigger_nautobot_onboarding(
     secret_groups_id: str,
     platform_id: str,
     port: int,
-    timeout: int
+    timeout: int,
 ) -> tuple:
     """
     Trigger Nautobot onboarding job.
@@ -343,18 +342,22 @@ def _wait_for_job_completion(task_instance, job_id: str, max_wait: int = 90) -> 
             check_count += 1
             elapsed = int(time.time() - start_time)
 
-            logger.info(f"Job {job_id} status check #{check_count} (after {elapsed}s): {status}")
+            logger.info(
+                f"Job {job_id} status check #{check_count} (after {elapsed}s): {status}"
+            )
 
             # Update task progress with detailed status
-            progress_percentage = min(30 + int((elapsed / max_wait) * 30), 59)  # Stay between 30-59%
+            progress_percentage = min(
+                30 + int((elapsed / max_wait) * 30), 59
+            )  # Stay between 30-59%
             task_instance.update_state(
-                state='PROGRESS',
+                state="PROGRESS",
                 meta={
-                    'stage': 'waiting',
-                    'status': f'Waiting for onboarding job (check #{check_count}, {elapsed}s elapsed, status: {status})',
-                    'progress': progress_percentage,
-                    'job_id': job_id
-                }
+                    "stage": "waiting",
+                    "status": f"Waiting for onboarding job (check #{check_count}, {elapsed}s elapsed, status: {status})",
+                    "progress": progress_percentage,
+                    "job_id": job_id,
+                },
             )
 
             # Check for completion (case-insensitive)
@@ -377,19 +380,22 @@ def _wait_for_job_completion(task_instance, job_id: str, max_wait: int = 90) -> 
             # Update progress even on error
             progress_percentage = min(30 + int((elapsed / max_wait) * 30), 59)
             task_instance.update_state(
-                state='PROGRESS',
+                state="PROGRESS",
                 meta={
-                    'stage': 'waiting',
-                    'status': f'Checking onboarding job status (attempt #{check_count}, {elapsed}s elapsed)',
-                    'progress': progress_percentage,
-                    'job_id': job_id
-                }
+                    "stage": "waiting",
+                    "status": f"Checking onboarding job status (attempt #{check_count}, {elapsed}s elapsed)",
+                    "progress": progress_percentage,
+                    "job_id": job_id,
+                },
             )
 
             # Wait 2 seconds before retry
             time.sleep(2)
 
-    return False, f"Job timeout - exceeded {max_wait} seconds after {check_count} status checks"
+    return (
+        False,
+        f"Job timeout - exceeded {max_wait} seconds after {check_count} status checks",
+    )
 
 
 def _get_device_id_from_ip(ip_address: str) -> tuple:
@@ -490,19 +496,15 @@ def _update_device_tags(device_id: str, tag_ids: List[str]) -> dict:
         response.raise_for_status()
 
         return {
-            'success': True,
-            'type': 'tags',
-            'count': len(tag_ids),
-            'message': f'Applied {len(tag_ids)} tags'
+            "success": True,
+            "type": "tags",
+            "count": len(tag_ids),
+            "message": f"Applied {len(tag_ids)} tags",
         }
 
     except Exception as e:
         logger.error(f"Failed to update device tags: {e}")
-        return {
-            'success': False,
-            'type': 'tags',
-            'error': str(e)
-        }
+        return {"success": False, "type": "tags", "error": str(e)}
 
 
 def _update_device_custom_fields(device_id: str, custom_fields: Dict[str, str]) -> dict:
@@ -538,19 +540,15 @@ def _update_device_custom_fields(device_id: str, custom_fields: Dict[str, str]) 
         response.raise_for_status()
 
         return {
-            'success': True,
-            'type': 'custom_fields',
-            'count': len(custom_fields),
-            'message': f'Applied {len(custom_fields)} custom fields'
+            "success": True,
+            "type": "custom_fields",
+            "count": len(custom_fields),
+            "message": f"Applied {len(custom_fields)} custom fields",
         }
 
     except Exception as e:
         logger.error(f"Failed to update device custom fields: {e}")
-        return {
-            'success': False,
-            'type': 'custom_fields',
-            'error': str(e)
-        }
+        return {"success": False, "type": "custom_fields", "error": str(e)}
 
 
 def _sync_network_data(
@@ -558,7 +556,7 @@ def _sync_network_data(
     namespace_id: str,
     status_id: str,
     interface_status_id: str,
-    ip_address_status_id: str
+    ip_address_status_id: str,
 ) -> dict:
     """
     Sync network data from device to Nautobot.
@@ -623,16 +621,16 @@ def _sync_network_data(
             logger.info(f"Network data sync job started: {sync_job_id}")
 
             return {
-                'success': True,
-                'message': 'Network data sync job started successfully',
-                'job_id': sync_job_id,
-                'job_url': f"{nautobot_url}/extras/job-results/{sync_job_id}/",
-                'sync_options': {
-                    'cables': True,
-                    'software': True,
-                    'vlans': True,
-                    'vrfs': True
-                }
+                "success": True,
+                "message": "Network data sync job started successfully",
+                "job_id": sync_job_id,
+                "job_url": f"{nautobot_url}/extras/job-results/{sync_job_id}/",
+                "sync_options": {
+                    "cables": True,
+                    "software": True,
+                    "vlans": True,
+                    "vrfs": True,
+                },
             }
         else:
             error_detail = "Unknown error"
@@ -646,15 +644,15 @@ def _sync_network_data(
 
             logger.error(f"Failed to start sync job: {error_detail}")
             return {
-                'success': False,
-                'message': f"Failed to start sync job: {error_detail}",
-                'status_code': response.status_code,
+                "success": False,
+                "message": f"Failed to start sync job: {error_detail}",
+                "status_code": response.status_code,
             }
 
     except Exception as e:
         logger.error(f"Failed to sync network data: {e}")
         return {
-            'success': False,
-            'error': str(e),
-            'message': f"Failed to sync network data: {str(e)}"
+            "success": False,
+            "error": str(e),
+            "message": f"Failed to sync network data: {str(e)}",
         }

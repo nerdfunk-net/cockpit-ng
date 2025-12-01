@@ -8,10 +8,11 @@ import os
 import logging
 import json
 from typing import Dict, Any, Optional, List
-from datetime import datetime, timezone
 import hashlib
-from core.database import get_db_session
-from repositories.template_repository import TemplateRepository, TemplateVersionRepository
+from repositories.template_repository import (
+    TemplateRepository,
+    TemplateVersionRepository,
+)
 from core.models import Template, TemplateVersion
 
 logger = logging.getLogger(__name__)
@@ -157,14 +158,14 @@ class TemplateManager:
         """
         try:
             repo = TemplateRepository()
-            
+
             logger.info(f"DEBUG: list_templates - filtering for username={username}")
-            
+
             templates = repo.list_templates(
                 category=category,
                 source=source,
                 active_only=active_only,
-                username=username
+                username=username,
             )
 
             results = [self._model_to_dict(t) for t in templates]
@@ -190,7 +191,7 @@ class TemplateManager:
             current_obj = repo.get_by_id(template_id)
             if not current_obj:
                 raise ValueError(f"Template with ID {template_id} not found")
-            
+
             current = self._model_to_dict(current_obj)
 
             logger.info(
@@ -218,15 +219,23 @@ class TemplateManager:
             # Prepare update kwargs
             update_kwargs = {
                 "name": template_data.get("name", current["name"]),
-                "template_type": template_data.get("template_type", current["template_type"]),
+                "template_type": template_data.get(
+                    "template_type", current["template_type"]
+                ),
                 "category": template_data.get("category", current["category"]),
                 "description": template_data.get("description", current["description"]),
-                "git_repo_url": template_data.get("git_repo_url", current["git_repo_url"]),
+                "git_repo_url": template_data.get(
+                    "git_repo_url", current["git_repo_url"]
+                ),
                 "git_branch": template_data.get("git_branch", current["git_branch"]),
-                "git_username": template_data.get("git_username", current["git_username"]),
+                "git_username": template_data.get(
+                    "git_username", current["git_username"]
+                ),
                 "git_token": template_data.get("git_token", current["git_token"]),
                 "git_path": template_data.get("git_path", current["git_path"]),
-                "git_verify_ssl": template_data.get("git_verify_ssl", current["git_verify_ssl"]),
+                "git_verify_ssl": template_data.get(
+                    "git_verify_ssl", current["git_verify_ssl"]
+                ),
                 "content": content,
                 "filename": template_data.get("filename", current["filename"]),
                 "content_hash": content_hash,
@@ -396,8 +405,12 @@ class TemplateManager:
             "is_active": bool(template.is_active),
             "last_sync": template.last_sync.isoformat() if template.last_sync else None,
             "sync_status": template.sync_status,
-            "created_at": template.created_at.isoformat() if template.created_at else None,
-            "updated_at": template.updated_at.isoformat() if template.updated_at else None,
+            "created_at": template.created_at.isoformat()
+            if template.created_at
+            else None,
+            "updated_at": template.updated_at.isoformat()
+            if template.updated_at
+            else None,
         }
 
         # Parse JSON fields
@@ -427,7 +440,9 @@ class TemplateManager:
             "version_number": version.version_number,
             "content": version.content,
             "content_hash": version.content_hash,
-            "created_at": version.created_at.isoformat() if version.created_at else None,
+            "created_at": version.created_at.isoformat()
+            if version.created_at
+            else None,
             "created_by": version.created_by,
             "change_notes": version.change_notes,
         }
@@ -499,7 +514,12 @@ class TemplateManager:
             logger.error(f"Error removing template file: {e}")
 
     def _create_template_version_obj(
-        self, version_repo: TemplateVersionRepository, template_id: int, content: str, content_hash: str, notes: str = ""
+        self,
+        version_repo: TemplateVersionRepository,
+        template_id: int,
+        content: str,
+        content_hash: str,
+        notes: str = "",
     ) -> None:
         """Create a new version entry for a template"""
         try:
@@ -512,7 +532,7 @@ class TemplateManager:
                 version_number=version_number,
                 content=content,
                 content_hash=content_hash,
-                change_notes=notes
+                change_notes=notes,
             )
 
         except Exception as e:
@@ -528,9 +548,7 @@ class TemplateManager:
         try:
             repo = TemplateRepository()
             templates = repo.search_templates(
-                query_text=query,
-                search_content=search_content,
-                username=username
+                query_text=query, search_content=search_content, username=username
             )
             return [self._model_to_dict(t) for t in templates]
 

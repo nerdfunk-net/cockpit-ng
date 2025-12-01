@@ -3,19 +3,20 @@ DEPRECATED Legacy task.
 Use new job system (dispatch_job) instead.
 Will be removed in future version.
 """
+
 from celery import shared_task
 import logging
 from typing import Optional
-from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
-@shared_task(bind=True, name='tasks.backup_configs')
+
+@shared_task(bind=True, name="tasks.backup_configs")
 def backup_configs_task(
     self,
     job_schedule_id: Optional[int] = None,
     credential_id: Optional[int] = None,
-    devices: Optional[list] = None
+    devices: Optional[list] = None,
 ) -> dict:
     """
     Task: Backup device configurations.
@@ -32,28 +33,34 @@ def backup_configs_task(
         dict: Task execution results
     """
     try:
-        logger.info(f"Starting backup_configs task (job_schedule_id: {job_schedule_id}, credential_id: {credential_id})")
+        logger.info(
+            f"Starting backup_configs task (job_schedule_id: {job_schedule_id}, credential_id: {credential_id})"
+        )
 
         self.update_state(
-            state='PROGRESS',
-            meta={'current': 0, 'total': 100, 'status': 'Initializing backup...'}
+            state="PROGRESS",
+            meta={"current": 0, "total": 100, "status": "Initializing backup..."},
         )
 
         # This is a placeholder for the actual backup implementation
         # You would integrate with your existing backup functionality here
 
         self.update_state(
-            state='PROGRESS',
-            meta={'current': 50, 'total': 100, 'status': 'Backing up configurations...'}
+            state="PROGRESS",
+            meta={
+                "current": 50,
+                "total": 100,
+                "status": "Backing up configurations...",
+            },
         )
 
         # Simulate backup process
         import time
+
         time.sleep(2)
 
         self.update_state(
-            state='PROGRESS',
-            meta={'current': 100, 'total': 100, 'status': 'Complete'}
+            state="PROGRESS", meta={"current": 100, "total": 100, "status": "Complete"}
         )
 
         device_count = len(devices) if devices else 0
@@ -61,28 +68,24 @@ def backup_configs_task(
         logger.info(f"Backup task completed for {device_count} devices")
 
         return {
-            'success': True,
-            'devices_backed_up': device_count,
-            'message': f'Backed up {device_count} device configurations',
-            'job_schedule_id': job_schedule_id
+            "success": True,
+            "devices_backed_up": device_count,
+            "message": f"Backed up {device_count} device configurations",
+            "job_schedule_id": job_schedule_id,
         }
 
     except Exception as e:
         logger.error(f"backup_configs task failed: {e}", exc_info=True)
-        return {
-            'success': False,
-            'error': str(e),
-            'job_schedule_id': job_schedule_id
-        }
+        return {"success": False, "error": str(e), "job_schedule_id": job_schedule_id}
 
 
-@shared_task(bind=True, name='tasks.ansible_playbook')
+@shared_task(bind=True, name="tasks.ansible_playbook")
 def ansible_playbook_task(
     self,
     job_schedule_id: Optional[int] = None,
     credential_id: Optional[int] = None,
     playbook: Optional[str] = None,
-    **kwargs
+    **kwargs,
 ) -> dict:
     """
     Task: Run Ansible playbook.
@@ -100,43 +103,41 @@ def ansible_playbook_task(
         dict: Task execution results
     """
     try:
-        logger.info(f"Starting ansible_playbook task (job_schedule_id: {job_schedule_id}, playbook: {playbook})")
+        logger.info(
+            f"Starting ansible_playbook task (job_schedule_id: {job_schedule_id}, playbook: {playbook})"
+        )
 
         self.update_state(
-            state='PROGRESS',
-            meta={'current': 0, 'total': 100, 'status': 'Initializing Ansible...'}
+            state="PROGRESS",
+            meta={"current": 0, "total": 100, "status": "Initializing Ansible..."},
         )
 
         # This is a placeholder for the actual Ansible implementation
         # You would integrate with your existing Ansible functionality here
 
         self.update_state(
-            state='PROGRESS',
-            meta={'current': 50, 'total': 100, 'status': 'Running playbook...'}
+            state="PROGRESS",
+            meta={"current": 50, "total": 100, "status": "Running playbook..."},
         )
 
         # Simulate playbook execution
         import time
+
         time.sleep(3)
 
         self.update_state(
-            state='PROGRESS',
-            meta={'current': 100, 'total': 100, 'status': 'Complete'}
+            state="PROGRESS", meta={"current": 100, "total": 100, "status": "Complete"}
         )
 
         logger.info(f"Ansible playbook task completed: {playbook}")
 
         return {
-            'success': True,
-            'playbook': playbook,
-            'message': f'Ansible playbook {playbook} executed successfully',
-            'job_schedule_id': job_schedule_id
+            "success": True,
+            "playbook": playbook,
+            "message": f"Ansible playbook {playbook} executed successfully",
+            "job_schedule_id": job_schedule_id,
         }
 
     except Exception as e:
         logger.error(f"ansible_playbook task failed: {e}", exc_info=True)
-        return {
-            'success': False,
-            'error': str(e),
-            'job_schedule_id': job_schedule_id
-        }
+        return {"success": False, "error": str(e), "job_schedule_id": job_schedule_id}

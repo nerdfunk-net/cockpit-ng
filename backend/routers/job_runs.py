@@ -2,11 +2,12 @@
 Job Runs Router
 API endpoints for viewing and managing job run history.
 """
+
 import logging
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from core.auth import verify_token, require_permission
+from core.auth import require_permission
 import job_run_manager
 from models.jobs import JobRunResponse, JobRunListResponse
 
@@ -24,11 +25,11 @@ async def list_job_runs(
     triggered_by: Optional[str] = Query(None, description="Filter by trigger type"),
     schedule_id: Optional[int] = Query(None, description="Filter by schedule ID"),
     template_id: Optional[int] = Query(None, description="Filter by template ID"),
-    current_user: dict = Depends(require_permission("jobs", "read"))
+    current_user: dict = Depends(require_permission("jobs", "read")),
 ):
     """
     List job runs with pagination and optional filters.
-    
+
     Returns paginated list of job runs including:
     - Job run details (name, type, status)
     - Timing information (queued, started, completed, duration)
@@ -43,7 +44,7 @@ async def list_job_runs(
             job_type=job_type,
             triggered_by=triggered_by,
             schedule_id=schedule_id,
-            template_id=template_id
+            template_id=template_id,
         )
         return result
     except Exception as e:
@@ -53,7 +54,7 @@ async def list_job_runs(
 
 @router.get("/templates")
 async def get_distinct_templates(
-    current_user: dict = Depends(require_permission("jobs", "read"))
+    current_user: dict = Depends(require_permission("jobs", "read")),
 ):
     """
     Get distinct templates used in job runs (for filter dropdown).
@@ -71,16 +72,14 @@ async def get_recent_runs(
     limit: int = Query(50, ge=1, le=200, description="Number of runs to return"),
     status: Optional[str] = Query(None, description="Filter by status"),
     job_type: Optional[str] = Query(None, description="Filter by job type"),
-    current_user: dict = Depends(require_permission("jobs", "read"))
+    current_user: dict = Depends(require_permission("jobs", "read")),
 ):
     """
     Get recent job runs (simplified endpoint for dashboard).
     """
     try:
         runs = job_run_manager.get_recent_runs(
-            limit=limit,
-            status=status,
-            job_type=job_type
+            limit=limit, status=status, job_type=job_type
         )
         return runs
     except Exception as e:
@@ -90,7 +89,7 @@ async def get_recent_runs(
 
 @router.get("/stats")
 async def get_job_stats(
-    current_user: dict = Depends(require_permission("jobs", "read"))
+    current_user: dict = Depends(require_permission("jobs", "read")),
 ):
     """
     Get job queue statistics.
@@ -107,7 +106,7 @@ async def get_job_stats(
 
 @router.get("/dashboard/stats")
 async def get_dashboard_stats(
-    current_user: dict = Depends(require_permission("jobs", "read"))
+    current_user: dict = Depends(require_permission("jobs", "read")),
 ):
     """
     Get dashboard statistics for job runs.
@@ -126,8 +125,7 @@ async def get_dashboard_stats(
 
 @router.get("/{run_id}", response_model=JobRunResponse)
 async def get_job_run(
-    run_id: int,
-    current_user: dict = Depends(require_permission("jobs", "read"))
+    run_id: int, current_user: dict = Depends(require_permission("jobs", "read"))
 ):
     """
     Get a specific job run by ID.
@@ -148,7 +146,7 @@ async def get_job_run(
 async def get_schedule_runs(
     schedule_id: int,
     limit: int = Query(50, ge=1, le=200, description="Number of runs to return"),
-    current_user: dict = Depends(require_permission("jobs", "read"))
+    current_user: dict = Depends(require_permission("jobs", "read")),
 ):
     """
     Get job runs for a specific schedule.
@@ -157,45 +155,47 @@ async def get_schedule_runs(
         runs = job_run_manager.get_schedule_runs(schedule_id, limit=limit)
         return runs
     except Exception as e:
-        logger.error(f"Error getting runs for schedule {schedule_id}: {e}", exc_info=True)
+        logger.error(
+            f"Error getting runs for schedule {schedule_id}: {e}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/{run_id}/cancel")
 async def cancel_job_run(
-    run_id: int,
-    current_user: dict = Depends(require_permission("jobs", "write"))
+    run_id: int, current_user: dict = Depends(require_permission("jobs", "write"))
 ):
     """
     Cancel a pending or running job.
-    
+
     Note: This marks the job as cancelled but may not stop a running Celery task.
     """
     try:
         run = job_run_manager.get_job_run(run_id)
         if not run:
             raise HTTPException(status_code=404, detail=f"Job run {run_id} not found")
-        
-        if run['status'] in ['completed', 'failed', 'cancelled']:
+
+        if run["status"] in ["completed", "failed", "cancelled"]:
             raise HTTPException(
                 status_code=400,
-                detail=f"Cannot cancel job with status: {run['status']}"
+                detail=f"Cannot cancel job with status: {run['status']}",
             )
-        
+
         # Try to revoke the Celery task if we have a task ID
-        if run.get('celery_task_id'):
+        if run.get("celery_task_id"):
             try:
                 from celery_app import celery_app
-                celery_app.control.revoke(run['celery_task_id'], terminate=True)
+
+                celery_app.control.revoke(run["celery_task_id"], terminate=True)
             except Exception as e:
                 logger.warning(f"Could not revoke Celery task: {e}")
-        
+
         updated = job_run_manager.mark_cancelled(run_id)
         if updated:
             return {"message": f"Job run {run_id} cancelled", "job_run": updated}
-        
+
         raise HTTPException(status_code=500, detail="Failed to cancel job run")
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -205,8 +205,10 @@ async def cancel_job_run(
 
 @router.delete("/cleanup")
 async def cleanup_old_runs(
-    days: int = Query(30, ge=1, le=365, description="Delete runs older than this many days"),
-    current_user: dict = Depends(require_permission("jobs", "admin"))
+    days: int = Query(
+        30, ge=1, le=365, description="Delete runs older than this many days"
+    ),
+    current_user: dict = Depends(require_permission("jobs", "admin")),
 ):
     """
     Clean up old job runs (admin only).
@@ -221,7 +223,7 @@ async def cleanup_old_runs(
 
 @router.delete("/clear-all")
 async def clear_all_runs(
-    current_user: dict = Depends(require_permission("jobs", "write"))
+    current_user: dict = Depends(require_permission("jobs", "write")),
 ):
     """
     Clear all job run history.
@@ -240,7 +242,7 @@ async def clear_filtered_runs(
     job_type: Optional[str] = Query(None, description="Filter by job type"),
     triggered_by: Optional[str] = Query(None, description="Filter by trigger type"),
     template_id: Optional[int] = Query(None, description="Filter by template ID"),
-    current_user: dict = Depends(require_permission("jobs", "write"))
+    current_user: dict = Depends(require_permission("jobs", "write")),
 ):
     """
     Clear job runs matching the specified filters.
@@ -251,7 +253,7 @@ async def clear_filtered_runs(
             status=status,
             job_type=job_type,
             triggered_by=triggered_by,
-            template_id=template_id
+            template_id=template_id,
         )
         filters = []
         if status:
@@ -270,8 +272,8 @@ async def clear_filtered_runs(
                 "status": status,
                 "job_type": job_type,
                 "triggered_by": triggered_by,
-                "template_id": template_id
-            }
+                "template_id": template_id,
+            },
         }
     except Exception as e:
         logger.error(f"Error clearing filtered job runs: {e}", exc_info=True)
@@ -280,8 +282,7 @@ async def clear_filtered_runs(
 
 @router.delete("/{run_id}")
 async def delete_job_run(
-    run_id: int,
-    current_user: dict = Depends(require_permission("jobs", "write"))
+    run_id: int, current_user: dict = Depends(require_permission("jobs", "write"))
 ):
     """
     Delete a single job run from history.
@@ -290,20 +291,20 @@ async def delete_job_run(
         run = job_run_manager.get_job_run(run_id)
         if not run:
             raise HTTPException(status_code=404, detail=f"Job run {run_id} not found")
-        
+
         # Don't allow deleting running jobs
-        if run['status'] in ['pending', 'running']:
+        if run["status"] in ["pending", "running"]:
             raise HTTPException(
                 status_code=400,
-                detail=f"Cannot delete job with status: {run['status']}. Cancel it first."
+                detail=f"Cannot delete job with status: {run['status']}. Cancel it first.",
             )
-        
+
         deleted = job_run_manager.delete_job_run(run_id)
         if deleted:
             return {"message": f"Job run {run_id} deleted", "deleted": True}
-        
+
         raise HTTPException(status_code=500, detail="Failed to delete job run")
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -313,8 +314,7 @@ async def delete_job_run(
 
 @router.post("/execute/{schedule_id}")
 async def execute_job_manually(
-    schedule_id: int,
-    current_user: dict = Depends(require_permission("jobs", "write"))
+    schedule_id: int, current_user: dict = Depends(require_permission("jobs", "write"))
 ):
     """
     Execute a job schedule manually (trigger immediate run).
@@ -329,42 +329,51 @@ async def execute_job_manually(
         schedule = jobs_manager.get_job_schedule(schedule_id)
         if not schedule:
             logger.error(f"Schedule {schedule_id} not found")
-            raise HTTPException(status_code=404, detail=f"Schedule {schedule_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"Schedule {schedule_id} not found"
+            )
 
         logger.info(f"Schedule found: {schedule.get('job_identifier')}")
 
         # Get the template
-        template_id = schedule.get('job_template_id')
+        template_id = schedule.get("job_template_id")
         if not template_id:
-            logger.error(f"Schedule {schedule_id} has no associated template. Schedule data: {schedule}")
-            raise HTTPException(status_code=400, detail="Schedule has no associated template. Please edit the schedule and select a job template.")
+            logger.error(
+                f"Schedule {schedule_id} has no associated template. Schedule data: {schedule}"
+            )
+            raise HTTPException(
+                status_code=400,
+                detail="Schedule has no associated template. Please edit the schedule and select a job template.",
+            )
 
         logger.info(f"Template ID: {template_id}")
         template = job_template_manager.get_job_template(template_id)
         if not template:
             logger.error(f"Template {template_id} not found in database")
-            raise HTTPException(status_code=404, detail=f"Template {template_id} not found")
-        
+            raise HTTPException(
+                status_code=404, detail=f"Template {template_id} not found"
+            )
+
         # Dispatch the job
         task = dispatch_job.delay(
             schedule_id=schedule_id,
             template_id=template_id,
-            job_name=schedule.get('job_identifier', f"manual-{schedule_id}"),
-            job_type=template.get('job_type'),
-            credential_id=schedule.get('credential_id'),
-            job_parameters=schedule.get('job_parameters'),
-            triggered_by='manual',
-            executed_by=current_user.get('username', 'unknown')
+            job_name=schedule.get("job_identifier", f"manual-{schedule_id}"),
+            job_type=template.get("job_type"),
+            credential_id=schedule.get("credential_id"),
+            job_parameters=schedule.get("job_parameters"),
+            triggered_by="manual",
+            executed_by=current_user.get("username", "unknown"),
         )
-        
+
         return {
-            "message": f"Job dispatched successfully",
+            "message": "Job dispatched successfully",
             "celery_task_id": task.id,
             "schedule_id": schedule_id,
-            "job_name": schedule.get('job_identifier'),
-            "job_type": template.get('job_type')
+            "job_name": schedule.get("job_identifier"),
+            "job_type": template.get("job_type"),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:

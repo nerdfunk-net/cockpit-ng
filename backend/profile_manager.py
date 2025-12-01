@@ -31,14 +31,14 @@ def _profile_to_dict(profile: UserProfile) -> Dict[str, Any]:
 
 def get_user_profile(username: str) -> Optional[Dict[str, Any]]:
     """Get user profile by username.
-    
+
     Returns default profile if none exists in database.
     """
     profile = _profile_repo.get_by_username(username)
-    
+
     if profile:
         return _profile_to_dict(profile)
-    
+
     # Return default profile if none exists
     return {
         "username": username,
@@ -57,24 +57,24 @@ def update_user_profile(
     api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Update or create user profile.
-    
+
     Args:
         username: Username to update profile for
         realname: Real name (optional)
         email: Email address (optional)
         debug_mode: Debug mode enabled (optional)
         api_key: API key (optional)
-        
+
     Returns:
         Updated profile dictionary
     """
     existing = _profile_repo.get_by_username(username)
     now = datetime.utcnow()
-    
+
     if existing:
         # Update existing profile
         update_kwargs = {}
-        
+
         if realname is not None:
             update_kwargs["realname"] = realname
         if email is not None:
@@ -83,9 +83,9 @@ def update_user_profile(
             update_kwargs["debug_mode"] = debug_mode
         if api_key is not None:
             update_kwargs["api_key"] = api_key
-        
+
         update_kwargs["updated_at"] = now
-        
+
         updated = _profile_repo.update(existing.id, **update_kwargs)
         return _profile_to_dict(updated)
     else:
@@ -97,7 +97,7 @@ def update_user_profile(
             debug_mode=debug_mode if debug_mode is not None else False,
             api_key=api_key,
             created_at=now,
-            updated_at=now
+            updated_at=now,
         )
         return _profile_to_dict(new_profile)
 

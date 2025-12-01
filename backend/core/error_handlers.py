@@ -5,6 +5,7 @@ Provides consistent error logging and HTTP exception handling across all routers
 Created in Phase 4 of Celery refactoring to eliminate repetitive try/except blocks
 across the entire codebase.
 """
+
 from functools import wraps
 from fastapi import HTTPException, status
 import logging
@@ -14,7 +15,9 @@ from typing import Callable, Any
 logger = logging.getLogger(__name__)
 
 
-def handle_errors(operation: str, error_status: int = status.HTTP_500_INTERNAL_SERVER_ERROR):
+def handle_errors(
+    operation: str, error_status: int = status.HTTP_500_INTERNAL_SERVER_ERROR
+):
     """
     General-purpose decorator for consistent FastAPI endpoint error handling.
 
@@ -64,9 +67,11 @@ def handle_errors(operation: str, error_status: int = status.HTTP_500_INTERNAL_S
                 result = some_operation()
                 return result
     """
+
     def decorator(func: Callable) -> Callable:
         # Handle async functions
         if asyncio.iscoroutinefunction(func):
+
             @wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                 try:
@@ -80,22 +85,24 @@ def handle_errors(operation: str, error_status: int = status.HTTP_500_INTERNAL_S
                         f"Failed to {operation}: {e}",
                         exc_info=True,
                         extra={
-                            'operation': operation,
-                            'function': func.__name__,
-                            'module': func.__module__,
-                            'args': args,
-                            'kwargs': kwargs
-                        }
+                            "operation": operation,
+                            "function": func.__name__,
+                            "module": func.__module__,
+                            "args": args,
+                            "kwargs": kwargs,
+                        },
                     )
                     # Convert to HTTP error
                     raise HTTPException(
                         status_code=error_status,
-                        detail=f"Failed to {operation}: {str(e)}"
+                        detail=f"Failed to {operation}: {str(e)}",
                     )
+
             return async_wrapper
 
         # Handle sync functions
         else:
+
             @wraps(func)
             def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
                 try:
@@ -109,18 +116,19 @@ def handle_errors(operation: str, error_status: int = status.HTTP_500_INTERNAL_S
                         f"Failed to {operation}: {e}",
                         exc_info=True,
                         extra={
-                            'operation': operation,
-                            'function': func.__name__,
-                            'module': func.__module__,
-                            'args': args,
-                            'kwargs': kwargs
-                        }
+                            "operation": operation,
+                            "function": func.__name__,
+                            "module": func.__module__,
+                            "args": args,
+                            "kwargs": kwargs,
+                        },
                     )
                     # Convert to HTTP error
                     raise HTTPException(
                         status_code=error_status,
-                        detail=f"Failed to {operation}: {str(e)}"
+                        detail=f"Failed to {operation}: {str(e)}",
                     )
+
             return sync_wrapper
 
     return decorator
@@ -149,8 +157,10 @@ def handle_not_found(operation: str, resource_name: str = "Resource"):
                 raise ValueError(f"User {user_id} not found")
             return user
     """
+
     def decorator(func: Callable) -> Callable:
         if asyncio.iscoroutinefunction(func):
+
             @wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                 try:
@@ -162,27 +172,29 @@ def handle_not_found(operation: str, resource_name: str = "Resource"):
                     logger.warning(
                         f"{resource_name} not found during {operation}: {e}",
                         extra={
-                            'operation': operation,
-                            'resource': resource_name,
-                            'function': func.__name__
-                        }
+                            "operation": operation,
+                            "resource": resource_name,
+                            "function": func.__name__,
+                        },
                     )
                     raise HTTPException(
                         status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"{resource_name} not found"
+                        detail=f"{resource_name} not found",
                     )
                 except Exception as e:
                     logger.error(
                         f"Failed to {operation}: {e}",
                         exc_info=True,
-                        extra={'operation': operation, 'function': func.__name__}
+                        extra={"operation": operation, "function": func.__name__},
                     )
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail=f"Failed to {operation}: {str(e)}"
+                        detail=f"Failed to {operation}: {str(e)}",
                     )
+
             return async_wrapper
         else:
+
             @wraps(func)
             def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
                 try:
@@ -193,25 +205,26 @@ def handle_not_found(operation: str, resource_name: str = "Resource"):
                     logger.warning(
                         f"{resource_name} not found during {operation}: {e}",
                         extra={
-                            'operation': operation,
-                            'resource': resource_name,
-                            'function': func.__name__
-                        }
+                            "operation": operation,
+                            "resource": resource_name,
+                            "function": func.__name__,
+                        },
                     )
                     raise HTTPException(
                         status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"{resource_name} not found"
+                        detail=f"{resource_name} not found",
                     )
                 except Exception as e:
                     logger.error(
                         f"Failed to {operation}: {e}",
                         exc_info=True,
-                        extra={'operation': operation, 'function': func.__name__}
+                        extra={"operation": operation, "function": func.__name__},
                     )
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail=f"Failed to {operation}: {str(e)}"
+                        detail=f"Failed to {operation}: {str(e)}",
                     )
+
             return sync_wrapper
 
     return decorator
@@ -237,8 +250,10 @@ def handle_validation_errors(operation: str):
             validate_username(user.username)  # May raise ValueError
             return db.create_user(user)
     """
+
     def decorator(func: Callable) -> Callable:
         if asyncio.iscoroutinefunction(func):
+
             @wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                 try:
@@ -250,27 +265,29 @@ def handle_validation_errors(operation: str):
                     logger.warning(
                         f"Validation error during {operation}: {e}",
                         extra={
-                            'operation': operation,
-                            'function': func.__name__,
-                            'error_type': type(e).__name__
-                        }
+                            "operation": operation,
+                            "function": func.__name__,
+                            "error_type": type(e).__name__,
+                        },
                     )
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Validation error: {str(e)}"
+                        detail=f"Validation error: {str(e)}",
                     )
                 except Exception as e:
                     logger.error(
                         f"Failed to {operation}: {e}",
                         exc_info=True,
-                        extra={'operation': operation, 'function': func.__name__}
+                        extra={"operation": operation, "function": func.__name__},
                     )
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail=f"Failed to {operation}: {str(e)}"
+                        detail=f"Failed to {operation}: {str(e)}",
                     )
+
             return async_wrapper
         else:
+
             @wraps(func)
             def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
                 try:
@@ -281,25 +298,26 @@ def handle_validation_errors(operation: str):
                     logger.warning(
                         f"Validation error during {operation}: {e}",
                         extra={
-                            'operation': operation,
-                            'function': func.__name__,
-                            'error_type': type(e).__name__
-                        }
+                            "operation": operation,
+                            "function": func.__name__,
+                            "error_type": type(e).__name__,
+                        },
                     )
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Validation error: {str(e)}"
+                        detail=f"Validation error: {str(e)}",
                     )
                 except Exception as e:
                     logger.error(
                         f"Failed to {operation}: {e}",
                         exc_info=True,
-                        extra={'operation': operation, 'function': func.__name__}
+                        extra={"operation": operation, "function": func.__name__},
                     )
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail=f"Failed to {operation}: {str(e)}"
+                        detail=f"Failed to {operation}: {str(e)}",
                     )
+
             return sync_wrapper
 
     return decorator

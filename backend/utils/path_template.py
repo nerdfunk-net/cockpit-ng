@@ -4,6 +4,7 @@ Replaces template variables in path strings with Nautobot device attributes.
 
 Supports nested attributes like {location.parent.name} and {custom_field_data.cf_net}.
 """
+
 import logging
 import re
 from typing import Dict, Any, Optional
@@ -35,7 +36,7 @@ def replace_template_variables(template: str, device_data: Dict[str, Any]) -> st
         return template
 
     # Find all variables in the template (format: {variable.path.here})
-    pattern = r'\{([^}]+)\}'
+    pattern = r"\{([^}]+)\}"
     matches = re.findall(pattern, template)
 
     result = template
@@ -51,7 +52,9 @@ def replace_template_variables(template: str, device_data: Dict[str, Any]) -> st
             logger.debug(f"Replaced {{{match}}} with '{value}'")
         else:
             # Keep the original variable if not found, or replace with empty string
-            logger.warning(f"Variable '{match}' not found in device data, keeping as-is")
+            logger.warning(
+                f"Variable '{match}' not found in device data, keeping as-is"
+            )
             # Optionally: result = result.replace(f"{{{match}}}", "")
 
     return result
@@ -89,7 +92,7 @@ def _get_nested_value(data: Dict[str, Any], path: str) -> Optional[Any]:
         logger.debug(f"Mapping custom_fields to custom_field_data: {path}")
 
     # Split the path and traverse the dictionary
-    keys = path.split('.')
+    keys = path.split(".")
     current = data
 
     for key in keys:
@@ -114,10 +117,10 @@ def sanitize_path_component(value: str) -> str:
     # Replace invalid characters with underscores
     invalid_chars = '<>:"|?*'
     for char in invalid_chars:
-        value = value.replace(char, '_')
+        value = value.replace(char, "_")
 
     # Remove leading/trailing dots and spaces
-    value = value.strip('. ')
+    value = value.strip(". ")
 
     return value
 
@@ -136,15 +139,15 @@ def validate_template_path(template: str) -> bool:
         return False
 
     # Check for balanced curly braces
-    open_count = template.count('{')
-    close_count = template.count('}')
+    open_count = template.count("{")
+    close_count = template.count("}")
 
     if open_count != close_count:
         logger.error(f"Unbalanced braces in template: {template}")
         return False
 
     # Check for empty variables
-    pattern = r'\{\s*\}'
+    pattern = r"\{\s*\}"
     if re.search(pattern, template):
         logger.error(f"Empty variable in template: {template}")
         return False

@@ -241,8 +241,9 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
         # Get user with RBAC roles and permissions
         logger.debug("[OIDC Debug] Fetching user RBAC roles and permissions...")
         import rbac_manager as rbac
+
         user_with_roles = rbac.get_user_with_rbac(user["id"])
-        
+
         if not user_with_roles:
             logger.warning(
                 f"get_user_with_rbac returned None for user_id={user['id']}, using base user"
@@ -253,7 +254,7 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
 
         # Extract role names for the response
         role_names = [r["name"] for r in user_with_roles.get("roles", [])]
-        
+
         # Determine primary role for legacy compatibility
         primary_role = "user"  # Default role
         if "admin" in role_names:
@@ -293,7 +294,9 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
             "email": user_with_roles.get("email"),
             "role": primary_role,  # Legacy field for compatibility
             "roles": role_names,  # New RBAC roles array
-            "permissions": user_with_roles.get("permissions", []),  # New RBAC permissions
+            "permissions": user_with_roles.get(
+                "permissions", []
+            ),  # New RBAC permissions
             "debug": user_with_roles.get("debug", False),
         }
 

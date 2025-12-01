@@ -2,6 +2,7 @@
 Job Template Manager
 Handles business logic for job templates using PostgreSQL and repository pattern.
 """
+
 import logging
 from typing import Optional, List, Dict, Any
 
@@ -26,7 +27,7 @@ def create_job_template(
     command_template_name: Optional[str] = None,
     backup_running_config_path: Optional[str] = None,
     backup_startup_config_path: Optional[str] = None,
-    is_global: bool = False
+    is_global: bool = False,
 ) -> Dict[str, Any]:
     """Create a new job template"""
 
@@ -47,7 +48,7 @@ def create_job_template(
         backup_startup_config_path=backup_startup_config_path,
         is_global=is_global,
         user_id=user_id if not is_global else None,
-        created_by=created_by
+        created_by=created_by,
     )
 
     logger.info(f"Created job template: {name} (ID: {template.id})")
@@ -62,7 +63,9 @@ def get_job_template(template_id: int) -> Optional[Dict[str, Any]]:
     return None
 
 
-def get_job_template_by_name(name: str, user_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
+def get_job_template_by_name(
+    name: str, user_id: Optional[int] = None
+) -> Optional[Dict[str, Any]]:
     """Get a job template by name"""
     template = repo.get_by_name(name, user_id)
     if template:
@@ -71,19 +74,20 @@ def get_job_template_by_name(name: str, user_id: Optional[int] = None) -> Option
 
 
 def list_job_templates(
-    user_id: Optional[int] = None,
-    job_type: Optional[str] = None
+    user_id: Optional[int] = None, job_type: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     """List job templates with optional filters"""
     if user_id is not None:
         templates = repo.get_user_templates(user_id, job_type)
     else:
         templates = repo.get_global_templates(job_type)
-    
+
     return [_model_to_dict(t) for t in templates]
 
 
-def get_user_job_templates(user_id: int, job_type: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_user_job_templates(
+    user_id: int, job_type: Optional[str] = None
+) -> List[Dict[str, Any]]:
     """Get all job templates accessible by a user (global + their private templates)"""
     templates = repo.get_user_templates(user_id, job_type)
     return [_model_to_dict(t) for t in templates]
@@ -101,7 +105,7 @@ def update_job_template(
     backup_running_config_path: Optional[str] = None,
     backup_startup_config_path: Optional[str] = None,
     is_global: Optional[bool] = None,
-    user_id: Optional[int] = None
+    user_id: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
     """Update a job template"""
 
@@ -114,29 +118,29 @@ def update_job_template(
     update_data = {}
 
     if name is not None:
-        update_data['name'] = name
+        update_data["name"] = name
     if description is not None:
-        update_data['description'] = description
+        update_data["description"] = description
     if config_repository_id is not None:
-        update_data['config_repository_id'] = config_repository_id
+        update_data["config_repository_id"] = config_repository_id
     if inventory_source is not None:
-        update_data['inventory_source'] = inventory_source
+        update_data["inventory_source"] = inventory_source
     if inventory_repository_id is not None:
-        update_data['inventory_repository_id'] = inventory_repository_id
+        update_data["inventory_repository_id"] = inventory_repository_id
     if inventory_name is not None:
-        update_data['inventory_name'] = inventory_name
+        update_data["inventory_name"] = inventory_name
     if command_template_name is not None:
-        update_data['command_template_name'] = command_template_name
+        update_data["command_template_name"] = command_template_name
     if backup_running_config_path is not None:
-        update_data['backup_running_config_path'] = backup_running_config_path
+        update_data["backup_running_config_path"] = backup_running_config_path
     if backup_startup_config_path is not None:
-        update_data['backup_startup_config_path'] = backup_startup_config_path
+        update_data["backup_startup_config_path"] = backup_startup_config_path
     if is_global is not None:
-        update_data['is_global'] = is_global
+        update_data["is_global"] = is_global
         if is_global:
-            update_data['user_id'] = None
+            update_data["user_id"] = None
         elif user_id is not None:
-            update_data['user_id'] = user_id
+            update_data["user_id"] = user_id
 
     if not update_data:
         # Nothing to update, return current state
@@ -165,23 +169,23 @@ def get_job_types() -> List[Dict[str, str]]:
         {
             "value": "backup",
             "label": "Backup",
-            "description": "Backup device configurations"
+            "description": "Backup device configurations",
         },
         {
             "value": "compare_devices",
             "label": "Compare Devices",
-            "description": "Compare device configurations with CheckMK"
+            "description": "Compare device configurations with CheckMK",
         },
         {
             "value": "run_commands",
             "label": "Run Commands",
-            "description": "Execute commands on devices using templates"
+            "description": "Execute commands on devices using templates",
         },
         {
             "value": "sync_devices",
             "label": "Sync Devices",
-            "description": "Synchronize devices with CheckMK"
-        }
+            "description": "Synchronize devices with CheckMK",
+        },
     ]
 
 
@@ -203,5 +207,5 @@ def _model_to_dict(template) -> Dict[str, Any]:
         "user_id": template.user_id,
         "created_by": template.created_by,
         "created_at": template.created_at,
-        "updated_at": template.updated_at
+        "updated_at": template.updated_at,
     }

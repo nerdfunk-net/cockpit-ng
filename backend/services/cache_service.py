@@ -6,7 +6,6 @@ Supports TTL, namespaces, statistics tracking, and works across multiple process
 from __future__ import annotations
 import time
 import json
-import sys
 import logging
 from typing import Any, Optional, List, Dict
 import redis
@@ -197,14 +196,18 @@ class RedisCacheService:
                     mem = self._redis.memory_usage(key)
                     if mem:
                         total_size += mem
-                except:
+                except Exception:
                     pass
 
             # Group by namespace
             namespaces = {}
             for key in cache_keys:
                 # Remove prefix to get user-facing key
-                user_key = key[len(self._prefix) + 1:] if key.startswith(f"{self._prefix}:") else key
+                user_key = (
+                    key[len(self._prefix) + 1 :]
+                    if key.startswith(f"{self._prefix}:")
+                    else key
+                )
                 namespace = user_key.split(":")[0] if ":" in user_key else "default"
 
                 if namespace not in namespaces:
@@ -216,7 +219,7 @@ class RedisCacheService:
                     mem = self._redis.memory_usage(key)
                     if mem:
                         namespaces[namespace]["size_bytes"] += mem
-                except:
+                except Exception:
                     pass
 
             # Calculate hit rate
@@ -224,12 +227,18 @@ class RedisCacheService:
             hit_rate = (hits / total_requests * 100) if total_requests > 0 else 0
 
             # Get user-facing keys (without prefix)
-            user_keys = [k[len(self._prefix) + 1:] for k in cache_keys if k.startswith(f"{self._prefix}:")]
+            user_keys = [
+                k[len(self._prefix) + 1 :]
+                for k in cache_keys
+                if k.startswith(f"{self._prefix}:")
+            ]
 
             return {
                 "overview": {
                     "total_items": len(cache_keys),
-                    "valid_items": len(cache_keys),  # Redis auto-expires, so all are valid
+                    "valid_items": len(
+                        cache_keys
+                    ),  # Redis auto-expires, so all are valid
                     "expired_items": 0,  # Redis handles expiration automatically
                     "total_size_bytes": total_size,
                     "total_size_mb": round(total_size / 1024 / 1024, 2),
@@ -266,7 +275,7 @@ class RedisCacheService:
             List of cache entry details
         """
         try:
-            now = time.time()
+            time.time()
             entries = []
 
             # Get all cache keys
@@ -277,7 +286,11 @@ class RedisCacheService:
 
             for redis_key in cache_keys:
                 # Get user-facing key
-                user_key = redis_key[len(self._prefix) + 1:] if redis_key.startswith(f"{self._prefix}:") else redis_key
+                user_key = (
+                    redis_key[len(self._prefix) + 1 :]
+                    if redis_key.startswith(f"{self._prefix}:")
+                    else redis_key
+                )
                 namespace = user_key.split(":")[0] if ":" in user_key else "default"
 
                 # Get TTL
@@ -288,22 +301,24 @@ class RedisCacheService:
                 # Get memory usage
                 try:
                     size_bytes = self._redis.memory_usage(redis_key) or 0
-                except:
+                except Exception:
                     size_bytes = 0
 
-                entries.append({
-                    "key": user_key,
-                    "namespace": namespace,
-                    "created_at": 0,  # Not tracked in Redis version
-                    "expires_at": 0,  # Not available
-                    "last_accessed": 0,  # Not tracked
-                    "access_count": 0,  # Not tracked per-key
-                    "size_bytes": size_bytes,
-                    "age_seconds": 0,  # Not tracked
-                    "ttl_seconds": max(ttl, 0),
-                    "last_accessed_ago": 0,  # Not tracked
-                    "is_expired": False,  # Redis auto-expires
-                })
+                entries.append(
+                    {
+                        "key": user_key,
+                        "namespace": namespace,
+                        "created_at": 0,  # Not tracked in Redis version
+                        "expires_at": 0,  # Not available
+                        "last_accessed": 0,  # Not tracked
+                        "access_count": 0,  # Not tracked per-key
+                        "size_bytes": size_bytes,
+                        "age_seconds": 0,  # Not tracked
+                        "ttl_seconds": max(ttl, 0),
+                        "last_accessed_ago": 0,  # Not tracked
+                        "is_expired": False,  # Redis auto-expires
+                    }
+                )
 
             # Sort by key name
             entries.sort(key=lambda x: x["key"])
@@ -332,7 +347,11 @@ class RedisCacheService:
 
             for redis_key in keys:
                 # Get user-facing key
-                user_key = redis_key[len(self._prefix) + 1:] if redis_key.startswith(f"{self._prefix}:") else redis_key
+                user_key = (
+                    redis_key[len(self._prefix) + 1 :]
+                    if redis_key.startswith(f"{self._prefix}:")
+                    else redis_key
+                )
 
                 # Get TTL
                 ttl = self._redis.ttl(redis_key)
@@ -343,19 +362,21 @@ class RedisCacheService:
                 try:
                     size_bytes = self._redis.memory_usage(redis_key) or 0
                     total_size += size_bytes
-                except:
+                except Exception:
                     size_bytes = 0
 
-                entries.append({
-                    "key": user_key,
-                    "created_at": 0,
-                    "expires_at": 0,
-                    "last_accessed": 0,
-                    "access_count": 0,
-                    "size_bytes": size_bytes,
-                    "ttl_seconds": max(ttl, 0),
-                    "is_expired": False,
-                })
+                entries.append(
+                    {
+                        "key": user_key,
+                        "created_at": 0,
+                        "expires_at": 0,
+                        "last_accessed": 0,
+                        "access_count": 0,
+                        "size_bytes": size_bytes,
+                        "ttl_seconds": max(ttl, 0),
+                        "is_expired": False,
+                    }
+                )
 
             return {
                 "namespace": namespace,
@@ -407,10 +428,14 @@ class RedisCacheService:
             return {
                 "uptime_seconds": round(uptime, 1),
                 "total_requests": total_requests,
-                "requests_per_second": round(total_requests / uptime, 2) if uptime > 0 else 0,
+                "requests_per_second": round(total_requests / uptime, 2)
+                if uptime > 0
+                else 0,
                 "cache_hits": hits,
                 "cache_misses": misses,
-                "hit_rate_percent": round((hits / total_requests * 100) if total_requests > 0 else 0, 2),
+                "hit_rate_percent": round(
+                    (hits / total_requests * 100) if total_requests > 0 else 0, 2
+                ),
                 "expired_entries": 0,  # Redis handles automatically
                 "entries_created": created,
                 "entries_cleared": cleared,
@@ -445,9 +470,9 @@ class RedisCacheService:
 # Initialize cache service with Redis
 try:
     from config import settings
+
     cache_service = RedisCacheService(
-        redis_url=settings.redis_url,
-        key_prefix="cockpit-cache"
+        redis_url=settings.redis_url, key_prefix="cockpit-cache"
     )
     logger.info("Initialized Redis-based cache service")
 except Exception as e:

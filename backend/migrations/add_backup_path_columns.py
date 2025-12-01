@@ -6,6 +6,7 @@ columns to the job_templates table to support templated backup paths.
 
 Run this migration once to update existing databases.
 """
+
 import logging
 import sys
 from pathlib import Path
@@ -13,7 +14,7 @@ from pathlib import Path
 # Add parent directory to path to import core modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.database import get_db_session, engine
+from core.database import get_db_session
 from sqlalchemy import text
 
 logging.basicConfig(level=logging.INFO)
@@ -29,34 +30,43 @@ def upgrade():
     try:
         # Check if columns already exist
         logger.info("Checking if columns already exist...")
-        result = session.execute(text("""
+        result = session.execute(
+            text("""
             SELECT column_name
             FROM information_schema.columns
             WHERE table_name = 'job_templates'
             AND column_name IN ('backup_running_config_path', 'backup_startup_config_path')
-        """))
+        """)
+        )
         existing_columns = [row[0] for row in result]
 
-        if 'backup_running_config_path' in existing_columns and 'backup_startup_config_path' in existing_columns:
+        if (
+            "backup_running_config_path" in existing_columns
+            and "backup_startup_config_path" in existing_columns
+        ):
             logger.info("✓ Columns already exist, skipping migration")
             return
 
         # Add backup_running_config_path column if it doesn't exist
-        if 'backup_running_config_path' not in existing_columns:
+        if "backup_running_config_path" not in existing_columns:
             logger.info("Adding backup_running_config_path column...")
-            session.execute(text("""
+            session.execute(
+                text("""
                 ALTER TABLE job_templates
                 ADD COLUMN backup_running_config_path VARCHAR(500)
-            """))
+            """)
+            )
             logger.info("✓ Added backup_running_config_path column")
 
         # Add backup_startup_config_path column if it doesn't exist
-        if 'backup_startup_config_path' not in existing_columns:
+        if "backup_startup_config_path" not in existing_columns:
             logger.info("Adding backup_startup_config_path column...")
-            session.execute(text("""
+            session.execute(
+                text("""
                 ALTER TABLE job_templates
                 ADD COLUMN backup_startup_config_path VARCHAR(500)
-            """))
+            """)
+            )
             logger.info("✓ Added backup_startup_config_path column")
 
         session.commit()
@@ -78,11 +88,13 @@ def downgrade():
 
     try:
         logger.info("Removing backup path columns...")
-        session.execute(text("""
+        session.execute(
+            text("""
             ALTER TABLE job_templates
             DROP COLUMN IF EXISTS backup_running_config_path,
             DROP COLUMN IF EXISTS backup_startup_config_path
-        """))
+        """)
+        )
         session.commit()
         logger.info("✅ Downgrade completed successfully")
 

@@ -22,17 +22,19 @@ os.chdir(backend_dir)
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
-# Import Celery app
-from celery_app import celery_app
-from config import settings
+# Import Celery app (after path setup)
+from celery_app import celery_app  # noqa: E402
+from config import settings  # noqa: E402
 
 # Import beat schedule
 try:
-    from beat_schedule import CELERY_BEAT_SCHEDULE
+    from beat_schedule import CELERY_BEAT_SCHEDULE  # noqa: E402
+
     schedule_count = len(CELERY_BEAT_SCHEDULE)
 except ImportError:
     schedule_count = 0
     print("Warning: Could not import beat_schedule")
+
 
 def main():
     """Start the Celery Beat scheduler."""
@@ -41,9 +43,9 @@ def main():
     print("=" * 70)
     print(f"Broker: {settings.celery_broker_url}")
     print(f"Backend: {settings.celery_result_backend}")
-    print(f"Scheduler: RedBeat (Redis-based)")
+    print("Scheduler: RedBeat (Redis-based)")
     print(f"Scheduled Tasks: {schedule_count}")
-    print(f"Log Level: INFO")
+    print("Log Level: INFO")
     print("=" * 70)
     print()
     print("⚠️  IMPORTANT: Only run ONE Beat instance per environment!")
@@ -51,14 +53,14 @@ def main():
 
     # Start beat scheduler using argv
     argv = [
-        'beat',
-        '--loglevel=INFO',
+        "beat",
+        "--loglevel=INFO",
     ]
 
     celery_app.start(argv)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
@@ -67,5 +69,6 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"Error starting Celery Beat: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

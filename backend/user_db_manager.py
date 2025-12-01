@@ -8,7 +8,6 @@ instead of direct SQLite3 connections. The API remains the same for backward com
 """
 
 from __future__ import annotations
-from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 from core.auth import get_password_hash, verify_password
 from repositories.user_repository import UserRepository
@@ -91,7 +90,7 @@ def get_all_users(include_inactive: bool = True) -> List[Dict[str, Any]]:
         users = _user_repo.get_all()
     else:
         users = _user_repo.get_active_users()
-    
+
     return [_user_to_dict(user) for user in users]
 
 
@@ -100,30 +99,30 @@ def get_user_by_id(
 ) -> Optional[Dict[str, Any]]:
     """Get user by ID."""
     user = _user_repo.get_by_id(user_id)
-    
+
     if user and (include_inactive or user.is_active):
         return _user_to_dict(user)
-    
+
     return None
 
 
 def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
     """Get user by username."""
     user = _user_repo.get_by_username(username)
-    
+
     if user and user.is_active:
         return _user_to_dict(user)
-    
+
     return None
 
 
 def authenticate_user(username: str, password: str) -> Optional[Dict[str, Any]]:
     """Authenticate user with username and password."""
     user = _user_repo.get_by_username(username)
-    
+
     if user and user.is_active and verify_password(password, user.password):
         return _user_to_dict(user)
-    
+
     return None
 
 
@@ -144,34 +143,34 @@ def update_user(
 
     # Build update kwargs
     updates = {}
-    
+
     if realname is not None:
         updates["realname"] = realname
-    
+
     if email is not None:
         updates["email"] = email
-    
+
     if password is not None:
         updates["password"] = get_password_hash(password)
-    
+
     if permissions is not None:
         updates["permissions"] = permissions
-    
+
     if debug is not None:
         updates["debug"] = debug
-    
+
     if is_active is not None:
         updates["is_active"] = is_active
-    
+
     if not updates:
         return _user_to_dict(current_user)
-    
+
     # Update user
     updated_user = _user_repo.update(user_id, **updates)
-    
+
     if updated_user:
         return _user_to_dict(updated_user)
-    
+
     return None
 
 
@@ -287,7 +286,7 @@ def get_permissions_for_role(role: str) -> int:
 def ensure_admin_user_permissions() -> None:
     """Ensure the admin user always has admin permissions."""
     admin_user = _user_repo.get_by_username("admin")
-    
+
     if admin_user and admin_user.permissions != PERMISSIONS_ADMIN:
         # Fix admin permissions
         _user_repo.update(admin_user.id, permissions=PERMISSIONS_ADMIN)
@@ -316,12 +315,17 @@ def _ensure_admin_role_assigned(user_id: Optional[int] = None) -> None:
             # Run seed script to create roles and permissions (silently)
             try:
                 import seed_rbac
+
                 seed_rbac.main(verbose=False)
                 admin_role = rbac.get_role_by_name("admin")
                 import logging
-                logging.getLogger(__name__).info("Initialized RBAC system with default roles and permissions")
+
+                logging.getLogger(__name__).info(
+                    "Initialized RBAC system with default roles and permissions"
+                )
             except Exception as e:
                 import logging
+
                 logging.getLogger(__name__).warning(f"Failed to seed RBAC: {e}")
                 return
 
@@ -332,10 +336,16 @@ def _ensure_admin_role_assigned(user_id: Optional[int] = None) -> None:
                 # Assign admin role
                 rbac.assign_role_to_user(user_id, admin_role["id"])
                 import logging
-                logging.getLogger(__name__).info(f"Assigned admin role to user ID {user_id}")
+
+                logging.getLogger(__name__).info(
+                    f"Assigned admin role to user ID {user_id}"
+                )
     except Exception as e:
         import logging
-        logging.getLogger(__name__).warning(f"Failed to ensure admin role assignment: {e}")
+
+        logging.getLogger(__name__).warning(
+            f"Failed to ensure admin role assignment: {e}"
+        )
 
 
 def _create_default_admin_without_rbac() -> Optional[Dict[str, Any]]:
@@ -350,7 +360,7 @@ def _create_default_admin_without_rbac() -> Optional[Dict[str, Any]]:
     # Create default admin user
     try:
         from config import settings as config_settings
-        
+
         admin_user = create_user(
             username="admin",
             realname="System Administrator",
@@ -360,10 +370,14 @@ def _create_default_admin_without_rbac() -> Optional[Dict[str, Any]]:
             debug=True,
         )
         import logging
-        logging.getLogger(__name__).info(f"Created default admin user (RBAC role will be assigned at startup)")
+
+        logging.getLogger(__name__).info(
+            "Created default admin user (RBAC role will be assigned at startup)"
+        )
         return admin_user
     except Exception as e:
         import logging
+
         logging.getLogger(__name__).warning(f"Failed to create default admin: {e}")
         return None
 
@@ -376,13 +390,14 @@ def ensure_admin_has_rbac_role() -> None:
     try:
         # First create default admin if no users exist
         _create_default_admin_without_rbac()
-        
+
         # Then ensure admin has RBAC role
         admin_user = get_user_by_username("admin")
         if admin_user:
             _ensure_admin_role_assigned(admin_user["id"])
     except Exception as e:
         import logging
+
         logging.getLogger(__name__).warning(f"Failed to ensure admin RBAC role: {e}")
 
 

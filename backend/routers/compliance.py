@@ -478,7 +478,9 @@ async def import_snmp_mappings(
         if result["errors"] > 0:
             parts.append(f"{result['errors']} errors")
 
-        message = f"SNMP mappings: {', '.join(parts)}" if parts else "No mappings imported"
+        message = (
+            f"SNMP mappings: {', '.join(parts)}" if parts else "No mappings imported"
+        )
 
         return {
             "success": True,

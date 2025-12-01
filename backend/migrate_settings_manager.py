@@ -6,13 +6,14 @@ Converts remaining SQLite code to PostgreSQL repository pattern
 
 import re
 
+
 def migrate_settings_manager():
-    with open('settings_manager.py', 'r') as f:
+    with open("settings_manager.py", "r") as f:
         content = f.read()
-    
+
     # Track changes
     changes = []
-    
+
     # 1. update_cache_settings - large function, full replacement
     old_update_cache = r'''    def update_cache_settings\(self, settings: Dict\[str, Any\]\) -> bool:
         """Update Cache settings"""
@@ -32,7 +33,7 @@ def migrate_settings_manager():
         except sqlite3\.Error as e:
             logger\.error\(f"Error updating Cache settings: \{e\}"\)
             return False'''
-    
+
     new_update_cache = '''    def update_cache_settings(self, settings: Dict[str, Any]) -> bool:
         """Update Cache settings"""
         try:
@@ -70,17 +71,18 @@ def migrate_settings_manager():
         except Exception as e:
             logger.error(f"Error updating Cache settings: {e}")
             return False'''
-    
+
     if re.search(old_update_cache, content, re.DOTALL):
         content = re.sub(old_update_cache, new_update_cache, content, flags=re.DOTALL)
         changes.append("update_cache_settings")
-    
+
     # Save
-    with open('settings_manager.py', 'w') as f:
+    with open("settings_manager.py", "w") as f:
         f.write(content)
-    
+
     print(f"✅ Migrated {len(changes)} functions: {', '.join(changes)}")
     return len(changes)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     migrate_settings_manager()

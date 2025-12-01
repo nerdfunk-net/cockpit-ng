@@ -3,14 +3,15 @@ DEPRECATED Legacy task.
 Use new job system (dispatch_job) instead.
 Will be removed in future version.
 """
+
 from celery import shared_task
 import logging
 from typing import Optional
-from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
-@shared_task(bind=True, name='tasks.cache_devices')
+
+@shared_task(bind=True, name="tasks.cache_devices")
 def cache_devices_task(self, job_schedule_id: Optional[int] = None) -> dict:
     """
     Task: Cache all devices from Nautobot.
@@ -29,8 +30,8 @@ def cache_devices_task(self, job_schedule_id: Optional[int] = None) -> dict:
 
         # Update task state to show progress
         self.update_state(
-            state='PROGRESS',
-            meta={'current': 0, 'total': 100, 'status': 'Connecting to Nautobot...'}
+            state="PROGRESS",
+            meta={"current": 0, "total": 100, "status": "Connecting to Nautobot..."},
         )
 
         # Import here to avoid circular imports
@@ -45,8 +46,8 @@ def cache_devices_task(self, job_schedule_id: Optional[int] = None) -> dict:
         try:
             # Fetch all devices from Nautobot
             self.update_state(
-                state='PROGRESS',
-                meta={'current': 30, 'total': 100, 'status': 'Fetching devices...'}
+                state="PROGRESS",
+                meta={"current": 30, "total": 100, "status": "Fetching devices..."},
             )
 
             # Use the existing get-all-devices job functionality
@@ -78,16 +79,16 @@ def cache_devices_task(self, job_schedule_id: Optional[int] = None) -> dict:
             result = loop.run_until_complete(nautobot_service.graphql_query(query))
 
             self.update_state(
-                state='PROGRESS',
-                meta={'current': 70, 'total': 100, 'status': 'Caching device data...'}
+                state="PROGRESS",
+                meta={"current": 70, "total": 100, "status": "Caching device data..."},
             )
 
             if "errors" in result:
                 logger.error(f"GraphQL errors: {result['errors']}")
                 return {
-                    'success': False,
-                    'error': f"GraphQL errors: {result['errors']}",
-                    'job_schedule_id': job_schedule_id
+                    "success": False,
+                    "error": f"GraphQL errors: {result['errors']}",
+                    "job_schedule_id": job_schedule_id,
                 }
 
             devices = result.get("data", {}).get("devices", [])
@@ -100,17 +101,17 @@ def cache_devices_task(self, job_schedule_id: Optional[int] = None) -> dict:
                     cache_service.set(cache_key, device, 30 * 60)  # 30 minutes TTL
 
             self.update_state(
-                state='PROGRESS',
-                meta={'current': 100, 'total': 100, 'status': 'Complete'}
+                state="PROGRESS",
+                meta={"current": 100, "total": 100, "status": "Complete"},
             )
 
             logger.info(f"Successfully cached {len(devices)} devices")
 
             return {
-                'success': True,
-                'devices_cached': len(devices),
-                'message': f'Cached {len(devices)} devices from Nautobot',
-                'job_schedule_id': job_schedule_id
+                "success": True,
+                "devices_cached": len(devices),
+                "message": f"Cached {len(devices)} devices from Nautobot",
+                "job_schedule_id": job_schedule_id,
             }
 
         finally:
@@ -118,10 +119,4 @@ def cache_devices_task(self, job_schedule_id: Optional[int] = None) -> dict:
 
     except Exception as e:
         logger.error(f"cache_devices task failed: {e}", exc_info=True)
-        return {
-            'success': False,
-            'error': str(e),
-            'job_schedule_id': job_schedule_id
-        }
-
-
+        return {"success": False, "error": str(e), "job_schedule_id": job_schedule_id}

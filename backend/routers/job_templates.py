@@ -2,8 +2,9 @@
 Job Templates Router
 API endpoints for managing job templates
 """
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List, Optional
+from typing import Optional
 from core.auth import verify_token
 import rbac_manager
 import job_template_manager
@@ -11,7 +12,7 @@ from models.job_templates import (
     JobTemplateCreate,
     JobTemplateUpdate,
     JobTemplateResponse,
-    JobTemplateListResponse
+    JobTemplateListResponse,
 )
 import logging
 
@@ -22,8 +23,7 @@ router = APIRouter(prefix="/api/job-templates", tags=["job-templates"])
 
 @router.post("", response_model=JobTemplateResponse)
 async def create_job_template(
-    template_data: JobTemplateCreate,
-    current_user: dict = Depends(verify_token)
+    template_data: JobTemplateCreate, current_user: dict = Depends(verify_token)
 ):
     """
     Create a new job template
@@ -40,7 +40,7 @@ async def create_job_template(
             if not has_permission and current_user.get("role") != "admin":
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Permission denied: jobs:write required for global templates"
+                    detail="Permission denied: jobs:write required for global templates",
                 )
 
         # Create the template
@@ -57,28 +57,24 @@ async def create_job_template(
             command_template_name=template_data.command_template_name,
             backup_running_config_path=template_data.backup_running_config_path,
             backup_startup_config_path=template_data.backup_startup_config_path,
-            is_global=template_data.is_global
+            is_global=template_data.is_global,
         )
 
         return JobTemplateResponse(**template)
 
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         logger.error(f"Error creating job template: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create job template: {str(e)}"
+            detail=f"Failed to create job template: {str(e)}",
         )
 
 
 @router.get("", response_model=JobTemplateListResponse)
 async def list_job_templates(
-    job_type: Optional[str] = None,
-    current_user: dict = Depends(verify_token)
+    job_type: Optional[str] = None, current_user: dict = Depends(verify_token)
 ):
     """
     List all job templates accessible to the current user
@@ -89,35 +85,31 @@ async def list_job_templates(
     """
     try:
         templates = job_template_manager.get_user_job_templates(
-            current_user["user_id"],
-            job_type
+            current_user["user_id"], job_type
         )
 
         return JobTemplateListResponse(
             templates=[JobTemplateResponse(**t) for t in templates],
-            total=len(templates)
+            total=len(templates),
         )
 
     except Exception as e:
         logger.error(f"Error listing job templates: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list job templates: {str(e)}"
+            detail=f"Failed to list job templates: {str(e)}",
         )
 
 
 @router.get("/types")
-async def get_job_types(
-    current_user: dict = Depends(verify_token)
-):
+async def get_job_types(current_user: dict = Depends(verify_token)):
     """Get available job types"""
     return job_template_manager.get_job_types()
 
 
 @router.get("/{template_id}", response_model=JobTemplateResponse)
 async def get_job_template(
-    template_id: int,
-    current_user: dict = Depends(verify_token)
+    template_id: int, current_user: dict = Depends(verify_token)
 ):
     """Get a specific job template by ID"""
     try:
@@ -125,15 +117,17 @@ async def get_job_template(
 
         if not template:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Job template not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found"
             )
 
         # Check access - user must own private template or it must be global
-        if not template.get("is_global") and template.get("user_id") != current_user["user_id"]:
+        if (
+            not template.get("is_global")
+            and template.get("user_id") != current_user["user_id"]
+        ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied: You can only view your own private templates"
+                detail="Access denied: You can only view your own private templates",
             )
 
         return JobTemplateResponse(**template)
@@ -144,7 +138,7 @@ async def get_job_template(
         logger.error(f"Error getting job template: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get job template: {str(e)}"
+            detail=f"Failed to get job template: {str(e)}",
         )
 
 
@@ -152,7 +146,7 @@ async def get_job_template(
 async def update_job_template(
     template_id: int,
     update_data: JobTemplateUpdate,
-    current_user: dict = Depends(verify_token)
+    current_user: dict = Depends(verify_token),
 ):
     """Update a job template"""
     try:
@@ -160,8 +154,7 @@ async def update_job_template(
 
         if not template:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Job template not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found"
             )
 
         # Check permissions
@@ -172,13 +165,13 @@ async def update_job_template(
             if not has_permission and current_user.get("role") != "admin":
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Permission denied: jobs:write required for global templates"
+                    detail="Permission denied: jobs:write required for global templates",
                 )
         else:
             if template.get("user_id") != current_user["user_id"]:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Access denied: You can only edit your own private templates"
+                    detail="Access denied: You can only edit your own private templates",
                 )
 
         # Update the template
@@ -194,36 +187,31 @@ async def update_job_template(
             backup_running_config_path=update_data.backup_running_config_path,
             backup_startup_config_path=update_data.backup_startup_config_path,
             is_global=update_data.is_global,
-            user_id=current_user["user_id"]
+            user_id=current_user["user_id"],
         )
 
         if not updated_template:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Job template not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found"
             )
 
         return JobTemplateResponse(**updated_template)
 
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error updating job template: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update job template: {str(e)}"
+            detail=f"Failed to update job template: {str(e)}",
         )
 
 
 @router.delete("/{template_id}")
 async def delete_job_template(
-    template_id: int,
-    current_user: dict = Depends(verify_token)
+    template_id: int, current_user: dict = Depends(verify_token)
 ):
     """Delete a job template"""
     try:
@@ -231,8 +219,7 @@ async def delete_job_template(
 
         if not template:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Job template not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found"
             )
 
         # Check permissions
@@ -243,21 +230,20 @@ async def delete_job_template(
             if not has_permission and current_user.get("role") != "admin":
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Permission denied: jobs:write required for global templates"
+                    detail="Permission denied: jobs:write required for global templates",
                 )
         else:
             if template.get("user_id") != current_user["user_id"]:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Access denied: You can only delete your own private templates"
+                    detail="Access denied: You can only delete your own private templates",
                 )
 
         deleted = job_template_manager.delete_job_template(template_id)
 
         if not deleted:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Job template not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found"
             )
 
         return {"message": "Job template deleted successfully"}
@@ -268,5 +254,5 @@ async def delete_job_template(
         logger.error(f"Error deleting job template: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete job template: {str(e)}"
+            detail=f"Failed to delete job template: {str(e)}",
         )

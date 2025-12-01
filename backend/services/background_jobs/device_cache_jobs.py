@@ -5,7 +5,7 @@ Background jobs for caching device data from Nautobot into Redis.
 
 import asyncio
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from celery import shared_task
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,9 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
         )
 
         # Update task state
-        self.update_state(state="PROGRESS", meta={"status": "Fetching devices from Nautobot..."})
+        self.update_state(
+            state="PROGRESS", meta={"status": "Fetching devices from Nautobot..."}
+        )
 
         # GraphQL query for all devices
         query = """
@@ -82,7 +84,9 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
-                result = loop.run_until_complete(nautobot_service.graphql_query(query, {}))
+                result = loop.run_until_complete(
+                    nautobot_service.graphql_query(query, {})
+                )
             finally:
                 loop.close()
 
@@ -126,7 +130,9 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
                 device_name = device.get("name", f"device_{i}")
 
                 if not device_id:
-                    logger.warning(f"Task {self.request.id}: Device {device_name} has no ID, skipping")
+                    logger.warning(
+                        f"Task {self.request.id}: Device {device_name} has no ID, skipping"
+                    )
                     failed_count += 1
                     continue
 
@@ -169,7 +175,9 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
                 f"Task {self.request.id}: Cached bulk collection with {len(lightweight_devices)} devices"
             )
         except Exception as e:
-            logger.error(f"Task {self.request.id}: Failed to cache bulk collection: {e}")
+            logger.error(
+                f"Task {self.request.id}: Failed to cache bulk collection: {e}"
+            )
 
         # Determine final status
         if failed_count == 0:
@@ -193,7 +201,9 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        logger.error(f"Task {self.request.id} failed with exception: {e}", exc_info=True)
+        logger.error(
+            f"Task {self.request.id} failed with exception: {e}", exc_info=True
+        )
         return {
             "status": "failed",
             "error": str(e),
@@ -220,7 +230,9 @@ def cache_single_device_task(self, device_id: str) -> Dict[str, Any]:
         from services.cache_service import cache_service
         from services.background_jobs.base import safe_graphql_query
 
-        self.update_state(state="PROGRESS", meta={"status": f"Fetching device {device_id}..."})
+        self.update_state(
+            state="PROGRESS", meta={"status": f"Fetching device {device_id}..."}
+        )
 
         # GraphQL query for single device
         query = """
@@ -277,7 +289,9 @@ def cache_single_device_task(self, device_id: str) -> Dict[str, Any]:
         cache_key = f"nautobot:devices:{device_id}"
         cache_service.set(cache_key, device, 3600)  # 1 hour TTL
 
-        logger.info(f"Successfully cached device {device.get('name')} (ID: {device_id})")
+        logger.info(
+            f"Successfully cached device {device.get('name')} (ID: {device_id})"
+        )
 
         return {
             "status": "completed",

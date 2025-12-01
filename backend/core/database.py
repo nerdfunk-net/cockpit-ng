@@ -3,7 +3,7 @@ Database connection and session management using SQLAlchemy with PostgreSQL.
 Replaces all SQLite-based database operations.
 """
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import NullPool
@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 
 # Create database engine
 DATABASE_URL = settings.database_url
-logger.info(f"Connecting to database: postgresql://{settings.database_username}:***@{settings.database_host}:{settings.database_port}/{settings.database_name}")
+logger.info(
+    f"Connecting to database: postgresql://{settings.database_username}:***@{settings.database_host}:{settings.database_port}/{settings.database_name}"
+)
 
 engine = create_engine(
     DATABASE_URL,
@@ -34,7 +36,7 @@ def get_db() -> Generator[Session, None, None]:
     """
     Get database session.
     Use as a dependency in FastAPI routes or context manager.
-    
+
     Example:
         with get_db() as db:
             db.query(User).all()
@@ -50,7 +52,7 @@ def get_db_session() -> Session:
     """
     Get database session for direct use (not as generator).
     Remember to close the session after use!
-    
+
     Example:
         db = get_db_session()
         try:
@@ -69,14 +71,15 @@ def init_db():
     try:
         logger.info("Initializing database tables...")
         # Import all models to ensure they're registered with Base.metadata
-        from core import models
         Base.metadata.create_all(bind=engine)
         # Run migrations for existing tables
         migrate_cache_settings_table()
         migrate_job_templates_table()
         # Commit the DDL changes
         engine.dispose()
-        logger.info(f"Database tables initialized successfully ({len(Base.metadata.tables)} tables)")
+        logger.info(
+            f"Database tables initialized successfully ({len(Base.metadata.tables)} tables)"
+        )
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
         raise
@@ -99,6 +102,7 @@ def check_connection():
     """
     try:
         from sqlalchemy import text
+
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
         logger.info("Database connection successful")
@@ -126,21 +130,29 @@ def migrate_cache_settings_table():
         inspector = inspect(engine)
 
         # Check if table exists
-        if 'cache_settings' not in inspector.get_table_names():
+        if "cache_settings" not in inspector.get_table_names():
             logger.debug("cache_settings table doesn't exist yet, skipping migration")
             return
 
-        existing_columns = {col['name'] for col in inspector.get_columns('cache_settings')}
+        existing_columns = {
+            col["name"] for col in inspector.get_columns("cache_settings")
+        }
 
         with engine.connect() as conn:
             for column_name, column_def in columns_to_add:
                 if column_name not in existing_columns:
                     logger.info(f"Adding column {column_name} to cache_settings table")
-                    conn.execute(text(f"ALTER TABLE cache_settings ADD COLUMN {column_name} {column_def}"))
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE cache_settings ADD COLUMN {column_name} {column_def}"
+                        )
+                    )
                     conn.commit()
                     logger.info(f"Successfully added column {column_name}")
                 else:
-                    logger.debug(f"Column {column_name} already exists in cache_settings")
+                    logger.debug(
+                        f"Column {column_name} already exists in cache_settings"
+                    )
 
     except Exception as e:
         logger.warning(f"Could not migrate cache_settings table: {e}")
@@ -162,21 +174,29 @@ def migrate_job_templates_table():
         inspector = inspect(engine)
 
         # Check if table exists
-        if 'job_templates' not in inspector.get_table_names():
+        if "job_templates" not in inspector.get_table_names():
             logger.debug("job_templates table doesn't exist yet, skipping migration")
             return
 
-        existing_columns = {col['name'] for col in inspector.get_columns('job_templates')}
+        existing_columns = {
+            col["name"] for col in inspector.get_columns("job_templates")
+        }
 
         with engine.connect() as conn:
             for column_name, column_def in columns_to_add:
                 if column_name not in existing_columns:
                     logger.info(f"Adding column {column_name} to job_templates table")
-                    conn.execute(text(f"ALTER TABLE job_templates ADD COLUMN {column_name} {column_def}"))
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE job_templates ADD COLUMN {column_name} {column_def}"
+                        )
+                    )
                     conn.commit()
                     logger.info(f"Successfully added column {column_name}")
                 else:
-                    logger.debug(f"Column {column_name} already exists in job_templates")
+                    logger.debug(
+                        f"Column {column_name} already exists in job_templates"
+                    )
 
     except Exception as e:
         logger.warning(f"Could not migrate job_templates table: {e}")

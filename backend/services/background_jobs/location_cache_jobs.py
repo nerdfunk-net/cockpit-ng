@@ -66,7 +66,9 @@ def cache_all_locations_task(self) -> Dict[str, Any]:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
-                result = loop.run_until_complete(nautobot_service.graphql_query(query, {}))
+                result = loop.run_until_complete(
+                    nautobot_service.graphql_query(query, {})
+                )
             finally:
                 loop.close()
 

@@ -463,10 +463,7 @@ async def get_ipam_ip_addresses_detailed(
 
         logger.info(f"Retrieved detailed information for IP address: {address}")
 
-        return {
-            "count": len(ip_addresses),
-            "ip_addresses": ip_addresses
-        }
+        return {"count": len(ip_addresses), "ip_addresses": ip_addresses}
 
     except HTTPException:
         raise

@@ -4,6 +4,7 @@ Executes commands on network devices using templates.
 
 Moved from job_tasks.py to improve code organization.
 """
+
 import logging
 import time
 from typing import Dict, Any, Optional
@@ -16,7 +17,7 @@ def execute_run_commands(
     credential_id: Optional[int],
     job_parameters: Optional[dict],
     target_devices: Optional[list],
-    task_context
+    task_context,
 ) -> Dict[str, Any]:
     """
     Execute run_commands job.
@@ -36,31 +37,38 @@ def execute_run_commands(
     """
     try:
         task_context.update_state(
-            state='PROGRESS',
-            meta={'current': 0, 'total': 100, 'status': 'Initializing command execution...'}
+            state="PROGRESS",
+            meta={
+                "current": 0,
+                "total": 100,
+                "status": "Initializing command execution...",
+            },
         )
 
         # TODO: Implement actual command execution using Netmiko
         # This should use credential_id and target_devices
 
-        command_template = job_parameters.get('command_template_name') if job_parameters else None
+        command_template = (
+            job_parameters.get("command_template_name") if job_parameters else None
+        )
 
         task_context.update_state(
-            state='PROGRESS',
-            meta={'current': 50, 'total': 100, 'status': f'Running commands from {command_template}...'}
+            state="PROGRESS",
+            meta={
+                "current": 50,
+                "total": 100,
+                "status": f"Running commands from {command_template}...",
+            },
         )
 
         time.sleep(2)  # Placeholder
 
         return {
-            'success': True,
-            'message': f'Commands executed successfully',
-            'command_template': command_template
+            "success": True,
+            "message": "Commands executed successfully",
+            "command_template": command_template,
         }
 
     except Exception as e:
         logger.error(f"Run commands job failed: {e}", exc_info=True)
-        return {
-            'success': False,
-            'error': str(e)
-        }
+        return {"success": False, "error": str(e)}

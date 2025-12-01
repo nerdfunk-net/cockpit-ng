@@ -39,17 +39,32 @@ def extract_device_essentials(device: Dict[str, Any]) -> Dict[str, Optional[str]
         "id": device.get("id"),
         "name": device.get("name"),
         "role": device.get("role", {}).get("name") if device.get("role") else None,
-        "location": device.get("location", {}).get("name") if device.get("location") else None,
-        "status": device.get("status", {}).get("name") if device.get("status") else None,
-        "primary_ip4": device.get("primary_ip4", {}).get("address") if device.get("primary_ip4") else None,
-        "device_type": device.get("device_type", {}).get("model") if device.get("device_type") else None,
-        "manufacturer": device.get("device_type", {}).get("manufacturer", {}).get("name")
-            if device.get("device_type", {}).get("manufacturer") else None,
-        "platform": device.get("platform", {}).get("name") if device.get("platform") else None,
+        "location": device.get("location", {}).get("name")
+        if device.get("location")
+        else None,
+        "status": device.get("status", {}).get("name")
+        if device.get("status")
+        else None,
+        "primary_ip4": device.get("primary_ip4", {}).get("address")
+        if device.get("primary_ip4")
+        else None,
+        "device_type": device.get("device_type", {}).get("model")
+        if device.get("device_type")
+        else None,
+        "manufacturer": device.get("device_type", {})
+        .get("manufacturer", {})
+        .get("name")
+        if device.get("device_type", {}).get("manufacturer")
+        else None,
+        "platform": device.get("platform", {}).get("name")
+        if device.get("platform")
+        else None,
     }
 
 
-def safe_graphql_query(result: Dict[str, Any]) -> tuple[bool, Optional[str], Optional[Dict]]:
+def safe_graphql_query(
+    result: Dict[str, Any],
+) -> tuple[bool, Optional[str], Optional[Dict]]:
     """
     Safely extract data from GraphQL query result.
 

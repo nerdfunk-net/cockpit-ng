@@ -4,6 +4,7 @@ Routes job execution to appropriate executor based on job type.
 
 Moved from job_tasks.py to improve code organization.
 """
+
 import logging
 from typing import Dict, Any, Optional
 
@@ -16,7 +17,7 @@ def execute_job_type(
     credential_id: Optional[int],
     job_parameters: Optional[dict],
     target_devices: Optional[list],
-    task_context
+    task_context,
 ) -> Dict[str, Any]:
     """
     Execute the appropriate job based on job type.
@@ -42,24 +43,21 @@ def execute_job_type(
 
     # Map job_type to execution function
     job_executors = {
-        'cache_devices': execute_cache_devices,
-        'sync_devices': execute_sync_devices,
-        'backup': execute_backup,
-        'run_commands': execute_run_commands,
-        'compare_devices': execute_compare_devices,
+        "cache_devices": execute_cache_devices,
+        "sync_devices": execute_sync_devices,
+        "backup": execute_backup,
+        "run_commands": execute_run_commands,
+        "compare_devices": execute_compare_devices,
     }
 
     executor = job_executors.get(job_type)
     if not executor:
-        return {
-            'success': False,
-            'error': f"Unknown job type: {job_type}"
-        }
+        return {"success": False, "error": f"Unknown job type: {job_type}"}
 
     return executor(
         schedule_id=schedule_id,
         credential_id=credential_id,
         job_parameters=job_parameters,
         target_devices=target_devices,
-        task_context=task_context
+        task_context=task_context,
     )

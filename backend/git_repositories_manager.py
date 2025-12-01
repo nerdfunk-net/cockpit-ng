@@ -32,7 +32,7 @@ class GitRepositoryManager:
                 raise ValueError(
                     f"Repository with name '{repo_data['name']}' already exists"
                 )
-            
+
             new_repo = self.repo.create(
                 name=repo_data["name"],
                 category=repo_data["category"],
@@ -44,7 +44,7 @@ class GitRepositoryManager:
                 description=repo_data.get("description"),
                 is_active=repo_data.get("is_active", True),
             )
-            
+
             logger.info(
                 f"Created git repository: {repo_data['name']} (ID: {new_repo.id})"
             )
@@ -77,7 +77,7 @@ class GitRepositoryManager:
                 repos = self.repo.get_all_active()
             else:
                 repos = self.repo.get_all()
-            
+
             return [self._model_to_dict(r) for r in repos]
         except Exception as e:
             logger.error(f"Error getting git repositories: {e}")
@@ -104,7 +104,7 @@ class GitRepositoryManager:
 
             if not update_kwargs:
                 return False
-            
+
             # Check for name conflict
             if "name" in update_kwargs:
                 existing = self.repo.get_by_name(update_kwargs["name"])
@@ -115,7 +115,7 @@ class GitRepositoryManager:
 
             update_kwargs["updated_at"] = datetime.utcnow()
             self.repo.update(repo_id, **update_kwargs)
-            
+
             logger.info(f"Updated git repository ID: {repo_id}")
             return True
         except ValueError:
@@ -133,7 +133,7 @@ class GitRepositoryManager:
             else:
                 self.repo.update(repo_id, is_active=False, updated_at=datetime.utcnow())
                 action = "Deactivated"
-            
+
             logger.info(f"{action} git repository ID: {repo_id}")
             return True
         except Exception as e:
@@ -147,12 +147,12 @@ class GitRepositoryManager:
         try:
             if last_sync is None:
                 last_sync = datetime.utcnow()
-            
+
             self.repo.update(
                 repo_id,
                 sync_status=status,
                 last_sync=last_sync,
-                updated_at=datetime.utcnow()
+                updated_at=datetime.utcnow(),
             )
             return True
         except Exception as e:
@@ -162,7 +162,7 @@ class GitRepositoryManager:
     def get_repositories_by_category(self, category: str) -> List[Dict[str, Any]]:
         """Get all active repositories for a specific category."""
         return self.get_repositories(category=category, active_only=True)
-    
+
     def _model_to_dict(self, repo: GitRepository) -> Dict[str, Any]:
         """Convert GitRepository model to dictionary."""
         return {
@@ -187,10 +187,12 @@ class GitRepositoryManager:
         try:
             all_repos = self.repo.get_all()
             active_repos = [r for r in all_repos if r.is_active]
-            
+
             category_counts = {}
             for repo in all_repos:
-                category_counts[repo.category] = category_counts.get(repo.category, 0) + 1
+                category_counts[repo.category] = (
+                    category_counts.get(repo.category, 0) + 1
+                )
 
             return {
                 "status": "healthy",

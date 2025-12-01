@@ -123,11 +123,11 @@ class Settings:
         """Build PostgreSQL database URL."""
         # Basic connection string
         url = f"postgresql://{self.database_username}:{self.database_password}@{self.database_host}:{self.database_port}/{self.database_name}"
-        
+
         # Add SSL mode if required
         if self.database_ssl:
             url += "?sslmode=require"
-        
+
         return url
 
 

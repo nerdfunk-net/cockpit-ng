@@ -4,6 +4,7 @@ Compares device configurations between Nautobot and CheckMK.
 
 Moved from job_tasks.py to improve code organization.
 """
+
 import logging
 import asyncio
 from typing import Dict, Any, Optional
@@ -16,7 +17,7 @@ def execute_compare_devices(
     credential_id: Optional[int],
     job_parameters: Optional[dict],
     target_devices: Optional[list],
-    task_context
+    task_context,
 ) -> Dict[str, Any]:
     """
     Execute compare_devices job - compares devices between Nautobot and CheckMK.
@@ -35,26 +36,41 @@ def execute_compare_devices(
     """
     try:
         task_context.update_state(
-            state='PROGRESS',
-            meta={'current': 0, 'total': 100, 'status': 'Initializing device comparison...'}
+            state="PROGRESS",
+            meta={
+                "current": 0,
+                "total": 100,
+                "status": "Initializing device comparison...",
+            },
         )
 
         from services.nb2cmk_base_service import nb2cmk_service
-        from services.nb2cmk_database_service import nb2cmk_db_service, JobStatus as NB2CMKJobStatus
+        from services.nb2cmk_database_service import (
+            nb2cmk_db_service,
+            JobStatus as NB2CMKJobStatus,
+        )
 
         # If no target devices provided, fetch all from Nautobot
         device_ids = target_devices
         if not device_ids:
-            logger.info("No target devices specified, fetching all devices from Nautobot")
+            logger.info(
+                "No target devices specified, fetching all devices from Nautobot"
+            )
             task_context.update_state(
-                state='PROGRESS',
-                meta={'current': 5, 'total': 100, 'status': 'Fetching devices from Nautobot...'}
+                state="PROGRESS",
+                meta={
+                    "current": 5,
+                    "total": 100,
+                    "status": "Fetching devices from Nautobot...",
+                },
             )
 
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
-                devices_result = loop.run_until_complete(nb2cmk_service.get_devices_for_sync())
+                devices_result = loop.run_until_complete(
+                    nb2cmk_service.get_devices_for_sync()
+                )
                 if devices_result and hasattr(devices_result, "devices"):
                     device_ids = [device.get("id") for device in devices_result.devices]
                     logger.info(f"Fetched {len(device_ids)} devices from Nautobot")
@@ -66,12 +82,12 @@ def execute_compare_devices(
 
         if not device_ids:
             return {
-                'success': True,
-                'message': 'No devices to compare',
-                'total': 0,
-                'completed': 0,
-                'failed': 0,
-                'differences_found': 0
+                "success": True,
+                "message": "No devices to compare",
+                "total": 0,
+                "completed": 0,
+                "failed": 0,
+                "differences_found": 0,
             }
 
         total_devices = len(device_ids)
@@ -87,7 +103,9 @@ def execute_compare_devices(
         # Create job in NB2CMK database for result tracking
         nb2cmk_db_service.create_job(username="scheduler", job_id=job_id)
         nb2cmk_db_service.update_job_status(job_id, NB2CMKJobStatus.RUNNING)
-        nb2cmk_db_service.update_job_progress(job_id, 0, total_devices, "Starting comparison...")
+        nb2cmk_db_service.update_job_progress(
+            job_id, 0, total_devices, "Starting comparison..."
+        )
 
         logger.info(f"Starting comparison of {total_devices} devices, job_id: {job_id}")
 
@@ -97,14 +115,14 @@ def execute_compare_devices(
                 # Update progress
                 progress = int(10 + (i / total_devices) * 85)
                 task_context.update_state(
-                    state='PROGRESS',
+                    state="PROGRESS",
                     meta={
-                        'current': progress,
-                        'total': 100,
-                        'status': f'Comparing device {i + 1}/{total_devices}',
-                        'completed': completed_count,
-                        'failed': failed_count
-                    }
+                        "current": progress,
+                        "total": 100,
+                        "status": f"Comparing device {i + 1}/{total_devices}",
+                        "completed": completed_count,
+                        "failed": failed_count,
+                    },
                 )
 
                 # Update job progress in NB2CMK database
@@ -126,14 +144,16 @@ def execute_compare_devices(
                     if comparison_result:
                         completed_count += 1
                         # DeviceComparison has 'result' field: 'equal', 'diff', 'host_not_found'
-                        has_differences = comparison_result.result not in ['equal']
+                        has_differences = comparison_result.result not in ["equal"]
                         if has_differences:
                             differences_found += 1
 
                         # Get device name from normalized config
                         device_name = device_id  # Default to UUID
                         if comparison_result.normalized_config:
-                            internal = comparison_result.normalized_config.get("internal", {})
+                            internal = comparison_result.normalized_config.get(
+                                "internal", {}
+                            )
                             device_name = internal.get("hostname", device_id)
 
                         # Store result in NB2CMK database using add_device_result
@@ -147,13 +167,15 @@ def execute_compare_devices(
                             normalized_config=comparison_result.normalized_config or {},
                             checkmk_config=comparison_result.checkmk_config,
                         )
-                        results.append({
-                            'device_id': device_id,
-                            'device_name': device_name,
-                            'status': 'completed',
-                            'checkmk_status': comparison_result.result,
-                            'has_differences': has_differences
-                        })
+                        results.append(
+                            {
+                                "device_id": device_id,
+                                "device_name": device_name,
+                                "status": "completed",
+                                "checkmk_status": comparison_result.result,
+                                "has_differences": has_differences,
+                            }
+                        )
                     else:
                         failed_count += 1
                         nb2cmk_db_service.add_device_result(
@@ -165,11 +187,13 @@ def execute_compare_devices(
                             normalized_config={},
                             checkmk_config=None,
                         )
-                        results.append({
-                            'device_id': device_id,
-                            'status': 'failed',
-                            'error': 'No comparison result'
-                        })
+                        results.append(
+                            {
+                                "device_id": device_id,
+                                "status": "failed",
+                                "error": "No comparison result",
+                            }
+                        )
                 finally:
                     loop.close()
 
@@ -186,16 +210,14 @@ def execute_compare_devices(
                     normalized_config={},
                     checkmk_config=None,
                 )
-                results.append({
-                    'device_id': device_id,
-                    'status': 'failed',
-                    'error': error_msg
-                })
+                results.append(
+                    {"device_id": device_id, "status": "failed", "error": error_msg}
+                )
 
         # Update final progress
         task_context.update_state(
-            state='PROGRESS',
-            meta={'current': 100, 'total': 100, 'status': 'Comparison complete'}
+            state="PROGRESS",
+            meta={"current": 100, "total": 100, "status": "Comparison complete"},
         )
 
         # Mark job as completed in NB2CMK database
@@ -207,19 +229,16 @@ def execute_compare_devices(
         )
 
         return {
-            'success': True,
-            'message': f'Compared {completed_count}/{total_devices} devices',
-            'total': total_devices,
-            'completed': completed_count,
-            'failed': failed_count,
-            'differences_found': differences_found,
-            'job_id': job_id
+            "success": True,
+            "message": f"Compared {completed_count}/{total_devices} devices",
+            "total": total_devices,
+            "completed": completed_count,
+            "failed": failed_count,
+            "differences_found": differences_found,
+            "job_id": job_id,
         }
 
     except Exception as e:
         error_msg = str(e)
         logger.error(f"Compare devices job failed: {error_msg}", exc_info=True)
-        return {
-            'success': False,
-            'error': error_msg
-        }
+        return {"success": False, "error": error_msg}

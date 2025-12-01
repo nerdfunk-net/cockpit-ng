@@ -15,7 +15,7 @@ from .legacy import (
     cache_devices_task,
     sync_checkmk_task,
     backup_configs_task,
-    ansible_playbook_task
+    ansible_playbook_task,
 )
 
 # Import test tasks
@@ -29,7 +29,7 @@ from .periodic_tasks import (
     worker_health_check,
     load_cache_schedules_task,
     dispatch_cache_task,
-    cleanup_celery_data_task
+    cleanup_celery_data_task,
 )
 
 # Import background job tasks (outside tasks package)
@@ -44,25 +44,21 @@ from services.background_jobs import (  # noqa: F401
 
 __all__ = [
     # Active tasks
-    'check_job_schedules_task',
-    'dispatch_job',
-
+    "check_job_schedules_task",
+    "dispatch_job",
     # Legacy tasks (deprecated)
-    'cache_devices_task',
-    'sync_checkmk_task',
-    'backup_configs_task',
-    'ansible_playbook_task',
-
+    "cache_devices_task",
+    "sync_checkmk_task",
+    "backup_configs_task",
+    "ansible_playbook_task",
     # Test tasks
-    'test_task',
-    'test_progress_task',
-
+    "test_task",
+    "test_progress_task",
     # Device onboarding
-    'onboard_device_task',
-
+    "onboard_device_task",
     # Periodic tasks
-    'worker_health_check',
-    'load_cache_schedules_task',
-    'dispatch_cache_task',
-    'cleanup_celery_data_task',
+    "worker_health_check",
+    "load_cache_schedules_task",
+    "dispatch_cache_task",
+    "cleanup_celery_data_task",
 ]

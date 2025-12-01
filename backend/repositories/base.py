@@ -4,32 +4,31 @@ Base repository with common CRUD operations.
 This provides a generic base class that other repositories can extend.
 """
 
-from typing import Generic, TypeVar, Type, List, Optional, Dict, Any
-from sqlalchemy.orm import Session
+from typing import Generic, TypeVar, Type, List, Optional
 from core.database import get_db_session
-from datetime import datetime
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 class BaseRepository(Generic[T]):
     """Base repository with common CRUD operations."""
-    
+
     def __init__(self, model: Type[T]):
         """
         Initialize repository with a SQLAlchemy model.
-        
+
         Args:
             model: SQLAlchemy model class
         """
         self.model = model
-    
+
     def get_by_id(self, id: int) -> Optional[T]:
         """
         Get a single record by ID.
-        
+
         Args:
             id: Primary key ID
-            
+
         Returns:
             Model instance or None if not found
         """
@@ -38,11 +37,11 @@ class BaseRepository(Generic[T]):
             return db.query(self.model).filter(self.model.id == id).first()
         finally:
             db.close()
-    
+
     def get_all(self) -> List[T]:
         """
         Get all records.
-        
+
         Returns:
             List of model instances
         """
@@ -51,14 +50,14 @@ class BaseRepository(Generic[T]):
             return db.query(self.model).all()
         finally:
             db.close()
-    
+
     def create(self, **kwargs) -> T:
         """
         Create a new record.
-        
+
         Args:
             **kwargs: Fields to set on the new record
-            
+
         Returns:
             Created model instance
         """
@@ -71,15 +70,15 @@ class BaseRepository(Generic[T]):
             return obj
         finally:
             db.close()
-    
+
     def update(self, id: int, **kwargs) -> Optional[T]:
         """
         Update an existing record.
-        
+
         Args:
             id: Primary key ID
             **kwargs: Fields to update
-            
+
         Returns:
             Updated model instance or None if not found
         """
@@ -95,14 +94,14 @@ class BaseRepository(Generic[T]):
             return obj
         finally:
             db.close()
-    
+
     def delete(self, id: int) -> bool:
         """
         Delete a record by ID.
-        
+
         Args:
             id: Primary key ID
-            
+
         Returns:
             True if deleted, False if not found
         """
@@ -116,14 +115,14 @@ class BaseRepository(Generic[T]):
             return False
         finally:
             db.close()
-    
+
     def filter(self, **kwargs) -> List[T]:
         """
         Filter records by field values.
-        
+
         Args:
             **kwargs: Field=value pairs to filter by
-            
+
         Returns:
             List of matching model instances
         """
@@ -136,11 +135,11 @@ class BaseRepository(Generic[T]):
             return query.all()
         finally:
             db.close()
-    
+
     def count(self) -> int:
         """
         Count total records.
-        
+
         Returns:
             Number of records
         """
@@ -149,14 +148,14 @@ class BaseRepository(Generic[T]):
             return db.query(self.model).count()
         finally:
             db.close()
-    
+
     def exists(self, id: int) -> bool:
         """
         Check if a record exists.
-        
+
         Args:
             id: Primary key ID
-            
+
         Returns:
             True if exists, False otherwise
         """

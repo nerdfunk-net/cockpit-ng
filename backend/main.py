@@ -8,7 +8,6 @@ for better code organization and maintainability.
 from __future__ import annotations
 import logging
 from datetime import datetime
-from typing import Optional
 from fastapi import FastAPI, Depends
 import asyncio
 
@@ -205,6 +204,7 @@ async def startup_services():
     # Initialize database tables first
     try:
         from core.database import init_db
+
         init_db()
         logger.info("Database tables initialized successfully")
     except Exception as e:
@@ -214,6 +214,7 @@ async def startup_services():
     # Ensure admin user has RBAC role assigned (must happen before other services)
     try:
         import user_db_manager
+
         user_db_manager.ensure_admin_has_rbac_role()
         logger.info("Admin RBAC role assignment completed")
     except Exception as e:
@@ -222,9 +223,12 @@ async def startup_services():
     # Initialize next_run for job schedules that don't have one
     try:
         import jobs_manager
+
         result = jobs_manager.initialize_schedule_next_runs()
-        if result['initialized_count'] > 0:
-            logger.info(f"Initialized next_run for {result['initialized_count']} job schedules")
+        if result["initialized_count"] > 0:
+            logger.info(
+                f"Initialized next_run for {result['initialized_count']} job schedules"
+            )
     except Exception as e:
         logger.error(f"Failed to initialize job schedule next_runs: {e}")
 

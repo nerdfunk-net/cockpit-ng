@@ -4,6 +4,7 @@ Fetches devices from Nautobot and caches them in Redis.
 
 Moved from job_tasks.py to improve code organization.
 """
+
 import logging
 import asyncio
 from typing import Dict, Any, Optional
@@ -16,7 +17,7 @@ def execute_cache_devices(
     credential_id: Optional[int],
     job_parameters: Optional[dict],
     target_devices: Optional[list],
-    task_context
+    task_context,
 ) -> Dict[str, Any]:
     """
     Execute cache_devices job.
@@ -35,8 +36,8 @@ def execute_cache_devices(
     """
     try:
         task_context.update_state(
-            state='PROGRESS',
-            meta={'current': 0, 'total': 100, 'status': 'Connecting to Nautobot...'}
+            state="PROGRESS",
+            meta={"current": 0, "total": 100, "status": "Connecting to Nautobot..."},
         )
 
         from services.nautobot import nautobot_service
@@ -47,8 +48,8 @@ def execute_cache_devices(
 
         try:
             task_context.update_state(
-                state='PROGRESS',
-                meta={'current': 30, 'total': 100, 'status': 'Fetching devices...'}
+                state="PROGRESS",
+                meta={"current": 30, "total": 100, "status": "Fetching devices..."},
             )
 
             query = """
@@ -69,15 +70,15 @@ def execute_cache_devices(
 
             if "errors" in result:
                 return {
-                    'success': False,
-                    'error': f"GraphQL errors: {result['errors']}"
+                    "success": False,
+                    "error": f"GraphQL errors: {result['errors']}",
                 }
 
             devices = result.get("data", {}).get("devices", [])
 
             task_context.update_state(
-                state='PROGRESS',
-                meta={'current': 70, 'total': 100, 'status': 'Caching device data...'}
+                state="PROGRESS",
+                meta={"current": 70, "total": 100, "status": "Caching device data..."},
             )
 
             for device in devices:
@@ -87,9 +88,9 @@ def execute_cache_devices(
                     cache_service.set(cache_key, device, 30 * 60)
 
             return {
-                'success': True,
-                'devices_cached': len(devices),
-                'message': f'Cached {len(devices)} devices from Nautobot'
+                "success": True,
+                "devices_cached": len(devices),
+                "message": f"Cached {len(devices)} devices from Nautobot",
             }
 
         finally:
@@ -97,7 +98,4 @@ def execute_cache_devices(
 
     except Exception as e:
         logger.error(f"Cache devices job failed: {e}", exc_info=True)
-        return {
-            'success': False,
-            'error': str(e)
-        }
+        return {"success": False, "error": str(e)}

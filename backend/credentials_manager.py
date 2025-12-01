@@ -79,11 +79,11 @@ def list_credentials(
     include_expired: bool = False, source: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     """List all credentials, optionally filtered by source.
-    
+
     Args:
         include_expired: If False, filter out expired credentials
         source: Optional source filter ('general', 'private')
-        
+
     Returns:
         List of credential dictionaries with computed status
     """
@@ -91,12 +91,12 @@ def list_credentials(
         creds = _creds_repo.get_by_source(source)
     else:
         creds = _creds_repo.get_all()
-    
+
     items = [_credential_to_dict(c) for c in creds]
-    
+
     if not include_expired:
         items = [i for i in items if i["status"] != "expired"]
-    
+
     return items
 
 
@@ -125,7 +125,7 @@ def create_credential(
     owner: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Create a new credential with encrypted password.
-    
+
     Args:
         name: Credential name
         username: Username for the credential
@@ -134,13 +134,13 @@ def create_credential(
         valid_until: ISO8601 datetime string or None
         source: 'general' or 'private'
         owner: Username of owner (for private credentials)
-        
+
     Returns:
         Dictionary representation of created credential
     """
     encrypted = encryption_service.encrypt(password)
     now = datetime.utcnow()
-    
+
     new_cred = _creds_repo.create(
         name=name,
         username=username,
@@ -151,7 +151,7 @@ def create_credential(
         owner=owner,
         is_active=True,
         created_at=now,
-        updated_at=now
+        updated_at=now,
     )
     return _credential_to_dict(new_cred)
 
@@ -167,7 +167,7 @@ def update_credential(
     owner: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Update an existing credential.
-    
+
     Args:
         cred_id: ID of credential to update
         name: New name (optional)
@@ -177,17 +177,17 @@ def update_credential(
         valid_until: New expiration date (optional)
         source: New source (optional)
         owner: New owner (optional)
-        
+
     Returns:
         Dictionary representation of updated credential
-        
+
     Raises:
         ValueError: If credential not found
     """
     existing = _creds_repo.get_by_id(cred_id)
     if not existing:
         raise ValueError("Credential not found")
-    
+
     # Build update kwargs with only provided values
     update_kwargs = {}
     if name is not None:
@@ -204,16 +204,16 @@ def update_credential(
         update_kwargs["owner"] = owner
     if password is not None:
         update_kwargs["password_encrypted"] = encryption_service.encrypt(password)
-    
+
     update_kwargs["updated_at"] = datetime.utcnow()
-    
+
     updated = _creds_repo.update(cred_id, **update_kwargs)
     return _credential_to_dict(updated)
 
 
 def delete_credential(cred_id: int) -> None:
     """Delete a credential by ID.
-    
+
     Args:
         cred_id: ID of credential to delete
     """
@@ -234,13 +234,13 @@ def delete_credentials_by_owner(owner: str) -> int:
 
 def get_decrypted_password(cred_id: int) -> str:
     """Get the decrypted password for a credential.
-    
+
     Args:
         cred_id: ID of credential
-        
+
     Returns:
         Decrypted password as plain text
-        
+
     Raises:
         ValueError: If credential not found or decryption fails
     """

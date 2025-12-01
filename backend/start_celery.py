@@ -20,15 +20,16 @@ os.chdir(backend_dir)
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
-# Import Celery app
-from celery_app import celery_app
-from config import settings
+# Import Celery app (after path setup)
+from celery_app import celery_app  # noqa: E402
+from config import settings  # noqa: E402
 
 # Import all tasks to register them
 try:
-    from tasks import *
+    from tasks import *  # noqa: E402, F403 - intentional for task registration
 except ImportError as e:
     print(f"Warning: Could not import tasks: {e}")
+
 
 def main():
     """Start the Celery worker."""
@@ -38,23 +39,23 @@ def main():
     print(f"Broker: {settings.celery_broker_url}")
     print(f"Backend: {settings.celery_result_backend}")
     print(f"Max Workers: {settings.celery_max_workers}")
-    print(f"Log Level: INFO")
+    print("Log Level: INFO")
     print("=" * 70)
     print()
 
     # Start worker using argv
     argv = [
-        'worker',
-        '--loglevel=INFO',
-        f'--concurrency={settings.celery_max_workers}',
-        '--prefetch-multiplier=1',
-        '--max-tasks-per-child=100',
+        "worker",
+        "--loglevel=INFO",
+        f"--concurrency={settings.celery_max_workers}",
+        "--prefetch-multiplier=1",
+        "--max-tasks-per-child=100",
     ]
 
     celery_app.worker_main(argv)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
@@ -63,5 +64,6 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"Error starting Celery worker: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

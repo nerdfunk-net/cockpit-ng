@@ -17,7 +17,7 @@ from repositories.settings_repository import (
     CelerySettingRepository,
     NautobotDefaultRepository,
     DeviceOffboardingSettingRepository,
-    SettingsMetadataRepository
+    SettingsMetadataRepository,
 )
 
 # Import config to get environment variable defaults
@@ -74,7 +74,7 @@ class CacheSettings:
     max_commits: int = 500  # limit per branch
     # Map of items to prefetch on startup, e.g., {"git": true, "locations": false}
     prefetch_items: Dict[str, bool] = None
-    
+
     # Cache task intervals (in minutes) - 0 means disabled
     devices_cache_interval_minutes: int = 60  # Cache devices every hour
     locations_cache_interval_minutes: int = 10  # Cache locations every 10 minutes
@@ -84,7 +84,7 @@ class CacheSettings:
 @dataclass
 class CelerySettings:
     """Celery task queue settings"""
-    
+
     max_workers: int = 4  # Worker concurrency (requires restart)
     cleanup_enabled: bool = True  # Enable automatic cleanup
     cleanup_interval_hours: int = 6  # Run cleanup every 6 hours
@@ -238,9 +238,21 @@ class SettingsManager:
                     "prefetch_items": json.loads(settings.prefetch_items)
                     if settings.prefetch_items
                     else {"git": True, "locations": False},
-                    "devices_cache_interval_minutes": getattr(settings, 'devices_cache_interval_minutes', self.default_cache.devices_cache_interval_minutes),
-                    "locations_cache_interval_minutes": getattr(settings, 'locations_cache_interval_minutes', self.default_cache.locations_cache_interval_minutes),
-                    "git_commits_cache_interval_minutes": getattr(settings, 'git_commits_cache_interval_minutes', self.default_cache.git_commits_cache_interval_minutes),
+                    "devices_cache_interval_minutes": getattr(
+                        settings,
+                        "devices_cache_interval_minutes",
+                        self.default_cache.devices_cache_interval_minutes,
+                    ),
+                    "locations_cache_interval_minutes": getattr(
+                        settings,
+                        "locations_cache_interval_minutes",
+                        self.default_cache.locations_cache_interval_minutes,
+                    ),
+                    "git_commits_cache_interval_minutes": getattr(
+                        settings,
+                        "git_commits_cache_interval_minutes",
+                        self.default_cache.git_commits_cache_interval_minutes,
+                    ),
                 }
             return asdict(self.default_cache)
         except Exception as e:
@@ -252,28 +264,46 @@ class SettingsManager:
         try:
             repo = CacheSettingRepository()
             existing = repo.get_settings()
-            
+
             prefetch_items_json = json.dumps(
                 settings.get("prefetch_items") or {"git": True, "locations": False}
             )
-            
+
             update_kwargs = {
                 "enabled": settings.get("enabled", self.default_cache.enabled),
-                "ttl_seconds": settings.get("ttl_seconds", self.default_cache.ttl_seconds),
-                "prefetch_on_startup": settings.get("prefetch_on_startup", self.default_cache.prefetch_on_startup),
-                "refresh_interval_minutes": settings.get("refresh_interval_minutes", self.default_cache.refresh_interval_minutes),
-                "max_commits": settings.get("max_commits", self.default_cache.max_commits),
+                "ttl_seconds": settings.get(
+                    "ttl_seconds", self.default_cache.ttl_seconds
+                ),
+                "prefetch_on_startup": settings.get(
+                    "prefetch_on_startup", self.default_cache.prefetch_on_startup
+                ),
+                "refresh_interval_minutes": settings.get(
+                    "refresh_interval_minutes",
+                    self.default_cache.refresh_interval_minutes,
+                ),
+                "max_commits": settings.get(
+                    "max_commits", self.default_cache.max_commits
+                ),
                 "prefetch_items": prefetch_items_json,
-                "devices_cache_interval_minutes": settings.get("devices_cache_interval_minutes", self.default_cache.devices_cache_interval_minutes),
-                "locations_cache_interval_minutes": settings.get("locations_cache_interval_minutes", self.default_cache.locations_cache_interval_minutes),
-                "git_commits_cache_interval_minutes": settings.get("git_commits_cache_interval_minutes", self.default_cache.git_commits_cache_interval_minutes),
+                "devices_cache_interval_minutes": settings.get(
+                    "devices_cache_interval_minutes",
+                    self.default_cache.devices_cache_interval_minutes,
+                ),
+                "locations_cache_interval_minutes": settings.get(
+                    "locations_cache_interval_minutes",
+                    self.default_cache.locations_cache_interval_minutes,
+                ),
+                "git_commits_cache_interval_minutes": settings.get(
+                    "git_commits_cache_interval_minutes",
+                    self.default_cache.git_commits_cache_interval_minutes,
+                ),
             }
-            
+
             if existing:
                 repo.update(existing.id, **update_kwargs)
             else:
                 repo.create(**update_kwargs)
-            
+
             logger.info("Cache settings updated successfully")
             return True
         except Exception as e:
@@ -304,20 +334,30 @@ class SettingsManager:
         try:
             repo = CelerySettingRepository()
             existing = repo.get_settings()
-            
+
             update_kwargs = {
-                "max_workers": settings.get("max_workers", self.default_celery.max_workers),
-                "cleanup_enabled": settings.get("cleanup_enabled", self.default_celery.cleanup_enabled),
-                "cleanup_interval_hours": settings.get("cleanup_interval_hours", self.default_celery.cleanup_interval_hours),
-                "cleanup_age_hours": settings.get("cleanup_age_hours", self.default_celery.cleanup_age_hours),
-                "result_expires_hours": settings.get("result_expires_hours", self.default_celery.result_expires_hours),
+                "max_workers": settings.get(
+                    "max_workers", self.default_celery.max_workers
+                ),
+                "cleanup_enabled": settings.get(
+                    "cleanup_enabled", self.default_celery.cleanup_enabled
+                ),
+                "cleanup_interval_hours": settings.get(
+                    "cleanup_interval_hours", self.default_celery.cleanup_interval_hours
+                ),
+                "cleanup_age_hours": settings.get(
+                    "cleanup_age_hours", self.default_celery.cleanup_age_hours
+                ),
+                "result_expires_hours": settings.get(
+                    "result_expires_hours", self.default_celery.result_expires_hours
+                ),
             }
-            
+
             if existing:
                 repo.update(existing.id, **update_kwargs)
             else:
                 repo.create(**update_kwargs)
-            
+
             logger.info("Celery settings updated successfully")
             return True
         except Exception as e:
@@ -336,14 +376,18 @@ class SettingsManager:
                     url=settings.get("url", self.default_nautobot.url),
                     token=settings.get("token", self.default_nautobot.token),
                     timeout=settings.get("timeout", self.default_nautobot.timeout),
-                    verify_ssl=settings.get("verify_ssl", self.default_nautobot.verify_ssl)
+                    verify_ssl=settings.get(
+                        "verify_ssl", self.default_nautobot.verify_ssl
+                    ),
                 )
             else:
                 repo.create(
                     url=settings.get("url", self.default_nautobot.url),
                     token=settings.get("token", self.default_nautobot.token),
                     timeout=settings.get("timeout", self.default_nautobot.timeout),
-                    verify_ssl=settings.get("verify_ssl", self.default_nautobot.verify_ssl)
+                    verify_ssl=settings.get(
+                        "verify_ssl", self.default_nautobot.verify_ssl
+                    ),
                 )
 
             logger.info("Nautobot settings updated successfully")
@@ -366,9 +410,13 @@ class SettingsManager:
                     branch=settings.get("branch", self.default_git.branch),
                     username=settings.get("username", self.default_git.username),
                     token=settings.get("token", self.default_git.token),
-                    config_path=settings.get("config_path", self.default_git.config_path),
-                    sync_interval=settings.get("sync_interval", self.default_git.sync_interval),
-                    verify_ssl=settings.get("verify_ssl", self.default_git.verify_ssl)
+                    config_path=settings.get(
+                        "config_path", self.default_git.config_path
+                    ),
+                    sync_interval=settings.get(
+                        "sync_interval", self.default_git.sync_interval
+                    ),
+                    verify_ssl=settings.get("verify_ssl", self.default_git.verify_ssl),
                 )
             else:
                 repo.create(
@@ -376,9 +424,13 @@ class SettingsManager:
                     branch=settings.get("branch", self.default_git.branch),
                     username=settings.get("username", self.default_git.username),
                     token=settings.get("token", self.default_git.token),
-                    config_path=settings.get("config_path", self.default_git.config_path),
-                    sync_interval=settings.get("sync_interval", self.default_git.sync_interval),
-                    verify_ssl=settings.get("verify_ssl", self.default_git.verify_ssl)
+                    config_path=settings.get(
+                        "config_path", self.default_git.config_path
+                    ),
+                    sync_interval=settings.get(
+                        "sync_interval", self.default_git.sync_interval
+                    ),
+                    verify_ssl=settings.get("verify_ssl", self.default_git.verify_ssl),
                 )
 
             logger.info("Git settings updated successfully")
@@ -393,15 +445,17 @@ class SettingsManager:
         try:
             repo = CheckMKSettingRepository()
             existing = repo.get_settings()
-            
+
             update_data = {
                 "url": settings.get("url", self.default_checkmk.url),
                 "site": settings.get("site", self.default_checkmk.site),
                 "username": settings.get("username", self.default_checkmk.username),
                 "password": settings.get("password", self.default_checkmk.password),
-                "verify_ssl": settings.get("verify_ssl", self.default_checkmk.verify_ssl),
+                "verify_ssl": settings.get(
+                    "verify_ssl", self.default_checkmk.verify_ssl
+                ),
             }
-            
+
             if existing:
                 repo.update(existing.id, **update_data)
             else:
@@ -440,7 +494,7 @@ class SettingsManager:
 
             metadata = {
                 "schema_version": schema_version.value if schema_version else "1.0",
-                "database_type": "postgresql"
+                "database_type": "postgresql",
             }
 
             return metadata
@@ -451,16 +505,26 @@ class SettingsManager:
 
     def _handle_database_corruption(self) -> Dict[str, str]:
         """Handle database corruption - not applicable for PostgreSQL"""
-        logger.warning("Database corruption handler called - not applicable for PostgreSQL")
-        return {"status": "not_applicable", "message": "PostgreSQL manages corruption internally"}
+        logger.warning(
+            "Database corruption handler called - not applicable for PostgreSQL"
+        )
+        return {
+            "status": "not_applicable",
+            "message": "PostgreSQL manages corruption internally",
+        }
 
     def reset_to_defaults(self) -> bool:
         """Reset all settings to defaults"""
         try:
             # Clear existing settings by deleting records
             from core.database import get_db_session
-            from core.models import NautobotSetting, GitSetting, CheckMKSetting, CacheSetting
-            
+            from core.models import (
+                NautobotSetting,
+                GitSetting,
+                CheckMKSetting,
+                CacheSetting,
+            )
+
             session = get_db_session()
             try:
                 session.query(NautobotSetting).delete()
@@ -482,7 +546,7 @@ class SettingsManager:
         try:
             nautobot_repo = NautobotSettingRepository()
             git_repo = GitSettingRepository()
-            
+
             nautobot_count = 1 if nautobot_repo.get_settings() else 0
             git_count = 1 if git_repo.get_settings() else 0
 
@@ -525,7 +589,7 @@ class SettingsManager:
         try:
             repo = NautobotDefaultRepository()
             settings = repo.get_defaults()
-            
+
             if settings:
                 return {
                     "location": settings.location,
@@ -552,7 +616,7 @@ class SettingsManager:
         try:
             repo = NautobotDefaultRepository()
             existing = repo.get_defaults()
-            
+
             update_data = {
                 "location": defaults.get("location", ""),
                 "platform": defaults.get("platform", ""),
@@ -565,7 +629,7 @@ class SettingsManager:
                 "secret_group": defaults.get("secret_group", ""),
                 "csv_delimiter": defaults.get("csv_delimiter", ","),
             }
-            
+
             if existing:
                 repo.update(existing.id, **update_data)
             else:
@@ -588,7 +652,11 @@ class SettingsManager:
                 custom_field_settings = settings.custom_field_settings
                 if isinstance(custom_field_settings, str):
                     try:
-                        custom_field_settings = json.loads(custom_field_settings) if custom_field_settings else {}
+                        custom_field_settings = (
+                            json.loads(custom_field_settings)
+                            if custom_field_settings
+                            else {}
+                        )
                     except json.JSONDecodeError:
                         custom_field_settings = {}
                 elif custom_field_settings is None:
@@ -631,13 +699,15 @@ class SettingsManager:
         try:
             repo = DeviceOffboardingSettingRepository()
             existing = repo.get_settings()
-            
+
             custom_field_settings_json = json.dumps(
                 settings.get("custom_field_settings", {})
             )
-            
+
             update_data = {
-                "remove_all_custom_fields": settings.get("remove_all_custom_fields", False),
+                "remove_all_custom_fields": settings.get(
+                    "remove_all_custom_fields", False
+                ),
                 "clear_device_name": settings.get("clear_device_name", False),
                 "keep_serial": settings.get("keep_serial", False),
                 "location_id": settings.get("location_id"),
@@ -645,7 +715,7 @@ class SettingsManager:
                 "role_id": settings.get("role_id"),
                 "custom_field_settings": custom_field_settings_json,
             }
-            
+
             if existing:
                 repo.update(existing.id, **update_data)
             else:

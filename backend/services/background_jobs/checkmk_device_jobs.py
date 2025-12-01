@@ -7,7 +7,6 @@ import asyncio
 import logging
 from typing import Dict, Any, List
 from celery import shared_task
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +37,7 @@ def add_device_to_checkmk_task(self, device_id: str) -> Dict[str, Any]:
         # Update task state
         self.update_state(
             state="PROGRESS",
-            meta={"status": f"Adding device {device_id} to CheckMK..."}
+            meta={"status": f"Adding device {device_id} to CheckMK..."},
         )
 
         # Execute the add operation (need to run in event loop)
@@ -239,9 +238,10 @@ def sync_devices_to_checkmk_task(self, device_ids: list[str]) -> Dict[str, Any]:
 
                 except Exception as update_error:
                     # If device not found in CheckMK, try to add it
-                    if "404" in str(update_error) or "not found" in str(
-                        update_error
-                    ).lower():
+                    if (
+                        "404" in str(update_error)
+                        or "not found" in str(update_error).lower()
+                    ):
                         logger.info(
                             f"Device {device_id} not in CheckMK, attempting to add..."
                         )
@@ -355,7 +355,6 @@ def compare_nautobot_and_checkmk_task(
         total_devices = len(device_ids)
         completed_count = 0
         failed_count = 0
-        results = []
 
         # Create a job ID for storing results in NB2CMK database
         job_id = f"celery_compare_{self.request.id}"
@@ -363,11 +362,11 @@ def compare_nautobot_and_checkmk_task(
         # Create job in NB2CMK database
         nb2cmk_db_service.create_job(username="celery", job_id=job_id)
         nb2cmk_db_service.update_job_status(job_id, JobStatus.RUNNING)
-        nb2cmk_db_service.update_job_progress(job_id, 0, total_devices, "Starting comparison...")
-
-        logger.info(
-            f"Starting comparison of {total_devices} devices, job_id: {job_id}"
+        nb2cmk_db_service.update_job_progress(
+            job_id, 0, total_devices, "Starting comparison..."
         )
+
+        logger.info(f"Starting comparison of {total_devices} devices, job_id: {job_id}")
 
         # Process each device
         for i, device_id in enumerate(device_ids):
@@ -422,10 +421,18 @@ def compare_nautobot_and_checkmk_task(
                     job_id=job_id,
                     device_id=device_id,
                     device_name=device_name,
-                    checkmk_status=comparison_result.result if hasattr(comparison_result, "result") else "unknown",
-                    diff=comparison_result.diff if hasattr(comparison_result, "diff") else "",
-                    normalized_config=comparison_result.normalized_config if hasattr(comparison_result, "normalized_config") else {},
-                    checkmk_config=comparison_result.checkmk_config if hasattr(comparison_result, "checkmk_config") else None,
+                    checkmk_status=comparison_result.result
+                    if hasattr(comparison_result, "result")
+                    else "unknown",
+                    diff=comparison_result.diff
+                    if hasattr(comparison_result, "diff")
+                    else "",
+                    normalized_config=comparison_result.normalized_config
+                    if hasattr(comparison_result, "normalized_config")
+                    else {},
+                    checkmk_config=comparison_result.checkmk_config
+                    if hasattr(comparison_result, "checkmk_config")
+                    else None,
                 )
 
                 completed_count += 1

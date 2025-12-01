@@ -40,7 +40,7 @@ class DeviceNormalizationService:
 
         # Set hostname in internal dict (needed for CheckMK queries but not for comparison)
         extensions.internal["hostname"] = device_data.get("name", "")
-        
+
         # Store device metadata in internal dict (for UI display, not for comparison)
         # Extract role name
         role = device_data.get("role")
@@ -50,7 +50,7 @@ class DeviceNormalizationService:
             extensions.internal["role"] = role
         else:
             extensions.internal["role"] = ""
-        
+
         # Extract status name
         status = device_data.get("status")
         if isinstance(status, dict):
@@ -59,7 +59,7 @@ class DeviceNormalizationService:
             extensions.internal["status"] = status
         else:
             extensions.internal["status"] = ""
-        
+
         # Extract location name
         location = device_data.get("location")
         if isinstance(location, dict):

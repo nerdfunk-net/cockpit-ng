@@ -7,11 +7,14 @@ from __future__ import annotations
 import json
 import uuid
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 from enum import Enum
-from repositories.nb2cmk_repository import NB2CMKJobRepository, NB2CMKJobResultRepository
+from repositories.nb2cmk_repository import (
+    NB2CMKJobRepository,
+    NB2CMKJobResultRepository,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +90,7 @@ class NB2CMKDatabaseService:
                 user_id=username,
                 total_devices=0,
                 processed_devices=0,
-                progress_message=''
+                progress_message="",
             )
             logger.info(f"Created NB2CMK job {job_id}")
             return job_id
@@ -111,7 +114,7 @@ class NB2CMKDatabaseService:
                 completed_at=job_model.completed_at,
                 total_devices=job_model.total_devices,
                 processed_devices=job_model.processed_devices,
-                progress_message=job_model.progress_message or '',
+                progress_message=job_model.progress_message or "",
                 user_id=job_model.user_id,
                 error_message=job_model.error_message,
             )
@@ -125,16 +128,16 @@ class NB2CMKDatabaseService:
     ) -> bool:
         """Update job status."""
         try:
-            update_data = {'status': status.value}
+            update_data = {"status": status.value}
             now = datetime.now()
 
             if status == JobStatus.RUNNING:
-                update_data['started_at'] = now
+                update_data["started_at"] = now
             elif status in [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED]:
-                update_data['completed_at'] = now
-            
+                update_data["completed_at"] = now
+
             if error_message is not None:
-                update_data['error_message'] = error_message
+                update_data["error_message"] = error_message
 
             updated = self.job_repo.update(job_id, **update_data)
             return updated is not None
@@ -152,7 +155,7 @@ class NB2CMKDatabaseService:
                 job_id,
                 processed_devices=processed_devices,
                 total_devices=total_devices,
-                progress_message=message
+                progress_message=message,
             )
             return updated is not None
 
@@ -180,7 +183,7 @@ class NB2CMKDatabaseService:
                 diff=diff,
                 normalized_config=json.dumps(normalized_config),
                 checkmk_config=json.dumps(checkmk_config) if checkmk_config else None,
-                processed_at=datetime.now()
+                processed_at=datetime.now(),
             )
             return True
 
@@ -192,7 +195,7 @@ class NB2CMKDatabaseService:
         """Get all device results for a job."""
         try:
             result_models = self.result_repo.get_by_job_id(job_id)
-            
+
             results = []
             for row in result_models:
                 results.append(
@@ -202,8 +205,12 @@ class NB2CMKDatabaseService:
                         device_name=row.device_name,
                         checkmk_status=row.checkmk_status,
                         diff=row.diff or "",
-                        normalized_config=json.loads(row.normalized_config) if row.normalized_config else {},
-                        checkmk_config=json.loads(row.checkmk_config) if row.checkmk_config else None,
+                        normalized_config=json.loads(row.normalized_config)
+                        if row.normalized_config
+                        else {},
+                        checkmk_config=json.loads(row.checkmk_config)
+                        if row.checkmk_config
+                        else None,
                         processed_at=row.processed_at,
                     )
                 )
@@ -217,7 +224,7 @@ class NB2CMKDatabaseService:
         """Get recent jobs ordered by creation date."""
         try:
             job_models = self.job_repo.get_recent_jobs(limit)
-            
+
             jobs = []
             for row in job_models:
                 jobs.append(
@@ -229,7 +236,7 @@ class NB2CMKDatabaseService:
                         completed_at=row.completed_at,
                         total_devices=row.total_devices,
                         processed_devices=row.processed_devices,
-                        progress_message=row.progress_message or '',
+                        progress_message=row.progress_message or "",
                         user_id=row.user_id,
                         error_message=row.error_message,
                     )
@@ -244,23 +251,29 @@ class NB2CMKDatabaseService:
         """Clean up old completed jobs and their results."""
         try:
             old_jobs = self.job_repo.get_jobs_older_than(days_old)
-            
+
             # Filter to only completed/failed/cancelled jobs
             job_ids_to_delete = [
-                job.job_id for job in old_jobs 
-                if job.status in [JobStatus.COMPLETED.value, JobStatus.FAILED.value, JobStatus.CANCELLED.value]
+                job.job_id
+                for job in old_jobs
+                if job.status
+                in [
+                    JobStatus.COMPLETED.value,
+                    JobStatus.FAILED.value,
+                    JobStatus.CANCELLED.value,
+                ]
             ]
-            
+
             if job_ids_to_delete:
                 for job_id in job_ids_to_delete:
                     # Delete results (cascades in PostgreSQL, but explicit is better)
                     self.result_repo.delete_by_job_id(job_id)
                     # Delete job
                     self.job_repo.delete(job_id)
-                
+
                 logger.info(f"Cleaned up {len(job_ids_to_delete)} old NB2CMK jobs")
                 return len(job_ids_to_delete)
-            
+
             return 0
 
         except Exception as e:
@@ -273,7 +286,7 @@ class NB2CMKDatabaseService:
             job_model = self.job_repo.get_active_job()
             if not job_model:
                 return None
-            
+
             return NB2CMKJob(
                 job_id=job_model.job_id,
                 status=JobStatus(job_model.status),
@@ -282,7 +295,7 @@ class NB2CMKDatabaseService:
                 completed_at=job_model.completed_at,
                 total_devices=job_model.total_devices,
                 processed_devices=job_model.processed_devices,
-                progress_message=job_model.progress_message or '',
+                progress_message=job_model.progress_message or "",
                 user_id=job_model.user_id,
                 error_message=job_model.error_message,
             )
@@ -296,10 +309,10 @@ class NB2CMKDatabaseService:
         try:
             # Delete job results (CASCADE will handle this, but explicit is better)
             self.result_repo.delete_by_job_id(job_id)
-            
+
             # Delete the job
             deleted = self.job_repo.delete(job_id)
-            
+
             if deleted:
                 logger.info(f"Deleted NB2CMK job {job_id}")
             return deleted

@@ -19,7 +19,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 from repositories.rbac_repository import RBACRepository
-from core.models import Role, Permission, RolePermission, UserRole, UserPermission
+from core.models import Role, Permission
 import user_db_manager as user_db
 
 # Logger
@@ -48,7 +48,9 @@ def _permission_to_dict(permission: Permission) -> Dict[str, Any]:
         "resource": permission.resource,
         "action": permission.action,
         "description": permission.description,
-        "created_at": permission.created_at.isoformat() if permission.created_at else None,
+        "created_at": permission.created_at.isoformat()
+        if permission.created_at
+        else None,
     }
 
 
@@ -74,7 +76,7 @@ def create_permission(
     existing = _rbac_repo.get_permission(resource, action)
     if existing:
         raise ValueError(f"Permission {resource}:{action} already exists")
-    
+
     permission = _rbac_repo.create_permission(resource, action, description)
     return _permission_to_dict(permission)
 
@@ -123,7 +125,7 @@ def create_role(
     # Check if already exists
     if _rbac_repo.role_name_exists(name):
         raise ValueError(f"Role '{name}' already exists")
-    
+
     role = _rbac_repo.create_role(name, description, is_system)
     return _role_to_dict(role)
 
@@ -153,13 +155,13 @@ def update_role(
     role = _rbac_repo.get_role(role_id)
     if not role:
         raise ValueError(f"Role with id {role_id} not found")
-    
+
     updates = {}
     if name is not None:
         updates["name"] = name
     if description is not None:
         updates["description"] = description
-    
+
     updated_role = _rbac_repo.update_role(role_id, **updates)
     return _role_to_dict(updated_role)
 
@@ -169,10 +171,10 @@ def delete_role(role_id: int) -> None:
     role = _rbac_repo.get_role(role_id)
     if not role:
         raise ValueError(f"Role with id {role_id} not found")
-    
+
     if role.is_system:
         raise ValueError("Cannot delete system role")
-    
+
     _rbac_repo.delete_role(role_id)
 
 
@@ -285,19 +287,19 @@ def has_permission(user_id: int, resource: str, action: str) -> bool:
     permission = _rbac_repo.get_permission(resource, action)
     if not permission:
         return False
-    
+
     # Step 1: Check user-specific permission override
     override = _rbac_repo.get_user_permission_override(user_id, permission.id)
     if override is not None:
         return override
-    
+
     # Step 2: Check role-based permissions
     user_roles = _rbac_repo.get_user_roles(user_id)
     for role in user_roles:
         role_permissions = _rbac_repo.get_role_permissions(role.id)
         if any(p.id == permission.id for p in role_permissions):
             return True
-    
+
     # Step 3: Default deny
     return False
 
@@ -305,7 +307,7 @@ def has_permission(user_id: int, resource: str, action: str) -> bool:
 def get_user_permissions(user_id: int) -> List[Dict[str, Any]]:
     """Get all effective permissions for a user (combined from roles and overrides)."""
     permissions_map: Dict[Tuple[str, str], Dict[str, Any]] = {}
-    
+
     # Get role-based permissions
     user_roles = _rbac_repo.get_user_roles(user_id)
     for role in user_roles:
@@ -314,23 +316,23 @@ def get_user_permissions(user_id: int) -> List[Dict[str, Any]]:
             key = (perm.resource, perm.action)
             if key not in permissions_map:
                 perm_dict = _permission_to_dict(perm)
-                perm_dict['granted'] = True
-                perm_dict['source'] = 'role'
+                perm_dict["granted"] = True
+                perm_dict["source"] = "role"
                 permissions_map[key] = perm_dict
-    
+
     # Get user-specific overrides (higher priority)
     user_permissions = _rbac_repo.get_user_permissions(user_id)
     for perm in user_permissions:
         key = (perm.resource, perm.action)
         perm_dict = _permission_to_dict(perm)
-        perm_dict['granted'] = True
-        perm_dict['source'] = 'override'
+        perm_dict["granted"] = True
+        perm_dict["source"] = "override"
         permissions_map[key] = perm_dict
-    
+
     # Filter to only granted permissions and sort
-    granted_perms = [p for p in permissions_map.values() if p.get('granted', False)]
-    granted_perms.sort(key=lambda x: (x['resource'], x['action']))
-    
+    granted_perms = [p for p in permissions_map.values() if p.get("granted", False)]
+    granted_perms.sort(key=lambda x: (x["resource"], x["action"]))
+
     return granted_perms
 
 

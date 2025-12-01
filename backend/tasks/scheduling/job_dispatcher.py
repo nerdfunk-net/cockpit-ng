@@ -4,6 +4,7 @@ Orchestrates job execution based on job type.
 
 Moved from job_tasks.py to improve code organization.
 """
+
 from celery import shared_task
 import logging
 from typing import Dict, Any, Optional
@@ -11,7 +12,7 @@ from typing import Dict, Any, Optional
 logger = logging.getLogger(__name__)
 
 
-@shared_task(bind=True, name='tasks.dispatch_job')
+@shared_task(bind=True, name="tasks.dispatch_job")
 def dispatch_job(
     self,
     schedule_id: Optional[int] = None,
@@ -22,7 +23,7 @@ def dispatch_job(
     job_parameters: Optional[Dict[str, Any]] = None,
     triggered_by: str = "schedule",
     executed_by: Optional[str] = None,
-    target_devices: Optional[list] = None
+    target_devices: Optional[list] = None,
 ) -> Dict[str, Any]:
     """
     Task: Dispatch and execute a job based on its type.
@@ -55,7 +56,9 @@ def dispatch_job(
     job_run = None
 
     try:
-        logger.info(f"Dispatching job: {job_name} (type: {job_type}, triggered_by: {triggered_by})")
+        logger.info(
+            f"Dispatching job: {job_name} (type: {job_type}, triggered_by: {triggered_by})"
+        )
 
         # Get template details if needed
         if template_id and not target_devices:
@@ -67,14 +70,14 @@ def dispatch_job(
         # Create job run record
         job_run = job_run_manager.create_job_run(
             job_name=job_name,
-            job_type=job_type or 'unknown',
+            job_type=job_type or "unknown",
             triggered_by=triggered_by,
             job_schedule_id=schedule_id,
             job_template_id=template_id,
             target_devices=target_devices,
-            executed_by=executed_by
+            executed_by=executed_by,
         )
-        job_run_id = job_run['id']
+        job_run_id = job_run["id"]
 
         # Mark as started
         job_run_manager.mark_started(job_run_id, self.request.id)
@@ -86,17 +89,17 @@ def dispatch_job(
             credential_id=credential_id,
             job_parameters=job_parameters,
             target_devices=target_devices,
-            task_context=self
+            task_context=self,
         )
 
         # Mark as completed or failed based on result
         # Check for success: either explicit 'success: true' or 'status: completed'
-        is_success = result.get('success') or result.get('status') == 'completed'
+        is_success = result.get("success") or result.get("status") == "completed"
         if is_success:
             job_run_manager.mark_completed(job_run_id, result=result)
             logger.info(f"Job {job_name} completed successfully")
         else:
-            error_msg = result.get('error', result.get('message', 'Unknown error'))
+            error_msg = result.get("error", result.get("message", "Unknown error"))
             job_run_manager.mark_failed(job_run_id, error_msg)
             logger.warning(f"Job {job_name} failed: {error_msg}")
 
@@ -108,11 +111,11 @@ def dispatch_job(
 
         # Update job run if we created one
         if job_run:
-            job_run_manager.mark_failed(job_run['id'], error_msg)
+            job_run_manager.mark_failed(job_run["id"], error_msg)
 
         return {
-            'success': False,
-            'error': error_msg,
-            'job_name': job_name,
-            'job_type': job_type
+            "success": False,
+            "error": error_msg,
+            "job_name": job_name,
+            "job_type": job_type,
         }

@@ -8,6 +8,7 @@ Refactored in Phase 4 to use general-purpose error handling utilities.
 DEPRECATED: Import from core.error_handlers instead.
 This module is kept for backward compatibility only.
 """
+
 from core.error_handlers import handle_errors
 
 # Backward compatibility alias

@@ -2,13 +2,14 @@
 Celery task management API endpoints.
 All Celery-related endpoints are under /api/celery/*
 """
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from celery.result import AsyncResult
 from core.auth import require_permission
 from core.celery_error_handler import handle_celery_errors
 from celery_app import celery_app
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
 import logging
 import redis
 
@@ -89,9 +90,7 @@ async def submit_test_task(request: TestTaskRequest):
     task = test_tasks.test_task.delay(message=request.message)
 
     return TaskResponse(
-        task_id=task.id,
-        status='queued',
-        message=f"Test task submitted: {task.id}"
+        task_id=task.id, status="queued", message=f"Test task submitted: {task.id}"
     )
 
 
@@ -109,8 +108,8 @@ async def submit_progress_test_task(request: ProgressTaskRequest):
 
     return TaskResponse(
         task_id=task.id,
-        status='queued',
-        message=f"Progress test task submitted: {task.id}"
+        status="queued",
+        message=f"Progress test task submitted: {task.id}",
     )
 
 
@@ -118,7 +117,7 @@ async def submit_progress_test_task(request: ProgressTaskRequest):
 @handle_celery_errors("onboard device")
 async def trigger_onboard_device(
     request: OnboardDeviceRequest,
-    current_user: dict = Depends(require_permission("devices.onboard", "execute"))
+    current_user: dict = Depends(require_permission("devices.onboard", "execute")),
 ):
     """
     Onboard a device to Nautobot with tags and custom fields using Celery.
@@ -163,13 +162,13 @@ async def trigger_onboard_device(
         port=request.port,
         timeout=request.timeout,
         tags=request.tags,
-        custom_fields=request.custom_fields
+        custom_fields=request.custom_fields,
     )
 
     return TaskResponse(
         task_id=task.id,
-        status='queued',
-        message=f"Device onboarding task queued for {request.ip_address}: {task.id}"
+        status="queued",
+        message=f"Device onboarding task queued for {request.ip_address}: {task.id}",
     )
 
 
@@ -177,7 +176,7 @@ async def trigger_onboard_device(
 @handle_celery_errors("get task status")
 async def get_task_status(
     task_id: str,
-    current_user: dict = Depends(require_permission("settings.celery", "read"))
+    current_user: dict = Depends(require_permission("settings.celery", "read")),
 ):
     """
     Get the status and result of a Celery task.
@@ -186,33 +185,31 @@ async def get_task_status(
     """
     result = AsyncResult(task_id, app=celery_app)
 
-    response = TaskStatusResponse(
-        task_id=task_id,
-        status=result.state
-    )
+    response = TaskStatusResponse(task_id=task_id, status=result.state)
 
-    if result.state == 'PENDING':
-        response.progress = {'status': 'Task is queued and waiting to start'}
+    if result.state == "PENDING":
+        response.progress = {"status": "Task is queued and waiting to start"}
 
-    elif result.state == 'PROGRESS':
+    elif result.state == "PROGRESS":
         # Task is running and has sent progress updates
         response.progress = result.info
 
-    elif result.state == 'SUCCESS':
+    elif result.state == "SUCCESS":
         # Task completed successfully
         response.result = result.result
 
-    elif result.state == 'FAILURE':
+    elif result.state == "FAILURE":
         # Task failed
         response.error = str(result.info)
 
     return response
 
+
 @router.delete("/tasks/{task_id}")
 @handle_celery_errors("cancel task")
 async def cancel_task(
     task_id: str,
-    current_user: dict = Depends(require_permission("settings.celery", "write"))
+    current_user: dict = Depends(require_permission("settings.celery", "write")),
 ):
     """
     Cancel a running or queued task.
@@ -220,15 +217,13 @@ async def cancel_task(
     result = AsyncResult(task_id, app=celery_app)
     result.revoke(terminate=True)
 
-    return {
-        "success": True,
-        "message": f"Task {task_id} cancelled"
-    }
+    return {"success": True, "message": f"Task {task_id} cancelled"}
+
 
 @router.get("/workers")
 @handle_celery_errors("list workers")
 async def list_workers(
-    current_user: dict = Depends(require_permission("settings.celery", "read"))
+    current_user: dict = Depends(require_permission("settings.celery", "read")),
 ):
     """
     List active Celery workers and their status.
@@ -243,14 +238,15 @@ async def list_workers(
         "workers": {
             "active_tasks": active or {},
             "stats": stats or {},
-            "registered_tasks": registered or {}
-        }
+            "registered_tasks": registered or {},
+        },
     }
+
 
 @router.get("/schedules")
 @handle_celery_errors("list schedules")
 async def list_schedules(
-    current_user: dict = Depends(require_permission("settings.celery", "read"))
+    current_user: dict = Depends(require_permission("settings.celery", "read")),
 ):
     """
     List all periodic task schedules configured in Celery Beat.
@@ -260,22 +256,22 @@ async def list_schedules(
 
     schedules = []
     for name, config in beat_schedule.items():
-        schedules.append({
-            "name": name,
-            "task": config.get("task"),
-            "schedule": str(config.get("schedule")),
-            "options": config.get("options", {}),
-        })
+        schedules.append(
+            {
+                "name": name,
+                "task": config.get("task"),
+                "schedule": str(config.get("schedule")),
+                "options": config.get("options", {}),
+            }
+        )
 
-    return {
-        "success": True,
-        "schedules": schedules
-    }
+    return {"success": True, "schedules": schedules}
+
 
 @router.get("/beat/status")
 @handle_celery_errors("get beat status")
 async def beat_status(
-    current_user: dict = Depends(require_permission("settings.celery", "read"))
+    current_user: dict = Depends(require_permission("settings.celery", "read")),
 ):
     """
     Get Celery Beat scheduler status.
@@ -298,13 +294,14 @@ async def beat_status(
     return {
         "success": True,
         "beat_running": beat_running,
-        "message": "Beat is running" if beat_running else "Beat not detected"
+        "message": "Beat is running" if beat_running else "Beat not detected",
     }
+
 
 @router.get("/status")
 @handle_celery_errors("get celery status")
 async def celery_status(
-    current_user: dict = Depends(require_permission("settings.celery", "read"))
+    current_user: dict = Depends(require_permission("settings.celery", "read")),
 ):
     """
     Get overall Celery system status.
@@ -327,7 +324,7 @@ async def celery_status(
         r = redis.from_url(settings.redis_url)
         r.ping()
         redis_connected = True
-    except:
+    except Exception:
         redis_connected = False
 
     # Check Beat status
@@ -336,7 +333,7 @@ async def celery_status(
         # Check for the lock key that beat holds when running
         beat_lock_key = "cockpit-ng:beat::lock"
         beat_running = bool(r.exists(beat_lock_key))
-    except:
+    except Exception:
         beat_running = False
 
     return {
@@ -346,14 +343,14 @@ async def celery_status(
             "worker_count": worker_count,
             "active_tasks": task_count,
             "beat_running": beat_running,
-        }
+        },
     }
 
 
 @router.get("/config")
 @handle_celery_errors("get celery config")
 async def get_celery_config(
-    current_user: dict = Depends(require_permission("settings.celery", "read"))
+    current_user: dict = Depends(require_permission("settings.celery", "read")),
 ):
     """
     Get current Celery configuration (read-only).
@@ -378,7 +375,7 @@ async def get_celery_config(
                 "host": redis_host,
                 "port": redis_port,
                 "has_password": has_password,
-                "database": "0"
+                "database": "0",
             },
             # Worker Configuration
             "worker": {
@@ -405,14 +402,15 @@ async def get_celery_config(
             # General
             "timezone": conf.timezone,
             "enable_utc": conf.enable_utc,
-        }
+        },
     }
+
 
 # Background job task endpoints
 @router.post("/tasks/cache-devices", response_model=TaskResponse)
 @handle_celery_errors("trigger cache devices task")
 async def trigger_cache_devices(
-    current_user: dict = Depends(require_permission("settings.celery", "write"))
+    current_user: dict = Depends(require_permission("settings.celery", "write")),
 ):
     """
     Manually trigger the cache_all_devices background task.
@@ -425,14 +423,15 @@ async def trigger_cache_devices(
 
     return TaskResponse(
         task_id=task.id,
-        status='queued',
-        message=f"Device caching task queued: {task.id}"
+        status="queued",
+        message=f"Device caching task queued: {task.id}",
     )
+
 
 @router.post("/tasks/cache-locations", response_model=TaskResponse)
 @handle_celery_errors("trigger cache locations task")
 async def trigger_cache_locations(
-    current_user: dict = Depends(require_permission("settings.celery", "write"))
+    current_user: dict = Depends(require_permission("settings.celery", "write")),
 ):
     """
     Manually trigger the cache_all_locations background task.
@@ -445,16 +444,17 @@ async def trigger_cache_locations(
 
     return TaskResponse(
         task_id=task.id,
-        status='queued',
-        message=f"Location caching task queued: {task.id}"
+        status="queued",
+        message=f"Location caching task queued: {task.id}",
     )
+
 
 # CheckMK device management task endpoints
 @router.post("/tasks/add-device-to-checkmk", response_model=TaskResponse)
 @handle_celery_errors("add device to CheckMK")
 async def trigger_add_device_to_checkmk(
     device_id: str,
-    current_user: dict = Depends(require_permission("checkmk.devices", "write"))
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """
     Manually trigger the add_device_to_checkmk background task.
@@ -470,15 +470,16 @@ async def trigger_add_device_to_checkmk(
 
     return TaskResponse(
         task_id=task.id,
-        status='queued',
-        message=f"Add device task queued for device {device_id}: {task.id}"
+        status="queued",
+        message=f"Add device task queued for device {device_id}: {task.id}",
     )
+
 
 @router.post("/tasks/update-device-in-checkmk", response_model=TaskResponse)
 @handle_celery_errors("update device in CheckMK")
 async def trigger_update_device_in_checkmk(
     device_id: str,
-    current_user: dict = Depends(require_permission("checkmk.devices", "write"))
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """
     Manually trigger the update_device_in_checkmk background task.
@@ -487,22 +488,25 @@ async def trigger_update_device_in_checkmk(
     Query Parameters:
         device_id: Nautobot device ID to update in CheckMK
     """
-    from services.background_jobs.checkmk_device_jobs import update_device_in_checkmk_task
+    from services.background_jobs.checkmk_device_jobs import (
+        update_device_in_checkmk_task,
+    )
 
     # Trigger the task asynchronously
     task = update_device_in_checkmk_task.delay(device_id)
 
     return TaskResponse(
         task_id=task.id,
-        status='queued',
-        message=f"Update device task queued for device {device_id}: {task.id}"
+        status="queued",
+        message=f"Update device task queued for device {device_id}: {task.id}",
     )
+
 
 @router.post("/tasks/sync-devices-to-checkmk", response_model=TaskResponse)
 @handle_celery_errors("sync devices to CheckMK")
 async def trigger_sync_devices_to_checkmk(
     device_ids: list[str],
-    current_user: dict = Depends(require_permission("checkmk.devices", "write"))
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """
     Manually trigger the sync_devices_to_checkmk background task.
@@ -511,12 +515,14 @@ async def trigger_sync_devices_to_checkmk(
     Request Body:
         device_ids: List of Nautobot device IDs to sync
     """
-    from services.background_jobs.checkmk_device_jobs import sync_devices_to_checkmk_task
+    from services.background_jobs.checkmk_device_jobs import (
+        sync_devices_to_checkmk_task,
+    )
 
     if not device_ids:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="device_ids list cannot be empty"
+            detail="device_ids list cannot be empty",
         )
 
     # Trigger the task asynchronously
@@ -524,15 +530,16 @@ async def trigger_sync_devices_to_checkmk(
 
     return TaskResponse(
         task_id=task.id,
-        status='queued',
-        message=f"Sync devices task queued for {len(device_ids)} devices: {task.id}"
+        status="queued",
+        message=f"Sync devices task queued for {len(device_ids)} devices: {task.id}",
     )
+
 
 @router.post("/tasks/compare-nautobot-and-checkmk", response_model=TaskResponse)
 @handle_celery_errors("compare Nautobot and CheckMK")
 async def trigger_compare_nautobot_and_checkmk(
     device_ids: list[str] = None,
-    current_user: dict = Depends(require_permission("jobs", "read"))
+    current_user: dict = Depends(require_permission("jobs", "read")),
 ):
     """
     Compare all devices (or specified devices) between Nautobot and CheckMK.
@@ -546,7 +553,9 @@ async def trigger_compare_nautobot_and_checkmk(
     Returns:
         TaskResponse with task_id for tracking progress
     """
-    from services.background_jobs.checkmk_device_jobs import compare_nautobot_and_checkmk_task
+    from services.background_jobs.checkmk_device_jobs import (
+        compare_nautobot_and_checkmk_task,
+    )
 
     # Trigger the task asynchronously
     # If device_ids is None or empty list, the task will fetch all devices
@@ -556,8 +565,8 @@ async def trigger_compare_nautobot_and_checkmk(
 
     return TaskResponse(
         task_id=task.id,
-        status='queued',
-        message=f"Device comparison task queued for {device_count_msg}: {task.id}"
+        status="queued",
+        message=f"Device comparison task queued for {device_count_msg}: {task.id}",
     )
 
 
@@ -572,7 +581,7 @@ class BackupDevicesRequest(BaseModel):
 @handle_celery_errors("backup devices")
 async def trigger_backup_devices(
     request: BackupDevicesRequest,
-    current_user: dict = Depends(require_permission("jobs", "write"))
+    current_user: dict = Depends(require_permission("jobs", "write")),
 ):
     """
     Backup device configurations to Git repository.
@@ -598,32 +607,33 @@ async def trigger_backup_devices(
     if not request.inventory:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="inventory list cannot be empty"
+            detail="inventory list cannot be empty",
         )
 
     if not request.config_repository_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="config_repository_id is required"
+            detail="config_repository_id is required",
         )
 
     # Trigger the task asynchronously
     task = backup_devices_task.delay(
         inventory=request.inventory,
         config_repository_id=request.config_repository_id,
-        credential_id=request.credential_id
+        credential_id=request.credential_id,
     )
 
     return TaskResponse(
         task_id=task.id,
-        status='queued',
-        message=f"Backup task queued for {len(request.inventory)} devices: {task.id}"
+        status="queued",
+        message=f"Backup task queued for {len(request.inventory)} devices: {task.id}",
     )
 
 
 # ============================================================================
 # Celery Settings Endpoints
 # ============================================================================
+
 
 class CelerySettingsRequest(BaseModel):
     max_workers: Optional[int] = None
@@ -636,100 +646,95 @@ class CelerySettingsRequest(BaseModel):
 @router.get("/settings")
 @handle_celery_errors("get celery settings")
 async def get_celery_settings(
-    current_user: dict = Depends(require_permission("settings.celery", "read"))
+    current_user: dict = Depends(require_permission("settings.celery", "read")),
 ):
     """
     Get current Celery settings from database.
     """
     from settings_manager import settings_manager
-    
+
     celery_settings = settings_manager.get_celery_settings()
-    
-    return {
-        "success": True,
-        "settings": celery_settings
-    }
+
+    return {"success": True, "settings": celery_settings}
 
 
 @router.put("/settings")
 @handle_celery_errors("update celery settings")
 async def update_celery_settings(
     request: CelerySettingsRequest,
-    current_user: dict = Depends(require_permission("settings.celery", "write"))
+    current_user: dict = Depends(require_permission("settings.celery", "write")),
 ):
     """
     Update Celery settings.
-    
+
     Note: max_workers changes require restarting the Celery worker to take effect.
     """
     from settings_manager import settings_manager
-    
+
     # Get current settings and merge with updates
     current = settings_manager.get_celery_settings()
     updates = request.model_dump(exclude_unset=True)
     merged = {**current, **updates}
-    
+
     success = settings_manager.update_celery_settings(merged)
-    
+
     if not success:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update Celery settings"
+            detail="Failed to update Celery settings",
         )
-    
+
     # Get updated settings
     updated = settings_manager.get_celery_settings()
-    
+
     return {
         "success": True,
         "settings": updated,
-        "message": "Celery settings updated. Worker restart required for max_workers changes."
+        "message": "Celery settings updated. Worker restart required for max_workers changes.",
     }
 
 
 @router.post("/cleanup", response_model=TaskResponse)
 @handle_celery_errors("trigger cleanup task")
 async def trigger_cleanup(
-    current_user: dict = Depends(require_permission("settings.celery", "write"))
+    current_user: dict = Depends(require_permission("settings.celery", "write")),
 ):
     """
     Manually trigger the Celery cleanup task.
-    
+
     This removes old task results and logs based on the configured cleanup_age_hours.
     """
     from tasks.periodic_tasks import cleanup_celery_data_task
-    
+
     task = cleanup_celery_data_task.delay()
-    
+
     return TaskResponse(
-        task_id=task.id,
-        status='queued',
-        message=f"Cleanup task triggered: {task.id}"
+        task_id=task.id, status="queued", message=f"Cleanup task triggered: {task.id}"
     )
 
 
 @router.get("/cleanup/stats")
 @handle_celery_errors("get cleanup stats")
 async def get_cleanup_stats(
-    current_user: dict = Depends(require_permission("settings.celery", "read"))
+    current_user: dict = Depends(require_permission("settings.celery", "read")),
 ):
     """
     Get statistics about data that would be cleaned up.
     """
     from settings_manager import settings_manager
     from datetime import datetime, timezone, timedelta
-    
+
     celery_settings = settings_manager.get_celery_settings()
-    cleanup_age_hours = celery_settings.get('cleanup_age_hours', 24)
+    cleanup_age_hours = celery_settings.get("cleanup_age_hours", 24)
     cutoff_time = datetime.now(timezone.utc) - timedelta(hours=cleanup_age_hours)
-    
+
     # Count old task results in Redis
     r = redis.from_url(settings.redis_url)
-    
+
     # Count celery task result keys
     result_keys = list(r.scan_iter("celery-task-meta-*"))
     old_results = 0
-    
+
     for key in result_keys:
         try:
             # Try to get the result and check its timestamp
@@ -737,22 +742,22 @@ async def get_cleanup_stats(
             old_results += 1  # Count all for now
         except Exception:
             pass
-    
+
     return {
         "success": True,
         "stats": {
             "cleanup_age_hours": cleanup_age_hours,
             "cutoff_time": cutoff_time.isoformat(),
             "total_result_keys": len(result_keys),
-            "message": f"Cleanup will remove task results older than {cleanup_age_hours} hours"
-        }
+            "message": f"Cleanup will remove task results older than {cleanup_age_hours} hours",
+        },
     }
 
 
 @router.get("/device-backup-status", response_model=BackupCheckResponse)
 async def check_device_backups(
     force_refresh: bool = False,
-    current_user: dict = Depends(require_permission("jobs", "read"))
+    current_user: dict = Depends(require_permission("jobs", "read")),
 ):
     """
     Analyze device-level backup status with caching.
@@ -777,8 +782,6 @@ async def check_device_backups(
     import json
     from core.database import get_db_session
     from sqlalchemy import text
-    from collections import defaultdict
-    from datetime import datetime, timedelta
 
     CACHE_KEY = "backup_check_devices"
     CACHE_DURATION_SECONDS = 300  # 5 minutes
@@ -798,7 +801,8 @@ async def check_device_backups(
 
     try:
         # Get all backup job results
-        backup_jobs = session.execute(text("""
+        backup_jobs = session.execute(
+            text("""
             SELECT
                 result,
                 completed_at,
@@ -807,7 +811,8 @@ async def check_device_backups(
             WHERE job_type = 'backup'
                 AND status IN ('completed', 'failed')
             ORDER BY completed_at DESC
-        """)).fetchall()
+        """)
+        ).fetchall()
 
         # Track device backup status
         device_status = {}  # device_id -> DeviceBackupStatus data
@@ -815,7 +820,7 @@ async def check_device_backups(
         for row in backup_jobs:
             result_json = row[0]
             completed_at = row[1]
-            job_status = row[2]
+            row[2]
 
             if not result_json:
                 continue
@@ -824,55 +829,69 @@ async def check_device_backups(
                 result = json.loads(result_json)
 
                 # Process successful backups
-                backed_up_devices = result.get('backed_up_devices', [])
+                backed_up_devices = result.get("backed_up_devices", [])
                 for device in backed_up_devices:
-                    device_id = device.get('device_id')
-                    device_name = device.get('device_name', device_id)
+                    device_id = device.get("device_id")
+                    device_name = device.get("device_name", device_id)
 
                     if device_id not in device_status:
                         device_status[device_id] = {
-                            'device_id': device_id,
-                            'device_name': device_name,
-                            'last_backup_success': True,
-                            'last_backup_time': completed_at.isoformat() if completed_at else None,
-                            'total_successful_backups': 1,
-                            'total_failed_backups': 0,
-                            'last_error': None
+                            "device_id": device_id,
+                            "device_name": device_name,
+                            "last_backup_success": True,
+                            "last_backup_time": completed_at.isoformat()
+                            if completed_at
+                            else None,
+                            "total_successful_backups": 1,
+                            "total_failed_backups": 0,
+                            "last_error": None,
                         }
                     else:
                         # Only update if this is more recent than what we have
-                        if not device_status[device_id].get('last_backup_time') or \
-                           (completed_at and completed_at.isoformat() > device_status[device_id]['last_backup_time']):
-                            device_status[device_id]['last_backup_success'] = True
-                            device_status[device_id]['last_backup_time'] = completed_at.isoformat() if completed_at else None
-                            device_status[device_id]['last_error'] = None
-                        device_status[device_id]['total_successful_backups'] += 1
+                        if not device_status[device_id].get("last_backup_time") or (
+                            completed_at
+                            and completed_at.isoformat()
+                            > device_status[device_id]["last_backup_time"]
+                        ):
+                            device_status[device_id]["last_backup_success"] = True
+                            device_status[device_id]["last_backup_time"] = (
+                                completed_at.isoformat() if completed_at else None
+                            )
+                            device_status[device_id]["last_error"] = None
+                        device_status[device_id]["total_successful_backups"] += 1
 
                 # Process failed backups
-                failed_devices = result.get('failed_devices', [])
+                failed_devices = result.get("failed_devices", [])
                 for device in failed_devices:
-                    device_id = device.get('device_id')
-                    device_name = device.get('device_name', device_id)
-                    error = device.get('error', 'Unknown error')
+                    device_id = device.get("device_id")
+                    device_name = device.get("device_name", device_id)
+                    error = device.get("error", "Unknown error")
 
                     if device_id not in device_status:
                         device_status[device_id] = {
-                            'device_id': device_id,
-                            'device_name': device_name,
-                            'last_backup_success': False,
-                            'last_backup_time': completed_at.isoformat() if completed_at else None,
-                            'total_successful_backups': 0,
-                            'total_failed_backups': 1,
-                            'last_error': error
+                            "device_id": device_id,
+                            "device_name": device_name,
+                            "last_backup_success": False,
+                            "last_backup_time": completed_at.isoformat()
+                            if completed_at
+                            else None,
+                            "total_successful_backups": 0,
+                            "total_failed_backups": 1,
+                            "last_error": error,
                         }
                     else:
                         # Only update if this is more recent than what we have
-                        if not device_status[device_id].get('last_backup_time') or \
-                           (completed_at and completed_at.isoformat() > device_status[device_id]['last_backup_time']):
-                            device_status[device_id]['last_backup_success'] = False
-                            device_status[device_id]['last_backup_time'] = completed_at.isoformat() if completed_at else None
-                            device_status[device_id]['last_error'] = error
-                        device_status[device_id]['total_failed_backups'] += 1
+                        if not device_status[device_id].get("last_backup_time") or (
+                            completed_at
+                            and completed_at.isoformat()
+                            > device_status[device_id]["last_backup_time"]
+                        ):
+                            device_status[device_id]["last_backup_success"] = False
+                            device_status[device_id]["last_backup_time"] = (
+                                completed_at.isoformat() if completed_at else None
+                            )
+                            device_status[device_id]["last_error"] = error
+                        device_status[device_id]["total_failed_backups"] += 1
 
             except (json.JSONDecodeError, KeyError, AttributeError) as e:
                 logger.warning(f"Failed to parse backup job result: {e}")
@@ -880,22 +899,26 @@ async def check_device_backups(
 
         # Calculate summary statistics
         devices_list = list(device_status.values())
-        devices_with_success = sum(1 for d in devices_list if d['last_backup_success'])
-        devices_with_failure = sum(1 for d in devices_list if not d['last_backup_success'])
+        devices_with_success = sum(1 for d in devices_list if d["last_backup_success"])
+        devices_with_failure = sum(
+            1 for d in devices_list if not d["last_backup_success"]
+        )
 
         response = BackupCheckResponse(
             total_devices=len(devices_list),
             devices_with_successful_backup=devices_with_success,
             devices_with_failed_backup=devices_with_failure,
             devices_never_backed_up=0,  # Would need Nautobot integration to calculate this
-            devices=devices_list
+            devices=devices_list,
         )
 
         # Cache the result
         try:
             r = redis.Redis.from_url(settings.redis_url, decode_responses=True)
             r.setex(CACHE_KEY, CACHE_DURATION_SECONDS, response.model_dump_json())
-            logger.info(f"Cached device backup status for {CACHE_DURATION_SECONDS} seconds")
+            logger.info(
+                f"Cached device backup status for {CACHE_DURATION_SECONDS} seconds"
+            )
         except Exception as e:
             logger.warning(f"Failed to cache device backup status: {e}")
 

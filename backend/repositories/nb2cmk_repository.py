@@ -23,7 +23,7 @@ class NB2CMKJobRepository(BaseRepository[NB2CMKJob]):
             return db.query(self.model).filter(self.model.job_id == job_id).first()
         finally:
             db.close()
-    
+
     def update(self, job_id: str, **kwargs) -> Optional[NB2CMKJob]:
         """Update job by job_id."""
         db = get_db_session()
@@ -39,7 +39,7 @@ class NB2CMKJobRepository(BaseRepository[NB2CMKJob]):
             return None
         finally:
             db.close()
-    
+
     def delete(self, job_id: str) -> bool:
         """Delete job by job_id (overrides base to use job_id instead of id)."""
         db = get_db_session()
@@ -57,7 +57,12 @@ class NB2CMKJobRepository(BaseRepository[NB2CMKJob]):
         """Get recent jobs ordered by created_at descending."""
         db = get_db_session()
         try:
-            return db.query(self.model).order_by(desc(self.model.created_at)).limit(limit).all()
+            return (
+                db.query(self.model)
+                .order_by(desc(self.model.created_at))
+                .limit(limit)
+                .all()
+            )
         finally:
             db.close()
 
@@ -67,7 +72,7 @@ class NB2CMKJobRepository(BaseRepository[NB2CMKJob]):
         try:
             return (
                 db.query(self.model)
-                .filter(self.model.status.in_(['pending', 'running']))
+                .filter(self.model.status.in_(["pending", "running"]))
                 .order_by(desc(self.model.created_at))
                 .first()
             )
@@ -79,7 +84,9 @@ class NB2CMKJobRepository(BaseRepository[NB2CMKJob]):
         cutoff_date = datetime.now() - timedelta(days=days)
         db = get_db_session()
         try:
-            return db.query(self.model).filter(self.model.created_at < cutoff_date).all()
+            return (
+                db.query(self.model).filter(self.model.created_at < cutoff_date).all()
+            )
         finally:
             db.close()
 

@@ -155,7 +155,7 @@ class NautobotToCheckMKService:
                   }
                 }
                 """
-            
+
             variables = {"deviceId": device_id}
             result = await nautobot_service.graphql_query(query, variables)
 

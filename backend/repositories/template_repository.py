@@ -3,7 +3,7 @@ Template Repository - handles database operations for templates.
 """
 
 from typing import List, Optional
-from sqlalchemy import select, func, or_, and_
+from sqlalchemy import func, or_, and_
 from core.models import Template, TemplateVersion
 from core.database import get_db_session
 from .base import BaseRepository
@@ -24,7 +24,7 @@ class TemplateRepository(BaseRepository[Template]):
         try:
             query = session.query(Template).filter(Template.name == name)
             if active_only:
-                query = query.filter(Template.is_active == True)
+                query = query.filter(Template.is_active)
             return query.first()
         finally:
             session.close()
@@ -48,19 +48,21 @@ class TemplateRepository(BaseRepository[Template]):
 
             # Active filter
             if active_only:
-                query = query.filter(Template.is_active == True)
+                query = query.filter(Template.is_active)
 
             # Scope and ownership filter
             if username:
                 query = query.filter(
                     or_(
-                        Template.scope == 'global',
-                        and_(Template.scope == 'private', Template.created_by == username)
+                        Template.scope == "global",
+                        and_(
+                            Template.scope == "private", Template.created_by == username
+                        ),
                     )
                 )
             else:
                 # No username provided, only show global templates
-                query = query.filter(Template.scope == 'global')
+                query = query.filter(Template.scope == "global")
 
             # Category filter
             if category:
@@ -90,19 +92,21 @@ class TemplateRepository(BaseRepository[Template]):
         session = get_db_session()
         try:
             search_pattern = f"%{query_text}%"
-            
-            query = session.query(Template).filter(Template.is_active == True)
-            
+
+            query = session.query(Template).filter(Template.is_active)
+
             # Scope and ownership
             if username:
                 query = query.filter(
                     or_(
-                        Template.scope == 'global',
-                        and_(Template.scope == 'private', Template.created_by == username)
+                        Template.scope == "global",
+                        and_(
+                            Template.scope == "private", Template.created_by == username
+                        ),
                     )
                 )
             else:
-                query = query.filter(Template.scope == 'global')
+                query = query.filter(Template.scope == "global")
 
             # Search conditions
             search_conditions = [
@@ -110,12 +114,12 @@ class TemplateRepository(BaseRepository[Template]):
                 Template.description.ilike(search_pattern),
                 Template.category.ilike(search_pattern),
             ]
-            
+
             if search_content:
                 search_conditions.append(Template.content.ilike(search_pattern))
 
             query = query.filter(or_(*search_conditions)).order_by(Template.name)
-            
+
             return query.all()
         finally:
             session.close()
@@ -124,13 +128,19 @@ class TemplateRepository(BaseRepository[Template]):
         """Get all unique template categories (active templates only)."""
         session = get_db_session()
         try:
-            result = session.query(Template.category).filter(
-                and_(
-                    Template.is_active == True,
-                    Template.category.isnot(None),
-                    Template.category != ''
+            result = (
+                session.query(Template.category)
+                .filter(
+                    and_(
+                        Template.is_active,
+                        Template.category.isnot(None),
+                        Template.category != "",
+                    )
                 )
-            ).distinct().order_by(Template.category).all()
+                .distinct()
+                .order_by(Template.category)
+                .all()
+            )
             return [row[0] for row in result]
         finally:
             session.close()
@@ -139,7 +149,11 @@ class TemplateRepository(BaseRepository[Template]):
         """Count active templates."""
         session = get_db_session()
         try:
-            return session.query(func.count(Template.id)).filter(Template.is_active == True).scalar()
+            return (
+                session.query(func.count(Template.id))
+                .filter(Template.is_active)
+                .scalar()
+            )
         finally:
             session.close()
 
@@ -155,9 +169,11 @@ class TemplateRepository(BaseRepository[Template]):
         """Count distinct categories."""
         session = get_db_session()
         try:
-            return session.query(func.count(func.distinct(Template.category))).filter(
-                Template.category.isnot(None)
-            ).scalar()
+            return (
+                session.query(func.count(func.distinct(Template.category)))
+                .filter(Template.category.isnot(None))
+                .scalar()
+            )
         finally:
             session.close()
 
@@ -172,9 +188,12 @@ class TemplateVersionRepository(BaseRepository[TemplateVersion]):
         """Get all versions for a template, ordered by version number descending."""
         session = get_db_session()
         try:
-            return session.query(TemplateVersion).filter(
-                TemplateVersion.template_id == template_id
-            ).order_by(TemplateVersion.version_number.desc()).all()
+            return (
+                session.query(TemplateVersion)
+                .filter(TemplateVersion.template_id == template_id)
+                .order_by(TemplateVersion.version_number.desc())
+                .all()
+            )
         finally:
             session.close()
 
@@ -182,10 +201,11 @@ class TemplateVersionRepository(BaseRepository[TemplateVersion]):
         """Get the maximum version number for a template."""
         session = get_db_session()
         try:
-            max_version = session.query(func.max(TemplateVersion.version_number)).filter(
-                TemplateVersion.template_id == template_id
-            ).scalar()
+            max_version = (
+                session.query(func.max(TemplateVersion.version_number))
+                .filter(TemplateVersion.template_id == template_id)
+                .scalar()
+            )
             return max_version or 0
         finally:
             session.close()
-
