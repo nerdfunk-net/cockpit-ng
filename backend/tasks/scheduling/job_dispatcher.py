@@ -54,6 +54,7 @@ def dispatch_job(
     from tasks.execution.base_executor import execute_job_type
 
     job_run = None
+    template = None
 
     try:
         logger.info(
@@ -61,11 +62,17 @@ def dispatch_job(
         )
 
         # Get template details if needed
-        if template_id and not target_devices:
+        if template_id:
             template = job_template_manager.get_job_template(template_id)
+            logger.info(f"[DISPATCH] Template ID {template_id} loaded: {template is not None}")
             if template:
-                # Get target devices based on inventory_source
-                target_devices = get_target_devices(template, job_parameters)
+                logger.info(f"[DISPATCH] Template name: {template.get('name')}")
+                logger.info(f"[DISPATCH] Template activate_changes_after_sync: {template.get('activate_changes_after_sync')}")
+                if not target_devices:
+                    # Get target devices based on inventory_source
+                    target_devices = get_target_devices(template, job_parameters)
+        else:
+            logger.info(f"[DISPATCH] No template_id provided")
 
         # Create job run record
         job_run = job_run_manager.create_job_run(
@@ -90,6 +97,7 @@ def dispatch_job(
             job_parameters=job_parameters,
             target_devices=target_devices,
             task_context=self,
+            template=template,
         )
 
         # Mark as completed or failed based on result

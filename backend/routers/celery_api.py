@@ -46,6 +46,11 @@ class OnboardDeviceRequest(BaseModel):
     custom_fields: Optional[Dict[str, str]] = None
 
 
+class SyncDevicesToCheckmkRequest(BaseModel):
+    device_ids: List[str]
+    activate_changes_after_sync: bool = True
+
+
 class TaskResponse(BaseModel):
     task_id: str
     status: str
@@ -511,7 +516,7 @@ async def trigger_update_device_in_checkmk(
 @router.post("/tasks/sync-devices-to-checkmk", response_model=TaskResponse)
 @handle_celery_errors("sync devices to CheckMK")
 async def trigger_sync_devices_to_checkmk(
-    device_ids: list[str],
+    request: SyncDevicesToCheckmkRequest,
     current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
     """
@@ -520,24 +525,27 @@ async def trigger_sync_devices_to_checkmk(
 
     Request Body:
         device_ids: List of Nautobot device IDs to sync
+        activate_changes_after_sync: Whether to activate CheckMK changes after sync completes (default: True)
     """
     from services.background_jobs.checkmk_device_jobs import (
         sync_devices_to_checkmk_task,
     )
 
-    if not device_ids:
+    if not request.device_ids:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="device_ids list cannot be empty",
         )
 
-    # Trigger the task asynchronously
-    task = sync_devices_to_checkmk_task.delay(device_ids)
+    # Trigger the task asynchronously with activate_changes_after_sync parameter
+    task = sync_devices_to_checkmk_task.delay(
+        request.device_ids, request.activate_changes_after_sync
+    )
 
     return TaskResponse(
         task_id=task.id,
         status="queued",
-        message=f"Sync devices task queued for {len(device_ids)} devices: {task.id}",
+        message=f"Sync devices task queued for {len(request.device_ids)} devices: {task.id}",
     )
 
 

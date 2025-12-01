@@ -21,7 +21,8 @@ import {
   Terminal,
   Loader2,
   HardDrive,
-  FolderGit2
+  FolderGit2,
+  RefreshCw
 } from "lucide-react"
 import { useAuthStore } from "@/lib/auth-store"
 import { useToast } from "@/hooks/use-toast"
@@ -38,6 +39,7 @@ interface JobTemplate {
   command_template_name?: string
   backup_running_config_path?: string
   backup_startup_config_path?: string
+  activate_changes_after_sync?: boolean
   is_global: boolean
   user_id?: number
   created_by?: string
@@ -104,6 +106,7 @@ export function JobTemplatesPage() {
   const [formCommandTemplate, setFormCommandTemplate] = useState("")
   const [formBackupRunningConfigPath, setFormBackupRunningConfigPath] = useState("")
   const [formBackupStartupConfigPath, setFormBackupStartupConfigPath] = useState("")
+  const [formActivateChangesAfterSync, setFormActivateChangesAfterSync] = useState(true)
   const [formIsGlobal, setFormIsGlobal] = useState(false)
 
   // Get job type label
@@ -288,17 +291,13 @@ export function JobTemplatesPage() {
     setFormCommandTemplate("")
     setFormBackupRunningConfigPath("")
     setFormBackupStartupConfigPath("")
+    setFormActivateChangesAfterSync(true)
     setFormIsGlobal(false)
     setEditingTemplate(null)
     setSavedInventories([])
   }, [])
 
   const handleEditTemplate = useCallback((template: JobTemplate) => {
-    console.log("Editing template:", template)
-    console.log("Backup paths:", {
-      running: template.backup_running_config_path,
-      startup: template.backup_startup_config_path
-    })
     setEditingTemplate(template)
     setFormName(template.name)
     setFormJobType(template.job_type)
@@ -310,6 +309,7 @@ export function JobTemplatesPage() {
     setFormCommandTemplate(template.command_template_name || "")
     setFormBackupRunningConfigPath(template.backup_running_config_path || "")
     setFormBackupStartupConfigPath(template.backup_startup_config_path || "")
+    setFormActivateChangesAfterSync(template.activate_changes_after_sync ?? true)
     setFormIsGlobal(template.is_global)
     setIsDialogOpen(true)
   }, [])
@@ -374,6 +374,7 @@ export function JobTemplatesPage() {
         command_template_name: formJobType === "run_commands" ? formCommandTemplate : undefined,
         backup_running_config_path: formJobType === "backup" ? formBackupRunningConfigPath : undefined,
         backup_startup_config_path: formJobType === "backup" ? formBackupStartupConfigPath : undefined,
+        activate_changes_after_sync: formJobType === "sync_devices" ? formActivateChangesAfterSync : undefined,
         is_global: formIsGlobal
       }
 
@@ -440,7 +441,7 @@ export function JobTemplatesPage() {
         variant: "destructive"
       })
     }
-  }, [token, formName, formJobType, formDescription, formConfigRepoId, formInventorySource, formInventoryRepoId, formInventoryName, formCommandTemplate, formBackupRunningConfigPath, formBackupStartupConfigPath, formIsGlobal, editingTemplate, resetForm, fetchTemplates, toast])
+  }, [token, formName, formJobType, formDescription, formConfigRepoId, formInventorySource, formInventoryRepoId, formInventoryName, formCommandTemplate, formBackupRunningConfigPath, formBackupStartupConfigPath, formActivateChangesAfterSync, formIsGlobal, editingTemplate, resetForm, fetchTemplates, toast])
 
   const handleDeleteTemplate = useCallback(async (templateId: number) => {
     if (!token) return
@@ -822,6 +823,30 @@ export function JobTemplatesPage() {
                       />
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Sync Devices Options Section (only for sync_devices) */}
+              {formJobType === "sync_devices" && (
+                <div className="rounded-lg border border-orange-200 bg-orange-50/30 p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4 text-orange-600" />
+                    <Label className="text-sm font-semibold text-orange-900">Sync Options</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    <Switch
+                      id="activate-changes"
+                      checked={formActivateChangesAfterSync}
+                      onCheckedChange={setFormActivateChangesAfterSync}
+                    />
+                    <Label htmlFor="activate-changes" className="text-sm text-orange-900 cursor-pointer">
+                      Activate all changes after Sync
+                    </Label>
+                  </div>
+                  <p className="text-xs text-orange-700">
+                    When enabled, CheckMK configuration changes will be automatically activated after the sync job completes successfully.
+                  </p>
                 </div>
               )}
             </div>

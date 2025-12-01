@@ -111,12 +111,47 @@ interface BackupJobResult {
   [key: string]: unknown
 }
 
+// Sync job result types
+interface SyncJobActivation {
+  success: boolean
+  message?: string
+  error?: string
+  data?: Record<string, unknown>
+}
+
+interface SyncJobResult {
+  success: boolean
+  message: string
+  total: number
+  success_count: number
+  failed_count: number
+  results: Array<{
+    device_id: string
+    hostname?: string
+    operation: string
+    success: boolean
+    message?: string
+    error?: string
+  }>
+  activation?: SyncJobActivation | null
+  // Index signature for compatibility with Record<string, unknown>
+  [key: string]: unknown
+}
+
 // Helper to check if result is a backup job result
 function isBackupJobResult(result: Record<string, unknown>): result is BackupJobResult {
   return (
     'backed_up_devices' in result || 
     'failed_devices' in result ||
     ('devices_backed_up' in result && 'devices_failed' in result)
+  )
+}
+
+// Helper to check if result is a sync job result (has activation field or is sync_devices type)
+function isSyncJobResult(result: Record<string, unknown>): result is SyncJobResult {
+  return (
+    'activation' in result ||
+    ('success_count' in result && 'results' in result && Array.isArray(result.results))
   )
 }
 
@@ -819,6 +854,53 @@ export function JobsViewPage() {
               {result.message && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <p className="text-sm text-blue-800">{String(result.message)}</p>
+                </div>
+              )}
+
+              {/* Sync Job - CheckMK Activation Status */}
+              {isSyncJobResult(result) && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4" />
+                    CheckMK Activation Status
+                  </h4>
+                  {result.activation === null || result.activation === undefined ? (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3">
+                      <div className="flex-shrink-0">
+                        <AlertCircle className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Activation Disabled</p>
+                        <p className="text-xs text-gray-500">
+                          CheckMK changes were not activated (activate_changes_after_sync is disabled)
+                        </p>
+                      </div>
+                    </div>
+                  ) : result.activation.success ? (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-3">
+                      <div className="flex-shrink-0">
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-green-700">Activation Successful</p>
+                        <p className="text-xs text-green-600">
+                          {result.activation.message || 'CheckMK changes were activated successfully'}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-3">
+                      <div className="flex-shrink-0">
+                        <XCircleIcon className="h-5 w-5 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-red-700">Activation Failed</p>
+                        <p className="text-xs text-red-600">
+                          {result.activation.error || result.activation.message || 'Failed to activate CheckMK changes'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

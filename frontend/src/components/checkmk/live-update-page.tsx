@@ -638,7 +638,10 @@ export default function LiveUpdatePage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify([device.id])
+        body: JSON.stringify({
+          device_ids: [device.id],
+          activate_changes_after_sync: true
+        })
       })
 
       if (response?.task_id) {
@@ -753,7 +756,10 @@ export default function LiveUpdatePage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(selectedDeviceList)
+        body: JSON.stringify({
+          device_ids: selectedDeviceList,
+          activate_changes_after_sync: true
+        })
       })
 
       if (response?.task_id) {

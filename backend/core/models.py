@@ -384,6 +384,9 @@ class JobTemplate(Base):
     backup_startup_config_path = Column(
         String(500)
     )  # Path template for startup config backups (supports Nautobot variables)
+    activate_changes_after_sync = Column(
+        Boolean, nullable=False, default=True
+    )  # Whether to activate CheckMK changes after sync_devices job completes
     is_global = Column(Boolean, nullable=False, default=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     created_by = Column(String(255))  # Username of creator

@@ -167,6 +167,7 @@ def migrate_job_templates_table():
 
     columns_to_add = [
         ("config_repository_id", "INTEGER"),
+        ("activate_changes_after_sync", "BOOLEAN DEFAULT TRUE NOT NULL"),
     ]
 
     try:

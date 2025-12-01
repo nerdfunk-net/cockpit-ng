@@ -53,6 +53,10 @@ class JobTemplateBase(BaseModel):
         max_length=500,
         description="Path template for startup config backups (supports Nautobot variables like {device_name}, {location.name})",
     )
+    activate_changes_after_sync: bool = Field(
+        True,
+        description="Whether to activate CheckMK changes after sync_devices job completes (only applies to sync_devices type)",
+    )
     is_global: bool = Field(
         False,
         description="Whether this template is global (available to all users) or private",
@@ -77,6 +81,7 @@ class JobTemplateUpdate(BaseModel):
     command_template_name: Optional[str] = None
     backup_running_config_path: Optional[str] = Field(None, max_length=500)
     backup_startup_config_path: Optional[str] = Field(None, max_length=500)
+    activate_changes_after_sync: Optional[bool] = None
     is_global: Optional[bool] = None
 
 

@@ -18,6 +18,7 @@ def execute_job_type(
     job_parameters: Optional[dict],
     target_devices: Optional[list],
     task_context,
+    template: Optional[dict] = None,
 ) -> Dict[str, Any]:
     """
     Execute the appropriate job based on job type.
@@ -31,6 +32,7 @@ def execute_job_type(
         job_parameters: Additional job parameters
         target_devices: List of target device UUIDs
         task_context: Celery task context (self)
+        template: Job template configuration (for settings like activate_changes_after_sync)
 
     Returns:
         dict: Execution results
@@ -60,4 +62,5 @@ def execute_job_type(
         job_parameters=job_parameters,
         target_devices=target_devices,
         task_context=task_context,
+        template=template,
     )

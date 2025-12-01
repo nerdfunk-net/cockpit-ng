@@ -57,6 +57,7 @@ async def create_job_template(
             command_template_name=template_data.command_template_name,
             backup_running_config_path=template_data.backup_running_config_path,
             backup_startup_config_path=template_data.backup_startup_config_path,
+            activate_changes_after_sync=template_data.activate_changes_after_sync,
             is_global=template_data.is_global,
         )
 
@@ -186,6 +187,7 @@ async def update_job_template(
             command_template_name=update_data.command_template_name,
             backup_running_config_path=update_data.backup_running_config_path,
             backup_startup_config_path=update_data.backup_startup_config_path,
+            activate_changes_after_sync=update_data.activate_changes_after_sync,
             is_global=update_data.is_global,
             user_id=current_user["user_id"],
         )

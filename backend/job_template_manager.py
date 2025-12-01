@@ -27,6 +27,7 @@ def create_job_template(
     command_template_name: Optional[str] = None,
     backup_running_config_path: Optional[str] = None,
     backup_startup_config_path: Optional[str] = None,
+    activate_changes_after_sync: bool = True,
     is_global: bool = False,
 ) -> Dict[str, Any]:
     """Create a new job template"""
@@ -46,6 +47,7 @@ def create_job_template(
         command_template_name=command_template_name,
         backup_running_config_path=backup_running_config_path,
         backup_startup_config_path=backup_startup_config_path,
+        activate_changes_after_sync=activate_changes_after_sync,
         is_global=is_global,
         user_id=user_id if not is_global else None,
         created_by=created_by,
@@ -104,6 +106,7 @@ def update_job_template(
     command_template_name: Optional[str] = None,
     backup_running_config_path: Optional[str] = None,
     backup_startup_config_path: Optional[str] = None,
+    activate_changes_after_sync: Optional[bool] = None,
     is_global: Optional[bool] = None,
     user_id: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
@@ -135,6 +138,8 @@ def update_job_template(
         update_data["backup_running_config_path"] = backup_running_config_path
     if backup_startup_config_path is not None:
         update_data["backup_startup_config_path"] = backup_startup_config_path
+    if activate_changes_after_sync is not None:
+        update_data["activate_changes_after_sync"] = activate_changes_after_sync
     if is_global is not None:
         update_data["is_global"] = is_global
         if is_global:
@@ -203,6 +208,7 @@ def _model_to_dict(template) -> Dict[str, Any]:
         "command_template_name": template.command_template_name,
         "backup_running_config_path": template.backup_running_config_path,
         "backup_startup_config_path": template.backup_startup_config_path,
+        "activate_changes_after_sync": template.activate_changes_after_sync,
         "is_global": template.is_global,
         "user_id": template.user_id,
         "created_by": template.created_by,

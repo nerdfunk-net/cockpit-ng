@@ -180,7 +180,9 @@ def update_device_in_checkmk_task(self, device_id: str) -> Dict[str, Any]:
 
 
 @shared_task(bind=True, name="sync_devices_to_checkmk")
-def sync_devices_to_checkmk_task(self, device_ids: list[str]) -> Dict[str, Any]:
+def sync_devices_to_checkmk_task(
+    self, device_ids: list[str], activate_changes_after_sync: bool = True
+) -> Dict[str, Any]:
     """
     Celery task to sync multiple devices from Nautobot to CheckMK.
 
@@ -189,6 +191,7 @@ def sync_devices_to_checkmk_task(self, device_ids: list[str]) -> Dict[str, Any]:
 
     Args:
         device_ids: List of Nautobot device IDs to sync
+        activate_changes_after_sync: Whether to activate CheckMK changes after sync completes
 
     Returns:
         Dictionary with task results (success count, failed count, details)
@@ -278,6 +281,36 @@ def sync_devices_to_checkmk_task(self, device_ids: list[str]) -> Dict[str, Any]:
             f"Sync task completed: {success_count} succeeded, {failed_count} failed"
         )
 
+        # Activate CheckMK changes if requested and at least one device was synced successfully
+        activation_result = None
+        if activate_changes_after_sync and success_count > 0:
+            try:
+                logger.info("Activating CheckMK changes after sync...")
+                self.update_state(
+                    state="PROGRESS",
+                    meta={
+                        "current": total_devices,
+                        "total": total_devices,
+                        "status": "Activating CheckMK changes...",
+                        "success": success_count,
+                        "failed": failed_count,
+                    },
+                )
+                activation_result = _activate_checkmk_changes()
+                if activation_result.get("success"):
+                    logger.info("CheckMK changes activated successfully")
+                else:
+                    logger.warning(
+                        f"CheckMK activation completed with issues: {activation_result.get('message')}"
+                    )
+            except Exception as activation_error:
+                logger.error(f"Failed to activate CheckMK changes: {activation_error}")
+                activation_result = {
+                    "success": False,
+                    "error": str(activation_error),
+                    "message": f"Failed to activate changes: {activation_error}",
+                }
+
         return {
             "status": "completed",
             "total": total_devices,
@@ -285,6 +318,7 @@ def sync_devices_to_checkmk_task(self, device_ids: list[str]) -> Dict[str, Any]:
             "failed_count": failed_count,
             "results": results,
             "message": f"Synced {success_count}/{total_devices} devices successfully",
+            "activation": activation_result,
         }
 
     except Exception as e:
@@ -295,6 +329,63 @@ def sync_devices_to_checkmk_task(self, device_ids: list[str]) -> Dict[str, Any]:
             "success_count": 0,
             "failed_count": len(device_ids),
         }
+
+
+def _activate_checkmk_changes() -> Dict[str, Any]:
+    """
+    Helper function to activate pending CheckMK configuration changes.
+    Called after sync operations complete successfully.
+
+    Returns:
+        Dictionary with activation result
+    """
+    from settings_manager import settings_manager
+    from checkmk.client import CheckMKClient
+    from urllib.parse import urlparse
+
+    db_settings = settings_manager.get_checkmk_settings()
+    if not db_settings or not all(
+        key in db_settings for key in ["url", "site", "username", "password"]
+    ):
+        return {
+            "success": False,
+            "message": "CheckMK settings not configured",
+        }
+
+    # Parse URL
+    url = db_settings["url"].rstrip("/")
+    if url.startswith(("http://", "https://")):
+        parsed_url = urlparse(url)
+        protocol = parsed_url.scheme
+        host = parsed_url.netloc
+    else:
+        protocol = "https"
+        host = url
+
+    effective_site = db_settings["site"]
+
+    # Create client
+    client = CheckMKClient(
+        host=host,
+        site_name=effective_site,
+        username=db_settings["username"],
+        password=db_settings["password"],
+        protocol=protocol,
+        verify_ssl=db_settings.get("verify_ssl", True),
+    )
+
+    # Activate changes
+    result = client.activate_changes(
+        sites=[effective_site],
+        force_foreign_changes=False,
+        redirect=False,
+    )
+
+    return {
+        "success": True,
+        "message": "Changes activated successfully",
+        "data": result,
+    }
 
 
 @shared_task(bind=True, name="compare_nautobot_and_checkmk")

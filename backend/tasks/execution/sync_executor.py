@@ -8,6 +8,7 @@ Moved from job_tasks.py to improve code organization.
 import logging
 import asyncio
 from typing import Dict, Any, Optional
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,7 @@ def execute_sync_devices(
     job_parameters: Optional[dict],
     target_devices: Optional[list],
     task_context,
+    template: Optional[dict] = None,
 ) -> Dict[str, Any]:
     """
     Execute sync_devices job (Nautobot to CheckMK).
@@ -31,6 +33,7 @@ def execute_sync_devices(
         job_parameters: Additional job parameters
         target_devices: List of device UUIDs to sync, or None for all devices
         task_context: Celery task context for progress updates
+        template: Job template configuration (contains activate_changes_after_sync setting)
 
     Returns:
         dict: Sync results with counts and per-device details
@@ -182,6 +185,60 @@ def execute_sync_devices(
             f"{failed_count} failed"
         )
 
+        # Activate CheckMK changes if configured and at least one device synced successfully
+        activation_result = None
+        # Get activate_changes_after_sync from template (default True if not specified)
+        activate_changes = True
+        
+        # Log template details for debugging
+        logger.info(f"[ACTIVATION DEBUG] Template provided: {template is not None}")
+        if template:
+            logger.info(f"[ACTIVATION DEBUG] Template keys: {list(template.keys())}")
+            logger.info(f"[ACTIVATION DEBUG] activate_changes_after_sync in template: {'activate_changes_after_sync' in template}")
+            activate_changes = template.get("activate_changes_after_sync", True)
+            logger.info(f"[ACTIVATION DEBUG] activate_changes_after_sync value from template: {template.get('activate_changes_after_sync')}")
+        
+        logger.info(f"[ACTIVATION DEBUG] Final activate_changes value: {activate_changes}")
+        logger.info(f"[ACTIVATION DEBUG] success_count: {success_count}")
+        logger.info(f"[ACTIVATION DEBUG] Will activate changes: {activate_changes and success_count > 0}")
+
+        if activate_changes and success_count > 0:
+            try:
+                logger.info("Activating CheckMK changes after sync...")
+                task_context.update_state(
+                    state="PROGRESS",
+                    meta={
+                        "current": 97,
+                        "total": 100,
+                        "status": "Activating CheckMK changes...",
+                    },
+                )
+                activation_result = _activate_checkmk_changes()
+                if activation_result.get("success"):
+                    logger.info("CheckMK changes activated successfully")
+                else:
+                    logger.warning(
+                        f"CheckMK activation completed with issues: {activation_result.get('message')}"
+                    )
+            except Exception as activation_error:
+                logger.error(f"Failed to activate CheckMK changes: {activation_error}")
+                activation_result = {
+                    "success": False,
+                    "error": str(activation_error),
+                    "message": f"Failed to activate changes: {activation_error}",
+                }
+        else:
+            if not activate_changes:
+                logger.info("[ACTIVATION] Skipping activation - activate_changes_after_sync is disabled")
+            elif success_count == 0:
+                logger.info("[ACTIVATION] Skipping activation - no devices were synced successfully")
+
+        # Update final progress
+        task_context.update_state(
+            state="PROGRESS",
+            meta={"current": 100, "total": 100, "status": "Sync complete"},
+        )
+
         return {
             "success": True,
             "message": f"Synced {success_count}/{total_devices} devices",
@@ -189,9 +246,83 @@ def execute_sync_devices(
             "success_count": success_count,
             "failed_count": failed_count,
             "results": results,
+            "activation": activation_result,
         }
 
     except Exception as e:
         error_msg = str(e)
         logger.error(f"Sync devices job failed: {error_msg}", exc_info=True)
         return {"success": False, "error": error_msg}
+
+
+def _activate_checkmk_changes() -> Dict[str, Any]:
+    """
+    Helper function to activate pending CheckMK configuration changes.
+    Called after sync operations complete successfully.
+
+    Returns:
+        dict: Activation result
+    """
+    from settings_manager import settings_manager
+    from checkmk.client import CheckMKClient
+
+    logger.info("[ACTIVATION] Starting CheckMK change activation...")
+    
+    db_settings = settings_manager.get_checkmk_settings()
+    if not db_settings or not all(
+        key in db_settings for key in ["url", "site", "username", "password"]
+    ):
+        logger.warning("[ACTIVATION] CheckMK settings not configured or incomplete")
+        logger.warning(f"[ACTIVATION] db_settings keys: {list(db_settings.keys()) if db_settings else 'None'}")
+        return {
+            "success": False,
+            "message": "CheckMK settings not configured",
+        }
+
+    logger.info(f"[ACTIVATION] CheckMK settings loaded - URL: {db_settings.get('url')}, Site: {db_settings.get('site')}")
+
+    # Parse URL
+    url = db_settings["url"].rstrip("/")
+    if url.startswith(("http://", "https://")):
+        parsed_url = urlparse(url)
+        protocol = parsed_url.scheme
+        host = parsed_url.netloc
+    else:
+        protocol = "https"
+        host = url
+
+    effective_site = db_settings["site"]
+    logger.info(f"[ACTIVATION] Connecting to CheckMK - Host: {host}, Protocol: {protocol}, Site: {effective_site}")
+
+    # Create client
+    client = CheckMKClient(
+        host=host,
+        site_name=effective_site,
+        username=db_settings["username"],
+        password=db_settings["password"],
+        protocol=protocol,
+        verify_ssl=db_settings.get("verify_ssl", True),
+    )
+
+    # Activate changes
+    logger.info(f"[ACTIVATION] Calling client.activate_changes(sites=[{effective_site}], force_foreign_changes=False, redirect=False)")
+    try:
+        result = client.activate_changes(
+            sites=[effective_site],
+            force_foreign_changes=False,
+            redirect=False,
+        )
+        logger.info(f"[ACTIVATION] activate_changes returned: {result}")
+    except Exception as e:
+        logger.error(f"[ACTIVATION] activate_changes raised exception: {e}", exc_info=True)
+        return {
+            "success": False,
+            "message": f"activate_changes failed: {str(e)}",
+            "error": str(e),
+        }
+
+    return {
+        "success": True,
+        "message": "Changes activated successfully",
+        "data": result,
+    }

@@ -144,6 +144,8 @@ async function handleRequest(
       status: backendResponse.status,
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
       },
     })
 
