@@ -913,40 +913,64 @@ export default function ConfigsViewPage() {
 
       {/* Config Selection Modal */}
       <Dialog open={isConfigSelectionModalOpen} onOpenChange={setIsConfigSelectionModalOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="!max-w-[90vw] w-[90vw] max-h-[80vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-blue-500" />
               Select Configuration File - {currentDevice?.name}
             </DialogTitle>
             <DialogDescription>
-              Multiple configuration files were found for this device. Please select which one to view.
+              Multiple configuration files were found for this device. Click on a row to view the file.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            
-            <div className="space-y-2">
-              {configFiles.map((file) => (
-                <div
-                  key={file.path}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                  onClick={() => handleConfigFileSelection(file)}
-                >
-                  <div className="flex items-center space-x-3">
-                    <FileText className="h-5 w-5 text-blue-500" />
-                    <div>
-                      <div className="font-medium">{file.name}</div>
-                      <div className="text-sm text-muted-foreground">{file.path}</div>
-                    </div>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {(file.size / 1024).toFixed(1)} KB
-                  </div>
-                </div>
-              ))}
+          <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+            {/* Scrollable table container */}
+            <div className="flex-1 overflow-auto rounded-lg border border-gray-200">
+              <table className="w-full">
+                <thead className="bg-gradient-to-r from-blue-500 to-blue-600 text-white sticky top-0 z-10">
+                  <tr>
+                    <th className="text-left p-3 font-semibold text-sm">File Name</th>
+                    <th className="text-left p-3 font-semibold text-sm">Path</th>
+                    <th className="text-right p-3 font-semibold text-sm w-24">Size</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {configFiles.map((file, index) => (
+                    <tr
+                      key={file.path}
+                      className={`cursor-pointer transition-colors hover:bg-blue-50 ${
+                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                      }`}
+                      onClick={() => handleConfigFileSelection(file)}
+                    >
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                          <span className="font-medium text-gray-900">{file.name}</span>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <span className="text-sm text-gray-600 truncate block max-w-md" title={file.path}>
+                          {file.path}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right">
+                        <span className="text-sm text-gray-500 font-mono">
+                          {(file.size / 1024).toFixed(1)} KB
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
             
-            <div className="flex justify-end space-x-2">
+            {/* Footer with count and cancel button */}
+            <div className="flex items-center justify-between pt-4 flex-shrink-0 border-t mt-4">
+              <span className="text-sm text-muted-foreground">
+                {configFiles.length} configuration file{configFiles.length !== 1 ? 's' : ''} found
+              </span>
               <Button
                 variant="outline"
                 onClick={() => setIsConfigSelectionModalOpen(false)}

@@ -384,6 +384,12 @@ class JobTemplate(Base):
     backup_startup_config_path = Column(
         String(500)
     )  # Path template for startup config backups (supports Nautobot variables)
+    write_timestamp_to_custom_field = Column(
+        Boolean, nullable=False, default=False
+    )  # Whether to write backup timestamp to a Nautobot custom field
+    timestamp_custom_field_name = Column(
+        String(255)
+    )  # Name of the Nautobot custom field to write the timestamp to
     activate_changes_after_sync = Column(
         Boolean, nullable=False, default=True
     )  # Whether to activate CheckMK changes after sync_devices job completes

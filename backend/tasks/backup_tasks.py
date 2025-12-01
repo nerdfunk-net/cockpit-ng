@@ -19,6 +19,8 @@ def backup_devices_task(
     inventory: Optional[List[str]] = None,
     config_repository_id: Optional[int] = None,
     credential_id: Optional[int] = None,
+    write_timestamp_to_custom_field: Optional[bool] = False,
+    timestamp_custom_field_name: Optional[str] = None,
 ) -> dict:
     """
     Backup device configurations to Git repository.
@@ -32,12 +34,15 @@ def backup_devices_task(
        - Execute 'show running-config' and 'show startup-config'
        - Save to files in Git repo
     4. Commit and push changes
+    5. Optionally update custom field with backup timestamp
 
     Args:
         self: Task instance (for updating state)
         inventory: List of device IDs to backup
         config_repository_id: ID of Git repository for configs
         credential_id: ID of credential for device authentication
+        write_timestamp_to_custom_field: Whether to write timestamp to Nautobot custom field
+        timestamp_custom_field_name: Name of the custom field to write timestamp to
 
     Returns:
         dict: Backup results with detailed information
@@ -620,6 +625,65 @@ def backup_devices_task(
                 "error": f"Backup completed but failed to push to Git: {str(e)}",
             }
 
+        # Step 5: Update Nautobot custom fields with backup timestamp (if enabled)
+        timestamp_update_status = {
+            "enabled": write_timestamp_to_custom_field,
+            "custom_field_name": timestamp_custom_field_name,
+            "updated_count": 0,
+            "failed_count": 0,
+            "errors": [],
+        }
+
+        if write_timestamp_to_custom_field and timestamp_custom_field_name and backed_up_devices:
+            logger.info("-" * 80)
+            logger.info("STEP 5: UPDATING NAUTOBOT CUSTOM FIELDS WITH BACKUP TIMESTAMP")
+            logger.info("-" * 80)
+            logger.info(f"Custom field: {timestamp_custom_field_name}")
+
+            self.update_state(
+                state="PROGRESS",
+                meta={
+                    "current": 95,
+                    "total": 100,
+                    "status": f"Updating custom field '{timestamp_custom_field_name}' in Nautobot...",
+                },
+            )
+
+            # Format timestamp as YYYY-MM-DD
+            backup_date = datetime.now().strftime("%Y-%m-%d")
+            logger.info(f"Backup timestamp: {backup_date}")
+
+            for device_info in backed_up_devices:
+                device_id = device_info.get("device_id")
+                device_name = device_info.get("device_name", device_id)
+
+                try:
+                    logger.info(f"Updating custom field for device: {device_name} ({device_id})")
+
+                    # Update the device's custom field via Nautobot REST API
+                    update_data = {
+                        "custom_fields": {
+                            timestamp_custom_field_name: backup_date
+                        }
+                    }
+
+                    result = nautobot_service._sync_rest_request(
+                        endpoint=f"dcim/devices/{device_id}/",
+                        method="PATCH",
+                        data=update_data
+                    )
+
+                    logger.info(f"✓ Updated custom field for {device_name}")
+                    timestamp_update_status["updated_count"] += 1
+
+                except Exception as e:
+                    error_msg = f"Failed to update custom field for {device_name}: {str(e)}"
+                    logger.error(f"✗ {error_msg}")
+                    timestamp_update_status["failed_count"] += 1
+                    timestamp_update_status["errors"].append(error_msg)
+
+            logger.info(f"Custom field updates: {timestamp_update_status['updated_count']} successful, {timestamp_update_status['failed_count']} failed")
+
         logger.info("=" * 80)
         logger.info("BACKUP TASK COMPLETED SUCCESSFULLY")
         logger.info("=" * 80)
@@ -633,6 +697,7 @@ def backup_devices_task(
             "git_status": git_status,
             "git_commit_status": git_commit_status,
             "credential_info": credential_info,
+            "timestamp_update_status": timestamp_update_status,
             "repository": repository.name,
             "commit_date": current_date,
         }

@@ -27,6 +27,8 @@ def create_job_template(
     command_template_name: Optional[str] = None,
     backup_running_config_path: Optional[str] = None,
     backup_startup_config_path: Optional[str] = None,
+    write_timestamp_to_custom_field: bool = False,
+    timestamp_custom_field_name: Optional[str] = None,
     activate_changes_after_sync: bool = True,
     is_global: bool = False,
 ) -> Dict[str, Any]:
@@ -47,6 +49,8 @@ def create_job_template(
         command_template_name=command_template_name,
         backup_running_config_path=backup_running_config_path,
         backup_startup_config_path=backup_startup_config_path,
+        write_timestamp_to_custom_field=write_timestamp_to_custom_field,
+        timestamp_custom_field_name=timestamp_custom_field_name,
         activate_changes_after_sync=activate_changes_after_sync,
         is_global=is_global,
         user_id=user_id if not is_global else None,
@@ -106,6 +110,8 @@ def update_job_template(
     command_template_name: Optional[str] = None,
     backup_running_config_path: Optional[str] = None,
     backup_startup_config_path: Optional[str] = None,
+    write_timestamp_to_custom_field: Optional[bool] = None,
+    timestamp_custom_field_name: Optional[str] = None,
     activate_changes_after_sync: Optional[bool] = None,
     is_global: Optional[bool] = None,
     user_id: Optional[int] = None,
@@ -138,6 +144,10 @@ def update_job_template(
         update_data["backup_running_config_path"] = backup_running_config_path
     if backup_startup_config_path is not None:
         update_data["backup_startup_config_path"] = backup_startup_config_path
+    if write_timestamp_to_custom_field is not None:
+        update_data["write_timestamp_to_custom_field"] = write_timestamp_to_custom_field
+    if timestamp_custom_field_name is not None:
+        update_data["timestamp_custom_field_name"] = timestamp_custom_field_name
     if activate_changes_after_sync is not None:
         update_data["activate_changes_after_sync"] = activate_changes_after_sync
     if is_global is not None:
@@ -208,6 +218,8 @@ def _model_to_dict(template) -> Dict[str, Any]:
         "command_template_name": template.command_template_name,
         "backup_running_config_path": template.backup_running_config_path,
         "backup_startup_config_path": template.backup_startup_config_path,
+        "write_timestamp_to_custom_field": template.write_timestamp_to_custom_field,
+        "timestamp_custom_field_name": template.timestamp_custom_field_name,
         "activate_changes_after_sync": template.activate_changes_after_sync,
         "is_global": template.is_global,
         "user_id": template.user_id,

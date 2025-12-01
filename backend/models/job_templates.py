@@ -53,6 +53,15 @@ class JobTemplateBase(BaseModel):
         max_length=500,
         description="Path template for startup config backups (supports Nautobot variables like {device_name}, {location.name})",
     )
+    write_timestamp_to_custom_field: bool = Field(
+        False,
+        description="Whether to write backup completion timestamp to a Nautobot custom field (only applies to backup type)",
+    )
+    timestamp_custom_field_name: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="Name of the Nautobot custom field to write the backup timestamp to",
+    )
     activate_changes_after_sync: bool = Field(
         True,
         description="Whether to activate CheckMK changes after sync_devices job completes (only applies to sync_devices type)",
@@ -81,6 +90,8 @@ class JobTemplateUpdate(BaseModel):
     command_template_name: Optional[str] = None
     backup_running_config_path: Optional[str] = Field(None, max_length=500)
     backup_startup_config_path: Optional[str] = Field(None, max_length=500)
+    write_timestamp_to_custom_field: Optional[bool] = None
+    timestamp_custom_field_name: Optional[str] = Field(None, max_length=255)
     activate_changes_after_sync: Optional[bool] = None
     is_global: Optional[bool] = None
 

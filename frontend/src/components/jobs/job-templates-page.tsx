@@ -22,7 +22,8 @@ import {
   Loader2,
   HardDrive,
   FolderGit2,
-  RefreshCw
+  RefreshCw,
+  Clock
 } from "lucide-react"
 import { useAuthStore } from "@/lib/auth-store"
 import { useToast } from "@/hooks/use-toast"
@@ -39,6 +40,8 @@ interface JobTemplate {
   command_template_name?: string
   backup_running_config_path?: string
   backup_startup_config_path?: string
+  write_timestamp_to_custom_field?: boolean
+  timestamp_custom_field_name?: string
   activate_changes_after_sync?: boolean
   is_global: boolean
   user_id?: number
@@ -72,11 +75,23 @@ interface CommandTemplate {
   category: string
 }
 
+interface CustomField {
+  id: string
+  name?: string
+  key: string
+  label: string
+  type: {
+    value: string
+    label: string
+  }
+}
+
 const EMPTY_TEMPLATES: JobTemplate[] = []
 const EMPTY_TYPES: JobType[] = []
 const EMPTY_REPOS: GitRepository[] = []
 const EMPTY_INVENTORIES: SavedInventory[] = []
 const EMPTY_CMD_TEMPLATES: CommandTemplate[] = []
+const EMPTY_CUSTOM_FIELDS: CustomField[] = []
 
 export function JobTemplatesPage() {
   const token = useAuthStore(state => state.token)
@@ -89,6 +104,7 @@ export function JobTemplatesPage() {
   const [inventoryRepos, setInventoryRepos] = useState<GitRepository[]>(EMPTY_REPOS)
   const [savedInventories, setSavedInventories] = useState<SavedInventory[]>(EMPTY_INVENTORIES)
   const [commandTemplates, setCommandTemplates] = useState<CommandTemplate[]>(EMPTY_CMD_TEMPLATES)
+  const [customFields, setCustomFields] = useState<CustomField[]>(EMPTY_CUSTOM_FIELDS)
 
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -106,6 +122,8 @@ export function JobTemplatesPage() {
   const [formCommandTemplate, setFormCommandTemplate] = useState("")
   const [formBackupRunningConfigPath, setFormBackupRunningConfigPath] = useState("")
   const [formBackupStartupConfigPath, setFormBackupStartupConfigPath] = useState("")
+  const [formWriteTimestampToCustomField, setFormWriteTimestampToCustomField] = useState(false)
+  const [formTimestampCustomFieldName, setFormTimestampCustomFieldName] = useState("")
   const [formActivateChangesAfterSync, setFormActivateChangesAfterSync] = useState(true)
   const [formIsGlobal, setFormIsGlobal] = useState(false)
 
@@ -265,13 +283,43 @@ export function JobTemplatesPage() {
     }
   }, [token])
 
+  // Fetch custom fields for devices
+  const fetchCustomFields = useCallback(async () => {
+    if (!token) return
+
+    try {
+      const response = await fetch("/api/proxy/api/nautobot/custom-fields/devices", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // The endpoint returns an array directly
+        const allFields = Array.isArray(data) ? data : (data.results || [])
+        // Filter for text and date type custom fields that can hold timestamp
+        // The type field is an object with {value, label}
+        const fields = allFields.filter((cf: CustomField) => {
+          const cfType = cf.type?.value?.toLowerCase() || ''
+          return ["text", "date", "datetime", "url"].includes(cfType)
+        })
+        setCustomFields(fields)
+      }
+    } catch (error) {
+      console.error("Error fetching custom fields:", error)
+    }
+  }, [token])
+
   useEffect(() => {
     fetchTemplates()
     fetchJobTypes()
     fetchConfigRepos()
     fetchInventoryRepos()
     fetchCommandTemplates()
-  }, [fetchTemplates, fetchJobTypes, fetchConfigRepos, fetchInventoryRepos, fetchCommandTemplates])
+    fetchCustomFields()
+  }, [fetchTemplates, fetchJobTypes, fetchConfigRepos, fetchInventoryRepos, fetchCommandTemplates, fetchCustomFields])
 
   // When inventory repo changes, fetch inventories
   useEffect(() => {
@@ -291,6 +339,8 @@ export function JobTemplatesPage() {
     setFormCommandTemplate("")
     setFormBackupRunningConfigPath("")
     setFormBackupStartupConfigPath("")
+    setFormWriteTimestampToCustomField(false)
+    setFormTimestampCustomFieldName("")
     setFormActivateChangesAfterSync(true)
     setFormIsGlobal(false)
     setEditingTemplate(null)
@@ -309,6 +359,8 @@ export function JobTemplatesPage() {
     setFormCommandTemplate(template.command_template_name || "")
     setFormBackupRunningConfigPath(template.backup_running_config_path || "")
     setFormBackupStartupConfigPath(template.backup_startup_config_path || "")
+    setFormWriteTimestampToCustomField(template.write_timestamp_to_custom_field ?? false)
+    setFormTimestampCustomFieldName(template.timestamp_custom_field_name || "")
     setFormActivateChangesAfterSync(template.activate_changes_after_sync ?? true)
     setFormIsGlobal(template.is_global)
     setIsDialogOpen(true)
@@ -362,6 +414,16 @@ export function JobTemplatesPage() {
       return
     }
 
+    // Validate custom field selection when timestamp writing is enabled
+    if (formJobType === "backup" && formWriteTimestampToCustomField && !formTimestampCustomFieldName) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a custom field when 'Write timestamp to custom field' is enabled.",
+        variant: "destructive"
+      })
+      return
+    }
+
     try {
       const payload = {
         name: formName,
@@ -374,6 +436,8 @@ export function JobTemplatesPage() {
         command_template_name: formJobType === "run_commands" ? formCommandTemplate : undefined,
         backup_running_config_path: formJobType === "backup" ? formBackupRunningConfigPath : undefined,
         backup_startup_config_path: formJobType === "backup" ? formBackupStartupConfigPath : undefined,
+        write_timestamp_to_custom_field: formJobType === "backup" ? formWriteTimestampToCustomField : undefined,
+        timestamp_custom_field_name: formJobType === "backup" && formWriteTimestampToCustomField ? formTimestampCustomFieldName : undefined,
         activate_changes_after_sync: formJobType === "sync_devices" ? formActivateChangesAfterSync : undefined,
         is_global: formIsGlobal
       }
@@ -441,7 +505,7 @@ export function JobTemplatesPage() {
         variant: "destructive"
       })
     }
-  }, [token, formName, formJobType, formDescription, formConfigRepoId, formInventorySource, formInventoryRepoId, formInventoryName, formCommandTemplate, formBackupRunningConfigPath, formBackupStartupConfigPath, formActivateChangesAfterSync, formIsGlobal, editingTemplate, resetForm, fetchTemplates, toast])
+  }, [token, formName, formJobType, formDescription, formConfigRepoId, formInventorySource, formInventoryRepoId, formInventoryName, formCommandTemplate, formBackupRunningConfigPath, formBackupStartupConfigPath, formWriteTimestampToCustomField, formTimestampCustomFieldName, formActivateChangesAfterSync, formIsGlobal, editingTemplate, resetForm, fetchTemplates, toast])
 
   const handleDeleteTemplate = useCallback(async (templateId: number) => {
     if (!token) return
@@ -823,6 +887,63 @@ export function JobTemplatesPage() {
                       />
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Backup Timestamp Section (only for backup) */}
+              {formJobType === "backup" && (
+                <div className="rounded-lg border border-teal-200 bg-teal-50/30 p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Clock className="h-4 w-4 text-teal-600" />
+                    <Label className="text-sm font-semibold text-teal-900">Backup Timestamp</Label>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center space-x-3">
+                      <Switch
+                        id="write-timestamp"
+                        checked={formWriteTimestampToCustomField}
+                        onCheckedChange={(checked) => {
+                          setFormWriteTimestampToCustomField(checked)
+                          if (!checked) {
+                            setFormTimestampCustomFieldName("")
+                          }
+                        }}
+                      />
+                      <Label htmlFor="write-timestamp" className="text-sm text-teal-900 cursor-pointer">
+                        Write timestamp to custom field
+                      </Label>
+                    </div>
+
+                    {formWriteTimestampToCustomField && (
+                      <div className="flex-1">
+                        <Select
+                          value={formTimestampCustomFieldName}
+                          onValueChange={setFormTimestampCustomFieldName}
+                          disabled={customFields.length === 0}
+                        >
+                          <SelectTrigger id="timestamp-custom-field" className="h-9 bg-white border-teal-200">
+                            <SelectValue placeholder={customFields.length === 0 ? "No suitable custom fields found" : "Select custom field..."} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {customFields.map((field) => (
+                              <SelectItem key={field.id} value={field.key}>
+                                <div className="flex items-center gap-2">
+                                  <span>{field.label}</span>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {field.type.label}
+                                  </Badge>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-teal-600 mt-2">
+                    When enabled, the backup completion timestamp will be written to the selected custom field in Nautobot
+                  </p>
                 </div>
               )}
 

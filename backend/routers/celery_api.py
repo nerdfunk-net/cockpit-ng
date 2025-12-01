@@ -589,6 +589,8 @@ class BackupDevicesRequest(BaseModel):
     inventory: List[str]
     config_repository_id: Optional[int] = None
     credential_id: Optional[int] = None
+    write_timestamp_to_custom_field: Optional[bool] = False
+    timestamp_custom_field_name: Optional[str] = None
 
 
 @router.post("/tasks/backup-devices", response_model=TaskResponse)
@@ -635,6 +637,8 @@ async def trigger_backup_devices(
         inventory=request.inventory,
         config_repository_id=request.config_repository_id,
         credential_id=request.credential_id,
+        write_timestamp_to_custom_field=request.write_timestamp_to_custom_field,
+        timestamp_custom_field_name=request.timestamp_custom_field_name,
     )
 
     return TaskResponse(
