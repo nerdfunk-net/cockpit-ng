@@ -5,11 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   Plus,
@@ -18,15 +13,16 @@ import {
   FileText,
   Globe,
   Lock,
-  Terminal,
   Loader2,
-  HardDrive,
-  FolderGit2,
-  RefreshCw,
-  Clock
 } from "lucide-react"
 import { useAuthStore } from "@/lib/auth-store"
 import { useToast } from "@/hooks/use-toast"
+import { JobTemplateCommonFields } from "./shared/JobTemplateCommonFields"
+import { JobTemplateConfigRepoSection } from "./shared/JobTemplateConfigRepoSection"
+import { JobTemplateInventorySection } from "./shared/JobTemplateInventorySection"
+import { BackupJobTemplate } from "./job-template-types/BackupJobTemplate"
+import { RunCommandsJobTemplate } from "./job-template-types/RunCommandsJobTemplate"
+import { SyncDevicesJobTemplate } from "./job-template-types/SyncDevicesJobTemplate"
 
 interface JobTemplate {
   id: number
@@ -583,392 +579,71 @@ export function JobTemplatesPage() {
             
             {/* Form content */}
             <div className="px-6 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
-              {/* Name and Type in grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="template-name" className="text-sm font-medium text-gray-700">
-                    Name <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="template-name"
-                    placeholder="Enter template name"
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    className="h-9 bg-white"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="job-type" className="text-sm font-medium text-gray-700">
-                    Type <span className="text-red-500">*</span>
-                  </Label>
-                  <Select 
-                    value={formJobType} 
-                    onValueChange={setFormJobType}
-                    disabled={!!editingTemplate}
-                  >
-                    <SelectTrigger id="job-type" className="h-9 bg-white">
-                      <SelectValue placeholder="Select job type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {jobTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          <div className="flex items-center gap-2">
-                            <div className={`h-2 w-2 rounded-full ${getJobTypeColor(type.value)}`} />
-                            <span>{type.label}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="space-y-1.5">
-                <Label htmlFor="description" className="text-sm font-medium text-gray-700">
-                  Description
-                </Label>
-                <Textarea
-                  id="description"
-                  placeholder="Enter a description for this template"
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  className="bg-white resize-none"
-                  rows={2}
-                />
-              </div>
-
-              {/* Global/Private Switch - Moved to top */}
-              <div className="rounded-lg border border-indigo-200 bg-indigo-50/30 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      id="is-global"
-                      checked={formIsGlobal}
-                      onCheckedChange={setFormIsGlobal}
-                      disabled={user?.role !== "admin"}
-                    />
-                    <Label htmlFor="is-global" className="text-sm font-medium text-indigo-900 cursor-pointer flex items-center gap-2">
-                      {formIsGlobal ? (
-                        <>
-                          <Globe className="h-4 w-4 text-indigo-600" />
-                          Global Template
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="h-4 w-4 text-indigo-600" />
-                          Private Template
-                        </>
-                      )}
-                    </Label>
-                  </div>
-                  {user?.role === "admin" && (
-                    <Badge variant="secondary" className="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-100">
-                      Admin
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-xs text-indigo-600">
-                  {formIsGlobal
-                    ? "Global templates can be scheduled by all users"
-                    : "Private templates can only be scheduled by you"}
-                </p>
-              </div>
+              <JobTemplateCommonFields
+                formName={formName}
+                setFormName={setFormName}
+                formJobType={formJobType}
+                setFormJobType={setFormJobType}
+                formDescription={formDescription}
+                setFormDescription={setFormDescription}
+                formIsGlobal={formIsGlobal}
+                setFormIsGlobal={setFormIsGlobal}
+                jobTypes={jobTypes}
+                user={user}
+                editingTemplate={!!editingTemplate}
+                getJobTypeColor={getJobTypeColor}
+              />
 
               {/* Config Repository Section - Show when job type is selected */}
               {formJobType && (
-                <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <FolderGit2 className="h-4 w-4 text-slate-600" />
-                    <Label className="text-sm font-semibold text-slate-700">Configuration Repository</Label>
-                    <span className="text-xs text-slate-500">(Optional)</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="config-repo" className="text-xs text-slate-600">Git Repository (category=configs)</Label>
-                    <Select
-                      value={formConfigRepoId?.toString() || "none"}
-                      onValueChange={(v) => setFormConfigRepoId(v === "none" ? null : parseInt(v))}
-                    >
-                      <SelectTrigger id="config-repo" className="h-9 bg-white border-slate-200">
-                        <SelectValue placeholder="Select config repository (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {configRepos.map((repo) => (
-                          <SelectItem key={repo.id} value={repo.id.toString()}>
-                            {repo.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-slate-500">
-                      Select a Git repository with configuration files
-                    </p>
-                  </div>
-                </div>
+                <JobTemplateConfigRepoSection
+                  formConfigRepoId={formConfigRepoId}
+                  setFormConfigRepoId={setFormConfigRepoId}
+                  configRepos={configRepos}
+                />
               )}
 
-              {/* Inventory Section */}
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50/30 p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <HardDrive className="h-4 w-4 text-emerald-600" />
-                  <Label className="text-sm font-semibold text-emerald-900">Inventory</Label>
-                </div>
+              <JobTemplateInventorySection
+                formInventorySource={formInventorySource}
+                setFormInventorySource={setFormInventorySource}
+                formInventoryRepoId={formInventoryRepoId}
+                setFormInventoryRepoId={setFormInventoryRepoId}
+                formInventoryName={formInventoryName}
+                setFormInventoryName={setFormInventoryName}
+                inventoryRepos={inventoryRepos}
+                savedInventories={savedInventories}
+                loadingInventories={loadingInventories}
+                onInventoryRepoChange={fetchSavedInventories}
+              />
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="inventory-source" className="text-xs text-emerald-700">Source</Label>
-                    <Select
-                      value={formInventorySource}
-                      onValueChange={(v) => setFormInventorySource(v as "all" | "inventory")}
-                    >
-                      <SelectTrigger id="inventory-source" className="h-9 bg-white border-emerald-200">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">
-                          <div className="flex items-center gap-2">
-                            <Globe className="h-4 w-4 text-blue-500" />
-                            <span>All Devices</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="inventory">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-green-500" />
-                            <span>Use Inventory</span>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="inventory-repo" className="text-xs text-emerald-700">
-                      Repository {formInventorySource === "inventory" && <span className="text-red-500">*</span>}
-                    </Label>
-                    <Select
-                      value={formInventoryRepoId?.toString() || ""}
-                      onValueChange={(v) => {
-                        setFormInventoryRepoId(parseInt(v))
-                        setFormInventoryName("")
-                      }}
-                      disabled={formInventorySource === "all"}
-                    >
-                      <SelectTrigger id="inventory-repo" className="h-9 bg-white border-emerald-200 disabled:opacity-50">
-                        <SelectValue placeholder="Select repository" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {inventoryRepos.map((repo) => (
-                          <SelectItem key={repo.id} value={repo.id.toString()}>
-                            {repo.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="inventory-name" className="text-xs text-emerald-700">
-                      Inventory {formInventorySource === "inventory" && <span className="text-red-500">*</span>}
-                    </Label>
-                    {loadingInventories ? (
-                      <div className="flex items-center justify-center h-9 bg-white border border-emerald-200 rounded-md">
-                        <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
-                      </div>
-                    ) : (
-                      <Select
-                        value={formInventoryName}
-                        onValueChange={setFormInventoryName}
-                        disabled={formInventorySource === "all" || !formInventoryRepoId}
-                      >
-                        <SelectTrigger id="inventory-name" className="h-9 bg-white border-emerald-200 disabled:opacity-50">
-                          <SelectValue placeholder="Select inventory" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {savedInventories.map((inv) => (
-                            <SelectItem key={inv.name} value={inv.name}>
-                              {inv.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Command Template Section (only for run_commands) */}
+              {/* Job Type Specific Sections */}
               {formJobType === "run_commands" && (
-                <div className="rounded-lg border border-violet-200 bg-violet-50/30 p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Terminal className="h-4 w-4 text-violet-600" />
-                    <Label className="text-sm font-semibold text-violet-900">Command Template</Label>
-                  </div>
-                  <Select
-                    value={formCommandTemplate}
-                    onValueChange={setFormCommandTemplate}
-                  >
-                    <SelectTrigger className="h-9 bg-white border-violet-200">
-                      <SelectValue placeholder="Select command template" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {commandTemplates.map((template) => (
-                        <SelectItem key={template.id} value={template.name}>
-                          <div className="flex items-center gap-2">
-                            <Terminal className="h-4 w-4 text-gray-500" />
-                            <span>{template.name}</span>
-                            {template.category && (
-                              <Badge variant="secondary" className="text-xs">
-                                {template.category}
-                              </Badge>
-                            )}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-violet-600">
-                    Templates can be created in Network / Automation / Templates
-                  </p>
-                </div>
+                <RunCommandsJobTemplate
+                  formCommandTemplate={formCommandTemplate}
+                  setFormCommandTemplate={setFormCommandTemplate}
+                  commandTemplates={commandTemplates}
+                />
               )}
 
-              {/* Backup Paths Section (only for backup) */}
               {formJobType === "backup" && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50/30 p-4 space-y-4">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-amber-600" />
-                    <Label className="text-sm font-semibold text-amber-900">Backup Configuration Paths</Label>
-                  </div>
-
-                  <div className="bg-amber-100/50 border border-amber-200 rounded-md px-3 py-2 space-y-1">
-                    <p className="text-xs text-amber-800 leading-relaxed">
-                      <span className="font-semibold">Available variables</span> (leave empty to use defaults):
-                    </p>
-                    <p className="text-xs text-amber-700 leading-relaxed">
-                      Device: {"{device_name}"}, {"{hostname}"}, {"{serial}"}, {"{asset_tag}"}
-                    </p>
-                    <p className="text-xs text-amber-700 leading-relaxed">
-                      Location: {"{location.name}"}, {"{location.parent.name}"}, {"{location.parent.parent.name}"}
-                    </p>
-                    <p className="text-xs text-amber-700 leading-relaxed">
-                      Platform: {"{platform.name}"}, {"{platform.manufacturer.name}"}, {"{device_type.model}"}
-                    </p>
-                    <p className="text-xs text-amber-700 leading-relaxed">
-                      Other: {"{role.name}"}, {"{status.name}"}, {"{tenant.name}"}, {"{rack.name}"}, {"{custom_field_data.FIELD_NAME}"}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="running-config-path" className="text-sm text-amber-900 font-medium flex items-center gap-1">
-                        Running Config Path <span className="text-xs text-amber-600 font-normal">(optional)</span>
-                      </Label>
-                      <Input
-                        id="running-config-path"
-                        placeholder="{custom_field_data.cf_net}/{location.name}/{device_name}.running_config"
-                        value={formBackupRunningConfigPath}
-                        onChange={(e) => setFormBackupRunningConfigPath(e.target.value)}
-                        className="h-9 bg-white border-amber-200 font-mono text-sm focus:ring-amber-500 focus:border-amber-500"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="startup-config-path" className="text-sm text-amber-900 font-medium flex items-center gap-1">
-                        Startup Config Path <span className="text-xs text-amber-600 font-normal">(optional)</span>
-                      </Label>
-                      <Input
-                        id="startup-config-path"
-                        placeholder="{custom_field_data.cf_net}/{location.name}/{device_name}.startup_config"
-                        value={formBackupStartupConfigPath}
-                        onChange={(e) => setFormBackupStartupConfigPath(e.target.value)}
-                        className="h-9 bg-white border-amber-200 font-mono text-sm focus:ring-amber-500 focus:border-amber-500"
-                      />
-                    </div>
-                  </div>
-                </div>
+                <BackupJobTemplate
+                  formBackupRunningConfigPath={formBackupRunningConfigPath}
+                  setFormBackupRunningConfigPath={setFormBackupRunningConfigPath}
+                  formBackupStartupConfigPath={formBackupStartupConfigPath}
+                  setFormBackupStartupConfigPath={setFormBackupStartupConfigPath}
+                  formWriteTimestampToCustomField={formWriteTimestampToCustomField}
+                  setFormWriteTimestampToCustomField={setFormWriteTimestampToCustomField}
+                  formTimestampCustomFieldName={formTimestampCustomFieldName}
+                  setFormTimestampCustomFieldName={setFormTimestampCustomFieldName}
+                  customFields={customFields}
+                />
               )}
 
-              {/* Backup Timestamp Section (only for backup) */}
-              {formJobType === "backup" && (
-                <div className="rounded-lg border border-teal-200 bg-teal-50/30 p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Clock className="h-4 w-4 text-teal-600" />
-                    <Label className="text-sm font-semibold text-teal-900">Backup Timestamp</Label>
-                  </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center space-x-3">
-                      <Switch
-                        id="write-timestamp"
-                        checked={formWriteTimestampToCustomField}
-                        onCheckedChange={(checked) => {
-                          setFormWriteTimestampToCustomField(checked)
-                          if (!checked) {
-                            setFormTimestampCustomFieldName("")
-                          }
-                        }}
-                      />
-                      <Label htmlFor="write-timestamp" className="text-sm text-teal-900 cursor-pointer">
-                        Write timestamp to custom field
-                      </Label>
-                    </div>
-
-                    {formWriteTimestampToCustomField && (
-                      <div className="flex-1">
-                        <Select
-                          value={formTimestampCustomFieldName}
-                          onValueChange={setFormTimestampCustomFieldName}
-                          disabled={customFields.length === 0}
-                        >
-                          <SelectTrigger id="timestamp-custom-field" className="h-9 bg-white border-teal-200">
-                            <SelectValue placeholder={customFields.length === 0 ? "No suitable custom fields found" : "Select custom field..."} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {customFields.map((field) => (
-                              <SelectItem key={field.id} value={field.key}>
-                                <div className="flex items-center gap-2">
-                                  <span>{field.label}</span>
-                                  <Badge variant="secondary" className="text-xs">
-                                    {field.type.label}
-                                  </Badge>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-teal-600 mt-2">
-                    When enabled, the backup completion timestamp will be written to the selected custom field in Nautobot
-                  </p>
-                </div>
-              )}
-
-              {/* Sync Devices Options Section (only for sync_devices) */}
               {formJobType === "sync_devices" && (
-                <div className="rounded-lg border border-orange-200 bg-orange-50/30 p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <RefreshCw className="h-4 w-4 text-orange-600" />
-                    <Label className="text-sm font-semibold text-orange-900">Sync Options</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <Switch
-                      id="activate-changes"
-                      checked={formActivateChangesAfterSync}
-                      onCheckedChange={setFormActivateChangesAfterSync}
-                    />
-                    <Label htmlFor="activate-changes" className="text-sm text-orange-900 cursor-pointer">
-                      Activate all changes after Sync
-                    </Label>
-                  </div>
-                  <p className="text-xs text-orange-700">
-                    When enabled, CheckMK configuration changes will be automatically activated after the sync job completes successfully.
-                  </p>
-                </div>
+                <SyncDevicesJobTemplate
+                  formActivateChangesAfterSync={formActivateChangesAfterSync}
+                  setFormActivateChangesAfterSync={setFormActivateChangesAfterSync}
+                />
               )}
             </div>
 
