@@ -42,7 +42,11 @@ interface BackupCheckResponse {
   devices: DeviceBackupStatus[]
 }
 
-export default function DashboardDeviceBackupStatus() {
+interface DashboardDeviceBackupStatusProps {
+  refreshTrigger?: number
+}
+
+export default function DashboardDeviceBackupStatus({ refreshTrigger = 0 }: DashboardDeviceBackupStatusProps) {
   const { apiCall } = useApi()
   const [backupStatus, setBackupStatus] = useState<BackupCheckResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -66,7 +70,7 @@ export default function DashboardDeviceBackupStatus() {
 
   useEffect(() => {
     loadBackupStatus()
-  }, [loadBackupStatus])
+  }, [loadBackupStatus, refreshTrigger])
 
   const formatTimeAgo = (timestamp: string | null): string => {
     if (!timestamp) return 'Never'

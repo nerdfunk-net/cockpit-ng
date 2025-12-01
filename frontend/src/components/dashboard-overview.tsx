@@ -7,6 +7,7 @@ import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
 import DashboardJobStats from '@/components/dashboard-job-stats'
 import DashboardDeviceBackupStatus from '@/components/dashboard-device-backup-status'
+import DashboardCheckmkSyncStatus from '@/components/dashboard-checkmk-sync-status'
 import {
   Server,
   MapPin,
@@ -56,6 +57,7 @@ export default function DashboardOverview() {
   const [loadingState, setLoadingState] = useState<LoadingState>('idle')
   const [cacheInfo, setCacheInfo] = useState<string>('')
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   useEffect(() => {
     loadDashboardData()
@@ -147,6 +149,8 @@ export default function DashboardOverview() {
     setCacheInfo('')
     loadDashboardData(true)
     loadCheckmkData()
+    // Trigger refresh for all child components
+    setRefreshTrigger(prev => prev + 1)
   }
 
   const formatNumber = (num: number): string => {
@@ -335,8 +339,9 @@ export default function DashboardOverview() {
       {/* Job Statistics Section */}
       <div className="col-span-full mt-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-          <DashboardJobStats />
-          <DashboardDeviceBackupStatus />
+          <DashboardJobStats refreshTrigger={refreshTrigger} />
+          <DashboardDeviceBackupStatus refreshTrigger={refreshTrigger} />
+          <DashboardCheckmkSyncStatus refreshTrigger={refreshTrigger} />
         </div>
       </div>
 

@@ -30,7 +30,11 @@ interface JobDashboardStats {
   backup_devices: BackupDeviceStats
 }
 
-export default function DashboardJobStats() {
+interface DashboardJobStatsProps {
+  refreshTrigger?: number
+}
+
+export default function DashboardJobStats({ refreshTrigger = 0 }: DashboardJobStatsProps) {
   const { apiCall } = useApi()
   const [jobStats, setJobStats] = useState<JobDashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -52,7 +56,7 @@ export default function DashboardJobStats() {
 
   useEffect(() => {
     loadJobStats()
-  }, [loadJobStats])
+  }, [loadJobStats, refreshTrigger])
 
   const formatNumber = (num: number): string => {
     if (num >= 1000) {

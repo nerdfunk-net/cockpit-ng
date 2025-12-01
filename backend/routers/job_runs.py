@@ -123,6 +123,56 @@ async def get_dashboard_stats(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/dashboard/compare-devices")
+async def get_latest_compare_devices_result(
+    current_user: dict = Depends(require_permission("jobs", "read")),
+):
+    """
+    Get the latest compare_devices job result for dashboard.
+
+    Returns:
+    - Latest job result with sync status between Nautobot and CheckMK
+    - Number of devices in sync vs out of sync
+    """
+    try:
+        # Get the most recent completed compare_devices job
+        runs = job_run_manager.get_recent_runs(
+            limit=1, status="completed", job_type="compare_devices"
+        )
+
+        if not runs:
+            return {
+                "has_data": False,
+                "message": "No compare_devices job has been run yet",
+            }
+
+        latest_run = runs[0]
+        result = latest_run.get("result", {})
+
+        if not result:
+            return {
+                "has_data": False,
+                "message": "Latest job has no result data",
+            }
+
+        return {
+            "has_data": True,
+            "job_id": latest_run.get("id"),
+            "job_name": latest_run.get("job_name"),
+            "completed_at": latest_run.get("completed_at"),
+            "total": result.get("total", 0),
+            "completed": result.get("completed", 0),
+            "failed": result.get("failed", 0),
+            "differences_found": result.get("differences_found", 0),
+            "in_sync": result.get("total", 0) - result.get("differences_found", 0),
+            "success": result.get("success", False),
+            "message": result.get("message", ""),
+        }
+    except Exception as e:
+        logger.error(f"Error getting compare devices stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{run_id}", response_model=JobRunResponse)
 async def get_job_run(
     run_id: int, current_user: dict = Depends(require_permission("jobs", "read"))
