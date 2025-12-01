@@ -110,12 +110,13 @@ export function OnboardingFormFields({
             <div className="space-y-1">
               <Label htmlFor="ip_address" className="text-[11px] font-medium">
                 IP Address(es) <span className="text-red-500">*</span>
+                <span className="text-muted-foreground font-normal ml-1">(comma-separated for multiple)</span>
               </Label>
               <div className="flex gap-2">
                 <div className="flex-1">
                   <Input
                     id="ip_address"
-                    placeholder="192.168.1.1"
+                    placeholder="192.168.1.1, 192.168.1.2, 192.168.1.3"
                     value={formData.ip_address}
                     onChange={e => onIPChange(e.target.value)}
                     className={`h-7 text-xs border-2 bg-white ${

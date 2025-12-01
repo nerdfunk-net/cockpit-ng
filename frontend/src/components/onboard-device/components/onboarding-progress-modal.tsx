@@ -22,6 +22,21 @@ interface TaskProgress {
   device_name?: string
   job_id?: string
   job_url?: string
+  device_count?: number
+  current_device?: number
+  current_ip?: string
+  ip_addresses?: string[]
+}
+
+interface DeviceResult {
+  success: boolean
+  ip_address: string
+  device_id?: string
+  device_name?: string
+  error?: string
+  stage?: string
+  update_results?: Array<{ success: boolean; type: string; message?: string; error?: string }>
+  sync_result?: { success: boolean; job_url?: string }
 }
 
 interface TaskStatus {
@@ -29,6 +44,7 @@ interface TaskStatus {
   status: 'PENDING' | 'PROGRESS' | 'SUCCESS' | 'FAILURE' | 'REVOKED'
   result?: {
     success: boolean
+    partial_success?: boolean
     message?: string
     error?: string
     device_id?: string
@@ -39,6 +55,10 @@ interface TaskStatus {
     tags_applied?: number
     custom_fields_applied?: number
     stage?: string
+    device_count?: number
+    successful_devices?: number
+    failed_devices?: number
+    devices?: DeviceResult[]
     sync_result?: {
       success: boolean
       job_url?: string
@@ -51,10 +71,13 @@ interface TaskStatus {
 const STAGE_DESCRIPTIONS: Record<string, string> = {
   onboarding: 'Initiating device onboarding...',
   waiting: 'Waiting for Nautobot onboarding job...',
+  processing_devices: 'Processing devices...',
   device_lookup: 'Device onboarded, retrieving device information...',
   updating: 'Updating device with tags and custom fields...',
   syncing: 'Syncing network data from device...',
-  completed: 'Device onboarding, configuration, and sync completed successfully!',
+  completed: 'All devices successfully onboarded, configured, and synced!',
+  partial_success: 'Some devices completed successfully, others failed',
+  all_failed: 'All devices failed post-onboarding steps',
   onboarding_failed: 'Onboarding job failed',
   device_lookup_failed: 'Failed to retrieve device information',
   update_partial_success: 'Device onboarded but some updates failed',
@@ -191,7 +214,13 @@ export function OnboardingProgressModal({
             Device Onboarding Progress
           </DialogTitle>
           <DialogDescription>
-            Onboarding device with IP: {ipAddress}
+            {(() => {
+              const ips = ipAddress.split(',').map(ip => ip.trim()).filter(ip => ip)
+              if (ips.length === 1) {
+                return `Onboarding device with IP: ${ips[0]}`
+              }
+              return `Onboarding ${ips.length} devices with IPs: ${ips.join(', ')}`
+            })()}
           </DialogDescription>
         </DialogHeader>
 
@@ -224,21 +253,124 @@ export function OnboardingProgressModal({
             </div>
           )}
 
+          {/* Multi-device processing progress */}
+          {taskStatus?.progress?.device_count !== undefined && taskStatus.progress.device_count > 1 && taskStatus.progress.current_device && (
+            <div className="rounded-lg border p-3 bg-background">
+              <h4 className="text-sm font-medium mb-2">
+                Processing Device {taskStatus.progress.current_device}/{taskStatus.progress.device_count}
+              </h4>
+              <div className="space-y-1 text-sm text-muted-foreground">
+                {taskStatus.progress.current_ip && (
+                  <p><span className="font-medium">Current IP:</span> {taskStatus.progress.current_ip}</p>
+                )}
+                {taskStatus.progress.ip_addresses && (
+                  <div className="mt-2">
+                    <p className="font-medium text-xs mb-1">All IPs:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {taskStatus.progress.ip_addresses.map((ip, idx) => (
+                        <span 
+                          key={ip} 
+                          className={`text-xs px-1.5 py-0.5 rounded ${
+                            idx + 1 < (taskStatus.progress?.current_device ?? 0)
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                              : idx + 1 === taskStatus.progress?.current_device
+                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {ip}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Success Result Details */}
           {taskStatus?.status === 'SUCCESS' && taskStatus.result && (
-            <div className="rounded-lg border p-3 bg-green-50 dark:bg-green-950/20">
-              <h4 className="text-sm font-medium mb-2 text-green-900 dark:text-green-100">
-                Onboarding Complete!
+            <div className={`rounded-lg border p-3 ${
+              taskStatus.result.success 
+                ? 'bg-green-50 dark:bg-green-950/20' 
+                : taskStatus.result.partial_success 
+                  ? 'bg-yellow-50 dark:bg-yellow-950/20'
+                  : 'bg-red-50 dark:bg-red-950/20'
+            }`}>
+              <h4 className={`text-sm font-medium mb-2 ${
+                taskStatus.result.success 
+                  ? 'text-green-900 dark:text-green-100' 
+                  : taskStatus.result.partial_success 
+                    ? 'text-yellow-900 dark:text-yellow-100'
+                    : 'text-red-900 dark:text-red-100'
+              }`}>
+                {taskStatus.result.success 
+                  ? 'Onboarding Complete!' 
+                  : taskStatus.result.partial_success 
+                    ? 'Partial Success'
+                    : 'Onboarding Issues'}
               </h4>
-              <div className="space-y-1 text-sm text-green-800 dark:text-green-200">
-                {taskStatus.result.device_name && (
+              <div className={`space-y-1 text-sm ${
+                taskStatus.result.success 
+                  ? 'text-green-800 dark:text-green-200' 
+                  : taskStatus.result.partial_success 
+                    ? 'text-yellow-800 dark:text-yellow-200'
+                    : 'text-red-800 dark:text-red-200'
+              }`}>
+                {/* Multi-device summary */}
+                {taskStatus.result.device_count !== undefined && taskStatus.result.device_count > 1 && (
+                  <div className="mb-2 pb-2 border-b border-current/20">
+                    <p>
+                      <span className="font-medium">Devices:</span>{' '}
+                      {taskStatus.result.successful_devices}/{taskStatus.result.device_count} successful
+                      {taskStatus.result.failed_devices !== undefined && taskStatus.result.failed_devices > 0 && (
+                        <span className="text-red-600 dark:text-red-400"> ({taskStatus.result.failed_devices} failed)</span>
+                      )}
+                    </p>
+                  </div>
+                )}
+                
+                {/* Single device info (backward compatible) */}
+                {taskStatus.result.device_name && !taskStatus.result.devices && (
                   <p><span className="font-medium">Device:</span> {taskStatus.result.device_name}</p>
                 )}
+                
+                {/* Multi-device list */}
+                {taskStatus.result.devices && taskStatus.result.devices.length > 0 && (
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {taskStatus.result.devices.map((device, idx) => (
+                      <div 
+                        key={device.ip_address || idx} 
+                        className={`text-xs p-2 rounded ${
+                          device.success 
+                            ? 'bg-green-100 dark:bg-green-900/30' 
+                            : 'bg-red-100 dark:bg-red-900/30'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1">
+                          {device.success ? (
+                            <CheckCircle2 className="h-3 w-3 text-green-600" />
+                          ) : (
+                            <XCircle className="h-3 w-3 text-red-600" />
+                          )}
+                          <span className="font-medium">{device.device_name || device.ip_address}</span>
+                          {device.device_name && (
+                            <span className="text-muted-foreground">({device.ip_address})</span>
+                          )}
+                        </div>
+                        {!device.success && device.error && (
+                          <p className="text-red-600 dark:text-red-400 mt-1 pl-4">{device.error}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
                 {taskStatus.result.tags_applied !== undefined && taskStatus.result.tags_applied > 0 && (
-                  <p><span className="font-medium">Tags applied:</span> {taskStatus.result.tags_applied}</p>
+                  <p><span className="font-medium">Tags applied:</span> {taskStatus.result.tags_applied} (per device)</p>
                 )}
                 {taskStatus.result.custom_fields_applied !== undefined && taskStatus.result.custom_fields_applied > 0 && (
-                  <p><span className="font-medium">Custom fields applied:</span> {taskStatus.result.custom_fields_applied}</p>
+                  <p><span className="font-medium">Custom fields applied:</span> {taskStatus.result.custom_fields_applied} (per device)</p>
                 )}
                 {taskStatus.result.sync_result && (
                   <p><span className="font-medium">Network sync:</span> {taskStatus.result.sync_result.success ? '✓ Completed' : '✗ Failed'}</p>

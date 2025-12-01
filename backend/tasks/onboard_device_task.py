@@ -31,17 +31,19 @@ def onboard_device_task(
     custom_fields: Optional[Dict[str, str]] = None,
 ) -> dict:
     """
-    Onboard a device to Nautobot with tags and custom fields.
+    Onboard one or more devices to Nautobot with tags and custom fields.
 
     Process:
-    1. Call Nautobot onboarding job
+    1. Call Nautobot onboarding job (handles multiple IPs)
     2. Wait for job completion (max 90 seconds)
-    3. Get device UUID from IP address
-    4. Update device with tags and custom fields
+    3. For each IP address:
+       a. Get device UUID from IP address
+       b. Update device with tags and custom fields
+       c. Sync network data from device
 
     Args:
         self: Task instance (for updating state)
-        ip_address: Device IP address
+        ip_address: Device IP address(es) - comma-separated for multiple
         location_id: Nautobot location ID
         role_id: Nautobot role ID
         namespace_id: Nautobot namespace ID
@@ -58,24 +60,33 @@ def onboard_device_task(
         custom_fields: Dict of custom field key-value pairs
 
     Returns:
-        dict: Result with success status, message, and details
+        dict: Result with success status, message, and details for all devices
     """
     try:
-        logger.info(f"Starting device onboarding for IP: {ip_address}")
+        # Parse IP addresses (comma-separated)
+        ip_list = [ip.strip() for ip in ip_address.split(",") if ip.strip()]
+        device_count = len(ip_list)
+        is_multi_device = device_count > 1
+
+        logger.info(
+            f"Starting device onboarding for {device_count} IP(s): {', '.join(ip_list)}"
+        )
 
         # Update progress
         self.update_state(
             state="PROGRESS",
             meta={
                 "stage": "onboarding",
-                "status": f"Initiating onboarding for {ip_address}",
-                "progress": 10,
+                "status": f"Initiating onboarding for {device_count} device(s)",
+                "progress": 5,
+                "device_count": device_count,
+                "ip_addresses": ip_list,
             },
         )
 
-        # Step 1: Call Nautobot onboarding job
+        # Step 1: Call Nautobot onboarding job (sends all IPs at once)
         job_id, job_url = _trigger_nautobot_onboarding(
-            ip_address=ip_address,
+            ip_address=ip_address,  # Pass original comma-separated string
             location_id=location_id,
             role_id=role_id,
             namespace_id=namespace_id,
@@ -93,15 +104,19 @@ def onboard_device_task(
             state="PROGRESS",
             meta={
                 "stage": "waiting",
-                "status": f"Waiting for onboarding job {job_id} to complete",
-                "progress": 30,
+                "status": f"Waiting for onboarding job to complete ({device_count} devices)",
+                "progress": 10,
                 "job_id": job_id,
                 "job_url": job_url,
+                "device_count": device_count,
             },
         )
 
-        # Step 2: Wait for job completion (max 90 seconds)
-        job_success, job_result = _wait_for_job_completion(self, job_id, max_wait=90)
+        # Step 2: Wait for job completion (max 90 seconds + extra time for multiple devices)
+        max_wait = 90 + (device_count - 1) * 30  # Add 30 seconds per additional device
+        job_success, job_result = _wait_for_job_completion(
+            self, job_id, max_wait=max_wait
+        )
 
         if not job_success:
             error_msg = f"Onboarding job failed or timed out: {job_result}"
@@ -112,19 +127,142 @@ def onboard_device_task(
                 "job_id": job_id,
                 "job_url": job_url,
                 "stage": "onboarding_failed",
+                "device_count": device_count,
             }
 
         logger.info(f"Onboarding job completed successfully: {job_id}")
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "stage": "device_lookup",
-                "status": "Device onboarded, retrieving device ID",
-                "progress": 60,
-            },
+
+        # Step 3: Process each device individually
+        device_results = []
+        successful_devices = 0
+        failed_devices = 0
+
+        for idx, single_ip in enumerate(ip_list):
+            device_num = idx + 1
+            # Calculate progress: 50-95% range divided among devices
+            base_progress = 50
+            progress_per_device = 45 / device_count
+            current_progress = int(base_progress + (idx * progress_per_device))
+
+            self.update_state(
+                state="PROGRESS",
+                meta={
+                    "stage": "processing_devices",
+                    "status": f"Processing device {device_num}/{device_count}: {single_ip}",
+                    "progress": current_progress,
+                    "job_id": job_id,
+                    "job_url": job_url,
+                    "current_device": device_num,
+                    "device_count": device_count,
+                    "current_ip": single_ip,
+                },
+            )
+
+            # Process single device
+            device_result = _process_single_device(
+                task_instance=self,
+                ip_address=single_ip,
+                namespace_id=namespace_id,
+                prefix_status_id=prefix_status_id,
+                interface_status_id=interface_status_id,
+                ip_address_status_id=ip_address_status_id,
+                sync_options=sync_options,
+                tags=tags,
+                custom_fields=custom_fields,
+                device_num=device_num,
+                device_count=device_count,
+            )
+
+            device_results.append(device_result)
+
+            if device_result.get("success"):
+                successful_devices += 1
+            else:
+                failed_devices += 1
+
+        # Build final result
+        all_success = failed_devices == 0
+        partial_success = successful_devices > 0 and failed_devices > 0
+
+        if is_multi_device:
+            if all_success:
+                message = f"All {device_count} devices successfully onboarded, configured, and synced"
+                stage = "completed"
+            elif partial_success:
+                message = f"{successful_devices}/{device_count} devices onboarded successfully, {failed_devices} failed"
+                stage = "partial_success"
+            else:
+                message = f"All {device_count} devices failed to complete post-onboarding steps"
+                stage = "all_failed"
+        else:
+            # Single device - use the device result directly
+            result = device_results[0]
+            if result.get("success"):
+                message = f"Device {result.get('device_name', 'unknown')} successfully onboarded, configured, and synced"
+                stage = "completed"
+            else:
+                message = result.get("error", "Device processing failed")
+                stage = result.get("stage", "failed")
+
+        return {
+            "success": all_success,
+            "partial_success": partial_success,
+            "message": message,
+            "job_id": job_id,
+            "job_url": job_url,
+            "device_count": device_count,
+            "successful_devices": successful_devices,
+            "failed_devices": failed_devices,
+            "devices": device_results,
+            "tags_applied": len(tags) if tags else 0,
+            "custom_fields_applied": len(custom_fields) if custom_fields else 0,
+            "stage": stage,
+        }
+
+    except Exception as e:
+        error_msg = f"Unexpected error during device onboarding: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return {"success": False, "error": error_msg, "stage": "exception"}
+
+
+def _process_single_device(
+    task_instance,
+    ip_address: str,
+    namespace_id: str,
+    prefix_status_id: str,
+    interface_status_id: str,
+    ip_address_status_id: str,
+    sync_options: Optional[List[str]],
+    tags: Optional[List[str]],
+    custom_fields: Optional[Dict[str, str]],
+    device_num: int,
+    device_count: int,
+) -> dict:
+    """
+    Process a single device after onboarding: lookup, update tags/custom fields, sync.
+
+    Args:
+        task_instance: Celery task instance for progress updates
+        ip_address: Single IP address
+        namespace_id: Namespace ID
+        prefix_status_id: Prefix status ID
+        interface_status_id: Interface status ID
+        ip_address_status_id: IP address status ID
+        sync_options: List of sync options
+        tags: List of tag IDs
+        custom_fields: Dict of custom field values
+        device_num: Current device number (1-based)
+        device_count: Total number of devices
+
+    Returns:
+        dict: Result for this device
+    """
+    try:
+        logger.info(
+            f"Processing device {device_num}/{device_count}: looking up {ip_address}"
         )
 
-        # Step 3: Get device UUID from IP address
+        # Get device UUID from IP address
         device_id, device_name = _get_device_id_from_ip(ip_address)
 
         if not device_id:
@@ -132,25 +270,16 @@ def onboard_device_task(
             logger.error(error_msg)
             return {
                 "success": False,
+                "ip_address": ip_address,
                 "error": error_msg,
-                "job_id": job_id,
-                "job_url": job_url,
                 "stage": "device_lookup_failed",
             }
 
-        logger.info(f"Found device: {device_name} (ID: {device_id})")
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "stage": "updating",
-                "status": f"Updating device {device_name} with tags and custom fields",
-                "progress": 80,
-                "device_id": device_id,
-                "device_name": device_name,
-            },
+        logger.info(
+            f"Found device {device_num}/{device_count}: {device_name} (ID: {device_id})"
         )
 
-        # Step 4: Update device with tags and custom fields
+        # Update device with tags and custom fields
         update_results = []
 
         if tags and len(tags) > 0:
@@ -168,35 +297,11 @@ def onboard_device_task(
         # Check if all updates succeeded
         all_updates_success = all(r.get("success", False) for r in update_results)
 
-        if not all_updates_success:
+        if update_results and not all_updates_success:
             failed_updates = [r for r in update_results if not r.get("success", False)]
-            error_msg = f"Some device updates failed: {failed_updates}"
-            logger.warning(error_msg)
-            return {
-                "success": False,
-                "warning": error_msg,
-                "job_id": job_id,
-                "job_url": job_url,
-                "device_id": device_id,
-                "device_name": device_name,
-                "update_results": update_results,
-                "stage": "update_partial_success",
-            }
+            logger.warning(f"Some updates failed for {device_name}: {failed_updates}")
 
-        logger.info(f"Device {device_name} onboarded and updated successfully")
-
-        # Step 5: Sync network data from device
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "stage": "syncing",
-                "status": f"Syncing network data from device {device_name}",
-                "progress": 90,
-                "device_id": device_id,
-                "device_name": device_name,
-            },
-        )
-
+        # Sync network data from device
         logger.info(f"Starting network data sync for device {device_name}")
         sync_result = _sync_network_data(
             device_id=device_id,
@@ -207,25 +312,27 @@ def onboard_device_task(
             sync_options=sync_options,
         )
 
+        logger.info(f"Device {device_name} ({ip_address}) processing complete")
+
         return {
             "success": True,
-            "message": f"Device {device_name} successfully onboarded, configured, and synced",
-            "job_id": job_id,
-            "job_url": job_url,
+            "ip_address": ip_address,
             "device_id": device_id,
             "device_name": device_name,
-            "ip_address": ip_address,
-            "tags_applied": len(tags) if tags else 0,
-            "custom_fields_applied": len(custom_fields) if custom_fields else 0,
             "update_results": update_results,
             "sync_result": sync_result,
             "stage": "completed",
         }
 
     except Exception as e:
-        error_msg = f"Unexpected error during device onboarding: {str(e)}"
+        error_msg = f"Error processing device {ip_address}: {str(e)}"
         logger.error(error_msg, exc_info=True)
-        return {"success": False, "error": error_msg, "stage": "exception"}
+        return {
+            "success": False,
+            "ip_address": ip_address,
+            "error": error_msg,
+            "stage": "exception",
+        }
 
 
 def _trigger_nautobot_onboarding(

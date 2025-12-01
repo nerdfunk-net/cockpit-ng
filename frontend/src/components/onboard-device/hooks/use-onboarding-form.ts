@@ -39,9 +39,15 @@ export function useOnboardingForm() {
     setFormData(prev => ({ ...prev, ip_address: value }))
 
     const isValid = validateIPAddress(value)
+    const ipCount = value.split(',').map(ip => ip.trim()).filter(ip => ip.length > 0).length
+    
     setIpValidation({
       isValid,
-      message: isValid ? 'Valid IP address(es)' : 'Please enter valid IP address(es)'
+      message: isValid 
+        ? ipCount > 1 
+          ? `✓ ${ipCount} valid IP addresses` 
+          : 'Valid IP address'
+        : 'Please enter valid IP address(es) separated by commas'
     })
   }, [])
 
