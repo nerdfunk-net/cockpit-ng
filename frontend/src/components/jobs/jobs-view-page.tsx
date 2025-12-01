@@ -25,13 +25,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { History, RefreshCw, XCircle, ChevronLeft, ChevronRight, Trash2, Eye, CheckCircle2, XCircle as XCircleIcon, AlertCircle, Server, GitBranch, Key, FileText, HardDrive, Wifi, Download } from "lucide-react"
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { History, RefreshCw, XCircle, ChevronLeft, ChevronRight, Trash2, Eye, CheckCircle2, XCircle as XCircleIcon, AlertCircle, Server, GitBranch, Key, FileText, HardDrive, Wifi, Download, ChevronDown } from "lucide-react"
 import { useAuthStore } from "@/lib/auth-store"
 import { useToast } from "@/hooks/use-toast"
 
@@ -175,10 +176,10 @@ export function JobsViewPage() {
   const [pageSize] = useState(25)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [jobTypeFilter, setJobTypeFilter] = useState<string>("all")
-  const [triggerFilter, setTriggerFilter] = useState<string>("all")
-  const [templateFilter, setTemplateFilter] = useState<string>("all")
+  const [statusFilter, setStatusFilter] = useState<string[]>([])
+  const [jobTypeFilter, setJobTypeFilter] = useState<string[]>([])
+  const [triggerFilter, setTriggerFilter] = useState<string[]>([])
+  const [templateFilter, setTemplateFilter] = useState<string[]>([])
   const [availableTemplates, setAvailableTemplates] = useState<Array<{id: number, name: string}>>([])
   const [cancellingId, setCancellingId] = useState<number | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
@@ -218,17 +219,17 @@ export function JobsViewPage() {
         page_size: pageSize.toString(),
       })
       
-      if (statusFilter && statusFilter !== "all") {
-        params.append("status", statusFilter)
+      if (statusFilter.length > 0) {
+        params.append("status", statusFilter.join(","))
       }
-      if (jobTypeFilter && jobTypeFilter !== "all") {
-        params.append("job_type", jobTypeFilter)
+      if (jobTypeFilter.length > 0) {
+        params.append("job_type", jobTypeFilter.join(","))
       }
-      if (triggerFilter && triggerFilter !== "all") {
-        params.append("triggered_by", triggerFilter)
+      if (triggerFilter.length > 0) {
+        params.append("triggered_by", triggerFilter.join(","))
       }
-      if (templateFilter && templateFilter !== "all") {
-        params.append("template_id", templateFilter)
+      if (templateFilter.length > 0) {
+        params.append("template_id", templateFilter.join(","))
       }
 
       const response = await fetch(`/api/proxy/job-runs?${params.toString()}`, {
@@ -329,16 +330,19 @@ export function JobsViewPage() {
     }
   }, [token, toast, fetchJobRuns])
 
-  const hasActiveFilters = statusFilter !== "all" || jobTypeFilter !== "all" || triggerFilter !== "all" || templateFilter !== "all"
+  const hasActiveFilters = statusFilter.length > 0 || jobTypeFilter.length > 0 || triggerFilter.length > 0 || templateFilter.length > 0
 
   const getFilterDescription = useCallback(() => {
     const parts: string[] = []
-    if (statusFilter !== "all") parts.push(`status: ${statusFilter}`)
-    if (jobTypeFilter !== "all") parts.push(`type: ${jobTypeFilter}`)
-    if (triggerFilter !== "all") parts.push(`trigger: ${triggerFilter}`)
-    if (templateFilter !== "all") {
-      const template = availableTemplates.find(t => t.id.toString() === templateFilter)
-      parts.push(`template: ${template?.name || templateFilter}`)
+    if (statusFilter.length > 0) parts.push(`status: ${statusFilter.join(", ")}`)
+    if (jobTypeFilter.length > 0) parts.push(`type: ${jobTypeFilter.join(", ")}`)
+    if (triggerFilter.length > 0) parts.push(`trigger: ${triggerFilter.join(", ")}`)
+    if (templateFilter.length > 0) {
+      const templateNames = templateFilter.map(id => {
+        const template = availableTemplates.find(t => t.id.toString() === id)
+        return template?.name || id
+      })
+      parts.push(`template: ${templateNames.join(", ")}`)
     }
     return parts.length > 0 ? parts.join(", ") : "all"
   }, [statusFilter, jobTypeFilter, triggerFilter, templateFilter, availableTemplates])
@@ -358,10 +362,10 @@ export function JobsViewPage() {
       
       // Build query params based on active filters
       const params = new URLSearchParams()
-      if (statusFilter !== "all") params.append("status", statusFilter)
-      if (jobTypeFilter !== "all") params.append("job_type", jobTypeFilter)
-      if (triggerFilter !== "all") params.append("triggered_by", triggerFilter)
-      if (templateFilter !== "all") params.append("template_id", templateFilter)
+      if (statusFilter.length > 0) params.append("status", statusFilter.join(","))
+      if (jobTypeFilter.length > 0) params.append("job_type", jobTypeFilter.join(","))
+      if (triggerFilter.length > 0) params.append("triggered_by", triggerFilter.join(","))
+      if (templateFilter.length > 0) params.append("template_id", templateFilter.join(","))
       
       const endpoint = hasActiveFilters
         ? `/api/proxy/job-runs/clear-filtered?${params.toString()}`
@@ -482,6 +486,60 @@ export function JobsViewPage() {
     )
   }
 
+  // Helper functions for multi-select filters
+  const toggleStatusFilter = (value: string) => {
+    setStatusFilter(prev => 
+      prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]
+    )
+    setPage(1)
+  }
+
+  const toggleJobTypeFilter = (value: string) => {
+    setJobTypeFilter(prev => 
+      prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]
+    )
+    setPage(1)
+  }
+
+  const toggleTriggerFilter = (value: string) => {
+    setTriggerFilter(prev => 
+      prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]
+    )
+    setPage(1)
+  }
+
+  const toggleTemplateFilter = (value: string) => {
+    setTemplateFilter(prev => 
+      prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]
+    )
+    setPage(1)
+  }
+
+  // Filter option definitions
+  const statusOptions = [
+    { value: "pending", label: "Pending" },
+    { value: "running", label: "Running" },
+    { value: "completed", label: "Completed" },
+    { value: "failed", label: "Failed" },
+    { value: "cancelled", label: "Cancelled" },
+  ]
+
+  const jobTypeOptions = [
+    { value: "backup", label: "Backup" },
+    { value: "cache_devices", label: "Cache Devices" },
+    { value: "cache_locations", label: "Cache Locations" },
+    { value: "cache_git_commits", label: "Cache Git Commits" },
+    { value: "sync_devices", label: "Sync Devices" },
+    { value: "run_commands", label: "Run Commands" },
+    { value: "compare_devices", label: "Compare Devices" },
+  ]
+
+  const triggerOptions = [
+    { value: "manual", label: "Manual" },
+    { value: "schedule", label: "Schedule" },
+    { value: "system", label: "System" },
+  ]
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -493,61 +551,141 @@ export function JobsViewPage() {
         </div>
         <div className="flex items-center gap-3">
           {/* Filters */}
-          <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setPage(1); }}>
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="running">Running</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select value={jobTypeFilter} onValueChange={(value) => { setJobTypeFilter(value); setPage(1); }}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Job Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="backup">Backup</SelectItem>
-              <SelectItem value="cache_devices">Cache Devices</SelectItem>
-              <SelectItem value="cache_locations">Cache Locations</SelectItem>
-              <SelectItem value="cache_git_commits">Cache Git Commits</SelectItem>
-              <SelectItem value="sync_devices">Sync Devices</SelectItem>
-              <SelectItem value="run_commands">Run Commands</SelectItem>
-              <SelectItem value="compare_devices">Compare Devices</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={triggerFilter} onValueChange={(value) => { setTriggerFilter(value); setPage(1); }}>
-            <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Trigger" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Triggers</SelectItem>
-              <SelectItem value="manual">Manual</SelectItem>
-              <SelectItem value="schedule">Schedule</SelectItem>
-              <SelectItem value="system">System</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={templateFilter} onValueChange={(value) => { setTemplateFilter(value); setPage(1); }}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Template" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Templates</SelectItem>
-              {availableTemplates.map((template) => (
-                <SelectItem key={template.id} value={template.id.toString()}>
-                  {template.name}
-                </SelectItem>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-[130px] justify-between">
+                {statusFilter.length === 0 ? "All Status" : `${statusFilter.length} selected`}
+                <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[150px]">
+              <DropdownMenuLabel>Status</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {statusOptions.map((option) => (
+                <DropdownMenuCheckboxItem
+                  key={option.value}
+                  checked={statusFilter.includes(option.value)}
+                  onCheckedChange={() => toggleStatusFilter(option.value)}
+                >
+                  {option.label}
+                </DropdownMenuCheckboxItem>
               ))}
-            </SelectContent>
-          </Select>
+              {statusFilter.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuCheckboxItem
+                    checked={false}
+                    onCheckedChange={() => setStatusFilter([])}
+                    className="text-red-600"
+                  >
+                    Clear all
+                  </DropdownMenuCheckboxItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-[150px] justify-between">
+                {jobTypeFilter.length === 0 ? "All Types" : `${jobTypeFilter.length} selected`}
+                <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[180px]">
+              <DropdownMenuLabel>Job Type</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {jobTypeOptions.map((option) => (
+                <DropdownMenuCheckboxItem
+                  key={option.value}
+                  checked={jobTypeFilter.includes(option.value)}
+                  onCheckedChange={() => toggleJobTypeFilter(option.value)}
+                >
+                  {option.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+              {jobTypeFilter.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuCheckboxItem
+                    checked={false}
+                    onCheckedChange={() => setJobTypeFilter([])}
+                    className="text-red-600"
+                  >
+                    Clear all
+                  </DropdownMenuCheckboxItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-[130px] justify-between">
+                {triggerFilter.length === 0 ? "All Triggers" : `${triggerFilter.length} selected`}
+                <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[150px]">
+              <DropdownMenuLabel>Trigger</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {triggerOptions.map((option) => (
+                <DropdownMenuCheckboxItem
+                  key={option.value}
+                  checked={triggerFilter.includes(option.value)}
+                  onCheckedChange={() => toggleTriggerFilter(option.value)}
+                >
+                  {option.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+              {triggerFilter.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuCheckboxItem
+                    checked={false}
+                    onCheckedChange={() => setTriggerFilter([])}
+                    className="text-red-600"
+                  >
+                    Clear all
+                  </DropdownMenuCheckboxItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-[150px] justify-between">
+                {templateFilter.length === 0 ? "All Templates" : `${templateFilter.length} selected`}
+                <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[200px]">
+              <DropdownMenuLabel>Template</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {availableTemplates.map((template) => (
+                <DropdownMenuCheckboxItem
+                  key={template.id}
+                  checked={templateFilter.includes(template.id.toString())}
+                  onCheckedChange={() => toggleTemplateFilter(template.id.toString())}
+                >
+                  {template.name}
+                </DropdownMenuCheckboxItem>
+              ))}
+              {templateFilter.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuCheckboxItem
+                    checked={false}
+                    onCheckedChange={() => setTemplateFilter([])}
+                    className="text-red-600"
+                  >
+                    Clear all
+                  </DropdownMenuCheckboxItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <Button onClick={fetchJobRuns} variant="outline" size="sm" disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />

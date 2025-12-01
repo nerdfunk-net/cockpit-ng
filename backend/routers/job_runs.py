@@ -20,15 +20,18 @@ router = APIRouter(prefix="/api/job-runs", tags=["job-runs"])
 async def list_job_runs(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(25, ge=1, le=100, description="Items per page"),
-    status: Optional[str] = Query(None, description="Filter by status"),
-    job_type: Optional[str] = Query(None, description="Filter by job type"),
-    triggered_by: Optional[str] = Query(None, description="Filter by trigger type"),
+    status: Optional[str] = Query(None, description="Filter by status (comma-separated for multiple)"),
+    job_type: Optional[str] = Query(None, description="Filter by job type (comma-separated for multiple)"),
+    triggered_by: Optional[str] = Query(None, description="Filter by trigger type (comma-separated for multiple)"),
     schedule_id: Optional[int] = Query(None, description="Filter by schedule ID"),
-    template_id: Optional[int] = Query(None, description="Filter by template ID"),
+    template_id: Optional[str] = Query(None, description="Filter by template ID (comma-separated for multiple)"),
     current_user: dict = Depends(require_permission("jobs", "read")),
 ):
     """
     List job runs with pagination and optional filters.
+    
+    Filters support comma-separated values for multiple selections.
+    Example: ?status=completed,failed&job_type=backup,sync_devices
 
     Returns paginated list of job runs including:
     - Job run details (name, type, status)
@@ -37,14 +40,20 @@ async def list_job_runs(
     - Related schedule and template information
     """
     try:
+        # Parse comma-separated values into lists
+        status_list = status.split(",") if status else None
+        job_type_list = job_type.split(",") if job_type else None
+        triggered_by_list = triggered_by.split(",") if triggered_by else None
+        template_id_list = [int(t) for t in template_id.split(",") if t.isdigit()] if template_id else None
+        
         result = job_run_manager.list_job_runs(
             page=page,
             page_size=page_size,
-            status=status,
-            job_type=job_type,
-            triggered_by=triggered_by,
+            status=status_list,
+            job_type=job_type_list,
+            triggered_by=triggered_by_list,
             schedule_id=schedule_id,
-            template_id=template_id,
+            template_id=template_id_list,
         )
         return result
     except Exception as e:
@@ -288,22 +297,29 @@ async def clear_all_runs(
 
 @router.delete("/clear-filtered")
 async def clear_filtered_runs(
-    status: Optional[str] = Query(None, description="Filter by status"),
-    job_type: Optional[str] = Query(None, description="Filter by job type"),
-    triggered_by: Optional[str] = Query(None, description="Filter by trigger type"),
-    template_id: Optional[int] = Query(None, description="Filter by template ID"),
+    status: Optional[str] = Query(None, description="Filter by status (comma-separated for multiple)"),
+    job_type: Optional[str] = Query(None, description="Filter by job type (comma-separated for multiple)"),
+    triggered_by: Optional[str] = Query(None, description="Filter by trigger type (comma-separated for multiple)"),
+    template_id: Optional[str] = Query(None, description="Filter by template ID (comma-separated for multiple)"),
     current_user: dict = Depends(require_permission("jobs", "write")),
 ):
     """
     Clear job runs matching the specified filters.
     Does not delete pending or running jobs.
+    Supports comma-separated values for multiple selections.
     """
     try:
+        # Parse comma-separated values into lists
+        status_list = status.split(",") if status else None
+        job_type_list = job_type.split(",") if job_type else None
+        triggered_by_list = triggered_by.split(",") if triggered_by else None
+        template_id_list = [int(t) for t in template_id.split(",") if t.isdigit()] if template_id else None
+        
         count = job_run_manager.clear_filtered_runs(
-            status=status,
-            job_type=job_type,
-            triggered_by=triggered_by,
-            template_id=template_id,
+            status=status_list,
+            job_type=job_type_list,
+            triggered_by=triggered_by_list,
+            template_id=template_id_list,
         )
         filters = []
         if status:

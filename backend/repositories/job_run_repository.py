@@ -130,13 +130,13 @@ class JobRunRepository(BaseRepository[JobRun]):
         self,
         page: int = 1,
         page_size: int = 25,
-        status: Optional[str] = None,
-        job_type: Optional[str] = None,
-        triggered_by: Optional[str] = None,
+        status: Optional[List[str]] = None,
+        job_type: Optional[List[str]] = None,
+        triggered_by: Optional[List[str]] = None,
         schedule_id: Optional[int] = None,
-        template_id: Optional[int] = None,
+        template_id: Optional[List[int]] = None,
     ) -> tuple[List[Dict[str, Any]], int]:
-        """Get paginated job runs with filters. Returns (items, total_count)"""
+        """Get paginated job runs with filters. Supports multiple values for filtering. Returns (items, total_count)"""
         from core.database import get_db_session
 
         session = get_db_session()
@@ -144,15 +144,27 @@ class JobRunRepository(BaseRepository[JobRun]):
             query = session.query(self.model)
 
             if status:
-                query = query.filter(self.model.status == status)
+                if len(status) == 1:
+                    query = query.filter(self.model.status == status[0])
+                else:
+                    query = query.filter(self.model.status.in_(status))
             if job_type:
-                query = query.filter(self.model.job_type == job_type)
+                if len(job_type) == 1:
+                    query = query.filter(self.model.job_type == job_type[0])
+                else:
+                    query = query.filter(self.model.job_type.in_(job_type))
             if triggered_by:
-                query = query.filter(self.model.triggered_by == triggered_by)
+                if len(triggered_by) == 1:
+                    query = query.filter(self.model.triggered_by == triggered_by[0])
+                else:
+                    query = query.filter(self.model.triggered_by.in_(triggered_by))
             if schedule_id:
                 query = query.filter(self.model.job_schedule_id == schedule_id)
             if template_id:
-                query = query.filter(self.model.job_template_id == template_id)
+                if len(template_id) == 1:
+                    query = query.filter(self.model.job_template_id == template_id[0])
+                else:
+                    query = query.filter(self.model.job_template_id.in_(template_id))
 
             total = query.count()
 
@@ -351,12 +363,12 @@ class JobRunRepository(BaseRepository[JobRun]):
 
     def clear_filtered(
         self,
-        status: Optional[str] = None,
-        job_type: Optional[str] = None,
-        triggered_by: Optional[str] = None,
-        template_id: Optional[int] = None,
+        status: Optional[List[str]] = None,
+        job_type: Optional[List[str]] = None,
+        triggered_by: Optional[List[str]] = None,
+        template_id: Optional[List[int]] = None,
     ) -> int:
-        """Delete job runs matching filters. Returns count deleted."""
+        """Delete job runs matching filters. Supports multiple values. Returns count deleted."""
         from core.database import get_db_session
 
         session = get_db_session()
@@ -367,13 +379,25 @@ class JobRunRepository(BaseRepository[JobRun]):
             query = query.filter(self.model.status.notin_(["pending", "running"]))
 
             if status:
-                query = query.filter(self.model.status == status)
+                if len(status) == 1:
+                    query = query.filter(self.model.status == status[0])
+                else:
+                    query = query.filter(self.model.status.in_(status))
             if job_type:
-                query = query.filter(self.model.job_type == job_type)
+                if len(job_type) == 1:
+                    query = query.filter(self.model.job_type == job_type[0])
+                else:
+                    query = query.filter(self.model.job_type.in_(job_type))
             if triggered_by:
-                query = query.filter(self.model.triggered_by == triggered_by)
+                if len(triggered_by) == 1:
+                    query = query.filter(self.model.triggered_by == triggered_by[0])
+                else:
+                    query = query.filter(self.model.triggered_by.in_(triggered_by))
             if template_id:
-                query = query.filter(self.model.job_template_id == template_id)
+                if len(template_id) == 1:
+                    query = query.filter(self.model.job_template_id == template_id[0])
+                else:
+                    query = query.filter(self.model.job_template_id.in_(template_id))
 
             result = query.delete(synchronize_session="fetch")
             session.commit()

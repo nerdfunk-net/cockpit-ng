@@ -62,13 +62,13 @@ def get_job_run_by_celery_id(celery_task_id: str) -> Optional[Dict[str, Any]]:
 def list_job_runs(
     page: int = 1,
     page_size: int = 25,
-    status: Optional[str] = None,
-    job_type: Optional[str] = None,
-    triggered_by: Optional[str] = None,
+    status: Optional[List[str]] = None,
+    job_type: Optional[List[str]] = None,
+    triggered_by: Optional[List[str]] = None,
     schedule_id: Optional[int] = None,
-    template_id: Optional[int] = None,
+    template_id: Optional[List[int]] = None,
 ) -> Dict[str, Any]:
-    """List job runs with pagination and filters"""
+    """List job runs with pagination and filters (supports multiple values)"""
     items, total = repo.get_paginated(
         page=page,
         page_size=page_size,
@@ -253,12 +253,12 @@ def clear_all_runs() -> int:
 
 
 def clear_filtered_runs(
-    status: Optional[str] = None,
-    job_type: Optional[str] = None,
-    triggered_by: Optional[str] = None,
-    template_id: Optional[int] = None,
+    status: Optional[List[str]] = None,
+    job_type: Optional[List[str]] = None,
+    triggered_by: Optional[List[str]] = None,
+    template_id: Optional[List[int]] = None,
 ) -> int:
-    """Delete job runs matching filters (excludes pending/running jobs)"""
+    """Delete job runs matching filters (excludes pending/running jobs). Supports multiple values."""
     count = repo.clear_filtered(
         status=status,
         job_type=job_type,
@@ -267,13 +267,13 @@ def clear_filtered_runs(
     )
     filters = []
     if status:
-        filters.append(f"status={status}")
+        filters.append(f"status={','.join(status)}")
     if job_type:
-        filters.append(f"job_type={job_type}")
+        filters.append(f"job_type={','.join(job_type)}")
     if triggered_by:
-        filters.append(f"triggered_by={triggered_by}")
+        filters.append(f"triggered_by={','.join(triggered_by)}")
     if template_id:
-        filters.append(f"template_id={template_id}")
+        filters.append(f"template_id={','.join(map(str, template_id))}")
     filter_desc = ", ".join(filters) if filters else "all"
     logger.info(f"Cleared {count} job runs (filter: {filter_desc})")
     return count
