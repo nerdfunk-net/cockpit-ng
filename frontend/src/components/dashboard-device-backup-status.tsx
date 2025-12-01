@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -50,19 +50,11 @@ export default function DashboardDeviceBackupStatus() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchFilter, setSearchFilter] = useState('')
 
-  useEffect(() => {
-    loadBackupStatus()
-  }, [])
-
-  const loadBackupStatus = async () => {
+  const loadBackupStatus = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
-      console.log('Loading device backup status...')
       const data = await apiCall<BackupCheckResponse>('celery/device-backup-status')
-      console.log('Backup status received:', data)
-      console.log('Total devices:', data.total_devices)
-      console.log('Devices array:', data.devices)
       setBackupStatus(data)
     } catch (err) {
       console.error('Error fetching backup status:', err)
@@ -70,7 +62,11 @@ export default function DashboardDeviceBackupStatus() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [apiCall])
+
+  useEffect(() => {
+    loadBackupStatus()
+  }, [loadBackupStatus])
 
   const formatTimeAgo = (timestamp: string | null): string => {
     if (!timestamp) return 'Never'

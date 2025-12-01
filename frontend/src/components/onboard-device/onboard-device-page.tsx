@@ -71,7 +71,6 @@ export function OnboardDevicePage() {
   const {
     formData,
     ipValidation,
-    isSubmitting,
     isValidatingIP,
     isSearchingDevice,
     updateFormData,
@@ -79,7 +78,7 @@ export function OnboardDevicePage() {
     checkIPInNautobot,
     searchDevice,
     validateForm,
-    submitOnboarding
+    // submitOnboarding - unused, using apiCall directly for Celery tasks
   } = useOnboardingForm()
 
   // Job tracking
@@ -89,7 +88,7 @@ export function OnboardDevicePage() {
     onboardedIPAddress,
     isCheckingJob,
     checkJob,
-    startTracking,
+    // startTracking - unused, using Celery task tracking instead
     resetTracking
   } = useJobTracking()
 
@@ -259,21 +258,16 @@ export function OnboardDevicePage() {
       const newTags = prev.includes(tagId)
         ? prev.filter(id => id !== tagId)
         : [...prev, tagId]
-      console.log('Tag toggled:', tagId, 'New tags:', newTags)
       return newTags
     })
   }, [])
 
   // Update custom field value
   const handleUpdateCustomField = useCallback((key: string, value: string) => {
-    setCustomFieldValues(prev => {
-      const newValues = {
-        ...prev,
-        [key]: value
-      }
-      console.log('Custom field updated:', key, '=', value, 'All values:', newValues)
-      return newValues
-    })
+    setCustomFieldValues(prev => ({
+      ...prev,
+      [key]: value
+    }))
   }, [])
 
   return (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
@@ -36,11 +36,7 @@ export default function DashboardJobStats() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadJobStats()
-  }, [])
-
-  const loadJobStats = async () => {
+  const loadJobStats = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -52,7 +48,11 @@ export default function DashboardJobStats() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [apiCall])
+
+  useEffect(() => {
+    loadJobStats()
+  }, [loadJobStats])
 
   const formatNumber = (num: number): string => {
     if (num >= 1000) {
