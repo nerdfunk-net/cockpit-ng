@@ -16,8 +16,10 @@ export function useOnboardingForm() {
     secret_groups_id: '',
     interface_status_id: '',
     ip_address_status_id: '',
+    prefix_status_id: '',
     port: 22,
-    timeout: 30
+    timeout: 30,
+    sync_options: ['cables', 'software', 'vlans', 'vrfs']
   })
 
   const [ipValidation, setIpValidation] = useState<IPValidation>({
@@ -177,7 +179,8 @@ export function useOnboardingForm() {
       { field: 'status_id', name: 'Device Status' },
       { field: 'secret_groups_id', name: 'Secret Group' },
       { field: 'interface_status_id', name: 'Interface Status' },
-      { field: 'ip_address_status_id', name: 'IP Address Status' }
+      { field: 'ip_address_status_id', name: 'IP Address Status' },
+      { field: 'prefix_status_id', name: 'Prefix Status' }
     ]
 
     const missingFields = requiredFields.filter(

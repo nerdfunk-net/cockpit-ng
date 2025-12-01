@@ -28,8 +28,10 @@ export interface OnboardFormData {
   secret_groups_id: string
   interface_status_id: string
   ip_address_status_id: string
+  prefix_status_id: string
   port: number
   timeout: number
+  sync_options: string[]
 }
 
 export interface StatusMessage {
@@ -43,6 +45,7 @@ export interface NautobotDefaults {
   interface_status: string
   device_status: string
   ip_address_status: string
+  ip_prefix_status: string
   namespace: string
   device_role: string
   secret_group: string

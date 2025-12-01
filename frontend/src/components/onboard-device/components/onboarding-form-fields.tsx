@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -26,11 +27,13 @@ interface OnboardingFormFieldsProps {
   deviceStatuses: DropdownOption[]
   interfaceStatuses: DropdownOption[]
   ipAddressStatuses: DropdownOption[]
+  prefixStatuses: DropdownOption[]
   secretGroups: DropdownOption[]
   locationSearchValue: string
   deviceSearchQuery: string
   onIPChange: (value: string) => void
   onFormDataChange: (field: keyof OnboardFormData, value: string | number) => void
+  onSyncOptionChange: (option: string, checked: boolean) => void
   onLocationSelect: (location: LocationItem) => void
   onCheckIP: () => void
   onSearchDevice: () => void
@@ -49,11 +52,13 @@ export function OnboardingFormFields({
   deviceStatuses = EMPTY_OPTIONS,
   interfaceStatuses = EMPTY_OPTIONS,
   ipAddressStatuses = EMPTY_OPTIONS,
+  prefixStatuses = EMPTY_OPTIONS,
   secretGroups = EMPTY_OPTIONS,
   locationSearchValue,
   deviceSearchQuery,
   onIPChange,
   onFormDataChange,
+  onSyncOptionChange,
   onLocationSelect,
   onCheckIP,
   onSearchDevice,
@@ -315,6 +320,27 @@ export function OnboardingFormFields({
             </SelectContent>
           </Select>
         </div>
+
+        <div className="space-y-1">
+          <Label className="text-[11px] font-medium">
+            Prefix Status <span className="text-red-500">*</span>
+          </Label>
+          <Select
+            value={formData.prefix_status_id}
+            onValueChange={value => onFormDataChange('prefix_status_id', value)}
+          >
+            <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+              <SelectValue placeholder="Select prefix status..." />
+            </SelectTrigger>
+            <SelectContent>
+              {prefixStatuses.map(status => (
+                <SelectItem key={status.id} value={status.id}>
+                  {status.display || status.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
           </div> {/* Close grid */}
         </div> {/* Close p-4 bg-white */}
       </div> {/* Close rounded-xl border */}
@@ -339,6 +365,39 @@ export function OnboardingFormFields({
             onChange={e => onFormDataChange('timeout', parseInt(e.target.value, 10))}
             className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
           />
+        </div>
+      </div>
+
+      {/* Sync Options */}
+      <div className="rounded-xl border shadow-sm overflow-hidden mt-4">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-1.5 px-3">
+          <div className="flex items-center space-x-1.5">
+            <div>
+              <h3 className="text-xs font-semibold">Sync Options</h3>
+              <p className="text-blue-100 text-[10px]">Configure what data to sync from the device after onboarding</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-3 bg-white">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { id: 'cables', label: 'Sync Cables' },
+              { id: 'software', label: 'Sync Software' },
+              { id: 'vlans', label: 'Sync VLANs' },
+              { id: 'vrfs', label: 'Sync VRFs' }
+            ].map(option => (
+              <div key={option.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`sync-${option.id}`}
+                  checked={formData.sync_options.includes(option.id)}
+                  onCheckedChange={(checked) => onSyncOptionChange(option.id, checked as boolean)}
+                />
+                <Label htmlFor={`sync-${option.id}`} className="text-sm font-medium cursor-pointer">
+                  {option.label}
+                </Label>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

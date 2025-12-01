@@ -21,10 +21,12 @@ def onboard_device_task(
     status_id: str,
     interface_status_id: str,
     ip_address_status_id: str,
+    prefix_status_id: str,
     secret_groups_id: str,
     platform_id: str,
     port: int,
     timeout: int,
+    sync_options: Optional[List[str]] = None,
     tags: Optional[List[str]] = None,
     custom_fields: Optional[Dict[str, str]] = None,
 ) -> dict:
@@ -46,10 +48,12 @@ def onboard_device_task(
         status_id: Device status ID
         interface_status_id: Interface status ID
         ip_address_status_id: IP address status ID
+        prefix_status_id: Prefix status ID
         secret_groups_id: Secret group ID
         platform_id: Platform ID or "detect"
         port: SSH port
         timeout: Connection timeout
+        sync_options: List of sync options (cables, software, vlans, vrfs)
         tags: List of tag IDs to apply
         custom_fields: Dict of custom field key-value pairs
 
@@ -197,9 +201,10 @@ def onboard_device_task(
         sync_result = _sync_network_data(
             device_id=device_id,
             namespace_id=namespace_id,
-            status_id=status_id,
+            prefix_status_id=prefix_status_id,
             interface_status_id=interface_status_id,
             ip_address_status_id=ip_address_status_id,
+            sync_options=sync_options,
         )
 
         return {
@@ -554,21 +559,23 @@ def _update_device_custom_fields(device_id: str, custom_fields: Dict[str, str]) 
 def _sync_network_data(
     device_id: str,
     namespace_id: str,
-    status_id: str,
+    prefix_status_id: str,
     interface_status_id: str,
     ip_address_status_id: str,
+    sync_options: Optional[List[str]] = None,
 ) -> dict:
     """
     Sync network data from device to Nautobot.
 
-    Triggers the "Sync Network Data From Network" job with all sync options enabled.
+    Triggers the "Sync Network Data From Network" job with user-specified sync options.
 
     Args:
         device_id: Device ID to sync
         namespace_id: Namespace ID for prefixes
-        status_id: Prefix status ID
+        prefix_status_id: Prefix status ID
         interface_status_id: Interface status ID
         ip_address_status_id: IP address status ID
+        sync_options: List of sync options (cables, software, vlans, vrfs)
 
     Returns:
         dict: Result with success status, job_id, and message
@@ -576,6 +583,10 @@ def _sync_network_data(
     import requests
     from settings_manager import settings_manager
     from config import settings
+
+    # Default sync options if none provided
+    if sync_options is None:
+        sync_options = ["cables", "software", "vlans", "vrfs"]
 
     try:
         # Get Nautobot config
@@ -590,18 +601,18 @@ def _sync_network_data(
             nautobot_url = settings.nautobot_url.rstrip("/")
             nautobot_token = settings.nautobot_token
 
-        # Prepare sync job data with all options enabled
+        # Prepare sync job data with user-specified options
         job_data = {
             "data": {
                 "devices": [device_id],
-                "default_prefix_status": status_id,
+                "default_prefix_status": prefix_status_id,
                 "interface_status": interface_status_id,
                 "ip_address_status": ip_address_status_id,
                 "namespace": namespace_id,
-                "sync_cables": True,
-                "sync_software_version": True,
-                "sync_vlans": True,
-                "sync_vrfs": True,
+                "sync_cables": "cables" in sync_options,
+                "sync_software_version": "software" in sync_options,
+                "sync_vlans": "vlans" in sync_options,
+                "sync_vrfs": "vrfs" in sync_options,
             }
         }
 
@@ -626,10 +637,10 @@ def _sync_network_data(
                 "job_id": sync_job_id,
                 "job_url": f"{nautobot_url}/extras/job-results/{sync_job_id}/",
                 "sync_options": {
-                    "cables": True,
-                    "software": True,
-                    "vlans": True,
-                    "vrfs": True,
+                    "cables": "cables" in sync_options,
+                    "software": "software" in sync_options,
+                    "vlans": "vlans" in sync_options,
+                    "vrfs": "vrfs" in sync_options,
                 },
             }
         else:

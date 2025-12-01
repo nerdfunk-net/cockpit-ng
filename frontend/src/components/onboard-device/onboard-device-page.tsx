@@ -59,6 +59,7 @@ export function OnboardDevicePage() {
     deviceStatuses,
     interfaceStatuses,
     ipAddressStatuses,
+    prefixStatuses,
     secretGroups,
     nautobotDefaults,
     isLoading: isLoadingData,
@@ -252,6 +253,15 @@ export function OnboardDevicePage() {
     }
   }
 
+  // Handle sync option change
+  const handleSyncOptionChange = useCallback((option: string, checked: boolean) => {
+    updateFormData({
+      sync_options: checked
+        ? [...formData.sync_options, option]
+        : formData.sync_options.filter(o => o !== option)
+    })
+  }, [formData.sync_options, updateFormData])
+
   // Toggle tag selection
   const handleToggleTag = useCallback((tagId: string) => {
     setSelectedTags(prev => {
@@ -349,11 +359,13 @@ export function OnboardDevicePage() {
                 deviceStatuses={deviceStatuses}
                 interfaceStatuses={interfaceStatuses}
                 ipAddressStatuses={ipAddressStatuses}
+                prefixStatuses={prefixStatuses}
                 secretGroups={secretGroups}
                 locationSearchValue={locationSearchValue}
                 deviceSearchQuery={deviceSearchQuery}
                 onIPChange={handleIPChange}
                 onFormDataChange={handleFormFieldChange}
+                onSyncOptionChange={handleSyncOptionChange}
                 onLocationSelect={handleLocationSelect}
                 onCheckIP={handleCheckIP}
                 onSearchDevice={handleSearchDevice}

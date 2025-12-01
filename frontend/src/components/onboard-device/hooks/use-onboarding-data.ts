@@ -22,6 +22,7 @@ export function useOnboardingData() {
   const [deviceStatuses, setDeviceStatuses] = useState<DropdownOption[]>(EMPTY_OPTIONS)
   const [interfaceStatuses, setInterfaceStatuses] = useState<DropdownOption[]>(EMPTY_OPTIONS)
   const [ipAddressStatuses, setIpAddressStatuses] = useState<DropdownOption[]>(EMPTY_OPTIONS)
+  const [prefixStatuses, setPrefixStatuses] = useState<DropdownOption[]>(EMPTY_OPTIONS)
   const [secretGroups, setSecretGroups] = useState<DropdownOption[]>(EMPTY_OPTIONS)
 
   // Default values from settings
@@ -43,6 +44,7 @@ export function useOnboardingData() {
         deviceStatusesData,
         interfaceStatusesData,
         ipAddressStatusesData,
+        prefixStatusesData,
         secretGroupsData,
         defaultsResponse
       ] = await Promise.all([
@@ -53,6 +55,7 @@ export function useOnboardingData() {
         apiCall<DropdownOption[]>('nautobot/statuses/device'),
         apiCall<DropdownOption[]>('nautobot/statuses/interface'),
         apiCall<DropdownOption[]>('nautobot/statuses/ipaddress'),
+        apiCall<DropdownOption[]>('nautobot/statuses/prefix'),
         apiCall<DropdownOption[]>('nautobot/secret-groups'),
         apiCall<{ success: boolean; data: NautobotDefaults }>('settings/nautobot/defaults')
       ])
@@ -67,6 +70,7 @@ export function useOnboardingData() {
       setDeviceStatuses(deviceStatusesData)
       setInterfaceStatuses(interfaceStatusesData)
       setIpAddressStatuses(ipAddressStatusesData)
+      setPrefixStatuses(prefixStatusesData)
       setSecretGroups(secretGroupsData)
 
       // Store defaults for future use
@@ -91,7 +95,8 @@ export function useOnboardingData() {
           role_id: findDefaultOption(deviceRoles, 'network')?.id || '',
           status_id: findDefaultOption(deviceStatuses, 'Active')?.id || '',
           interface_status_id: findDefaultOption(interfaceStatuses, 'Active')?.id || '',
-          ip_address_status_id: findDefaultOption(ipAddressStatuses, 'Active')?.id || ''
+          ip_address_status_id: findDefaultOption(ipAddressStatuses, 'Active')?.id || '',
+          prefix_status_id: findDefaultOption(prefixStatuses, 'Active')?.id || ''
         }
       }
 
@@ -104,10 +109,11 @@ export function useOnboardingData() {
         status_id: defaults.device_status || '',
         interface_status_id: defaults.interface_status || '',
         ip_address_status_id: defaults.ip_address_status || '',
+        prefix_status_id: defaults.ip_prefix_status || '',
         secret_groups_id: defaults.secret_group || ''
       }
     },
-    [namespaces, deviceRoles, deviceStatuses, interfaceStatuses, ipAddressStatuses]
+    [namespaces, deviceRoles, deviceStatuses, interfaceStatuses, ipAddressStatuses, prefixStatuses]
   )
 
   const getDefaultLocationDisplay = useCallback(
@@ -129,6 +135,7 @@ export function useOnboardingData() {
       deviceStatuses,
       interfaceStatuses,
       ipAddressStatuses,
+      prefixStatuses,
       secretGroups,
       nautobotDefaults,
       // State
@@ -146,6 +153,7 @@ export function useOnboardingData() {
       deviceStatuses,
       interfaceStatuses,
       ipAddressStatuses,
+      prefixStatuses,
       secretGroups,
       nautobotDefaults,
       isLoading,

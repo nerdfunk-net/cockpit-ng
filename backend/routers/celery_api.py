@@ -36,10 +36,12 @@ class OnboardDeviceRequest(BaseModel):
     status_id: str
     interface_status_id: str
     ip_address_status_id: str
+    prefix_status_id: str
     secret_groups_id: str
     platform_id: str
     port: int = 22
     timeout: int = 30
+    sync_options: List[str] = ["cables", "software", "vlans", "vrfs"]
     tags: Optional[List[str]] = None
     custom_fields: Optional[Dict[str, str]] = None
 
@@ -136,10 +138,12 @@ async def trigger_onboard_device(
         status_id: Device status ID
         interface_status_id: Interface status ID
         ip_address_status_id: IP address status ID
+        prefix_status_id: Prefix status ID
         secret_groups_id: Secret group ID
         platform_id: Platform ID or "detect"
         port: SSH port (default: 22)
         timeout: Connection timeout (default: 30)
+        sync_options: List of sync options (cables, software, vlans, vrfs)
         tags: List of tag IDs to apply (optional)
         custom_fields: Dict of custom field key-value pairs (optional)
 
@@ -157,10 +161,12 @@ async def trigger_onboard_device(
         status_id=request.status_id,
         interface_status_id=request.interface_status_id,
         ip_address_status_id=request.ip_address_status_id,
+        prefix_status_id=request.prefix_status_id,
         secret_groups_id=request.secret_groups_id,
         platform_id=request.platform_id,
         port=request.port,
         timeout=request.timeout,
+        sync_options=request.sync_options,
         tags=request.tags,
         custom_fields=request.custom_fields,
     )
