@@ -5,10 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
-import { 
-  Server, 
-  MapPin, 
-  Network, 
+import DashboardJobStats from '@/components/dashboard-job-stats'
+import DashboardDeviceBackupStatus from '@/components/dashboard-device-backup-status'
+import {
+  Server,
+  MapPin,
+  Network,
   Layers,
   RefreshCw,
   Clock,
@@ -328,6 +330,14 @@ export default function DashboardOverview() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Job Statistics Section */}
+      <div className="col-span-full mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+          <DashboardJobStats />
+          <DashboardDeviceBackupStatus />
+        </div>
       </div>
 
       {/* Last Updated Info */}

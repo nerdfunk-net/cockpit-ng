@@ -15,7 +15,7 @@ interface SidebarContextType {
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined)
 
 // Navigation sections - all collapsed by default on login
-const navigationSectionTitles = ['General', 'Nautobot', 'CheckMK', 'Network', 'Settings']
+const navigationSectionTitles = ['General', 'Nautobot', 'CheckMK', 'Network', 'Jobs', 'Settings']
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false)

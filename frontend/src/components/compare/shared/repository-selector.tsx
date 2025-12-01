@@ -3,7 +3,11 @@
  * Used across all compare pages for consistent repository selection
  */
 
+<<<<<<< HEAD
 import { useCallback, useRef } from 'react'
+=======
+import { useCallback, useEffect, useRef } from 'react'
+>>>>>>> celery
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { GitRepository } from '@/types/git'
@@ -25,8 +29,16 @@ export function RepositorySelector({
 }: RepositorySelectorProps) {
   // Memoize the callback - use ref to access current repositories without re-creating callback
   const repositoriesRef = useRef(repositories)
+<<<<<<< HEAD
   repositoriesRef.current = repositories
   
+=======
+
+  useEffect(() => {
+    repositoriesRef.current = repositories
+  }, [repositories])
+
+>>>>>>> celery
   const handleValueChange = useCallback((value: string) => {
     if (value === '__none__') {
       onSelectRepo(null)

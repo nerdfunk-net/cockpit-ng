@@ -4,31 +4,23 @@ Handles template storage, retrieval, and management operations
 """
 
 from __future__ import annotations
-import sqlite3
 import os
 import logging
 import json
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 import hashlib
+from core.database import get_db_session
+from repositories.template_repository import TemplateRepository, TemplateVersionRepository
+from core.models import Template, TemplateVersion
 
 logger = logging.getLogger(__name__)
 
 
 class TemplateManager:
-    """Manages configuration templates in SQLite database and file system"""
+    """Manages configuration templates in PostgreSQL database and file system"""
 
-    def __init__(self, db_path: str = None, storage_path: str = None):
-        if db_path is None:
-            # Use data/settings directory for persistence across containers
-            settings_dir = os.path.join(
-                os.path.dirname(os.path.dirname(__file__)), "data", "settings"
-            )
-            os.makedirs(settings_dir, exist_ok=True)
-            self.db_path = os.path.join(settings_dir, "cockpit_templates.db")
-        else:
-            self.db_path = db_path
-
+    def __init__(self, storage_path: str = None):
         if storage_path is None:
             # Use data/templates directory for file storage
             self.storage_path = os.path.join(
@@ -38,222 +30,81 @@ class TemplateManager:
         else:
             self.storage_path = storage_path
 
-        # Initialize database
-        self.init_database()
-
-    def init_database(self) -> bool:
-        """Initialize the templates database"""
-        try:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
-
-                # Create templates table
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS templates (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT NOT NULL,
-                        source TEXT NOT NULL CHECK(source IN ('git', 'file', 'webeditor')),
-                        template_type TEXT NOT NULL DEFAULT 'jinja2' CHECK(template_type IN ('jinja2', 'text', 'yaml', 'json', 'textfsm')),
-                        category TEXT,
-                        description TEXT,
-
-                        -- Git-specific fields
-                        git_repo_url TEXT,
-                        git_branch TEXT DEFAULT 'main',
-                        git_username TEXT,
-                        git_token TEXT,
-                        git_path TEXT,
-                        git_verify_ssl BOOLEAN DEFAULT 1,
-
-                        -- File/WebEditor-specific fields
-                        content TEXT,
-                        filename TEXT,
-                        content_hash TEXT,
-
-                        -- Metadata
-                        variables TEXT DEFAULT '{}',  -- JSON string
-                        tags TEXT DEFAULT '[]',       -- JSON string
-
-                        -- Ownership and scope
-                        created_by TEXT,
-                        scope TEXT DEFAULT 'global' CHECK(scope IN ('global', 'private')),
-
-                        -- Status
-                        is_active BOOLEAN DEFAULT 1,
-                        last_sync TIMESTAMP,
-                        sync_status TEXT,
-
-                        -- Timestamps
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-
-                # Add columns to existing tables if they don't exist (migration)
-                try:
-                    cursor.execute("SELECT created_by FROM templates LIMIT 1")
-                except sqlite3.OperationalError:
-                    cursor.execute("ALTER TABLE templates ADD COLUMN created_by TEXT")
-                    logger.info("Added 'created_by' column to templates table")
-
-                try:
-                    cursor.execute("SELECT scope FROM templates LIMIT 1")
-                except sqlite3.OperationalError:
-                    cursor.execute(
-                        "ALTER TABLE templates ADD COLUMN scope TEXT DEFAULT 'global' CHECK(scope IN ('global', 'private'))"
-                    )
-                    logger.info("Added 'scope' column to templates table")
-
-                # Create template_versions table for history
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS template_versions (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        template_id INTEGER NOT NULL,
-                        version_number INTEGER NOT NULL,
-                        content TEXT NOT NULL,
-                        content_hash TEXT NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        created_by TEXT,
-                        change_notes TEXT,
-                        FOREIGN KEY (template_id) REFERENCES templates (id) ON DELETE CASCADE
-                    )
-                """)
-
-                # Create indexes for performance
-                cursor.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_templates_name ON templates(name)"
-                )
-                cursor.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_templates_source ON templates(source)"
-                )
-                cursor.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_templates_category ON templates(category)"
-                )
-                cursor.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_templates_active ON templates(is_active)"
-                )
-                cursor.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_templates_created_by ON templates(created_by)"
-                )
-                cursor.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_templates_scope ON templates(scope)"
-                )
-                cursor.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_template_versions_template_id ON template_versions(template_id)"
-                )
-
-                # Create unique index for active template names
-                cursor.execute(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS idx_templates_active_name ON templates(name) WHERE is_active = 1"
-                )
-
-                conn.commit()
-                logger.info(f"Templates database initialized at {self.db_path}")
-                return True
-
-        except sqlite3.Error as e:
-            logger.error(f"Template database initialization failed: {e}")
-            return False
-
     def create_template(self, template_data: Dict[str, Any]) -> Optional[int]:
         """Create a new template"""
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
+            repo = TemplateRepository()
+            version_repo = TemplateVersionRepository()
 
-                # Validate required fields
-                if not template_data.get("name"):
-                    raise ValueError("Template name is required")
+            # Validate required fields
+            if not template_data.get("name"):
+                raise ValueError("Template name is required")
 
-                if not template_data.get("source"):
-                    raise ValueError("Template source is required")
+            if not template_data.get("source"):
+                raise ValueError("Template source is required")
 
-                # Check for existing active template with same name
-                cursor.execute(
-                    "SELECT id FROM templates WHERE name = ? AND is_active = 1",
-                    (template_data["name"],),
-                )
-                existing = cursor.fetchone()
-                if existing:
-                    raise ValueError(
-                        f"Template with name '{template_data['name']}' already exists"
-                    )
-
-                # Prepare data
-                now = datetime.now(timezone.utc).isoformat()
-                variables_json = json.dumps(template_data.get("variables", {}))
-                tags_json = json.dumps(template_data.get("tags", []))
-
-                # Handle content based on source
-                content = template_data.get("content", "")
-                content_hash = (
-                    hashlib.sha256(content.encode()).hexdigest() if content else None
-                )
-
-                # Insert template
-                cursor.execute(
-                    """
-                    INSERT INTO templates (
-                        name, source, template_type, category, description,
-                        git_repo_url, git_branch, git_username, git_token, git_path, git_verify_ssl,
-                        content, filename, content_hash,
-                        variables, tags, created_by, scope, is_active, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                    (
-                        template_data["name"],
-                        template_data["source"],
-                        template_data.get("template_type", "jinja2"),
-                        template_data.get("category"),
-                        template_data.get("description"),
-                        template_data.get("git_repo_url"),
-                        template_data.get("git_branch", "main"),
-                        template_data.get("git_username"),
-                        template_data.get("git_token"),
-                        template_data.get("git_path"),
-                        template_data.get("git_verify_ssl", True),
-                        content,
-                        template_data.get("filename"),
-                        content_hash,
-                        variables_json,
-                        tags_json,
-                        template_data.get("created_by"),
-                        template_data.get("scope", "global"),
-                        True,
-                        now,
-                    ),
-                )
-
-                template_id = cursor.lastrowid
-
-                # Save content to file if it's a file or webeditor template
-                if template_data["source"] in ["file", "webeditor"] and content:
-                    self._save_template_to_file(
-                        template_id,
-                        template_data["name"],
-                        content,
-                        template_data.get("filename"),
-                    )
-
-                # Create initial version
-                if content:
-                    self._create_template_version(
-                        cursor, template_id, content, content_hash, "Initial version"
-                    )
-
-                conn.commit()
-                logger.info(
-                    f"Template '{template_data['name']}' created with ID {template_id}"
-                )
-                return template_id
-
-        except ValueError as e:
-            raise e
-        except sqlite3.IntegrityError as e:
-            if "UNIQUE constraint failed" in str(e):
+            # Check for existing active template with same name
+            existing = repo.get_by_name(template_data["name"], active_only=True)
+            if existing:
                 raise ValueError(
                     f"Template with name '{template_data['name']}' already exists"
                 )
+
+            # Prepare data
+            variables_json = json.dumps(template_data.get("variables", {}))
+            tags_json = json.dumps(template_data.get("tags", []))
+
+            # Handle content based on source
+            content = template_data.get("content", "")
+            content_hash = (
+                hashlib.sha256(content.encode()).hexdigest() if content else None
+            )
+
+            # Create template using BaseRepository.create(**kwargs)
+            template = repo.create(
+                name=template_data["name"],
+                source=template_data["source"],
+                template_type=template_data.get("template_type", "jinja2"),
+                category=template_data.get("category"),
+                description=template_data.get("description"),
+                git_repo_url=template_data.get("git_repo_url"),
+                git_branch=template_data.get("git_branch", "main"),
+                git_username=template_data.get("git_username"),
+                git_token=template_data.get("git_token"),
+                git_path=template_data.get("git_path"),
+                git_verify_ssl=template_data.get("git_verify_ssl", True),
+                content=content,
+                filename=template_data.get("filename"),
+                content_hash=content_hash,
+                variables=variables_json,
+                tags=tags_json,
+                created_by=template_data.get("created_by"),
+                scope=template_data.get("scope", "global"),
+                is_active=True,
+            )
+            template_id = template.id
+
+            # Save content to file if it's a file or webeditor template
+            if template_data["source"] in ["file", "webeditor"] and content:
+                self._save_template_to_file(
+                    template_id,
+                    template_data["name"],
+                    content,
+                    template_data.get("filename"),
+                )
+
+            # Create initial version
+            if content:
+                self._create_template_version_obj(
+                    version_repo, template_id, content, content_hash, "Initial version"
+                )
+
+            logger.info(
+                f"Template '{template_data['name']}' created with ID {template_id}"
+            )
+            return template_id
+
+        except ValueError as e:
             raise e
         except Exception as e:
             logger.error(f"Error creating template: {e}")
@@ -262,20 +113,16 @@ class TemplateManager:
     def get_template(self, template_id: int) -> Optional[Dict[str, Any]]:
         """Get a template by ID"""
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
+            repo = TemplateRepository()
+            template = repo.get_by_id(template_id)
 
-                cursor.execute("SELECT * FROM templates WHERE id = ?", (template_id,))
-                row = cursor.fetchone()
-
-                if row:
-                    result = self._row_to_dict(row)
-                    logger.info(
-                        f"DEBUG: get_template({template_id}) - scope={result.get('scope')}, created_by={result.get('created_by')}"
-                    )
-                    return result
-                return None
+            if template:
+                result = self._model_to_dict(template)
+                logger.info(
+                    f"DEBUG: get_template({template_id}) - scope={result.get('scope')}, created_by={result.get('created_by')}"
+                )
+                return result
+            return None
 
         except Exception as e:
             logger.error(f"Error getting template {template_id}: {e}")
@@ -284,18 +131,12 @@ class TemplateManager:
     def get_template_by_name(self, name: str) -> Optional[Dict[str, Any]]:
         """Get a template by name"""
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
+            repo = TemplateRepository()
+            template = repo.get_by_name(name, active_only=True)
 
-                cursor.execute(
-                    "SELECT * FROM templates WHERE name = ? AND is_active = 1", (name,)
-                )
-                row = cursor.fetchone()
-
-                if row:
-                    return self._row_to_dict(row)
-                return None
+            if template:
+                return self._model_to_dict(template)
+            return None
 
         except Exception as e:
             logger.error(f"Error getting template by name '{name}': {e}")
@@ -315,54 +156,25 @@ class TemplateManager:
         - Private templates owned by the user (scope='private' AND created_by=username)
         """
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
+            repo = TemplateRepository()
+            
+            logger.info(f"DEBUG: list_templates - filtering for username={username}")
+            
+            templates = repo.list_templates(
+                category=category,
+                source=source,
+                active_only=active_only,
+                username=username
+            )
 
-                query = "SELECT * FROM templates WHERE 1=1"
-                params = []
+            results = [self._model_to_dict(t) for t in templates]
+            logger.info(f"DEBUG: list_templates - found {len(results)} templates")
+            for template in results:
+                logger.info(
+                    f"DEBUG: list_templates - template: id={template['id']}, name={template['name']}, scope={template.get('scope')}, created_by={template.get('created_by')}"
+                )
 
-                if active_only:
-                    query += " AND is_active = 1"
-
-                # Filter by scope and ownership
-                if username:
-                    query += " AND (scope = 'global' OR (scope = 'private' AND created_by = ?))"
-                    params.append(username)
-                    logger.info(
-                        f"DEBUG: list_templates - filtering for username={username}"
-                    )
-                else:
-                    # If no username provided, only show global templates
-                    query += " AND scope = 'global'"
-                    logger.info(
-                        "DEBUG: list_templates - no username, showing only global templates"
-                    )
-
-                if category:
-                    query += " AND category = ?"
-                    params.append(category)
-
-                if source:
-                    query += " AND source = ?"
-                    params.append(source)
-
-                query += " ORDER BY name"
-
-                logger.info(f"DEBUG: list_templates - SQL query: {query}")
-                logger.info(f"DEBUG: list_templates - SQL params: {params}")
-
-                cursor.execute(query, params)
-                rows = cursor.fetchall()
-
-                results = [self._row_to_dict(row) for row in rows]
-                logger.info(f"DEBUG: list_templates - found {len(results)} templates")
-                for template in results:
-                    logger.info(
-                        f"DEBUG: list_templates - template: id={template['id']}, name={template['name']}, scope={template.get('scope')}, created_by={template.get('created_by')}"
-                    )
-
-                return results
+            return results
 
         except Exception as e:
             logger.error(f"Error listing templates: {e}")
@@ -371,96 +183,85 @@ class TemplateManager:
     def update_template(self, template_id: int, template_data: Dict[str, Any]) -> bool:
         """Update an existing template"""
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
+            repo = TemplateRepository()
+            version_repo = TemplateVersionRepository()
 
-                # Get current template
-                current = self.get_template(template_id)
-                if not current:
-                    raise ValueError(f"Template with ID {template_id} not found")
+            # Get current template
+            current_obj = repo.get_by_id(template_id)
+            if not current_obj:
+                raise ValueError(f"Template with ID {template_id} not found")
+            
+            current = self._model_to_dict(current_obj)
 
-                logger.info(
-                    f"DEBUG: update_template({template_id}) - incoming scope={template_data.get('scope')}, current scope={current.get('scope')}"
+            logger.info(
+                f"DEBUG: update_template({template_id}) - incoming scope={template_data.get('scope')}, current scope={current.get('scope')}"
+            )
+
+            # Prepare update data
+            variables_json = json.dumps(template_data.get("variables", {}))
+            tags_json = json.dumps(template_data.get("tags", []))
+
+            content = template_data.get("content", current.get("content", ""))
+            content_hash = (
+                hashlib.sha256(content.encode()).hexdigest() if content else None
+            )
+
+            # Check if content changed
+            content_changed = content_hash != current.get("content_hash")
+
+            # Get the scope to update
+            new_scope = template_data.get("scope", current.get("scope", "global"))
+            logger.info(
+                f"DEBUG: update_template({template_id}) - will update scope to: {new_scope}"
+            )
+
+            # Prepare update kwargs
+            update_kwargs = {
+                "name": template_data.get("name", current["name"]),
+                "template_type": template_data.get("template_type", current["template_type"]),
+                "category": template_data.get("category", current["category"]),
+                "description": template_data.get("description", current["description"]),
+                "git_repo_url": template_data.get("git_repo_url", current["git_repo_url"]),
+                "git_branch": template_data.get("git_branch", current["git_branch"]),
+                "git_username": template_data.get("git_username", current["git_username"]),
+                "git_token": template_data.get("git_token", current["git_token"]),
+                "git_path": template_data.get("git_path", current["git_path"]),
+                "git_verify_ssl": template_data.get("git_verify_ssl", current["git_verify_ssl"]),
+                "content": content,
+                "filename": template_data.get("filename", current["filename"]),
+                "content_hash": content_hash,
+                "variables": variables_json,
+                "tags": tags_json,
+                "scope": new_scope,
+            }
+
+            repo.update(template_id, **update_kwargs)
+
+            logger.info(
+                f"DEBUG: update_template({template_id}) - SQL UPDATE executed with scope={new_scope}"
+            )
+
+            # Save content to file if needed
+            if current["source"] in ["file", "webeditor"] and content:
+                self._save_template_to_file(
+                    template_id,
+                    template_data.get("name", current["name"]),
+                    content,
+                    template_data.get("filename", current.get("filename")),
                 )
 
-                # Prepare update data
-                now = datetime.now(timezone.utc).isoformat()
-                variables_json = json.dumps(template_data.get("variables", {}))
-                tags_json = json.dumps(template_data.get("tags", []))
-
-                content = template_data.get("content", current.get("content", ""))
-                content_hash = (
-                    hashlib.sha256(content.encode()).hexdigest() if content else None
+            # Create new version if content changed
+            if content_changed and content:
+                self._create_template_version_obj(
+                    version_repo,
+                    template_id,
+                    content,
+                    content_hash,
+                    template_data.get("change_notes", "Template updated"),
                 )
 
-                # Check if content changed
-                content_changed = content_hash != current.get("content_hash")
-
-                # Get the scope to update
-                new_scope = template_data.get("scope", current.get("scope", "global"))
-                logger.info(
-                    f"DEBUG: update_template({template_id}) - will update scope to: {new_scope}"
-                )
-
-                # Update template
-                cursor.execute(
-                    """
-                    UPDATE templates SET
-                        name = ?, template_type = ?, category = ?, description = ?,
-                        git_repo_url = ?, git_branch = ?, git_username = ?, git_token = ?,
-                        git_path = ?, git_verify_ssl = ?,
-                        content = ?, filename = ?, content_hash = ?,
-                        variables = ?, tags = ?, scope = ?, updated_at = ?
-                    WHERE id = ?
-                """,
-                    (
-                        template_data.get("name", current["name"]),
-                        template_data.get("template_type", current["template_type"]),
-                        template_data.get("category", current["category"]),
-                        template_data.get("description", current["description"]),
-                        template_data.get("git_repo_url", current["git_repo_url"]),
-                        template_data.get("git_branch", current["git_branch"]),
-                        template_data.get("git_username", current["git_username"]),
-                        template_data.get("git_token", current["git_token"]),
-                        template_data.get("git_path", current["git_path"]),
-                        template_data.get("git_verify_ssl", current["git_verify_ssl"]),
-                        content,
-                        template_data.get("filename", current["filename"]),
-                        content_hash,
-                        variables_json,
-                        tags_json,
-                        new_scope,
-                        now,
-                        template_id,
-                    ),
-                )
-
-                logger.info(
-                    f"DEBUG: update_template({template_id}) - SQL UPDATE executed with scope={new_scope}"
-                )
-
-                # Save content to file if needed
-                if current["source"] in ["file", "webeditor"] and content:
-                    self._save_template_to_file(
-                        template_id,
-                        template_data.get("name", current["name"]),
-                        content,
-                        template_data.get("filename", current.get("filename")),
-                    )
-
-                # Create new version if content changed
-                if content_changed and content:
-                    self._create_template_version(
-                        cursor,
-                        template_id,
-                        content,
-                        content_hash,
-                        template_data.get("change_notes", "Template updated"),
-                    )
-
-                conn.commit()
-                logger.info(f"Template {template_id} updated")
-                return True
+            logger.info(f"Template {template_id} updated")
+            return True
 
         except Exception as e:
             logger.error(f"Error updating template {template_id}: {e}")
@@ -469,31 +270,24 @@ class TemplateManager:
     def delete_template(self, template_id: int, hard_delete: bool = False) -> bool:
         """Delete a template (soft delete by default)"""
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
+            repo = TemplateRepository()
 
-                if hard_delete:
-                    # Hard delete - remove from database and file system
-                    template = self.get_template(template_id)
-                    if template:
-                        cursor.execute(
-                            "DELETE FROM templates WHERE id = ?", (template_id,)
-                        )
-                        # Remove file if it exists
-                        if template["source"] in ["file", "webeditor"]:
-                            self._remove_template_file(template_id, template["name"])
-                else:
-                    # Soft delete - mark as inactive
-                    cursor.execute(
-                        "UPDATE templates SET is_active = 0 WHERE id = ?",
-                        (template_id,),
-                    )
+            if hard_delete:
+                # Hard delete - remove from database and file system
+                template_dict = self.get_template(template_id)
+                if template_dict:
+                    repo.delete(template_id)
+                    # Remove file if it exists
+                    if template_dict["source"] in ["file", "webeditor"]:
+                        self._remove_template_file(template_id, template_dict["name"])
+            else:
+                # Soft delete - mark as inactive using update
+                repo.update(template_id, is_active=False)
 
-                conn.commit()
-                logger.info(
-                    f"Template {template_id} {'deleted' if hard_delete else 'deactivated'}"
-                )
-                return True
+            logger.info(
+                f"Template {template_id} {'deleted' if hard_delete else 'deactivated'}"
+            )
+            return True
 
         except Exception as e:
             logger.error(f"Error deleting template {template_id}: {e}")
@@ -571,48 +365,72 @@ class TemplateManager:
     def get_template_versions(self, template_id: int) -> List[Dict[str, Any]]:
         """Get version history for a template"""
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
-
-                cursor.execute(
-                    """
-                    SELECT * FROM template_versions 
-                    WHERE template_id = ? 
-                    ORDER BY version_number DESC
-                """,
-                    (template_id,),
-                )
-
-                rows = cursor.fetchall()
-                return [dict(row) for row in rows]
+            version_repo = TemplateVersionRepository()
+            versions = version_repo.get_versions_by_template_id(template_id)
+            return [self._version_model_to_dict(v) for v in versions]
 
         except Exception as e:
             logger.error(f"Error getting template versions for {template_id}: {e}")
             return []
 
-    def _row_to_dict(self, row: sqlite3.Row) -> Dict[str, Any]:
-        """Convert SQLite row to dictionary with proper data types"""
-        result = dict(row)
+    def _model_to_dict(self, template: Template) -> Dict[str, Any]:
+        """Convert SQLAlchemy model to dictionary with proper data types"""
+        result = {
+            "id": template.id,
+            "name": template.name,
+            "source": template.source,
+            "template_type": template.template_type,
+            "category": template.category,
+            "description": template.description,
+            "git_repo_url": template.git_repo_url,
+            "git_branch": template.git_branch,
+            "git_username": template.git_username,
+            "git_token": template.git_token,
+            "git_path": template.git_path,
+            "git_verify_ssl": bool(template.git_verify_ssl),
+            "content": template.content,
+            "filename": template.filename,
+            "content_hash": template.content_hash,
+            "created_by": template.created_by,
+            "scope": template.scope,
+            "is_active": bool(template.is_active),
+            "last_sync": template.last_sync.isoformat() if template.last_sync else None,
+            "sync_status": template.sync_status,
+            "created_at": template.created_at.isoformat() if template.created_at else None,
+            "updated_at": template.updated_at.isoformat() if template.updated_at else None,
+        }
 
         # Parse JSON fields
-        if result.get("variables"):
+        if template.variables:
             try:
-                result["variables"] = json.loads(result["variables"])
+                result["variables"] = json.loads(template.variables)
             except json.JSONDecodeError:
                 result["variables"] = {}
+        else:
+            result["variables"] = {}
 
-        if result.get("tags"):
+        if template.tags:
             try:
-                result["tags"] = json.loads(result["tags"])
+                result["tags"] = json.loads(template.tags)
             except json.JSONDecodeError:
                 result["tags"] = []
-
-        # Convert boolean fields
-        result["is_active"] = bool(result["is_active"])
-        result["git_verify_ssl"] = bool(result.get("git_verify_ssl", True))
+        else:
+            result["tags"] = []
 
         return result
+
+    def _version_model_to_dict(self, version: TemplateVersion) -> Dict[str, Any]:
+        """Convert TemplateVersion model to dictionary"""
+        return {
+            "id": version.id,
+            "template_id": version.template_id,
+            "version_number": version.version_number,
+            "content": version.content,
+            "content_hash": version.content_hash,
+            "created_at": version.created_at.isoformat() if version.created_at else None,
+            "created_by": version.created_by,
+            "change_notes": version.change_notes,
+        }
 
     def _save_template_to_file(
         self, template_id: int, name: str, content: str, filename: str = None
@@ -680,25 +498,21 @@ class TemplateManager:
         except Exception as e:
             logger.error(f"Error removing template file: {e}")
 
-    def _create_template_version(
-        self, cursor, template_id: int, content: str, content_hash: str, notes: str = ""
+    def _create_template_version_obj(
+        self, version_repo: TemplateVersionRepository, template_id: int, content: str, content_hash: str, notes: str = ""
     ) -> None:
         """Create a new version entry for a template"""
         try:
             # Get current version number
-            cursor.execute(
-                "SELECT MAX(version_number) FROM template_versions WHERE template_id = ?",
-                (template_id,),
-            )
-            result = cursor.fetchone()
-            version_number = (result[0] or 0) + 1
+            version_number = version_repo.get_max_version_number(template_id) + 1
 
-            cursor.execute(
-                """
-                INSERT INTO template_versions (template_id, version_number, content, content_hash, change_notes)
-                VALUES (?, ?, ?, ?, ?)
-            """,
-                (template_id, version_number, content, content_hash, notes),
+            # Create new version using BaseRepository.create(**kwargs)
+            version_repo.create(
+                template_id=template_id,
+                version_number=version_number,
+                content=content,
+                content_hash=content_hash,
+                change_notes=notes
             )
 
         except Exception as e:
@@ -712,90 +526,13 @@ class TemplateManager:
         Respects scope and ownership - returns global templates and user's private templates.
         """
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
-
-                search_pattern = f"%{query}%"
-
-                if search_content:
-                    if username:
-                        cursor.execute(
-                            """
-                            SELECT * FROM templates
-                            WHERE is_active = 1
-                            AND (scope = 'global' OR (scope = 'private' AND created_by = ?))
-                            AND (
-                                name LIKE ? OR
-                                description LIKE ? OR
-                                category LIKE ? OR
-                                content LIKE ?
-                            )
-                            ORDER BY name
-                        """,
-                            (
-                                username,
-                                search_pattern,
-                                search_pattern,
-                                search_pattern,
-                                search_pattern,
-                            ),
-                        )
-                    else:
-                        cursor.execute(
-                            """
-                            SELECT * FROM templates
-                            WHERE is_active = 1
-                            AND scope = 'global'
-                            AND (
-                                name LIKE ? OR
-                                description LIKE ? OR
-                                category LIKE ? OR
-                                content LIKE ?
-                            )
-                            ORDER BY name
-                        """,
-                            (
-                                search_pattern,
-                                search_pattern,
-                                search_pattern,
-                                search_pattern,
-                            ),
-                        )
-                else:
-                    if username:
-                        cursor.execute(
-                            """
-                            SELECT * FROM templates
-                            WHERE is_active = 1
-                            AND (scope = 'global' OR (scope = 'private' AND created_by = ?))
-                            AND (
-                                name LIKE ? OR
-                                description LIKE ? OR
-                                category LIKE ?
-                            )
-                            ORDER BY name
-                        """,
-                            (username, search_pattern, search_pattern, search_pattern),
-                        )
-                    else:
-                        cursor.execute(
-                            """
-                            SELECT * FROM templates
-                            WHERE is_active = 1
-                            AND scope = 'global'
-                            AND (
-                                name LIKE ? OR
-                                description LIKE ? OR
-                                category LIKE ?
-                            )
-                            ORDER BY name
-                        """,
-                            (search_pattern, search_pattern, search_pattern),
-                        )
-
-                rows = cursor.fetchall()
-                return [self._row_to_dict(row) for row in rows]
+            repo = TemplateRepository()
+            templates = repo.search_templates(
+                query_text=query,
+                search_content=search_content,
+                username=username
+            )
+            return [self._model_to_dict(t) for t in templates]
 
         except Exception as e:
             logger.error(f"Error searching templates: {e}")
@@ -804,16 +541,8 @@ class TemplateManager:
     def get_categories(self) -> List[str]:
         """Get all unique template categories"""
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
-
-                cursor.execute("""
-                    SELECT DISTINCT category FROM templates 
-                    WHERE is_active = 1 AND category IS NOT NULL AND category != ''
-                    ORDER BY category
-                """)
-
-                return [row[0] for row in cursor.fetchall()]
+            repo = TemplateRepository()
+            return repo.get_categories()
 
         except Exception as e:
             logger.error(f"Error getting categories: {e}")
@@ -822,31 +551,19 @@ class TemplateManager:
     def health_check(self) -> Dict[str, Any]:
         """Check template database health"""
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
+            repo = TemplateRepository()
 
-                cursor.execute("SELECT COUNT(*) FROM templates WHERE is_active = 1")
-                active_count = cursor.fetchone()[0]
+            active_count = repo.get_active_count()
+            total_count = repo.get_total_count()
+            categories_count = repo.get_categories_count()
 
-                cursor.execute("SELECT COUNT(*) FROM templates")
-                total_count = cursor.fetchone()[0]
-
-                cursor.execute(
-                    "SELECT COUNT(DISTINCT category) FROM templates WHERE category IS NOT NULL"
-                )
-                categories_count = cursor.fetchone()[0]
-
-                return {
-                    "status": "healthy",
-                    "database_path": self.db_path,
-                    "storage_path": self.storage_path,
-                    "active_templates": active_count,
-                    "total_templates": total_count,
-                    "categories": categories_count,
-                    "database_size": os.path.getsize(self.db_path)
-                    if os.path.exists(self.db_path)
-                    else 0,
-                }
+            return {
+                "status": "healthy",
+                "storage_path": self.storage_path,
+                "active_templates": active_count,
+                "total_templates": total_count,
+                "categories": categories_count,
+            }
 
         except Exception as e:
             logger.error(f"Template database health check failed: {e}")

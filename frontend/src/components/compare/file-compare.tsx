@@ -110,6 +110,14 @@ export default function FileCompare() {
   const leftFileSearch = useFileSearch(leftFiles)
   const rightFileSearch = useFileSearch(rightFiles)
 
+  // Memoized callback for repository changes
+  // NOTE: setState functions are stable, and we access the methods directly
+  const handleRepoChange = useCallback((repo: typeof selectedRepo) => {
+    setSelectedRepo(repo)
+    leftFileSearch.clearSelection()
+    rightFileSearch.clearSelection()
+  }, [setSelectedRepo, leftFileSearch, rightFileSearch])
+
   // Comparison state
   const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null)
   const [showComparison, setShowComparison] = useState(false)
@@ -261,12 +269,7 @@ export default function FileCompare() {
               <RepositorySelector
                 repositories={repositories}
                 selectedRepo={selectedRepo}
-                onSelectRepo={(repo) => {
-                  setSelectedRepo(repo)
-                  // Clear file selections when repository changes
-                  leftFileSearch.clearSelection()
-                  rightFileSearch.clearSelection()
-                }}
+                onSelectRepo={handleRepoChange}
               />
 
               <FileSearchInput

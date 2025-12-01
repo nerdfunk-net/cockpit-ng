@@ -33,28 +33,16 @@ export default function ConfigCompare() {
     }
   }, [isAuthenticated, token])
 
-  const renderContent = () => {
-    if (!authReady) {
-      return (
-        <div className="flex items-center justify-center p-8">
-          <div className="text-center">
-            <RefreshCw className="h-8 w-8 animate-spin mx-auto text-blue-500 mb-4" />
-            <p className="text-gray-600">Loading...</p>
-          </div>
+  // Loading state
+  if (!authReady) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto text-blue-500 mb-4" />
+          <p className="text-gray-600">Loading...</p>
         </div>
-      )
-    }
-
-    switch (comparisonMode) {
-      case 'files':
-        return <FileCompare />
-      case 'git':
-        return <GitCompare />
-      case 'history':
-        return <FileHistoryCompare />
-      default:
-        return <FileCompare />
-    }
+      </div>
+    )
   }
 
   return (
@@ -108,8 +96,10 @@ export default function ConfigCompare() {
         </CardContent>
       </Card>
 
-      {/* Dynamic Content */}
-      {renderContent()}
+      {/* Dynamic Content - Render components conditionally in JSX */}
+      {comparisonMode === 'files' && <FileCompare />}
+      {comparisonMode === 'git' && <GitCompare />}
+      {comparisonMode === 'history' && <FileHistoryCompare />}
     </div>
   )
 }

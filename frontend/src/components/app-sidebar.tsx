@@ -25,11 +25,13 @@ import {
   ChevronDown,
   ChevronRight,
   LogOut,
-  Activity,
   Eye,
   Minus,
   Terminal,
   CheckCircle,
+  Server,
+  Calendar,
+  History,
 } from 'lucide-react'
 
 interface NavItem {
@@ -94,6 +96,14 @@ const navigationSections: NavSection[] = [
     ],
   },
   {
+    title: 'Jobs',
+    items: [
+      { label: 'Job Templates', href: '/jobs/templates', icon: FileText },
+      { label: 'Scheduler', href: '/jobs/scheduler', icon: Calendar },
+      { label: 'View', href: '/jobs/view', icon: History },
+    ],
+  },
+  {
     title: 'Settings',
     items: [
       { label: 'Nautobot', href: '/settings/nautobot', icon: Database },
@@ -102,9 +112,9 @@ const navigationSections: NavSection[] = [
       { label: 'Templates', href: '/settings/templates', icon: FileText },
       { label: 'Git Management', href: '/settings/git', icon: GitBranch },
       { label: 'Cache', href: '/settings/cache', icon: Zap },
+      { label: 'Celery', href: '/settings/celery', icon: Server },
       { label: 'Credentials', href: '/settings/credentials', icon: Key },
       { label: 'Users & Permissions', href: '/settings/permissions', icon: Shield },
-      { label: 'Jobs', href: '/settings/jobs', icon: Activity },
     ],
   },
 ]

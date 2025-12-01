@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Search, X, ChevronLeft, ChevronRight, RotateCcw, GitCompare, RefreshCw, ChevronDown } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -32,6 +32,49 @@ interface Device {
   location?: { name: string }
   device_type?: { model: string }
   status?: { name: string }
+}
+
+// Celery task types
+interface CeleryTaskResponse {
+  task_id: string
+  status: string
+  message: string
+}
+
+interface CeleryTaskStatus {
+  task_id: string
+  status: 'PENDING' | 'STARTED' | 'PROGRESS' | 'SUCCESS' | 'FAILURE' | 'RETRY' | 'REVOKED'
+  result?: {
+    success: boolean
+    message: string
+    device_id?: string
+    hostname?: string
+    [key: string]: unknown
+  }
+  error?: string
+  progress?: {
+    status?: string
+    current?: number
+    total?: number
+    [key: string]: unknown
+  }
+}
+
+interface DeviceTask {
+  taskId: string
+  deviceId: string | string[] // Support single device or array
+  deviceName: string
+  operation: 'add' | 'update' | 'sync'
+  status: CeleryTaskStatus['status']
+  message: string
+  startedAt: Date
+  // Batch operation progress
+  batchProgress?: {
+    current: number
+    total: number
+    success: number
+    failed: number
+  }
 }
 
 interface PaginationState {
@@ -142,6 +185,10 @@ export default function LiveUpdatePage() {
   const [selectedDevices, setSelectedDevices] = useState<Set<string>>(new Set())
   const [isSyncingSelected, setIsSyncingSelected] = useState(false)
 
+  // Celery task tracking state
+  const [activeTasks, setActiveTasks] = useState<Map<string, DeviceTask>>(new Map())
+  const pollingIntervalsRef = useRef<Map<string, NodeJS.Timeout>>(new Map())
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(0)
   const [pageSize, setPageSize] = useState(50)
@@ -188,10 +235,182 @@ export default function LiveUpdatePage() {
 
   // Show status message
   const showMessage = useCallback((text: string, type: 'success' | 'error' | 'info' = 'info') => {
-    setStatusMessage({ type, text })
-    // Auto-hide after 3 seconds for success and info
+    // Prevent showing the same message repeatedly
+    setStatusMessage(prev => {
+      if (prev?.text === text && prev?.type === type) {
+        return prev // Don't update if it's the same message
+      }
+      return { type, text }
+    })
+
+    // Auto-hide after 5 seconds for success and info only (not errors)
     if (type === 'success' || type === 'info') {
-      setTimeout(() => setStatusMessage(null), 3000)
+      setTimeout(() => {
+        setStatusMessage(prev => {
+          // Only clear if it's still the same message
+          if (prev?.text === text) {
+            return null
+          }
+          return prev
+        })
+      }, 5000)
+    }
+  }, [])
+
+  // Poll Celery task status
+  const pollTaskStatus = useCallback(async (taskId: string) => {
+    try {
+      const response = await apiCall<CeleryTaskStatus>(`celery/tasks/${taskId}`)
+
+      if (response) {
+        let shouldStopPolling = false
+
+        // Update task in activeTasks and check if we should stop polling
+        setActiveTasks(prev => {
+          const task = prev.get(taskId)
+          if (!task) return prev
+
+          const updated = new Map(prev)
+
+          // Extract batch progress if available
+          const batchProgress = response.progress?.current && response.progress?.total ? {
+            current: response.progress.current,
+            total: response.progress.total,
+            success: Number(response.progress.success) || 0,
+            failed: Number(response.progress.failed) || 0
+          } : undefined
+
+          updated.set(taskId, {
+            ...task,
+            status: response.status,
+            message: response.progress?.status || response.result?.message || task.message,
+            batchProgress
+          })
+
+          // Check if task is complete
+          if (response.status === 'SUCCESS' || response.status === 'FAILURE') {
+            shouldStopPolling = true
+          }
+
+          return updated
+        })
+
+        // Handle completion or failure
+        if (shouldStopPolling) {
+          // Stop polling immediately using ref
+          const interval = pollingIntervalsRef.current.get(taskId)
+          if (interval) {
+            clearInterval(interval)
+            pollingIntervalsRef.current.delete(taskId)
+          }
+
+          // Handle success/failure states
+          if (response.status === 'SUCCESS') {
+            setHasDevicesSynced(true)
+            // Remove task after 1 second on success
+            setTimeout(() => {
+              setActiveTasks(prev => {
+                const updated = new Map(prev)
+                updated.delete(taskId)
+                return updated
+              })
+            }, 1000)
+          } else if (response.status === 'FAILURE') {
+            // Keep failed tasks visible - don't auto-remove
+            // They will stay in the panel showing the error
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`Error polling task ${taskId}:`, err)
+      // Stop polling on error using ref
+      const interval = pollingIntervalsRef.current.get(taskId)
+      if (interval) {
+        clearInterval(interval)
+        pollingIntervalsRef.current.delete(taskId)
+      }
+    }
+  }, [apiCall])
+
+  // Start tracking a Celery task
+  const trackTask = useCallback((
+    taskId: string,
+    deviceId: string | string[], // Support single or multiple devices
+    deviceName: string,
+    operation: 'add' | 'update' | 'sync'
+  ) => {
+    const task: DeviceTask = {
+      taskId,
+      deviceId,
+      deviceName,
+      operation,
+      status: 'PENDING',
+      message: `${operation === 'add' ? 'Adding' : operation === 'update' ? 'Updating' : 'Syncing'} ${deviceName}...`,
+      startedAt: new Date()
+    }
+
+    setActiveTasks(prev => new Map(prev).set(taskId, task))
+
+    // Start polling for this task using ref
+    const interval = setInterval(() => {
+      void pollTaskStatus(taskId)
+    }, 2000) // Poll every 2 seconds
+
+    pollingIntervalsRef.current.set(taskId, interval)
+
+    // Initial poll
+    void pollTaskStatus(taskId)
+  }, [pollTaskStatus])
+
+  // Cancel a running task
+  const handleCancelTask = useCallback(async (taskId: string) => {
+    try {
+      await apiCall(`celery/tasks/${taskId}`, {
+        method: 'DELETE'
+      })
+
+      // Stop polling
+      const interval = pollingIntervalsRef.current.get(taskId)
+      if (interval) {
+        clearInterval(interval)
+        pollingIntervalsRef.current.delete(taskId)
+      }
+
+      // Update task state to cancelled
+      setActiveTasks(prev => {
+        const task = prev.get(taskId)
+        if (!task) return prev
+
+        const updated = new Map(prev)
+        updated.set(taskId, {
+          ...task,
+          status: 'REVOKED',
+          message: 'Task cancelled by user'
+        })
+        return updated
+      })
+
+      // Remove task after a short delay
+      setTimeout(() => {
+        setActiveTasks(prev => {
+          const updated = new Map(prev)
+          updated.delete(taskId)
+          return updated
+        })
+      }, 2000)
+
+    } catch (err) {
+      console.error(`Failed to cancel task ${taskId}:`, err)
+      showMessage('Failed to cancel task', 'error')
+    }
+  }, [apiCall, showMessage])
+
+  // Cleanup all polling intervals on unmount
+  useEffect(() => {
+    const intervals = pollingIntervalsRef.current
+    return () => {
+      intervals.forEach(interval => clearInterval(interval))
+      intervals.clear()
     }
   }, [])
 
@@ -372,11 +591,10 @@ export default function LiveUpdatePage() {
       setLoadingDiff(true)
       setSelectedDevice(device)
       setIsDiffModalOpen(true)
-      showMessage(`Getting diff for ${device.name}...`, 'info')
 
       const response = await apiCall<DiffResult['differences']>(`nb2cmk/device/${device.id}/compare`)
-      
-      
+
+
       if (response) {
         const diffData = {
           device_id: device.id,
@@ -385,14 +603,12 @@ export default function LiveUpdatePage() {
           timestamp: new Date().toISOString()
         }
         setDiffResult(diffData)
-        
+
         // Store the result for table row coloring
         setDeviceDiffResults(prev => ({
           ...prev,
           [device.id]: response.result
         }))
-        
-        showMessage(`Diff retrieved for ${device.name}`, 'success')
       } else {
         showMessage(`No diff data available for ${device.name}`, 'info')
       }
@@ -416,30 +632,33 @@ export default function LiveUpdatePage() {
 
   const handleSync = useCallback(async (device: Device) => {
     try {
-      showMessage(`Syncing ${device.name}...`, 'info')
-      
-      const response = await apiCall(`nb2cmk/device/${device.id}/update`, {
-        method: 'POST'
+      // Use batch endpoint with single device for consistency
+      const response = await apiCall<CeleryTaskResponse>(`celery/tasks/sync-devices-to-checkmk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify([device.id])
       })
-      
-      if (response) {
-        showMessage(`Successfully synced ${device.name} in CheckMK`, 'success')
-        setHasDevicesSynced(true) // Enable the Activate button
+
+      if (response?.task_id) {
+        // Start tracking the task (task panel will show progress)
+        trackTask(response.task_id, [device.id], device.name, 'update')
       } else {
-        showMessage(`Failed to sync ${device.name}`, 'error')
+        showMessage(`Failed to queue sync task for ${device.name}`, 'error')
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to sync device'
-      
+
       // Check if it's a 404 error (device not found in CheckMK)
       if (message.includes('404') || message.includes('Not Found') || message.includes('not found')) {
         // Ask user if they want to add the device to CheckMK
         handleAddDeviceConfirmation(device)
       } else {
-        showMessage(`Failed to sync ${device.name}: ${message}`, 'error')
+        showMessage(`Failed to queue sync for ${device.name}: ${message}`, 'error')
       }
     }
-  }, [apiCall, showMessage, handleAddDeviceConfirmation])
+  }, [apiCall, showMessage, handleAddDeviceConfirmation, trackTask])
 
   const handleActivate = useCallback(async () => {
     try {
@@ -467,27 +686,27 @@ export default function LiveUpdatePage() {
   const handleAddDevice = useCallback(async (device: Device) => {
     try {
       setIsAddingDevice(true)
-      showMessage(`Adding ${device.name} to CheckMK...`, 'info')
-      
-      const response = await apiCall(`nb2cmk/device/${device.id}/add`, {
+
+      // Call Celery endpoint with device_id as query parameter
+      const response = await apiCall<CeleryTaskResponse>(`celery/tasks/add-device-to-checkmk?device_id=${device.id}`, {
         method: 'POST'
       })
-      
-      if (response) {
-        showMessage(`Successfully added ${device.name} to CheckMK`, 'success')
-        setHasDevicesSynced(true) // Enable the Activate button
+
+      if (response?.task_id) {
+        // Start tracking the task (task panel will show progress)
+        trackTask(response.task_id, device.id, device.name, 'add')
         setShowAddDeviceModal(false) // Close the modal
         setDeviceToAdd(null)
       } else {
-        showMessage(`Failed to add ${device.name} to CheckMK`, 'error')
+        showMessage(`Failed to queue add task for ${device.name}`, 'error')
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to add device'
-      showMessage(`Failed to add ${device.name}: ${message}`, 'error')
+      showMessage(`Failed to queue add for ${device.name}: ${message}`, 'error')
     } finally {
       setIsAddingDevice(false)
     }
-  }, [apiCall, showMessage])
+  }, [apiCall, showMessage, trackTask])
 
   // Pagination
   const totalPages = Math.ceil(filteredDevices.length / pageSize)
@@ -527,50 +746,30 @@ export default function LiveUpdatePage() {
     try {
       setIsSyncingSelected(true)
       const selectedDeviceList = Array.from(selectedDevices)
-      const deviceNames = devices
-        .filter(device => selectedDeviceList.includes(device.id))
-        .map(device => device.name)
 
-      showMessage(`Syncing ${selectedDevices.size} devices: ${deviceNames.join(', ')}...`, 'info')
+      // Use batch sync endpoint
+      const response = await apiCall<CeleryTaskResponse>(`celery/tasks/sync-devices-to-checkmk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(selectedDeviceList)
+      })
 
-      let hasDevicesSynced = false
-
-      // Sync each device using the same endpoint as individual sync
-      for (const deviceId of selectedDeviceList) {
-        const device = devices.find(d => d.id === deviceId)
-        if (!device) continue
-
-        try {
-          const response = await apiCall(`nb2cmk/device/${device.id}/update`, {
-            method: 'POST'
-          })
-
-          if (response) {
-            showMessage(`Successfully synced ${device.name} in CheckMK`, 'success')
-            hasDevicesSynced = true
-          } else {
-            showMessage(`Failed to sync ${device.name}`, 'error')
-          }
-        } catch (err) {
-          const message = err instanceof Error ? err.message : 'Failed to sync device'
-          
-          // Check if it's a 404 error (device not found in CheckMK)
-          if (message.includes('404') || message.includes('Not Found') || message.includes('not found')) {
-            showMessage(`Device ${device.name} not found in CheckMK. Use individual sync to add it.`, 'error')
-          } else {
-            showMessage(`Failed to sync ${device.name}: ${message}`, 'error')
-          }
-        }
+      if (response?.task_id) {
+        // Track the batch task with detailed progress
+        trackTask(
+          response.task_id,
+          selectedDeviceList, // Pass array of device IDs
+          `${selectedDevices.size} device${selectedDevices.size === 1 ? '' : 's'}`,
+          'sync'
+        )
+      } else {
+        showMessage(`Failed to queue batch sync task`, 'error')
       }
 
-      // Enable activate button if any devices were synced
-      if (hasDevicesSynced) {
-        setHasDevicesSynced(true)
-      }
-
-      // Clear selection after sync
+      // Clear selection after queueing
       setSelectedDevices(new Set())
-      showMessage(`Completed syncing ${selectedDevices.size} devices`, 'info')
 
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to sync selected devices'
@@ -578,7 +777,7 @@ export default function LiveUpdatePage() {
     } finally {
       setIsSyncingSelected(false)
     }
-  }, [selectedDevices, devices, apiCall, showMessage])
+  }, [selectedDevices, apiCall, showMessage, trackTask])
 
   const handlePageChange = useCallback((newPage: number) => {
     setCurrentPage(Math.max(0, Math.min(newPage, totalPages - 1)))
@@ -695,34 +894,171 @@ export default function LiveUpdatePage() {
         </div>
       </div>
 
-      {/* Status Message */}
-      {statusMessage && (
-        <Card className={
-          statusMessage.type === 'success' ? 'border-green-200 bg-green-50' :
-          statusMessage.type === 'error' ? 'border-red-200 bg-red-50' :
-          'border-blue-200 bg-blue-50'
-        }>
-          <CardContent className="p-4">
-            <div className={`flex items-center gap-2 ${
-              statusMessage.type === 'success' ? 'text-green-800' :
-              statusMessage.type === 'error' ? 'text-red-800' :
-              'text-blue-800'
-            }`}>
-              {statusMessage.type === 'success' && <span>✓</span>}
-              {statusMessage.type === 'error' && <X className="h-4 w-4" />}
-              {statusMessage.type === 'info' && <span>ℹ</span>}
-              <span>{statusMessage.text}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setStatusMessage(null)}
-                className="ml-auto h-6 w-6 p-0"
+      {/* Status Message - Only for non-task related messages */}
+      {statusMessage && !statusMessage.text.includes('✓') && !statusMessage.text.includes('✗') && (
+        <div className="fixed top-20 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
+          <Card className={`min-w-[400px] max-w-[600px] shadow-lg ${
+            statusMessage.type === 'error' ? 'border-red-500 bg-red-50' :
+            'border-blue-500 bg-blue-50'
+          }`}>
+            <CardContent className="p-4">
+              <div className={`flex items-start gap-3 ${
+                statusMessage.type === 'error' ? 'text-red-800' :
+                'text-blue-800'
+              }`}>
+                <div className="flex-shrink-0 mt-0.5">
+                  {statusMessage.type === 'error' && <X className="h-5 w-5" />}
+                  {statusMessage.type === 'info' && <span className="text-lg">ℹ</span>}
+                </div>
+                <span className="flex-1 text-sm font-medium break-words">{statusMessage.text}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setStatusMessage(null)}
+                  className="ml-2 h-6 w-6 p-0 flex-shrink-0 hover:bg-transparent"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Active Tasks Panel */}
+      {activeTasks.size > 0 && (
+        <div className="space-y-2">
+          {Array.from(activeTasks.values()).map((task) => {
+            const isSuccess = task.status === 'SUCCESS'
+            const isFailure = task.status === 'FAILURE'
+            const isRunning = task.status === 'PENDING' || task.status === 'STARTED' || task.status === 'PROGRESS'
+            const isBatch = Array.isArray(task.deviceId) && task.deviceId.length > 1
+
+            return (
+              <Card
+                key={task.taskId}
+                className={`${
+                  isSuccess ? 'border-green-500 bg-green-50' :
+                  isFailure ? 'border-red-500 bg-red-50' :
+                  'border-blue-200 bg-blue-50'
+                } transition-all duration-300`}
               >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${
+                            isSuccess ? 'border-green-600 text-green-700 bg-green-100' :
+                            isFailure ? 'border-red-600 text-red-700 bg-red-100' :
+                            'border-blue-600 text-blue-700 bg-blue-100'
+                          }`}
+                        >
+                          {task.operation === 'add' ? 'Adding' : task.operation === 'update' ? 'Updating' : 'Syncing'}
+                        </Badge>
+                        <span className={`font-medium text-sm ${
+                          isSuccess ? 'text-green-800' :
+                          isFailure ? 'text-red-800' :
+                          'text-blue-800'
+                        }`}>
+                          {task.deviceName}
+                        </span>
+                      </div>
+
+                      {/* Batch Progress Bar and Details */}
+                      {isBatch && task.batchProgress && (
+                        <div className="mt-2 space-y-1">
+                          {/* Progress Bar */}
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full transition-all duration-300 ${
+                                isSuccess ? 'bg-green-500' :
+                                isFailure ? 'bg-red-500' :
+                                'bg-blue-500'
+                              }`}
+                              style={{ width: `${(task.batchProgress.current / task.batchProgress.total) * 100}%` }}
+                            />
+                          </div>
+                          {/* Progress Stats */}
+                          <div className="flex items-center gap-3 text-xs">
+                            <span className={
+                              isSuccess ? 'text-green-700' :
+                              isFailure ? 'text-red-700' :
+                              'text-blue-700'
+                            }>
+                              {task.batchProgress.current}/{task.batchProgress.total} processed
+                            </span>
+                            {task.batchProgress.success > 0 && (
+                              <span className="text-green-600">
+                                ✓ {task.batchProgress.success} succeeded
+                              </span>
+                            )}
+                            {task.batchProgress.failed > 0 && (
+                              <span className="text-red-600">
+                                ✗ {task.batchProgress.failed} failed
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className={`text-xs mt-1 ${
+                        isSuccess ? 'text-green-700' :
+                        isFailure ? 'text-red-700' :
+                        'text-gray-600'
+                      }`}>
+                        {isSuccess ? '✓ Successfully updated' : isFailure ? task.message : task.message}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="mt-2 flex items-center justify-end gap-2">
+                        {/* Cancel button for running batch tasks */}
+                        {isRunning && isBatch && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCancelTask(task.taskId)}
+                            className="h-7 text-xs border-orange-400 text-orange-700 hover:text-orange-900 hover:bg-orange-50"
+                          >
+                            <X className="h-3 w-3 mr-1" />
+                            Cancel
+                          </Button>
+                        )}
+                        {/* Dismiss button for failed tasks */}
+                        {isFailure && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setActiveTasks(prev => {
+                                const updated = new Map(prev)
+                                updated.delete(task.taskId)
+                                return updated
+                              })
+                            }}
+                            className="h-7 text-xs text-red-700 hover:text-red-900 hover:bg-red-100"
+                          >
+                            Dismiss
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      {isRunning ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500" />
+                      ) : isSuccess ? (
+                        <span className="text-green-600 text-2xl">✓</span>
+                      ) : isFailure ? (
+                        <X className="h-6 w-6 text-red-600" />
+                      ) : null}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
       )}
 
       {error && (

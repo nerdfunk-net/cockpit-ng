@@ -155,7 +155,8 @@ async def start_scan(
         # Get user's debug setting
         from services.user_management import get_user_by_username
 
-        user = get_user_by_username(current_user)
+        username = current_user.get("username") or current_user.get("sub")
+        user = get_user_by_username(username) if username else None
         debug_enabled = user.get("debug", False) if user else False
 
         logger.info(

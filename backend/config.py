@@ -78,6 +78,58 @@ class Settings:
         os.path.join(os.path.dirname(os.path.dirname(__file__)), "data"),
     )
 
+    # Celery and Redis Configuration
+    # Build Redis URL from components or use direct URL if provided
+    @property
+    def redis_url(self) -> str:
+        """Build Redis URL from individual components or use direct URL."""
+        # Check if REDIS_URL is explicitly set
+        if os.getenv("REDIS_URL"):
+            return os.getenv("REDIS_URL")
+
+        # Build from components
+        redis_host = os.getenv("COCKPIT_REDIS_HOST", "localhost")
+        redis_port = os.getenv("COCKPIT_REDIS_PORT", "6379")
+        redis_password = os.getenv("COCKPIT_REDIS_PASSWORD", "")
+
+        # Format: redis://[:password@]host:port/db
+        if redis_password:
+            return f"redis://:{redis_password}@{redis_host}:{redis_port}/0"
+        else:
+            return f"redis://{redis_host}:{redis_port}/0"
+
+    @property
+    def celery_broker_url(self) -> str:
+        """Celery broker URL (uses Redis)."""
+        return os.getenv("CELERY_BROKER_URL", self.redis_url)
+
+    @property
+    def celery_result_backend(self) -> str:
+        """Celery result backend URL (uses Redis)."""
+        return os.getenv("CELERY_RESULT_BACKEND", self.redis_url)
+
+    celery_max_workers: int = int(os.getenv("CELERY_MAX_WORKERS", "4"))
+
+    # PostgreSQL Database Configuration
+    database_host: str = os.getenv("COCKPIT_DATABASE_HOST", "localhost")
+    database_port: int = int(os.getenv("COCKPIT_DATABASE_PORT", "5432"))
+    database_name: str = os.getenv("COCKPIT_DATABASE_NAME", "cockpit")
+    database_username: str = os.getenv("COCKPIT_DATABASE_USERNAME", "postgres")
+    database_password: str = os.getenv("COCKPIT_DATABASE_PASSWORD", "postgres")
+    database_ssl: bool = get_env_bool("COCKPIT_DATABASE_SSL", False)
+
+    @property
+    def database_url(self) -> str:
+        """Build PostgreSQL database URL."""
+        # Basic connection string
+        url = f"postgresql://{self.database_username}:{self.database_password}@{self.database_host}:{self.database_port}/{self.database_name}"
+        
+        # Add SSL mode if required
+        if self.database_ssl:
+            url += "?sslmode=require"
+        
+        return url
+
 
 # Global settings instance
 settings = Settings()

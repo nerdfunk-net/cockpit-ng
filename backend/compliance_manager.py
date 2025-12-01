@@ -1,26 +1,29 @@
 """Compliance settings and credential storage manager.
 
 Manages compliance configurations including regex patterns, login credentials, and SNMP settings.
+Migrated to PostgreSQL with repository pattern.
 """
 
 from __future__ import annotations
 import base64
 import hashlib
 import os
-import sqlite3
 import yaml
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from cryptography.fernet import Fernet, InvalidToken
 from config import settings as config_settings
 
-DB_PATH = os.path.join(config_settings.data_directory, "settings", "compliance.db")
+from repositories.compliance_repository import (
+    RegexPatternRepository,
+    LoginCredentialRepository,
+    SNMPMappingRepository,
+)
 
-
-def _get_conn() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+# Initialize repositories
+regex_repo = RegexPatternRepository()
+login_repo = LoginCredentialRepository()
+snmp_repo = SNMPMappingRepository()
 
 
 def _build_key(secret: str) -> bytes:
@@ -48,176 +51,64 @@ class EncryptionService:
 encryption_service = EncryptionService()
 
 
-def _ensure_tables() -> None:
-    """Create compliance database tables if they don't exist."""
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    with _get_conn() as conn:
-        # Regex patterns table - for must match and must not match patterns
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS regex_patterns (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                pattern TEXT NOT NULL,
-                description TEXT,
-                pattern_type TEXT NOT NULL CHECK(pattern_type IN ('must_match','must_not_match')),
-                is_active INTEGER NOT NULL DEFAULT 1,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-            """
-        )
-
-        # Login credentials table - for compliance testing
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS login_credentials (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                username TEXT NOT NULL,
-                password_encrypted BLOB NOT NULL,
-                description TEXT,
-                is_active INTEGER NOT NULL DEFAULT 1,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-            """
-        )
-
-        # SNMP mapping table - SNMP credentials are device-type independent
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS snmp_mapping (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL UNIQUE,
-                snmp_community TEXT,
-                snmp_version TEXT NOT NULL CHECK(snmp_version IN ('v1','v2c','v3')),
-                snmp_v3_user TEXT,
-                snmp_v3_auth_protocol TEXT,
-                snmp_v3_auth_password_encrypted BLOB,
-                snmp_v3_priv_protocol TEXT,
-                snmp_v3_priv_password_encrypted BLOB,
-                description TEXT,
-                is_active INTEGER NOT NULL DEFAULT 1,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-            """
-        )
-
-        # Migrate existing tables
-        _migrate_add_name_columns(conn)
-        _migrate_remove_device_type(conn)
-
-        conn.commit()
+# Database tables are now managed by SQLAlchemy models in core/models.py
+# (RegexPattern, LoginCredential, SNMPMapping)
 
 
-def _migrate_add_name_columns(conn) -> None:
-    """Add 'name' column to existing tables if they don't have it."""
-    try:
-        # Check if login_credentials has 'name' column
-        cursor = conn.execute("PRAGMA table_info(login_credentials)")
-        columns = [row[1] for row in cursor.fetchall()]
-        if "name" not in columns:
-            # Add name column and populate with username
-            conn.execute("ALTER TABLE login_credentials ADD COLUMN name TEXT")
-            conn.execute(
-                "UPDATE login_credentials SET name = username WHERE name IS NULL"
-            )
-            conn.execute(
-                "UPDATE login_credentials SET name = username || ' (' || id || ')' WHERE name IS NULL OR name = ''"
-            )
-    except Exception:
-        # Table might not exist yet, which is fine
-        pass
+# ============================================================================
+# Helper Functions
+# ============================================================================
 
-    try:
-        # Check if snmp_mapping has 'name' column
-        cursor = conn.execute("PRAGMA table_info(snmp_mapping)")
-        columns = [row[1] for row in cursor.fetchall()]
-        if "name" not in columns:
-            # Add name column and populate with device_type or id
-            conn.execute("ALTER TABLE snmp_mapping ADD COLUMN name TEXT")
-            # Try to use device_type if it exists, otherwise use id
-            try:
-                conn.execute(
-                    "UPDATE snmp_mapping SET name = device_type WHERE name IS NULL"
-                )
-            except Exception:
-                conn.execute(
-                    "UPDATE snmp_mapping SET name = 'snmp-' || id WHERE name IS NULL"
-                )
-            conn.execute(
-                "UPDATE snmp_mapping SET name = 'snmp-' || id WHERE name IS NULL OR name = ''"
-            )
-    except Exception:
-        # Table might not exist yet, which is fine
-        pass
+def _regex_pattern_to_dict(pattern) -> Dict[str, Any]:
+    """Convert RegexPattern model to dictionary"""
+    return {
+        'id': pattern.id,
+        'pattern': pattern.pattern,
+        'description': pattern.description,
+        'pattern_type': pattern.pattern_type,
+        'is_active': pattern.is_active,
+        'created_at': pattern.created_at.isoformat() if pattern.created_at else None,
+        'updated_at': pattern.updated_at.isoformat() if pattern.updated_at else None,
+    }
 
 
-def _migrate_remove_device_type(conn) -> None:
-    """Remove device_type column from snmp_mapping table.
-
-    SQLite doesn't support DROP COLUMN directly, so we need to:
-    1. Create a new table without device_type
-    2. Copy data from old table to new table
-    3. Drop old table
-    4. Rename new table to original name
-    """
-    try:
-        # Check if snmp_mapping has 'device_type' column
-        cursor = conn.execute("PRAGMA table_info(snmp_mapping)")
-        columns = [row[1] for row in cursor.fetchall()]
-
-        if "device_type" in columns:
-            # Create new table without device_type
-            conn.execute(
-                """
-                CREATE TABLE snmp_mapping_new (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL UNIQUE,
-                    snmp_community TEXT,
-                    snmp_version TEXT NOT NULL CHECK(snmp_version IN ('v1','v2c','v3')),
-                    snmp_v3_user TEXT,
-                    snmp_v3_auth_protocol TEXT,
-                    snmp_v3_auth_password_encrypted BLOB,
-                    snmp_v3_priv_protocol TEXT,
-                    snmp_v3_priv_password_encrypted BLOB,
-                    description TEXT,
-                    is_active INTEGER NOT NULL DEFAULT 1,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
-                )
-                """
-            )
-
-            # Copy data from old table (excluding device_type)
-            conn.execute(
-                """
-                INSERT INTO snmp_mapping_new
-                (id, name, snmp_community, snmp_version, snmp_v3_user,
-                 snmp_v3_auth_protocol, snmp_v3_auth_password_encrypted,
-                 snmp_v3_priv_protocol, snmp_v3_priv_password_encrypted,
-                 description, is_active, created_at, updated_at)
-                SELECT id, name, snmp_community, snmp_version, snmp_v3_user,
-                       snmp_v3_auth_protocol, snmp_v3_auth_password_encrypted,
-                       snmp_v3_priv_protocol, snmp_v3_priv_password_encrypted,
-                       description, is_active, created_at, updated_at
-                FROM snmp_mapping
-                """
-            )
-
-            # Drop old table
-            conn.execute("DROP TABLE snmp_mapping")
-
-            # Rename new table to original name
-            conn.execute("ALTER TABLE snmp_mapping_new RENAME TO snmp_mapping")
-    except Exception:
-        # Table might not exist yet or migration already completed
-        pass
+def _login_credential_to_dict(cred, decrypt_password: bool = False) -> Dict[str, Any]:
+    """Convert LoginCredential model to dictionary"""
+    result = {
+        'id': cred.id,
+        'name': cred.name,
+        'username': cred.username,
+        'description': cred.description,
+        'is_active': cred.is_active,
+        'created_at': cred.created_at.isoformat() if cred.created_at else None,
+        'updated_at': cred.updated_at.isoformat() if cred.updated_at else None,
+    }
+    if decrypt_password and cred.password_encrypted:
+        result['password'] = encryption_service.decrypt(cred.password_encrypted)
+    return result
 
 
-# Initialize database on module import
-_ensure_tables()
+def _snmp_mapping_to_dict(mapping, decrypt_passwords: bool = False) -> Dict[str, Any]:
+    """Convert SNMPMapping model to dictionary"""
+    result = {
+        'id': mapping.id,
+        'name': mapping.name,
+        'snmp_community': mapping.snmp_community,
+        'snmp_version': mapping.snmp_version,
+        'snmp_v3_user': mapping.snmp_v3_user,
+        'snmp_v3_auth_protocol': mapping.snmp_v3_auth_protocol,
+        'snmp_v3_priv_protocol': mapping.snmp_v3_priv_protocol,
+        'description': mapping.description,
+        'is_active': mapping.is_active,
+        'created_at': mapping.created_at.isoformat() if mapping.created_at else None,
+        'updated_at': mapping.updated_at.isoformat() if mapping.updated_at else None,
+    }
+    if decrypt_passwords:
+        if mapping.snmp_v3_auth_password_encrypted:
+            result['snmp_v3_auth_password'] = encryption_service.decrypt(mapping.snmp_v3_auth_password_encrypted)
+        if mapping.snmp_v3_priv_password_encrypted:
+            result['snmp_v3_priv_password'] = encryption_service.decrypt(mapping.snmp_v3_priv_password_encrypted)
+    return result
 
 
 # ============================================================================
@@ -227,44 +118,20 @@ _ensure_tables()
 
 def get_all_regex_patterns() -> List[Dict[str, Any]]:
     """Get all regex patterns."""
-    with _get_conn() as conn:
-        rows = conn.execute(
-            """
-            SELECT id, pattern, description, pattern_type, is_active, created_at, updated_at
-            FROM regex_patterns
-            ORDER BY pattern_type, created_at DESC
-            """
-        ).fetchall()
-        return [dict(row) for row in rows]
+    patterns = regex_repo.get_all()
+    return [_regex_pattern_to_dict(p) for p in patterns]
 
 
 def get_regex_patterns_by_type(pattern_type: str) -> List[Dict[str, Any]]:
     """Get regex patterns filtered by type (must_match or must_not_match)."""
-    with _get_conn() as conn:
-        rows = conn.execute(
-            """
-            SELECT id, pattern, description, pattern_type, is_active, created_at, updated_at
-            FROM regex_patterns
-            WHERE pattern_type = ? AND is_active = 1
-            ORDER BY created_at DESC
-            """,
-            (pattern_type,),
-        ).fetchall()
-        return [dict(row) for row in rows]
+    patterns = regex_repo.get_by_type(pattern_type, is_active=True)
+    return [_regex_pattern_to_dict(p) for p in patterns]
 
 
 def get_regex_pattern_by_id(pattern_id: int) -> Optional[Dict[str, Any]]:
     """Get a specific regex pattern by ID."""
-    with _get_conn() as conn:
-        row = conn.execute(
-            """
-            SELECT id, pattern, description, pattern_type, is_active, created_at, updated_at
-            FROM regex_patterns
-            WHERE id = ?
-            """,
-            (pattern_id,),
-        ).fetchone()
-        return dict(row) if row else None
+    pattern = regex_repo.get_by_id(pattern_id)
+    return _regex_pattern_to_dict(pattern) if pattern else None
 
 
 def create_regex_pattern(
@@ -276,17 +143,13 @@ def create_regex_pattern(
             "Invalid pattern_type. Must be 'must_match' or 'must_not_match'"
         )
 
-    now = datetime.utcnow().isoformat()
-    with _get_conn() as conn:
-        cursor = conn.execute(
-            """
-            INSERT INTO regex_patterns (pattern, description, pattern_type, is_active, created_at, updated_at)
-            VALUES (?, ?, ?, 1, ?, ?)
-            """,
-            (pattern, description, pattern_type, now, now),
-        )
-        conn.commit()
-        return cursor.lastrowid
+    new_pattern = regex_repo.create(
+        pattern=pattern,
+        description=description,
+        pattern_type=pattern_type,
+        is_active=True
+    )
+    return new_pattern.id
 
 
 def update_regex_pattern(
@@ -296,40 +159,25 @@ def update_regex_pattern(
     is_active: Optional[bool] = None,
 ) -> bool:
     """Update an existing regex pattern."""
-    updates = []
-    values = []
+    update_data = {}
 
     if pattern is not None:
-        updates.append("pattern = ?")
-        values.append(pattern)
+        update_data['pattern'] = pattern
     if description is not None:
-        updates.append("description = ?")
-        values.append(description)
+        update_data['description'] = description
     if is_active is not None:
-        updates.append("is_active = ?")
-        values.append(1 if is_active else 0)
+        update_data['is_active'] = is_active
 
-    if not updates:
+    if not update_data:
         return False
 
-    updates.append("updated_at = ?")
-    values.append(datetime.utcnow().isoformat())
-    values.append(pattern_id)
-
-    with _get_conn() as conn:
-        conn.execute(
-            f"UPDATE regex_patterns SET {', '.join(updates)} WHERE id = ?", values
-        )
-        conn.commit()
-        return True
+    updated = regex_repo.update(pattern_id, **update_data)
+    return updated is not None
 
 
 def delete_regex_pattern(pattern_id: int) -> bool:
     """Delete a regex pattern."""
-    with _get_conn() as conn:
-        cursor = conn.execute("DELETE FROM regex_patterns WHERE id = ?", (pattern_id,))
-        conn.commit()
-        return cursor.rowcount > 0
+    return regex_repo.delete(pattern_id)
 
 
 # ============================================================================
@@ -339,63 +187,28 @@ def delete_regex_pattern(pattern_id: int) -> bool:
 
 def get_all_login_credentials(decrypt_passwords: bool = False) -> List[Dict[str, Any]]:
     """Get all login credentials. Optionally decrypt passwords."""
-    with _get_conn() as conn:
-        rows = conn.execute(
-            """
-            SELECT id, name, username, password_encrypted, description, is_active, created_at, updated_at
-            FROM login_credentials
-            ORDER BY created_at DESC
-            """
-        ).fetchall()
-
-        credentials = []
-        for row in rows:
-            cred = dict(row)
-            if decrypt_passwords:
-                try:
-                    cred["password"] = encryption_service.decrypt(
-                        cred["password_encrypted"]
-                    )
-                except Exception as e:
-                    cred["password"] = f"[Decryption Error: {str(e)}]"
-            else:
-                cred["password"] = "********"
-            del cred["password_encrypted"]
-            credentials.append(cred)
-
-        return credentials
+    credentials = login_repo.get_all()
+    result = []
+    for cred in credentials:
+        cred_dict = _login_credential_to_dict(cred, decrypt_password=decrypt_passwords)
+        if not decrypt_passwords:
+            cred_dict['password'] = '********'
+        result.append(cred_dict)
+    return result
 
 
 def get_login_credential_by_id(
     credential_id: int, decrypt_password: bool = False
 ) -> Optional[Dict[str, Any]]:
     """Get a specific login credential by ID."""
-    with _get_conn() as conn:
-        row = conn.execute(
-            """
-            SELECT id, name, username, password_encrypted, description, is_active, created_at, updated_at
-            FROM login_credentials
-            WHERE id = ?
-            """,
-            (credential_id,),
-        ).fetchone()
-
-        if not row:
-            return None
-
-        cred = dict(row)
-        if decrypt_password:
-            try:
-                cred["password"] = encryption_service.decrypt(
-                    cred["password_encrypted"]
-                )
-            except Exception as e:
-                cred["password"] = f"[Decryption Error: {str(e)}]"
-        else:
-            cred["password"] = "********"
-        del cred["password_encrypted"]
-
-        return cred
+    cred = login_repo.get_by_id(credential_id)
+    if not cred:
+        return None
+    
+    cred_dict = _login_credential_to_dict(cred, decrypt_password=decrypt_password)
+    if not decrypt_password:
+        cred_dict['password'] = '********'
+    return cred_dict
 
 
 def create_login_credential(
@@ -403,18 +216,15 @@ def create_login_credential(
 ) -> int:
     """Create a new login credential with encrypted password."""
     encrypted_password = encryption_service.encrypt(password)
-    now = datetime.utcnow().isoformat()
-
-    with _get_conn() as conn:
-        cursor = conn.execute(
-            """
-            INSERT INTO login_credentials (name, username, password_encrypted, description, is_active, created_at, updated_at)
-            VALUES (?, ?, ?, ?, 1, ?, ?)
-            """,
-            (name, username, encrypted_password, description, now, now),
-        )
-        conn.commit()
-        return cursor.lastrowid
+    
+    new_cred = login_repo.create(
+        name=name,
+        username=username,
+        password_encrypted=encrypted_password,
+        description=description,
+        is_active=True
+    )
+    return new_cred.id
 
 
 def update_login_credential(
@@ -426,49 +236,29 @@ def update_login_credential(
     is_active: Optional[bool] = None,
 ) -> bool:
     """Update an existing login credential."""
-    updates = []
-    values = []
+    update_data = {}
 
     if name is not None:
-        updates.append("name = ?")
-        values.append(name)
+        update_data['name'] = name
     if username is not None:
-        updates.append("username = ?")
-        values.append(username)
+        update_data['username'] = username
     if password is not None:
-        encrypted_password = encryption_service.encrypt(password)
-        updates.append("password_encrypted = ?")
-        values.append(encrypted_password)
+        update_data['password_encrypted'] = encryption_service.encrypt(password)
     if description is not None:
-        updates.append("description = ?")
-        values.append(description)
+        update_data['description'] = description
     if is_active is not None:
-        updates.append("is_active = ?")
-        values.append(1 if is_active else 0)
+        update_data['is_active'] = is_active
 
-    if not updates:
+    if not update_data:
         return False
 
-    updates.append("updated_at = ?")
-    values.append(datetime.utcnow().isoformat())
-    values.append(credential_id)
-
-    with _get_conn() as conn:
-        conn.execute(
-            f"UPDATE login_credentials SET {', '.join(updates)} WHERE id = ?", values
-        )
-        conn.commit()
-        return True
+    updated = login_repo.update(credential_id, **update_data)
+    return updated is not None
 
 
 def delete_login_credential(credential_id: int) -> bool:
     """Delete a login credential."""
-    with _get_conn() as conn:
-        cursor = conn.execute(
-            "DELETE FROM login_credentials WHERE id = ?", (credential_id,)
-        )
-        conn.commit()
-        return cursor.rowcount > 0
+    return login_repo.delete(credential_id)
 
 
 # ============================================================================
@@ -478,95 +268,30 @@ def delete_login_credential(credential_id: int) -> bool:
 
 def get_all_snmp_mappings(decrypt_passwords: bool = False) -> List[Dict[str, Any]]:
     """Get all SNMP mappings. Optionally decrypt passwords."""
-    with _get_conn() as conn:
-        rows = conn.execute(
-            """
-            SELECT id, name, snmp_community, snmp_version,
-                   snmp_v3_user, snmp_v3_auth_protocol, snmp_v3_auth_password_encrypted,
-                   snmp_v3_priv_protocol, snmp_v3_priv_password_encrypted,
-                   description, is_active, created_at, updated_at
-            FROM snmp_mapping
-            ORDER BY name
-            """
-        ).fetchall()
-
-        mappings = []
-        for row in rows:
-            mapping = dict(row)
-            if decrypt_passwords:
-                try:
-                    if mapping["snmp_v3_auth_password_encrypted"]:
-                        mapping["snmp_v3_auth_password"] = encryption_service.decrypt(
-                            mapping["snmp_v3_auth_password_encrypted"]
-                        )
-                    if mapping["snmp_v3_priv_password_encrypted"]:
-                        mapping["snmp_v3_priv_password"] = encryption_service.decrypt(
-                            mapping["snmp_v3_priv_password_encrypted"]
-                        )
-                except Exception as e:
-                    mapping["snmp_v3_auth_password"] = f"[Decryption Error: {str(e)}]"
-                    mapping["snmp_v3_priv_password"] = f"[Decryption Error: {str(e)}]"
-            else:
-                mapping["snmp_v3_auth_password"] = (
-                    "********" if mapping["snmp_v3_auth_password_encrypted"] else None
-                )
-                mapping["snmp_v3_priv_password"] = (
-                    "********" if mapping["snmp_v3_priv_password_encrypted"] else None
-                )
-
-            del mapping["snmp_v3_auth_password_encrypted"]
-            del mapping["snmp_v3_priv_password_encrypted"]
-            mappings.append(mapping)
-
-        return mappings
+    mappings = snmp_repo.get_all()
+    result = []
+    for mapping in mappings:
+        mapping_dict = _snmp_mapping_to_dict(mapping, decrypt_passwords=decrypt_passwords)
+        if not decrypt_passwords:
+            mapping_dict['snmp_v3_auth_password'] = '********' if mapping.snmp_v3_auth_password_encrypted else None
+            mapping_dict['snmp_v3_priv_password'] = '********' if mapping.snmp_v3_priv_password_encrypted else None
+        result.append(mapping_dict)
+    return result
 
 
 def get_snmp_mapping_by_id(
     mapping_id: int, decrypt_passwords: bool = False
 ) -> Optional[Dict[str, Any]]:
     """Get a specific SNMP mapping by ID."""
-    with _get_conn() as conn:
-        row = conn.execute(
-            """
-            SELECT id, name, snmp_community, snmp_version,
-                   snmp_v3_user, snmp_v3_auth_protocol, snmp_v3_auth_password_encrypted,
-                   snmp_v3_priv_protocol, snmp_v3_priv_password_encrypted,
-                   description, is_active, created_at, updated_at
-            FROM snmp_mapping
-            WHERE id = ?
-            """,
-            (mapping_id,),
-        ).fetchone()
-
-        if not row:
-            return None
-
-        mapping = dict(row)
-        if decrypt_passwords:
-            try:
-                if mapping["snmp_v3_auth_password_encrypted"]:
-                    mapping["snmp_v3_auth_password"] = encryption_service.decrypt(
-                        mapping["snmp_v3_auth_password_encrypted"]
-                    )
-                if mapping["snmp_v3_priv_password_encrypted"]:
-                    mapping["snmp_v3_priv_password"] = encryption_service.decrypt(
-                        mapping["snmp_v3_priv_password_encrypted"]
-                    )
-            except Exception as e:
-                mapping["snmp_v3_auth_password"] = f"[Decryption Error: {str(e)}]"
-                mapping["snmp_v3_priv_password"] = f"[Decryption Error: {str(e)}]"
-        else:
-            mapping["snmp_v3_auth_password"] = (
-                "********" if mapping["snmp_v3_auth_password_encrypted"] else None
-            )
-            mapping["snmp_v3_priv_password"] = (
-                "********" if mapping["snmp_v3_priv_password_encrypted"] else None
-            )
-
-        del mapping["snmp_v3_auth_password_encrypted"]
-        del mapping["snmp_v3_priv_password_encrypted"]
-
-        return mapping
+    mapping = snmp_repo.get_by_id(mapping_id)
+    if not mapping:
+        return None
+    
+    mapping_dict = _snmp_mapping_to_dict(mapping, decrypt_passwords=decrypt_passwords)
+    if not decrypt_passwords:
+        mapping_dict['snmp_v3_auth_password'] = '********' if mapping.snmp_v3_auth_password_encrypted else None
+        mapping_dict['snmp_v3_priv_password'] = '********' if mapping.snmp_v3_priv_password_encrypted else None
+    return mapping_dict
 
 
 def create_snmp_mapping(
@@ -596,34 +321,19 @@ def create_snmp_mapping(
         else None
     )
 
-    now = datetime.utcnow().isoformat()
-    with _get_conn() as conn:
-        cursor = conn.execute(
-            """
-            INSERT INTO snmp_mapping (
-                name, snmp_community, snmp_version,
-                snmp_v3_user, snmp_v3_auth_protocol, snmp_v3_auth_password_encrypted,
-                snmp_v3_priv_protocol, snmp_v3_priv_password_encrypted,
-                description, is_active, created_at, updated_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
-            """,
-            (
-                name,
-                snmp_community,
-                snmp_version,
-                snmp_v3_user,
-                snmp_v3_auth_protocol,
-                auth_password_encrypted,
-                snmp_v3_priv_protocol,
-                priv_password_encrypted,
-                description,
-                now,
-                now,
-            ),
-        )
-        conn.commit()
-        return cursor.lastrowid
+    new_mapping = snmp_repo.create(
+        name=name,
+        snmp_community=snmp_community,
+        snmp_version=snmp_version,
+        snmp_v3_user=snmp_v3_user,
+        snmp_v3_auth_protocol=snmp_v3_auth_protocol,
+        snmp_v3_auth_password_encrypted=auth_password_encrypted,
+        snmp_v3_priv_protocol=snmp_v3_priv_protocol,
+        snmp_v3_priv_password_encrypted=priv_password_encrypted,
+        description=description,
+        is_active=True
+    )
+    return new_mapping.id
 
 
 def update_snmp_mapping(
@@ -640,65 +350,41 @@ def update_snmp_mapping(
     is_active: Optional[bool] = None,
 ) -> bool:
     """Update an existing SNMP mapping."""
-    updates = []
-    values = []
+    update_data = {}
 
     if name is not None:
-        updates.append("name = ?")
-        values.append(name)
+        update_data['name'] = name
     if snmp_version is not None:
         if snmp_version not in ["v1", "v2c", "v3"]:
             raise ValueError("Invalid snmp_version. Must be 'v1', 'v2c', or 'v3'")
-        updates.append("snmp_version = ?")
-        values.append(snmp_version)
+        update_data['snmp_version'] = snmp_version
     if snmp_community is not None:
-        updates.append("snmp_community = ?")
-        values.append(snmp_community)
+        update_data['snmp_community'] = snmp_community
     if snmp_v3_user is not None:
-        updates.append("snmp_v3_user = ?")
-        values.append(snmp_v3_user)
+        update_data['snmp_v3_user'] = snmp_v3_user
     if snmp_v3_auth_protocol is not None:
-        updates.append("snmp_v3_auth_protocol = ?")
-        values.append(snmp_v3_auth_protocol)
+        update_data['snmp_v3_auth_protocol'] = snmp_v3_auth_protocol
     if snmp_v3_auth_password is not None:
-        encrypted = encryption_service.encrypt(snmp_v3_auth_password)
-        updates.append("snmp_v3_auth_password_encrypted = ?")
-        values.append(encrypted)
+        update_data['snmp_v3_auth_password_encrypted'] = encryption_service.encrypt(snmp_v3_auth_password)
     if snmp_v3_priv_protocol is not None:
-        updates.append("snmp_v3_priv_protocol = ?")
-        values.append(snmp_v3_priv_protocol)
+        update_data['snmp_v3_priv_protocol'] = snmp_v3_priv_protocol
     if snmp_v3_priv_password is not None:
-        encrypted = encryption_service.encrypt(snmp_v3_priv_password)
-        updates.append("snmp_v3_priv_password_encrypted = ?")
-        values.append(encrypted)
+        update_data['snmp_v3_priv_password_encrypted'] = encryption_service.encrypt(snmp_v3_priv_password)
     if description is not None:
-        updates.append("description = ?")
-        values.append(description)
+        update_data['description'] = description
     if is_active is not None:
-        updates.append("is_active = ?")
-        values.append(1 if is_active else 0)
+        update_data['is_active'] = is_active
 
-    if not updates:
+    if not update_data:
         return False
 
-    updates.append("updated_at = ?")
-    values.append(datetime.utcnow().isoformat())
-    values.append(mapping_id)
-
-    with _get_conn() as conn:
-        conn.execute(
-            f"UPDATE snmp_mapping SET {', '.join(updates)} WHERE id = ?", values
-        )
-        conn.commit()
-        return True
+    updated = snmp_repo.update(mapping_id, **update_data)
+    return updated is not None
 
 
 def delete_snmp_mapping(mapping_id: int) -> bool:
     """Delete an SNMP mapping."""
-    with _get_conn() as conn:
-        cursor = conn.execute("DELETE FROM snmp_mapping WHERE id = ?", (mapping_id,))
-        conn.commit()
-        return cursor.rowcount > 0
+    return snmp_repo.delete(mapping_id)
 
 
 def get_snmp_mapping_by_name(name: str) -> Optional[Dict[str, Any]]:
@@ -710,23 +396,15 @@ def get_snmp_mapping_by_name(name: str) -> Optional[Dict[str, Any]]:
     Returns:
         SNMP mapping dict if found, None otherwise
     """
-    with _get_conn() as conn:
-        row = conn.execute(
-            """
-            SELECT id, name, snmp_community, snmp_version,
-                   snmp_v3_user, snmp_v3_auth_protocol, snmp_v3_auth_password_encrypted,
-                   snmp_v3_priv_protocol, snmp_v3_priv_password_encrypted,
-                   description, is_active, created_at, updated_at
-            FROM snmp_mapping
-            WHERE name = ?
-            """,
-            (name,),
-        ).fetchone()
-
-        if not row:
-            return None
-
-        return dict(row)
+    mapping = snmp_repo.get_by_name(name)
+    if not mapping:
+        return None
+    
+    # Don't decrypt passwords for this function
+    mapping_dict = _snmp_mapping_to_dict(mapping, decrypt_passwords=False)
+    mapping_dict['snmp_v3_auth_password'] = '********' if mapping.snmp_v3_auth_password_encrypted else None
+    mapping_dict['snmp_v3_priv_password'] = '********' if mapping.snmp_v3_priv_password_encrypted else None
+    return mapping_dict
 
 
 def import_snmp_mappings_from_yaml(yaml_content: str) -> Dict[str, Any]:
@@ -752,8 +430,6 @@ def import_snmp_mappings_from_yaml(yaml_content: str) -> Dict[str, Any]:
     Returns:
       Dict with success count, error count, and list of errors
     """
-    _ensure_tables()
-
     try:
         yaml_data = yaml.safe_load(yaml_content)
         if not isinstance(yaml_data, dict):

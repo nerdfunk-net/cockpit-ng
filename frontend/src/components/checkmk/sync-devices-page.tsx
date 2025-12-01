@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { RefreshCw, Search, Eye, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown, BarChart3, Download } from 'lucide-react'
+import { RefreshCw, Search, Eye, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown, BarChart3, Download, Trash2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import {
@@ -56,19 +56,6 @@ interface NautobotDeviceRecord {
   location?: { name?: string } | null
   primary_ip4?: { address?: string } | null
   device_type?: { model?: string } | null
-}
-
-interface JobResult {
-  id: string
-  type: string
-  status: string
-  started_at: string
-  created_at: string
-  processed_devices: number
-  progress?: {
-    processed: number
-    total: number
-  }
 }
 
 interface DeviceResult {
@@ -118,6 +105,26 @@ interface DeviceResult {
   primary_ip4?: { address: string }
   device_status?: { name: string }
   device_id?: string
+  checkmk_status?: string
+  normalized_config?: {
+    folder?: string
+    attributes?: Record<string, unknown>
+    internal?: {
+      hostname?: string
+      role?: string
+      status?: string
+      location?: string
+    }
+  }
+  checkmk_config?: {
+    folder?: string
+    attributes?: Record<string, unknown>
+    effective_attributes?: Record<string, unknown> | null
+    is_cluster?: boolean
+    is_offline?: boolean
+    cluster_nodes?: unknown[] | null
+  }
+  diff?: string
 }
 
 interface AttributeConfig {
@@ -223,16 +230,21 @@ export function CheckMKSyncDevicesPage() {
   const [loadingResults, setLoadingResults] = useState(false)
   const [isReloadingDevices, setIsReloadingDevices] = useState(false)
 
-  // Background job state
+  // Background job state (Celery)
   const [currentJobId, setCurrentJobId] = useState<string | null>(null)
-  const [isJobRunning, setIsJobRunning] = useState(false)
+  const [celeryTaskId, setCeleryTaskId] = useState<string | null>(null)
+  const [_isJobRunning, setIsJobRunning] = useState(false)
   const [jobProgress, setJobProgress] = useState<{
     processed: number
     total: number
     message: string
     status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+    current?: number
+    success?: number
+    failed?: number
   } | null>(null)
   const [showProgressModal, setShowProgressModal] = useState(false)
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Show status message helper
   const showMessage = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -336,16 +348,10 @@ export function CheckMKSyncDevicesPage() {
     }
   }
 
-  const loadJobStateFromStorage = () => {
-    const savedJobId = localStorage.getItem('nb2cmk_current_job_id')
-    const savedIsRunning = localStorage.getItem('nb2cmk_is_job_running') === 'true'
-    return { savedJobId, savedIsRunning }
-  }
-
-  // Fetch available completed jobs from backend
+  // Fetch available completed jobs from backend (NB2CMK database)
   const fetchAvailableJobs = useCallback(async () => {
     try {
-      const response = await fetch('/api/proxy/jobs/', {
+      const response = await fetch('/api/proxy/nb2cmk/jobs?limit=50', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -353,16 +359,15 @@ export function CheckMKSyncDevicesPage() {
       })
       if (response.ok) {
         const data = await response.json()
-        // Filter only completed Device Comparison jobs with device results
-        const completedJobs = data.jobs.filter((job: JobResult) =>
+        // Filter only completed jobs with processed devices
+        const completedJobs = data.jobs.filter((job: { status: string; processed_devices: number }) =>
           job.status === 'completed' && 
-          job.type === 'device-comparison' &&
-          (job.progress?.processed || 0) > 0
-        ).map((job: JobResult) => ({
+          (job.processed_devices || 0) > 0
+        ).map((job: { id: string; status: string; started_at: string; processed_devices: number }) => ({
           id: job.id,
           status: job.status,
           created_at: job.started_at,
-          processed_devices: job.progress?.processed || 0
+          processed_devices: job.processed_devices || 0
         }))
         setAvailableJobs(completedJobs)
       }
@@ -376,7 +381,8 @@ export function CheckMKSyncDevicesPage() {
     
     setLoadingResults(true)
     try {
-      const response = await fetch(`/api/proxy/jobs/${selectedJobId}`, {
+      // Use NB2CMK jobs endpoint for comparison results
+      const response = await fetch(`/api/proxy/nb2cmk/jobs/${selectedJobId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -386,24 +392,30 @@ export function CheckMKSyncDevicesPage() {
       if (response.ok) {
         const data = await response.json()
         
-        // Extract device results from the new job format
+        // Extract device results from the NB2CMK job format
         const deviceResults = data.job?.device_results || []
         // Convert device results to the expected devices format
-        const devices = deviceResults.map((result: DeviceResult, index: number) => ({
-          id: result.device_id || result.device_name || `device_${index}`, // Use device UUID as ID, fallback to device name or index
-          name: result.device_name || result.device || `device_${index}`, // Use device name for display, fallback to device UUID
-          role: (typeof result.role === 'object' && result.role?.name) || result.role || 'Unknown', // Extract name from object or use string directly
-          status: result.device_status?.name || result.status || 'Unknown', // Use device_status for device status, fallback to job status
-          location: (typeof result.location === 'object' && result.location?.name) || result.location || 'Unknown', // Extract name from object or use string directly
-          result_data: result.result_data,
-          error_message: result.error_message,
-          processed_at: result.processed_at,
-          checkmk_status: result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown', // Extract result from data.result
-          // Extract normalized_config and checkmk_config from result_data
-          normalized_config: result.result_data?.data?.normalized_config || result.result_data?.normalized_config,
-          checkmk_config: result.result_data?.data?.checkmk_config || result.result_data?.checkmk_config,
-          diff: result.result_data?.data?.diff || result.result_data?.diff
-        }))
+        const devices = deviceResults.map((result: DeviceResult, index: number) => {
+          // Get internal data from normalized_config for device metadata
+          const internalData = result.normalized_config?.internal || {}
+          
+          return {
+            id: result.device_id || result.device_name || `device_${index}`, // Use device UUID as ID, fallback to device name or index
+            name: internalData.hostname || result.device_name || result.device || `device_${index}`, // Use hostname from internal data
+            role: internalData.role || (typeof result.role === 'object' && result.role?.name) || result.role || 'Unknown', // Get role from internal data
+            status: internalData.status || result.device_status?.name || result.status || 'Unknown', // Get status from internal data
+            location: internalData.location || (typeof result.location === 'object' && result.location?.name) || result.location || 'Unknown', // Get location from internal data
+            result_data: result.result_data,
+            error_message: result.error_message,
+            processed_at: result.processed_at,
+            // For NB2CMK format, checkmk_status is directly on the result
+            checkmk_status: result.checkmk_status || result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown',
+            // normalized_config and checkmk_config are directly on the result for NB2CMK format
+            normalized_config: result.normalized_config || result.result_data?.data?.normalized_config || result.result_data?.normalized_config,
+            checkmk_config: result.checkmk_config || result.result_data?.data?.checkmk_config || result.result_data?.checkmk_config,
+            diff: result.diff || result.result_data?.data?.diff || result.result_data?.diff
+          }
+        })
         
         setDevices(devices)
         setStatusMessage({
@@ -434,6 +446,64 @@ export function CheckMKSyncDevicesPage() {
       setShowStatusModal(true)
     } finally {
       setLoadingResults(false)
+    }
+  }
+
+  // Clear all comparison results from the database
+  const handleClearResults = async () => {
+    if (!token) return
+    
+    // Confirm before clearing
+    if (!confirm('Are you sure you want to delete all comparison results? This action cannot be undone.')) {
+      return
+    }
+    
+    try {
+      const response = await fetch('/api/proxy/nb2cmk/jobs/clear', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Refresh the job list
+        await fetchAvailableJobs()
+        
+        // Clear current selection and devices if they were from a deleted job
+        setSelectedJobId('')
+        setDevices([])
+        setCurrentJobId(null)
+        
+        setStatusMessage({
+          type: 'success',
+          message: data.message || 'All comparison results cleared'
+        })
+        setShowStatusModal(true)
+        
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+          setStatusMessage(null)
+          setShowStatusModal(false)
+        }, 3000)
+      } else {
+        const errorData = await response.json()
+        setStatusMessage({
+          type: 'error',
+          message: `Failed to clear results: ${errorData.detail || 'Unknown error'}`
+        })
+        setShowStatusModal(true)
+      }
+    } catch (error) {
+      console.error('Error clearing results:', error)
+      setStatusMessage({
+        type: 'error',
+        message: 'Error clearing comparison results'
+      })
+      setShowStatusModal(true)
     }
   }
 
@@ -518,94 +588,17 @@ export function CheckMKSyncDevicesPage() {
     if (token) {
       fetchDefaultSite()
       fetchAvailableJobs() // Fetch available job results
-      
-      // Load previous job state from localStorage
-      const { savedJobId, savedIsRunning } = loadJobStateFromStorage()
-      if (savedJobId) {
-        setCurrentJobId(savedJobId)
-        setIsJobRunning(savedIsRunning)
-        
-        // Check if the job is still actually running by getting its current status
-        // Do this after a short delay to ensure the component is fully loaded
-        const checkJobStatus = async () => {
-          try {
-            const response = await fetch(`/api/proxy/nb2cmk/job/${savedJobId}/progress`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            })
-            
-            if (response.ok) {
-              const data = await response.json()
-              const jobStillRunning = data.status === 'running' || data.status === 'pending'
-              setIsJobRunning(jobStillRunning)
-              saveJobStateToStorage(savedJobId, jobStillRunning)
-              
-              setJobProgress({
-                processed: data.processed_devices,
-                total: data.total_devices,
-                message: data.progress_message,
-                status: data.status
-              })
-              
-              // If completed, silently load results
-              if (data.status === 'completed') {
-                const resultResponse = await fetch(`/api/proxy/jobs/${savedJobId}`, {
-                  headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                  }
-                })
-
-                if (resultResponse.ok) {
-                  const resultData = await resultResponse.json()
-
-                  // Extract device results from the new job format and convert to expected format
-                  const deviceResults = resultData.job?.device_results || []
-                  const devices = deviceResults.map((result: DeviceResult, index: number) => ({
-                    id: result.device_id || result.device_name || `device_${index}`, // Use device UUID as ID, fallback to device name or index
-                    name: result.device_name,
-                    role: (typeof result.role === 'object' && result.role?.name) || result.role || 'Unknown', // Extract name from object or use string directly
-                    status: result.device_status?.name || result.status || 'Unknown', // Use device_status for device status
-                    location: (typeof result.location === 'object' && result.location?.name) || result.location || 'Unknown', // Extract name from object or use string directly
-                    result_data: result.result_data,
-                    error_message: result.error_message,
-                    processed_at: result.processed_at,
-                    checkmk_status: result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown' // Extract result from data.result
-                  }))
-
-                  setDevices(devices)
-                }
-              }
-            }
-          } catch (error) {
-            console.error('Error checking restored job status:', error)
-          }
-        }
-        
-        setTimeout(checkJobStatus, 100)
-      }
     }
   }, [token, fetchAvailableJobs, fetchDefaultSite])
 
-  // Auto-check progress for running jobs every 5 seconds
+  // Cleanup polling interval on unmount
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null
-    
-    if (currentJobId && isJobRunning) {
-      interval = setInterval(() => {
-        handleGetProgress(currentJobId, true) // Silent check
-      }, 5000)
-    }
-    
     return () => {
-      if (interval) {
-        clearInterval(interval)
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentJobId, isJobRunning]) // handleGetProgress is stable due to useCallback
+  }, [])
 
   // Extract unique roles and statuses from the current device data
   const availableRoles = useMemo(() => {
@@ -691,41 +684,145 @@ export function CheckMKSyncDevicesPage() {
   }
 
 
+  // Poll Celery task status
+  const pollCeleryTask = useCallback(async (taskId: string) => {
+    try {
+      const response = await fetch(`/api/proxy/celery/tasks/${taskId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+
+        // Update progress from Celery task state
+        if (data.progress || data.result) {
+          const progress = data.progress || {}
+          const result = data.result || {}
+
+          setJobProgress({
+            processed: progress.current || result.completed || 0,
+            total: progress.total || result.total || 0,
+            message: progress.status || result.message || 'Processing...',
+            status: data.status === 'SUCCESS' ? 'completed' :
+                   data.status === 'FAILURE' ? 'failed' :
+                   data.status === 'PROGRESS' ? 'running' : 'pending',
+            current: progress.current,
+            success: progress.completed || result.completed,
+            failed: progress.failed || result.failed
+          })
+        }
+
+        // If task completed or failed, stop polling
+        if (data.status === 'SUCCESS' || data.status === 'FAILURE') {
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current)
+            pollingIntervalRef.current = null
+          }
+          setIsJobRunning(false)
+
+          // Get the job_id from the result for reference
+          if (data.status === 'SUCCESS' && data.result?.job_id) {
+            setCurrentJobId(data.result.job_id)
+            // Set the selected job so user can click "Load Results" to view
+            setSelectedJobId(data.result.job_id)
+          }
+
+          // Refresh available jobs
+          fetchAvailableJobs()
+
+          showMessage(
+            data.status === 'SUCCESS'
+              ? `Comparison completed: ${data.result?.message || 'All devices processed'}`
+              : `Comparison failed: ${data.error || 'Unknown error'}`,
+            data.status === 'SUCCESS' ? 'success' : 'error'
+          )
+        }
+      }
+    } catch (error) {
+      console.error('Error polling Celery task:', error)
+    }
+  }, [token, fetchAvailableJobs])
+
+  // Cancel running Celery task
+  const cancelCeleryTask = useCallback(async () => {
+    if (!celeryTaskId || !token) return
+
+    try {
+      const response = await fetch(`/api/proxy/celery/tasks/${celeryTaskId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current)
+          pollingIntervalRef.current = null
+        }
+        setIsJobRunning(false)
+        setCeleryTaskId(null)
+        setJobProgress(null)
+        showMessage('Job cancelled successfully', 'info')
+      } else {
+        showMessage('Failed to cancel job', 'error')
+      }
+    } catch (error) {
+      console.error('Error cancelling task:', error)
+      showMessage('Error cancelling job', 'error')
+    }
+  }, [celeryTaskId, token])
+
   // Background job functions
-  // Start new device comparison job using the APScheduler service
+  // Start new device comparison job using Celery
   const startNewJob = async () => {
     if (!token) {
       setStatusMessage({ type: 'error', message: 'Authentication required' })
       setShowStatusModal(true)
       return
     }
-    
+
     try {
-      // Start a complete device comparison job that processes ALL devices
-      const response = await fetch('/api/proxy/jobs/compare-devices', {
+      // Start a Celery comparison task for all devices
+      const response = await fetch('/api/proxy/celery/tasks/compare-nautobot-and-checkmk', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          // Empty devices list means "process all devices"
-          devices: [],
-          max_concurrent: 3  // Default concurrency for device processing
-        })
+        body: JSON.stringify(null) // null = compare all devices
       })
-      
+
       if (response.ok) {
         const result = await response.json()
+        setCeleryTaskId(result.task_id)
+        setIsJobRunning(true)
+        setJobProgress({
+          processed: 0,
+          total: 0,
+          message: 'Starting comparison...',
+          status: 'pending'
+        })
+        setShowProgressModal(true)
+
+        // Start polling for task status
+        pollingIntervalRef.current = setInterval(() => {
+          pollCeleryTask(result.task_id)
+        }, 2000) // Poll every 2 seconds
+
+        // Initial poll
+        pollCeleryTask(result.task_id)
+
         setStatusMessage({
           type: 'success',
-          message: `Device comparison job started with ID: ${result.job_id}`
+          message: `Device comparison task started: ${result.task_id.slice(0, 8)}...`
         })
         setShowStatusModal(true)
-        
-        // Refresh available jobs list
-        fetchAvailableJobs()
-        
+
         // Auto-hide success message after 3 seconds
         setTimeout(() => {
           setStatusMessage(null)
@@ -750,74 +847,7 @@ export function CheckMKSyncDevicesPage() {
     }
   }
 
-  const handleGetProgress = useCallback(async (jobId?: string, silent = false) => {
-    const targetJobId = jobId || currentJobId
-    
-    if (!targetJobId || !token) {
-      if (!silent) {
-        setStatusMessage({ type: 'error', message: 'No active job found' })
-        setShowStatusModal(true)
-      }
-      return
-    }
-
-    try {
-      const response = await fetch(`/api/proxy/nb2cmk/job/${targetJobId}/progress`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        const newProgress = {
-          processed: data.processed_devices,
-          total: data.total_devices,
-          message: data.progress_message,
-          status: data.status as 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
-        }
-        
-        setJobProgress(newProgress)
-        
-        // Update job running state and save to storage
-        const jobStillRunning = data.status === 'running' || data.status === 'pending'
-        
-        setIsJobRunning(jobStillRunning)
-        saveJobStateToStorage(targetJobId, jobStillRunning)
-        
-        // If this is not a silent check, show the modal
-        if (!silent) {
-          setShowProgressModal(true)
-        }
-        
-        // If job is completed and we have results, we can automatically load them
-        if (data.status === 'completed' && devices.length === 0) {
-          // Silently load the results
-          handleViewDiff(targetJobId, true)
-        }
-      } else {
-        const errorData = await response.json()
-        if (!silent) {
-          setStatusMessage({
-            type: 'error',
-            message: `Failed to get job progress: ${errorData.detail || 'Unknown error'}`
-          })
-          setShowStatusModal(true)
-        }
-      }
-    } catch (error) {
-      console.error('Error getting job progress:', error)
-      if (!silent) {
-        setStatusMessage({
-          type: 'error',
-          message: 'Error getting job progress'
-        })
-        setShowStatusModal(true)
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentJobId, token, devices.length, saveJobStateToStorage]) // handleViewDiff would cause circular dependency
+  // handleGetProgress removed - now using pollCeleryTask for real-time progress tracking
 
   const handleViewDiff = async (jobId?: string, silent = false) => {
     const targetJobId = jobId || currentJobId
@@ -831,7 +861,8 @@ export function CheckMKSyncDevicesPage() {
     }
 
     try {
-      const response = await fetch(`/api/proxy/jobs/${targetJobId}`, {
+      // Use NB2CMK jobs endpoint for comparison results
+      const response = await fetch(`/api/proxy/nb2cmk/jobs/${targetJobId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -841,7 +872,7 @@ export function CheckMKSyncDevicesPage() {
       if (response.ok) {
         const data = await response.json()
 
-        // Extract device results from the new job format and convert to expected format
+        // Extract device results from the NB2CMK job format and convert to expected format
         const deviceResults = data.job?.device_results || []
         const devices = deviceResults.map((result: DeviceResult, index: number) => ({
           id: result.device_id || result.device_name || `device_${index}`, // Use device UUID as ID, fallback to device name or index
@@ -852,11 +883,12 @@ export function CheckMKSyncDevicesPage() {
           result_data: result.result_data,
           error_message: result.error_message,
           processed_at: result.processed_at,
-          checkmk_status: result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown', // Extract result from data.result
-          // Extract normalized_config and checkmk_config from result_data
-          normalized_config: result.result_data?.data?.normalized_config || result.result_data?.normalized_config,
-          checkmk_config: result.result_data?.data?.checkmk_config || result.result_data?.checkmk_config,
-          diff: result.result_data?.data?.diff || result.result_data?.diff
+          // For NB2CMK format, checkmk_status is directly on the result
+          checkmk_status: result.checkmk_status || result.result_data?.data?.result || result.result_data?.comparison_result || result.result_data?.status || 'unknown',
+          // normalized_config and checkmk_config are directly on the result for NB2CMK format
+          normalized_config: result.normalized_config || result.result_data?.data?.normalized_config || result.result_data?.normalized_config,
+          checkmk_config: result.checkmk_config || result.result_data?.data?.checkmk_config || result.result_data?.checkmk_config,
+          diff: result.diff || result.result_data?.data?.diff || result.result_data?.diff
         }))
 
         setDevices(devices)
@@ -1728,6 +1760,17 @@ export function CheckMKSyncDevicesPage() {
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh Jobs
                 </Button>
+                <Button 
+                  onClick={handleClearResults}
+                  variant="outline"
+                  size="sm"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  title="Clear all comparison results"
+                  disabled={availableJobs.length === 0}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear Results
+                </Button>
               </div>
             </div>
           </div>
@@ -2054,9 +2097,9 @@ export function CheckMKSyncDevicesPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Status:</span>
-                    <Badge 
+                    <Badge
                       variant={
-                        jobProgress.status === 'completed' ? 'default' : 
+                        jobProgress.status === 'completed' ? 'default' :
                         jobProgress.status === 'running' ? 'secondary' :
                         jobProgress.status === 'failed' ? 'destructive' :
                         'outline'
@@ -2069,11 +2112,27 @@ export function CheckMKSyncDevicesPage() {
                     <span>Progress:</span>
                     <span>{jobProgress.processed} of {jobProgress.total} devices</span>
                   </div>
-                  
+
+                  {/* Detailed Progress Stats */}
+                  {(jobProgress.success !== undefined || jobProgress.failed !== undefined) && (
+                    <div className="flex justify-between text-xs text-gray-600">
+                      <span>
+                        {jobProgress.success !== undefined && (
+                          <span className="text-green-600">✓ {jobProgress.success} succeeded</span>
+                        )}
+                      </span>
+                      <span>
+                        {jobProgress.failed !== undefined && jobProgress.failed > 0 && (
+                          <span className="text-red-600">✗ {jobProgress.failed} failed</span>
+                        )}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Progress Bar */}
                   {jobProgress.total > 0 && (
                     <div className="space-y-1">
-                      <Progress 
+                      <Progress
                         value={(jobProgress.processed / jobProgress.total) * 100}
                         className="w-full"
                       />
@@ -2082,29 +2141,51 @@ export function CheckMKSyncDevicesPage() {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Progress Message */}
                   {jobProgress.message && (
                     <div className="bg-gray-50 p-3 rounded text-sm">
                       {jobProgress.message}
                     </div>
                   )}
-                  
-                  {/* Job ID */}
+
+                  {/* Task ID */}
+                  {celeryTaskId && (
+                    <div className="text-xs text-gray-500 font-mono">
+                      Task ID: {celeryTaskId.slice(0, 16)}...
+                    </div>
+                  )}
+
+                  {/* Job ID (once available) */}
                   {currentJobId && (
                     <div className="text-xs text-gray-500 font-mono">
-                      Job ID: {currentJobId}
+                      Job ID: {currentJobId.slice(0, 16)}...
                     </div>
                   )}
                 </div>
 
                 {/* Action buttons */}
                 <div className="flex space-x-2 pt-2">
+                  {/* Cancel button for running tasks */}
+                  {(jobProgress.status === 'running' || jobProgress.status === 'pending') && (
+                    <Button
+                      onClick={cancelCeleryTask}
+                      variant="outline"
+                      className="flex-1 border-orange-400 text-orange-700 hover:bg-orange-50"
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Cancel Job
+                    </Button>
+                  )}
+
+                  {/* View Results button for completed tasks */}
                   {jobProgress.status === 'completed' && (
-                    <Button 
+                    <Button
                       onClick={() => {
                         setShowProgressModal(false)
-                        handleViewDiff()
+                        if (currentJobId) {
+                          handleViewDiff(currentJobId)
+                        }
                       }}
                       className="flex-1 bg-green-600 hover:bg-green-700"
                     >
@@ -2112,7 +2193,9 @@ export function CheckMKSyncDevicesPage() {
                       View Results
                     </Button>
                   )}
-                  <Button 
+
+                  {/* Close button */}
+                  <Button
                     onClick={() => setShowProgressModal(false)}
                     variant="outline"
                     className="flex-1"

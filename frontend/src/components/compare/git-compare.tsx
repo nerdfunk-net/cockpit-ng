@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -32,7 +32,8 @@ import {
 } from '@/lib/compare-utils'
 import type {
   FileItem,
-  ComparisonResult
+  ComparisonResult,
+  GitRepository
 } from '@/types/git'
 
 export default function GitCompare() {
@@ -44,7 +45,10 @@ export default function GitCompare() {
   const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null)
   const [showComparison, setShowComparison] = useState(false)
 
-  // Memoized callback for branch changes
+  // Use custom hooks for state management
+  const { repositories, selectedRepo, setSelectedRepo } = useGitRepositories()
+
+  // IMPORTANT: Stable callback to prevent infinite loops
   const handleBranchChange = useCallback(() => {
     setLeftCommit('')
     setRightCommit('')
@@ -52,12 +56,24 @@ export default function GitCompare() {
     setShowComparison(false)
   }, [])
 
-  // Use custom hooks for state management
-  const { repositories, selectedRepo, setSelectedRepo } = useGitRepositories()
+  // IMPORTANT: Memoize options object to ensure stable reference
+  const branchOptions = useMemo(() => ({ 
+    onBranchChange: handleBranchChange 
+  }), [handleBranchChange])
+
   const { branches, selectedBranch, setSelectedBranch } = useGitBranches(
     selectedRepo?.id || null,
-    { onBranchChange: handleBranchChange }
+    branchOptions
   )
+
+  // Memoized callback for repository changes
+  const handleRepoChange = useCallback((repo: GitRepository | null) => {
+    setSelectedRepo(repo)
+    setLeftCommit('')
+    setRightCommit('')
+    setComparisonResult(null)
+    setShowComparison(false)
+  }, [setSelectedRepo])
   const { commits } = useGitCommits(selectedRepo?.id || null, selectedBranch)
   const diffNav = useDiffNavigation()
 
@@ -85,7 +101,8 @@ export default function GitCompare() {
 
   useEffect(() => {
     loadFiles()
-  }, [loadFiles])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRepo])
 
   const canCompare = () => {
     return selectedRepo && leftCommit && leftCommit.trim() !== '' &&
@@ -159,14 +176,7 @@ export default function GitCompare() {
             <RepositorySelector
               repositories={repositories}
               selectedRepo={selectedRepo}
-              onSelectRepo={(repo) => {
-                setSelectedRepo(repo)
-                // Clear commit selections when repo changes
-                setLeftCommit('')
-                setRightCommit('')
-                setComparisonResult(null)
-                setShowComparison(false)
-              }}
+              onSelectRepo={handleRepoChange}
             />
 
             <BranchSelector

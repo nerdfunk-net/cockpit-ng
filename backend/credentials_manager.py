@@ -1,91 +1,23 @@
 """Credential storage and encryption manager.
 
 Encrypted credential storage using SECRET_KEY-derived key.
+Database: PostgreSQL (cockpit database)
+Table: credentials
 """
 
 from __future__ import annotations
 import base64
 import hashlib
 import os
-import sqlite3
 from datetime import datetime, date
 from typing import Any, Dict, List, Optional
 from cryptography.fernet import Fernet, InvalidToken
 from config import settings as config_settings
+from repositories import CredentialsRepository
+from core.models import Credential
 
-DB_PATH = os.path.join(config_settings.data_directory, "settings", "credentials.db")
-
-
-def _get_conn() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-def _ensure_table() -> None:
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    with _get_conn() as conn:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS credentials (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                username TEXT NOT NULL,
-                type TEXT NOT NULL CHECK(type IN ('ssh','tacacs','generic','token')),
-                password_encrypted BLOB NOT NULL,
-                valid_until TEXT,
-                is_active INTEGER NOT NULL DEFAULT 1,
-                source TEXT NOT NULL DEFAULT 'general' CHECK(source IN ('general','private')),
-                owner TEXT,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-            """
-        )
-        conn.commit()
-
-
-def _create_initial_credential() -> None:
-    """Create initial credential on first startup if none exist."""
-    try:
-        with _get_conn() as conn:
-            # Check if any credentials exist
-            cursor = conn.execute("SELECT COUNT(*) FROM credentials")
-            count = cursor.fetchone()[0]
-
-            if count == 0:
-                # No credentials exist, create initial one from environment
-                initial_username = config_settings.initial_username
-                initial_password = config_settings.initial_password
-
-                if initial_username and initial_password:
-                    encrypted = encryption_service.encrypt(initial_password)
-                    now = datetime.utcnow().isoformat()
-
-                    conn.execute(
-                        """
-                        INSERT INTO credentials (name, username, type, password_encrypted, valid_until, source, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                        (
-                            "Initial Admin Credential",
-                            initial_username,
-                            "generic",
-                            encrypted,
-                            None,  # No expiration
-                            "general",  # Default source
-                            now,
-                            now,
-                        ),
-                    )
-                    conn.commit()
-                    print(f"Created initial credential for user: {initial_username}")
-                else:
-                    print(
-                        "Warning: INITIAL_USERNAME or INITIAL_PASSWORD not set, skipping initial credential creation"
-                    )
-    except Exception as e:
-        print(f"Warning: Failed to create initial credential: {e}")
+# Initialize repository
+_creds_repo = CredentialsRepository()
 
 
 def _build_key(secret: str) -> bytes:
@@ -112,13 +44,10 @@ class EncryptionService:
 
 encryption_service = EncryptionService()
 
-# Initialize database and create initial credential after encryption service is ready
-_ensure_table()
-_create_initial_credential()
 
-
-def _row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
-    valid_until = row["valid_until"]
+def _credential_to_dict(cred: Credential) -> Dict[str, Any]:
+    """Convert Credential model to dictionary with computed status."""
+    valid_until = cred.valid_until
     status = "active"
     if valid_until:
         try:
@@ -131,16 +60,16 @@ def _row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
         except Exception:
             status = "unknown"
     return {
-        "id": row["id"],
-        "name": row["name"],
-        "username": row["username"],
-        "type": row["type"],
-        "valid_until": row["valid_until"],
-        "is_active": bool(row["is_active"]),
-        "source": row["source"],
-        "owner": row["owner"],
-        "created_at": row["created_at"],
-        "updated_at": row["updated_at"],
+        "id": cred.id,
+        "name": cred.name,
+        "username": cred.username,
+        "type": cred.type,
+        "valid_until": cred.valid_until,
+        "is_active": cred.is_active,
+        "source": cred.source,
+        "owner": cred.owner,
+        "created_at": cred.created_at.isoformat() if cred.created_at else None,
+        "updated_at": cred.updated_at.isoformat() if cred.updated_at else None,
         "status": status,
         "has_password": True,
     }
@@ -149,17 +78,41 @@ def _row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
 def list_credentials(
     include_expired: bool = False, source: Optional[str] = None
 ) -> List[Dict[str, Any]]:
-    with _get_conn() as conn:
-        if source:
-            rows = conn.execute(
-                "SELECT * FROM credentials WHERE source = ? ORDER BY name", (source,)
-            ).fetchall()
-        else:
-            rows = conn.execute("SELECT * FROM credentials ORDER BY name").fetchall()
-    items = [_row_to_dict(r) for r in rows]
+    """List all credentials, optionally filtered by source.
+    
+    Args:
+        include_expired: If False, filter out expired credentials
+        source: Optional source filter ('general', 'private')
+        
+    Returns:
+        List of credential dictionaries with computed status
+    """
+    if source:
+        creds = _creds_repo.get_by_source(source)
+    else:
+        creds = _creds_repo.get_all()
+    
+    items = [_credential_to_dict(c) for c in creds]
+    
     if not include_expired:
         items = [i for i in items if i["status"] != "expired"]
+    
     return items
+
+
+def get_credential_by_id(cred_id: int) -> Optional[Dict[str, Any]]:
+    """Get a credential by ID.
+
+    Args:
+        cred_id: The credential ID
+
+    Returns:
+        Credential dictionary or None if not found
+    """
+    cred = _creds_repo.get_by_id(cred_id)
+    if not cred:
+        return None
+    return _credential_to_dict(cred)
 
 
 def create_credential(
@@ -171,32 +124,36 @@ def create_credential(
     source: str = "general",
     owner: Optional[str] = None,
 ) -> Dict[str, Any]:
+    """Create a new credential with encrypted password.
+    
+    Args:
+        name: Credential name
+        username: Username for the credential
+        cred_type: Type of credential (ssh, tacacs, generic, token)
+        password: Plain text password to encrypt
+        valid_until: ISO8601 datetime string or None
+        source: 'general' or 'private'
+        owner: Username of owner (for private credentials)
+        
+    Returns:
+        Dictionary representation of created credential
+    """
     encrypted = encryption_service.encrypt(password)
-    now = datetime.utcnow().isoformat()
-    with _get_conn() as conn:
-        cur = conn.execute(
-            """
-            INSERT INTO credentials (name, username, type, password_encrypted, valid_until, source, owner, created_at, updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?)
-            """,
-            (
-                name,
-                username,
-                cred_type,
-                encrypted,
-                valid_until,
-                source,
-                owner,
-                now,
-                now,
-            ),
-        )
-        conn.commit()
-        new_id = cur.lastrowid
-        row = conn.execute(
-            "SELECT * FROM credentials WHERE id = ?", (new_id,)
-        ).fetchone()
-    return _row_to_dict(row)
+    now = datetime.utcnow()
+    
+    new_cred = _creds_repo.create(
+        name=name,
+        username=username,
+        type=cred_type,
+        password_encrypted=encrypted,
+        valid_until=valid_until,
+        source=source,
+        owner=owner,
+        is_active=True,
+        created_at=now,
+        updated_at=now
+    )
+    return _credential_to_dict(new_cred)
 
 
 def update_credential(
@@ -209,57 +166,62 @@ def update_credential(
     source: Optional[str] = None,
     owner: Optional[str] = None,
 ) -> Dict[str, Any]:
-    with _get_conn() as conn:
-        row = conn.execute(
-            "SELECT * FROM credentials WHERE id = ?", (cred_id,)
-        ).fetchone()
-        if not row:
-            raise ValueError("Credential not found")
-        new_name = name if name is not None else row["name"]
-        new_user = username if username is not None else row["username"]
-        new_type = cred_type if cred_type is not None else row["type"]
-        new_valid = valid_until if valid_until is not None else row["valid_until"]
-        new_source = source if source is not None else row["source"]
-        new_owner = (
-            owner
-            if owner is not None
-            else (row["owner"] if "owner" in row.keys() else None)
-        )
-        encrypted = row["password_encrypted"]
-        if password:
-            encrypted = encryption_service.encrypt(password)
-        now = datetime.utcnow().isoformat()
-        conn.execute(
-            """
-            UPDATE credentials SET name=?, username=?, type=?, password_encrypted=?, valid_until=?, source=?, owner=?, updated_at=? WHERE id=?
-            """,
-            (
-                new_name,
-                new_user,
-                new_type,
-                encrypted,
-                new_valid,
-                new_source,
-                new_owner,
-                now,
-                cred_id,
-            ),
-        )
-        conn.commit()
-        new_row = conn.execute(
-            "SELECT * FROM credentials WHERE id = ?", (cred_id,)
-        ).fetchone()
-    return _row_to_dict(new_row)
+    """Update an existing credential.
+    
+    Args:
+        cred_id: ID of credential to update
+        name: New name (optional)
+        username: New username (optional)
+        cred_type: New type (optional)
+        password: New password to encrypt (optional)
+        valid_until: New expiration date (optional)
+        source: New source (optional)
+        owner: New owner (optional)
+        
+    Returns:
+        Dictionary representation of updated credential
+        
+    Raises:
+        ValueError: If credential not found
+    """
+    existing = _creds_repo.get_by_id(cred_id)
+    if not existing:
+        raise ValueError("Credential not found")
+    
+    # Build update kwargs with only provided values
+    update_kwargs = {}
+    if name is not None:
+        update_kwargs["name"] = name
+    if username is not None:
+        update_kwargs["username"] = username
+    if cred_type is not None:
+        update_kwargs["type"] = cred_type
+    if valid_until is not None:
+        update_kwargs["valid_until"] = valid_until
+    if source is not None:
+        update_kwargs["source"] = source
+    if owner is not None:
+        update_kwargs["owner"] = owner
+    if password is not None:
+        update_kwargs["password_encrypted"] = encryption_service.encrypt(password)
+    
+    update_kwargs["updated_at"] = datetime.utcnow()
+    
+    updated = _creds_repo.update(cred_id, **update_kwargs)
+    return _credential_to_dict(updated)
 
 
 def delete_credential(cred_id: int) -> None:
-    with _get_conn() as conn:
-        conn.execute("DELETE FROM credentials WHERE id = ?", (cred_id,))
-        conn.commit()
+    """Delete a credential by ID.
+    
+    Args:
+        cred_id: ID of credential to delete
+    """
+    _creds_repo.delete(cred_id)
 
 
 def delete_credentials_by_owner(owner: str) -> int:
-    """Delete all credentials owned by a specific user.
+    """Delete all private credentials owned by a specific user.
 
     Args:
         owner: Username of the credential owner
@@ -267,19 +229,22 @@ def delete_credentials_by_owner(owner: str) -> int:
     Returns:
         Number of credentials deleted
     """
-    with _get_conn() as conn:
-        cursor = conn.execute(
-            "DELETE FROM credentials WHERE owner = ? AND source = 'private'", (owner,)
-        )
-        conn.commit()
-        return cursor.rowcount
+    return _creds_repo.delete_by_owner(owner)
 
 
 def get_decrypted_password(cred_id: int) -> str:
-    with _get_conn() as conn:
-        row = conn.execute(
-            "SELECT password_encrypted FROM credentials WHERE id = ?", (cred_id,)
-        ).fetchone()
-        if not row:
-            raise ValueError("Credential not found")
-        return encryption_service.decrypt(row["password_encrypted"])
+    """Get the decrypted password for a credential.
+    
+    Args:
+        cred_id: ID of credential
+        
+    Returns:
+        Decrypted password as plain text
+        
+    Raises:
+        ValueError: If credential not found or decryption fails
+    """
+    cred = _creds_repo.get_by_id(cred_id)
+    if not cred:
+        raise ValueError("Credential not found")
+    return encryption_service.decrypt(cred.password_encrypted)

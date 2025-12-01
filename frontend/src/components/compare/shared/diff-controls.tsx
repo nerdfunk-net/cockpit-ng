@@ -3,6 +3,7 @@
  * Provides font size, hide unchanged, and export controls for diff views
  */
 
+import { useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -37,6 +38,14 @@ export function DiffControls({
   showExport = true,
   className = ''
 }: DiffControlsProps) {
+  // Memoize the font size change callback
+  const handleFontSizeChange = useCallback((value: string) => {
+    const size = parseInt(value)
+    if (size >= 8 && size <= 20) {
+      onFontSizeChange(size)
+    }
+  }, [onFontSizeChange])
+
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       {/* Font Size Control */}
@@ -45,12 +54,7 @@ export function DiffControls({
           <Label className="text-sm">Font Size:</Label>
           <Select
             value={fontSize.toString()}
-            onValueChange={(value) => {
-              const size = parseInt(value)
-              if (size >= 8 && size <= 20) {
-                onFontSizeChange(size)
-              }
-            }}
+            onValueChange={handleFontSizeChange}
           >
             <SelectTrigger className="w-20 h-8">
               <SelectValue />

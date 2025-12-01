@@ -4,251 +4,18 @@ Nautobot to CheckMK comparison router for device synchronization and comparison.
 
 from __future__ import annotations
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from core.auth import require_permission
 from services.nb2cmk_base_service import nb2cmk_service
-from services.nb2cmk_background_service import nb2cmk_background_service
-from models.nb2cmk import (
-    JobStartResponse,
-    JobProgressResponse,
-    JobResultsResponse,
-)
+from services.nb2cmk_database_service import nb2cmk_db_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/nb2cmk", tags=["nb2cmk"])
 
 
-# Background Job Endpoints
-
-
-@router.get("/jobs")
-async def get_jobs_list(
-    limit: int = 100,
-    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
-):
-    """Get list of recent background jobs"""
-    try:
-        from services.nb2cmk_database_service import nb2cmk_db_service
-
-        jobs = nb2cmk_db_service.get_recent_jobs(limit)
-
-        # Convert to frontend format
-        jobs_data = []
-        for job in jobs:
-            job_data = {
-                "id": job.job_id,
-                "type": "device-comparison",  # All current jobs are device comparisons
-                "status": job.status.value,
-                "started_at": job.created_at.isoformat(),
-                "completed_at": job.completed_at.isoformat()
-                if job.completed_at
-                else None,
-                "started_by": job.user_id or "unknown",
-                "progress": {
-                    "processed": job.processed_devices,
-                    "total": job.total_devices,
-                    "message": job.progress_message,
-                }
-                if job.total_devices > 0
-                else None,
-                "results": {
-                    "devices_processed": job.processed_devices,
-                    "devices_added": 0,  # Would need tracking for this
-                    "devices_updated": 0,  # Would need tracking for this
-                    "errors": [job.error_message] if job.error_message else [],
-                }
-                if job.status.value in ["completed", "failed"]
-                else None,
-            }
-            jobs_data.append(job_data)
-
-        return {"jobs": jobs_data}
-    except Exception as e:
-        logger.error(f"Error getting jobs list: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get jobs list: {str(e)}",
-        )
-
-
-@router.post("/start-diff-job", response_model=JobStartResponse)
-async def start_devices_diff_job(
-    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
-):
-    """Start a background job to get all devices from Nautobot with CheckMK comparison status"""
-    try:
-        username = current_user.get("username")  # Extract username from JWT token
-        result = await nb2cmk_background_service.start_devices_diff_job(username)
-        return result
-    except Exception as e:
-        logger.error(f"Error starting devices diff job: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to start devices diff job: {str(e)}",
-        )
-
-
-@router.get("/job/{job_id}/progress", response_model=JobProgressResponse)
-async def get_job_progress(
-    job_id: str,
-    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
-):
-    """Get progress information for a background job"""
-    try:
-        result = await nb2cmk_background_service.get_job_progress(job_id)
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting job progress for {job_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get job progress: {str(e)}",
-        )
-
-
-@router.get("/job/{job_id}/results", response_model=JobResultsResponse)
-async def get_job_results(
-    job_id: str,
-    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
-):
-    """Get complete results for a completed background job"""
-    try:
-        result = await nb2cmk_background_service.get_job_results(job_id)
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting job results for {job_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get job results: {str(e)}",
-        )
-
-
-@router.post("/job/{job_id}/cancel")
-async def cancel_job(
-    job_id: str,
-    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
-):
-    """Cancel a running background job"""
-    try:
-        success = await nb2cmk_background_service.cancel_job(job_id)
-        if success:
-            return {"message": f"Job {job_id} cancelled successfully"}
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Failed to cancel job {job_id}",
-            )
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error cancelling job {job_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to cancel job: {str(e)}",
-        )
-
-
-@router.delete("/job/{job_id}")
-async def delete_job(
-    job_id: str,
-    current_user: dict = Depends(require_permission("checkmk.devices", "delete")),
-):
-    """Delete a completed background job and its results"""
-    try:
-        from services.nb2cmk_database_service import nb2cmk_db_service
-
-        # Check if job exists and is in a deletable state
-        job = nb2cmk_db_service.get_job(job_id)
-        if not job:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found"
-            )
-
-        if job.status.value in ["running", "pending"]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot delete {job.status.value} job. Cancel it first.",
-            )
-
-        # Delete job and its results
-        success = nb2cmk_db_service.delete_job(job_id)
-        if success:
-            return {"message": f"Job {job_id} deleted successfully"}
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to delete job {job_id}",
-            )
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error deleting job {job_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete job: {str(e)}",
-        )
-
-
-@router.post("/jobs/clear-completed")
-async def clear_completed_jobs(
-    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
-):
-    """Clear all completed and failed jobs"""
-    try:
-        from services.nb2cmk_database_service import nb2cmk_db_service
-
-        # Use cleanup method with 0 days to clear all completed jobs
-        deleted_count = nb2cmk_db_service.cleanup_old_jobs(0)
-        return {"message": f"Cleared {deleted_count} completed jobs"}
-    except Exception as e:
-        logger.error(f"Error clearing completed jobs: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to clear completed jobs: {str(e)}",
-        )
-
-
 # Device Sync Endpoints
-
-
-@router.get("/devices", response_model=dict)
-async def get_devices_for_sync(
-    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
-):
-    """Get all devices from Nautobot for CheckMK sync"""
-    try:
-        result = await nb2cmk_service.get_devices_for_sync()
-        return result.model_dump()
-    except Exception as e:
-        logger.error(f"Error getting devices for CheckMK sync: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get devices for CheckMK sync: {str(e)}",
-        )
-
-
-@router.get("/device/{device_id}/normalized")
-async def get_device_normalized(
-    device_id: str,
-    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
-):
-    """Get normalized device config from Nautobot for CheckMK comparison."""
-    try:
-        return await nb2cmk_service.get_device_normalized(device_id)
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(
-            f"Error getting normalized device config for {device_id}: {str(e)}"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get normalized device config: {str(e)}",
-        )
 
 
 @router.get("/get_default_site")
@@ -263,22 +30,6 @@ async def get_default_site(
         logger.error(f"Error getting default site: {str(e)}")
         # Return default value even if config reading fails
         return {"default_site": "cmk"}
-
-
-@router.get("/get_diff", response_model=dict)
-async def get_devices_diff(
-    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
-):
-    """Get all devices from Nautobot with CheckMK comparison status"""
-    try:
-        result = await nb2cmk_service.get_devices_diff()
-        return result.model_dump()
-    except Exception as e:
-        logger.error(f"Error getting devices diff: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get devices diff: {str(e)}",
-        )
 
 
 @router.get("/device/{device_id}/compare")
@@ -336,3 +87,206 @@ async def update_device_in_checkmk(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update device {device_id} in CheckMK: {str(e)}",
         )
+
+
+# Job Management Endpoints
+
+
+@router.get("/jobs")
+async def list_comparison_jobs(
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of jobs to return"),
+    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
+):
+    """
+    List recent device comparison jobs from the NB2CMK database.
+    
+    These jobs are created by scheduled "Compare Devices" tasks and store
+    the comparison results for viewing in the Sync Devices page.
+    """
+    try:
+        jobs = nb2cmk_db_service.get_recent_jobs(limit=limit)
+        
+        # Convert to dict format expected by frontend
+        job_list = []
+        for job in jobs:
+            job_list.append({
+                "id": job.job_id,
+                "status": job.status.value if hasattr(job.status, 'value') else job.status,
+                "created_at": job.created_at.isoformat() if job.created_at else None,
+                "started_at": job.started_at.isoformat() if job.started_at else None,
+                "completed_at": job.completed_at.isoformat() if job.completed_at else None,
+                "total_devices": job.total_devices,
+                "processed_devices": job.processed_devices,
+                "progress_message": job.progress_message,
+                "user_id": job.user_id,
+                "error_message": job.error_message,
+            })
+        
+        return {"jobs": job_list, "total": len(job_list)}
+        
+    except Exception as e:
+        logger.error(f"Error listing comparison jobs: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list comparison jobs: {str(e)}",
+        )
+
+
+@router.get("/jobs/{job_id}")
+async def get_comparison_job_details(
+    job_id: str,
+    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
+):
+    """
+    Get detailed information about a comparison job including device results.
+    
+    Returns the job status and all device comparison results stored in the
+    NB2CMK database, formatted for display in the Sync Devices page.
+    """
+    try:
+        # Get job info
+        job = nb2cmk_db_service.get_job(job_id)
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Job {job_id} not found",
+            )
+        
+        # Get device results
+        device_results = nb2cmk_db_service.get_job_results(job_id)
+        
+        # Format device results for frontend
+        formatted_results = []
+        for result in device_results:
+            formatted_results.append({
+                "device_id": result.device_id,
+                "device_name": result.device_name,
+                "device": result.device_name,  # Alias for compatibility
+                "checkmk_status": result.checkmk_status,
+                "diff": result.diff,
+                "normalized_config": result.normalized_config,
+                "checkmk_config": result.checkmk_config,
+                "processed_at": result.processed_at.isoformat() if result.processed_at else None,
+            })
+        
+        return {
+            "job": {
+                "id": job.job_id,
+                "status": job.status.value if hasattr(job.status, 'value') else job.status,
+                "created_at": job.created_at.isoformat() if job.created_at else None,
+                "started_at": job.started_at.isoformat() if job.started_at else None,
+                "completed_at": job.completed_at.isoformat() if job.completed_at else None,
+                "total_devices": job.total_devices,
+                "processed_devices": job.processed_devices,
+                "progress_message": job.progress_message,
+                "user_id": job.user_id,
+                "error_message": job.error_message,
+                "device_results": formatted_results,
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting comparison job {job_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get comparison job: {str(e)}",
+        )
+
+
+@router.delete("/jobs/{job_id}")
+async def delete_comparison_job(
+    job_id: str,
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
+):
+    """
+    Delete a comparison job and its results.
+    
+    Only completed, failed, or cancelled jobs can be deleted.
+    Running or pending jobs must be cancelled first.
+    """
+    try:
+        # Check if job exists
+        job = nb2cmk_db_service.get_job(job_id)
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Job {job_id} not found",
+            )
+        
+        # Check if job can be deleted
+        status_value = job.status.value if hasattr(job.status, 'value') else job.status
+        if status_value in ['running', 'pending']:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot delete job {job_id} - job is {status_value}. Cancel it first.",
+            )
+        
+        # Delete the job
+        deleted = nb2cmk_db_service.delete_job(job_id)
+        
+        if deleted:
+            return {"message": f"Job {job_id} deleted successfully"}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to delete job {job_id}",
+            )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting comparison job {job_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete comparison job: {str(e)}",
+        )
+
+
+@router.post("/jobs/clear")
+async def clear_all_comparison_jobs(
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
+):
+    """
+    Delete all completed, failed, and cancelled comparison jobs.
+    
+    Running or pending jobs are preserved.
+    Returns the count of deleted jobs.
+    """
+    try:
+        # Get all jobs
+        jobs = nb2cmk_db_service.get_recent_jobs(limit=1000)
+        
+        deleted_count = 0
+        skipped_count = 0
+        
+        for job in jobs:
+            status_value = job.status.value if hasattr(job.status, 'value') else job.status
+            
+            # Skip running or pending jobs
+            if status_value in ['running', 'pending']:
+                skipped_count += 1
+                continue
+            
+            # Delete the job
+            if nb2cmk_db_service.delete_job(job.job_id):
+                deleted_count += 1
+        
+        message = f"Deleted {deleted_count} comparison job(s)"
+        if skipped_count > 0:
+            message += f", skipped {skipped_count} running/pending job(s)"
+        
+        return {
+            "message": message,
+            "deleted": deleted_count,
+            "skipped": skipped_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Error clearing comparison jobs: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to clear comparison jobs: {str(e)}",
+        )
+

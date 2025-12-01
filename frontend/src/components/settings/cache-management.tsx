@@ -35,6 +35,10 @@ interface CacheSettings {
     locations?: boolean
     devices?: boolean
   }
+  // Cache task intervals (in minutes) - 0 means disabled
+  devices_cache_interval_minutes?: number
+  locations_cache_interval_minutes?: number
+  git_commits_cache_interval_minutes?: number
 }
 
 interface CacheStats {
@@ -99,7 +103,10 @@ export default function CacheManagement() {
       git: true,
       locations: false,
       devices: false
-    }
+    },
+    devices_cache_interval_minutes: 60,
+    locations_cache_interval_minutes: 10,
+    git_commits_cache_interval_minutes: 15
   })
   const [originalSettings, setOriginalSettings] = useState<CacheSettings | null>(null)
   const [stats, setStats] = useState<CacheStats | null>(null)
@@ -128,7 +135,10 @@ export default function CacheManagement() {
       if (response?.success && response.data) {
         const loadedSettings = {
           ...response.data,
-          prefetch_items: response.data.prefetch_items || { git: true, locations: false, devices: false }
+          prefetch_items: response.data.prefetch_items || { git: true, locations: false, devices: false },
+          devices_cache_interval_minutes: response.data.devices_cache_interval_minutes ?? 60,
+          locations_cache_interval_minutes: response.data.locations_cache_interval_minutes ?? 10,
+          git_commits_cache_interval_minutes: response.data.git_commits_cache_interval_minutes ?? 15
         }
         setSettings(loadedSettings)
         setOriginalSettings(loadedSettings)
@@ -483,6 +493,70 @@ export default function CacheManagement() {
                 <p className="text-sm text-gray-500">
                   Limit how many commits are prefetched and returned
                 </p>
+              </div>
+
+              <Separator />
+
+              {/* Cache Task Intervals Section */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-base font-medium">Background Cache Tasks</h3>
+                  <p className="text-sm text-gray-500">
+                    Configure how often background tasks refresh the cache. Set to 0 to disable a task.
+                    These tasks will appear in Jobs → View.
+                  </p>
+                </div>
+                
+                {/* Devices Cache Interval */}
+                <div className="space-y-2">
+                  <Label htmlFor="devices-interval">Devices Cache Interval (minutes)</Label>
+                  <Input
+                    id="devices-interval"
+                    type="number"
+                    min="0"
+                    step="5"
+                    value={settings.devices_cache_interval_minutes ?? 60}
+                    onChange={(e) => setSettings(prev => ({ ...prev, devices_cache_interval_minutes: parseInt(e.target.value) || 0 }))}
+                    placeholder="60"
+                  />
+                  <p className="text-sm text-gray-500">
+                    How often to refresh the devices cache from Nautobot (0 = disabled)
+                  </p>
+                </div>
+
+                {/* Locations Cache Interval */}
+                <div className="space-y-2">
+                  <Label htmlFor="locations-interval">Locations Cache Interval (minutes)</Label>
+                  <Input
+                    id="locations-interval"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={settings.locations_cache_interval_minutes ?? 10}
+                    onChange={(e) => setSettings(prev => ({ ...prev, locations_cache_interval_minutes: parseInt(e.target.value) || 0 }))}
+                    placeholder="10"
+                  />
+                  <p className="text-sm text-gray-500">
+                    How often to refresh the locations cache from Nautobot (0 = disabled)
+                  </p>
+                </div>
+
+                {/* Git Commits Cache Interval */}
+                <div className="space-y-2">
+                  <Label htmlFor="git-interval">Git Commits Cache Interval (minutes)</Label>
+                  <Input
+                    id="git-interval"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={settings.git_commits_cache_interval_minutes ?? 15}
+                    onChange={(e) => setSettings(prev => ({ ...prev, git_commits_cache_interval_minutes: parseInt(e.target.value) || 0 }))}
+                    placeholder="15"
+                  />
+                  <p className="text-sm text-gray-500">
+                    How often to refresh the git commits cache (0 = disabled)
+                  </p>
+                </div>
               </div>
 
               <Separator />
