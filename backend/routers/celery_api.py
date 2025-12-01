@@ -27,6 +27,22 @@ class ProgressTaskRequest(BaseModel):
     duration: int = 10
 
 
+class OnboardDeviceRequest(BaseModel):
+    ip_address: str
+    location_id: str
+    role_id: str
+    namespace_id: str
+    status_id: str
+    interface_status_id: str
+    ip_address_status_id: str
+    secret_groups_id: str
+    platform_id: str
+    port: int = 22
+    timeout: int = 30
+    tags: Optional[List[str]] = None
+    custom_fields: Optional[Dict[str, str]] = None
+
+
 class TaskResponse(BaseModel):
     task_id: str
     status: str
@@ -96,6 +112,66 @@ async def submit_progress_test_task(request: ProgressTaskRequest):
         status='queued',
         message=f"Progress test task submitted: {task.id}"
     )
+
+
+@router.post("/tasks/onboard-device", response_model=TaskResponse)
+@handle_celery_errors("onboard device")
+async def trigger_onboard_device(
+    request: OnboardDeviceRequest,
+    current_user: dict = Depends(require_permission("devices.onboard", "execute"))
+):
+    """
+    Onboard a device to Nautobot with tags and custom fields using Celery.
+
+    This endpoint triggers a background task that:
+    1. Calls Nautobot onboarding job
+    2. Waits for job completion (max 90 seconds)
+    3. Retrieves the device UUID from the IP address
+    4. Updates the device with tags and custom fields
+
+    Request Body:
+        ip_address: Device IP address
+        location_id: Nautobot location ID
+        role_id: Nautobot role ID
+        namespace_id: Nautobot namespace ID
+        status_id: Device status ID
+        interface_status_id: Interface status ID
+        ip_address_status_id: IP address status ID
+        secret_groups_id: Secret group ID
+        platform_id: Platform ID or "detect"
+        port: SSH port (default: 22)
+        timeout: Connection timeout (default: 30)
+        tags: List of tag IDs to apply (optional)
+        custom_fields: Dict of custom field key-value pairs (optional)
+
+    Returns:
+        TaskResponse with task_id for tracking progress via /tasks/{task_id}
+    """
+    from tasks.onboard_device_task import onboard_device_task
+
+    # Submit task to Celery queue
+    task = onboard_device_task.delay(
+        ip_address=request.ip_address,
+        location_id=request.location_id,
+        role_id=request.role_id,
+        namespace_id=request.namespace_id,
+        status_id=request.status_id,
+        interface_status_id=request.interface_status_id,
+        ip_address_status_id=request.ip_address_status_id,
+        secret_groups_id=request.secret_groups_id,
+        platform_id=request.platform_id,
+        port=request.port,
+        timeout=request.timeout,
+        tags=request.tags,
+        custom_fields=request.custom_fields
+    )
+
+    return TaskResponse(
+        task_id=task.id,
+        status='queued',
+        message=f"Device onboarding task queued for {request.ip_address}: {task.id}"
+    )
+
 
 @router.get("/tasks/{task_id}", response_model=TaskStatusResponse)
 @handle_celery_errors("get task status")

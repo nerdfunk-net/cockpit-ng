@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { FileUp, Plus, RefreshCw } from 'lucide-react'
+import { FileUp, Plus, RefreshCw, Tags, FileText } from 'lucide-react'
 import { useOnboardingData } from './hooks/use-onboarding-data'
 import { useOnboardingForm } from './hooks/use-onboarding-form'
 import { useJobTracking } from './hooks/use-job-tracking'
@@ -12,7 +12,28 @@ import { ValidationMessage } from './components/validation-message'
 import { DeviceSearchResults } from './components/device-search-results'
 import { JobStatusDisplay } from './components/job-status-display'
 import { CSVUploadModal } from './components/csv-upload-modal'
+import { TagsModal } from '@/components/shared/tags-modal'
+import { CustomFieldsModal } from '@/components/shared/custom-fields-modal'
+import { OnboardingProgressModal } from './components/onboarding-progress-modal'
 import type { StatusMessage, LocationItem, OnboardFormData } from './types'
+import { useApi } from '@/hooks/use-api'
+
+interface TagItem {
+  id: string
+  name: string
+  color?: string
+}
+
+interface CustomField {
+  id: string
+  key: string
+  label: string
+  type: {
+    value: string
+  }
+  required: boolean
+  description?: string
+}
 
 interface DeviceSearchResult {
   id: string
@@ -81,8 +102,29 @@ export function OnboardDevicePage() {
   const [locationSearchValue, setLocationSearchValue] = useState('')
   const [deviceSearchQuery, setDeviceSearchQuery] = useState('')
 
+  // Tags state
+  const [showTagsModal, setShowTagsModal] = useState(false)
+  const [availableTags, setAvailableTags] = useState<TagItem[]>([])
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [isLoadingTags, setIsLoadingTags] = useState(false)
+
+  // Custom fields state
+  const [showCustomFieldsModal, setShowCustomFieldsModal] = useState(false)
+  const [customFields, setCustomFields] = useState<CustomField[]>([])
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({})
+  const [customFieldChoices, setCustomFieldChoices] = useState<Record<string, string[]>>({})
+  const [isLoadingCustomFields, setIsLoadingCustomFields] = useState(false)
+
+  // Onboarding progress modal state
+  const [showProgressModal, setShowProgressModal] = useState(false)
+  const [onboardingTaskId, setOnboardingTaskId] = useState<string | null>(null)
+  const [isSubmittingOnboard, setIsSubmittingOnboard] = useState(false)
+
   // Track if we've initialized form defaults
   const hasInitialized = useRef(false)
+
+  // API hook for Celery task submission
+  const { apiCall } = useApi()
 
   // Load data on mount
   useEffect(() => {
@@ -120,18 +162,48 @@ export function OnboardDevicePage() {
       return
     }
 
+    setIsSubmittingOnboard(true)
+
     try {
-      const response = await submitOnboarding()
-      setStatusMessage({
-        type: 'success',
-        message: 'Device onboarding initiated successfully!'
+      // Prepare request body with form data, tags, and custom fields
+      const requestBody = {
+        ...formData,
+        tags: selectedTags.length > 0 ? selectedTags : undefined,
+        custom_fields: Object.keys(customFieldValues).length > 0 ? customFieldValues : undefined
+      }
+
+      // Submit to Celery task endpoint
+      const response = await apiCall<{
+        task_id: string
+        status: string
+        message: string
+      }>('celery/tasks/onboard-device', {
+        method: 'POST',
+        body: requestBody
       })
-      startTracking(response.job_id, formData.ip_address)
+
+      if (response.task_id) {
+        // Show progress modal and start tracking
+        setOnboardingTaskId(response.task_id)
+        setShowProgressModal(true)
+        setStatusMessage({
+          type: 'success',
+          message: `✅ Onboarding task started successfully!`
+        })
+      } else {
+        setStatusMessage({
+          type: 'error',
+          message: '❌ Failed to start onboarding task: No task ID returned.'
+        })
+      }
     } catch (error) {
+      console.error('Onboarding error:', error)
       setStatusMessage({
         type: 'error',
-        message: error instanceof Error ? error.message : 'Failed to onboard device'
+        message: `❌ Failed to start onboarding: ${error instanceof Error ? error.message : 'Unknown error'}`
       })
+    } finally {
+      setIsSubmittingOnboard(false)
     }
   }
 
@@ -181,6 +253,29 @@ export function OnboardDevicePage() {
     }
   }
 
+  // Toggle tag selection
+  const handleToggleTag = useCallback((tagId: string) => {
+    setSelectedTags(prev => {
+      const newTags = prev.includes(tagId)
+        ? prev.filter(id => id !== tagId)
+        : [...prev, tagId]
+      console.log('Tag toggled:', tagId, 'New tags:', newTags)
+      return newTags
+    })
+  }, [])
+
+  // Update custom field value
+  const handleUpdateCustomField = useCallback((key: string, value: string) => {
+    setCustomFieldValues(prev => {
+      const newValues = {
+        ...prev,
+        [key]: value
+      }
+      console.log('Custom field updated:', key, '=', value, 'All values:', newValues)
+      return newValues
+    })
+  }, [])
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -210,11 +305,35 @@ export function OnboardDevicePage() {
       {/* Main Onboarding Form */}
       <div className="rounded-xl border shadow-sm overflow-hidden">
         <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-1.5 px-3">
-          <div className="flex items-center space-x-1.5">
-            <Plus className="h-3.5 w-3.5" />
-            <div>
-              <h3 className="text-xs font-semibold">Device Information</h3>
-              <p className="text-blue-100 text-[10px]">Enter IP address and verify availability</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-1.5">
+              <Plus className="h-3.5 w-3.5" />
+              <div>
+                <h3 className="text-xs font-semibold">Device Information</h3>
+                <p className="text-blue-100 text-[10px]">Enter IP address and verify availability</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setShowTagsModal(true)}
+                disabled={isLoadingData}
+                size="sm"
+                variant="outline"
+                className="bg-white text-blue-600 hover:bg-blue-50 border-blue-200 h-7 text-xs px-2"
+              >
+                <Tags className="h-3 w-3 mr-1" />
+                Tags {selectedTags.length > 0 && `(${selectedTags.length})`}
+              </Button>
+              <Button
+                onClick={() => setShowCustomFieldsModal(true)}
+                disabled={isLoadingData}
+                size="sm"
+                variant="outline"
+                className="bg-white text-blue-600 hover:bg-blue-50 border-blue-200 h-7 text-xs px-2"
+              >
+                <FileText className="h-3 w-3 mr-1" />
+                Custom Fields
+              </Button>
             </div>
           </div>
         </div>
@@ -252,13 +371,13 @@ export function OnboardDevicePage() {
               <div className="mt-4 flex items-center space-x-4 pt-4 border-t">
                 <Button
                   onClick={handleSubmit}
-                  disabled={isSubmitting || !ipValidation.isValid}
+                  disabled={isSubmittingOnboard || !ipValidation.isValid}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 h-8 text-sm"
                 >
-                  {isSubmitting ? (
+                  {isSubmittingOnboard ? (
                     <>
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Onboarding Device...
+                      Starting Onboarding...
                     </>
                   ) : (
                     <>
@@ -304,6 +423,40 @@ export function OnboardDevicePage() {
         parseError={csvUpload.parseError}
         onFileSelect={csvUpload.parseCSV}
         onUpload={csvUpload.performBulkOnboarding}
+      />
+
+      {/* Tags Modal */}
+      <TagsModal
+        open={showTagsModal}
+        onOpenChange={setShowTagsModal}
+        selectedTags={selectedTags}
+        onToggleTag={handleToggleTag}
+        availableTags={availableTags}
+        setAvailableTags={setAvailableTags}
+        isLoadingTags={isLoadingTags}
+        setIsLoadingTags={setIsLoadingTags}
+      />
+
+      {/* Custom Fields Modal */}
+      <CustomFieldsModal
+        open={showCustomFieldsModal}
+        onOpenChange={setShowCustomFieldsModal}
+        customFieldValues={customFieldValues}
+        onUpdateCustomField={handleUpdateCustomField}
+        customFields={customFields}
+        setCustomFields={setCustomFields}
+        customFieldChoices={customFieldChoices}
+        setCustomFieldChoices={setCustomFieldChoices}
+        isLoadingCustomFields={isLoadingCustomFields}
+        setIsLoadingCustomFields={setIsLoadingCustomFields}
+      />
+
+      {/* Onboarding Progress Modal */}
+      <OnboardingProgressModal
+        open={showProgressModal}
+        onOpenChange={setShowProgressModal}
+        taskId={onboardingTaskId}
+        ipAddress={formData.ip_address}
       />
     </div>
   )

@@ -1,0 +1,660 @@
+"""
+Celery task for device onboarding.
+"""
+from celery import shared_task
+import logging
+import time
+import asyncio
+from typing import Dict, Any, List, Optional
+
+logger = logging.getLogger(__name__)
+
+
+@shared_task(bind=True, name='tasks.onboard_device_task')
+def onboard_device_task(
+    self,
+    ip_address: str,
+    location_id: str,
+    role_id: str,
+    namespace_id: str,
+    status_id: str,
+    interface_status_id: str,
+    ip_address_status_id: str,
+    secret_groups_id: str,
+    platform_id: str,
+    port: int,
+    timeout: int,
+    tags: Optional[List[str]] = None,
+    custom_fields: Optional[Dict[str, str]] = None,
+) -> dict:
+    """
+    Onboard a device to Nautobot with tags and custom fields.
+
+    Process:
+    1. Call Nautobot onboarding job
+    2. Wait for job completion (max 90 seconds)
+    3. Get device UUID from IP address
+    4. Update device with tags and custom fields
+
+    Args:
+        self: Task instance (for updating state)
+        ip_address: Device IP address
+        location_id: Nautobot location ID
+        role_id: Nautobot role ID
+        namespace_id: Nautobot namespace ID
+        status_id: Device status ID
+        interface_status_id: Interface status ID
+        ip_address_status_id: IP address status ID
+        secret_groups_id: Secret group ID
+        platform_id: Platform ID or "detect"
+        port: SSH port
+        timeout: Connection timeout
+        tags: List of tag IDs to apply
+        custom_fields: Dict of custom field key-value pairs
+
+    Returns:
+        dict: Result with success status, message, and details
+    """
+    try:
+        logger.info(f"Starting device onboarding for IP: {ip_address}")
+
+        # Update progress
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'stage': 'onboarding',
+                'status': f'Initiating onboarding for {ip_address}',
+                'progress': 10
+            }
+        )
+
+        # Step 1: Call Nautobot onboarding job
+        job_id, job_url = _trigger_nautobot_onboarding(
+            ip_address=ip_address,
+            location_id=location_id,
+            role_id=role_id,
+            namespace_id=namespace_id,
+            status_id=status_id,
+            interface_status_id=interface_status_id,
+            ip_address_status_id=ip_address_status_id,
+            secret_groups_id=secret_groups_id,
+            platform_id=platform_id,
+            port=port,
+            timeout=timeout
+        )
+
+        logger.info(f"Nautobot onboarding job started: {job_id}")
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'stage': 'waiting',
+                'status': f'Waiting for onboarding job {job_id} to complete',
+                'progress': 30,
+                'job_id': job_id,
+                'job_url': job_url
+            }
+        )
+
+        # Step 2: Wait for job completion (max 90 seconds)
+        job_success, job_result = _wait_for_job_completion(self, job_id, max_wait=90)
+
+        if not job_success:
+            error_msg = f"Onboarding job failed or timed out: {job_result}"
+            logger.error(error_msg)
+            return {
+                'success': False,
+                'error': error_msg,
+                'job_id': job_id,
+                'job_url': job_url,
+                'stage': 'onboarding_failed'
+            }
+
+        logger.info(f"Onboarding job completed successfully: {job_id}")
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'stage': 'device_lookup',
+                'status': f'Device onboarded, retrieving device ID',
+                'progress': 60
+            }
+        )
+
+        # Step 3: Get device UUID from IP address
+        device_id, device_name = _get_device_id_from_ip(ip_address)
+
+        if not device_id:
+            error_msg = f"Failed to retrieve device ID for IP {ip_address}"
+            logger.error(error_msg)
+            return {
+                'success': False,
+                'error': error_msg,
+                'job_id': job_id,
+                'job_url': job_url,
+                'stage': 'device_lookup_failed'
+            }
+
+        logger.info(f"Found device: {device_name} (ID: {device_id})")
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'stage': 'updating',
+                'status': f'Updating device {device_name} with tags and custom fields',
+                'progress': 80,
+                'device_id': device_id,
+                'device_name': device_name
+            }
+        )
+
+        # Step 4: Update device with tags and custom fields
+        update_results = []
+
+        if tags and len(tags) > 0:
+            logger.info(f"Updating device {device_name} with {len(tags)} tags")
+            tag_result = _update_device_tags(device_id, tags)
+            update_results.append(tag_result)
+
+        if custom_fields and len(custom_fields) > 0:
+            logger.info(f"Updating device {device_name} with {len(custom_fields)} custom fields")
+            cf_result = _update_device_custom_fields(device_id, custom_fields)
+            update_results.append(cf_result)
+
+        # Check if all updates succeeded
+        all_updates_success = all(r.get('success', False) for r in update_results)
+
+        if not all_updates_success:
+            failed_updates = [r for r in update_results if not r.get('success', False)]
+            error_msg = f"Some device updates failed: {failed_updates}"
+            logger.warning(error_msg)
+            return {
+                'success': False,
+                'warning': error_msg,
+                'job_id': job_id,
+                'job_url': job_url,
+                'device_id': device_id,
+                'device_name': device_name,
+                'update_results': update_results,
+                'stage': 'update_partial_success'
+            }
+
+        logger.info(f"Device {device_name} onboarded and updated successfully")
+
+        # Step 5: Sync network data from device
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'stage': 'syncing',
+                'status': f'Syncing network data from device {device_name}',
+                'progress': 90,
+                'device_id': device_id,
+                'device_name': device_name
+            }
+        )
+
+        logger.info(f"Starting network data sync for device {device_name}")
+        sync_result = _sync_network_data(
+            device_id=device_id,
+            namespace_id=namespace_id,
+            status_id=status_id,
+            interface_status_id=interface_status_id,
+            ip_address_status_id=ip_address_status_id
+        )
+
+        return {
+            'success': True,
+            'message': f'Device {device_name} successfully onboarded, configured, and synced',
+            'job_id': job_id,
+            'job_url': job_url,
+            'device_id': device_id,
+            'device_name': device_name,
+            'ip_address': ip_address,
+            'tags_applied': len(tags) if tags else 0,
+            'custom_fields_applied': len(custom_fields) if custom_fields else 0,
+            'update_results': update_results,
+            'sync_result': sync_result,
+            'stage': 'completed'
+        }
+
+    except Exception as e:
+        error_msg = f"Unexpected error during device onboarding: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return {
+            'success': False,
+            'error': error_msg,
+            'stage': 'exception'
+        }
+
+
+def _trigger_nautobot_onboarding(
+    ip_address: str,
+    location_id: str,
+    role_id: str,
+    namespace_id: str,
+    status_id: str,
+    interface_status_id: str,
+    ip_address_status_id: str,
+    secret_groups_id: str,
+    platform_id: str,
+    port: int,
+    timeout: int
+) -> tuple:
+    """
+    Trigger Nautobot onboarding job.
+
+    Returns:
+        tuple: (job_id, job_url)
+    """
+    import requests
+    from settings_manager import settings_manager
+    from config import settings
+
+    # Get Nautobot config
+    try:
+        db_settings = settings_manager.get_nautobot_settings()
+        if db_settings and db_settings.get("url") and db_settings.get("token"):
+            nautobot_url = db_settings["url"].rstrip("/")
+            nautobot_token = db_settings["token"]
+        else:
+            raise Exception("No database settings")
+    except Exception:
+        nautobot_url = settings.nautobot_url.rstrip("/")
+        nautobot_token = settings.nautobot_token
+
+    # Prepare job data
+    job_data = {
+        "data": {
+            "location": location_id,
+            "ip_addresses": ip_address,
+            "secrets_group": secret_groups_id,
+            "device_role": role_id,
+            "namespace": namespace_id,
+            "device_status": status_id,
+            "interface_status": interface_status_id,
+            "ip_address_status": ip_address_status_id,
+            "platform": None if platform_id == "detect" else platform_id,
+            "port": port,
+            "timeout": timeout,
+            "update_devices_without_primary_ip": False,
+        }
+    }
+
+    # Call Nautobot job API
+    job_url = f"{nautobot_url}/api/extras/jobs/Sync%20Devices%20From%20Network/run/"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Token {nautobot_token}",
+    }
+
+    response = requests.post(job_url, json=job_data, headers=headers, timeout=30)
+    response.raise_for_status()
+
+    result = response.json()
+    job_id = result.get("job_result", {}).get("id")
+
+    if not job_id:
+        raise Exception(f"No job ID returned from Nautobot: {result}")
+
+    return job_id, f"{nautobot_url}/extras/job-results/{job_id}/"
+
+
+def _wait_for_job_completion(task_instance, job_id: str, max_wait: int = 90) -> tuple:
+    """
+    Wait for Nautobot job to complete with progress updates.
+
+    Args:
+        task_instance: Celery task instance (self)
+        job_id: Nautobot job ID
+        max_wait: Maximum seconds to wait
+
+    Returns:
+        tuple: (success: bool, result: str)
+    """
+    import requests
+    from settings_manager import settings_manager
+    from config import settings
+
+    # Get Nautobot config
+    try:
+        db_settings = settings_manager.get_nautobot_settings()
+        if db_settings and db_settings.get("url") and db_settings.get("token"):
+            nautobot_url = db_settings["url"].rstrip("/")
+            nautobot_token = db_settings["token"]
+        else:
+            raise Exception("No database settings")
+    except Exception:
+        nautobot_url = settings.nautobot_url.rstrip("/")
+        nautobot_token = settings.nautobot_token
+
+    headers = {
+        "Authorization": f"Token {nautobot_token}",
+    }
+
+    check_url = f"{nautobot_url}/api/extras/job-results/{job_id}/"
+
+    start_time = time.time()
+    check_count = 0
+
+    while time.time() - start_time < max_wait:
+        try:
+            response = requests.get(check_url, headers=headers, timeout=10)
+            response.raise_for_status()
+            job_data = response.json()
+
+            status = job_data.get("status", {}).get("value", "")
+            check_count += 1
+            elapsed = int(time.time() - start_time)
+
+            logger.info(f"Job {job_id} status check #{check_count} (after {elapsed}s): {status}")
+
+            # Update task progress with detailed status
+            progress_percentage = min(30 + int((elapsed / max_wait) * 30), 59)  # Stay between 30-59%
+            task_instance.update_state(
+                state='PROGRESS',
+                meta={
+                    'stage': 'waiting',
+                    'status': f'Waiting for onboarding job (check #{check_count}, {elapsed}s elapsed, status: {status})',
+                    'progress': progress_percentage,
+                    'job_id': job_id
+                }
+            )
+
+            # Check for completion (case-insensitive)
+            status_lower = status.lower()
+            if status_lower in ["completed", "success"]:
+                logger.info(f"Job {job_id} completed successfully")
+                return True, "Job completed successfully"
+            elif status_lower in ["failed", "errored", "failure"]:
+                logger.error(f"Job {job_id} failed with status: {status}")
+                return False, f"Job failed with status: {status}"
+
+            # Job still running, wait 2 seconds and check again
+            time.sleep(2)
+
+        except Exception as e:
+            logger.warning(f"Error checking job status (attempt {check_count}): {e}")
+            check_count += 1
+            elapsed = int(time.time() - start_time)
+
+            # Update progress even on error
+            progress_percentage = min(30 + int((elapsed / max_wait) * 30), 59)
+            task_instance.update_state(
+                state='PROGRESS',
+                meta={
+                    'stage': 'waiting',
+                    'status': f'Checking onboarding job status (attempt #{check_count}, {elapsed}s elapsed)',
+                    'progress': progress_percentage,
+                    'job_id': job_id
+                }
+            )
+
+            # Wait 2 seconds before retry
+            time.sleep(2)
+
+    return False, f"Job timeout - exceeded {max_wait} seconds after {check_count} status checks"
+
+
+def _get_device_id_from_ip(ip_address: str) -> tuple:
+    """
+    Get device ID and name from IP address using detailed endpoint.
+
+    Returns:
+        tuple: (device_id: str, device_name: str)
+    """
+    # Use asyncio to call the async service
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        result = loop.run_until_complete(_async_get_device_id(ip_address))
+        return result
+    finally:
+        loop.close()
+
+
+async def _async_get_device_id(ip_address: str) -> tuple:
+    """Async helper to get device ID from IP."""
+    from services.nautobot import nautobot_service
+
+    # Build GraphQL query (same as detailed endpoint)
+    query = """
+    query IPaddresses($address_filter: [String], $get_id: Boolean!, $get_name: Boolean!, $get_primary_ip4_for: Boolean!) {
+      ip_addresses(address: $address_filter) {
+        id @include(if: $get_id)
+        address
+        primary_ip4_for @include(if: $get_primary_ip4_for) {
+          id @include(if: $get_id)
+          name @include(if: $get_name)
+        }
+      }
+    }
+    """
+
+    variables = {
+        "address_filter": [ip_address],
+        "get_id": True,
+        "get_name": True,
+        "get_primary_ip4_for": True,
+    }
+
+    result = await nautobot_service.graphql_query(query, variables)
+
+    if "errors" in result:
+        logger.error(f"GraphQL errors: {result['errors']}")
+        return None, None
+
+    ip_addresses = result.get("data", {}).get("ip_addresses", [])
+
+    if not ip_addresses:
+        logger.error(f"No IP address found for {ip_address}")
+        return None, None
+
+    ip_data = ip_addresses[0]
+    primary_devices = ip_data.get("primary_ip4_for", [])
+
+    if not primary_devices:
+        logger.error(f"IP {ip_address} is not a primary IP for any device")
+        return None, None
+
+    device = primary_devices[0]
+    return device.get("id"), device.get("name")
+
+
+def _update_device_tags(device_id: str, tag_ids: List[str]) -> dict:
+    """Update device tags in Nautobot."""
+    import requests
+    from settings_manager import settings_manager
+    from config import settings
+
+    try:
+        # Get Nautobot config
+        try:
+            db_settings = settings_manager.get_nautobot_settings()
+            if db_settings and db_settings.get("url") and db_settings.get("token"):
+                nautobot_url = db_settings["url"].rstrip("/")
+                nautobot_token = db_settings["token"]
+            else:
+                raise Exception("No database settings")
+        except Exception:
+            nautobot_url = settings.nautobot_url.rstrip("/")
+            nautobot_token = settings.nautobot_token
+
+        # Update device tags via REST API
+        url = f"{nautobot_url}/api/dcim/devices/{device_id}/"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Token {nautobot_token}",
+        }
+
+        # PATCH to update only tags
+        data = {"tags": tag_ids}
+
+        response = requests.patch(url, json=data, headers=headers, timeout=30)
+        response.raise_for_status()
+
+        return {
+            'success': True,
+            'type': 'tags',
+            'count': len(tag_ids),
+            'message': f'Applied {len(tag_ids)} tags'
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to update device tags: {e}")
+        return {
+            'success': False,
+            'type': 'tags',
+            'error': str(e)
+        }
+
+
+def _update_device_custom_fields(device_id: str, custom_fields: Dict[str, str]) -> dict:
+    """Update device custom fields in Nautobot."""
+    import requests
+    from settings_manager import settings_manager
+    from config import settings
+
+    try:
+        # Get Nautobot config
+        try:
+            db_settings = settings_manager.get_nautobot_settings()
+            if db_settings and db_settings.get("url") and db_settings.get("token"):
+                nautobot_url = db_settings["url"].rstrip("/")
+                nautobot_token = db_settings["token"]
+            else:
+                raise Exception("No database settings")
+        except Exception:
+            nautobot_url = settings.nautobot_url.rstrip("/")
+            nautobot_token = settings.nautobot_token
+
+        # Update device custom fields via REST API
+        url = f"{nautobot_url}/api/dcim/devices/{device_id}/"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Token {nautobot_token}",
+        }
+
+        # PATCH to update only custom fields
+        data = {"custom_fields": custom_fields}
+
+        response = requests.patch(url, json=data, headers=headers, timeout=30)
+        response.raise_for_status()
+
+        return {
+            'success': True,
+            'type': 'custom_fields',
+            'count': len(custom_fields),
+            'message': f'Applied {len(custom_fields)} custom fields'
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to update device custom fields: {e}")
+        return {
+            'success': False,
+            'type': 'custom_fields',
+            'error': str(e)
+        }
+
+
+def _sync_network_data(
+    device_id: str,
+    namespace_id: str,
+    status_id: str,
+    interface_status_id: str,
+    ip_address_status_id: str
+) -> dict:
+    """
+    Sync network data from device to Nautobot.
+
+    Triggers the "Sync Network Data From Network" job with all sync options enabled.
+
+    Args:
+        device_id: Device ID to sync
+        namespace_id: Namespace ID for prefixes
+        status_id: Prefix status ID
+        interface_status_id: Interface status ID
+        ip_address_status_id: IP address status ID
+
+    Returns:
+        dict: Result with success status, job_id, and message
+    """
+    import requests
+    from settings_manager import settings_manager
+    from config import settings
+
+    try:
+        # Get Nautobot config
+        try:
+            db_settings = settings_manager.get_nautobot_settings()
+            if db_settings and db_settings.get("url") and db_settings.get("token"):
+                nautobot_url = db_settings["url"].rstrip("/")
+                nautobot_token = db_settings["token"]
+            else:
+                raise Exception("No database settings")
+        except Exception:
+            nautobot_url = settings.nautobot_url.rstrip("/")
+            nautobot_token = settings.nautobot_token
+
+        # Prepare sync job data with all options enabled
+        job_data = {
+            "data": {
+                "devices": [device_id],
+                "default_prefix_status": status_id,
+                "interface_status": interface_status_id,
+                "ip_address_status": ip_address_status_id,
+                "namespace": namespace_id,
+                "sync_cables": True,
+                "sync_software_version": True,
+                "sync_vlans": True,
+                "sync_vrfs": True,
+            }
+        }
+
+        # Call Nautobot sync job API
+        job_url = f"{nautobot_url}/api/extras/jobs/Sync%20Network%20Data%20From%20Network/run/"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Token {nautobot_token}",
+        }
+
+        logger.info(f"Triggering network data sync job for device {device_id}")
+        response = requests.post(job_url, json=job_data, headers=headers, timeout=30)
+
+        if response.status_code in [200, 201, 202]:
+            result = response.json()
+            sync_job_id = result.get("job_result", {}).get("id") or result.get("id")
+            logger.info(f"Network data sync job started: {sync_job_id}")
+
+            return {
+                'success': True,
+                'message': 'Network data sync job started successfully',
+                'job_id': sync_job_id,
+                'job_url': f"{nautobot_url}/extras/job-results/{sync_job_id}/",
+                'sync_options': {
+                    'cables': True,
+                    'software': True,
+                    'vlans': True,
+                    'vrfs': True
+                }
+            }
+        else:
+            error_detail = "Unknown error"
+            try:
+                error_response = response.json()
+                error_detail = error_response.get(
+                    "detail", error_response.get("message", str(error_response))
+                )
+            except (ValueError, KeyError, TypeError):
+                error_detail = response.text or f"HTTP {response.status_code}"
+
+            logger.error(f"Failed to start sync job: {error_detail}")
+            return {
+                'success': False,
+                'message': f"Failed to start sync job: {error_detail}",
+                'status_code': response.status_code,
+            }
+
+    except Exception as e:
+        logger.error(f"Failed to sync network data: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'message': f"Failed to sync network data: {str(e)}"
+        }

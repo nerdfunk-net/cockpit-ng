@@ -57,7 +57,7 @@ class DeviceQueryService:
         Args:
             limit: Number of devices per page
             offset: Number of devices to skip
-            filter_type: Type of filter ('name', 'location', 'prefix')
+            filter_type: Type of filter ('name', 'location', 'prefix', 'ip_addresses')
             filter_value: Value to filter by
             reload: If True, bypass cache
 
@@ -85,6 +85,10 @@ class DeviceQueryService:
                 )
             elif filter_type == "prefix":
                 return await self._query_by_prefix(
+                    filter_value, limit, offset, cache_key
+                )
+            elif filter_type == "ip_addresses":
+                return await self._query_by_ip_addresses(
                     filter_value, limit, offset, cache_key
                 )
 
@@ -247,6 +251,56 @@ class DeviceQueryService:
             cache_key,
             filter_type="prefix",
             filter_value=prefix_filter,
+        )
+
+    async def _query_by_ip_addresses(
+        self,
+        ip_filter: str,
+        limit: Optional[int],
+        offset: Optional[int],
+        cache_key: str,
+    ) -> dict:
+        """Query devices filtered by IP address in CIDR notation."""
+        query = f"""
+        query devices_by_ip_address(
+          $ip_filter: [String],
+          $limit: Int,
+          $offset: Int
+        ) {{
+          ip_addresses(address__net_in: $ip_filter, limit: $limit, offset: $offset) {{
+            address
+            primary_ip4_for {{
+              {DEVICE_FIELDS}
+            }}
+          }}
+        }}
+        """
+        variables = {"ip_filter": [ip_filter]}
+        if limit is not None:
+            variables["limit"] = limit
+        if offset is not None:
+            variables["offset"] = offset
+
+        result = await nautobot_service.graphql_query(query, variables)
+        if "errors" in result:
+            raise Exception(f"GraphQL errors: {result['errors']}")
+
+        # Extract unique devices from IP addresses
+        devices_dict = {}
+        for ip_addr in result["data"]["ip_addresses"]:
+            if ip_addr["primary_ip4_for"]:
+                device = ip_addr["primary_ip4_for"]
+                devices_dict[device["id"]] = device
+
+        devices = list(devices_dict.values())
+        return self._build_response(
+            devices,
+            len(devices),
+            limit,
+            offset,
+            cache_key,
+            filter_type="ip_addresses",
+            filter_value=ip_filter,
         )
 
     async def _query_all_devices(

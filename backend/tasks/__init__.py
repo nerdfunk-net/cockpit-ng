@@ -21,6 +21,9 @@ from .legacy import (
 # Import test tasks
 from .test_tasks import test_task, test_progress_task
 
+# Import onboard device task
+from .onboard_device_task import onboard_device_task
+
 # Import periodic tasks
 from .periodic_tasks import (
     worker_health_check,
@@ -53,6 +56,9 @@ __all__ = [
     # Test tasks
     'test_task',
     'test_progress_task',
+
+    # Device onboarding
+    'onboard_device_task',
 
     # Periodic tasks
     'worker_health_check',
