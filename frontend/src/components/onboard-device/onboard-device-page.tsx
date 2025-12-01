@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { FileUp, Plus, RefreshCw, Tags, FileText } from 'lucide-react'
+import { FileUp, Plus, RefreshCw } from 'lucide-react'
 import { useOnboardingData } from './hooks/use-onboarding-data'
 import { useOnboardingForm } from './hooks/use-onboarding-form'
 import { useJobTracking } from './hooks/use-job-tracking'
@@ -280,6 +280,58 @@ export function OnboardDevicePage() {
     }))
   }, [])
 
+  // Load tags for CSV upload (if not already loaded)
+  const loadTagsForCSV = useCallback(async () => {
+    if (availableTags.length === 0 && !isLoadingTags) {
+      setIsLoadingTags(true)
+      try {
+        const tagsData = await apiCall<TagItem[]>('nautobot/tags/devices', { method: 'GET' })
+        if (tagsData && Array.isArray(tagsData)) {
+          setAvailableTags(tagsData)
+        }
+      } catch (error) {
+        console.error('Error loading tags for CSV:', error)
+      } finally {
+        setIsLoadingTags(false)
+      }
+    }
+  }, [apiCall, availableTags.length, isLoadingTags])
+
+  // Open CSV modal and load tags
+  const handleOpenCSVModal = useCallback(() => {
+    csvUpload.openModal()
+    loadTagsForCSV()
+  }, [csvUpload, loadTagsForCSV])
+
+  // Handle CSV bulk onboarding with lookup data for name-to-ID conversion
+  const handleCSVUpload = useCallback(() => {
+    const lookupData = {
+      locations,
+      namespaces,
+      deviceRoles,
+      platforms,
+      deviceStatuses,
+      interfaceStatuses,
+      ipAddressStatuses,
+      prefixStatuses,
+      secretGroups,
+      availableTags: availableTags.map(tag => ({ id: tag.id, name: tag.name }))
+    }
+    csvUpload.performBulkOnboarding(csvUpload.parsedData, lookupData)
+  }, [
+    csvUpload,
+    locations,
+    namespaces,
+    deviceRoles,
+    platforms,
+    deviceStatuses,
+    interfaceStatuses,
+    ipAddressStatuses,
+    prefixStatuses,
+    secretGroups,
+    availableTags
+  ])
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -290,7 +342,7 @@ export function OnboardDevicePage() {
           </p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline" onClick={csvUpload.openModal} disabled={isLoadingData}>
+          <Button variant="outline" onClick={handleOpenCSVModal} disabled={isLoadingData}>
             <FileUp className="h-4 w-4 mr-2" />
             Bulk Upload CSV
           </Button>
@@ -307,99 +359,65 @@ export function OnboardDevicePage() {
       )}
 
       {/* Main Onboarding Form */}
-      <div className="rounded-xl border shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-1.5 px-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-1.5">
-              <Plus className="h-3.5 w-3.5" />
-              <div>
-                <h3 className="text-xs font-semibold">Device Information</h3>
-                <p className="text-blue-100 text-[10px]">Enter IP address and verify availability</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setShowTagsModal(true)}
-                disabled={isLoadingData}
-                size="sm"
-                variant="outline"
-                className="bg-white text-blue-600 hover:bg-blue-50 border-blue-200 h-7 text-xs px-2"
-              >
-                <Tags className="h-3 w-3 mr-1" />
-                Tags {selectedTags.length > 0 && `(${selectedTags.length})`}
-              </Button>
-              <Button
-                onClick={() => setShowCustomFieldsModal(true)}
-                disabled={isLoadingData}
-                size="sm"
-                variant="outline"
-                className="bg-white text-blue-600 hover:bg-blue-50 border-blue-200 h-7 text-xs px-2"
-              >
-                <FileText className="h-3 w-3 mr-1" />
-                Custom Fields
-              </Button>
-            </div>
-          </div>
+      {isLoadingData ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <span className="ml-4 text-slate-600">Loading configuration...</span>
         </div>
-        <div className="p-3 bg-white">
-          {isLoadingData ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-              <span className="ml-4 text-slate-600">Loading configuration...</span>
-            </div>
-          ) : (
-            <>
-              <OnboardingFormFields
-                formData={formData}
-                ipValidation={ipValidation}
-                locations={locations}
-                namespaces={namespaces}
-                deviceRoles={deviceRoles}
-                platforms={platforms}
-                deviceStatuses={deviceStatuses}
-                interfaceStatuses={interfaceStatuses}
-                ipAddressStatuses={ipAddressStatuses}
-                prefixStatuses={prefixStatuses}
-                secretGroups={secretGroups}
-                locationSearchValue={locationSearchValue}
-                deviceSearchQuery={deviceSearchQuery}
-                onIPChange={handleIPChange}
-                onFormDataChange={handleFormFieldChange}
-                onSyncOptionChange={handleSyncOptionChange}
-                onLocationSelect={handleLocationSelect}
-                onCheckIP={handleCheckIP}
-                onSearchDevice={handleSearchDevice}
-                onDeviceSearchQueryChange={setDeviceSearchQuery}
-                isValidatingIP={isValidatingIP}
-                isSearchingDevice={isSearchingDevice}
-              />
+      ) : (
+        <>
+          <OnboardingFormFields
+            formData={formData}
+            ipValidation={ipValidation}
+            locations={locations}
+            namespaces={namespaces}
+            deviceRoles={deviceRoles}
+            platforms={platforms}
+            deviceStatuses={deviceStatuses}
+            interfaceStatuses={interfaceStatuses}
+            ipAddressStatuses={ipAddressStatuses}
+            prefixStatuses={prefixStatuses}
+            secretGroups={secretGroups}
+            locationSearchValue={locationSearchValue}
+            deviceSearchQuery={deviceSearchQuery}
+            selectedTagsCount={selectedTags.length}
+            onIPChange={handleIPChange}
+            onFormDataChange={handleFormFieldChange}
+            onSyncOptionChange={handleSyncOptionChange}
+            onLocationSelect={handleLocationSelect}
+            onCheckIP={handleCheckIP}
+            onSearchDevice={handleSearchDevice}
+            onDeviceSearchQueryChange={setDeviceSearchQuery}
+            onShowTagsModal={() => setShowTagsModal(true)}
+            onShowCustomFieldsModal={() => setShowCustomFieldsModal(true)}
+            isValidatingIP={isValidatingIP}
+            isSearchingDevice={isSearchingDevice}
+          />
 
-              <div className="mt-4 flex items-center space-x-4 pt-4 border-t">
-                <Button
-                  onClick={handleSubmit}
-                  disabled={isSubmittingOnboard || !ipValidation.isValid}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 h-8 text-sm"
-                >
-                  {isSubmittingOnboard ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Starting Onboarding...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Onboard Device
-                    </>
-                  )}
-                </Button>
-                <p className="text-sm text-slate-500">
-                  Required fields are marked with <span className="text-red-500">*</span>
-                </p>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+          <div className="flex items-center space-x-4 pt-4">
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmittingOnboard || !ipValidation.isValid}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 h-8 text-sm"
+            >
+              {isSubmittingOnboard ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Starting Onboarding...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Onboard Device
+                </>
+              )}
+            </Button>
+            <p className="text-sm text-slate-500">
+              Required fields are marked with <span className="text-red-500">*</span>
+            </p>
+          </div>
+        </>
+      )}
 
       {/* Device Search Results */}
       {searchResults.length > 0 && (
@@ -428,7 +446,7 @@ export function OnboardDevicePage() {
         bulkResults={csvUpload.bulkResults}
         parseError={csvUpload.parseError}
         onFileSelect={csvUpload.parseCSV}
-        onUpload={csvUpload.performBulkOnboarding}
+        onUpload={handleCSVUpload}
       />
 
       {/* Tags Modal */}

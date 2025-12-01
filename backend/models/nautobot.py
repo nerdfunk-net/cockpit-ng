@@ -25,8 +25,11 @@ class DeviceOnboardRequest(BaseModel):
     secret_groups_id: str
     interface_status_id: str
     ip_address_status_id: str
+    prefix_status_id: Optional[str] = None
     port: int = 22
     timeout: int = 30
+    tags: Optional[list[str]] = None
+    custom_fields: Optional[Dict[str, str]] = None
 
 
 class SyncNetworkDataRequest(BaseModel):

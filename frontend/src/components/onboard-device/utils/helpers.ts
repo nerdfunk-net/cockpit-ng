@@ -80,6 +80,77 @@ export function findDefaultOption(
 }
 
 /**
+ * Resolves a name or ID to an ID from a list of options.
+ * First checks if the value is already an ID (UUID format), then tries to find by name.
+ * Returns the original value if no match found (for backward compatibility).
+ */
+export function resolveNameToId(
+  value: string,
+  options: DropdownOption[]
+): string {
+  if (!value) return ''
+  
+  // Check if value is already a UUID (ID format)
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (uuidRegex.test(value)) {
+    // Verify the ID exists in options
+    if (options.some(opt => opt.id === value)) {
+      return value
+    }
+  }
+  
+  // Try to find by exact name match (case-insensitive)
+  const lowerValue = value.toLowerCase()
+  const match = options.find(
+    opt => 
+      opt.name.toLowerCase() === lowerValue || 
+      (opt.display && opt.display.toLowerCase() === lowerValue)
+  )
+  
+  if (match) {
+    return match.id
+  }
+  
+  // Return original value if no match (backend will handle validation)
+  return value
+}
+
+/**
+ * Resolves a location name or ID to an ID.
+ * Locations have hierarchical paths, so we need to handle those too.
+ */
+export function resolveLocationNameToId(
+  value: string,
+  locations: LocationItem[]
+): string {
+  if (!value) return ''
+  
+  // Check if value is already a UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (uuidRegex.test(value)) {
+    if (locations.some(loc => loc.id === value)) {
+      return value
+    }
+  }
+  
+  // Try to find by name, display, or hierarchical path (case-insensitive)
+  const lowerValue = value.toLowerCase()
+  const match = locations.find(
+    loc => 
+      loc.name.toLowerCase() === lowerValue || 
+      (loc.display && loc.display.toLowerCase() === lowerValue) ||
+      (loc.hierarchicalPath && loc.hierarchicalPath.toLowerCase() === lowerValue)
+  )
+  
+  if (match) {
+    return match.id
+  }
+  
+  // Return original value if no match
+  return value
+}
+
+/**
  * Validates CSV headers against expected columns
  */
 export function validateCSVHeaders(

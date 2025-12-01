@@ -75,7 +75,10 @@ export interface ParsedCSVRow {
   timeout?: number
   interface_status?: string
   ip_address_status?: string
+  prefix_status?: string
   secret_groups?: string
+  tags?: string[]
+  custom_fields?: Record<string, string>
 }
 
 export interface BulkOnboardingResult {
@@ -106,4 +109,17 @@ export interface JobStatus {
     message: string
     error?: string
   }
+}
+
+export interface CSVLookupData {
+  locations: LocationItem[]
+  namespaces: DropdownOption[]
+  deviceRoles: DropdownOption[]
+  platforms: DropdownOption[]
+  deviceStatuses: DropdownOption[]
+  interfaceStatuses: DropdownOption[]
+  ipAddressStatuses: DropdownOption[]
+  prefixStatuses: DropdownOption[]
+  secretGroups: DropdownOption[]
+  availableTags: DropdownOption[]
 }

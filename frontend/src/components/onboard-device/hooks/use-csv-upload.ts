@@ -2,8 +2,8 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { useApi } from '@/hooks/use-api'
-import { validateCSVHeaders } from '../utils/helpers'
-import type { ParsedCSVRow, BulkOnboardingResult } from '../types'
+import { validateCSVHeaders, resolveNameToId, resolveLocationNameToId } from '../utils/helpers'
+import type { ParsedCSVRow, BulkOnboardingResult, CSVLookupData } from '../types'
 
 const REQUIRED_CSV_HEADERS = ['ip_address', 'location', 'namespace', 'role', 'status']
 
@@ -87,6 +87,24 @@ export function useCSVUpload() {
             }
           })
 
+          // Extract custom fields (columns starting with "cf_")
+          const customFields: Record<string, string> = {}
+          headers.forEach(header => {
+            if (header.startsWith('cf_') && row[header]) {
+              // Remove "cf_" prefix to get the custom field key
+              const cfKey = header.substring(3)
+              customFields[cfKey] = row[header]
+            }
+          })
+
+          // Parse tags (comma-separated list within the cell, using semicolon as separator to avoid conflict with CSV delimiter)
+          // If tags column contains values like "tag1;tag2;tag3" or "tag1|tag2|tag3"
+          let tags: string[] | undefined
+          if (row.tags) {
+            // Support semicolon, pipe, or space as tag separators within the tags column
+            tags = row.tags.split(/[;|]/).map(t => t.trim()).filter(t => t.length > 0)
+          }
+
           rows.push({
             ip_address: row.ip_address || '',
             location: row.location || '',
@@ -98,7 +116,10 @@ export function useCSVUpload() {
             timeout: row.timeout ? parseInt(row.timeout, 10) : 30,
             interface_status: row.interface_status || '',
             ip_address_status: row.ip_address_status || '',
-            secret_groups: row.secret_groups || ''
+            prefix_status: row.prefix_status || '',
+            secret_groups: row.secret_groups || '',
+            tags: tags,
+            custom_fields: Object.keys(customFields).length > 0 ? customFields : undefined
           })
         }
 
@@ -119,7 +140,7 @@ export function useCSVUpload() {
   }, [])
 
   const performBulkOnboarding = useCallback(
-    async (data: ParsedCSVRow[]) => {
+    async (data: ParsedCSVRow[], lookupData: CSVLookupData) => {
       setIsUploading(true)
       setBulkResults([])
 
@@ -127,11 +148,41 @@ export function useCSVUpload() {
 
       for (const row of data) {
         try {
+          // Convert tag names to IDs
+          let tagIds: string[] | undefined
+          if (row.tags && row.tags.length > 0 && lookupData.availableTags.length > 0) {
+            tagIds = row.tags
+              .map(tagName => resolveNameToId(tagName, lookupData.availableTags))
+              .filter(id => id.length > 0)
+            if (tagIds.length === 0) {
+              tagIds = undefined
+            }
+          }
+
+          // Transform CSV row fields to match backend DeviceOnboardRequest model
+          // Convert names to IDs using lookup data
+          const requestBody = {
+            ip_address: row.ip_address,
+            location_id: resolveLocationNameToId(row.location, lookupData.locations),
+            namespace_id: resolveNameToId(row.namespace, lookupData.namespaces),
+            role_id: resolveNameToId(row.role, lookupData.deviceRoles),
+            status_id: resolveNameToId(row.status, lookupData.deviceStatuses),
+            platform_id: row.platform ? resolveNameToId(row.platform, lookupData.platforms) : 'detect',
+            secret_groups_id: row.secret_groups ? resolveNameToId(row.secret_groups, lookupData.secretGroups) : '',
+            interface_status_id: row.interface_status ? resolveNameToId(row.interface_status, lookupData.interfaceStatuses) : '',
+            ip_address_status_id: row.ip_address_status ? resolveNameToId(row.ip_address_status, lookupData.ipAddressStatuses) : '',
+            prefix_status_id: row.prefix_status ? resolveNameToId(row.prefix_status, lookupData.prefixStatuses) : '',
+            port: row.port || 22,
+            timeout: row.timeout || 30,
+            tags: tagIds,
+            custom_fields: row.custom_fields
+          }
+
           const result = await callApi.apiCall<{ message: string; job_id: string }>(
             '/nautobot/devices/onboard',
             {
               method: 'POST',
-              body: row
+              body: requestBody
             }
           )
 

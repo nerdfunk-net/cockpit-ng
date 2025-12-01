@@ -35,7 +35,7 @@ interface CSVUploadModalProps {
   bulkResults: BulkOnboardingResult[]
   parseError: string
   onFileSelect: (file: File) => void
-  onUpload: (data: ParsedCSVRow[]) => void
+  onUpload: () => void
 }
 
 export function CSVUploadModal({
@@ -221,7 +221,7 @@ export function CSVUploadModal({
             {bulkResults.length > 0 ? 'Close' : 'Cancel'}
           </Button>
           {parsedData.length > 0 && bulkResults.length === 0 && (
-            <Button onClick={() => onUpload(parsedData)} disabled={isUploading || isParsing}>
+            <Button onClick={onUpload} disabled={isUploading || isParsing}>
               <Upload className="h-4 w-4 mr-2" />
               Upload {parsedData.length} Device{parsedData.length > 1 ? 's' : ''}
             </Button>
@@ -231,7 +231,7 @@ export function CSVUploadModal({
 
       {/* Help Dialog */}
       <Dialog open={showHelp} onOpenChange={setShowHelp}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <HelpCircle className="h-5 w-5" />
@@ -272,7 +272,10 @@ export function CSVUploadModal({
                 <li><code className="bg-muted px-1 py-0.5 rounded">timeout</code> - Connection timeout in seconds (default: 30)</li>
                 <li><code className="bg-muted px-1 py-0.5 rounded">interface_status</code> - Default interface status</li>
                 <li><code className="bg-muted px-1 py-0.5 rounded">ip_address_status</code> - Default IP address status</li>
+                <li><code className="bg-muted px-1 py-0.5 rounded">prefix_status</code> - Default prefix status</li>
                 <li><code className="bg-muted px-1 py-0.5 rounded">secret_groups</code> - Secret group name or ID</li>
+                <li><code className="bg-muted px-1 py-0.5 rounded">tags</code> - Tag names separated by semicolon or pipe (e.g., <code className="bg-muted px-1 py-0.5 rounded">tag1;tag2;tag3</code>)</li>
+                <li><code className="bg-muted px-1 py-0.5 rounded">cf_*</code> - Custom fields with prefix <code className="bg-muted px-1 py-0.5 rounded">cf_</code> (e.g., <code className="bg-muted px-1 py-0.5 rounded">cf_net</code> for custom field &quot;net&quot;)</li>
               </ul>
             </div>
 
@@ -280,10 +283,10 @@ export function CSVUploadModal({
               <h4 className="font-semibold mb-2">Example CSV</h4>
               <div className="bg-muted p-3 rounded-md overflow-x-auto">
                 <pre className="text-xs font-mono whitespace-pre">
-{`ip_address,location,namespace,role,status,platform,port,timeout
-192.168.1.1,datacenter-1,global,access-switch,active,cisco_ios,22,30
-192.168.1.2,datacenter-1,global,core-router,active,cisco_ios,22,30
-10.0.0.1,branch-office,global,firewall,active,paloalto_panos,22,60`}
+{`ip_address,location,namespace,role,status,platform,tags,cf_environment
+192.168.1.1,datacenter-1,global,access-switch,active,cisco_ios,production;core,prod
+192.168.1.2,datacenter-1,global,core-router,active,cisco_ios,production,prod
+10.0.0.1,branch-office,global,firewall,active,paloalto_panos,branch|security,dev`}
                 </pre>
               </div>
             </div>
@@ -298,6 +301,8 @@ export function CSVUploadModal({
                     <li>You can track onboarding progress using the Job ID returned for each device</li>
                     <li>Ensure the IP addresses are reachable and credentials are configured in Nautobot</li>
                     <li>Location, namespace, role, and status must exist in Nautobot before importing</li>
+                    <li>Tags: Use semicolon (;) or pipe (|) to separate multiple tags within the tags column</li>
+                    <li>Custom fields: Column names starting with <code className="bg-muted px-1 py-0.5 rounded">cf_</code> are treated as custom fields</li>
                   </ul>
                 </div>
               </div>
