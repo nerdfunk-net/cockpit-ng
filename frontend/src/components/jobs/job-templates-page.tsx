@@ -23,6 +23,7 @@ import { JobTemplateInventorySection } from "./shared/JobTemplateInventorySectio
 import { BackupJobTemplate } from "./job-template-types/BackupJobTemplate"
 import { RunCommandsJobTemplate } from "./job-template-types/RunCommandsJobTemplate"
 import { SyncDevicesJobTemplate } from "./job-template-types/SyncDevicesJobTemplate"
+import { CompareDevicesJobTemplate } from "./job-template-types/CompareDevicesJobTemplate"
 
 interface JobTemplate {
   id: number
@@ -594,8 +595,8 @@ export function JobTemplatesPage() {
                 getJobTypeColor={getJobTypeColor}
               />
 
-              {/* Config Repository Section - Show when job type is selected */}
-              {formJobType && (
+              {/* Config Repository Section - Only show for backup job type */}
+              {formJobType === "backup" && (
                 <JobTemplateConfigRepoSection
                   formConfigRepoId={formConfigRepoId}
                   setFormConfigRepoId={setFormConfigRepoId}
@@ -617,14 +618,6 @@ export function JobTemplatesPage() {
               />
 
               {/* Job Type Specific Sections */}
-              {formJobType === "run_commands" && (
-                <RunCommandsJobTemplate
-                  formCommandTemplate={formCommandTemplate}
-                  setFormCommandTemplate={setFormCommandTemplate}
-                  commandTemplates={commandTemplates}
-                />
-              )}
-
               {formJobType === "backup" && (
                 <BackupJobTemplate
                   formBackupRunningConfigPath={formBackupRunningConfigPath}
@@ -636,6 +629,18 @@ export function JobTemplatesPage() {
                   formTimestampCustomFieldName={formTimestampCustomFieldName}
                   setFormTimestampCustomFieldName={setFormTimestampCustomFieldName}
                   customFields={customFields}
+                />
+              )}
+
+              {formJobType === "compare_devices" && (
+                <CompareDevicesJobTemplate />
+              )}
+
+              {formJobType === "run_commands" && (
+                <RunCommandsJobTemplate
+                  formCommandTemplate={formCommandTemplate}
+                  setFormCommandTemplate={setFormCommandTemplate}
+                  commandTemplates={commandTemplates}
                 />
               )}
 

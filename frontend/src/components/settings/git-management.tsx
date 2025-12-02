@@ -13,15 +13,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
 import { Separator } from '../ui/separator'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
-import { 
-  GitBranch, 
-  GitCommit, 
-  Github, 
-  RefreshCw, 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash2, 
+import {
+  GitBranch,
+  GitCommit,
+  Github,
+  RefreshCw,
+  Plus,
+  Search,
+  Edit,
+  Trash2,
   Eye,
   TestTube,
   Download,
@@ -30,7 +30,11 @@ import {
   Clock,
   ExternalLink,
   Settings,
-  RotateCcw
+  RotateCcw,
+  Bug,
+  Info,
+  FileText,
+  X
 } from 'lucide-react'
 import { useApi } from '../../hooks/use-api'
 
@@ -90,6 +94,22 @@ interface GitFormData {
   description: string
 }
 
+interface DebugResult {
+  success: boolean
+  message?: string
+  error?: string
+  error_type?: string
+  details?: Record<string, unknown>
+  diagnostics?: {
+    repository_info: Record<string, unknown>
+    access_test: Record<string, unknown>
+    file_system: Record<string, unknown>
+    git_status: Record<string, unknown>
+    ssl_info: Record<string, unknown>
+    credentials: Record<string, unknown>
+  }
+}
+
 const GitManagement: React.FC = () => {
   const { apiCall } = useApi()
   
@@ -135,6 +155,13 @@ const GitManagement: React.FC = () => {
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [statusData, setStatusData] = useState<GitStatus | null>(null)
+
+  // Debug dialog state
+  const [showDebugDialog, setShowDebugDialog] = useState(false)
+  const [debugRepo, setDebugRepo] = useState<GitRepository | null>(null)
+  const [debugTab, setDebugTab] = useState('diagnostics')
+  const [debugLoading, setDebugLoading] = useState(false)
+  const [debugResult, setDebugResult] = useState<DebugResult | null>(null)
 
   // Load data on mount
   useEffect(() => {
@@ -354,7 +381,7 @@ const GitManagement: React.FC = () => {
     try {
       setStatusData(null)
       setShowStatusDialog(true)
-      
+
       const response = await apiCall<{ success: boolean; data: GitStatus }>(`git/${repo.id}/status`)
       if (response.success) {
         setStatusData(response.data)
@@ -364,6 +391,43 @@ const GitManagement: React.FC = () => {
     } catch {
       showMessage('Failed to load repository status', 'error')
       setShowStatusDialog(false)
+    }
+  }
+
+  const openDebugDialog = (repo: GitRepository) => {
+    setDebugRepo(repo)
+    setDebugTab('diagnostics')
+    setDebugResult(null)
+    setShowDebugDialog(true)
+  }
+
+  const runDebugOperation = async (operation: 'read' | 'write' | 'delete' | 'diagnostics') => {
+    if (!debugRepo) return
+
+    setDebugLoading(true)
+    setDebugResult(null)
+
+    try {
+      const endpoint = operation === 'diagnostics'
+        ? `git-repositories/${debugRepo.id}/debug/diagnostics`
+        : `git-repositories/${debugRepo.id}/debug/${operation}`
+
+      const method = operation === 'diagnostics' ? 'GET' : 'POST'
+
+      const response = await apiCall(endpoint, { method })
+      setDebugResult(response as DebugResult)
+    } catch (error) {
+      const err = error as Error
+      setDebugResult({
+        success: false,
+        message: err.message || 'Debug operation failed',
+        details: {
+          error: err.message || 'Unknown error',
+          error_type: 'FetchError'
+        }
+      })
+    } finally {
+      setDebugLoading(false)
     }
   }
 
@@ -618,6 +682,21 @@ const GitManagement: React.FC = () => {
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p>View repository status and details</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  onClick={() => openDebugDialog(repo)}
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-purple-600 hover:text-purple-700"
+                                >
+                                  <Bug className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Debug repository (read/write/delete tests)</p>
                               </TooltipContent>
                             </Tooltip>
                             <Tooltip>
@@ -969,6 +1048,421 @@ const GitManagement: React.FC = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Debug Dialog */}
+      <Dialog open={showDebugDialog} onOpenChange={setShowDebugDialog}>
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bug className="h-5 w-5 text-purple-600" />
+              Debug Repository: {debugRepo?.name}
+            </DialogTitle>
+          </DialogHeader>
+
+          <Tabs value={debugTab} onValueChange={setDebugTab} className="space-y-4">
+            <TabsList className="grid grid-cols-4 w-full">
+              <TabsTrigger value="diagnostics" className="flex items-center gap-2">
+                <Info className="h-4 w-4" />
+                Diagnostics
+              </TabsTrigger>
+              <TabsTrigger value="read" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Read Test
+              </TabsTrigger>
+              <TabsTrigger value="write" className="flex items-center gap-2">
+                <Edit className="h-4 w-4" />
+                Write Test
+              </TabsTrigger>
+              <TabsTrigger value="delete" className="flex items-center gap-2">
+                <X className="h-4 w-4" />
+                Delete Test
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Diagnostics Tab */}
+            <TabsContent value="diagnostics" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Repository Diagnostics</CardTitle>
+                  <CardDescription>
+                    Comprehensive diagnostic information about repository access, permissions, and configuration
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Button
+                    onClick={() => runDebugOperation('diagnostics')}
+                    disabled={debugLoading}
+                    className="w-full"
+                  >
+                    {debugLoading ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Info className="h-4 w-4 mr-2" />
+                    )}
+                    Run Diagnostics
+                  </Button>
+
+                  {debugResult && (
+                    <div className="space-y-4">
+                      <div className={`p-4 rounded-md ${
+                        debugResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          {debugResult.success ? (
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <AlertCircle className="h-5 w-5 text-red-600" />
+                          )}
+                          <span className={`font-medium ${
+                            debugResult.success ? 'text-green-800' : 'text-red-800'
+                          }`}>
+                            {debugResult.success ? 'Diagnostics Complete' : 'Diagnostics Failed'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {debugResult.diagnostics && (
+                        <div className="space-y-4">
+                          {/* Repository Info */}
+                          <Card>
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm">Repository Information</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-2 text-sm">
+                                {Object.entries(debugResult.diagnostics.repository_info).map(([key, value]) => (
+                                  <div key={key} className="flex justify-between">
+                                    <span className="font-medium text-gray-700">{key}:</span>
+                                    <span className="text-gray-900">{String(value)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          {/* Access Test */}
+                          <Card>
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm">Access Test</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-2 text-sm">
+                                {Object.entries(debugResult.diagnostics.access_test).map(([key, value]) => (
+                                  <div key={key} className="flex justify-between">
+                                    <span className="font-medium text-gray-700">{key}:</span>
+                                    <span className={
+                                      key === 'accessible' ? (value ? 'text-green-600' : 'text-red-600') : 'text-gray-900'
+                                    }>{String(value)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          {/* File System Permissions */}
+                          <Card>
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm">File System Permissions</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-2 text-sm">
+                                {Object.entries(debugResult.diagnostics.file_system).map(([key, value]) => (
+                                  <div key={key} className="flex justify-between">
+                                    <span className="font-medium text-gray-700">{key}:</span>
+                                    <span className={
+                                      typeof value === 'boolean' ? (value ? 'text-green-600' : 'text-red-600') : 'text-gray-900'
+                                    }>{String(value)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          {/* Git Status */}
+                          <Card>
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm">Git Status</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-2 text-sm">
+                                {Object.entries(debugResult.diagnostics.git_status).map(([key, value]) => (
+                                  <div key={key} className="flex justify-between">
+                                    <span className="font-medium text-gray-700">{key}:</span>
+                                    <span className="text-gray-900">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          {/* SSL Info */}
+                          <Card>
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm">SSL/TLS Configuration</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-2 text-sm">
+                                {Object.entries(debugResult.diagnostics.ssl_info).map(([key, value]) => (
+                                  <div key={key} className="flex justify-between">
+                                    <span className="font-medium text-gray-700">{key}:</span>
+                                    <span className="text-gray-900">{String(value)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          {/* Credentials */}
+                          <Card>
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm">Credentials</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-2 text-sm">
+                                {Object.entries(debugResult.diagnostics.credentials).map(([key, value]) => (
+                                  <div key={key} className="flex justify-between">
+                                    <span className="font-medium text-gray-700">{key}:</span>
+                                    <span className={
+                                      key.startsWith('has_') ? (value ? 'text-green-600' : 'text-red-600') : 'text-gray-900'
+                                    }>{String(value)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Read Test Tab */}
+            <TabsContent value="read" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Read Test</CardTitle>
+                  <CardDescription>
+                    Test reading a file from the repository to verify read permissions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Button
+                    onClick={() => runDebugOperation('read')}
+                    disabled={debugLoading}
+                    className="w-full"
+                  >
+                    {debugLoading ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <FileText className="h-4 w-4 mr-2" />
+                    )}
+                    Test Read Operation
+                  </Button>
+
+                  {debugResult && (
+                    <div className="space-y-4">
+                      <div className={`p-4 rounded-md ${
+                        debugResult.success ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'
+                      }`}>
+                        <div className="flex items-start gap-2">
+                          {debugResult.success ? (
+                            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                          ) : (
+                            <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                          )}
+                          <div>
+                            <div className={`font-medium ${
+                              debugResult.success ? 'text-green-800' : 'text-yellow-800'
+                            }`}>
+                              {debugResult.message}
+                            </div>
+                            {debugResult.details?.suggestion != null && (
+                              <div className="text-sm text-gray-600 mt-1">
+                                {String(debugResult.details.suggestion)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {debugResult.details && (
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm">Details</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2 text-sm">
+                              {Object.entries(debugResult.details).map(([key, value]) => (
+                                <div key={key} className="space-y-1">
+                                  <div className="flex justify-between">
+                                    <span className="font-medium text-gray-700">{key}:</span>
+                                  </div>
+                                  {key === 'content' && typeof value === 'string' ? (
+                                    <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">{value}</pre>
+                                  ) : (
+                                    <span className="text-gray-900 break-all">{String(value)}</span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Write Test Tab */}
+            <TabsContent value="write" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Write Test</CardTitle>
+                  <CardDescription>
+                    Test writing a file to the repository to verify write permissions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Button
+                    onClick={() => runDebugOperation('write')}
+                    disabled={debugLoading}
+                    className="w-full"
+                  >
+                    {debugLoading ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Edit className="h-4 w-4 mr-2" />
+                    )}
+                    Test Write Operation
+                  </Button>
+
+                  {debugResult && (
+                    <div className="space-y-4">
+                      <div className={`p-4 rounded-md ${
+                        debugResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                      }`}>
+                        <div className="flex items-start gap-2">
+                          {debugResult.success ? (
+                            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                          ) : (
+                            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                          )}
+                          <div>
+                            <div className={`font-medium ${
+                              debugResult.success ? 'text-green-800' : 'text-red-800'
+                            }`}>
+                              {debugResult.message}
+                            </div>
+                            {debugResult.details?.suggestion != null && (
+                              <div className="text-sm text-gray-600 mt-1">
+                                {String(debugResult.details.suggestion)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {debugResult.details && (
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm">Details</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2 text-sm">
+                              {Object.entries(debugResult.details).map(([key, value]) => (
+                                <div key={key} className="flex justify-between">
+                                  <span className="font-medium text-gray-700">{key}:</span>
+                                  <span className="text-gray-900 break-all">{String(value)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Delete Test Tab */}
+            <TabsContent value="delete" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Delete Test</CardTitle>
+                  <CardDescription>
+                    Test deleting the test file from the repository
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Button
+                    onClick={() => runDebugOperation('delete')}
+                    disabled={debugLoading}
+                    variant="destructive"
+                    className="w-full"
+                  >
+                    {debugLoading ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <X className="h-4 w-4 mr-2" />
+                    )}
+                    Test Delete Operation
+                  </Button>
+
+                  {debugResult && (
+                    <div className="space-y-4">
+                      <div className={`p-4 rounded-md ${
+                        debugResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                      }`}>
+                        <div className="flex items-start gap-2">
+                          {debugResult.success ? (
+                            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                          ) : (
+                            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                          )}
+                          <div>
+                            <div className={`font-medium ${
+                              debugResult.success ? 'text-green-800' : 'text-red-800'
+                            }`}>
+                              {debugResult.message}
+                            </div>
+                            {debugResult.details?.suggestion != null && (
+                              <div className="text-sm text-gray-600 mt-1">
+                                {String(debugResult.details.suggestion)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {debugResult.details && (
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm">Details</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2 text-sm">
+                              {Object.entries(debugResult.details).map(([key, value]) => (
+                                <div key={key} className="flex justify-between">
+                                  <span className="font-medium text-gray-700">{key}:</span>
+                                  <span className="text-gray-900 break-all">{String(value)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
 

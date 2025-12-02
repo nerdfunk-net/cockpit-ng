@@ -303,3 +303,430 @@ async def health_check(
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{repo_id}/debug/read")
+async def debug_read_test(
+    repo_id: int,
+    current_user: dict = Depends(require_permission("git.repositories", "write")),
+):
+    """Debug operation: Test reading a file from the repository."""
+    try:
+        from services.git_shared_utils import get_git_repo_by_id
+        from pathlib import Path
+
+        # Get repository details
+        repository = git_repo_manager.get_repository(repo_id)
+        if not repository:
+            raise HTTPException(status_code=404, detail="Repository not found")
+
+        repo = get_git_repo_by_id(repo_id)
+        repo_path = Path(repo.working_dir)
+        test_file_path = repo_path / ".cockpit_debug_test.txt"
+
+        # Try to read the test file
+        if not test_file_path.exists():
+            return {
+                "success": False,
+                "message": "Test file does not exist",
+                "details": {
+                    "file_path": str(test_file_path),
+                    "repository_path": str(repo_path),
+                    "exists": False,
+                    "suggestion": "Use the 'Write' operation to create the test file first"
+                }
+            }
+
+        try:
+            content = test_file_path.read_text()
+            return {
+                "success": True,
+                "message": "File read successfully",
+                "details": {
+                    "file_path": str(test_file_path),
+                    "content": content,
+                    "size_bytes": len(content),
+                    "readable": True
+                }
+            }
+        except PermissionError as e:
+            return {
+                "success": False,
+                "message": "Permission denied reading file",
+                "details": {
+                    "error": str(e),
+                    "file_path": str(test_file_path),
+                    "error_type": "PermissionError",
+                    "suggestion": "Check file system permissions for the repository directory"
+                }
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Error reading file: {str(e)}",
+                "details": {
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "file_path": str(test_file_path)
+                }
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Debug read test failed for repo {repo_id}: {e}")
+        return {
+            "success": False,
+            "message": f"Debug test failed: {str(e)}",
+            "details": {
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "stage": "repository_access"
+            }
+        }
+
+
+@router.post("/{repo_id}/debug/write")
+async def debug_write_test(
+    repo_id: int,
+    current_user: dict = Depends(require_permission("git.repositories", "write")),
+):
+    """Debug operation: Test writing a file to the repository."""
+    try:
+        from services.git_shared_utils import get_git_repo_by_id
+        from pathlib import Path
+        from datetime import datetime
+
+        # Get repository details
+        repository = git_repo_manager.get_repository(repo_id)
+        if not repository:
+            raise HTTPException(status_code=404, detail="Repository not found")
+
+        repo = get_git_repo_by_id(repo_id)
+        repo_path = Path(repo.working_dir)
+        test_file_path = repo_path / ".cockpit_debug_test.txt"
+
+        # Create test content with timestamp
+        test_content = f"Cockpit Debug Test\nTimestamp: {datetime.now().isoformat()}\nRepository: {repository['name']}\n"
+
+        try:
+            # Try to write the file
+            test_file_path.write_text(test_content)
+
+            # Verify write
+            if test_file_path.exists():
+                written_content = test_file_path.read_text()
+                success = written_content == test_content
+
+                # Get git status
+                repo_status = "unknown"
+                try:
+                    if repo.is_dirty(untracked_files=True):
+                        repo_status = "modified (file created but not committed)"
+                    else:
+                        repo_status = "clean"
+                except Exception:
+                    repo_status = "status check failed"
+
+                return {
+                    "success": success,
+                    "message": "File written successfully" if success else "File written but verification failed",
+                    "details": {
+                        "file_path": str(test_file_path),
+                        "content_length": len(test_content),
+                        "verified": success,
+                        "git_status": repo_status,
+                        "writable": True
+                    }
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": "File write appeared to succeed but file does not exist",
+                    "details": {
+                        "file_path": str(test_file_path),
+                        "error_type": "VerificationError"
+                    }
+                }
+
+        except PermissionError as e:
+            return {
+                "success": False,
+                "message": "Permission denied writing file",
+                "details": {
+                    "error": str(e),
+                    "file_path": str(test_file_path),
+                    "error_type": "PermissionError",
+                    "suggestion": "Check file system permissions for the repository directory",
+                    "directory_writable": os.access(str(repo_path), os.W_OK)
+                }
+            }
+        except OSError as e:
+            return {
+                "success": False,
+                "message": f"OS error writing file: {str(e)}",
+                "details": {
+                    "error": str(e),
+                    "error_type": "OSError",
+                    "file_path": str(test_file_path),
+                    "suggestion": "Check disk space and file system health"
+                }
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Error writing file: {str(e)}",
+                "details": {
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "file_path": str(test_file_path)
+                }
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Debug write test failed for repo {repo_id}: {e}")
+        return {
+            "success": False,
+            "message": f"Debug test failed: {str(e)}",
+            "details": {
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "stage": "repository_access"
+            }
+        }
+
+
+@router.post("/{repo_id}/debug/delete")
+async def debug_delete_test(
+    repo_id: int,
+    current_user: dict = Depends(require_permission("git.repositories", "write")),
+):
+    """Debug operation: Test deleting the test file from the repository."""
+    try:
+        from services.git_shared_utils import get_git_repo_by_id
+        from pathlib import Path
+
+        # Get repository details
+        repository = git_repo_manager.get_repository(repo_id)
+        if not repository:
+            raise HTTPException(status_code=404, detail="Repository not found")
+
+        repo = get_git_repo_by_id(repo_id)
+        repo_path = Path(repo.working_dir)
+        test_file_path = repo_path / ".cockpit_debug_test.txt"
+
+        # Check if file exists before deletion
+        if not test_file_path.exists():
+            return {
+                "success": False,
+                "message": "Test file does not exist, nothing to delete",
+                "details": {
+                    "file_path": str(test_file_path),
+                    "exists": False
+                }
+            }
+
+        try:
+            # Try to delete the file
+            test_file_path.unlink()
+
+            # Verify deletion
+            if test_file_path.exists():
+                return {
+                    "success": False,
+                    "message": "File deletion appeared to succeed but file still exists",
+                    "details": {
+                        "file_path": str(test_file_path),
+                        "error_type": "VerificationError"
+                    }
+                }
+            else:
+                # Get git status
+                repo_status = "unknown"
+                try:
+                    if repo.is_dirty(untracked_files=True):
+                        repo_status = "modified (file deleted but not committed)"
+                    else:
+                        repo_status = "clean"
+                except Exception:
+                    repo_status = "status check failed"
+
+                return {
+                    "success": True,
+                    "message": "File deleted successfully",
+                    "details": {
+                        "file_path": str(test_file_path),
+                        "verified": True,
+                        "git_status": repo_status
+                    }
+                }
+
+        except PermissionError as e:
+            return {
+                "success": False,
+                "message": "Permission denied deleting file",
+                "details": {
+                    "error": str(e),
+                    "file_path": str(test_file_path),
+                    "error_type": "PermissionError",
+                    "suggestion": "Check file system permissions for the file"
+                }
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Error deleting file: {str(e)}",
+                "details": {
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "file_path": str(test_file_path)
+                }
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Debug delete test failed for repo {repo_id}: {e}")
+        return {
+            "success": False,
+            "message": f"Debug test failed: {str(e)}",
+            "details": {
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "stage": "repository_access"
+            }
+        }
+
+
+@router.get("/{repo_id}/debug/diagnostics")
+async def debug_diagnostics(
+    repo_id: int,
+    current_user: dict = Depends(require_permission("git.repositories", "read")),
+):
+    """Get comprehensive diagnostic information for the repository."""
+    try:
+        from services.git_shared_utils import get_git_repo_by_id
+        from pathlib import Path
+        import ssl
+
+        # Get repository details
+        repository = git_repo_manager.get_repository(repo_id)
+        if not repository:
+            raise HTTPException(status_code=404, detail="Repository not found")
+
+        diagnostics = {
+            "repository_info": {
+                "id": repository["id"],
+                "name": repository["name"],
+                "url": repository["url"],
+                "branch": repository["branch"],
+                "is_active": repository["is_active"],
+                "verify_ssl": repository.get("verify_ssl", True)
+            },
+            "access_test": {},
+            "file_system": {},
+            "git_status": {},
+            "ssl_info": {},
+            "credentials": {}
+        }
+
+        # Test repository access
+        try:
+            repo = get_git_repo_by_id(repo_id)
+            repo_path = Path(repo.working_dir)
+
+            diagnostics["access_test"] = {
+                "accessible": True,
+                "path": str(repo_path),
+                "exists": repo_path.exists()
+            }
+
+            # File system permissions
+            try:
+                diagnostics["file_system"] = {
+                    "readable": os.access(str(repo_path), os.R_OK),
+                    "writable": os.access(str(repo_path), os.W_OK),
+                    "executable": os.access(str(repo_path), os.X_OK),
+                    "path": str(repo_path)
+                }
+            except Exception as e:
+                diagnostics["file_system"] = {
+                    "error": str(e),
+                    "error_type": type(e).__name__
+                }
+
+            # Git status
+            try:
+                diagnostics["git_status"] = {
+                    "is_dirty": repo.is_dirty(untracked_files=True),
+                    "active_branch": repo.active_branch.name,
+                    "head_commit": repo.head.commit.hexsha[:8] if repo.head.is_valid() else "no commits",
+                    "remotes": [r.name for r in repo.remotes],
+                    "has_origin": "origin" in [r.name for r in repo.remotes]
+                }
+            except Exception as e:
+                diagnostics["git_status"] = {
+                    "error": str(e),
+                    "error_type": type(e).__name__
+                }
+
+        except Exception as e:
+            diagnostics["access_test"] = {
+                "accessible": False,
+                "error": str(e),
+                "error_type": type(e).__name__
+            }
+
+        # SSL/Certificate information
+        try:
+            if not repository.get("verify_ssl", True):
+                diagnostics["ssl_info"] = {
+                    "verification": "disabled",
+                    "note": "SSL verification is disabled for this repository"
+                }
+            else:
+                diagnostics["ssl_info"] = {
+                    "verification": "enabled",
+                    "ssl_version": ssl.OPENSSL_VERSION
+                }
+        except Exception as e:
+            diagnostics["ssl_info"] = {
+                "error": str(e),
+                "error_type": type(e).__name__
+            }
+
+        # Credential information (without exposing secrets)
+        try:
+            from services.git_utils import resolve_git_credentials
+
+            username, token = resolve_git_credentials(repository)
+            diagnostics["credentials"] = {
+                "credential_name": repository.get("credential_name", "none"),
+                "has_username": bool(username),
+                "has_token": bool(token),
+                "token_length": len(token) if token else 0,
+                "authentication": "configured" if (username and token) else "none"
+            }
+        except Exception as e:
+            diagnostics["credentials"] = {
+                "error": str(e),
+                "error_type": type(e).__name__
+            }
+
+        return {
+            "success": True,
+            "repository_id": repo_id,
+            "diagnostics": diagnostics
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Debug diagnostics failed for repo {repo_id}: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "error_type": type(e).__name__
+        }

@@ -6,15 +6,14 @@ Simple approach without complex pydantic parsing.
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-# Try to load from backend directory first, then from current directory
+# Load environment variables from .env file (optional)
+# Docker environment variables take precedence - .env file won't override them
 backend_env_path = os.path.join(os.path.dirname(__file__), ".env")
 if os.path.exists(backend_env_path):
-    load_dotenv(backend_env_path)
-    print(f"Loaded .env from: {backend_env_path}")
+    load_dotenv(backend_env_path, override=False)
+    print(f"Loaded .env from: {backend_env_path} (Docker env vars take precedence)")
 else:
-    load_dotenv()
-    print("Loaded .env from current directory")
+    print("No .env file found - using environment variables from system/Docker")
 
 
 def get_env_bool(key: str, default: bool = False) -> bool:
