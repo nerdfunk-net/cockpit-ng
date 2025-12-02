@@ -19,7 +19,6 @@ import {
   Github,
   RefreshCw,
   Plus,
-  Search,
   Edit,
   Trash2,
   Eye,
@@ -115,15 +114,9 @@ const GitManagement: React.FC = () => {
   
   // State
   const [repositories, setRepositories] = useState<GitRepository[]>([])
-  const [filteredRepositories, setFilteredRepositories] = useState<GitRepository[]>([])
   const [credentials, setCredentials] = useState<GitCredential[]>([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-  
-  // Filters
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterCategory, setFilterCategory] = useState('')
-  const [filterStatus, setFilterStatus] = useState('')
   
   // Form state
   const [formData, setFormData] = useState<GitFormData>({
@@ -170,12 +163,6 @@ const GitManagement: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Filter repositories when search or filters change
-  useEffect(() => {
-    filterRepositories()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [repositories, searchTerm, filterCategory, filterStatus])
-
   const showMessage = (text: string, type: 'success' | 'error') => {
     setMessage({ type, text })
     setTimeout(() => setMessage(null), 5000)
@@ -204,22 +191,6 @@ const GitManagement: React.FC = () => {
       // Some installations might not have credentials set up yet
       setCredentials([])
     }
-  }
-
-  const filterRepositories = () => {
-    const filtered = repositories.filter(repo => {
-      const matchesSearch = repo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           repo.url.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (repo.description && repo.description.toLowerCase().includes(searchTerm.toLowerCase()))
-      const matchesCategory = !filterCategory || filterCategory === '__all__' || repo.category === filterCategory
-      const matchesStatus = !filterStatus || filterStatus === '__all__' ||
-                           (filterStatus === 'active' && repo.is_active) ||
-                           (filterStatus === 'inactive' && !repo.is_active)
-      
-      return matchesSearch && matchesCategory && matchesStatus
-    })
-    
-    setFilteredRepositories(filtered)
   }
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -494,84 +465,28 @@ const GitManagement: React.FC = () => {
 
         {/* Repository List Tab */}
         <TabsContent value="list" className="space-y-4">
-          {/* Filters */}
-          <Card className="overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 pl-8 pr-4 -mx-6 -mt-6 mb-1">
-              <CardTitle className="flex items-center gap-2 text-white text-sm font-semibold">
-                <Search className="h-4 w-4" />
-                Repository Filters
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-1 pb-2">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-1.5">
-                <div>
-                  <Label htmlFor="search" className="text-xs font-medium text-gray-700 mb-0 block">Search</Label>
-                  <div className="relative">
-                    <Search className="absolute left-1.5 top-1 h-2.5 w-2.5 text-gray-400" />
-                    <Input
-                      id="search"
-                      placeholder="Search repositories..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-6 h-6 text-xs"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="filter-category" className="text-xs font-medium text-gray-700 mb-0 block">Category</Label>
-                  <Select value={filterCategory} onValueChange={setFilterCategory}>
-                    <SelectTrigger id="filter-category" className="h-6 text-xs">
-                      <SelectValue placeholder="All" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__all__">All Categories</SelectItem>
-                      <SelectItem value="configs">Configs</SelectItem>
-                      <SelectItem value="templates">Templates</SelectItem>
-                      <SelectItem value="onboarding">Onboarding</SelectItem>
-                      <SelectItem value="inventory">Inventory</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="filter-status" className="text-xs font-medium text-gray-700 mb-0 block">Status</Label>
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger id="filter-status" className="h-6 text-xs">
-                      <SelectValue placeholder="All" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__all__">All Status</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs font-medium text-gray-700 mb-0 block">Actions</Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button onClick={loadRepositories} variant="outline" size="sm" className="h-6 px-1.5 text-xs w-full">
-                          <RefreshCw className="h-2.5 w-2.5 mr-0.5" />
-                          Refresh
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Reload repository list</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Repositories Table */}
           <Card className="overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 pl-8 pr-4 -mx-6 -mt-6 mb-1">
-              <CardTitle className="flex items-center gap-2 text-white text-sm font-semibold">
-                <GitBranch className="h-4 w-4" />
-                Managed Repositories ({filteredRepositories.length})
-              </CardTitle>
+            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 pl-8 pr-8 -mx-6 -mt-6 mb-1">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-white text-sm font-semibold">
+                  <GitBranch className="h-4 w-4" />
+                  Managed Repositories ({repositories.length})
+                </CardTitle>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button onClick={loadRepositories} variant="ghost" size="sm" className="h-6 px-2 text-xs text-white hover:bg-white/20 shrink-0">
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Refresh
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Reload repository list</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -579,7 +494,7 @@ const GitManagement: React.FC = () => {
                   <RefreshCw className="h-8 w-8 animate-spin mx-auto text-gray-400" />
                   <p className="text-gray-500 mt-2">Loading repositories...</p>
                 </div>
-              ) : filteredRepositories.length === 0 ? (
+              ) : repositories.length === 0 ? (
                 <div className="text-center py-8">
                   <Github className="h-12 w-12 mx-auto text-gray-400" />
                   <p className="text-gray-500 mt-2">No repositories found</p>
@@ -587,7 +502,7 @@ const GitManagement: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {filteredRepositories.map((repo) => (
+                  {repositories.map((repo) => (
                     <div key={repo.id} className="border rounded-lg p-4 hover:bg-gray-50">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 space-y-2">

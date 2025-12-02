@@ -316,18 +316,13 @@ export default function UserManagement() {
       )}
 
       {/* Main Content */}
-      <Card className="overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
+      <Card className="shadow-lg border-0 overflow-hidden p-0">
+        <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
           <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="flex items-center space-x-2 text-white text-base">
-                <UserCheck className="h-5 w-5" />
-                <span>Users ({users.length})</span>
-              </CardTitle>
-              <CardDescription className="text-blue-100">
-                Create and manage user accounts
-              </CardDescription>
-            </div>
+            <CardTitle className="flex items-center space-x-2 text-sm font-medium">
+              <UserCheck className="h-5 w-5" />
+              <span>User Accounts ({users.length})</span>
+            </CardTitle>
             <div className="flex items-center space-x-2 mr-4">
               <Button
                 onClick={loadUsers}
@@ -469,7 +464,7 @@ export default function UserManagement() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <RefreshCw className="h-6 w-6 animate-spin mr-2" />

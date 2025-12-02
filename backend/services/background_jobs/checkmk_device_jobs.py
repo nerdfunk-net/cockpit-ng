@@ -410,8 +410,22 @@ def compare_nautobot_and_checkmk_task(
     try:
         from services.nb2cmk_base_service import nb2cmk_service
         from services.nb2cmk_database_service import nb2cmk_db_service, JobStatus
+        import job_run_manager
 
         logger.info("Starting compare_nautobot_and_checkmk task")
+
+        # Create job run record for Jobs/View app
+        job_run = job_run_manager.create_job_run(
+            job_name="Device Comparison (Manual)",
+            job_type="compare_devices",
+            triggered_by="manual",
+            target_devices=device_ids,
+            executed_by="system",
+        )
+        job_run_id = job_run["id"]
+
+        # Mark job as started
+        job_run_manager.mark_started(job_run_id, self.request.id)
 
         # If no device IDs provided, fetch all devices from Nautobot
         if not device_ids:
@@ -426,6 +440,7 @@ def compare_nautobot_and_checkmk_task(
                     device_ids = []
             except Exception as e:
                 logger.error(f"Failed to fetch devices from Nautobot: {e}")
+                job_run_manager.mark_failed(job_run_id, f"Failed to fetch devices: {str(e)}")
                 return {
                     "status": "failed",
                     "error": f"Failed to fetch devices: {str(e)}",
@@ -435,6 +450,10 @@ def compare_nautobot_and_checkmk_task(
                 }
 
         if not device_ids:
+            job_run_manager.mark_completed(
+                job_run_id,
+                result={"message": "No devices to compare", "total": 0, "completed": 0, "failed": 0}
+            )
             return {
                 "status": "completed",
                 "message": "No devices to compare",
@@ -562,17 +581,46 @@ def compare_nautobot_and_checkmk_task(
             f"Comparison task completed: {completed_count} succeeded, {failed_count} failed"
         )
 
+        # Mark job run as completed in Jobs/View database
+        result_message = f"Compared {completed_count}/{total_devices} devices successfully"
+        if failed_count > 0:
+            result_message += f" ({failed_count} failed)"
+
+        # If all devices failed, mark as failed; otherwise mark as completed
+        if failed_count > 0 and completed_count == 0:
+            job_run_manager.mark_failed(job_run_id, error_message)
+        else:
+            job_run_manager.mark_completed(
+                job_run_id,
+                result={
+                    "success": True,
+                    "message": result_message,
+                    "total": total_devices,
+                    "completed": completed_count,
+                    "failed": failed_count,
+                    "job_id": job_id
+                }
+            )
+
         return {
             "status": "completed",
             "total": total_devices,
             "completed": completed_count,
             "failed": failed_count,
             "job_id": job_id,  # Return job_id so frontend can fetch detailed results
-            "message": f"Compared {completed_count}/{total_devices} devices successfully",
+            "message": result_message,
         }
 
     except Exception as e:
         logger.error(f"Comparison task failed: {e}", exc_info=True)
+
+        # Mark job run as failed
+        try:
+            if 'job_run_id' in locals():
+                job_run_manager.mark_failed(job_run_id, str(e))
+        except Exception as mark_error:
+            logger.error(f"Failed to mark job as failed: {mark_error}")
+
         return {
             "status": "failed",
             "error": str(e),

@@ -140,34 +140,36 @@ export function CommandExecutionTab({
             )}
 
             {/* Enable Mode Toggle */}
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-md">
+            <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200 rounded-lg shadow-sm">
               <Switch
                 id="enable-mode"
                 checked={enableMode}
                 onCheckedChange={setEnableMode}
+                className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-400 border-2 border-slate-300"
               />
               <div className="flex-1">
-                <Label htmlFor="enable-mode" className="font-medium cursor-pointer">
+                <Label htmlFor="enable-mode" className="font-medium text-slate-800 cursor-pointer">
                   Enable configure mode after login
                 </Label>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-slate-600 mt-1">
                   When enabled, commands will be executed in configuration mode
                 </p>
               </div>
             </div>
 
             {/* Write Config Toggle */}
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-md">
+            <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200 rounded-lg shadow-sm">
               <Switch
                 id="write-config"
                 checked={writeConfig}
                 onCheckedChange={setWriteConfig}
+                className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-slate-400 border-2 border-slate-300"
               />
               <div className="flex-1">
-                <Label htmlFor="write-config" className="font-medium cursor-pointer">
+                <Label htmlFor="write-config" className="font-medium text-slate-800 cursor-pointer">
                   Write config at the end (when no errors occurred)
                 </Label>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-slate-600 mt-1">
                   When enabled, runs &quot;copy running-config startup-config&quot; after successful command execution
                 </p>
               </div>
@@ -175,17 +177,18 @@ export function CommandExecutionTab({
 
             {/* Dry Run Toggle (only for templates) */}
             {usingTemplate && (
-              <div className="flex items-center space-x-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+              <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-300 rounded-lg shadow-sm">
                 <Switch
                   id="dry-run"
                   checked={dryRun}
                   onCheckedChange={setDryRun}
+                  className="data-[state=checked]:bg-amber-500 data-[state=unchecked]:bg-slate-400 border-2 border-amber-300"
                 />
                 <div className="flex-1">
-                  <Label htmlFor="dry-run" className="font-medium cursor-pointer text-yellow-900">
+                  <Label htmlFor="dry-run" className="font-medium cursor-pointer text-amber-900">
                     Dry Run (render only, do not execute)
                   </Label>
-                  <p className="text-xs text-yellow-800 mt-1">
+                  <p className="text-xs text-amber-700 mt-1">
                     When enabled, the template will be rendered for each device but NOT executed. Use this to preview generated commands.
                   </p>
                 </div>

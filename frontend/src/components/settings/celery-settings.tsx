@@ -254,66 +254,66 @@ export function CelerySettingsPage() {
 
       {/* Status Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className={celeryStatus?.redis_connected ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Redis</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
+            <Database className={celeryStatus?.redis_connected ? 'h-4 w-4 text-green-600' : 'h-4 w-4 text-red-600'} />
           </CardHeader>
           <CardContent>
             <div className="flex items-center space-x-2">
               {celeryStatus?.redis_connected ? (
                 <>
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                  <span className="text-xl font-bold">Connected</span>
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <span className="text-xl font-bold text-green-700">Connected</span>
                 </>
               ) : (
                 <>
-                  <XCircle className="h-5 w-5 text-red-500" />
-                  <span className="text-xl font-bold">Disconnected</span>
+                  <XCircle className="h-5 w-5 text-red-600" />
+                  <span className="text-xl font-bold text-red-700">Disconnected</span>
                 </>
               )}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className={(celeryStatus?.worker_count ?? 0) > 0 ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Workers</CardTitle>
-            <Server className="h-4 w-4 text-muted-foreground" />
+            <Server className={(celeryStatus?.worker_count ?? 0) > 0 ? 'h-4 w-4 text-blue-600' : 'h-4 w-4 text-gray-400'} />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{celeryStatus?.worker_count || 0}</div>
+            <div className={(celeryStatus?.worker_count ?? 0) > 0 ? 'text-2xl font-bold text-blue-700' : 'text-2xl font-bold text-gray-500'}>{celeryStatus?.worker_count || 0}</div>
             <p className="text-xs text-muted-foreground">Active workers</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className={(celeryStatus?.active_tasks ?? 0) > 0 ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Tasks</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <Activity className={(celeryStatus?.active_tasks ?? 0) > 0 ? 'h-4 w-4 text-purple-600' : 'h-4 w-4 text-gray-400'} />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{celeryStatus?.active_tasks || 0}</div>
+            <div className={(celeryStatus?.active_tasks ?? 0) > 0 ? 'text-2xl font-bold text-purple-700' : 'text-2xl font-bold text-gray-500'}>{celeryStatus?.active_tasks || 0}</div>
             <p className="text-xs text-muted-foreground">Currently running</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className={celeryStatus?.beat_running ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Beat Scheduler</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Clock className={celeryStatus?.beat_running ? 'h-4 w-4 text-green-600' : 'h-4 w-4 text-red-600'} />
           </CardHeader>
           <CardContent>
             <div className="flex items-center space-x-2">
               {celeryStatus?.beat_running ? (
                 <>
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                  <span className="text-xl font-bold">Running</span>
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <span className="text-xl font-bold text-green-700">Running</span>
                 </>
               ) : (
                 <>
-                  <XCircle className="h-5 w-5 text-red-500" />
-                  <span className="text-xl font-bold">Stopped</span>
+                  <XCircle className="h-5 w-5 text-red-600" />
+                  <span className="text-xl font-bold text-red-700">Stopped</span>
                 </>
               )}
             </div>
@@ -331,37 +331,56 @@ export function CelerySettingsPage() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>System Status</CardTitle>
-              <CardDescription>Current state of the Celery task queue system</CardDescription>
+          <Card className="shadow-lg border-0 overflow-hidden p-0">
+            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
+              <CardTitle className="flex items-center space-x-2 text-sm font-medium">
+                <Activity className="h-4 w-4" />
+                <span>System Status</span>
+              </CardTitle>
+              <CardDescription className="text-blue-100 text-xs">Current state of the Celery task queue system</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Redis Connection</span>
-                  <Badge variant={celeryStatus?.redis_connected ? 'default' : 'destructive'}>
+            <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50">
+              <div className="space-y-3">
+                <div className={`flex items-center justify-between p-3 rounded-lg ${celeryStatus?.redis_connected ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                  <div className="flex items-center gap-3">
+                    <Database className={celeryStatus?.redis_connected ? 'h-5 w-5 text-green-600' : 'h-5 w-5 text-red-600'} />
+                    <span className="text-sm font-medium">Redis Connection</span>
+                  </div>
+                  <Badge className={celeryStatus?.redis_connected ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-100' : 'bg-red-100 text-red-800 border-red-300 hover:bg-red-100'}>
                     {celeryStatus?.redis_connected ? 'Connected' : 'Disconnected'}
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Celery Workers</span>
-                  <Badge variant="outline">{celeryStatus?.worker_count || 0} Active</Badge>
+                <div className={`flex items-center justify-between p-3 rounded-lg ${(celeryStatus?.worker_count ?? 0) > 0 ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 border border-gray-200'}`}>
+                  <div className="flex items-center gap-3">
+                    <Server className={(celeryStatus?.worker_count ?? 0) > 0 ? 'h-5 w-5 text-blue-600' : 'h-5 w-5 text-gray-400'} />
+                    <span className="text-sm font-medium">Celery Workers</span>
+                  </div>
+                  <Badge className={(celeryStatus?.worker_count ?? 0) > 0 ? 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-100' : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-100'}>
+                    {celeryStatus?.worker_count || 0} Active
+                  </Badge>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Beat Scheduler</span>
-                  <Badge variant={celeryStatus?.beat_running ? 'default' : 'destructive'}>
+                <div className={`flex items-center justify-between p-3 rounded-lg ${celeryStatus?.beat_running ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                  <div className="flex items-center gap-3">
+                    <Clock className={celeryStatus?.beat_running ? 'h-5 w-5 text-green-600' : 'h-5 w-5 text-red-600'} />
+                    <span className="text-sm font-medium">Beat Scheduler</span>
+                  </div>
+                  <Badge className={celeryStatus?.beat_running ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-100' : 'bg-red-100 text-red-800 border-red-300 hover:bg-red-100'}>
                     {celeryStatus?.beat_running ? 'Running' : 'Stopped'}
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Active Tasks</span>
-                  <Badge variant="outline">{celeryStatus?.active_tasks || 0} Running</Badge>
+                <div className={`flex items-center justify-between p-3 rounded-lg ${(celeryStatus?.active_tasks ?? 0) > 0 ? 'bg-purple-50 border border-purple-200' : 'bg-gray-50 border border-gray-200'}`}>
+                  <div className="flex items-center gap-3">
+                    <Activity className={(celeryStatus?.active_tasks ?? 0) > 0 ? 'h-5 w-5 text-purple-600' : 'h-5 w-5 text-gray-400'} />
+                    <span className="text-sm font-medium">Active Tasks</span>
+                  </div>
+                  <Badge className={(celeryStatus?.active_tasks ?? 0) > 0 ? 'bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-100' : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-100'}>
+                    {celeryStatus?.active_tasks || 0} Running
+                  </Badge>
                 </div>
               </div>
 
               <div className="mt-6">
-                <Button onClick={loadStatus} disabled={isLoading}>
+                <Button onClick={loadStatus} disabled={isLoading} variant="outline">
                   <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                   Refresh Status
                 </Button>
