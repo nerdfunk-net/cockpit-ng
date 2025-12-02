@@ -136,8 +136,8 @@ export default function NetmikoPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Netmiko Command Execution</h1>
-          <p className="text-gray-600">Execute commands on network devices using Netmiko</p>
+          <h1 className="text-3xl font-bold text-gray-900">Netmiko Command Execution</h1>
+          <p className="text-gray-600 mt-1">Execute commands on network devices using Netmiko</p>
         </div>
       </div>
 

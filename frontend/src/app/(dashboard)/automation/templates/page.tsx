@@ -209,7 +209,7 @@ function UserTemplatesContent() {
   )
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="border-b border-gray-200 pb-4">
         <div className="flex items-center space-x-3">
@@ -217,8 +217,8 @@ function UserTemplatesContent() {
             <FileCode className="h-6 w-6 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Netmiko Templates</h1>
-            <p className="text-gray-600">Create and manage your Jinja2 templates for network automation</p>
+            <h1 className="text-3xl font-bold text-gray-900">Netmiko Templates</h1>
+            <p className="text-gray-600 mt-1">Create and manage your Jinja2 templates for network automation</p>
           </div>
         </div>
       </div>
