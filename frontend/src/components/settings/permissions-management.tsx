@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Shield, Users, Key, UserCog, UserPlus } from 'lucide-react'
 import { RolesManager } from './permissions/roles-manager'
 import { UserRolesManager } from './permissions/user-roles-manager'
