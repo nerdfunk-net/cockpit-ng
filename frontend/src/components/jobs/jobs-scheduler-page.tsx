@@ -537,11 +537,16 @@ export function JobsSchedulerPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Job Scheduler</h1>
-          <p className="text-gray-600 mt-1">
-            Schedule automated tasks using job templates
-          </p>
+        <div className="flex items-center space-x-3">
+          <div className="bg-blue-100 p-2 rounded-lg">
+            <Calendar className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Job Scheduler</h1>
+            <p className="text-gray-600 mt-1">
+              Schedule automated tasks using job templates
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {/* Debug Dialog */}

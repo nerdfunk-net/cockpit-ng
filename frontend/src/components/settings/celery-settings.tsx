@@ -237,11 +237,16 @@ export function CelerySettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Celery Task Queue</h1>
-        <p className="text-muted-foreground mt-2">
-          Monitor and manage Celery workers, tasks, and schedules
-        </p>
+      <div className="flex items-center gap-4">
+        <div className="bg-purple-100 p-2 rounded-lg">
+          <Server className="h-6 w-6 text-purple-600" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold">Celery Task Queue</h1>
+          <p className="text-muted-foreground mt-2">
+            Monitor and manage Celery workers, tasks, and schedules
+          </p>
+        </div>
       </div>
 
       {message && (

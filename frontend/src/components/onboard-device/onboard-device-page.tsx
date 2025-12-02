@@ -343,13 +343,18 @@ export function OnboardDevicePage() {
   ])
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Onboard Network Device</h1>
-          <p className="text-slate-600 mt-2">
-            Add new network devices to Nautobot and configure them for management
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="bg-green-100 p-2 rounded-lg">
+            <Plus className="h-6 w-6 text-green-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Onboard Network Device</h1>
+            <p className="text-slate-600 mt-2">
+              Add new network devices to Nautobot and configure them for management
+            </p>
+          </div>
         </div>
         <div className="flex space-x-2">
           <Button variant="outline" onClick={handleOpenCSVModal} disabled={isLoadingData}>

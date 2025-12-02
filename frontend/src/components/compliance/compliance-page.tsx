@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { CheckCircle } from 'lucide-react'
 import type { DeviceInfo, LogicalCondition } from '@/components/shared/device-selector'
 
 // Tab Components
@@ -39,9 +40,14 @@ export default function CompliancePage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Compliance Check</h1>
-          <p className="text-gray-600">Verify network device compliance with your security policies</p>
+        <div className="flex items-center gap-4">
+          <div className="bg-green-100 p-2 rounded-lg">
+            <CheckCircle className="h-6 w-6 text-green-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Compliance Check</h1>
+            <p className="text-gray-600">Verify network device compliance with your security policies</p>
+          </div>
         </div>
       </div>
 

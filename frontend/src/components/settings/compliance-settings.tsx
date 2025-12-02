@@ -540,11 +540,16 @@ export default function ComplianceSettingsForm() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Compliance Settings</h1>
-          <p className="text-muted-foreground">
-            Configure compliance check rules and credentials
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="bg-green-100 p-2 rounded-lg">
+            <CheckCircle className="h-6 w-6 text-green-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold">Compliance Settings</h1>
+            <p className="text-muted-foreground">
+              Configure compliance check rules and credentials
+            </p>
+          </div>
         </div>
       </div>
 

@@ -1156,12 +1156,17 @@ export function ScanAndAddPage() {
   }
 
   return (
-    <div className="space-y-8 p-6 bg-slate-50/50 min-h-screen">
+    <div className="space-y-8 bg-slate-50/50 min-h-screen">
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold text-slate-900">Scan & Add Devices</h1>
-          <p className="text-slate-600">Discover and onboard network devices to your infrastructure</p>
+        <div className="flex items-center gap-4">
+          <div className="bg-blue-100 p-2 rounded-lg">
+            <Network className="h-6 w-6 text-blue-600" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold text-slate-900">Scan & Add Devices</h1>
+            <p className="text-slate-600">Discover and onboard network devices to your infrastructure</p>
+          </div>
         </div>
       </div>
 

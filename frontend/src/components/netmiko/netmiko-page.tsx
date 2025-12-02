@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Terminal } from 'lucide-react'
 import type { DeviceInfo, LogicalCondition } from '@/components/shared/device-selector'
 
 // Hooks
@@ -135,9 +136,14 @@ export default function NetmikoPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Netmiko Command Execution</h1>
-          <p className="text-gray-600 mt-1">Execute commands on network devices using Netmiko</p>
+        <div className="flex items-center space-x-3">
+          <div className="bg-blue-100 p-2 rounded-lg">
+            <Terminal className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Netmiko Command Execution</h1>
+            <p className="text-gray-600 mt-1">Execute commands on network devices using Netmiko</p>
+          </div>
         </div>
       </div>
 

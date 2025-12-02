@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { RefreshCw, Search, Eye, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown, BarChart3, Download, Trash2 } from 'lucide-react'
+import { RefreshCw, Search, Eye, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle, AlertCircle, Info, Plus, ChevronDown, BarChart3, Download, Trash2, Shield } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import {
@@ -1279,9 +1279,14 @@ export function CheckMKSyncDevicesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">CheckMK Sync Devices</h1>
-          <p className="text-gray-600 mt-1">Compare and synchronize devices between Nautobot and CheckMK</p>
+        <div className="flex items-center space-x-3">
+          <div className="bg-green-100 p-2 rounded-lg">
+            <Shield className="h-6 w-6 text-green-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">CheckMK Sync Devices</h1>
+            <p className="text-gray-600 mt-1">Compare and synchronize devices between Nautobot and CheckMK</p>
+          </div>
         </div>
       </div>
 

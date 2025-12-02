@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { List } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 import { useAuthStore } from '@/lib/auth-store'
 
@@ -101,9 +102,14 @@ export default function AnsibleInventoryPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Ansible Inventory Builder</h1>
-          <p className="text-gray-600 mt-1">Build dynamic Ansible inventories using logical operations</p>
+        <div className="flex items-center space-x-3">
+          <div className="bg-blue-100 p-2 rounded-lg">
+            <List className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Ansible Inventory Builder</h1>
+            <p className="text-gray-600 mt-1">Build dynamic Ansible inventories using logical operations</p>
+          </div>
         </div>
       </div>
 
