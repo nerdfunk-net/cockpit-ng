@@ -6,7 +6,6 @@ Replaces all SQLite-based database operations.
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import NullPool
 from config import settings
 from typing import Generator
 import logging
@@ -21,8 +20,11 @@ logger.info(
 
 engine = create_engine(
     DATABASE_URL,
-    poolclass=NullPool,  # Use NullPool for simplicity, can be changed to QueuePool later
-    echo=settings.debug,  # Log all SQL statements in debug mode
+    pool_size=5,           # Number of persistent connections in the pool
+    max_overflow=10,       # Additional connections when pool is exhausted
+    pool_pre_ping=True,    # Verify connections are alive before use
+    pool_recycle=3600,     # Recycle connections after 1 hour
+    echo=settings.debug,   # Log all SQL statements in debug mode
 )
 
 # Create session factory

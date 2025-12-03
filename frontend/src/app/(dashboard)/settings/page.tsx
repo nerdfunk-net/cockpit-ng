@@ -44,9 +44,9 @@ const settingsPages = [
     bgColor: 'bg-red-100'
   },
   {
-    title: 'User Management',
-    description: 'Manage system users and permissions',
-    href: '/settings/users',
+    title: 'Users & Permissions',
+    description: 'Manage system users, roles and permissions (RBAC)',
+    href: '/settings/permissions',
     icon: Users,
     color: 'text-indigo-600',
     bgColor: 'bg-indigo-100'

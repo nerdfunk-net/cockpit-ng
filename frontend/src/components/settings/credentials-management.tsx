@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
@@ -294,38 +293,36 @@ export default function CredentialsManagement() {
   }
 
   return (
-    <div className="space-y-2">
-      {/* Modern Header */}
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 pl-6 pr-4 rounded-lg border shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Key className="h-5 w-5" />
-              <div>
-                <h1 className="text-lg font-semibold">System Credentials Management</h1>
-                <p className="text-blue-100 text-xs">Manage shared system credentials for device access</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={loadCredentials}
-                disabled={loading}
-                className="flex items-center gap-2 bg-white/20 text-white border-white/30 hover:bg-white/30"
-              >
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                Reload
-              </Button>
-              <Button 
-                size="sm"
-                onClick={openAddDialog} 
-                className="flex items-center gap-2 bg-white text-blue-600 hover:bg-blue-50"
-              >
-                <Plus className="h-4 w-4" />
-                Add System Credential
-              </Button>
-            </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="bg-amber-100 p-2 rounded-lg">
+            <Key className="h-6 w-6 text-amber-600" />
           </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">System Credentials</h1>
+            <p className="text-gray-600 mt-1">Manage shared system credentials for device access</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadCredentials}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Reload
+          </Button>
+          <Button 
+            size="sm"
+            onClick={openAddDialog}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Credential
+          </Button>
+        </div>
       </div>
 
       {/* Status Message */}
@@ -347,16 +344,14 @@ export default function CredentialsManagement() {
       )}
 
       {/* Credentials Table */}
-      <Card>
-        <CardHeader>
+      <div className="rounded-xl border shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Lock className="h-5 w-5" />
+            <div className="flex items-center space-x-2">
+              <Lock className="h-4 w-4" />
               <div>
-                <CardTitle>System Credentials</CardTitle>
-                <CardDescription>
-                  Shared system credentials. Passwords are encrypted and never displayed for security. Personal credentials are managed separately in your profile.
-                </CardDescription>
+                <h3 className="text-sm font-semibold">System Credentials ({credentials.length})</h3>
+                <p className="text-blue-100 text-xs">Shared system credentials. Passwords are encrypted and never displayed.</p>
               </div>
             </div>
             <div className="flex items-center space-x-2">
@@ -365,15 +360,15 @@ export default function CredentialsManagement() {
                 id="include-expired"
                 checked={includeExpired}
                 onChange={(e) => setIncludeExpired(e.target.checked)}
-                className="rounded border-gray-300"
+                className="rounded border-white/50 bg-white/20"
               />
-              <Label htmlFor="include-expired" className="text-sm text-gray-600">
+              <Label htmlFor="include-expired" className="text-sm text-blue-100">
                 Include expired
               </Label>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="bg-white">
           {credentials.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Key className="h-12 w-12 mx-auto text-gray-300 mb-4" />
@@ -384,37 +379,37 @@ export default function CredentialsManagement() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-2 font-medium text-gray-600">Name</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-600">Username</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-600">Type</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-600">Valid Until</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-600">Status</th>
-                    <th className="text-left py-3 px-2 font-medium text-gray-600 w-24">Actions</th>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Name</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Username</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Type</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Valid Until</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700 w-24">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {credentials.map((credential) => (
                     <tr key={credential.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-2">
+                      <td className="py-3 px-4">
                         <div className="font-medium">{credential.name}</div>
                       </td>
-                      <td className="py-3 px-2 text-gray-600">
+                      <td className="py-3 px-4 text-gray-600">
                         {credential.username}
                       </td>
-                      <td className="py-3 px-2">
+                      <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           {getTypeIcon(credential.type)}
                           <span className="capitalize">{credential.type}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-2 text-gray-600">
+                      <td className="py-3 px-4 text-gray-600">
                         {credential.valid_until || '-'}
                       </td>
-                      <td className="py-3 px-2">
+                      <td className="py-3 px-4">
                         {getStatusBadge(credential.status)}
                       </td>
-                      <td className="py-3 px-2">
+                      <td className="py-3 px-4">
                         <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
@@ -447,8 +442,8 @@ export default function CredentialsManagement() {
               </table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Add/Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>

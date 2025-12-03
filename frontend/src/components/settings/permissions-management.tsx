@@ -14,12 +14,18 @@ export function PermissionsManagement() {
   const [activeTab, setActiveTab] = useState('users')
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900">Users & Permissions</h1>
-        <p className="text-slate-600 mt-2">
-          Manage users, roles, permissions, and access control
-        </p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="bg-blue-100 p-2 rounded-lg">
+            <Shield className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Users & Permissions</h1>
+            <p className="text-gray-600 mt-1">Manage users, roles, permissions, and access control</p>
+          </div>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
