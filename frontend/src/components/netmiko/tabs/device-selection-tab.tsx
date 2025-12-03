@@ -1,4 +1,3 @@
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle2 } from 'lucide-react'
 import { DeviceSelector, type DeviceInfo, type LogicalCondition } from '@/components/shared/device-selector'
@@ -22,15 +21,6 @@ export function DeviceSelectionTab({
 }: DeviceSelectionTabProps) {
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Select Devices</CardTitle>
-          <CardDescription>
-            Use logical operations to filter and select devices for command execution
-          </CardDescription>
-        </CardHeader>
-      </Card>
-
       <DeviceSelector
         onDevicesSelected={onDevicesSelected}
         showActions={true}
@@ -43,9 +33,9 @@ export function DeviceSelectionTab({
       />
 
       {selectedDevices.length > 0 && (
-        <Alert>
-          <CheckCircle2 className="h-4 w-4" />
-          <AlertDescription>
+        <Alert className="bg-green-50 border-green-200">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
             <strong>{selectedDevices.length}</strong> device{selectedDevices.length !== 1 ? 's' : ''} selected.
             Switch to the <strong>Variables & Templates</strong> tab to configure templates, or <strong>Commands</strong> tab to execute commands.
           </AlertDescription>

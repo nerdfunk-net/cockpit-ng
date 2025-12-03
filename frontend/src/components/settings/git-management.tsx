@@ -1152,6 +1152,68 @@ const GitManagement: React.FC = () => {
                               </div>
                             </CardContent>
                           </Card>
+
+                          {/* Push Capability */}
+                          {debugResult.diagnostics.push_capability && (
+                            <Card>
+                              <CardHeader className="pb-3">
+                                <CardTitle className="text-sm flex items-center gap-2">
+                                  <Upload className="h-4 w-4" />
+                                  Push Capability
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="space-y-2 text-sm">
+                                  <div className="flex justify-between items-center">
+                                    <span className="font-medium text-gray-700">Status:</span>
+                                    <span className={
+                                      debugResult.diagnostics.push_capability.can_push
+                                        ? 'text-green-600 font-medium'
+                                        : 'text-red-600 font-medium'
+                                    }>
+                                      {debugResult.diagnostics.push_capability.status}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="font-medium text-gray-700">Message:</span>
+                                    <span className="text-gray-900 text-right max-w-[60%]">
+                                      {debugResult.diagnostics.push_capability.message}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="font-medium text-gray-700">Can Push:</span>
+                                    <span className={
+                                      debugResult.diagnostics.push_capability.can_push
+                                        ? 'text-green-600'
+                                        : 'text-red-600'
+                                    }>
+                                      {String(debugResult.diagnostics.push_capability.can_push)}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="font-medium text-gray-700">Has Credentials:</span>
+                                    <span className={
+                                      debugResult.diagnostics.push_capability.has_credentials
+                                        ? 'text-green-600'
+                                        : 'text-red-600'
+                                    }>
+                                      {String(debugResult.diagnostics.push_capability.has_credentials)}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="font-medium text-gray-700">Has Remote:</span>
+                                    <span className={
+                                      debugResult.diagnostics.push_capability.has_remote
+                                        ? 'text-green-600'
+                                        : 'text-red-600'
+                                    }>
+                                      {String(debugResult.diagnostics.push_capability.has_remote)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )}
                         </div>
                       )}
                     </div>

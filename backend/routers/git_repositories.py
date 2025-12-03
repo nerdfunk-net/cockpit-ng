@@ -860,7 +860,8 @@ async def debug_diagnostics(
             "file_system": {},
             "git_status": {},
             "ssl_info": {},
-            "credentials": {}
+            "credentials": {},
+            "push_capability": {}
         }
 
         # Test repository access
@@ -940,10 +941,53 @@ async def debug_diagnostics(
                 "token_length": len(token) if token else 0,
                 "authentication": "configured" if (username and token) else "none"
             }
+
+            # Push capability assessment
+            has_credentials = bool(username and token)
+            has_remote = False
+            remote_url = "unknown"
+
+            try:
+                repo = get_git_repo_by_id(repo_id)
+                if "origin" in [r.name for r in repo.remotes]:
+                    has_remote = True
+                    origin = repo.remote("origin")
+                    remote_url = list(origin.urls)[0] if origin.urls else "unknown"
+            except Exception:
+                pass
+
+            # Determine push capability status
+            if has_credentials and has_remote:
+                push_status = "ready"
+                push_message = "Push capability is configured and ready"
+            elif not has_credentials:
+                push_status = "no_credentials"
+                push_message = "Push requires authentication credentials"
+            elif not has_remote:
+                push_status = "no_remote"
+                push_message = "No remote 'origin' configured"
+            else:
+                push_status = "unknown"
+                push_message = "Push capability status unclear"
+
+            diagnostics["push_capability"] = {
+                "status": push_status,
+                "message": push_message,
+                "has_credentials": has_credentials,
+                "has_remote": has_remote,
+                "remote_url": remote_url,
+                "can_push": has_credentials and has_remote
+            }
+
         except Exception as e:
             diagnostics["credentials"] = {
                 "error": str(e),
                 "error_type": type(e).__name__
+            }
+            diagnostics["push_capability"] = {
+                "status": "error",
+                "message": f"Failed to assess push capability: {str(e)}",
+                "can_push": False
             }
 
         return {
