@@ -33,7 +33,8 @@ import {
   Bug,
   Info,
   FileText,
-  X
+  X,
+  Upload
 } from 'lucide-react'
 import { useApi } from '../../hooks/use-api'
 
@@ -372,7 +373,7 @@ const GitManagement: React.FC = () => {
     setShowDebugDialog(true)
   }
 
-  const runDebugOperation = async (operation: 'read' | 'write' | 'delete' | 'diagnostics') => {
+  const runDebugOperation = async (operation: 'read' | 'write' | 'delete' | 'push' | 'diagnostics') => {
     if (!debugRepo) return
 
     setDebugLoading(true)
@@ -968,7 +969,7 @@ const GitManagement: React.FC = () => {
 
       {/* Debug Dialog */}
       <Dialog open={showDebugDialog} onOpenChange={setShowDebugDialog}>
-        <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="!max-w-[90vw] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Bug className="h-5 w-5 text-purple-600" />
@@ -977,7 +978,7 @@ const GitManagement: React.FC = () => {
           </DialogHeader>
 
           <Tabs value={debugTab} onValueChange={setDebugTab} className="space-y-4">
-            <TabsList className="grid grid-cols-4 w-full">
+            <TabsList className="grid grid-cols-5 w-full">
               <TabsTrigger value="diagnostics" className="flex items-center gap-2">
                 <Info className="h-4 w-4" />
                 Diagnostics
@@ -993,6 +994,10 @@ const GitManagement: React.FC = () => {
               <TabsTrigger value="delete" className="flex items-center gap-2">
                 <X className="h-4 w-4" />
                 Delete Test
+              </TabsTrigger>
+              <TabsTrigger value="push" className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Push Test
               </TabsTrigger>
             </TabsList>
 
@@ -1366,6 +1371,98 @@ const GitManagement: React.FC = () => {
                                 <div key={key} className="flex justify-between">
                                   <span className="font-medium text-gray-700">{key}:</span>
                                   <span className="text-gray-900 break-all">{String(value)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Push Test Tab */}
+            <TabsContent value="push" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Push Test</CardTitle>
+                  <CardDescription>
+                    Test pushing changes to the remote repository (creates a commit and pushes to remote)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                      <div className="text-sm text-yellow-800">
+                        <div className="font-medium mb-1">Important:</div>
+                        <ul className="list-disc list-inside space-y-1">
+                          <li>This will create a real commit and push to the remote repository</li>
+                          <li>Requires write access and valid credentials</li>
+                          <li>Test file: <code className="bg-yellow-100 px-1 rounded">.cockpit_debug_test.txt</code></li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={() => runDebugOperation('push')}
+                    disabled={debugLoading}
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                  >
+                    {debugLoading ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4 mr-2" />
+                    )}
+                    Test Push Operation
+                  </Button>
+
+                  {debugResult && (
+                    <div className="space-y-4">
+                      <div className={`p-4 rounded-md ${
+                        debugResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                      }`}>
+                        <div className="flex items-start gap-2">
+                          {debugResult.success ? (
+                            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                          ) : (
+                            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                          )}
+                          <div>
+                            <div className={`font-medium ${
+                              debugResult.success ? 'text-green-800' : 'text-red-800'
+                            }`}>
+                              {debugResult.message}
+                            </div>
+                            {debugResult.details?.suggestion != null && (
+                              <div className="text-sm text-gray-600 mt-1">
+                                {String(debugResult.details.suggestion)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {debugResult.details && (
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm">Details</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2 text-sm">
+                              {Object.entries(debugResult.details).map(([key, value]) => (
+                                <div key={key} className="space-y-1">
+                                  <div className="flex justify-between">
+                                    <span className="font-medium text-gray-700">{key}:</span>
+                                  </div>
+                                  {key === 'commit_message' && typeof value === 'string' ? (
+                                    <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">{value}</pre>
+                                  ) : (
+                                    <span className="text-gray-900 break-all">{String(value)}</span>
+                                  )}
                                 </div>
                               ))}
                             </div>

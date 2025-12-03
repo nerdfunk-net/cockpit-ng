@@ -600,6 +600,237 @@ async def debug_delete_test(
         }
 
 
+@router.post("/{repo_id}/debug/push")
+async def debug_push_test(
+    repo_id: int,
+    current_user: dict = Depends(require_permission("git.repositories", "write")),
+):
+    """Debug operation: Test pushing changes to the remote repository."""
+    try:
+        from services.git_shared_utils import get_git_repo_by_id
+        from pathlib import Path
+        from datetime import datetime
+        from services.git_utils import resolve_git_credentials
+
+        # Get repository details
+        repository = git_repo_manager.get_repository(repo_id)
+        if not repository:
+            raise HTTPException(status_code=404, detail="Repository not found")
+
+        repo = get_git_repo_by_id(repo_id)
+        repo_path = Path(repo.working_dir)
+        test_file_path = repo_path / ".cockpit_debug_test.txt"
+
+        # Resolve credentials for push
+        username, token = resolve_git_credentials(repository)
+
+        # Check for credentials
+        if not username or not token:
+            return {
+                "success": False,
+                "message": "No credentials configured for push",
+                "details": {
+                    "error": "Push requires authentication credentials",
+                    "error_type": "AuthenticationRequired",
+                    "suggestion": "Configure a token credential for this repository to enable push operations"
+                }
+            }
+
+        try:
+            # Step 1: Create or update test file
+            test_content = f"Cockpit Debug Push Test\nTimestamp: {datetime.now().isoformat()}\nRepository: {repository['name']}\n"
+            test_file_path.write_text(test_content)
+
+            # Step 2: Stage the file
+            try:
+                repo.index.add(['.cockpit_debug_test.txt'])
+            except Exception as add_error:
+                return {
+                    "success": False,
+                    "message": f"Failed to stage file: {str(add_error)}",
+                    "details": {
+                        "error": str(add_error),
+                        "error_type": type(add_error).__name__,
+                        "stage": "git_add"
+                    }
+                }
+
+            # Step 3: Commit the change
+            try:
+                commit_message = f"Debug push test - {datetime.now().isoformat()}"
+                commit = repo.index.commit(commit_message)
+                commit_sha = commit.hexsha[:8]
+            except Exception as commit_error:
+                # If nothing to commit (file already exists with same content), that's ok
+                if "nothing to commit" in str(commit_error).lower():
+                    return {
+                        "success": False,
+                        "message": "No changes to push (test file unchanged)",
+                        "details": {
+                            "error": str(commit_error),
+                            "error_type": "NoChanges",
+                            "suggestion": "The test file already exists with the same content. Use Write test first or modify the file manually."
+                        }
+                    }
+                return {
+                    "success": False,
+                    "message": f"Failed to commit changes: {str(commit_error)}",
+                    "details": {
+                        "error": str(commit_error),
+                        "error_type": type(commit_error).__name__,
+                        "stage": "git_commit"
+                    }
+                }
+
+            # Step 4: Update remote URL with credentials
+            try:
+                origin = repo.remote('origin')
+                original_url = list(origin.urls)[0]
+
+                # Build authenticated URL
+                if "://" in repository['url']:
+                    protocol, rest = repository['url'].split("://", 1)
+                    # Remove any existing auth from URL
+                    if "@" in rest:
+                        rest = rest.split("@", 1)[1]
+                    auth_url = f"{protocol}://{username}:{token}@{rest}"
+                else:
+                    auth_url = repository['url']
+
+                # Temporarily set the URL with credentials
+                origin.set_url(auth_url)
+
+            except Exception as remote_error:
+                return {
+                    "success": False,
+                    "message": f"Failed to configure remote: {str(remote_error)}",
+                    "details": {
+                        "error": str(remote_error),
+                        "error_type": type(remote_error).__name__,
+                        "stage": "configure_remote"
+                    }
+                }
+
+            # Step 5: Push to remote
+            try:
+                push_info = origin.push(refspec=f"{repository['branch']}:{repository['branch']}")
+
+                # Restore original URL (without credentials)
+                try:
+                    origin.set_url(original_url)
+                except Exception:
+                    pass  # Best effort to clean up
+
+                # Check push result
+                if push_info and len(push_info) > 0:
+                    push_result = push_info[0]
+
+                    # Check for errors
+                    if push_result.flags & push_result.ERROR:
+                        return {
+                            "success": False,
+                            "message": f"Push failed: {push_result.summary}",
+                            "details": {
+                                "error": push_result.summary,
+                                "error_type": "PushError",
+                                "commit_sha": commit_sha,
+                                "suggestion": "Check repository permissions and credentials"
+                            }
+                        }
+
+                    # Success!
+                    return {
+                        "success": True,
+                        "message": "Push test successful - changes pushed to remote",
+                        "details": {
+                            "commit_sha": commit_sha,
+                            "commit_message": commit_message,
+                            "branch": repository['branch'],
+                            "remote": "origin",
+                            "file_path": str(test_file_path),
+                            "push_summary": push_result.summary,
+                            "verified": True
+                        }
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "message": "Push completed but no feedback received",
+                        "details": {
+                            "error": "No push info returned",
+                            "error_type": "UnknownPushResult",
+                            "commit_sha": commit_sha
+                        }
+                    }
+
+            except Exception as push_error:
+                # Restore original URL even if push fails
+                try:
+                    origin.set_url(original_url)
+                except Exception:
+                    pass
+
+                error_message = str(push_error)
+
+                # Provide helpful error messages for common issues
+                if "permission denied" in error_message.lower() or "403" in error_message:
+                    suggestion = "Authentication failed or insufficient permissions. Check that the token has write access."
+                elif "could not resolve host" in error_message.lower():
+                    suggestion = "Network error: Cannot reach remote repository. Check network connectivity."
+                elif "authentication failed" in error_message.lower():
+                    suggestion = "Credentials are invalid. Update the token in credential settings."
+                else:
+                    suggestion = "Check repository configuration and network connectivity"
+
+                return {
+                    "success": False,
+                    "message": f"Failed to push: {error_message}",
+                    "details": {
+                        "error": error_message,
+                        "error_type": type(push_error).__name__,
+                        "stage": "git_push",
+                        "commit_sha": commit_sha,
+                        "suggestion": suggestion
+                    }
+                }
+
+        except PermissionError as e:
+            return {
+                "success": False,
+                "message": "Permission denied for file operations",
+                "details": {
+                    "error": str(e),
+                    "file_path": str(test_file_path),
+                    "error_type": "PermissionError",
+                    "suggestion": "Check file system permissions for the repository directory"
+                }
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Unexpected error during push test: {str(e)}",
+                "details": {
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "file_path": str(test_file_path)
+                }
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Debug push test failed for repo {repo_id}: {e}")
+        return {
+            "success": False,
+            "message": f"Debug test failed: {str(e)}",
+            "details": {
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "stage": "repository_access"
+            }
+        }
+
+
 @router.get("/{repo_id}/debug/diagnostics")
 async def debug_diagnostics(
     repo_id: int,
