@@ -27,10 +27,16 @@ RUN apt-get update && apt-get install -y \
     nodejs \
     npm \
     supervisor \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
+
+# Copy and install private certificates
+# This allows git, curl, and other system tools to trust private CA certificates
+COPY docker/certs/*.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
 
 # Copy backend requirements and install Python dependencies
 COPY backend/requirements.txt ./backend/
