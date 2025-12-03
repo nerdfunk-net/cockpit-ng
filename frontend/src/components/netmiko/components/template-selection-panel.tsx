@@ -1,4 +1,3 @@
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -45,13 +44,15 @@ export function TemplateSelectionPanel({
   onShowNautobotData,
 }: TemplateSelectionPanelProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Template Selection</CardTitle>
-        <CardDescription>
+    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm font-medium">Template Selection</span>
+        </div>
+        <div className="text-xs text-blue-100">
           Choose a Jinja2 template to generate commands for your devices
-        </CardDescription>
-      </CardHeader>
+        </div>
+      </div>
       <div className="p-6 space-y-4">
         {/* Template Selection Dropdown */}
         <div className="space-y-2">
@@ -171,6 +172,6 @@ export function TemplateSelectionPanel({
           </>
         )}
       </div>
-    </Card>
+    </div>
   )
 }

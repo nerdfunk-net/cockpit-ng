@@ -107,6 +107,13 @@ interface DebugResult {
     git_status: Record<string, unknown>
     ssl_info: Record<string, unknown>
     credentials: Record<string, unknown>
+    push_capability?: {
+      status: string
+      message: string
+      can_push: boolean
+      has_credentials: boolean
+      has_remote: boolean
+    }
   }
 }
 

@@ -1,4 +1,3 @@
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,13 +25,15 @@ export function VariableManagerPanel({
   validateVariableName,
 }: VariableManagerPanelProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Template Variables</CardTitle>
-        <CardDescription>
+    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm font-medium">Template Variables</span>
+        </div>
+        <div className="text-xs text-blue-100">
           Define variables that will be used in your Jinja2 template
-        </CardDescription>
-      </CardHeader>
+        </div>
+      </div>
       <div className="p-6 space-y-4">
         {/* Nautobot Context Checkbox */}
         <div className="flex items-center space-x-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
@@ -106,6 +107,6 @@ export function VariableManagerPanel({
           ))}
         </div>
       </div>
-    </Card>
+    </div>
   )
 }
