@@ -82,6 +82,42 @@ docker compose logs
 
 ## ⚙️ Configuration
 
+### Environment Variables
+
+Create a `.env` file in the docker directory to customize your deployment:
+
+```bash
+cd docker
+cp .env.example .env
+nano .env  # Edit as needed
+```
+
+**Key Configuration Options:**
+
+- **`FRONTEND_PORT`** - Frontend web server port (default: `3000`)
+- **`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`** - Database credentials
+- **`COCKPIT_REDIS_PASSWORD`** - Redis authentication
+- **`SECRET_KEY`** - JWT signing key (⚠️ **Change in production!**)
+- **`NAUTOBOT_URL`, `NAUTOBOT_TOKEN`** - Nautobot integration
+- **`LOG_LEVEL`** - Logging verbosity (DEBUG, INFO, WARNING, ERROR)
+
+**Port Configuration:**
+
+The frontend port is fully configurable:
+```env
+FRONTEND_PORT=3000  # Change to any available port (e.g., 8080, 5000)
+```
+
+The backend port is fixed at `8000` inside the container. To change the host port mapping, edit `docker-compose.yml`:
+```yaml
+ports:
+  - "8080:8000"  # Map host port 8080 to container port 8000
+```
+
+**Without .env File:**
+
+The docker-compose configuration will work without a `.env` file using default values. However, ⚠️ **you should change the `SECRET_KEY` in production!**
+
 ### OIDC/SSO Authentication
 Cockpit-NG supports OpenID Connect (OIDC) for Single Sign-On. The configuration is managed through YAML files:
 

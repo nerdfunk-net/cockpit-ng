@@ -43,7 +43,7 @@ services:
       dockerfile: docker/Dockerfile.all-in-one
     container_name: cockpit-web
     ports:
-      - "3000:3000"  # Frontend (Next.js)
+      - "${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}"  # Frontend (Next.js)
       - "8000:8000"  # Backend (FastAPI)
     environment:
       # Backend Environment Variables
@@ -74,6 +74,8 @@ services:
       # Frontend Environment Variables
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
+      - BACKEND_URL=http://localhost:8000
+      - FRONTEND_PORT=${FRONTEND_PORT:-3000}
 
       # Supervisord Config
       # Note: supervisord-web.conf is copied into the image during build (see Dockerfile.all-in-one)
@@ -95,7 +97,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000", "||", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "sh", "-c", "curl -f http://localhost:$$FRONTEND_PORT || curl -f http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3

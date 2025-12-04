@@ -146,12 +146,16 @@ RUN mkdir -p /app/data/settings \
 RUN chown -R root:root /app/data \
     && chmod -R 755 /app/data
 
-# Expose ports (backend: 8000, frontend: 3000)
-EXPOSE 3000 8000
+# Set default frontend port (can be overridden at runtime)
+ENV FRONTEND_PORT=3000
 
-# Health check
+# Expose ports (backend: 8000, frontend: configurable via FRONTEND_PORT)
+EXPOSE 8000
+EXPOSE ${FRONTEND_PORT}
+
+# Health check (uses FRONTEND_PORT environment variable)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:3000 && curl -f http://localhost:8000/health || exit 1
+    CMD sh -c "curl -f http://localhost:${FRONTEND_PORT} && curl -f http://localhost:8000/health || exit 1"
 
 # Use supervisor to manage both services
 CMD ["./start.sh"]
