@@ -99,7 +99,11 @@ async def get_devices(
     Args:
         limit: Number of devices per page (default: no limit for full data load)
         offset: Number of devices to skip (default: 0)
-        filter_type: Type of filter ('name', 'location', 'prefix')
+        filter_type: Type of filter ('name', 'name__ic', 'location', 'prefix')
+            - 'name': Exact name match with regex (name__ire)
+            - 'name__ic': Case-insensitive contains match (name__ic)
+            - 'location': Filter by location name
+            - 'prefix': Filter by IP prefix
         filter_value: Value to filter by
         reload: If True, bypass cache and reload from Nautobot (default: False)
     """

@@ -1,10 +1,10 @@
 """
 Template Management for Cockpit
 Handles template storage, retrieval, and management operations
+All templates are now stored in PostgreSQL database
 """
 
 from __future__ import annotations
-import os
 import logging
 import json
 from typing import Dict, Any, Optional, List
@@ -19,17 +19,12 @@ logger = logging.getLogger(__name__)
 
 
 class TemplateManager:
-    """Manages configuration templates in PostgreSQL database and file system"""
+    """Manages configuration templates in PostgreSQL database"""
 
     def __init__(self, storage_path: str = None):
-        if storage_path is None:
-            # Use data/templates directory for file storage
-            self.storage_path = os.path.join(
-                os.path.dirname(os.path.dirname(__file__)), "data", "templates"
-            )
-            os.makedirs(self.storage_path, exist_ok=True)
-        else:
-            self.storage_path = storage_path
+        # storage_path parameter kept for backwards compatibility but no longer used
+        # All template content is now stored in PostgreSQL database
+        pass
 
     def create_template(self, template_data: Dict[str, Any]) -> Optional[int]:
         """Create a new template"""
@@ -85,14 +80,8 @@ class TemplateManager:
             )
             template_id = template.id
 
-            # Save content to file if it's a file or webeditor template
-            if template_data["source"] in ["file", "webeditor"] and content:
-                self._save_template_to_file(
-                    template_id,
-                    template_data["name"],
-                    content,
-                    template_data.get("filename"),
-                )
+            # Content is already saved to database in repo.create() above
+            # No file system operations needed
 
             # Create initial version
             if content:
@@ -250,14 +239,8 @@ class TemplateManager:
                 f"DEBUG: update_template({template_id}) - SQL UPDATE executed with scope={new_scope}"
             )
 
-            # Save content to file if needed
-            if current["source"] in ["file", "webeditor"] and content:
-                self._save_template_to_file(
-                    template_id,
-                    template_data.get("name", current["name"]),
-                    content,
-                    template_data.get("filename", current.get("filename")),
-                )
+            # Content is already saved to database in repo.update() above
+            # No file system operations needed
 
             # Create new version if content changed
             if content_changed and content:
@@ -282,13 +265,9 @@ class TemplateManager:
             repo = TemplateRepository()
 
             if hard_delete:
-                # Hard delete - remove from database and file system
-                template_dict = self.get_template(template_id)
-                if template_dict:
-                    repo.delete(template_id)
-                    # Remove file if it exists
-                    if template_dict["source"] in ["file", "webeditor"]:
-                        self._remove_template_file(template_id, template_dict["name"])
+                # Hard delete - remove from database only
+                # All content is now stored in database
+                repo.delete(template_id)
             else:
                 # Soft delete - mark as inactive using update
                 repo.update(template_id, is_active=False)
@@ -303,25 +282,15 @@ class TemplateManager:
             return False
 
     def get_template_content(self, template_id: int) -> Optional[str]:
-        """Get template content, loading from file if necessary"""
+        """Get template content from database"""
         try:
             template = self.get_template(template_id)
             if not template:
                 return None
 
-            # For Git templates, content might need to be fetched
-            if template["source"] == "git":
-                # TODO: Implement Git content fetching
-                return template.get("content")
-
-            # For file/webeditor templates, try database first, then file
-            content = template.get("content")
-            if not content and template["source"] in ["file", "webeditor"]:
-                content = self._load_template_from_file(
-                    template_id, template["name"], template.get("filename")
-                )
-
-            return content
+            # All content is now stored in database
+            # For Git templates, content should be synced to database
+            return template.get("content")
 
         except Exception as e:
             logger.error(f"Error getting template content for {template_id}: {e}")
@@ -447,71 +416,12 @@ class TemplateManager:
             "change_notes": version.change_notes,
         }
 
-    def _save_template_to_file(
-        self, template_id: int, name: str, content: str, filename: str = None
-    ) -> None:
-        """Save template content to file system, preserving extension if possible"""
-        try:
-            # Use original extension if provided, else default to .txt
-            ext = ".txt"
-            if filename:
-                ext = os.path.splitext(filename)[1] or ".txt"
-            else:
-                # Try to extract extension from name
-                if "." in name:
-                    ext = os.path.splitext(name)[1] or ".txt"
-            safe_name = name.replace(" ", "_").replace("/", "_")
-            file_out = f"{template_id}_{safe_name}{ext}"
-            filepath = os.path.join(self.storage_path, file_out)
-            with open(filepath, "w", encoding="utf-8") as f:
-                f.write(content)
-            logger.debug(f"Template content saved to {filepath}")
-        except Exception as e:
-            logger.error(f"Error saving template to file: {e}")
+    # File system operations removed - all content now stored in database
+    # These methods kept for reference only, no longer used
 
-    def _load_template_from_file(
-        self, template_id: int, name: str, filename: str = None
-    ) -> Optional[str]:
-        """Load template content from file system, trying multiple extensions"""
-        try:
-            safe_name = name.replace(" ", "_").replace("/", "_")
-            exts = [".txt", ".j2", ".textfsm"]
-            if filename:
-                exts.insert(0, os.path.splitext(filename)[1])
-            else:
-                if "." in name:
-                    exts.insert(0, os.path.splitext(name)[1])
-            for ext in exts:
-                file_in = f"{template_id}_{safe_name}{ext}"
-                filepath = os.path.join(self.storage_path, file_in)
-                if os.path.exists(filepath):
-                    with open(filepath, "r", encoding="utf-8") as f:
-                        return f.read()
-            return None
-        except Exception as e:
-            logger.error(f"Error loading template from file: {e}")
-            return None
-
-    def _remove_template_file(
-        self, template_id: int, name: str, filename: str = None
-    ) -> None:
-        """Remove template file from file system, trying multiple extensions"""
-        try:
-            safe_name = name.replace(" ", "_").replace("/", "_")
-            exts = [".txt", ".j2", ".textfsm"]
-            if filename:
-                exts.insert(0, os.path.splitext(filename)[1])
-            else:
-                if "." in name:
-                    exts.insert(0, os.path.splitext(name)[1])
-            for ext in exts:
-                file_rm = f"{template_id}_{safe_name}{ext}"
-                filepath = os.path.join(self.storage_path, file_rm)
-                if os.path.exists(filepath):
-                    os.remove(filepath)
-                    logger.debug(f"Template file removed: {filepath}")
-        except Exception as e:
-            logger.error(f"Error removing template file: {e}")
+    # def _save_template_to_file(...)
+    # def _load_template_from_file(...)
+    # def _remove_template_file(...)
 
     def _create_template_version_obj(
         self,
@@ -577,7 +487,7 @@ class TemplateManager:
 
             return {
                 "status": "healthy",
-                "storage_path": self.storage_path,
+                "storage_type": "database",
                 "active_templates": active_count,
                 "total_templates": total_count,
                 "categories": categories_count,

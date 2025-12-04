@@ -931,8 +931,8 @@ export function JobsSchedulerPage() {
                 <p className="text-xs text-gray-500">First run at {formStartTime} UTC</p>
               )}
 
-              {/* Credential selector for backup jobs */}
-              {selectedTemplate && selectedTemplate.job_type === "backup" && (
+              {/* Credential selector for backup and run_commands jobs */}
+              {selectedTemplate && (selectedTemplate.job_type === "backup" || selectedTemplate.job_type === "run_commands") && (
                 <div className="pt-3 border-t border-gray-200">
                   <div className="space-y-1.5">
                     <Label htmlFor="credential" className="text-sm font-medium text-gray-700">

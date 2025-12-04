@@ -78,7 +78,9 @@ class DeviceQueryService:
         # Route to appropriate query method based on filter type
         if filter_type and filter_value:
             if filter_type == "name":
-                return await self._query_by_name(filter_value, limit, offset, cache_key)
+                return await self._query_by_name(filter_value, limit, offset, cache_key, use_contains=False)
+            elif filter_type == "name__ic":
+                return await self._query_by_name(filter_value, limit, offset, cache_key, use_contains=True)
             elif filter_type == "location":
                 return await self._query_by_location(
                     filter_value, limit, offset, cache_key
@@ -101,15 +103,29 @@ class DeviceQueryService:
         limit: Optional[int],
         offset: Optional[int],
         cache_key: str,
+        use_contains: bool = False,
     ) -> dict:
-        """Query devices filtered by name."""
+        """Query devices filtered by name.
+
+        Args:
+            name_filter: The name filter value
+            limit: Number of devices per page
+            offset: Number of devices to skip
+            cache_key: Cache key for storing results
+            use_contains: If True, use name__ic (case-insensitive contains),
+                         otherwise use name__ire (case-insensitive regex exact match)
+        """
+        # Determine which GraphQL filter to use
+        filter_field = "name__ic" if use_contains else "name__ire"
+        filter_type_label = "name__ic" if use_contains else "name"
+
         # Get total count first
-        count_query = """
-        query devices_count_by_name($name_filter: [String]) {
-          devices(name__ire: $name_filter) {
+        count_query = f"""
+        query devices_count_by_name($name_filter: [String]) {{
+          devices({filter_field}: $name_filter) {{
             id
-          }
-        }
+          }}
+        }}
         """
         count_result = await nautobot_service.graphql_query(
             count_query, {"name_filter": [name_filter]}
@@ -125,7 +141,7 @@ class DeviceQueryService:
           $limit: Int,
           $offset: Int
         ) {{
-          devices(name__ire: $name_filter, limit: $limit, offset: $offset) {{
+          devices({filter_field}: $name_filter, limit: $limit, offset: $offset) {{
             {DEVICE_FIELDS}
           }}
         }}
@@ -147,7 +163,7 @@ class DeviceQueryService:
             limit,
             offset,
             cache_key,
-            filter_type="name",
+            filter_type=filter_type_label,
             filter_value=name_filter,
         )
 

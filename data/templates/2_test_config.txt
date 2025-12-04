@@ -1,3 +1,0 @@
-hostname {{ device_name }}
-ip address {{ ip_addr }}
-!
