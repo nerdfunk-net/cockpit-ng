@@ -119,35 +119,17 @@ async def get_nautobot_stats(
 
     **🔶 This endpoint uses REST API** to fetch aggregated statistics.
     """
-    from datetime import datetime, timezone, timedelta
-    import json
-    import os
+    from datetime import datetime, timezone
 
-    # Cache configuration
-    cache_duration = timedelta(minutes=10)
-    cache_dir = "data/cache"
-    cache_file = os.path.join(cache_dir, "nautobot_stats.json")
+    # Cache configuration - 10 minutes
+    cache_key = "nautobot:stats"
+    cache_ttl = 600  # 10 minutes in seconds
 
-    # Ensure cache directory exists
-    os.makedirs(cache_dir, exist_ok=True)
-
-    # Check if cache exists and is still valid
-    if os.path.exists(cache_file):
-        try:
-            with open(cache_file, "r") as f:
-                cache_data = json.load(f)
-
-            cache_timestamp = datetime.fromisoformat(
-                cache_data.get("cache_timestamp", "")
-            )
-            if datetime.now(timezone.utc) - cache_timestamp < cache_duration:
-                logger.info("Returning cached Nautobot stats")
-                # Remove cache metadata before returning
-                stats = cache_data.copy()
-                del stats["cache_timestamp"]
-                return stats
-        except (json.JSONDecodeError, ValueError, KeyError) as e:
-            logger.warning(f"Invalid cache file, will refresh: {e}")
+    # Check Redis cache first
+    cached_stats = cache_service.get(cache_key)
+    if cached_stats is not None:
+        logger.info("Returning cached Nautobot stats from Redis")
+        return cached_stats
 
     logger.info("Cache expired or missing, fetching fresh Nautobot stats")
 
@@ -188,16 +170,9 @@ async def get_nautobot_stats(
             "total_device_types": device_types_result.get("count", 0),
         }
 
-        # Save to cache with timestamp
-        cache_data = stats.copy()
-        cache_data["cache_timestamp"] = datetime.now(timezone.utc).isoformat()
-
-        try:
-            with open(cache_file, "w") as f:
-                json.dump(cache_data, f)
-            logger.info("Nautobot stats cached successfully")
-        except Exception as cache_error:
-            logger.warning(f"Failed to cache stats: {cache_error}")
+        # Save to Redis cache
+        cache_service.set(cache_key, stats, cache_ttl)
+        logger.info("Nautobot stats cached successfully in Redis")
 
         return stats
     except Exception as e:

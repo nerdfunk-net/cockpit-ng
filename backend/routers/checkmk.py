@@ -4,9 +4,7 @@ CheckMK router for settings and API interactions.
 
 from __future__ import annotations
 import logging
-import json
-import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
@@ -129,31 +127,17 @@ async def get_checkmk_stats(
     current_user: dict = Depends(require_permission("checkmk.devices", "read")),
 ):
     """Get CheckMK statistics with 10-minute caching."""
-    # Cache configuration
-    cache_duration = timedelta(minutes=10)
-    cache_dir = "data/cache"
-    cache_file = os.path.join(cache_dir, "checkmk_stats.json")
+    from services.cache_service import cache_service
 
-    # Ensure cache directory exists
-    os.makedirs(cache_dir, exist_ok=True)
+    # Cache configuration - 10 minutes
+    cache_key = "checkmk:stats"
+    cache_ttl = 600  # 10 minutes in seconds
 
-    # Check if cache exists and is still valid
-    if os.path.exists(cache_file):
-        try:
-            with open(cache_file, "r") as f:
-                cache_data = json.load(f)
-
-            cache_timestamp = datetime.fromisoformat(
-                cache_data.get("cache_timestamp", "")
-            )
-            if datetime.now(timezone.utc) - cache_timestamp < cache_duration:
-                logger.info("Returning cached CheckMK stats")
-                # Remove cache metadata before returning
-                stats = cache_data.copy()
-                del stats["cache_timestamp"]
-                return stats
-        except (json.JSONDecodeError, ValueError, KeyError) as e:
-            logger.warning(f"Invalid CheckMK cache file, will refresh: {e}")
+    # Check Redis cache first
+    cached_stats = cache_service.get(cache_key)
+    if cached_stats is not None:
+        logger.info("Returning cached CheckMK stats from Redis")
+        return cached_stats
 
     logger.info("CheckMK cache expired or missing, fetching fresh stats")
 
@@ -209,16 +193,9 @@ async def get_checkmk_stats(
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
-        # Save to cache with timestamp
-        cache_data = stats.copy()
-        cache_data["cache_timestamp"] = datetime.now(timezone.utc).isoformat()
-
-        try:
-            with open(cache_file, "w") as f:
-                json.dump(cache_data, f)
-            logger.info("CheckMK stats cached successfully")
-        except Exception as cache_error:
-            logger.warning(f"Failed to cache CheckMK stats: {cache_error}")
+        # Save to Redis cache
+        cache_service.set(cache_key, stats, cache_ttl)
+        logger.info("CheckMK stats cached successfully in Redis")
 
         return stats
 
