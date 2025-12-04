@@ -62,8 +62,11 @@ interface GitRepository {
 }
 
 interface SavedInventory {
+  id: number
   name: string
   description?: string
+  scope: string
+  created_by: string
 }
 
 interface CommandTemplate {
@@ -98,7 +101,8 @@ export function JobTemplatesPage() {
   const [templates, setTemplates] = useState<JobTemplate[]>(EMPTY_TEMPLATES)
   const [jobTypes, setJobTypes] = useState<JobType[]>(EMPTY_TYPES)
   const [configRepos, setConfigRepos] = useState<GitRepository[]>(EMPTY_REPOS)
-  const [inventoryRepos, setInventoryRepos] = useState<GitRepository[]>(EMPTY_REPOS)
+  // Inventory repos no longer used - using database storage
+  // const [inventoryRepos, setInventoryRepos] = useState<GitRepository[]>(EMPTY_REPOS)
   const [savedInventories, setSavedInventories] = useState<SavedInventory[]>(EMPTY_INVENTORIES)
   const [commandTemplates, setCommandTemplates] = useState<CommandTemplate[]>(EMPTY_CMD_TEMPLATES)
   const [customFields, setCustomFields] = useState<CustomField[]>(EMPTY_CUSTOM_FIELDS)
@@ -114,7 +118,8 @@ export function JobTemplatesPage() {
   const [formDescription, setFormDescription] = useState("")
   const [formConfigRepoId, setFormConfigRepoId] = useState<number | null>(null)
   const [formInventorySource, setFormInventorySource] = useState<"all" | "inventory">("all")
-  const [formInventoryRepoId, setFormInventoryRepoId] = useState<number | null>(null)
+  // Inventory repo ID no longer used - using database storage
+  // const [formInventoryRepoId, setFormInventoryRepoId] = useState<number | null>(null)
   const [formInventoryName, setFormInventoryName] = useState("")
   const [formCommandTemplate, setFormCommandTemplate] = useState("")
   const [formBackupRunningConfigPath, setFormBackupRunningConfigPath] = useState("")
@@ -213,34 +218,16 @@ export function JobTemplatesPage() {
     }
   }, [token])
 
-  // Fetch inventory repositories
-  const fetchInventoryRepos = useCallback(async () => {
-    if (!token) return
+  // Inventory repositories no longer used - using database storage
+  // const fetchInventoryRepos = useCallback(async () => { ... }, [token])
 
-    try {
-      const response = await fetch("/api/proxy/api/git-repositories?category=inventory", {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setInventoryRepos(data.repositories || [])
-      }
-    } catch (error) {
-      console.error("Error fetching inventory repositories:", error)
-    }
-  }, [token])
-
-  // Fetch saved inventories for a repository
-  const fetchSavedInventories = useCallback(async (repoId: number) => {
+  // Fetch saved inventories from database (no longer repository-based)
+  const fetchSavedInventories = useCallback(async () => {
     if (!token) return
 
     setLoadingInventories(true)
     try {
-      const response = await fetch(`/api/proxy/ansible-inventory/list-inventories?repository_id=${repoId}`, {
+      const response = await fetch('/api/proxy/inventory', {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -313,17 +300,18 @@ export function JobTemplatesPage() {
     fetchTemplates()
     fetchJobTypes()
     fetchConfigRepos()
-    fetchInventoryRepos()
+    // fetchInventoryRepos() // No longer needed - using database
+    fetchSavedInventories() // Pre-load inventories for job templates
     fetchCommandTemplates()
     fetchCustomFields()
-  }, [fetchTemplates, fetchJobTypes, fetchConfigRepos, fetchInventoryRepos, fetchCommandTemplates, fetchCustomFields])
+  }, [fetchTemplates, fetchJobTypes, fetchConfigRepos, fetchSavedInventories, fetchCommandTemplates, fetchCustomFields])
 
-  // When inventory repo changes, fetch inventories
+  // When inventory source changes to "inventory", fetch inventories from database
   useEffect(() => {
-    if (formInventoryRepoId && formInventorySource === "inventory") {
-      fetchSavedInventories(formInventoryRepoId)
+    if (formInventorySource === "inventory") {
+      fetchSavedInventories()
     }
-  }, [formInventoryRepoId, formInventorySource, fetchSavedInventories])
+  }, [formInventorySource, fetchSavedInventories])
 
   const resetForm = useCallback(() => {
     setFormName("")
@@ -331,7 +319,7 @@ export function JobTemplatesPage() {
     setFormDescription("")
     setFormConfigRepoId(null)
     setFormInventorySource("all")
-    setFormInventoryRepoId(null)
+    // setFormInventoryRepoId(null) // No longer used
     setFormInventoryName("")
     setFormCommandTemplate("")
     setFormBackupRunningConfigPath("")
@@ -351,7 +339,7 @@ export function JobTemplatesPage() {
     setFormDescription(template.description || "")
     setFormConfigRepoId(template.config_repository_id || null)
     setFormInventorySource(template.inventory_source)
-    setFormInventoryRepoId(template.inventory_repository_id || null)
+    // setFormInventoryRepoId(template.inventory_repository_id || null) // No longer used
     setFormInventoryName(template.inventory_name || "")
     setFormCommandTemplate(template.command_template_name || "")
     setFormBackupRunningConfigPath(template.backup_running_config_path || "")
@@ -374,10 +362,10 @@ export function JobTemplatesPage() {
     }
 
     // Validate inventory selection
-    if (formInventorySource === "inventory" && (!formInventoryRepoId || !formInventoryName)) {
+    if (formInventorySource === "inventory" && !formInventoryName) {
       toast({
         title: "Validation Error",
-        description: "Please select a repository and inventory when using 'Use Inventory'.",
+        description: "Please select a saved inventory when using 'Use Saved Inventory'.",
         variant: "destructive"
       })
       return
@@ -428,7 +416,7 @@ export function JobTemplatesPage() {
         description: formDescription || undefined,
         config_repository_id: formConfigRepoId || undefined,
         inventory_source: formInventorySource,
-        inventory_repository_id: formInventorySource === "inventory" ? formInventoryRepoId : undefined,
+        // inventory_repository_id no longer used - database storage
         inventory_name: formInventorySource === "inventory" ? formInventoryName : undefined,
         command_template_name: formJobType === "run_commands" ? formCommandTemplate : undefined,
         backup_running_config_path: formJobType === "backup" ? formBackupRunningConfigPath : undefined,
@@ -502,7 +490,7 @@ export function JobTemplatesPage() {
         variant: "destructive"
       })
     }
-  }, [token, formName, formJobType, formDescription, formConfigRepoId, formInventorySource, formInventoryRepoId, formInventoryName, formCommandTemplate, formBackupRunningConfigPath, formBackupStartupConfigPath, formWriteTimestampToCustomField, formTimestampCustomFieldName, formActivateChangesAfterSync, formIsGlobal, editingTemplate, resetForm, fetchTemplates, toast])
+  }, [token, formName, formJobType, formDescription, formConfigRepoId, formInventorySource, formInventoryName, formCommandTemplate, formBackupRunningConfigPath, formBackupStartupConfigPath, formWriteTimestampToCustomField, formTimestampCustomFieldName, formActivateChangesAfterSync, formIsGlobal, editingTemplate, resetForm, fetchTemplates, toast])
 
   const handleDeleteTemplate = useCallback(async (templateId: number) => {
     if (!token) return
@@ -612,14 +600,10 @@ export function JobTemplatesPage() {
               <JobTemplateInventorySection
                 formInventorySource={formInventorySource}
                 setFormInventorySource={setFormInventorySource}
-                formInventoryRepoId={formInventoryRepoId}
-                setFormInventoryRepoId={setFormInventoryRepoId}
                 formInventoryName={formInventoryName}
                 setFormInventoryName={setFormInventoryName}
-                inventoryRepos={inventoryRepos}
                 savedInventories={savedInventories}
                 loadingInventories={loadingInventories}
-                onInventoryRepoChange={fetchSavedInventories}
               />
 
               {/* Job Type Specific Sections */}

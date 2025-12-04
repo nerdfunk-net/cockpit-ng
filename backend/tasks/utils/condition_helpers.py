@@ -31,12 +31,21 @@ def convert_conditions_to_operations(conditions: list) -> list:
     current_conditions = []
 
     for cond in conditions:
-        # Get the logic type (AND, OR, NOT)
-        logic = getattr(cond, "logic", "AND").upper()
+        # Handle both dict (from database JSON) and object (from models)
+        if isinstance(cond, dict):
+            logic = cond.get("logic", "AND").upper()
+            field = cond.get("field")
+            operator = cond.get("operator")
+            value = cond.get("value")
+        else:
+            logic = getattr(cond, "logic", "AND").upper()
+            field = cond.field
+            operator = cond.operator
+            value = cond.value
 
         # Create LogicalCondition
         lc = LogicalCondition(
-            field=cond.field, operator=cond.operator, value=cond.value
+            field=field, operator=operator, value=value
         )
 
         if logic == "NOT":

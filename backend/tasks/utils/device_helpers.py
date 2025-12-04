@@ -31,40 +31,39 @@ def get_target_devices(
         # Return None to indicate all devices
         return None
     elif inventory_source == "inventory":
-        # Get devices from stored inventory
+        # Get devices from stored inventory (database)
         inventory_name = template.get("inventory_name")
-        inventory_repo_id = template.get("inventory_repository_id")
 
-        if not inventory_name or not inventory_repo_id:
+        if not inventory_name:
             logger.warning(
-                "Inventory source selected but no inventory name or repository ID provided"
+                "Inventory source selected but no inventory name provided"
             )
             return None
 
         try:
+            from inventory_manager import inventory_manager
             from services.ansible_inventory import ansible_inventory_service
+
+            # Load inventory from database by name
+            # Note: We need to get the username from the template context
+            username = template.get("created_by", "admin")  # Fallback to admin if not specified
+
+            inventory = inventory_manager.get_inventory_by_name(inventory_name, username)
+
+            if not inventory:
+                logger.warning(
+                    f"Inventory '{inventory_name}' not found in database for user '{username}'"
+                )
+                return None
 
             # Create new event loop for async operations
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
             try:
-                # Load the saved inventory from git repository
-                saved_inventory = loop.run_until_complete(
-                    ansible_inventory_service.load_inventory(
-                        inventory_name, inventory_repo_id
-                    )
-                )
-
-                if not saved_inventory:
-                    logger.warning(
-                        f"Inventory '{inventory_name}' not found in repository {inventory_repo_id}"
-                    )
-                    return None
-
                 # Convert SavedInventoryConditions to LogicalOperations
                 operations = convert_conditions_to_operations(
-                    saved_inventory.conditions
+                    inventory["conditions"]
                 )
 
                 if not operations:

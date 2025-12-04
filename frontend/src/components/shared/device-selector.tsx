@@ -133,12 +133,16 @@ export function DeviceSelector({
   // Save/Load Inventory modals
   const [showSaveModal, setShowSaveModal] = useState(false)
   const [showLoadModal, setShowLoadModal] = useState(false)
-  const [inventoryRepositories, setInventoryRepositories] = useState<Array<{id: number, name: string, url: string, branch: string}>>([])
-  const [selectedInventoryRepo, setSelectedInventoryRepo] = useState<number | null>(null)
+  // Inventory repositories no longer used - using database storage
+  // const [inventoryRepositories, setInventoryRepositories] = useState<Array<{id: number, name: string, url: string, branch: string}>>([])
+  // const [selectedInventoryRepo, setSelectedInventoryRepo] = useState<number | null>(null)
   const [savedInventories, setSavedInventories] = useState<Array<{
+    id: number
     name: string
     description?: string
     conditions: LogicalCondition[]
+    scope: string
+    created_by: string
     created_at?: string
     updated_at?: string
   }>>([])
@@ -228,42 +232,25 @@ export function DeviceSelector({
     loadFieldOptions()
   }, [loadFieldOptions])
 
-  const loadInventoryRepositories = async () => {
-    try {
-      const response = await apiCall<{
-        repositories: Array<{id: number, name: string, url: string, branch: string, category: string}>
-        total: number
-      }>('git-repositories?category=inventory')
+  // Inventory repositories no longer needed - using database storage
+  // const loadInventoryRepositories = async () => { ... }
 
-      setInventoryRepositories(response.repositories)
-      if (response.repositories.length > 0) {
-        const firstRepoId = response.repositories[0]?.id
-        if (firstRepoId) {
-          setSelectedInventoryRepo(firstRepoId)
-          return firstRepoId
-        }
-      }
-      return null
-    } catch (error) {
-      console.error('Error loading inventory repositories:', error)
-      setInventoryRepositories([])
-      return null
-    }
-  }
-
-  const loadSavedInventories = async (repositoryId: number) => {
+  const loadSavedInventories = async () => {
     setIsLoadingInventories(true)
     try {
       const response = await apiCall<{
         inventories: Array<{
+          id: number
           name: string
           description?: string
           conditions: LogicalCondition[]
+          scope: string
+          created_by: string
           created_at?: string
           updated_at?: string
         }>
         total: number
-      }>(`ansible-inventory/list-inventories?repository_id=${repositoryId}`)
+      }>('inventory')
 
       setSavedInventories(response.inventories)
     } catch (error) {
@@ -277,11 +264,6 @@ export function DeviceSelector({
   const handleSaveInventory = async () => {
     if (!saveInventoryName.trim()) {
       alert('Please enter an inventory name.')
-      return
-    }
-
-    if (!selectedInventoryRepo) {
-      alert('Please select a repository.')
       return
     }
 
@@ -299,15 +281,27 @@ export function DeviceSelector({
 
     setIsSavingInventory(true)
     try {
-      await apiCall('ansible-inventory/save-inventory', {
-        method: 'POST',
-        body: {
-          name: saveInventoryName,
-          description: saveInventoryDescription || undefined,
-          conditions: conditions,
-          repository_id: selectedInventoryRepo
-        }
-      })
+      if (existingInventory) {
+        // Update existing inventory
+        await apiCall(`inventory/${existingInventory.id}`, {
+          method: 'PUT',
+          body: {
+            description: saveInventoryDescription || undefined,
+            conditions: conditions,
+          }
+        })
+      } else {
+        // Create new inventory
+        await apiCall('inventory', {
+          method: 'POST',
+          body: {
+            name: saveInventoryName,
+            description: saveInventoryDescription || undefined,
+            conditions: conditions,
+            scope: 'global'
+          }
+        })
+      }
 
       alert(`Inventory "${saveInventoryName}" saved successfully!`)
       setSaveInventoryName('')
@@ -316,7 +310,7 @@ export function DeviceSelector({
       setShowOverwriteConfirm(false)
       setInventoryToOverwrite(null)
 
-      await loadSavedInventories(selectedInventoryRepo)
+      await loadSavedInventories()
     } catch (error) {
       console.error('Error saving inventory:', error)
       alert('Error saving inventory: ' + (error as Error).message)
@@ -326,19 +320,17 @@ export function DeviceSelector({
   }
 
   const handleLoadInventory = async (inventoryName: string) => {
-    if (!selectedInventoryRepo) {
-      alert('Please select a repository.')
-      return
-    }
-
     try {
       const response = await apiCall<{
+        id: number
         name: string
         description?: string
         conditions: LogicalCondition[]
+        scope: string
+        created_by: string
         created_at?: string
         updated_at?: string
-      }>(`ansible-inventory/load-inventory/${encodeURIComponent(inventoryName)}?repository_id=${selectedInventoryRepo}`)
+      }>(`inventory/by-name/${encodeURIComponent(inventoryName)}`)
 
       setConditions(response.conditions)
       setShowPreviewResults(false)
@@ -358,24 +350,14 @@ export function DeviceSelector({
     }
 
     setShowSaveModal(true)
-    let repoId = selectedInventoryRepo
-    if (inventoryRepositories.length === 0) {
-      repoId = await loadInventoryRepositories()
-    }
-    if (repoId) {
-      await loadSavedInventories(repoId)
-    }
+    // Load saved inventories from database
+    await loadSavedInventories()
   }
 
   const openLoadModal = async () => {
     setShowLoadModal(true)
-    let repoId = selectedInventoryRepo
-    if (inventoryRepositories.length === 0) {
-      repoId = await loadInventoryRepositories()
-    }
-    if (repoId) {
-      await loadSavedInventories(repoId)
-    }
+    // Load saved inventories from database
+    await loadSavedInventories()
   }
 
   const loadCustomFields = async () => {
@@ -1077,28 +1059,7 @@ export function DeviceSelector({
                   <DialogTitle>Save Device Filter</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="save-repository">Repository</Label>
-                    <Select
-                      value={selectedInventoryRepo?.toString() || ''}
-                      onValueChange={(value) => {
-                        const repoId = parseInt(value)
-                        setSelectedInventoryRepo(repoId)
-                        loadSavedInventories(repoId)
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a repository..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {inventoryRepositories.map(repo => (
-                          <SelectItem key={repo.id} value={repo.id.toString()}>
-                            {repo.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Repository selection removed - using database storage */}
 
                   <div className="space-y-2">
                     <Label htmlFor="inventory-name">Name *</Label>
@@ -1168,7 +1129,7 @@ export function DeviceSelector({
                     </Button>
                     <Button
                       onClick={handleSaveInventory}
-                      disabled={isSavingInventory || !saveInventoryName.trim() || !selectedInventoryRepo}
+                      disabled={isSavingInventory || !saveInventoryName.trim()}
                       className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       {isSavingInventory ? 'Saving...' : (showOverwriteConfirm ? 'Yes, Overwrite' : 'Save')}
@@ -1187,28 +1148,7 @@ export function DeviceSelector({
                   <DialogTitle>Load Device Filter</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="load-repository">Repository</Label>
-                    <Select
-                      value={selectedInventoryRepo?.toString() || ''}
-                      onValueChange={(value) => {
-                        const repoId = parseInt(value)
-                        setSelectedInventoryRepo(repoId)
-                        loadSavedInventories(repoId)
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a repository..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {inventoryRepositories.map(repo => (
-                          <SelectItem key={repo.id} value={repo.id.toString()}>
-                            {repo.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Repository selection removed - using database storage */}
 
                   {isLoadingInventories && (
                     <div className="flex items-center justify-center py-8">

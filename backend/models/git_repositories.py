@@ -14,7 +14,6 @@ class GitCategory(str, Enum):
     CONFIGS = "configs"
     TEMPLATES = "templates"
     ONBOARDING = "onboarding"
-    INVENTORY = "inventory"
 
 
 class GitRepositoryRequest(BaseModel):

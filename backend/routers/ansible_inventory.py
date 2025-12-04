@@ -233,14 +233,12 @@ async def get_git_repositories(
     current_user: dict = Depends(require_permission("network.inventory", "read")),
 ) -> dict:
     """
-    Get Git repositories configured with category='inventory'.
+    Get active Git repositories for inventory operations.
     """
     try:
         from services.git_shared_utils import git_repo_manager
 
-        repositories = git_repo_manager.get_repositories(
-            category="inventory", active_only=True
-        )
+        repositories = git_repo_manager.get_repositories(active_only=True)
 
         # Convert to simple list format for dropdown
         repo_list = [

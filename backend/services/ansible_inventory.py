@@ -1053,11 +1053,6 @@ class AnsibleInventoryService:
             if not repository:
                 raise ValueError(f"Repository with ID {repository_id} not found")
 
-            if repository["category"] != "inventory":
-                raise ValueError(
-                    f"Repository must be of category 'inventory', got '{repository['category']}'"
-                )
-
             # Check if repository has credentials configured for HTTPS URLs
             if repository.get("url", "").startswith("https://"):
                 username, token = resolve_git_credentials(repository)
@@ -1183,11 +1178,6 @@ class AnsibleInventoryService:
             if not repository:
                 raise ValueError(f"Repository with ID {repository_id} not found")
 
-            if repository["category"] != "inventory":
-                raise ValueError(
-                    f"Repository must be of category 'inventory', got '{repository['category']}'"
-                )
-
             # Check if repository has credentials configured for HTTPS URLs
             if repository.get("url", "").startswith("https://"):
                 from services.git_utils import resolve_git_credentials
@@ -1270,11 +1260,6 @@ class AnsibleInventoryService:
 
             if not repository:
                 raise ValueError(f"Repository with ID {repository_id} not found")
-
-            if repository["category"] != "inventory":
-                raise ValueError(
-                    f"Repository must be of category 'inventory', got '{repository['category']}'"
-                )
 
             # Check if repository has credentials configured for HTTPS URLs
             if repository.get("url", "").startswith("https://"):
