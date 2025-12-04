@@ -597,9 +597,15 @@ function TestTemplateTab({ templates, showMessage }: TestTemplateTabProps) {
   // Load devices when search term changes (min 3 chars)
   useEffect(() => {
     const loadDevices = async () => {
+      // Don't load if search is too short
       if (deviceSearchTerm.length < 3) {
         setDevices([])
         setShowDeviceDropdown(false)
+        return
+      }
+
+      // Don't load if a device is already selected (prevents reopening after selection)
+      if (selectedDevices.length > 0) {
         return
       }
 
@@ -620,7 +626,7 @@ function TestTemplateTab({ templates, showMessage }: TestTemplateTabProps) {
 
     const debounceTimer = setTimeout(loadDevices, 300)
     return () => clearTimeout(debounceTimer)
-  }, [deviceSearchTerm, apiCall])
+  }, [deviceSearchTerm, apiCall, selectedDevices.length])
 
   const handleDeviceSelect = (device: DeviceSearchResult) => {
     setSelectedDevices([device])
