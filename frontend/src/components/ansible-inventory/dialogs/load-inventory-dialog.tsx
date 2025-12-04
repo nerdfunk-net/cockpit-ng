@@ -2,7 +2,7 @@
  * Dialog for loading saved inventory configurations from database
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -43,21 +43,17 @@ export function LoadInventoryDialog({
   isLoading,
 }: LoadInventoryDialogProps) {
   const [searchTerm, setSearchTerm] = useState('')
-  const [filteredInventories, setFilteredInventories] = useState<SavedInventory[]>(inventories)
-
-  useEffect(() => {
+  
+  const filteredInventories = useMemo(() => {
     if (searchTerm.trim() === '') {
-      setFilteredInventories(inventories)
-    } else {
-      const term = searchTerm.toLowerCase()
-      setFilteredInventories(
-        inventories.filter(
-          (inv) =>
-            inv.name.toLowerCase().includes(term) ||
-            (inv.description?.toLowerCase().includes(term) ?? false)
-        )
-      )
+      return inventories
     }
+    const term = searchTerm.toLowerCase()
+    return inventories.filter(
+      (inv) =>
+        inv.name.toLowerCase().includes(term) ||
+        (inv.description?.toLowerCase().includes(term) ?? false)
+    )
   }, [searchTerm, inventories])
 
   const handleLoad = (inventory: SavedInventory) => {
@@ -127,7 +123,7 @@ export function LoadInventoryDialog({
                 {searchTerm ? (
                   <>
                     <Search className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                    <p>No inventories found matching "{searchTerm}"</p>
+                    <p>No inventories found matching &ldquo;{searchTerm}&rdquo;</p>
                   </>
                 ) : (
                   <>
