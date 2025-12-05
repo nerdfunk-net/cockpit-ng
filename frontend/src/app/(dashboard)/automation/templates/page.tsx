@@ -14,11 +14,9 @@ import { useApi } from '@/hooks/use-api'
 import { useAuthStore } from '@/lib/auth-store'
 import { FileCode, Plus, Edit, Trash2, Eye, Search, RefreshCw, User, Calendar, Globe, Lock } from 'lucide-react'
 
-// Import Netmiko components and hooks for template testing
+// Import Netmiko components and hooks for template editing
 import { useVariableManager } from '@/components/netmiko/hooks/use-variable-manager'
-import { useTemplateManager } from '@/components/netmiko/hooks/use-template-manager'
 import { VariableManagerPanel } from '@/components/netmiko/components/variable-manager-panel'
-import { TemplateSelectionPanel } from '@/components/netmiko/components/template-selection-panel'
 import { TemplateRenderResultDialog, type TemplateRenderResult } from '@/components/netmiko/dialogs/template-render-result-dialog'
 import { NautobotDataDialog } from '@/components/netmiko/dialogs/nautobot-data-dialog'
 
@@ -35,6 +33,14 @@ interface Template {
   template_type: string
   source: string
   updated_at: string
+}
+
+// DeviceSearchResult interface for device selection in Create Template tab
+interface DeviceSearchResult {
+  id: string
+  name: string
+  primary_ip4?: { address: string } | string
+  location?: { name: string }
 }
 
 function UserTemplatesContent() {
@@ -452,10 +458,6 @@ function UserTemplatesContent() {
             <Plus className="h-4 w-4 mr-2" />
             {editingTemplate ? 'Edit Template' : 'Create Template'}
           </TabsTrigger>
-          <TabsTrigger value="test">
-            <Eye className="h-4 w-4 mr-2" />
-            Test Template
-          </TabsTrigger>
         </TabsList>
 
         {/* List Tab */}
@@ -766,11 +768,6 @@ function UserTemplatesContent() {
             </div>
           </div>
         </TabsContent>
-
-        {/* Test Template Tab */}
-        <TabsContent value="test" className="space-y-4">
-          <TestTemplateTab templates={templates} showMessage={showMessage} />
-        </TabsContent>
       </Tabs>
 
       {/* View Template Dialog */}
@@ -891,344 +888,6 @@ function UserTemplatesContent() {
         open={showRenderResultDialog}
         onOpenChange={(open) => setShowRenderResultDialog(open)}
         result={renderResult}
-      />
-    </div>
-  )
-}
-
-// Test Template Tab Component - Uses Netmiko reusable components
-interface TestTemplateTabProps {
-  templates: Template[]
-  showMessage: (msg: string) => void
-}
-
-interface DeviceSearchResult {
-  id: string
-  name: string
-  primary_ip4?: { address: string } | string
-  location?: { name: string }
-}
-
-function TestTemplateTab({ templates, showMessage }: TestTemplateTabProps) {
-  const { apiCall } = useApi()
-
-  // Use Netmiko hooks for variable and template management
-  const variableManager = useVariableManager()
-  const templateManager = useTemplateManager()
-
-  // Dialog state
-  const [showRenderResultDialog, setShowRenderResultDialog] = useState(false)
-  const [renderResult, setRenderResult] = useState<TemplateRenderResult | null>(null)
-  const [showNautobotDataDialog, setShowNautobotDataDialog] = useState(false)
-  const [nautobotData, setNautobotData] = useState<Record<string, unknown> | null>(null)
-
-  // Device search state
-  const [deviceSearchTerm, setDeviceSearchTerm] = useState('')
-  const [devices, setDevices] = useState<DeviceSearchResult[]>([])
-  const [isLoadingDevices, setIsLoadingDevices] = useState(false)
-  const [showDeviceDropdown, setShowDeviceDropdown] = useState(false)
-  const [selectedDevices, setSelectedDevices] = useState<DeviceSearchResult[]>([])
-  const [testDeviceId, setTestDeviceId] = useState('')
-
-  // Load devices when search term changes (min 3 chars)
-  useEffect(() => {
-    const loadDevices = async () => {
-      // Don't load if search is too short
-      if (deviceSearchTerm.length < 3) {
-        setDevices([])
-        setShowDeviceDropdown(false)
-        return
-      }
-
-      // Don't load if a device is already selected (prevents reopening after selection)
-      if (selectedDevices.length > 0) {
-        return
-      }
-
-      setIsLoadingDevices(true)
-      try {
-        const response = await apiCall<{ devices: DeviceSearchResult[] }>(
-          `nautobot/devices?filter_type=name__ic&filter_value=${encodeURIComponent(deviceSearchTerm)}`
-        )
-        setDevices(response.devices || [])
-        setShowDeviceDropdown(true)
-      } catch (error) {
-        console.error('Error loading devices:', error)
-        setDevices([])
-      } finally {
-        setIsLoadingDevices(false)
-      }
-    }
-
-    const debounceTimer = setTimeout(loadDevices, 300)
-    return () => clearTimeout(debounceTimer)
-  }, [deviceSearchTerm, apiCall, selectedDevices.length])
-
-  const handleDeviceSelect = (device: DeviceSearchResult) => {
-    setSelectedDevices([device])
-    setTestDeviceId(device.id)
-    setDeviceSearchTerm(device.name)
-    setShowDeviceDropdown(false)
-  }
-
-  const handleClearDevice = () => {
-    setSelectedDevices([])
-    setTestDeviceId('')
-    setDeviceSearchTerm('')
-  }
-
-  const handleShowTestResult = (result: TemplateRenderResult) => {
-    setRenderResult(result)
-    setShowRenderResultDialog(true)
-  }
-
-  const handleShowNautobotData = (data: Record<string, unknown>) => {
-    setNautobotData(data)
-    setShowNautobotDataDialog(true)
-  }
-
-  // Test template rendering
-  const handleTestTemplate = async () => {
-    if (!templateManager.selectedTemplate || !testDeviceId) {
-      showMessage('Please select a template and device')
-      return
-    }
-
-    try {
-      const device = selectedDevices.find(d => d.id === testDeviceId)
-      if (!device) {
-        showMessage('Selected device not found')
-        return
-      }
-
-      const varsObject: Record<string, string> = {}
-      variableManager.variables.forEach(v => {
-        if (v.name && variableManager.validateVariableName(v.name)) {
-          varsObject[v.name] = v.value
-        }
-      })
-
-      const useEditedContent = templateManager.selectedTemplate.scope === 'private' &&
-                               templateManager.editedTemplateContent !== templateManager.selectedTemplate.content
-
-      const response = await apiCall<{
-        rendered_content: string
-        variables_used: string[]
-        context_data?: Record<string, unknown>
-        warnings?: string[]
-      }>('templates/render', {
-        method: 'POST',
-        body: useEditedContent ? {
-          template_content: templateManager.editedTemplateContent,
-          category: 'netmiko',
-          device_id: device.id,
-          user_variables: varsObject,
-          use_nautobot_context: variableManager.useNautobotContext
-        } : {
-          template_id: templateManager.selectedTemplate.id,
-          category: 'netmiko',
-          device_id: device.id,
-          user_variables: varsObject,
-          use_nautobot_context: variableManager.useNautobotContext
-        }
-      })
-
-      // Show success in the enhanced dialog
-      handleShowTestResult({
-        success: true,
-        rendered_content: response.rendered_content,
-        variables_used: response.variables_used,
-        context_data: response.context_data,
-        warnings: response.warnings
-      })
-    } catch (error: unknown) {
-      console.error('Error testing template:', error)
-      const errorMessage = (error as Error)?.message || 'Unknown error'
-      const details: string[] = []
-      
-      const userVarNames = variableManager.variables
-        .filter(v => v.name && variableManager.validateVariableName(v.name))
-        .map(v => v.name)
-      
-      if (userVarNames.length > 0) {
-        details.push(`User-provided variables: ${userVarNames.join(', ')}`)
-      } else {
-        details.push('User-provided variables: (none)')
-      }
-
-      details.push(`Nautobot context enabled: ${variableManager.useNautobotContext ? 'Yes' : 'No'}`)
-
-      const varsObject: Record<string, string> = {}
-      variableManager.variables.forEach(v => {
-        if (v.name && variableManager.validateVariableName(v.name)) {
-          varsObject[v.name] = v.value
-        }
-      })
-
-      // Show error in the enhanced dialog
-      handleShowTestResult({
-        success: false,
-        error_title: 'Template Rendering Failed',
-        error_message: errorMessage,
-        error_details: details,
-        context_data: {
-          user_variables: varsObject,
-          use_nautobot_context: variableManager.useNautobotContext,
-          device_id: testDeviceId
-        }
-      })
-    }
-  }
-
-  const handleShowNautobotDataClick = async () => {
-    if (!testDeviceId) {
-      return
-    }
-
-    try {
-      const device = selectedDevices.find(d => d.id === testDeviceId)
-      if (!device) {
-        showMessage('Selected device not found')
-        return
-      }
-
-      const response = await apiCall<Record<string, unknown>>(`nautobot/devices/${device.id}/details`)
-      handleShowNautobotData(response)
-    } catch (error) {
-      console.error('Error fetching Nautobot data:', error)
-      showMessage('Error fetching Nautobot data: ' + (error as Error).message)
-    }
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Device Search Section */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
-          <div className="flex items-center space-x-2">
-            <Eye className="h-4 w-4" />
-            <span className="text-sm font-medium">Device Selection</span>
-          </div>
-          <div className="text-xs text-blue-100">
-            Search for a device to test your template
-          </div>
-        </div>
-        <div className="p-6 space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="device-search">Search Device</Label>
-            <div className="relative">
-              <Input
-                id="device-search"
-                placeholder="Type at least 3 characters to search devices..."
-                value={deviceSearchTerm}
-                onChange={(e) => setDeviceSearchTerm(e.target.value)}
-                className="w-full border-2 border-slate-300 bg-white focus:border-blue-500"
-              />
-              {isLoadingDevices && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <RefreshCw className="h-4 w-4 animate-spin text-gray-400" />
-                </div>
-              )}
-
-              {showDeviceDropdown && devices.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border-2 border-blue-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                  {devices.map(device => (
-                    <button
-                      key={device.id}
-                      onClick={() => handleDeviceSelect(device)}
-                      className="w-full px-4 py-2 text-left hover:bg-blue-50 transition-colors border-b last:border-b-0"
-                    >
-                      <div className="font-medium">{device.name}</div>
-                      {device.primary_ip4 && (
-                        <div className="text-xs text-gray-500">
-                          {typeof device.primary_ip4 === 'object' ? device.primary_ip4.address : device.primary_ip4}
-                          {device.location && ` • ${device.location.name}`}
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {showDeviceDropdown && devices.length === 0 && deviceSearchTerm.length >= 3 && !isLoadingDevices && (
-                <div className="absolute z-10 w-full mt-1 bg-white border-2 border-gray-300 rounded-md shadow-lg px-4 py-2 text-sm text-gray-500">
-                  No devices found matching &quot;{deviceSearchTerm}&quot;
-                </div>
-              )}
-            </div>
-
-            {selectedDevices.length > 0 && selectedDevices[0] && (
-              <div className="mt-2 p-3 bg-blue-50 border-2 border-blue-200 rounded-md">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-blue-900">{selectedDevices[0].name}</div>
-                    {selectedDevices[0].primary_ip4 && (
-                      <div className="text-sm text-blue-700">
-                        {typeof selectedDevices[0].primary_ip4 === 'object'
-                          ? selectedDevices[0].primary_ip4.address
-                          : selectedDevices[0].primary_ip4}
-                        {selectedDevices[0].location && ` • ${selectedDevices[0].location.name}`}
-                      </div>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleClearDevice}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    Clear
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Template Selection Panel */}
-      <TemplateSelectionPanel
-        templates={templates.map(t => ({
-          id: t.id,
-          name: t.name,
-          category: t.category,
-          content: t.content || '',
-          scope: t.scope,
-          created_by: t.created_by
-        }))}
-        selectedTemplateId={templateManager.selectedTemplateId}
-        selectedTemplate={templateManager.selectedTemplate}
-        editedTemplateContent={templateManager.editedTemplateContent}
-        isSavingTemplate={templateManager.isSavingTemplate}
-        setEditedTemplateContent={templateManager.setEditedTemplateContent}
-        handleTemplateChange={templateManager.handleTemplateChange}
-        handleSaveTemplate={templateManager.handleSaveTemplate}
-        selectedDevices={selectedDevices.map(d => ({
-          id: d.id,
-          name: d.name,
-          primary_ip4: d.primary_ip4,
-          location: typeof d.location === 'object' ? d.location?.name : d.location,
-          tags: []
-        }))}
-        testDeviceId={testDeviceId}
-        setTestDeviceId={setTestDeviceId}
-        isTestingTemplate={false}
-        isLoadingNautobotData={false}
-        onTestTemplate={handleTestTemplate}
-        onShowNautobotData={handleShowNautobotDataClick}
-      />
-
-      {/* Dialogs */}
-      <TemplateRenderResultDialog
-        open={showRenderResultDialog}
-        onOpenChange={setShowRenderResultDialog}
-        result={renderResult}
-      />
-
-      <NautobotDataDialog
-        open={showNautobotDataDialog}
-        onOpenChange={setShowNautobotDataDialog}
-        nautobotData={nautobotData}
       />
     </div>
   )
