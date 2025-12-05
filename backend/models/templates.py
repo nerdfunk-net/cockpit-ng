@@ -254,6 +254,13 @@ class TemplateRenderRequest(BaseModel):
     use_nautobot_context: bool = Field(
         default=True, description="Whether to include Nautobot device context"
     )
+    pre_run_command: Optional[str] = Field(
+        None,
+        description="Command to execute on the device before rendering. Output is parsed with TextFSM and available as 'pre_run_output' variable.",
+    )
+    credential_id: Optional[int] = Field(
+        None, description="ID of stored credential to use for pre-run command execution"
+    )
 
 
 class TemplateRenderResponse(BaseModel):
@@ -268,4 +275,10 @@ class TemplateRenderResponse(BaseModel):
     )
     warnings: Optional[List[str]] = Field(
         default_factory=list, description="Non-fatal warnings during rendering"
+    )
+    pre_run_output: Optional[str] = Field(
+        None, description="Raw output from pre-run command (if executed)"
+    )
+    pre_run_parsed: Optional[List[Dict[str, Any]]] = Field(
+        None, description="TextFSM parsed output from pre-run command (if available)"
     )

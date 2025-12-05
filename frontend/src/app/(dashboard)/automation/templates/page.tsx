@@ -10,9 +10,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useApi } from '@/hooks/use-api'
 import { useAuthStore } from '@/lib/auth-store'
-import { FileCode, Plus, Edit, Trash2, Eye, Search, RefreshCw, User, Calendar, Globe, Lock } from 'lucide-react'
+import { FileCode, Plus, Edit, Trash2, Eye, Search, RefreshCw, User, Calendar, Globe, Lock, Terminal, Key } from 'lucide-react'
 
 // Import Netmiko components and hooks for template editing
 import { useVariableManager } from '@/components/netmiko/hooks/use-variable-manager'
@@ -87,8 +88,14 @@ function UserTemplatesContent() {
   const [showRenderResultDialog, setShowRenderResultDialog] = useState(false)
   const [renderResult, setRenderResult] = useState<TemplateRenderResult | null>(null)
 
+  // Pre-run command state
+  const [preRunCommand, setPreRunCommand] = useState('')
+  const [selectedCredentialId, setSelectedCredentialId] = useState<number | null>(null)
+  const [storedCredentials, setStoredCredentials] = useState<Array<{ id: number; name: string; username: string }>>([])
+
   useEffect(() => {
     loadTemplates()
+    loadCredentials()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -102,6 +109,18 @@ function UserTemplatesContent() {
       showMessage('Failed to load templates')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadCredentials = async () => {
+    try {
+      const response = await apiCall<Array<{ id: number; name: string; username: string; type: string }>>('credentials?include_expired=false')
+      // Filter for SSH credentials only
+      const sshCredentials = response.filter(cred => cred.type === 'ssh')
+      setStoredCredentials(sshCredentials)
+    } catch (error) {
+      console.error('Error loading credentials:', error)
+      setStoredCredentials([])
     }
   }
 
@@ -128,6 +147,9 @@ function UserTemplatesContent() {
     setSelectedDevice(null)
     setDeviceSearchTerm('')
     setEditingTemplate(null)
+    // Reset pre-run command
+    setPreRunCommand('')
+    setSelectedCredentialId(null)
   }
 
   // Load devices when search term changes (min 3 chars)
@@ -202,6 +224,12 @@ function UserTemplatesContent() {
       return
     }
 
+    // If pre-run command is set, credential is required
+    if (preRunCommand.trim() && !selectedCredentialId) {
+      showMessage('Please select credentials for the pre-run command')
+      return
+    }
+
     setIsRenderingTemplate(true)
     const varsObject = variablesToObject()
     
@@ -209,7 +237,9 @@ function UserTemplatesContent() {
       console.log('Rendering template with:', {
         device_id: selectedDevice.id,
         variables: varsObject,
-        use_nautobot_context: variableManager.useNautobotContext
+        use_nautobot_context: variableManager.useNautobotContext,
+        pre_run_command: preRunCommand.trim() || undefined,
+        credential_id: preRunCommand.trim() ? selectedCredentialId : undefined
       })
 
       const response = await apiCall<{
@@ -217,6 +247,8 @@ function UserTemplatesContent() {
         variables_used: string[]
         context_data?: Record<string, unknown>
         warnings?: string[]
+        pre_run_output?: string
+        pre_run_parsed?: Array<Record<string, unknown>>
       }>('templates/render', {
         method: 'POST',
         body: {
@@ -224,7 +256,11 @@ function UserTemplatesContent() {
           category: 'netmiko',
           device_id: selectedDevice.id,
           user_variables: varsObject,
-          use_nautobot_context: variableManager.useNautobotContext
+          use_nautobot_context: variableManager.useNautobotContext,
+          ...(preRunCommand.trim() && {
+            pre_run_command: preRunCommand.trim(),
+            credential_id: selectedCredentialId
+          })
         }
       })
 
@@ -588,6 +624,67 @@ function UserTemplatesContent() {
                   onChange={(e) => handleFormChange('description', e.target.value)}
                   className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
                 />
+              </div>
+
+              {/* Run before Template Panel */}
+              <div className="border-2 border-amber-200 rounded-lg overflow-hidden">
+                <div className="bg-gradient-to-r from-amber-400/80 to-amber-500/80 text-white py-2 px-4 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Terminal className="h-4 w-4" />
+                    <span className="text-sm font-medium">Run before Template (Optional)</span>
+                  </div>
+                  <div className="text-xs text-amber-100">
+                    Execute a command and use output in template
+                  </div>
+                </div>
+                <div className="p-4 bg-amber-50 space-y-4">
+                  <p className="text-sm text-amber-800">
+                    Run a command on the device before rendering. The output is available as{' '}
+                    <code className="bg-amber-100 px-1 rounded">{'{{ pre_run_output }}'}</code> (raw) and{' '}
+                    <code className="bg-amber-100 px-1 rounded">{'{{ pre_run_parsed }}'}</code> (TextFSM parsed).
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="pre-run-command">Command</Label>
+                      <Input
+                        id="pre-run-command"
+                        placeholder="e.g., show interfaces status"
+                        value={preRunCommand}
+                        onChange={(e) => setPreRunCommand(e.target.value)}
+                        className="border-2 border-amber-300 bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-200 shadow-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="pre-run-credential">Credentials {preRunCommand.trim() && '*'}</Label>
+                      <Select
+                        value={selectedCredentialId?.toString() ?? ''}
+                        onValueChange={(value) => setSelectedCredentialId(value ? parseInt(value, 10) : null)}
+                      >
+                        <SelectTrigger className={`border-2 bg-white shadow-sm ${preRunCommand.trim() ? 'border-amber-400' : 'border-amber-300'} focus:border-amber-500 focus:ring-2 focus:ring-amber-200`}>
+                          <SelectValue placeholder="Select credentials..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {storedCredentials.map((cred) => (
+                            <SelectItem key={cred.id} value={cred.id.toString()}>
+                              <div className="flex items-center gap-2">
+                                <Key className="h-3 w-3 text-amber-600" />
+                                {cred.name} ({cred.username})
+                              </div>
+                            </SelectItem>
+                          ))}
+                          {storedCredentials.length === 0 && (
+                            <div className="px-2 py-1 text-sm text-gray-500">No SSH credentials found</div>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  {preRunCommand.trim() && !selectedCredentialId && (
+                    <p className="text-xs text-amber-700">
+                      ⚠️ Credentials required to execute pre-run command
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Template Content */}

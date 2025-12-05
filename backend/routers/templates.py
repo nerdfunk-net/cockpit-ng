@@ -869,13 +869,22 @@ async def render_template_endpoint(
             device_id=render_request.device_id,
             user_variables=render_request.user_variables or {},
             use_nautobot_context=render_request.use_nautobot_context,
+            pre_run_command=render_request.pre_run_command,
+            credential_id=render_request.credential_id,
         )
+
+        # Extract pre-run data from context if available
+        context_data = result.get("context_data", {})
+        pre_run_output = context_data.get("pre_run_output") if context_data else None
+        pre_run_parsed = context_data.get("pre_run_parsed") if context_data else None
 
         return TemplateRenderResponse(
             rendered_content=result["rendered_content"],
             variables_used=result["variables_used"],
-            context_data=result.get("context_data"),
+            context_data=context_data,
             warnings=result.get("warnings", []),
+            pre_run_output=pre_run_output,
+            pre_run_parsed=pre_run_parsed,
         )
 
     except HTTPException:
