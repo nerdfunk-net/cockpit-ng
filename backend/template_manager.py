@@ -63,17 +63,12 @@ class TemplateManager:
                 template_type=template_data.get("template_type", "jinja2"),
                 category=template_data.get("category"),
                 description=template_data.get("description"),
-                git_repo_url=template_data.get("git_repo_url"),
-                git_branch=template_data.get("git_branch", "main"),
-                git_username=template_data.get("git_username"),
-                git_token=template_data.get("git_token"),
-                git_path=template_data.get("git_path"),
-                git_verify_ssl=template_data.get("git_verify_ssl", True),
                 content=content,
                 filename=template_data.get("filename"),
                 content_hash=content_hash,
                 variables=variables_json,
                 tags=tags_json,
+                use_nautobot_context=template_data.get("use_nautobot_context", False),
                 created_by=template_data.get("created_by"),
                 scope=template_data.get("scope", "global"),
                 is_active=True,
@@ -213,23 +208,12 @@ class TemplateManager:
                 ),
                 "category": template_data.get("category", current["category"]),
                 "description": template_data.get("description", current["description"]),
-                "git_repo_url": template_data.get(
-                    "git_repo_url", current["git_repo_url"]
-                ),
-                "git_branch": template_data.get("git_branch", current["git_branch"]),
-                "git_username": template_data.get(
-                    "git_username", current["git_username"]
-                ),
-                "git_token": template_data.get("git_token", current["git_token"]),
-                "git_path": template_data.get("git_path", current["git_path"]),
-                "git_verify_ssl": template_data.get(
-                    "git_verify_ssl", current["git_verify_ssl"]
-                ),
                 "content": content,
                 "filename": template_data.get("filename", current["filename"]),
                 "content_hash": content_hash,
                 "variables": variables_json,
                 "tags": tags_json,
+                "use_nautobot_context": template_data.get("use_nautobot_context", current.get("use_nautobot_context", False)),
                 "scope": new_scope,
             }
 
@@ -360,18 +344,13 @@ class TemplateManager:
             "template_type": template.template_type,
             "category": template.category,
             "description": template.description,
-            "git_repo_url": template.git_repo_url,
-            "git_branch": template.git_branch,
-            "git_username": template.git_username,
-            "git_token": template.git_token,
-            "git_path": template.git_path,
-            "git_verify_ssl": bool(template.git_verify_ssl),
             "content": template.content,
             "filename": template.filename,
             "content_hash": template.content_hash,
             "created_by": template.created_by,
             "scope": template.scope,
             "is_active": bool(template.is_active),
+            "use_nautobot_context": bool(template.use_nautobot_context),
             "last_sync": template.last_sync.isoformat() if template.last_sync else None,
             "sync_status": template.sync_status,
             "created_at": template.created_at.isoformat()

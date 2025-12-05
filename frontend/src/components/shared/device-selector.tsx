@@ -336,7 +336,6 @@ export function DeviceSelector({
       setShowPreviewResults(false)
       setPreviewDevices([])
       setShowLoadModal(false)
-      alert(`Inventory "${inventoryName}" loaded successfully with ${response.conditions.length} condition(s)!`)
     } catch (error) {
       console.error('Error loading inventory:', error)
       alert('Error loading inventory: ' + (error as Error).message)

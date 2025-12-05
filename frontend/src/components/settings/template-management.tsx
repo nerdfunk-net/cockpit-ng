@@ -23,15 +23,15 @@ interface TemplateImportResponse {
   imported_templates?: string[]
   failed_templates?: string[]
 }
-import { 
-  FileCode, 
-  Plus, 
-  Download, 
-  Search, 
-  RefreshCw, 
-  Eye, 
-  Edit, 
-  Trash2, 
+import {
+  FileCode,
+  Plus,
+  Download,
+  Search,
+  RefreshCw,
+  Eye,
+  Edit,
+  Trash2,
   RotateCcw as Sync,
   GitBranch,
   Upload,
@@ -55,6 +55,8 @@ interface Template {
   updated_at: string
   created_by?: string
   scope: 'global' | 'private'
+  variables?: Record<string, string>
+  use_nautobot_context?: boolean
   git_repo_url?: string
   git_branch?: string
   git_path?: string
@@ -68,6 +70,8 @@ interface TemplateFormData {
   description: string
   content?: string
   scope: 'global' | 'private'
+  variables?: Record<string, string>
+  use_nautobot_context?: boolean
   git_repo_url?: string
   git_branch?: string
   git_path?: string
@@ -121,6 +125,8 @@ export default function TemplateManagement() {
     description: '',
     content: '',
     scope: 'global',
+    variables: {},
+    use_nautobot_context: false,
     git_repo_url: '',
     git_branch: 'main',
     git_path: '',
@@ -151,6 +157,8 @@ export default function TemplateManagement() {
       description: '',
       content: '',
       scope: 'global',
+      variables: {},
+      use_nautobot_context: false,
       git_repo_url: '',
       git_branch: 'main',
       git_path: '',
@@ -202,6 +210,8 @@ export default function TemplateManagement() {
       description: '',
       content: '',
       scope: 'global',
+      variables: {},
+      use_nautobot_context: false,
       git_repo_url: '',
       git_branch: 'main',
       git_path: '',
@@ -250,6 +260,8 @@ export default function TemplateManagement() {
         description: template.description || '',
         content: response.content || '',
         scope: template.scope || 'global',
+        variables: template.variables || {},
+        use_nautobot_context: template.use_nautobot_context || false,
         git_repo_url: template.git_repo_url || '',
         git_branch: template.git_branch || 'main',
         git_path: template.git_path || '',
@@ -289,6 +301,8 @@ export default function TemplateManagement() {
         category: string;
         description: string;
         scope: string;
+        variables?: Record<string, string>;
+        use_nautobot_context?: boolean;
         git_repo_url?: string;
         git_branch?: string;
         git_path?: string;
@@ -302,7 +316,9 @@ export default function TemplateManagement() {
         template_type: formData.template_type,
         category: formData.category === '__none__' ? '' : formData.category,
         description: formData.description,
-        scope: formData.scope
+        scope: formData.scope,
+        variables: formData.variables || {},
+        use_nautobot_context: formData.use_nautobot_context || false
       }
 
       // Add source-specific data
@@ -375,6 +391,8 @@ export default function TemplateManagement() {
         category: string;
         description: string;
         scope: string;
+        variables?: Record<string, string>;
+        use_nautobot_context?: boolean;
         git_repo_url?: string;
         git_branch?: string;
         git_path?: string;
@@ -388,7 +406,9 @@ export default function TemplateManagement() {
         template_type: formData.template_type,
         category: formData.category === '__none__' ? '' : formData.category,
         description: formData.description,
-        scope: formData.scope
+        scope: formData.scope,
+        variables: formData.variables || {},
+        use_nautobot_context: formData.use_nautobot_context || false
       }
 
       // Add source-specific data
@@ -952,7 +972,7 @@ export default function TemplateManagement() {
                     <SelectContent>
                       <SelectItem value="__none__">No Category</SelectItem>
                       {/* Canonical categories only to avoid duplicates from the API */}
-                      {['inventory', 'onboarding', 'parser', 'netmiko'].map(cat => (
+                      {['ansible', 'onboarding', 'parser', 'netmiko'].map(cat => (
                         <SelectItem key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</SelectItem>
                       ))}
                     </SelectContent>

@@ -46,18 +46,6 @@ class TemplateRequest(BaseModel):
     )
     description: Optional[str] = Field(None, description="Template description")
 
-    # Git-specific fields
-    git_repo_url: Optional[str] = Field(None, description="Git repository URL")
-    git_branch: Optional[str] = Field(default="main", description="Git branch")
-    git_username: Optional[str] = Field(None, description="Git username")
-    git_token: Optional[str] = Field(None, description="Git personal access token")
-    git_path: Optional[str] = Field(
-        None, description="Path to template file in repository"
-    )
-    git_verify_ssl: Optional[bool] = Field(
-        default=True, description="Verify SSL certificates"
-    )
-
     # File/WebEditor-specific fields
     content: Optional[str] = Field(None, description="Template content")
     filename: Optional[str] = Field(
@@ -74,6 +62,9 @@ class TemplateRequest(BaseModel):
         default_factory=dict, description="Template variables"
     )
     tags: Optional[List[str]] = Field(default_factory=list, description="Template tags")
+    use_nautobot_context: Optional[bool] = Field(
+        default=False, description="Whether to use Nautobot context when rendering"
+    )
 
 
 class TemplateResponse(BaseModel):
@@ -86,13 +77,6 @@ class TemplateResponse(BaseModel):
     category: Optional[str]
     description: Optional[str]
 
-    # Git-specific fields
-    git_repo_url: Optional[str]
-    git_branch: Optional[str]
-    git_username: Optional[str]
-    git_path: Optional[str]
-    git_verify_ssl: Optional[bool]
-
     # File/WebEditor-specific fields
     content: Optional[str]
     filename: Optional[str]
@@ -104,6 +88,7 @@ class TemplateResponse(BaseModel):
     # Metadata
     variables: Dict[str, Any]
     tags: List[str]
+    use_nautobot_context: bool
 
     # Timestamps
     created_at: str
@@ -244,6 +229,7 @@ class TemplateUpdateRequest(BaseModel):
     # Metadata
     variables: Optional[Dict[str, Any]] = Field(None, description="Template variables")
     tags: Optional[List[str]] = Field(None, description="Template tags")
+    use_nautobot_context: Optional[bool] = Field(None, description="Whether to use Nautobot context when rendering")
 
 
 class TemplateRenderRequest(BaseModel):

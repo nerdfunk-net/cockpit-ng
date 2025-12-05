@@ -240,115 +240,111 @@ export function InventoryGenerationTab({
           </div>
         </div>
         <div className="p-6 bg-gradient-to-b from-white to-gray-50">
-          <div className="grid grid-cols-1 gap-4">
-            {/* First row: All selections */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="category">Template Category</Label>
-                <Select
-                  value={selectedCategory}
-                  onValueChange={(value) => {
-                    setSelectedCategory(value)
-                    setSelectedTemplate('')
-                    loadTemplatesForCategory(value)
-                  }}
-                >
-                  <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
-                    <SelectValue placeholder="Select Category..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {templateCategories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="template">Template Name</Label>
-                <Select
-                  value={selectedTemplate}
-                  onValueChange={setSelectedTemplate}
-                  disabled={!selectedCategory}
-                >
-                  <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
-                    <SelectValue placeholder="Select Template..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableTemplates.map((template) => (
-                      <SelectItem key={template} value={template}>
-                        {template}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="gitRepo">Git Repository</Label>
-                <Select
-                  value={selectedGitRepo?.toString() || ''}
-                  onValueChange={(value) => setSelectedGitRepo(parseInt(value))}
-                >
-                  <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
-                    <SelectValue placeholder="Select Repository..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {gitRepositories.length === 0 ? (
-                      <SelectItem value="none" disabled>
-                        No repositories configured
-                      </SelectItem>
-                    ) : (
-                      gitRepositories.map((repo) => (
-                        <SelectItem key={repo.id} value={repo.id.toString()}>
-                          {repo.name}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
+          {/* Single row: All inputs and buttons with separator between groups */}
+          <div className="flex flex-wrap items-end gap-4">
+            {/* Group 1: Template selection and actions */}
+            <div className="space-y-2">
+              <Label htmlFor="category">Template Category</Label>
+              <Select
+                value={selectedCategory}
+                onValueChange={(value) => {
+                  setSelectedCategory(value)
+                  setSelectedTemplate('')
+                  loadTemplatesForCategory(value)
+                }}
+              >
+                <SelectTrigger className="w-[180px] border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                  <SelectValue placeholder="Select Category..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {templateCategories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Second row: All action buttons */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-              <div>
-                <Button
-                  onClick={generateInventory}
-                  disabled={!selectedCategory || !selectedTemplate || isGeneratingInventory}
-                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white w-full"
-                >
-                  <Settings className="h-4 w-4" />
-                  <span>{isGeneratingInventory ? 'Creating...' : 'Create Inventory'}</span>
-                </Button>
-              </div>
-
-              <div>
-                <Button
-                  onClick={pushToGit}
-                  disabled={!selectedCategory || !selectedTemplate || !selectedGitRepo || isPushingToGit}
-                  variant="outline"
-                  className="flex items-center space-x-2 w-full border-2 border-blue-500 text-blue-600 hover:bg-blue-50 disabled:border-gray-300 disabled:text-gray-400"
-                >
-                  <GitBranch className="h-4 w-4" />
-                  <span>{isPushingToGit ? 'Pushing...' : 'Push to Git'}</span>
-                </Button>
-              </div>
-
-              <div>
-                <Button
-                  onClick={downloadInventory}
-                  disabled={!selectedCategory || !selectedTemplate}
-                  variant="outline"
-                  className="flex items-center space-x-2 w-full"
-                >
-                  <Download className="h-4 w-4" />
-                  <span>Download</span>
-                </Button>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="template">Template Name</Label>
+              <Select
+                value={selectedTemplate}
+                onValueChange={setSelectedTemplate}
+                disabled={!selectedCategory}
+              >
+                <SelectTrigger className="w-[200px] border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
+                  <SelectValue placeholder="Select Template..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTemplates.map((template) => (
+                    <SelectItem key={template} value={template}>
+                      {template}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
+            <Button
+              onClick={downloadInventory}
+              disabled={!selectedCategory || !selectedTemplate}
+              variant="outline"
+              size="sm"
+              className="flex items-center space-x-2"
+            >
+              <Download className="h-4 w-4" />
+              <span>Download</span>
+            </Button>
+
+            <Button
+              onClick={generateInventory}
+              disabled={!selectedCategory || !selectedTemplate || isGeneratingInventory}
+              size="sm"
+              className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Settings className="h-4 w-4" />
+              <span>{isGeneratingInventory ? 'Creating...' : 'Create Inventory'}</span>
+            </Button>
+
+            {/* Separator */}
+            <div className="h-9 w-px bg-slate-300" />
+
+            {/* Group 2: Git operations */}
+            <div className="space-y-2">
+              <Label htmlFor="gitRepo">Git Repository</Label>
+              <Select
+                value={selectedGitRepo?.toString() || ''}
+                onValueChange={(value) => setSelectedGitRepo(parseInt(value))}
+              >
+                <SelectTrigger className="w-[200px] border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                  <SelectValue placeholder="Select Repository..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {gitRepositories.length === 0 ? (
+                    <SelectItem value="none" disabled>
+                      No repositories configured
+                    </SelectItem>
+                  ) : (
+                    gitRepositories.map((repo) => (
+                      <SelectItem key={repo.id} value={repo.id.toString()}>
+                        {repo.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              onClick={pushToGit}
+              disabled={!selectedCategory || !selectedTemplate || !selectedGitRepo || isPushingToGit}
+              variant="outline"
+              className="flex items-center space-x-2 border-2 border-blue-500 text-blue-600 hover:bg-blue-50 disabled:border-gray-300 disabled:text-gray-400"
+            >
+              <GitBranch className="h-4 w-4" />
+              <span>{isPushingToGit ? 'Pushing...' : 'Push to Git'}</span>
+            </Button>
           </div>
         </div>
       </div>

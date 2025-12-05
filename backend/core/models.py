@@ -724,14 +724,6 @@ class Template(Base):
     category = Column(String(255), index=True)
     description = Column(Text)
 
-    # Git-specific fields
-    git_repo_url = Column(Text)
-    git_branch = Column(String(255), default="main")
-    git_username = Column(String(255))
-    git_token = Column(Text)
-    git_path = Column(Text)
-    git_verify_ssl = Column(Boolean, default=True, nullable=False)
-
     # File/WebEditor-specific fields
     content = Column(Text)
     filename = Column(String(255))
@@ -740,6 +732,7 @@ class Template(Base):
     # Metadata
     variables = Column(Text, default="{}", nullable=False)  # JSON string
     tags = Column(Text, default="[]", nullable=False)  # JSON string
+    use_nautobot_context = Column(Boolean, default=False, nullable=False)  # Whether to use Nautobot context when rendering
 
     # Ownership and scope
     created_by = Column(String(255), index=True)

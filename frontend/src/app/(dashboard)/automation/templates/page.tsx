@@ -19,10 +19,8 @@ import { useVariableManager } from '@/components/netmiko/hooks/use-variable-mana
 import { useTemplateManager } from '@/components/netmiko/hooks/use-template-manager'
 import { VariableManagerPanel } from '@/components/netmiko/components/variable-manager-panel'
 import { TemplateSelectionPanel } from '@/components/netmiko/components/template-selection-panel'
-import { TestResultDialog } from '@/components/netmiko/dialogs/test-result-dialog'
+import { TemplateRenderResultDialog, type TemplateRenderResult } from '@/components/netmiko/dialogs/template-render-result-dialog'
 import { NautobotDataDialog } from '@/components/netmiko/dialogs/nautobot-data-dialog'
-import { ErrorDialog } from '@/components/netmiko/dialogs/error-dialog'
-import type { ErrorDetails } from '@/components/netmiko/types'
 
 interface Template {
   id: number
@@ -30,6 +28,8 @@ interface Template {
   description: string
   content: string
   scope: 'global' | 'private'
+  variables?: Record<string, string>
+  use_nautobot_context?: boolean
   created_by?: string
   category: string
   template_type: string
@@ -61,6 +61,25 @@ function UserTemplatesContent() {
     content: '',
     scope: (isAdmin ? 'global' : 'private') as 'global' | 'private'
   })
+
+  // Use variable manager for template variables
+  const variableManager = useVariableManager()
+
+  // Device search state for Create Template tab
+  const [deviceSearchTerm, setDeviceSearchTerm] = useState('')
+  const [devices, setDevices] = useState<DeviceSearchResult[]>([])
+  const [isLoadingDevices, setIsLoadingDevices] = useState(false)
+  const [showDeviceDropdown, setShowDeviceDropdown] = useState(false)
+  const [selectedDevice, setSelectedDevice] = useState<DeviceSearchResult | null>(null)
+
+  // Dialog state for Nautobot data
+  const [showNautobotDataDialog, setShowNautobotDataDialog] = useState(false)
+  const [nautobotData, setNautobotData] = useState<Record<string, unknown> | null>(null)
+
+  // Template rendering state
+  const [isRenderingTemplate, setIsRenderingTemplate] = useState(false)
+  const [showRenderResultDialog, setShowRenderResultDialog] = useState(false)
+  const [renderResult, setRenderResult] = useState<TemplateRenderResult | null>(null)
 
   useEffect(() => {
     loadTemplates()
@@ -96,7 +115,184 @@ function UserTemplatesContent() {
       content: '',
       scope: isAdmin ? 'global' : 'private'
     })
+    // Reset variables to one empty variable
+    variableManager.setVariables([{ id: crypto.randomUUID(), name: '', value: '' }])
+    variableManager.setUseNautobotContext(false)
+    // Reset device selection
+    setSelectedDevice(null)
+    setDeviceSearchTerm('')
     setEditingTemplate(null)
+  }
+
+  // Load devices when search term changes (min 3 chars)
+  useEffect(() => {
+    const loadDevices = async () => {
+      // Don't load if search is too short
+      if (deviceSearchTerm.length < 3) {
+        setDevices([])
+        setShowDeviceDropdown(false)
+        return
+      }
+
+      // Don't load if a device is already selected (prevents reopening after selection)
+      if (selectedDevice) {
+        return
+      }
+
+      setIsLoadingDevices(true)
+      try {
+        const response = await apiCall<{ devices: DeviceSearchResult[] }>(
+          `nautobot/devices?filter_type=name__ic&filter_value=${encodeURIComponent(deviceSearchTerm)}`
+        )
+        setDevices(response.devices || [])
+        setShowDeviceDropdown(true)
+      } catch (error) {
+        console.error('Error loading devices:', error)
+        setDevices([])
+      } finally {
+        setIsLoadingDevices(false)
+      }
+    }
+
+    const debounceTimer = setTimeout(loadDevices, 300)
+    return () => clearTimeout(debounceTimer)
+  }, [deviceSearchTerm, apiCall, selectedDevice])
+
+  const handleDeviceSelect = (device: DeviceSearchResult) => {
+    setSelectedDevice(device)
+    setDeviceSearchTerm(device.name)
+    setShowDeviceDropdown(false)
+  }
+
+  const handleClearDevice = () => {
+    setSelectedDevice(null)
+    setDeviceSearchTerm('')
+  }
+
+  const handleShowNautobotData = async () => {
+    if (!selectedDevice) {
+      showMessage('Please select a device first')
+      return
+    }
+
+    try {
+      const response = await apiCall<Record<string, unknown>>(`nautobot/devices/${selectedDevice.id}/details`)
+      setNautobotData(response)
+      setShowNautobotDataDialog(true)
+    } catch (error) {
+      console.error('Error fetching Nautobot data:', error)
+      showMessage('Error fetching Nautobot data: ' + (error as Error).message)
+    }
+  }
+
+  const handleRenderTemplate = async () => {
+    if (!formData.content.trim()) {
+      showMessage('Please enter template content first')
+      return
+    }
+
+    if (!selectedDevice) {
+      showMessage('Please select a device to render the template')
+      return
+    }
+
+    setIsRenderingTemplate(true)
+    const varsObject = variablesToObject()
+    
+    try {
+      console.log('Rendering template with:', {
+        device_id: selectedDevice.id,
+        variables: varsObject,
+        use_nautobot_context: variableManager.useNautobotContext
+      })
+
+      const response = await apiCall<{
+        rendered_content: string
+        variables_used: string[]
+        context_data?: Record<string, unknown>
+        warnings?: string[]
+      }>('templates/render', {
+        method: 'POST',
+        body: {
+          template_content: formData.content,
+          category: 'netmiko',
+          device_id: selectedDevice.id,
+          user_variables: varsObject,
+          use_nautobot_context: variableManager.useNautobotContext
+        }
+      })
+
+      console.log('Render response:', response)
+
+      // Show result in the enhanced dialog
+      setRenderResult({
+        success: true,
+        rendered_content: response.rendered_content,
+        variables_used: response.variables_used,
+        context_data: response.context_data,
+        warnings: response.warnings
+      })
+      setShowRenderResultDialog(true)
+    } catch (error: unknown) {
+      console.error('Error rendering template:', error)
+
+      // Extract error message (apiCall might wrap the error)
+      let errorMessage = 'Unknown error'
+      let errorDetails: string[] = []
+      
+      if (error && typeof error === 'object') {
+        if ('message' in error && typeof error.message === 'string') {
+          errorMessage = error.message
+        } else if ('detail' in error && typeof error.detail === 'string') {
+          errorMessage = error.detail
+        }
+        
+        // Try to extract more details
+        if ('details' in error && Array.isArray(error.details)) {
+          errorDetails = error.details
+        }
+      }
+
+      // Show error in the enhanced dialog instead of just a toast
+      setRenderResult({
+        success: false,
+        error_title: 'Template Rendering Failed',
+        error_message: errorMessage,
+        error_details: errorDetails.length > 0 ? errorDetails : undefined,
+        // Include context data if available (for debugging)
+        context_data: {
+          user_variables: varsObject,
+          use_nautobot_context: variableManager.useNautobotContext,
+          device_id: selectedDevice.id
+        }
+      })
+      setShowRenderResultDialog(true)
+    } finally {
+      setIsRenderingTemplate(false)
+    }
+  }
+
+  // Helper: Convert variables array to object for backend
+  const variablesToObject = (): Record<string, string> => {
+    const varsObject: Record<string, string> = {}
+    variableManager.variables.forEach(v => {
+      if (v.name && variableManager.validateVariableName(v.name)) {
+        varsObject[v.name] = v.value
+      }
+    })
+    return varsObject
+  }
+
+  // Helper: Convert variables object to array for UI
+  const objectToVariables = (obj: Record<string, string> | undefined) => {
+    if (!obj || Object.keys(obj).length === 0) {
+      return [{ id: crypto.randomUUID(), name: '', value: '' }]
+    }
+    return Object.entries(obj).map(([name, value]) => ({
+      id: crypto.randomUUID(),
+      name,
+      value
+    }))
   }
 
   const handleCreateTemplate = async () => {
@@ -113,7 +309,9 @@ function UserTemplatesContent() {
         category: 'netmiko',
         description: formData.description,
         content: formData.content,
-        scope: formData.scope
+        scope: formData.scope,
+        variables: variablesToObject(),
+        use_nautobot_context: variableManager.useNautobotContext
       }
 
       await apiCall('templates', {
@@ -141,7 +339,9 @@ function UserTemplatesContent() {
           name: formData.name,
           description: formData.description,
           content: formData.content,
-          scope: formData.scope
+          scope: formData.scope,
+          variables: variablesToObject(),
+          use_nautobot_context: variableManager.useNautobotContext
         }
       })
 
@@ -166,6 +366,9 @@ function UserTemplatesContent() {
         content: response.content || '',
         scope: response.scope || 'global'
       })
+      // Load variables into variable manager
+      variableManager.setVariables(objectToVariables(response.variables))
+      variableManager.setUseNautobotContext(response.use_nautobot_context || false)
 
       setEditingTemplate(template)
       setActiveTab('create')
@@ -402,6 +605,106 @@ function UserTemplatesContent() {
                 </p>
               </div>
 
+              {/* Template Variables Panel */}
+              <VariableManagerPanel
+                variables={variableManager.variables}
+                useNautobotContext={variableManager.useNautobotContext}
+                setUseNautobotContext={variableManager.setUseNautobotContext}
+                addVariable={variableManager.addVariable}
+                removeVariable={variableManager.removeVariable}
+                updateVariable={variableManager.updateVariable}
+                validateVariableName={variableManager.validateVariableName}
+              />
+
+              {/* Device Selection for Nautobot Data Preview */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="device-search" className="text-sm font-medium">
+                    Device (Optional - for previewing Nautobot data)
+                  </Label>
+                  {selectedDevice && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={handleShowNautobotData}
+                      className="h-7 text-xs"
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      Show Nautobot Data
+                    </Button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Input
+                    id="device-search"
+                    placeholder="Type at least 3 characters to search devices..."
+                    value={deviceSearchTerm}
+                    onChange={(e) => setDeviceSearchTerm(e.target.value)}
+                    className="border-2 border-slate-300 bg-white focus:border-blue-500"
+                  />
+                  {isLoadingDevices && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <RefreshCw className="h-4 w-4 animate-spin text-gray-400" />
+                    </div>
+                  )}
+
+                  {showDeviceDropdown && devices.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border-2 border-blue-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                      {devices.map(device => (
+                        <button
+                          key={device.id}
+                          type="button"
+                          onClick={() => handleDeviceSelect(device)}
+                          className="w-full px-4 py-2 text-left hover:bg-blue-50 transition-colors border-b last:border-b-0"
+                        >
+                          <div className="font-medium text-sm">{device.name}</div>
+                          {device.primary_ip4 && (
+                            <div className="text-xs text-gray-500">
+                              {typeof device.primary_ip4 === 'object' ? device.primary_ip4.address : device.primary_ip4}
+                              {device.location && ` • ${device.location.name}`}
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {showDeviceDropdown && devices.length === 0 && deviceSearchTerm.length >= 3 && !isLoadingDevices && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border-2 border-gray-300 rounded-md shadow-lg px-4 py-2 text-sm text-gray-500">
+                      No devices found matching &quot;{deviceSearchTerm}&quot;
+                    </div>
+                  )}
+                </div>
+
+                {selectedDevice && (
+                  <div className="p-3 bg-blue-50 border-2 border-blue-200 rounded-md">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-sm text-blue-900">{selectedDevice.name}</div>
+                        {selectedDevice.primary_ip4 && (
+                          <div className="text-xs text-blue-700">
+                            {typeof selectedDevice.primary_ip4 === 'object'
+                              ? selectedDevice.primary_ip4.address
+                              : selectedDevice.primary_ip4}
+                            {selectedDevice.location && ` • ${selectedDevice.location.name}`}
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleClearDevice}
+                        className="text-blue-600 hover:text-blue-800 h-7 text-xs"
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Scope - Only show for admin users */}
               {isAdmin && (
                 <div className="flex items-center space-x-2 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
@@ -422,22 +725,43 @@ function UserTemplatesContent() {
               )}
 
               {/* Actions */}
-              <div className="flex justify-end gap-3 pt-4">
+              <div className="flex justify-between pt-4">
                 <Button
+                  type="button"
                   variant="outline"
-                  onClick={() => {
-                    resetForm()
-                    setActiveTab('list')
-                  }}
+                  onClick={handleRenderTemplate}
+                  disabled={!formData.content.trim() || !selectedDevice || isRenderingTemplate}
+                  className="border-2 border-blue-500 text-blue-600 hover:bg-blue-50"
                 >
-                  Cancel
+                  {isRenderingTemplate ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Rendering...
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-4 w-4 mr-2" />
+                      Render Template
+                    </>
+                  )}
                 </Button>
-                <Button
-                  onClick={editingTemplate ? handleUpdateTemplate : handleCreateTemplate}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  {editingTemplate ? 'Update Template' : 'Create Template'}
-                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      resetForm()
+                      setActiveTab('list')
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={editingTemplate ? handleUpdateTemplate : handleCreateTemplate}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {editingTemplate ? 'Update Template' : 'Create Template'}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -554,6 +878,20 @@ function UserTemplatesContent() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Nautobot Data Dialog */}
+      <NautobotDataDialog
+        open={showNautobotDataDialog}
+        onOpenChange={(open) => setShowNautobotDataDialog(open)}
+        nautobotData={nautobotData}
+      />
+
+      {/* Template Render Result Dialog */}
+      <TemplateRenderResultDialog
+        open={showRenderResultDialog}
+        onOpenChange={(open) => setShowRenderResultDialog(open)}
+        result={renderResult}
+      />
     </div>
   )
 }
@@ -579,12 +917,10 @@ function TestTemplateTab({ templates, showMessage }: TestTemplateTabProps) {
   const templateManager = useTemplateManager()
 
   // Dialog state
-  const [showTestResultDialog, setShowTestResultDialog] = useState(false)
-  const [testResult, setTestResult] = useState('')
+  const [showRenderResultDialog, setShowRenderResultDialog] = useState(false)
+  const [renderResult, setRenderResult] = useState<TemplateRenderResult | null>(null)
   const [showNautobotDataDialog, setShowNautobotDataDialog] = useState(false)
   const [nautobotData, setNautobotData] = useState<Record<string, unknown> | null>(null)
-  const [showErrorDialog, setShowErrorDialog] = useState(false)
-  const [errorDetails, setErrorDetails] = useState<ErrorDetails | null>(null)
 
   // Device search state
   const [deviceSearchTerm, setDeviceSearchTerm] = useState('')
@@ -641,19 +977,14 @@ function TestTemplateTab({ templates, showMessage }: TestTemplateTabProps) {
     setDeviceSearchTerm('')
   }
 
-  const handleShowTestResult = (result: string) => {
-    setTestResult(result)
-    setShowTestResultDialog(true)
+  const handleShowTestResult = (result: TemplateRenderResult) => {
+    setRenderResult(result)
+    setShowRenderResultDialog(true)
   }
 
   const handleShowNautobotData = (data: Record<string, unknown>) => {
     setNautobotData(data)
     setShowNautobotDataDialog(true)
-  }
-
-  const handleError = (error: ErrorDetails) => {
-    setErrorDetails(error)
-    setShowErrorDialog(true)
   }
 
   // Test template rendering
@@ -683,6 +1014,7 @@ function TestTemplateTab({ templates, showMessage }: TestTemplateTabProps) {
       const response = await apiCall<{
         rendered_content: string
         variables_used: string[]
+        context_data?: Record<string, unknown>
         warnings?: string[]
       }>('templates/render', {
         method: 'POST',
@@ -701,30 +1033,49 @@ function TestTemplateTab({ templates, showMessage }: TestTemplateTabProps) {
         }
       })
 
-      handleShowTestResult(response.rendered_content)
-
-      if (response.warnings && response.warnings.length > 0) {
-        console.warn('Template rendering warnings:', response.warnings)
-      }
+      // Show success in the enhanced dialog
+      handleShowTestResult({
+        success: true,
+        rendered_content: response.rendered_content,
+        variables_used: response.variables_used,
+        context_data: response.context_data,
+        warnings: response.warnings
+      })
     } catch (error: unknown) {
       console.error('Error testing template:', error)
       const errorMessage = (error as Error)?.message || 'Unknown error'
       const details: string[] = []
-      details.push(`Error message: ${errorMessage}`)
-
-      const userVars = Object.keys(variableManager.variables)
-      if (userVars.length > 0) {
-        details.push(`User-provided variables: ${userVars.join(', ')}`)
+      
+      const userVarNames = variableManager.variables
+        .filter(v => v.name && variableManager.validateVariableName(v.name))
+        .map(v => v.name)
+      
+      if (userVarNames.length > 0) {
+        details.push(`User-provided variables: ${userVarNames.join(', ')}`)
       } else {
         details.push('User-provided variables: (none)')
       }
 
       details.push(`Nautobot context enabled: ${variableManager.useNautobotContext ? 'Yes' : 'No'}`)
 
-      handleError({
-        title: 'Template Rendering Failed',
-        message: 'The template could not be rendered. Please check the details below:',
-        details
+      const varsObject: Record<string, string> = {}
+      variableManager.variables.forEach(v => {
+        if (v.name && variableManager.validateVariableName(v.name)) {
+          varsObject[v.name] = v.value
+        }
+      })
+
+      // Show error in the enhanced dialog
+      handleShowTestResult({
+        success: false,
+        error_title: 'Template Rendering Failed',
+        error_message: errorMessage,
+        error_details: details,
+        context_data: {
+          user_variables: varsObject,
+          use_nautobot_context: variableManager.useNautobotContext,
+          device_id: testDeviceId
+        }
       })
     }
   }
@@ -835,17 +1186,6 @@ function TestTemplateTab({ templates, showMessage }: TestTemplateTabProps) {
         </div>
       </div>
 
-      {/* Variable Manager Panel */}
-      <VariableManagerPanel
-        variables={variableManager.variables}
-        useNautobotContext={variableManager.useNautobotContext}
-        setUseNautobotContext={variableManager.setUseNautobotContext}
-        addVariable={variableManager.addVariable}
-        removeVariable={variableManager.removeVariable}
-        updateVariable={variableManager.updateVariable}
-        validateVariableName={variableManager.validateVariableName}
-      />
-
       {/* Template Selection Panel */}
       <TemplateSelectionPanel
         templates={templates.map(t => ({
@@ -879,22 +1219,16 @@ function TestTemplateTab({ templates, showMessage }: TestTemplateTabProps) {
       />
 
       {/* Dialogs */}
-      <TestResultDialog
-        open={showTestResultDialog}
-        onOpenChange={setShowTestResultDialog}
-        testResult={testResult}
+      <TemplateRenderResultDialog
+        open={showRenderResultDialog}
+        onOpenChange={setShowRenderResultDialog}
+        result={renderResult}
       />
 
       <NautobotDataDialog
         open={showNautobotDataDialog}
         onOpenChange={setShowNautobotDataDialog}
         nautobotData={nautobotData}
-      />
-
-      <ErrorDialog
-        open={showErrorDialog}
-        onOpenChange={setShowErrorDialog}
-        errorDetails={errorDetails}
       />
     </div>
   )

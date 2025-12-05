@@ -14,6 +14,7 @@ class GitCategory(str, Enum):
     CONFIGS = "configs"
     TEMPLATES = "templates"
     ONBOARDING = "onboarding"
+    ANSIBLE = "ansible"
 
 
 class GitRepositoryRequest(BaseModel):

@@ -26,6 +26,7 @@ export function useVariableManager() {
 
   return {
     variables,
+    setVariables,
     useNautobotContext,
     setUseNautobotContext,
     addVariable,

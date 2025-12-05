@@ -415,6 +415,7 @@ const GitManagement: React.FC = () => {
       case 'configs': return 'bg-blue-100 text-blue-800 hover:bg-blue-200'
       case 'templates': return 'bg-purple-100 text-purple-800 hover:bg-purple-200'
       case 'onboarding': return 'bg-green-100 text-green-800 hover:bg-green-200'
+      case 'ansible': return 'bg-orange-100 text-orange-800 hover:bg-orange-200'
       default: return 'bg-gray-100 text-gray-800 hover:bg-gray-200'
     }
   }
@@ -687,6 +688,7 @@ const GitManagement: React.FC = () => {
                         <SelectItem value="configs">Configs</SelectItem>
                         <SelectItem value="templates">Templates</SelectItem>
                         <SelectItem value="onboarding">Onboarding</SelectItem>
+                        <SelectItem value="ansible">Ansible</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-gray-600">Purpose of this repository</p>
@@ -877,6 +879,7 @@ const GitManagement: React.FC = () => {
                     <SelectItem value="configs">Configs</SelectItem>
                     <SelectItem value="templates">Templates</SelectItem>
                     <SelectItem value="onboarding">Onboarding</SelectItem>
+                    <SelectItem value="ansible">Ansible</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

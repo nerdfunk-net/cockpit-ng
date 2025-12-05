@@ -90,7 +90,7 @@ class RenderService:
             try:
                 from services.nautobot import nautobot_service
 
-                # Use the same GraphQL query as the router endpoint
+                # Use the same comprehensive GraphQL query as /nautobot/devices/{device_id}/details endpoint
                 query = """
                 query DeviceDetails($deviceId: ID!) {
                     device(id: $deviceId) {
@@ -107,8 +107,19 @@ class RenderService:
                         primary_ip4 {
                             id
                             address
+                            description
+                            ip_version
                             host
                             mask_length
+                            dns_name
+                            status {
+                                id
+                                name
+                            }
+                            parent {
+                                id
+                                prefix
+                            }
                         }
                         role {
                             id
@@ -122,25 +133,107 @@ class RenderService:
                                 name
                             }
                         }
+                        platform {
+                            id
+                            name
+                            network_driver
+                            manufacturer {
+                                id
+                                name
+                            }
+                        }
                         location {
                             id
                             name
+                            description
                             parent {
                                 id
                                 name
                             }
                         }
-                        platform {
+                        status {
                             id
                             name
                         }
-                        status {
+                        interfaces {
+                            id
+                            name
+                            type
+                            enabled
+                            mtu
+                            mac_address
+                            description
+                            status {
+                                id
+                                name
+                            }
+                            ip_addresses {
+                                id
+                                address
+                                ip_version
+                                status {
+                                    id
+                                    name
+                                }
+                            }
+                            connected_interface {
+                                id
+                                name
+                                device {
+                                    id
+                                    name
+                                }
+                            }
+                            cable {
+                                id
+                                status {
+                                    id
+                                    name
+                                }
+                            }
+                            tagged_vlans {
+                                id
+                                name
+                                vid
+                            }
+                            untagged_vlan {
+                                id
+                                name
+                                vid
+                            }
+                        }
+                        console_ports {
+                            id
+                            name
+                            type
+                            description
+                        }
+                        console_server_ports {
+                            id
+                            name
+                            type
+                            description
+                        }
+                        power_ports {
+                            id
+                            name
+                            type
+                            description
+                        }
+                        power_outlets {
+                            id
+                            name
+                            type
+                            description
+                        }
+                        secrets_group {
                             id
                             name
                         }
                         tags {
                             id
                             name
+                            color
                         }
                     }
                 }
