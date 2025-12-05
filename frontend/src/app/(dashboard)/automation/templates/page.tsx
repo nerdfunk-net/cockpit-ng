@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useApi } from '@/hooks/use-api'
 import { useAuthStore } from '@/lib/auth-store'
-import { FileCode, Plus, Edit, Trash2, Eye, Search, RefreshCw, User, Calendar, Globe, Lock, Terminal, Key } from 'lucide-react'
+import { FileCode, Plus, Edit, Trash2, Eye, Search, RefreshCw, User, Calendar, Globe, Lock, Terminal, Key, ChevronDown, ChevronUp, HelpCircle, BookOpen, Copy, Check } from 'lucide-react'
 
 // Import Netmiko components and hooks for template editing
 import { useVariableManager } from '@/components/netmiko/hooks/use-variable-manager'
@@ -29,6 +29,7 @@ interface Template {
   scope: 'global' | 'private'
   variables?: Record<string, string>
   use_nautobot_context?: boolean
+  pre_run_command?: string
   created_by?: string
   category: string
   template_type: string
@@ -42,6 +43,497 @@ interface DeviceSearchResult {
   name: string
   primary_ip4?: { address: string } | string
   location?: { name: string }
+}
+
+// Code example component with copy functionality
+function CodeExample({ title, code, language = 'jinja2' }: { title: string; code: string; language?: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(code)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="rounded-lg border border-slate-200 overflow-hidden">
+      <div className="flex items-center justify-between bg-slate-100 px-4 py-2 border-b border-slate-200">
+        <span className="text-sm font-medium text-slate-700">{title}</span>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs">{language}</Badge>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCopy}
+            className="h-7 px-2"
+          >
+            {copied ? (
+              <Check className="h-3.5 w-3.5 text-green-600" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        </div>
+      </div>
+      <pre className="bg-slate-900 text-green-400 p-4 text-sm font-mono overflow-x-auto whitespace-pre-wrap">
+        {code}
+      </pre>
+    </div>
+  )
+}
+
+// Help and Examples content component
+function HelpAndExamplesContent() {
+  return (
+    <div className="space-y-8">
+      {/* Introduction */}
+      <Card>
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <BookOpen className="h-5 w-5 text-blue-600" />
+            Template System Overview
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-4">
+          <p className="text-gray-700">
+            The Template System allows you to create reusable configuration templates using <strong>Jinja2</strong> syntax.
+            Templates can dynamically pull data from <strong>Nautobot</strong> (your source of truth for network devices)
+            and can execute <strong>pre-run commands</strong> on devices to gather real-time information before rendering.
+          </p>
+          <div className="grid md:grid-cols-3 gap-4 mt-4">
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="font-semibold text-blue-800 mb-2">📋 Nautobot Integration</h4>
+              <p className="text-sm text-blue-700">
+                Access device information like hostname, IP addresses, interfaces, and custom fields directly from Nautobot.
+              </p>
+            </div>
+            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+              <h4 className="font-semibold text-amber-800 mb-2">⚡ Pre-run Commands</h4>
+              <p className="text-sm text-amber-700">
+                Execute commands on devices before rendering. Output is parsed with TextFSM and available as variables.
+              </p>
+            </div>
+            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <h4 className="font-semibold text-green-800 mb-2">🔧 Custom Variables</h4>
+              <p className="text-sm text-green-700">
+                Define your own variables that can be filled in when rendering the template.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Jinja2 Basics */}
+      <Card>
+        <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 border-b">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <FileCode className="h-5 w-5 text-slate-600" />
+            Jinja2 Template Basics
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-6">
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-800">Variable Syntax</h4>
+            <p className="text-gray-600 text-sm">
+              Use double curly braces to output variables. Variables are organized into namespaces:
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="p-3 bg-gray-50 rounded-lg border">
+                <code className="text-sm text-blue-600">{'{{ nautobot.hostname }}'}</code>
+                <p className="text-xs text-gray-500 mt-1">Data from Nautobot device</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg border">
+                <code className="text-sm text-blue-600">{'{{ user_variables.vlan_id }}'}</code>
+                <p className="text-xs text-gray-500 mt-1">Custom user-defined variable</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg border">
+                <code className="text-sm text-blue-600">{'{{ pre_run.parsed[0].interface }}'}</code>
+                <p className="text-xs text-gray-500 mt-1">Parsed output from pre-run command</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg border">
+                <code className="text-sm text-blue-600">{'{{ pre_run.raw }}'}</code>
+                <p className="text-xs text-gray-500 mt-1">Raw output from pre-run command</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-800">Control Structures</h4>
+            <div className="grid md:grid-cols-2 gap-4">
+              <CodeExample
+                title="For Loop"
+                code={`{% for interface in nautobot.interfaces %}
+interface {{ interface.name }}
+ description {{ interface.description }}
+{% endfor %}`}
+              />
+              <CodeExample
+                title="Conditional (If/Else)"
+                code={`{% if nautobot.primary_ip4 %}
+ip address {{ nautobot.primary_ip4.address }}
+{% else %}
+! No IP configured
+{% endif %}`}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-800">Filters</h4>
+            <p className="text-gray-600 text-sm">
+              Jinja2 filters transform values. Use the pipe character (<code>|</code>) to apply them:
+            </p>
+            <div className="grid md:grid-cols-3 gap-3">
+              <div className="p-3 bg-gray-50 rounded-lg border text-sm">
+                <code className="text-blue-600">{'{{ name | upper }}'}</code>
+                <p className="text-xs text-gray-500 mt-1">Convert to uppercase</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg border text-sm">
+                <code className="text-blue-600">{'{{ name | lower }}'}</code>
+                <p className="text-xs text-gray-500 mt-1">Convert to lowercase</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg border text-sm">
+                <code className="text-blue-600">{'{{ items | length }}'}</code>
+                <p className="text-xs text-gray-500 mt-1">Get list length</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg border text-sm">
+                <code className="text-blue-600">{'{{ value | default("N/A") }}'}</code>
+                <p className="text-xs text-gray-500 mt-1">Default if undefined</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg border text-sm">
+                <code className="text-blue-600">{'{{ ip | ipaddr("address") }}'}</code>
+                <p className="text-xs text-gray-500 mt-1">Extract IP address</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg border text-sm">
+                <code className="text-blue-600">{'{{ list | join(", ") }}'}</code>
+                <p className="text-xs text-gray-500 mt-1">Join list items</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Nautobot Context */}
+      <Card>
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 border-b">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Globe className="h-5 w-5 text-blue-600" />
+            Nautobot Context Variables
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-6">
+          <p className="text-gray-600 text-sm">
+            When "Use Nautobot Context" is enabled, device information is available under the <code className="bg-gray-100 px-1 rounded">nautobot</code> namespace.
+            Select a device when rendering to populate this data.
+          </p>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-800">Available Device Fields</h4>
+            <div className="grid md:grid-cols-2 gap-3 text-sm">
+              <div className="space-y-2">
+                <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                  <code>nautobot.name</code> - Device hostname
+                </div>
+                <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                  <code>nautobot.primary_ip4.address</code> - Primary IPv4
+                </div>
+                <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                  <code>nautobot.primary_ip6.address</code> - Primary IPv6
+                </div>
+                <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                  <code>nautobot.platform.name</code> - Platform (e.g., cisco_ios)
+                </div>
+                <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                  <code>nautobot.role.name</code> - Device role
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                  <code>nautobot.location.name</code> - Location/Site
+                </div>
+                <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                  <code>nautobot.tenant.name</code> - Tenant
+                </div>
+                <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                  <code>nautobot.serial</code> - Serial number
+                </div>
+                <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                  <code>nautobot.interfaces</code> - List of interfaces
+                </div>
+                <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                  <code>nautobot.custom_fields.*</code> - Custom fields
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <CodeExample
+            title="Example: Generate SNMP Configuration from Nautobot"
+            code={`! SNMP Configuration for {{ nautobot.name }}
+! Location: {{ nautobot.location.name | default("Unknown") }}
+! Role: {{ nautobot.role.name | default("Unknown") }}
+
+snmp-server community {{ user_variables.snmp_community }} RO
+snmp-server location {{ nautobot.location.name | default("Not Set") }}
+snmp-server contact {{ nautobot.tenant.name | default("NOC") }}
+
+{% if nautobot.custom_fields.snmp_trap_server %}
+snmp-server host {{ nautobot.custom_fields.snmp_trap_server }} traps
+{% endif %}`}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Pre-run Commands */}
+      <Card>
+        <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Terminal className="h-5 w-5 text-amber-600" />
+            Pre-run Commands
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-6">
+          <p className="text-gray-600 text-sm">
+            Pre-run commands allow you to execute a command on the device <strong>before</strong> rendering the template.
+            The command output is automatically parsed using <strong>TextFSM</strong> (when a parser is available) and
+            made available as template variables.
+          </p>
+
+          <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+            <h4 className="font-semibold text-amber-800 mb-2">How it works:</h4>
+            <ol className="list-decimal list-inside text-sm text-amber-700 space-y-1">
+              <li>Enter a command (e.g., <code className="bg-amber-100 px-1 rounded">show ip interface brief</code>)</li>
+              <li>Select credentials for device authentication</li>
+              <li>When you render the template, the command runs first</li>
+              <li>Output is parsed with TextFSM and available as <code className="bg-amber-100 px-1 rounded">pre_run.parsed</code></li>
+              <li>Raw output is available as <code className="bg-amber-100 px-1 rounded">pre_run.raw</code></li>
+            </ol>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-800">Pre-run Variables</h4>
+            <div className="grid md:grid-cols-2 gap-3 text-sm">
+              <div className="p-3 bg-gray-50 rounded-lg border">
+                <code className="text-blue-600">{'{{ pre_run.parsed }}'}</code>
+                <p className="text-xs text-gray-500 mt-1">List of parsed results (TextFSM output)</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg border">
+                <code className="text-blue-600">{'{{ pre_run.raw }}'}</code>
+                <p className="text-xs text-gray-500 mt-1">Raw command output as string</p>
+              </div>
+            </div>
+          </div>
+
+          <CodeExample
+            title="Example: Configure interfaces based on current status"
+            code={`{# Pre-run command: show ip interface brief #}
+! Interface Status Report for {{ nautobot.name }}
+! Generated from live device data
+
+{% for intf in pre_run.parsed %}
+{% if intf.status == 'down' and intf.protocol == 'down' %}
+! Interface {{ intf.interface }} is DOWN - consider shutdown
+interface {{ intf.interface }}
+ description UNUSED - {{ intf.interface }}
+ shutdown
+{% endif %}
+{% endfor %}`}
+          />
+
+          <CodeExample
+            title="Example: Document current VLAN configuration"
+            code={`{# Pre-run command: show vlan brief #}
+! VLAN Documentation for {{ nautobot.name }}
+! Exported: {{ now | default("N/A") }}
+
+{% for vlan in pre_run.parsed %}
+! VLAN {{ vlan.vlan_id }}: {{ vlan.name }}
+!   Status: {{ vlan.status }}
+!   Ports: {{ vlan.ports | default("none") }}
+{% endfor %}`}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Complete Examples */}
+      <Card>
+        <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <FileCode className="h-5 w-5 text-green-600" />
+            Complete Template Examples
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-6">
+          <CodeExample
+            title="Basic Switch Port Configuration"
+            code={`! Port Configuration Template
+! Device: {{ nautobot.name }}
+! Generated for: {{ user_variables.purpose | default("General Use") }}
+
+interface {{ user_variables.interface }}
+ description {{ user_variables.description }}
+ switchport mode access
+ switchport access vlan {{ user_variables.vlan_id }}
+ spanning-tree portfast
+ no shutdown`}
+          />
+
+          <CodeExample
+            title="Backup Configuration with Nautobot Metadata"
+            code={`! ==========================================
+! Configuration Backup
+! Device: {{ nautobot.name }}
+! Location: {{ nautobot.location.name }}
+! Platform: {{ nautobot.platform.name | default("unknown") }}
+! Role: {{ nautobot.role.name }}
+! Serial: {{ nautobot.serial | default("N/A") }}
+! ==========================================
+
+! Management Access
+{% if nautobot.primary_ip4 %}
+interface Vlan1
+ ip address {{ nautobot.primary_ip4.address | ipaddr('address') }} {{ nautobot.primary_ip4.address | ipaddr('netmask') }}
+{% endif %}
+
+! Interfaces
+{% for intf in nautobot.interfaces %}
+{% if intf.enabled %}
+interface {{ intf.name }}
+{% if intf.description %}
+ description {{ intf.description }}
+{% endif %}
+ no shutdown
+{% endif %}
+{% endfor %}`}
+          />
+
+          <CodeExample
+            title="NTP Configuration with Custom Variables"
+            code={`! NTP Configuration for {{ nautobot.name }}
+! Timezone: {{ user_variables.timezone | default("UTC") }}
+
+clock timezone {{ user_variables.timezone | default("UTC") }} {{ user_variables.utc_offset | default("0") }}
+
+{% for ntp_server in user_variables.ntp_servers.split(",") %}
+ntp server {{ ntp_server | trim }}
+{% endfor %}
+
+ntp update-calendar
+ntp logging`}
+          />
+
+          <CodeExample
+            title="ACL Generation from Pre-run Data"
+            code={`{# Pre-run command: show ip access-lists #}
+! Current ACL Audit for {{ nautobot.name }}
+! This template documents existing ACLs
+
+{% if pre_run.parsed %}
+{% for acl in pre_run.parsed %}
+! ACL Name: {{ acl.name }}
+! Type: {{ acl.type | default("standard") }}
+! Entries: {{ acl.entries | length if acl.entries else 0 }}
+!
+ip access-list {{ acl.type | default("standard") }} {{ acl.name }}
+{% for entry in acl.entries | default([]) %}
+ {{ entry.action }} {{ entry.source }} {{ entry.destination | default("") }}
+{% endfor %}
+!
+{% endfor %}
+{% else %}
+! No ACLs found on device
+{% endif %}`}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Tips and Best Practices */}
+      <Card>
+        <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 border-b">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <HelpCircle className="h-5 w-5 text-purple-600" />
+            Tips & Best Practices
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <h4 className="font-semibold text-gray-800 border-b pb-2">✅ Do</h4>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-500 mt-0.5">•</span>
+                  Use <code className="bg-gray-100 px-1 rounded">| default("value")</code> for optional fields
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-500 mt-0.5">•</span>
+                  Add comments to explain template sections
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-500 mt-0.5">•</span>
+                  Test templates with "Render Template" before deploying
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-500 mt-0.5">•</span>
+                  Use descriptive variable names
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-500 mt-0.5">•</span>
+                  Check for empty lists before iterating
+                </li>
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <h4 className="font-semibold text-gray-800 border-b pb-2">❌ Avoid</h4>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-start gap-2">
+                  <span className="text-red-500 mt-0.5">•</span>
+                  Hardcoding values that should be variables
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-500 mt-0.5">•</span>
+                  Assuming fields always exist (use <code>| default</code>)
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-500 mt-0.5">•</span>
+                  Storing sensitive data in templates (use credentials)
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-500 mt-0.5">•</span>
+                  Creating overly complex nested loops
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-500 mt-0.5">•</span>
+                  Ignoring whitespace control (<code>{'{%-'}</code> and <code>{'-%}'}</code>)
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-800 mb-2">💡 Pro Tip: Whitespace Control</h4>
+            <p className="text-sm text-blue-700 mb-3">
+              Use <code className="bg-blue-100 px-1 rounded">{'{%-'}</code> and <code className="bg-blue-100 px-1 rounded">{'-%}'}</code> to remove
+              whitespace before/after template tags:
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-white p-3 rounded border">
+                <p className="text-xs text-gray-500 mb-1">With whitespace issues:</p>
+                <pre className="text-xs font-mono text-gray-700">{`{% for i in items %}
+{{ i }}
+{% endfor %}`}</pre>
+              </div>
+              <div className="bg-white p-3 rounded border">
+                <p className="text-xs text-gray-500 mb-1">Clean output:</p>
+                <pre className="text-xs font-mono text-gray-700">{`{%- for i in items %}
+{{ i }}
+{%- endfor %}`}</pre>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
 }
 
 function UserTemplatesContent() {
@@ -92,6 +584,7 @@ function UserTemplatesContent() {
   const [preRunCommand, setPreRunCommand] = useState('')
   const [selectedCredentialId, setSelectedCredentialId] = useState<number | null>(null)
   const [storedCredentials, setStoredCredentials] = useState<Array<{ id: number; name: string; username: string }>>([])
+  const [isPreRunPanelExpanded, setIsPreRunPanelExpanded] = useState(false)
 
   useEffect(() => {
     loadTemplates()
@@ -150,6 +643,7 @@ function UserTemplatesContent() {
     // Reset pre-run command
     setPreRunCommand('')
     setSelectedCredentialId(null)
+    setIsPreRunPanelExpanded(false)
   }
 
   // Load devices when search term changes (min 3 chars)
@@ -353,7 +847,8 @@ function UserTemplatesContent() {
         content: formData.content,
         scope: formData.scope,
         variables: variablesToObject(),
-        use_nautobot_context: variableManager.useNautobotContext
+        use_nautobot_context: variableManager.useNautobotContext,
+        pre_run_command: preRunCommand || undefined
       }
 
       await apiCall('templates', {
@@ -383,7 +878,8 @@ function UserTemplatesContent() {
           content: formData.content,
           scope: formData.scope,
           variables: variablesToObject(),
-          use_nautobot_context: variableManager.useNautobotContext
+          use_nautobot_context: variableManager.useNautobotContext,
+          pre_run_command: preRunCommand || undefined
         }
       })
 
@@ -411,6 +907,13 @@ function UserTemplatesContent() {
       // Load variables into variable manager
       variableManager.setVariables(objectToVariables(response.variables))
       variableManager.setUseNautobotContext(response.use_nautobot_context || false)
+
+      // Load pre-run command if present
+      setPreRunCommand(response.pre_run_command || '')
+      // Expand the panel if there's a saved pre-run command
+      if (response.pre_run_command) {
+        setIsPreRunPanelExpanded(true)
+      }
 
       setEditingTemplate(template)
       setActiveTab('create')
@@ -485,7 +988,7 @@ function UserTemplatesContent() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="list">
             <FileCode className="h-4 w-4 mr-2" />
             My Templates
@@ -493,6 +996,10 @@ function UserTemplatesContent() {
           <TabsTrigger value="create">
             <Plus className="h-4 w-4 mr-2" />
             {editingTemplate ? 'Edit Template' : 'Create Template'}
+          </TabsTrigger>
+          <TabsTrigger value="help">
+            <HelpCircle className="h-4 w-4 mr-2" />
+            Help & Examples
           </TabsTrigger>
         </TabsList>
 
@@ -626,65 +1133,83 @@ function UserTemplatesContent() {
                 />
               </div>
 
-              {/* Run before Template Panel */}
-              <div className="border-2 border-amber-200 rounded-lg overflow-hidden">
-                <div className="bg-gradient-to-r from-amber-400/80 to-amber-500/80 text-white py-2 px-4 flex items-center justify-between">
+              {/* Run before Template Panel - Collapsible */}
+              <div className="border-2 border-slate-200 rounded-lg overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setIsPreRunPanelExpanded(!isPreRunPanelExpanded)}
+                  className="w-full bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 text-slate-700 py-2 px-4 flex items-center justify-between transition-colors"
+                >
                   <div className="flex items-center space-x-2">
-                    <Terminal className="h-4 w-4" />
+                    <Terminal className="h-4 w-4 text-slate-600" />
                     <span className="text-sm font-medium">Run before Template (Optional)</span>
+                    {preRunCommand.trim() && (
+                      <Badge variant="secondary" className="ml-2 bg-slate-300 text-slate-700 text-xs">
+                        Command set
+                      </Badge>
+                    )}
                   </div>
-                  <div className="text-xs text-amber-100">
-                    Execute a command and use output in template
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-500 hidden sm:inline">
+                      Execute a command and use output in template
+                    </span>
+                    {isPreRunPanelExpanded ? (
+                      <ChevronUp className="h-4 w-4 text-slate-500" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-slate-500" />
+                    )}
                   </div>
-                </div>
-                <div className="p-4 bg-amber-50 space-y-4">
-                  <p className="text-sm text-amber-800">
-                    Run a command on the device before rendering. The output is available as{' '}
-                    <code className="bg-amber-100 px-1 rounded">{'{{ pre_run_output }}'}</code> (raw) and{' '}
-                    <code className="bg-amber-100 px-1 rounded">{'{{ pre_run_parsed }}'}</code> (TextFSM parsed).
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="pre-run-command">Command</Label>
-                      <Input
-                        id="pre-run-command"
-                        placeholder="e.g., show interfaces status"
-                        value={preRunCommand}
-                        onChange={(e) => setPreRunCommand(e.target.value)}
-                        className="border-2 border-amber-300 bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-200 shadow-sm"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="pre-run-credential">Credentials {preRunCommand.trim() && '*'}</Label>
-                      <Select
-                        value={selectedCredentialId?.toString() ?? ''}
-                        onValueChange={(value) => setSelectedCredentialId(value ? parseInt(value, 10) : null)}
-                      >
-                        <SelectTrigger className={`border-2 bg-white shadow-sm ${preRunCommand.trim() ? 'border-amber-400' : 'border-amber-300'} focus:border-amber-500 focus:ring-2 focus:ring-amber-200`}>
-                          <SelectValue placeholder="Select credentials..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {storedCredentials.map((cred) => (
-                            <SelectItem key={cred.id} value={cred.id.toString()}>
-                              <div className="flex items-center gap-2">
-                                <Key className="h-3 w-3 text-amber-600" />
-                                {cred.name} ({cred.username})
-                              </div>
-                            </SelectItem>
-                          ))}
-                          {storedCredentials.length === 0 && (
-                            <div className="px-2 py-1 text-sm text-gray-500">No SSH credentials found</div>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  {preRunCommand.trim() && !selectedCredentialId && (
-                    <p className="text-xs text-amber-700">
-                      ⚠️ Credentials required to execute pre-run command
+                </button>
+                {isPreRunPanelExpanded && (
+                  <div className="p-4 bg-slate-50 space-y-4 border-t border-slate-200">
+                    <p className="text-sm text-slate-600">
+                      Run a command on the device before rendering. The output is available as{' '}
+                      <code className="bg-slate-200 px-1 rounded text-slate-800">{'{{ pre_run_output }}'}</code> (raw) and{' '}
+                      <code className="bg-slate-200 px-1 rounded text-slate-800">{'{{ pre_run_parsed }}'}</code> (TextFSM parsed).
                     </p>
-                  )}
-                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="pre-run-command">Command</Label>
+                        <Input
+                          id="pre-run-command"
+                          placeholder="e.g., show interfaces status"
+                          value={preRunCommand}
+                          onChange={(e) => setPreRunCommand(e.target.value)}
+                          className="border-2 border-slate-300 bg-white focus:border-slate-500 focus:ring-2 focus:ring-slate-200 shadow-sm"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="pre-run-credential">Credentials {preRunCommand.trim() && '*'}</Label>
+                        <Select
+                          value={selectedCredentialId?.toString() ?? ''}
+                          onValueChange={(value) => setSelectedCredentialId(value ? parseInt(value, 10) : null)}
+                        >
+                          <SelectTrigger className={`border-2 bg-white shadow-sm ${preRunCommand.trim() ? 'border-slate-400' : 'border-slate-300'} focus:border-slate-500 focus:ring-2 focus:ring-slate-200`}>
+                            <SelectValue placeholder="Select credentials..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {storedCredentials.map((cred) => (
+                              <SelectItem key={cred.id} value={cred.id.toString()}>
+                                <div className="flex items-center gap-2">
+                                  <Key className="h-3 w-3 text-slate-600" />
+                                  {cred.name} ({cred.username})
+                                </div>
+                              </SelectItem>
+                            ))}
+                            {storedCredentials.length === 0 && (
+                              <div className="px-2 py-1 text-sm text-gray-500">No SSH credentials found</div>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    {preRunCommand.trim() && !selectedCredentialId && (
+                      <p className="text-xs text-slate-600">
+                        ⚠️ Credentials required to execute pre-run command
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Template Content */}
@@ -864,6 +1389,11 @@ function UserTemplatesContent() {
               </div>
             </div>
           </div>
+        </TabsContent>
+
+        {/* Help & Examples Tab */}
+        <TabsContent value="help" className="space-y-6">
+          <HelpAndExamplesContent />
         </TabsContent>
       </Tabs>
 

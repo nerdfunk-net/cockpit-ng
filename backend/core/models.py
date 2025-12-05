@@ -733,6 +733,7 @@ class Template(Base):
     variables = Column(Text, default="{}", nullable=False)  # JSON string
     tags = Column(Text, default="[]", nullable=False)  # JSON string
     use_nautobot_context = Column(Boolean, default=False, nullable=False)  # Whether to use Nautobot context when rendering
+    pre_run_command = Column(Text)  # Command to execute before rendering (output available as context)
 
     # Ownership and scope
     created_by = Column(String(255), index=True)

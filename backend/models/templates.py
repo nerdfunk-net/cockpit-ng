@@ -65,6 +65,10 @@ class TemplateRequest(BaseModel):
     use_nautobot_context: Optional[bool] = Field(
         default=False, description="Whether to use Nautobot context when rendering"
     )
+    pre_run_command: Optional[str] = Field(
+        None,
+        description="Command to execute on device before rendering. Output is parsed with TextFSM and available as context.",
+    )
 
 
 class TemplateResponse(BaseModel):
@@ -89,6 +93,7 @@ class TemplateResponse(BaseModel):
     variables: Dict[str, Any]
     tags: List[str]
     use_nautobot_context: bool
+    pre_run_command: Optional[str]
 
     # Timestamps
     created_at: str
@@ -230,6 +235,10 @@ class TemplateUpdateRequest(BaseModel):
     variables: Optional[Dict[str, Any]] = Field(None, description="Template variables")
     tags: Optional[List[str]] = Field(None, description="Template tags")
     use_nautobot_context: Optional[bool] = Field(None, description="Whether to use Nautobot context when rendering")
+    pre_run_command: Optional[str] = Field(
+        None,
+        description="Command to execute on device before rendering. Output is parsed with TextFSM and available as context.",
+    )
 
 
 class TemplateRenderRequest(BaseModel):

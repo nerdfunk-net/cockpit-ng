@@ -69,6 +69,7 @@ class TemplateManager:
                 variables=variables_json,
                 tags=tags_json,
                 use_nautobot_context=template_data.get("use_nautobot_context", False),
+                pre_run_command=template_data.get("pre_run_command"),
                 created_by=template_data.get("created_by"),
                 scope=template_data.get("scope", "global"),
                 is_active=True,
@@ -214,6 +215,7 @@ class TemplateManager:
                 "variables": variables_json,
                 "tags": tags_json,
                 "use_nautobot_context": template_data.get("use_nautobot_context", current.get("use_nautobot_context", False)),
+                "pre_run_command": template_data.get("pre_run_command", current.get("pre_run_command")),
                 "scope": new_scope,
             }
 
@@ -351,6 +353,7 @@ class TemplateManager:
             "scope": template.scope,
             "is_active": bool(template.is_active),
             "use_nautobot_context": bool(template.use_nautobot_context),
+            "pre_run_command": template.pre_run_command,
             "last_sync": template.last_sync.isoformat() if template.last_sync else None,
             "sync_status": template.sync_status,
             "created_at": template.created_at.isoformat()
