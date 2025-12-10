@@ -8,10 +8,7 @@ Moved from job_tasks.py to improve code organization.
 import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
-import shutil
-from git import Repo
-from git.exc import InvalidGitRepositoryError, GitCommandError
-from services.git_config_service import set_git_author
+from git.exc import GitCommandError
 
 logger = logging.getLogger(__name__)
 
@@ -72,12 +69,8 @@ def execute_backup(
 
         # Import services
         from services.git_shared_utils import git_repo_manager
-        from services.git_utils import (
-            repo_path,
-            add_auth_to_url,
-            set_ssl_env,
-            resolve_git_credentials,
-        )
+        from services.git_service import git_service
+        from services.git_auth_service import git_auth_service
         from services.nautobot import NautobotService
         from services.netmiko_service import NetmikoService
         import credentials_manager
@@ -244,108 +237,62 @@ def execute_backup(
         logger.info("STEP 2: SETTING UP GIT REPOSITORY")
         logger.info("-" * 80)
 
-        repo_dir = repo_path(dict(repository))
+        repo_dir = git_service.get_repo_path(dict(repository))
         git_status["repository_path"] = str(repo_dir)
         logger.info(f"Repository local path: {repo_dir}")
 
         repo_dir.parent.mkdir(parents=True, exist_ok=True)
         logger.info(f"✓ Parent directory created/exists: {repo_dir.parent}")
 
-        # Get Git credentials for repository
+        # Get Git credentials for repository (for logging purposes)
         logger.info("Resolving Git repository credentials...")
-        git_username, git_token, git_ssh_key_path = resolve_git_credentials(
-            dict(repository)
+        git_username, git_token, git_ssh_key_path = (
+            git_auth_service.resolve_credentials(dict(repository))
         )
         logger.info(f"  - Git username: {git_username or 'none'}")
         logger.info(f"  - Git token: {'*' * 10 if git_token else 'none'}")
         logger.info(f"  - SSH key: {'configured' if git_ssh_key_path else 'none'}")
+        logger.info(f"  - Auth type: {repository.get('auth_type', 'token')}")
 
-        # Check if repository exists
-        git_repo = None
-
-        logger.info(f"Checking if repository exists at {repo_dir}...")
+        # Use central git_service for repository operations (supports SSH keys and tokens)
         try:
-            git_repo = Repo(str(repo_dir))
-            git_status["repository_existed"] = True
-            logger.info("✓ Repository exists locally")
+            git_repo = git_service.open_or_clone(dict(repository))
 
-            from services.git_utils import normalize_git_url
-
-            existing_url = normalize_git_url(
-                git_repo.remotes.origin.url if git_repo.remotes else ""
+            git_status["repository_existed"] = repo_dir.exists()
+            git_status["operation"] = (
+                "opened" if git_status["repository_existed"] else "cloned"
             )
-            expected_url = normalize_git_url(repository.get("url"))
 
-            logger.info("Verifying repository URL...")
-            logger.info(f"  - Expected: {expected_url}")
-            logger.info(f"  - Actual:   {existing_url}")
+            logger.info(f"✓ Repository ready at {repo_dir}")
+            logger.info(f"  - Current branch: {git_repo.active_branch}")
+            logger.info(f"  - Latest commit: {git_repo.head.commit.hexsha[:8]}")
 
-            if existing_url != expected_url:
-                logger.warning("⚠ Repository URL mismatch! Will remove and reclone.")
-                git_repo.close()
-                shutil.rmtree(repo_dir)
-                git_repo = None
+            # Pull latest changes using git_service
+            logger.info(f"Pulling latest changes from {repository.get('url')}...")
+            pull_result = git_service.pull(dict(repository), repo=git_repo)
+
+            if pull_result.success:
+                logger.info(f"✓ {pull_result.message}")
+                git_status["operation"] = "pulled"
             else:
-                logger.info("✓ Repository URL matches")
+                logger.warning(f"⚠ Pull warning: {pull_result.message}")
 
-        except (InvalidGitRepositoryError, Exception) as e:
-            logger.info(f"Repository doesn't exist or is invalid: {e}")
-            git_repo = None
-
-        # Clone or pull repository
-        if git_repo is None:
-            logger.info(
-                f"CLONING repository from {repository.get('url')} to {repo_dir}"
-            )
-            git_status["operation"] = "cloned"
-            clone_url = add_auth_to_url(repository.get("url"), git_username, git_token)
-
-            with set_ssl_env(dict(repository)):
-                try:
-                    git_repo = Repo.clone_from(
-                        clone_url,
-                        str(repo_dir),
-                        branch=repository.get("branch") or "main",
-                    )
-                    logger.info("✓ Successfully cloned repository")
-                    logger.info(f"  - Current branch: {git_repo.active_branch}")
-                    logger.info(f"  - Latest commit: {git_repo.head.commit.hexsha[:8]}")
-                except GitCommandError as e:
-                    logger.error(f"ERROR: Failed to clone repository: {e}")
-                    return {
-                        "success": False,
-                        "error": f"Failed to clone repository: {str(e)}",
-                        "git_status": git_status,
-                        "credential_info": credential_info,
-                    }
-        else:
-            logger.info(f"PULLING latest changes from {repository.get('url')}")
-            git_status["operation"] = "pulled"
-
-            with set_ssl_env(dict(repository)):
-                try:
-                    origin = git_repo.remotes.origin
-                    pull_url = add_auth_to_url(
-                        repository.get("url"), git_username, git_token
-                    )
-
-                    with git_repo.config_writer() as config:
-                        config.set_value('remote "origin"', "url", pull_url)
-
-                    origin.pull(repository.get("branch") or "main")
-                    logger.info("✓ Successfully pulled latest changes")
-                except GitCommandError as e:
-                    logger.warning(f"⚠ Pull failed: {e}. Will remove and reclone...")
-                    git_status["operation"] = "recloned"
-                    git_repo.close()
-                    shutil.rmtree(repo_dir)
-
-                    git_repo = Repo.clone_from(
-                        add_auth_to_url(repository.get("url"), git_username, git_token),
-                        str(repo_dir),
-                        branch=repository.get("branch") or "main",
-                    )
-                    logger.info("✓ Successfully recloned repository")
+        except GitCommandError as e:
+            logger.error(f"ERROR: Failed to prepare repository: {e}")
+            return {
+                "success": False,
+                "error": f"Failed to prepare repository: {str(e)}",
+                "git_status": git_status,
+                "credential_info": credential_info,
+            }
+        except Exception as e:
+            logger.error(f"ERROR: Unexpected error preparing repository: {e}")
+            return {
+                "success": False,
+                "error": f"Failed to prepare repository: {str(e)}",
+                "git_status": git_status,
+                "credential_info": credential_info,
+            }
 
         task_context.update_state(
             state="PROGRESS",
@@ -680,7 +627,7 @@ def execute_backup(
             meta={"current": 90, "total": 100, "status": "Committing to Git..."},
         )
 
-        # STEP 4: Commit and push
+        # STEP 4: Commit and push using git_service
         logger.info("-" * 80)
         logger.info("STEP 4: GIT COMMIT AND PUSH")
         logger.info("-" * 80)
@@ -694,36 +641,35 @@ def execute_backup(
 
         try:
             if backed_up_devices:
-                git_repo.git.add(".")
-
-                changed_files = git_repo.git.diff("--cached", "--name-only").split("\n")
-                changed_files = [f for f in changed_files if f.strip()]
-                git_commit_status["files_changed"] = len(changed_files)
-
-                logger.info(f"Files to commit: {len(changed_files)}")
-                for f in changed_files[:10]:
-                    logger.info(f"  - {f}")
-
                 commit_message = f"Backup config {current_date}"
-                # Set git author configuration for this commit
-                with set_git_author(dict(repository), git_repo):
-                    commit = git_repo.index.commit(commit_message)
-                git_commit_status["committed"] = True
-                git_commit_status["commit_hash"] = commit.hexsha[:8]
-                logger.info(f"✓ Committed: {commit.hexsha[:8]}")
+                logger.info(f"Committing and pushing with message: '{commit_message}'")
+                logger.info(f"  - Auth type: {repository.get('auth_type', 'token')}")
 
-                with set_ssl_env(dict(repository)):
-                    origin = git_repo.remotes.origin
-                    push_url = add_auth_to_url(
-                        repository.get("url"), git_username, git_token
-                    )
+                # Use git_service for commit and push (supports SSH keys and tokens)
+                result = git_service.commit_and_push(
+                    repository=dict(repository),
+                    message=commit_message,
+                    repo=git_repo,
+                    add_all=True,
+                    branch=repository.get("branch") or "main",
+                )
 
-                    with git_repo.config_writer() as config:
-                        config.set_value('remote "origin"', "url", push_url)
+                git_commit_status["files_changed"] = result.files_changed
+                git_commit_status["commit_hash"] = (
+                    result.commit_sha[:8] if result.commit_sha else None
+                )
+                git_commit_status["committed"] = result.commit_sha is not None
+                git_commit_status["pushed"] = result.pushed
 
-                    origin.push(repository.get("branch") or "main")
-                    git_commit_status["pushed"] = True
-                    logger.info("✓ Pushed to remote")
+                if result.success:
+                    logger.info(f"✓ {result.message}")
+                    if result.commit_sha:
+                        logger.info(f"  - Commit: {result.commit_sha[:8]}")
+                    logger.info(f"  - Files changed: {result.files_changed}")
+                    logger.info(f"  - Pushed: {result.pushed}")
+                else:
+                    logger.error(f"✗ {result.message}")
+                    raise GitCommandError("commit_and_push", 1, result.message.encode())
             else:
                 logger.warning("⚠ No devices backed up - skipping commit")
 

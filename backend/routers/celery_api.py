@@ -59,6 +59,7 @@ class TaskResponse(BaseModel):
 
 class TaskWithJobResponse(BaseModel):
     """Response model for tasks that are tracked in the job database."""
+
     task_id: str
     job_id: Optional[str] = None  # Job ID for tracking in Jobs/Views
     status: str

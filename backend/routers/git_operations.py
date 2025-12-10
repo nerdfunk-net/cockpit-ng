@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from git import GitCommandError, Repo
 
 from core.auth import require_permission
-from services.git_utils import set_ssl_env
+from services.git_env import set_ssl_env
 from services.git_paths import repo_path as git_repo_path
 from services.git_auth_service import git_auth_service
 from services.git_cache_service import git_cache_service

@@ -309,13 +309,29 @@ const GitManagement: React.FC = () => {
 
   const editRepository = (repo: GitRepository) => {
     setEditingRepo(repo)
+    
+    // Find the matching credential and construct the "id:name" format expected by the Select component
+    let credentialValue = '__none__'
+    if (repo.credential_name) {
+      const expectedType = repo.auth_type === 'ssh_key' ? 'ssh_key' : 'token'
+      const matchingCred = credentials.find(
+        cred => cred.name === repo.credential_name && cred.type === expectedType
+      )
+      if (matchingCred?.id) {
+        credentialValue = `${matchingCred.id}:${matchingCred.name}`
+      } else if (matchingCred) {
+        // Fallback for credentials without ID
+        credentialValue = repo.credential_name
+      }
+    }
+    
     setEditFormData({
       name: repo.name,
       category: repo.category,
       url: repo.url,
       branch: repo.branch,
       auth_type: repo.auth_type || 'none',
-      credential_name: repo.credential_name || '__none__',
+      credential_name: credentialValue,
       path: repo.path || '',
       verify_ssl: repo.verify_ssl,
       git_author_name: repo.git_author_name || '',

@@ -13,7 +13,6 @@ Usage:
     python start_celery.py
 """
 
-import glob
 import os
 import shutil
 import subprocess

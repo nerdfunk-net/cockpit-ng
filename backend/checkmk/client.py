@@ -469,7 +469,7 @@ class CheckMKClient:
         Start service discovery for a host
 
         Endpoint: POST /domain-types/service_discovery_run/actions/start/invoke
-        
+
         Valid modes:
         - new: Only add new services
         - remove: Only remove vanished services
@@ -527,7 +527,7 @@ class CheckMKClient:
         will block other bulk discovery jobs from running until the active job is finished.
 
         Endpoint: POST /domain-types/discovery_run/actions/bulk-discovery-start/invoke
-        
+
         Args:
             hostnames: List of host names to discover
             options: Discovery options (monitor_undecided_services, remove_vanished_services, etc.)
@@ -557,11 +557,11 @@ class CheckMKClient:
             "domain-types/discovery_run/actions/bulk-discovery-start/invoke",
             json_data=json_data,
         )
-        
+
         # Handle 204 No Content (success with no body)
         if response.status_code == 204:
             return {"success": True, "message": "Bulk discovery started"}
-        
+
         return self._handle_response(response)
 
     # Acknowledgment Methods

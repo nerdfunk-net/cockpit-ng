@@ -95,6 +95,7 @@ class GitRepositoryManager:
                 "category",
                 "url",
                 "branch",
+                "auth_type",
                 "credential_name",
                 "path",
                 "verify_ssl",

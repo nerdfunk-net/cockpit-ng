@@ -159,11 +159,17 @@ def execute_compare_devices(
 
                         # Filter diff to remove ignored attributes (same as manual job)
                         raw_diff = comparison_result.diff or ""
-                        ignored_attrs = comparison_result.ignored_attributes if hasattr(comparison_result, "ignored_attributes") else []
+                        ignored_attrs = (
+                            comparison_result.ignored_attributes
+                            if hasattr(comparison_result, "ignored_attributes")
+                            else []
+                        )
 
                         # Use the same filtering logic as the manual job
-                        filtered_diff = nb2cmk_service.filter_diff_by_ignored_attributes(
-                            raw_diff, ignored_attrs
+                        filtered_diff = (
+                            nb2cmk_service.filter_diff_by_ignored_attributes(
+                                raw_diff, ignored_attrs
+                            )
                         )
 
                         # Store result in NB2CMK database using add_device_result

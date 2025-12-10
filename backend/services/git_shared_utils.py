@@ -6,7 +6,7 @@ Consolidates common functions to avoid duplication.
 import logging
 from fastapi import HTTPException, status
 from git_repositories_manager import GitRepositoryManager
-from services.git_utils import open_or_clone
+from services.git_service import git_service
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +32,9 @@ def get_git_repo_by_id(repo_id: int):
                 detail=f"Git repository '{repository['name']}' is inactive. Please activate it first.",
             )
 
-        # Open the repository (or clone if needed) using shared utilities
+        # Open the repository (or clone if needed) using central git_service
         try:
-            repo = open_or_clone(repository)
+            repo = git_service.open_or_clone(repository)
             return repo
         except Exception as e:
             logger.error(f"Failed to prepare repository {repository['name']}: {e}")

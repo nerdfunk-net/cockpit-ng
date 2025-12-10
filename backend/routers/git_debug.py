@@ -425,99 +425,99 @@ async def debug_push_test(
                         _token,
                         _ssh_key_path,
                     ):
-                            # Update remote URL with authenticated URL for token auth
-                            if auth_type != "ssh_key":
-                                origin.set_url(auth_url)
+                        # Update remote URL with authenticated URL for token auth
+                        if auth_type != "ssh_key":
+                            origin.set_url(auth_url)
 
-                            # Push to remote
-                            try:
-                                push_info = origin.push(
-                                    refspec=f"{repository['branch']}:{repository['branch']}"
-                                )
+                        # Push to remote
+                        try:
+                            push_info = origin.push(
+                                refspec=f"{repository['branch']}:{repository['branch']}"
+                            )
 
-                                # Restore original URL (without credentials) for token auth
-                                if auth_type != "ssh_key" and original_url:
-                                    try:
-                                        origin.set_url(original_url)
-                                    except Exception:
-                                        pass  # Best effort to clean up
+                            # Restore original URL (without credentials) for token auth
+                            if auth_type != "ssh_key" and original_url:
+                                try:
+                                    origin.set_url(original_url)
+                                except Exception:
+                                    pass  # Best effort to clean up
 
-                                # Check push result
-                                if push_info and len(push_info) > 0:
-                                    push_result = push_info[0]
+                            # Check push result
+                            if push_info and len(push_info) > 0:
+                                push_result = push_info[0]
 
-                                    # Check for errors
-                                    if push_result.flags & push_result.ERROR:
-                                        return {
-                                            "success": False,
-                                            "message": f"Push failed: {push_result.summary}",
-                                            "details": {
-                                                "error": push_result.summary,
-                                                "error_type": "PushError",
-                                                "commit_sha": commit_sha,
-                                                "suggestion": "Check repository permissions and credentials",
-                                            },
-                                        }
-
-                                    # Success!
-                                    return {
-                                        "success": True,
-                                        "message": "Push test successful - changes pushed to remote",
-                                        "details": {
-                                            "commit_sha": commit_sha,
-                                            "commit_message": commit_message,
-                                            "branch": repository["branch"],
-                                            "remote": "origin",
-                                            "file_path": str(test_file_path),
-                                            "push_summary": push_result.summary,
-                                            "verified": True,
-                                        },
-                                    }
-                                else:
+                                # Check for errors
+                                if push_result.flags & push_result.ERROR:
                                     return {
                                         "success": False,
-                                        "message": "Push completed but no feedback received",
+                                        "message": f"Push failed: {push_result.summary}",
                                         "details": {
-                                            "error": "No push info returned",
-                                            "error_type": "UnknownPushResult",
+                                            "error": push_result.summary,
+                                            "error_type": "PushError",
                                             "commit_sha": commit_sha,
+                                            "suggestion": "Check repository permissions and credentials",
                                         },
                                     }
 
-                            except Exception as push_error:
-                                # Restore original URL even if push fails
-                                if auth_type != "ssh_key" and original_url:
-                                    try:
-                                        origin.set_url(original_url)
-                                    except Exception:
-                                        pass
-
-                                error_message = str(push_error)
-
-                                # Provide helpful error messages for common issues
-                                if (
-                                    "permission denied" in error_message.lower()
-                                    or "403" in error_message
-                                ):
-                                    suggestion = "Authentication failed or insufficient permissions. Check that the token has write access."
-                                elif "could not resolve host" in error_message.lower():
-                                    suggestion = "Network error: Cannot reach remote repository. Check network connectivity."
-                                elif "authentication failed" in error_message.lower():
-                                    suggestion = "Credentials are invalid. Update the token in credential settings."
-                                else:
-                                    suggestion = "Check repository configuration and network connectivity"
-
+                                # Success!
                                 return {
-                                    "success": False,
-                                    "message": f"Failed to push: {error_message}",
+                                    "success": True,
+                                    "message": "Push test successful - changes pushed to remote",
                                     "details": {
-                                        "error": error_message,
-                                        "error_type": type(push_error).__name__,
-                                        "stage": "git_push",
                                         "commit_sha": commit_sha,
-                                        "suggestion": suggestion,
+                                        "commit_message": commit_message,
+                                        "branch": repository["branch"],
+                                        "remote": "origin",
+                                        "file_path": str(test_file_path),
+                                        "push_summary": push_result.summary,
+                                        "verified": True,
                                     },
                                 }
+                            else:
+                                return {
+                                    "success": False,
+                                    "message": "Push completed but no feedback received",
+                                    "details": {
+                                        "error": "No push info returned",
+                                        "error_type": "UnknownPushResult",
+                                        "commit_sha": commit_sha,
+                                    },
+                                }
+
+                        except Exception as push_error:
+                            # Restore original URL even if push fails
+                            if auth_type != "ssh_key" and original_url:
+                                try:
+                                    origin.set_url(original_url)
+                                except Exception:
+                                    pass
+
+                            error_message = str(push_error)
+
+                            # Provide helpful error messages for common issues
+                            if (
+                                "permission denied" in error_message.lower()
+                                or "403" in error_message
+                            ):
+                                suggestion = "Authentication failed or insufficient permissions. Check that the token has write access."
+                            elif "could not resolve host" in error_message.lower():
+                                suggestion = "Network error: Cannot reach remote repository. Check network connectivity."
+                            elif "authentication failed" in error_message.lower():
+                                suggestion = "Credentials are invalid. Update the token in credential settings."
+                            else:
+                                suggestion = "Check repository configuration and network connectivity"
+
+                            return {
+                                "success": False,
+                                "message": f"Failed to push: {error_message}",
+                                "details": {
+                                    "error": error_message,
+                                    "error_type": type(push_error).__name__,
+                                    "stage": "git_push",
+                                    "commit_sha": commit_sha,
+                                    "suggestion": suggestion,
+                                },
+                            }
 
             except Exception as remote_error:
                 return {

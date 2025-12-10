@@ -177,11 +177,17 @@ class NB2CMKDatabaseService:
     ) -> bool:
         """Add a device result to the job."""
         try:
-            logger.info(f"[DB_SERVICE] Device {device_name}: Received ignored_attributes = {ignored_attributes}")
+            logger.info(
+                f"[DB_SERVICE] Device {device_name}: Received ignored_attributes = {ignored_attributes}"
+            )
             logger.info(f"[DB_SERVICE] Device {device_name}: Received diff = {diff}")
 
-            ignored_attrs_json = json.dumps(ignored_attributes) if ignored_attributes else json.dumps([])
-            logger.info(f"[DB_SERVICE] Device {device_name}: JSON ignored_attributes = {ignored_attrs_json}")
+            ignored_attrs_json = (
+                json.dumps(ignored_attributes) if ignored_attributes else json.dumps([])
+            )
+            logger.info(
+                f"[DB_SERVICE] Device {device_name}: JSON ignored_attributes = {ignored_attrs_json}"
+            )
 
             self.result_repo.create(
                 job_id=job_id,
@@ -195,11 +201,15 @@ class NB2CMKDatabaseService:
                 processed_at=datetime.now(),
             )
 
-            logger.info(f"[DB_SERVICE] Device {device_name}: Successfully stored to database")
+            logger.info(
+                f"[DB_SERVICE] Device {device_name}: Successfully stored to database"
+            )
             return True
 
         except Exception as e:
-            logger.error(f"[DB_SERVICE] Error adding device result for job {job_id}: {e}")
+            logger.error(
+                f"[DB_SERVICE] Error adding device result for job {job_id}: {e}"
+            )
             return False
 
     def get_job_results(self, job_id: str) -> List[DeviceJobResult]:
@@ -207,15 +217,25 @@ class NB2CMKDatabaseService:
         try:
             result_models = self.result_repo.get_by_job_id(job_id)
 
-            logger.info(f"[DB_SERVICE] Retrieved {len(result_models)} results from database for job {job_id}")
+            logger.info(
+                f"[DB_SERVICE] Retrieved {len(result_models)} results from database for job {job_id}"
+            )
 
             results = []
             for row in result_models:
-                logger.info(f"[DB_SERVICE] Device {row.device_name}: raw ignored_attributes from DB = {row.ignored_attributes}")
-                logger.info(f"[DB_SERVICE] Device {row.device_name}: raw diff from DB = {row.diff}")
+                logger.info(
+                    f"[DB_SERVICE] Device {row.device_name}: raw ignored_attributes from DB = {row.ignored_attributes}"
+                )
+                logger.info(
+                    f"[DB_SERVICE] Device {row.device_name}: raw diff from DB = {row.diff}"
+                )
 
-                ignored_attrs = json.loads(row.ignored_attributes) if row.ignored_attributes else []
-                logger.info(f"[DB_SERVICE] Device {row.device_name}: parsed ignored_attributes = {ignored_attrs}")
+                ignored_attrs = (
+                    json.loads(row.ignored_attributes) if row.ignored_attributes else []
+                )
+                logger.info(
+                    f"[DB_SERVICE] Device {row.device_name}: parsed ignored_attributes = {ignored_attrs}"
+                )
 
                 results.append(
                     DeviceJobResult(

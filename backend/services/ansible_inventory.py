@@ -787,7 +787,7 @@ class AnsibleInventoryService:
 
             logger.debug(f"Custom field query: {query}")
             logger.debug(f"Custom field variables: {variables}")
-            
+
             result = await nautobot_service.graphql_query(query, variables)
 
             if "errors" in result:
@@ -891,23 +891,29 @@ class AnsibleInventoryService:
             for field in response["results"]:
                 # Get the field key/name - Nautobot uses 'key' in v2+
                 field_name = field.get("key") or field.get("name", "")
-                
+
                 # Get label - ensure it's a string, not an object
                 label = field.get("label", field_name)
                 if isinstance(label, dict):
                     # If label is a dict, try to get display value
                     label = label.get("display") or label.get("value") or str(label)
-                
+
                 # Get type - ensure it's a string
                 field_type = field.get("type", "text")
                 if isinstance(field_type, dict):
-                    field_type = field_type.get("value") or field_type.get("label") or str(field_type)
-                
-                transformed_fields.append({
-                    "name": str(field_name),
-                    "label": str(label) if label else str(field_name),
-                    "type": str(field_type)
-                })
+                    field_type = (
+                        field_type.get("value")
+                        or field_type.get("label")
+                        or str(field_type)
+                    )
+
+                transformed_fields.append(
+                    {
+                        "name": str(field_name),
+                        "label": str(label) if label else str(field_name),
+                        "type": str(field_type),
+                    }
+                )
 
             # Cache the transformed results
             self._custom_fields_cache = transformed_fields
@@ -943,14 +949,18 @@ class AnsibleInventoryService:
             if field_name.startswith("cf_"):
                 # Get the custom field name without the cf_ prefix
                 cf_key = field_name[3:]  # Remove 'cf_' prefix
-                
+
                 # Get custom fields to check the type
                 custom_fields = await self.get_custom_fields()
-                cf_info = next((cf for cf in custom_fields if cf.get("name") == cf_key), None)
-                
+                cf_info = next(
+                    (cf for cf in custom_fields if cf.get("name") == cf_key), None
+                )
+
                 if cf_info and cf_info.get("type") == "select":
                     # For select-type custom fields, fetch the available choices
-                    logger.info(f"Custom field '{cf_key}' is type 'select' - fetching choices")
+                    logger.info(
+                        f"Custom field '{cf_key}' is type 'select' - fetching choices"
+                    )
                     try:
                         choices_response = await nautobot_service.rest_request(
                             f"extras/custom-field-choices/?custom_field={cf_key}"
@@ -960,17 +970,23 @@ class AnsibleInventoryService:
                             for choice in choices_response["results"]:
                                 choice_value = choice.get("value", "")
                                 if choice_value:
-                                    values.append({
-                                        "value": str(choice_value),
-                                        "label": str(choice_value)
-                                    })
+                                    values.append(
+                                        {
+                                            "value": str(choice_value),
+                                            "label": str(choice_value),
+                                        }
+                                    )
                             values.sort(key=lambda x: x["label"].lower())
-                            logger.info(f"Retrieved {len(values)} choices for custom field '{cf_key}'")
+                            logger.info(
+                                f"Retrieved {len(values)} choices for custom field '{cf_key}'"
+                            )
                             return values
                     except Exception as e:
-                        logger.error(f"Error fetching choices for custom field '{cf_key}': {e}")
+                        logger.error(
+                            f"Error fetching choices for custom field '{cf_key}': {e}"
+                        )
                         return []
-                
+
                 # For non-select custom fields (text, date, integer, etc.), return empty list for text input
                 logger.info(
                     f"Custom field '{field_name}' is type '{cf_info.get('type') if cf_info else 'unknown'}' - using text input"
@@ -1087,13 +1103,8 @@ class AnsibleInventoryService:
         from datetime import datetime
         from pathlib import Path
         from git_repositories_manager import GitRepositoryManager
-        from services.git_utils import (
-            open_or_clone,
-            resolve_git_credentials,
-            add_auth_to_url,
-            set_ssl_env,
-        )
-        from services.git_config_service import set_git_author
+        from services.git_service import git_service
+        from services.git_auth_service import git_auth_service
 
         try:
             logger.info(f"Saving inventory '{name}' to repository {repository_id}")
@@ -1106,8 +1117,11 @@ class AnsibleInventoryService:
                 raise ValueError(f"Repository with ID {repository_id} not found")
 
             # Check if repository has credentials configured for HTTPS URLs
-            if repository.get("url", "").startswith("https://"):
-                username, token, _ = resolve_git_credentials(repository)
+            if (
+                repository.get("url", "").startswith("https://")
+                and repository.get("auth_type") != "ssh_key"
+            ):
+                username, token, _ = git_auth_service.resolve_credentials(repository)
                 if not token:
                     raise ValueError(
                         f"Repository '{repository['name']}' requires credentials. "
@@ -1115,9 +1129,10 @@ class AnsibleInventoryService:
                         "or use SSH URL (git@...) instead of HTTPS."
                     )
 
-            # Open or clone repository
+            # Open or clone repository using git_service
             logger.info(f"Opening/cloning Git repository: {repository['name']}")
-            repo = open_or_clone(repository)
+            logger.info(f"  - Auth type: {repository.get('auth_type', 'token')}")
+            repo = git_service.open_or_clone(repository)
 
             # Create inventories directory if it doesn't exist
             inventories_dir = Path(repo.working_dir) / "inventories"
@@ -1158,42 +1173,23 @@ class AnsibleInventoryService:
             logger.info(f"Writing inventory to {inventory_file}")
             inventory_file.write_text(json.dumps(inventory_data, indent=2))
 
-            # Stage the file
-            repo.index.add([str(inventory_file.relative_to(repo.working_dir))])
-
-            # Commit changes
+            # Commit changes using git_service
             action = "Updated" if is_update else "Created"
             commit_message = f"{action} inventory: {name}"
             if description:
                 commit_message += f"\n\n{description}"
 
-            logger.info(f"Committing changes with message: {commit_message}")
-            # Set git author configuration for this commit
-            with set_git_author(repository, repo):
-                repo.index.commit(commit_message)
+            logger.info(f"Committing and pushing with message: {commit_message}")
+            result = git_service.commit_and_push(
+                repository=repository,
+                message=commit_message,
+                files=[str(inventory_file.relative_to(repo.working_dir))],
+                repo=repo,
+                branch=repository.get("branch", "main"),
+            )
 
-            # Push to remote
-            logger.info(f"Pushing to remote branch: {repository.get('branch', 'main')}")
-
-            # Get credentials and set up auth
-            username, token, _ = resolve_git_credentials(repository)
-
-            # Configure push URL with auth
-            if username and token:
-                push_url = add_auth_to_url(repository["url"], username, token)
-                origin = repo.remotes.origin
-                original_url = origin.url
-                origin.set_url(push_url)
-
-            try:
-                with set_ssl_env(repository):
-                    origin.push(
-                        refspec=f"{repository.get('branch', 'main')}:{repository.get('branch', 'main')}"
-                    )
-            finally:
-                # Restore original URL if we modified it
-                if username and token:
-                    origin.set_url(original_url)
+            if not result.success:
+                raise ValueError(f"Failed to commit/push: {result.message}")
 
             logger.info(f"Successfully saved inventory '{name}' to repository")
 
@@ -1219,7 +1215,8 @@ class AnsibleInventoryService:
         import json
         from pathlib import Path
         from git_repositories_manager import GitRepositoryManager
-        from services.git_utils import open_or_clone
+        from services.git_service import git_service
+        from services.git_auth_service import git_auth_service
         from models.ansible_inventory import SavedInventory, SavedInventoryCondition
 
         try:
@@ -1233,23 +1230,23 @@ class AnsibleInventoryService:
                 raise ValueError(f"Repository with ID {repository_id} not found")
 
             # Check if repository has credentials configured for HTTPS URLs
-            if repository.get("url", "").startswith("https://"):
-                from services.git_utils import resolve_git_credentials
-
-                username, token, _ = resolve_git_credentials(repository)
+            if (
+                repository.get("url", "").startswith("https://")
+                and repository.get("auth_type") != "ssh_key"
+            ):
+                username, token, _ = git_auth_service.resolve_credentials(repository)
                 if not token:
                     raise ValueError(
                         f"Repository '{repository['name']}' requires credentials. "
                         "Please configure a credential for this repository in Settings → Credentials."
                     )
 
-            # Open or clone repository
+            # Open or clone repository using git_service
             logger.info(f"Opening/cloning Git repository: {repository['name']}")
-            repo = open_or_clone(repository)
+            repo = git_service.open_or_clone(repository)
 
-            # Pull latest changes
-            origin = repo.remotes.origin
-            origin.pull(repository.get("branch", "main"))
+            # Pull latest changes using git_service
+            git_service.pull(repository, repo=repo)
 
             # Read inventories directory
             inventories_dir = Path(repo.working_dir) / "inventories"
@@ -1302,7 +1299,8 @@ class AnsibleInventoryService:
         import json
         from pathlib import Path
         from git_repositories_manager import GitRepositoryManager
-        from services.git_utils import open_or_clone
+        from services.git_service import git_service
+        from services.git_auth_service import git_auth_service
         from models.ansible_inventory import SavedInventory, SavedInventoryCondition
 
         try:
@@ -1316,23 +1314,23 @@ class AnsibleInventoryService:
                 raise ValueError(f"Repository with ID {repository_id} not found")
 
             # Check if repository has credentials configured for HTTPS URLs
-            if repository.get("url", "").startswith("https://"):
-                from services.git_utils import resolve_git_credentials
-
-                username, token, _ = resolve_git_credentials(repository)
+            if (
+                repository.get("url", "").startswith("https://")
+                and repository.get("auth_type") != "ssh_key"
+            ):
+                username, token, _ = git_auth_service.resolve_credentials(repository)
                 if not token:
                     raise ValueError(
                         f"Repository '{repository['name']}' requires credentials. "
                         "Please configure a credential for this repository in Settings → Credentials."
                     )
 
-            # Open or clone repository
+            # Open or clone repository using git_service
             logger.info(f"Opening/cloning Git repository: {repository['name']}")
-            repo = open_or_clone(repository)
+            repo = git_service.open_or_clone(repository)
 
-            # Pull latest changes
-            origin = repo.remotes.origin
-            origin.pull(repository.get("branch", "main"))
+            # Pull latest changes using git_service
+            git_service.pull(repository, repo=repo)
 
             # Read inventory file
             inventory_file = Path(repo.working_dir) / "inventories" / f"{name}.json"

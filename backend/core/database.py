@@ -224,7 +224,9 @@ def migrate_nb2cmk_job_results_table():
 
         # Check if table exists
         if "nb2cmk_job_results" not in inspector.get_table_names():
-            logger.debug("nb2cmk_job_results table doesn't exist yet, skipping migration")
+            logger.debug(
+                "nb2cmk_job_results table doesn't exist yet, skipping migration"
+            )
             return
 
         existing_columns = {
@@ -234,7 +236,9 @@ def migrate_nb2cmk_job_results_table():
         with engine.connect() as conn:
             for column_name, column_def in columns_to_add:
                 if column_name not in existing_columns:
-                    logger.info(f"Adding column {column_name} to nb2cmk_job_results table")
+                    logger.info(
+                        f"Adding column {column_name} to nb2cmk_job_results table"
+                    )
                     conn.execute(
                         text(
                             f"ALTER TABLE nb2cmk_job_results ADD COLUMN {column_name} {column_def}"
@@ -279,7 +283,9 @@ def migrate_git_repositories_table():
         with engine.connect() as conn:
             for column_name, column_def in columns_to_add:
                 if column_name not in existing_columns:
-                    logger.info(f"Adding column {column_name} to git_repositories table")
+                    logger.info(
+                        f"Adding column {column_name} to git_repositories table"
+                    )
                     conn.execute(
                         text(
                             f"ALTER TABLE git_repositories ADD COLUMN {column_name} {column_def}"

@@ -1373,8 +1373,12 @@ def _execute_compare_devices(
     """
     import asyncio
 
-    logger.info("[SCHEDULED_JOB] ========== STARTING SCHEDULED COMPARE DEVICES JOB ==========")
-    logger.info(f"[SCHEDULED_JOB] schedule_id={schedule_id}, target_devices={target_devices}")
+    logger.info(
+        "[SCHEDULED_JOB] ========== STARTING SCHEDULED COMPARE DEVICES JOB =========="
+    )
+    logger.info(
+        f"[SCHEDULED_JOB] schedule_id={schedule_id}, target_devices={target_devices}"
+    )
 
     try:
         task_context.update_state(
@@ -1502,27 +1506,47 @@ def _execute_compare_devices(
                         raw_diff = comparison_result.diff or ""
 
                         # Debug the comparison_result object
-                        logger.info(f"[SCHEDULED_JOB] Device {device_name}: comparison_result type = {type(comparison_result)}")
-                        logger.info(f"[SCHEDULED_JOB] Device {device_name}: comparison_result = {comparison_result}")
-                        logger.info(f"[SCHEDULED_JOB] Device {device_name}: has ignored_attributes attr = {hasattr(comparison_result, 'ignored_attributes')}")
-
-                        if hasattr(comparison_result, "ignored_attributes"):
-                            logger.info(f"[SCHEDULED_JOB] Device {device_name}: comparison_result.ignored_attributes = {comparison_result.ignored_attributes}")
-                            ignored_attrs = comparison_result.ignored_attributes or []
-                        else:
-                            logger.warning(f"[SCHEDULED_JOB] Device {device_name}: comparison_result does NOT have ignored_attributes attribute")
-                            ignored_attrs = []
-
-                        logger.info(f"[SCHEDULED_JOB] Device {device_name}: raw_diff = {raw_diff}")
-                        logger.info(f"[SCHEDULED_JOB] Device {device_name}: final ignored_attrs = {ignored_attrs}")
-
-                        # Use the same filtering logic as the manual job
-                        filtered_diff = nb2cmk_service.filter_diff_by_ignored_attributes(
-                            raw_diff, ignored_attrs
+                        logger.info(
+                            f"[SCHEDULED_JOB] Device {device_name}: comparison_result type = {type(comparison_result)}"
+                        )
+                        logger.info(
+                            f"[SCHEDULED_JOB] Device {device_name}: comparison_result = {comparison_result}"
+                        )
+                        logger.info(
+                            f"[SCHEDULED_JOB] Device {device_name}: has ignored_attributes attr = {hasattr(comparison_result, 'ignored_attributes')}"
                         )
 
-                        logger.info(f"[SCHEDULED_JOB] Device {device_name}: filtered_diff = {filtered_diff}")
-                        logger.info(f"[SCHEDULED_JOB] Device {device_name}: Storing to database with ignored_attributes = {ignored_attrs}")
+                        if hasattr(comparison_result, "ignored_attributes"):
+                            logger.info(
+                                f"[SCHEDULED_JOB] Device {device_name}: comparison_result.ignored_attributes = {comparison_result.ignored_attributes}"
+                            )
+                            ignored_attrs = comparison_result.ignored_attributes or []
+                        else:
+                            logger.warning(
+                                f"[SCHEDULED_JOB] Device {device_name}: comparison_result does NOT have ignored_attributes attribute"
+                            )
+                            ignored_attrs = []
+
+                        logger.info(
+                            f"[SCHEDULED_JOB] Device {device_name}: raw_diff = {raw_diff}"
+                        )
+                        logger.info(
+                            f"[SCHEDULED_JOB] Device {device_name}: final ignored_attrs = {ignored_attrs}"
+                        )
+
+                        # Use the same filtering logic as the manual job
+                        filtered_diff = (
+                            nb2cmk_service.filter_diff_by_ignored_attributes(
+                                raw_diff, ignored_attrs
+                            )
+                        )
+
+                        logger.info(
+                            f"[SCHEDULED_JOB] Device {device_name}: filtered_diff = {filtered_diff}"
+                        )
+                        logger.info(
+                            f"[SCHEDULED_JOB] Device {device_name}: Storing to database with ignored_attributes = {ignored_attrs}"
+                        )
 
                         # Store result in NB2CMK database using add_device_result
                         # This format is expected by the "Sync Devices" app

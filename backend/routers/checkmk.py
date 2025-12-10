@@ -412,9 +412,7 @@ async def create_host(
                     "mode": request.discovery_mode,
                     "result": discovery_result,
                 }
-                logger.info(
-                    f"Service discovery started for host {request.host_name}"
-                )
+                logger.info(f"Service discovery started for host {request.host_name}")
             except Exception as discovery_error:
                 logger.warning(
                     f"Failed to start service discovery for host {request.host_name}: {discovery_error}"
@@ -475,9 +473,7 @@ async def create_host_v2(
                     "mode": request.discovery_mode,
                     "result": discovery_result,
                 }
-                logger.info(
-                    f"Service discovery started for host {request.host_name}"
-                )
+                logger.info(f"Service discovery started for host {request.host_name}")
             except Exception as discovery_error:
                 logger.warning(
                     f"Failed to start service discovery for host {request.host_name}: {discovery_error}"
@@ -968,7 +964,7 @@ async def start_bulk_discovery(
 ):
     """
     Start a bulk discovery job.
-    
+
     Only one bulk discovery job can run at a time. An active bulk discovery job
     will block other bulk discovery jobs from running until the active job is finished.
     """

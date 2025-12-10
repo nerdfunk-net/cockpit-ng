@@ -15,7 +15,6 @@ from models.ansible_inventory import (
     InventoryGenerateResponse,
 )
 from services.ansible_inventory import ansible_inventory_service
-from services.git_config_service import set_git_author
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/ansible-inventory", tags=["ansible-inventory"])
@@ -268,12 +267,7 @@ async def push_to_git(
     """
     try:
         from services.git_shared_utils import git_repo_manager
-        from services.git_utils import (
-            open_or_clone,
-            resolve_git_credentials,
-            add_auth_to_url,
-            set_ssl_env,
-        )
+        from services.git_service import git_service
         from pathlib import Path
 
         # Validate request
@@ -328,46 +322,33 @@ async def push_to_git(
         # Build commit message from logical operations
         commit_message = build_commit_message(operations, device_count)
 
-        # Open or clone repository
+        # Open or clone repository using git_service
         logger.info(f"Opening/cloning Git repository: {repository['name']}")
-        repo = open_or_clone(repository)
+        logger.info(f"  - Auth type: {repository.get('auth_type', 'token')}")
+        repo = git_service.open_or_clone(repository)
 
         # Write inventory to file
         inventory_file = Path(repo.working_dir) / "inventory.yaml"
         logger.info(f"Writing inventory to {inventory_file}")
         inventory_file.write_text(inventory_content)
 
-        # Stage the file
-        repo.index.add(["inventory.yaml"])
+        # Use git_service for commit and push (supports SSH keys and tokens)
+        logger.info(
+            f"Committing and pushing to branch: {repository.get('branch', 'main')}"
+        )
+        result = git_service.commit_and_push(
+            repository=repository,
+            message=commit_message,
+            files=["inventory.yaml"],
+            repo=repo,
+            branch=repository.get("branch", "main"),
+        )
 
-        # Commit changes with git author configuration
-        logger.info(f"Committing changes with message: {commit_message}")
-        with set_git_author(repository, repo):
-            repo.index.commit(commit_message)
-
-        # Push to remote
-        logger.info(f"Pushing to remote branch: {repository.get('branch', 'main')}")
-
-        # Get credentials and set up auth
-        username, token, _ = resolve_git_credentials(repository)
-
-        # Configure push URL with auth
-        if username and token:
-            push_url = add_auth_to_url(repository["url"], username, token)
-            # Temporarily update the remote URL for push
-            origin = repo.remotes.origin
-            original_url = origin.url
-            origin.set_url(push_url)
-
-        try:
-            with set_ssl_env(repository):
-                origin.push(
-                    refspec=f"{repository.get('branch', 'main')}:{repository.get('branch', 'main')}"
-                )
-        finally:
-            # Restore original URL if we modified it
-            if username and token:
-                origin.set_url(original_url)
+        if not result.success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to commit/push to Git: {result.message}",
+            )
 
         logger.info(
             f"Successfully pushed inventory to Git repository: {repository['name']}"

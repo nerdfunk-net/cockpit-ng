@@ -2,6 +2,8 @@
 CheckMK models for API requests and responses.
 """
 
+from enum import Enum
+
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 from datetime import datetime
@@ -145,8 +147,6 @@ class CheckMKServiceQueryRequest(BaseModel):
 
 
 # Service Discovery Models
-
-from enum import Enum
 
 
 class ServiceDiscoveryMode(str, Enum):

@@ -13,7 +13,7 @@ from git import InvalidGitRepositoryError, GitCommandError
 
 from core.auth import require_permission
 from services.cache_service import cache_service
-from services.git_utils import repo_path as git_repo_path
+from services.git_paths import repo_path as git_repo_path
 from services.git_shared_utils import get_git_repo_by_id, git_repo_manager
 
 logger = logging.getLogger(__name__)

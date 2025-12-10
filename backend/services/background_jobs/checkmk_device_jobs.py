@@ -5,7 +5,7 @@ Background jobs for adding and updating devices in CheckMK from Nautobot.
 
 import asyncio
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any
 from celery import shared_task
 
 from services.nb2cmk_database_service import (
@@ -239,7 +239,9 @@ def sync_devices_to_checkmk_task(
         if job_run_id:
             job_run_manager.mark_started(job_run_id, self.request.id)
 
-        logger.info(f"Created sync job {job_id} (run_id: {job_run_id}) for {total_devices} devices")
+        logger.info(
+            f"Created sync job {job_id} (run_id: {job_run_id}) for {total_devices} devices"
+        )
 
         for i, device_id in enumerate(device_ids):
             try:
@@ -272,7 +274,9 @@ def sync_devices_to_checkmk_task(
                     success_count += 1
 
                     # Get device name for result tracking
-                    device_name = result.hostname if hasattr(result, 'hostname') else device_id
+                    device_name = (
+                        result.hostname if hasattr(result, "hostname") else device_id
+                    )
 
                     # Store success result in database
                     nb2cmk_db_service.add_device_result(
@@ -311,7 +315,11 @@ def sync_devices_to_checkmk_task(
                         success_count += 1
 
                         # Get device name for result tracking
-                        device_name = result.hostname if hasattr(result, 'hostname') else device_id
+                        device_name = (
+                            result.hostname
+                            if hasattr(result, "hostname")
+                            else device_id
+                        )
 
                         # Store success result in database
                         nb2cmk_db_service.add_device_result(
@@ -412,7 +420,7 @@ def sync_devices_to_checkmk_task(
             nb2cmk_db_service.update_job_status(
                 job_id,
                 NB2CMKJobStatus.COMPLETED,
-                error_message=f"{failed_count} devices failed to sync"
+                error_message=f"{failed_count} devices failed to sync",
             )
         else:
             nb2cmk_db_service.update_job_status(job_id, NB2CMKJobStatus.COMPLETED)
@@ -458,9 +466,7 @@ def sync_devices_to_checkmk_task(
         # Mark job as failed in NB2CMK database
         try:
             nb2cmk_db_service.update_job_status(
-                job_id,
-                NB2CMKJobStatus.FAILED,
-                error_message=str(e)
+                job_id, NB2CMKJobStatus.FAILED, error_message=str(e)
             )
         except Exception as db_error:
             logger.error(f"Failed to update job status in database: {db_error}")
@@ -469,6 +475,7 @@ def sync_devices_to_checkmk_task(
         if job_run_id:
             try:
                 import job_run_manager
+
                 job_run_manager.mark_failed(job_run_id, str(e))
             except Exception as run_error:
                 logger.error(f"Failed to update job run status: {run_error}")
