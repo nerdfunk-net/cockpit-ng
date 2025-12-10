@@ -1,0 +1,76 @@
+# Multi-stage Docker build for Cockpit-NG
+# Stage 1: Build the frontend
+FROM node:24-alpine AS frontend-builder
+
+WORKDIR /app/frontend
+
+# Copy frontend package files
+COPY frontend/package*.json ./
+
+# Install frontend dependencies
+# Install dependencies (including dev dependencies for build)
+RUN npm ci
+
+# Copy frontend source code
+COPY frontend/ ./
+
+# Build the frontend
+RUN DOCKER_BUILD=true npm run build
+
+# Stage 2: Final runtime image
+FROM python:3.12-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    nodejs \
+    npm \
+    supervisor \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy and install private certificates
+# This allows git, curl, and other system tools to trust private CA certificates
+COPY docker/certs/*.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+
+# Copy backend requirements and install Python dependencies
+COPY backend/requirements.txt ./backend/
+RUN pip install --no-cache-dir -r backend/requirements.txt
+
+# Copy backend source code
+COPY backend/ ./backend/
+
+# Copy built frontend from the build stage
+COPY --from=frontend-builder /app/frontend/.next ./frontend/.next
+COPY --from=frontend-builder /app/frontend/public ./frontend/public
+COPY --from=frontend-builder /app/frontend/package*.json ./frontend/
+COPY --from=frontend-builder /app/frontend/next.config.ts ./frontend/
+COPY --from=frontend-builder /app/frontend/node_modules ./frontend/node_modules
+
+# Copy other frontend files needed for runtime
+COPY frontend/postcss.config.mjs ./frontend/
+COPY frontend/tsconfig.json ./frontend/
+
+# Create data directory
+RUN mkdir -p /app/data
+
+# Create supervisor configuration for running both services
+RUN mkdir -p /var/log/supervisor
+
+# Copy supervisor configuration
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Copy startup script
+COPY docker/start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
+# Expose ports (backend: 8000, frontend: 3000)
+EXPOSE 3000 8000
+
+# Use supervisor to run both services
+CMD ["/app/start.sh"]

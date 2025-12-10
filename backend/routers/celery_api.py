@@ -1,0 +1,968 @@
+"""
+Celery task management API endpoints.
+All Celery-related endpoints are under /api/celery/*
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from celery.result import AsyncResult
+from core.auth import require_permission
+from core.celery_error_handler import handle_celery_errors
+from celery_app import celery_app
+from pydantic import BaseModel
+from typing import Optional, List, Dict
+import logging
+import redis
+
+from config import settings
+
+logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/api/celery", tags=["celery"])
+
+
+# Request/Response Models
+class TestTaskRequest(BaseModel):
+    message: str = "Hello from Celery!"
+
+
+class ProgressTaskRequest(BaseModel):
+    duration: int = 10
+
+
+class OnboardDeviceRequest(BaseModel):
+    ip_address: str
+    location_id: str
+    role_id: str
+    namespace_id: str
+    status_id: str
+    interface_status_id: str
+    ip_address_status_id: str
+    prefix_status_id: str
+    secret_groups_id: str
+    platform_id: str
+    port: int = 22
+    timeout: int = 30
+    sync_options: List[str] = ["cables", "software", "vlans", "vrfs"]
+    tags: Optional[List[str]] = None
+    custom_fields: Optional[Dict[str, str]] = None
+
+
+class SyncDevicesToCheckmkRequest(BaseModel):
+    device_ids: List[str]
+    activate_changes_after_sync: bool = True
+
+
+class TaskResponse(BaseModel):
+    task_id: str
+    status: str
+    message: str
+
+
+class TaskWithJobResponse(BaseModel):
+    """Response model for tasks that are tracked in the job database."""
+    task_id: str
+    job_id: Optional[str] = None  # Job ID for tracking in Jobs/Views
+    status: str
+    message: str
+
+
+class TaskStatusResponse(BaseModel):
+    task_id: str
+    status: str
+    result: Optional[dict] = None
+    error: Optional[str] = None
+    progress: Optional[dict] = None
+
+
+class DeviceBackupStatus(BaseModel):
+    device_id: str
+    device_name: str
+    last_backup_success: bool
+    last_backup_time: Optional[str] = None
+    total_successful_backups: int
+    total_failed_backups: int
+    last_error: Optional[str] = None
+
+
+class BackupCheckResponse(BaseModel):
+    total_devices: int
+    devices_with_successful_backup: int
+    devices_with_failed_backup: int
+    devices_never_backed_up: int
+    devices: List[DeviceBackupStatus]
+
+
+# Test endpoint (no auth required for testing)
+@router.post("/test", response_model=TaskResponse)
+@handle_celery_errors("submit test task")
+async def submit_test_task(request: TestTaskRequest):
+    """
+    Submit a test task to verify Celery is working.
+    No authentication required for testing.
+    """
+    from tasks import test_tasks
+
+    # Submit task to Celery queue
+    task = test_tasks.test_task.delay(message=request.message)
+
+    return TaskResponse(
+        task_id=task.id, status="queued", message=f"Test task submitted: {task.id}"
+    )
+
+
+@router.post("/test/progress", response_model=TaskResponse)
+@handle_celery_errors("submit progress test task")
+async def submit_progress_test_task(request: ProgressTaskRequest):
+    """
+    Submit a test task that reports progress.
+    No authentication required for testing.
+    """
+    from tasks import test_tasks
+
+    # Submit task to Celery queue
+    task = test_tasks.test_progress_task.delay(duration=request.duration)
+
+    return TaskResponse(
+        task_id=task.id,
+        status="queued",
+        message=f"Progress test task submitted: {task.id}",
+    )
+
+
+@router.post("/tasks/onboard-device", response_model=TaskResponse)
+@handle_celery_errors("onboard device")
+async def trigger_onboard_device(
+    request: OnboardDeviceRequest,
+    current_user: dict = Depends(require_permission("devices.onboard", "execute")),
+):
+    """
+    Onboard a device to Nautobot with tags and custom fields using Celery.
+
+    This endpoint triggers a background task that:
+    1. Calls Nautobot onboarding job
+    2. Waits for job completion (max 90 seconds)
+    3. Retrieves the device UUID from the IP address
+    4. Updates the device with tags and custom fields
+
+    Request Body:
+        ip_address: Device IP address
+        location_id: Nautobot location ID
+        role_id: Nautobot role ID
+        namespace_id: Nautobot namespace ID
+        status_id: Device status ID
+        interface_status_id: Interface status ID
+        ip_address_status_id: IP address status ID
+        prefix_status_id: Prefix status ID
+        secret_groups_id: Secret group ID
+        platform_id: Platform ID or "detect"
+        port: SSH port (default: 22)
+        timeout: Connection timeout (default: 30)
+        sync_options: List of sync options (cables, software, vlans, vrfs)
+        tags: List of tag IDs to apply (optional)
+        custom_fields: Dict of custom field key-value pairs (optional)
+
+    Returns:
+        TaskResponse with task_id for tracking progress via /tasks/{task_id}
+    """
+    from tasks.onboard_device_task import onboard_device_task
+
+    # Submit task to Celery queue
+    task = onboard_device_task.delay(
+        ip_address=request.ip_address,
+        location_id=request.location_id,
+        role_id=request.role_id,
+        namespace_id=request.namespace_id,
+        status_id=request.status_id,
+        interface_status_id=request.interface_status_id,
+        ip_address_status_id=request.ip_address_status_id,
+        prefix_status_id=request.prefix_status_id,
+        secret_groups_id=request.secret_groups_id,
+        platform_id=request.platform_id,
+        port=request.port,
+        timeout=request.timeout,
+        sync_options=request.sync_options,
+        tags=request.tags,
+        custom_fields=request.custom_fields,
+    )
+
+    return TaskResponse(
+        task_id=task.id,
+        status="queued",
+        message=f"Device onboarding task queued for {request.ip_address}: {task.id}",
+    )
+
+
+@router.get("/tasks/{task_id}", response_model=TaskStatusResponse)
+@handle_celery_errors("get task status")
+async def get_task_status(
+    task_id: str,
+    current_user: dict = Depends(require_permission("settings.celery", "read")),
+):
+    """
+    Get the status and result of a Celery task.
+
+    Status can be: PENDING, STARTED, PROGRESS, SUCCESS, FAILURE, RETRY, REVOKED
+    """
+    result = AsyncResult(task_id, app=celery_app)
+
+    response = TaskStatusResponse(task_id=task_id, status=result.state)
+
+    if result.state == "PENDING":
+        response.progress = {"status": "Task is queued and waiting to start"}
+
+    elif result.state == "PROGRESS":
+        # Task is running and has sent progress updates
+        response.progress = result.info
+
+    elif result.state == "SUCCESS":
+        # Task completed successfully
+        response.result = result.result
+
+    elif result.state == "FAILURE":
+        # Task failed
+        response.error = str(result.info)
+
+    return response
+
+
+@router.delete("/tasks/{task_id}")
+@handle_celery_errors("cancel task")
+async def cancel_task(
+    task_id: str,
+    current_user: dict = Depends(require_permission("settings.celery", "write")),
+):
+    """
+    Cancel a running or queued task.
+    """
+    result = AsyncResult(task_id, app=celery_app)
+    result.revoke(terminate=True)
+
+    return {"success": True, "message": f"Task {task_id} cancelled"}
+
+
+@router.get("/workers")
+@handle_celery_errors("list workers")
+async def list_workers(
+    current_user: dict = Depends(require_permission("settings.celery", "read")),
+):
+    """
+    List active Celery workers and their status.
+    """
+    inspect = celery_app.control.inspect()
+    active = inspect.active()
+    stats = inspect.stats()
+    registered = inspect.registered()
+
+    return {
+        "success": True,
+        "workers": {
+            "active_tasks": active or {},
+            "stats": stats or {},
+            "registered_tasks": registered or {},
+        },
+    }
+
+
+@router.get("/schedules")
+@handle_celery_errors("list schedules")
+async def list_schedules(
+    current_user: dict = Depends(require_permission("settings.celery", "read")),
+):
+    """
+    List all periodic task schedules configured in Celery Beat.
+    """
+    # Get beat schedule from celery_app config
+    beat_schedule = celery_app.conf.beat_schedule or {}
+
+    schedules = []
+    for name, config in beat_schedule.items():
+        schedules.append(
+            {
+                "name": name,
+                "task": config.get("task"),
+                "schedule": str(config.get("schedule")),
+                "options": config.get("options", {}),
+            }
+        )
+
+    return {"success": True, "schedules": schedules}
+
+
+@router.get("/beat/status")
+@handle_celery_errors("get beat status")
+async def beat_status(
+    current_user: dict = Depends(require_permission("settings.celery", "read")),
+):
+    """
+    Get Celery Beat scheduler status.
+    """
+    # Check if beat is running by inspecting Redis
+    # RedBeat stores lock and schedule keys when running
+    r = redis.from_url(settings.redis_url)
+
+    # Check for the lock key that beat holds when running
+    beat_lock_key = "cockpit-ng:beat::lock"
+    lock_exists = r.exists(beat_lock_key)
+
+    # Also check for schedule key
+    beat_schedule_key = "cockpit-ng:beat::schedule"
+    schedule_exists = r.exists(beat_schedule_key)
+
+    # Beat is running if either key exists (lock is most reliable)
+    beat_running = bool(lock_exists or schedule_exists)
+
+    return {
+        "success": True,
+        "beat_running": beat_running,
+        "message": "Beat is running" if beat_running else "Beat not detected",
+    }
+
+
+@router.get("/status")
+@handle_celery_errors("get celery status")
+async def celery_status(
+    current_user: dict = Depends(require_permission("settings.celery", "read")),
+):
+    """
+    Get overall Celery system status.
+    """
+    inspect = celery_app.control.inspect()
+    stats = inspect.stats()
+    active = inspect.active()
+
+    # Count active workers
+    worker_count = len(stats) if stats else 0
+
+    # Count active tasks
+    task_count = 0
+    if active:
+        for worker_tasks in active.values():
+            task_count += len(worker_tasks)
+
+    # Check Redis connection
+    try:
+        r = redis.from_url(settings.redis_url)
+        r.ping()
+        redis_connected = True
+    except Exception:
+        redis_connected = False
+
+    # Check Beat status
+    try:
+        r = redis.from_url(settings.redis_url)
+        # Check for the lock key that beat holds when running
+        beat_lock_key = "cockpit-ng:beat::lock"
+        beat_running = bool(r.exists(beat_lock_key))
+    except Exception:
+        beat_running = False
+
+    return {
+        "success": True,
+        "status": {
+            "redis_connected": redis_connected,
+            "worker_count": worker_count,
+            "active_tasks": task_count,
+            "beat_running": beat_running,
+        },
+    }
+
+
+@router.get("/config")
+@handle_celery_errors("get celery config")
+async def get_celery_config(
+    current_user: dict = Depends(require_permission("settings.celery", "read")),
+):
+    """
+    Get current Celery configuration (read-only).
+    Configuration is set via environment variables and cannot be changed at runtime.
+    """
+    import os
+
+    # Get Redis configuration (mask password for security)
+    redis_host = os.getenv("COCKPIT_REDIS_HOST", "localhost")
+    redis_port = os.getenv("COCKPIT_REDIS_PORT", "6379")
+    redis_password = os.getenv("COCKPIT_REDIS_PASSWORD", "")
+    has_password = bool(redis_password)
+
+    # Get Celery configuration from celery_app
+    conf = celery_app.conf
+
+    return {
+        "success": True,
+        "config": {
+            # Redis Configuration
+            "redis": {
+                "host": redis_host,
+                "port": redis_port,
+                "has_password": has_password,
+                "database": "0",
+            },
+            # Worker Configuration
+            "worker": {
+                "max_concurrency": settings.celery_max_workers,
+                "prefetch_multiplier": conf.worker_prefetch_multiplier,
+                "max_tasks_per_child": conf.worker_max_tasks_per_child,
+            },
+            # Task Configuration
+            "task": {
+                "time_limit": conf.task_time_limit,
+                "serializer": conf.task_serializer,
+                "track_started": conf.task_track_started,
+            },
+            # Result Configuration
+            "result": {
+                "expires": conf.result_expires,
+                "serializer": conf.result_serializer,
+            },
+            # Beat Configuration
+            "beat": {
+                "scheduler": conf.beat_scheduler,
+                "schedule_count": len(conf.beat_schedule) if conf.beat_schedule else 0,
+            },
+            # General
+            "timezone": conf.timezone,
+            "enable_utc": conf.enable_utc,
+        },
+    }
+
+
+# Background job task endpoints
+@router.post("/tasks/cache-devices", response_model=TaskResponse)
+@handle_celery_errors("trigger cache devices task")
+async def trigger_cache_devices(
+    current_user: dict = Depends(require_permission("settings.celery", "write")),
+):
+    """
+    Manually trigger the cache_all_devices background task.
+    This fetches all devices from Nautobot and caches them in Redis.
+    """
+    from services.background_jobs.device_cache_jobs import cache_all_devices_task
+
+    # Trigger the task asynchronously
+    task = cache_all_devices_task.delay()
+
+    return TaskResponse(
+        task_id=task.id,
+        status="queued",
+        message=f"Device caching task queued: {task.id}",
+    )
+
+
+@router.post("/tasks/cache-locations", response_model=TaskResponse)
+@handle_celery_errors("trigger cache locations task")
+async def trigger_cache_locations(
+    current_user: dict = Depends(require_permission("settings.celery", "write")),
+):
+    """
+    Manually trigger the cache_all_locations background task.
+    This fetches all locations from Nautobot and caches them in Redis.
+    """
+    from services.background_jobs.location_cache_jobs import cache_all_locations_task
+
+    # Trigger the task asynchronously
+    task = cache_all_locations_task.delay()
+
+    return TaskResponse(
+        task_id=task.id,
+        status="queued",
+        message=f"Location caching task queued: {task.id}",
+    )
+
+
+# CheckMK device management task endpoints
+@router.post("/tasks/add-device-to-checkmk", response_model=TaskResponse)
+@handle_celery_errors("add device to CheckMK")
+async def trigger_add_device_to_checkmk(
+    device_id: str,
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
+):
+    """
+    Manually trigger the add_device_to_checkmk background task.
+    This adds a device from Nautobot to CheckMK.
+
+    Query Parameters:
+        device_id: Nautobot device ID to add to CheckMK
+    """
+    from services.background_jobs.checkmk_device_jobs import add_device_to_checkmk_task
+
+    # Trigger the task asynchronously
+    task = add_device_to_checkmk_task.delay(device_id)
+
+    return TaskResponse(
+        task_id=task.id,
+        status="queued",
+        message=f"Add device task queued for device {device_id}: {task.id}",
+    )
+
+
+@router.post("/tasks/update-device-in-checkmk", response_model=TaskResponse)
+@handle_celery_errors("update device in CheckMK")
+async def trigger_update_device_in_checkmk(
+    device_id: str,
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
+):
+    """
+    Manually trigger the update_device_in_checkmk background task.
+    This syncs/updates a device from Nautobot to CheckMK.
+
+    Query Parameters:
+        device_id: Nautobot device ID to update in CheckMK
+    """
+    from services.background_jobs.checkmk_device_jobs import (
+        update_device_in_checkmk_task,
+    )
+
+    # Trigger the task asynchronously
+    task = update_device_in_checkmk_task.delay(device_id)
+
+    return TaskResponse(
+        task_id=task.id,
+        status="queued",
+        message=f"Update device task queued for device {device_id}: {task.id}",
+    )
+
+
+@router.post("/tasks/sync-devices-to-checkmk", response_model=TaskWithJobResponse)
+@handle_celery_errors("sync devices to CheckMK")
+async def trigger_sync_devices_to_checkmk(
+    request: SyncDevicesToCheckmkRequest,
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
+):
+    """
+    Manually trigger the sync_devices_to_checkmk background task.
+    This syncs multiple devices from Nautobot to CheckMK.
+
+    The task is tracked in the NB2CMK job database and can be viewed
+    in the Jobs/Views app.
+
+    Request Body:
+        device_ids: List of Nautobot device IDs to sync
+        activate_changes_after_sync: Whether to activate CheckMK changes after sync completes (default: True)
+
+    Returns:
+        TaskWithJobResponse with task_id (for Celery) and job_id (for Jobs/Views tracking)
+    """
+    from services.background_jobs.checkmk_device_jobs import (
+        sync_devices_to_checkmk_task,
+    )
+
+    if not request.device_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="device_ids list cannot be empty",
+        )
+
+    # Trigger the task asynchronously with activate_changes_after_sync parameter
+    task = sync_devices_to_checkmk_task.delay(
+        request.device_ids, request.activate_changes_after_sync
+    )
+
+    # Generate job_id that will be used by the task
+    job_id = f"sync_devices_{task.id}"
+
+    return TaskWithJobResponse(
+        task_id=task.id,
+        job_id=job_id,
+        status="queued",
+        message=f"Sync devices task queued for {len(request.device_ids)} devices: {task.id}",
+    )
+
+
+@router.post("/tasks/compare-nautobot-and-checkmk", response_model=TaskResponse)
+@handle_celery_errors("compare Nautobot and CheckMK")
+async def trigger_compare_nautobot_and_checkmk(
+    device_ids: list[str] = None,
+    current_user: dict = Depends(require_permission("jobs", "read")),
+):
+    """
+    Compare all devices (or specified devices) between Nautobot and CheckMK.
+
+    This task compares device configurations and stores the results in the job database
+    for later retrieval and display in the frontend.
+
+    Request Body (optional):
+        device_ids: List of Nautobot device IDs to compare. If empty or null, compares all devices.
+
+    Returns:
+        TaskResponse with task_id for tracking progress
+    """
+    from tasks.scheduling.job_dispatcher import dispatch_job
+
+    # Use the unified dispatch_job to ensure consistency with scheduled jobs
+    # This uses the refactored execution path in tasks/execution/compare_executor.py
+    task = dispatch_job.delay(
+        job_name="Device Comparison (Manual)",
+        job_type="compare_devices",
+        target_devices=device_ids,
+        triggered_by="manual",
+        executed_by=current_user.get("username", "unknown"),
+    )
+
+    device_count_msg = f"{len(device_ids)} devices" if device_ids else "all devices"
+
+    return TaskResponse(
+        task_id=task.id,
+        status="queued",
+        message=f"Device comparison task queued for {device_count_msg}: {task.id}",
+    )
+
+
+# Backup request model
+class BackupDevicesRequest(BaseModel):
+    inventory: List[str]
+    config_repository_id: Optional[int] = None
+    credential_id: Optional[int] = None
+    write_timestamp_to_custom_field: Optional[bool] = False
+    timestamp_custom_field_name: Optional[str] = None
+
+
+@router.post("/tasks/backup-devices", response_model=TaskResponse)
+@handle_celery_errors("backup devices")
+async def trigger_backup_devices(
+    request: BackupDevicesRequest,
+    current_user: dict = Depends(require_permission("jobs", "write")),
+):
+    """
+    Backup device configurations to Git repository.
+
+    This task:
+    1. Converts inventory to device list
+    2. Checks/clones/pulls Git repository
+    3. Connects to each device via Netmiko
+    4. Executes 'show running-config' and 'show startup-config'
+    5. Saves configs to Git repository
+    6. Commits and pushes changes
+
+    Request Body:
+        inventory: List of device IDs to backup
+        config_repository_id: ID of Git repository for configs (category=configs)
+        credential_id: Optional ID of credential for device authentication
+
+    Returns:
+        TaskResponse with task_id for tracking progress
+    """
+    from tasks.backup_tasks import backup_devices_task
+
+    if not request.inventory:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="inventory list cannot be empty",
+        )
+
+    if not request.config_repository_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="config_repository_id is required",
+        )
+
+    # Trigger the task asynchronously
+    task = backup_devices_task.delay(
+        inventory=request.inventory,
+        config_repository_id=request.config_repository_id,
+        credential_id=request.credential_id,
+        write_timestamp_to_custom_field=request.write_timestamp_to_custom_field,
+        timestamp_custom_field_name=request.timestamp_custom_field_name,
+    )
+
+    return TaskResponse(
+        task_id=task.id,
+        status="queued",
+        message=f"Backup task queued for {len(request.inventory)} devices: {task.id}",
+    )
+
+
+# ============================================================================
+# Celery Settings Endpoints
+# ============================================================================
+
+
+class CelerySettingsRequest(BaseModel):
+    max_workers: Optional[int] = None
+    cleanup_enabled: Optional[bool] = None
+    cleanup_interval_hours: Optional[int] = None
+    cleanup_age_hours: Optional[int] = None
+    result_expires_hours: Optional[int] = None
+
+
+@router.get("/settings")
+@handle_celery_errors("get celery settings")
+async def get_celery_settings(
+    current_user: dict = Depends(require_permission("settings.celery", "read")),
+):
+    """
+    Get current Celery settings from database.
+    """
+    from settings_manager import settings_manager
+
+    celery_settings = settings_manager.get_celery_settings()
+
+    return {"success": True, "settings": celery_settings}
+
+
+@router.put("/settings")
+@handle_celery_errors("update celery settings")
+async def update_celery_settings(
+    request: CelerySettingsRequest,
+    current_user: dict = Depends(require_permission("settings.celery", "write")),
+):
+    """
+    Update Celery settings.
+
+    Note: max_workers changes require restarting the Celery worker to take effect.
+    """
+    from settings_manager import settings_manager
+
+    # Get current settings and merge with updates
+    current = settings_manager.get_celery_settings()
+    updates = request.model_dump(exclude_unset=True)
+    merged = {**current, **updates}
+
+    success = settings_manager.update_celery_settings(merged)
+
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update Celery settings",
+        )
+
+    # Get updated settings
+    updated = settings_manager.get_celery_settings()
+
+    return {
+        "success": True,
+        "settings": updated,
+        "message": "Celery settings updated. Worker restart required for max_workers changes.",
+    }
+
+
+@router.post("/cleanup", response_model=TaskResponse)
+@handle_celery_errors("trigger cleanup task")
+async def trigger_cleanup(
+    current_user: dict = Depends(require_permission("settings.celery", "write")),
+):
+    """
+    Manually trigger the Celery cleanup task.
+
+    This removes old task results and logs based on the configured cleanup_age_hours.
+    """
+    from tasks.periodic_tasks import cleanup_celery_data_task
+
+    task = cleanup_celery_data_task.delay()
+
+    return TaskResponse(
+        task_id=task.id, status="queued", message=f"Cleanup task triggered: {task.id}"
+    )
+
+
+@router.get("/cleanup/stats")
+@handle_celery_errors("get cleanup stats")
+async def get_cleanup_stats(
+    current_user: dict = Depends(require_permission("settings.celery", "read")),
+):
+    """
+    Get statistics about data that would be cleaned up.
+    """
+    from settings_manager import settings_manager
+    from datetime import datetime, timezone, timedelta
+
+    celery_settings = settings_manager.get_celery_settings()
+    cleanup_age_hours = celery_settings.get("cleanup_age_hours", 24)
+    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=cleanup_age_hours)
+
+    # Count old task results in Redis
+    r = redis.from_url(settings.redis_url)
+
+    # Count celery task result keys
+    result_keys = list(r.scan_iter("celery-task-meta-*"))
+    old_results = 0
+
+    for key in result_keys:
+        try:
+            # Try to get the result and check its timestamp
+            # This is approximate as we can't easily get the task completion time
+            old_results += 1  # Count all for now
+        except Exception:
+            pass
+
+    return {
+        "success": True,
+        "stats": {
+            "cleanup_age_hours": cleanup_age_hours,
+            "cutoff_time": cutoff_time.isoformat(),
+            "total_result_keys": len(result_keys),
+            "message": f"Cleanup will remove task results older than {cleanup_age_hours} hours",
+        },
+    }
+
+
+@router.get("/device-backup-status", response_model=BackupCheckResponse)
+async def check_device_backups(
+    force_refresh: bool = False,
+    current_user: dict = Depends(require_permission("jobs", "read")),
+):
+    """
+    Analyze device-level backup status with caching.
+
+    This endpoint provides critical operational visibility by analyzing
+    which specific devices have successful backups and which don't.
+
+    Unlike aggregate statistics, this tracks the last backup status per device,
+    ensuring no device falls through the cracks.
+
+    Args:
+        force_refresh: If True, bypass cache and recalculate
+
+    Returns:
+        - Total devices that have been backed up
+        - Devices with successful last backup
+        - Devices with failed last backup
+        - Detailed per-device backup history
+
+    Cache: Results are cached for 5 minutes to improve dashboard performance
+    """
+    import json
+    from core.database import get_db_session
+    from sqlalchemy import text
+
+    CACHE_KEY = "backup_check_devices"
+    CACHE_DURATION_SECONDS = 300  # 5 minutes
+
+    # Try to get from cache first
+    if not force_refresh:
+        try:
+            r = redis.Redis.from_url(settings.redis_url, decode_responses=True)
+            cached = r.get(CACHE_KEY)
+            if cached:
+                logger.info("Returning cached device backup status")
+                return BackupCheckResponse(**json.loads(cached))
+        except Exception as e:
+            logger.warning(f"Cache read failed, proceeding with fresh data: {e}")
+
+    session = get_db_session()
+
+    try:
+        # Get all backup job results
+        backup_jobs = session.execute(
+            text("""
+            SELECT
+                result,
+                completed_at,
+                status
+            FROM job_runs
+            WHERE job_type = 'backup'
+                AND status IN ('completed', 'failed')
+            ORDER BY completed_at DESC
+        """)
+        ).fetchall()
+
+        # Track device backup status
+        device_status = {}  # device_id -> DeviceBackupStatus data
+
+        for row in backup_jobs:
+            result_json = row[0]
+            completed_at = row[1]
+            row[2]
+
+            if not result_json:
+                continue
+
+            try:
+                result = json.loads(result_json)
+
+                # Process successful backups
+                backed_up_devices = result.get("backed_up_devices", [])
+                for device in backed_up_devices:
+                    device_id = device.get("device_id")
+                    device_name = device.get("device_name", device_id)
+
+                    if device_id not in device_status:
+                        device_status[device_id] = {
+                            "device_id": device_id,
+                            "device_name": device_name,
+                            "last_backup_success": True,
+                            "last_backup_time": completed_at.isoformat()
+                            if completed_at
+                            else None,
+                            "total_successful_backups": 1,
+                            "total_failed_backups": 0,
+                            "last_error": None,
+                        }
+                    else:
+                        # Only update if this is more recent than what we have
+                        if not device_status[device_id].get("last_backup_time") or (
+                            completed_at
+                            and completed_at.isoformat()
+                            > device_status[device_id]["last_backup_time"]
+                        ):
+                            device_status[device_id]["last_backup_success"] = True
+                            device_status[device_id]["last_backup_time"] = (
+                                completed_at.isoformat() if completed_at else None
+                            )
+                            device_status[device_id]["last_error"] = None
+                        device_status[device_id]["total_successful_backups"] += 1
+
+                # Process failed backups
+                failed_devices = result.get("failed_devices", [])
+                for device in failed_devices:
+                    device_id = device.get("device_id")
+                    device_name = device.get("device_name", device_id)
+                    error = device.get("error", "Unknown error")
+
+                    if device_id not in device_status:
+                        device_status[device_id] = {
+                            "device_id": device_id,
+                            "device_name": device_name,
+                            "last_backup_success": False,
+                            "last_backup_time": completed_at.isoformat()
+                            if completed_at
+                            else None,
+                            "total_successful_backups": 0,
+                            "total_failed_backups": 1,
+                            "last_error": error,
+                        }
+                    else:
+                        # Only update if this is more recent than what we have
+                        if not device_status[device_id].get("last_backup_time") or (
+                            completed_at
+                            and completed_at.isoformat()
+                            > device_status[device_id]["last_backup_time"]
+                        ):
+                            device_status[device_id]["last_backup_success"] = False
+                            device_status[device_id]["last_backup_time"] = (
+                                completed_at.isoformat() if completed_at else None
+                            )
+                            device_status[device_id]["last_error"] = error
+                        device_status[device_id]["total_failed_backups"] += 1
+
+            except (json.JSONDecodeError, KeyError, AttributeError) as e:
+                logger.warning(f"Failed to parse backup job result: {e}")
+                continue
+
+        # Calculate summary statistics
+        devices_list = list(device_status.values())
+        devices_with_success = sum(1 for d in devices_list if d["last_backup_success"])
+        devices_with_failure = sum(
+            1 for d in devices_list if not d["last_backup_success"]
+        )
+
+        response = BackupCheckResponse(
+            total_devices=len(devices_list),
+            devices_with_successful_backup=devices_with_success,
+            devices_with_failed_backup=devices_with_failure,
+            devices_never_backed_up=0,  # Would need Nautobot integration to calculate this
+            devices=devices_list,
+        )
+
+        # Cache the result
+        try:
+            r = redis.Redis.from_url(settings.redis_url, decode_responses=True)
+            r.setex(CACHE_KEY, CACHE_DURATION_SECONDS, response.model_dump_json())
+            logger.info(
+                f"Cached device backup status for {CACHE_DURATION_SECONDS} seconds"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to cache device backup status: {e}")
+
+        return response
+
+    finally:
+        session.close()

@@ -1,0 +1,20 @@
+# Ignore all certificate files
+*.pem
+*.crt
+*.cer
+*.der
+*.p7b
+*.p7c
+*.pfx
+*.p12
+*.key
+*.csr
+
+# Keep the README and conversion script
+!README.md
+!convert-cert.sh
+!.gitignore
+
+# Example/template files (if any)
+!*.example
+!*.template

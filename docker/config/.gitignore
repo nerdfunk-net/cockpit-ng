@@ -1,0 +1,8 @@
+# Ignore all config files with secrets
+*.yaml
+
+# Allow example files
+!*.yaml.example
+
+# Keep the README
+!README.md

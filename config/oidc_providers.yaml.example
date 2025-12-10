@@ -1,0 +1,355 @@
+# ============================================================================
+# OIDC Providers Configuration Example
+# ============================================================================
+# This file configures OpenID Connect (OIDC) Single Sign-On providers.
+# Copy this file to 'oidc_providers.yaml' and customize for your environment.
+#
+# Location: config/oidc_providers.yaml
+# Format: YAML
+#
+# Documentation: See OIDC_SETUP.md for detailed setup instructions
+# ============================================================================
+
+# ============================================================================
+# PROVIDER DEFINITIONS
+# ============================================================================
+# Define one or more OIDC identity providers (Keycloak, Azure AD, Okta, etc.)
+# Users will see these as login options on the login page.
+
+providers:
+
+  # ---------------------------------------------------------------------------
+  # Example 1: Corporate Keycloak Instance
+  # ---------------------------------------------------------------------------
+  # The provider ID (e.g., "corporate") is used in URLs and must be unique
+  corporate:
+    # -------------------------------------------------------------------------
+    # MANDATORY FIELDS - Required for provider to work
+    # -------------------------------------------------------------------------
+
+    # enabled: Enable or disable this provider
+    # Type: boolean (true/false)
+    # Required: YES
+    # Default: No default - must be specified
+    enabled: true
+
+    # discovery_url: OIDC discovery endpoint URL
+    # Type: string (URL)
+    # Required: YES
+    # Default: No default - must be specified
+    # Format: https://{host}/realms/{realm}/.well-known/openid-configuration
+    # Example for Keycloak: https://keycloak.example.com/realms/production/.well-known/openid-configuration
+    # Example for Azure AD: https://login.microsoftonline.com/{tenant-id}/v2.0/.well-known/openid-configuration
+    # Example for Okta: https://{domain}.okta.com/.well-known/openid-configuration
+    discovery_url: "https://keycloak.example.com/realms/production/.well-known/openid-configuration"
+
+    # client_id: OAuth 2.0 Client ID from your OIDC provider
+    # Type: string
+    # Required: YES
+    # Default: No default - must be specified
+    # Where to find: In your OIDC provider's client configuration
+    client_id: "cockpit-production"
+
+    # client_secret: OAuth 2.0 Client Secret from your OIDC provider
+    # Type: string (sensitive)
+    # Required: YES
+    # Default: No default - must be specified
+    # Security: Keep this secret secure! Consider using environment variables
+    # Where to find: In your OIDC provider's client credentials/secrets section
+    client_secret: "your-client-secret-here"
+
+    # redirect_uri: OAuth callback URL where OIDC provider redirects after authentication
+    # Type: string (URL)
+    # Required: YES
+    # Default: No default - must be specified
+    # Format: http(s)://{frontend-host}/login/callback
+    # Important: Must match EXACTLY what's configured in your OIDC provider
+    # Important: Must be accessible from the user's browser (not backend URL)
+    redirect_uri: "http://localhost:3000/login/callback"
+
+    # -------------------------------------------------------------------------
+    # OPTIONAL FIELDS - Have sensible defaults
+    # -------------------------------------------------------------------------
+
+    # name: Display name shown on login button
+    # Type: string
+    # Required: NO
+    # Default: Uses provider ID (e.g., "corporate")
+    name: "Corporate SSO"
+
+    # description: Help text shown below login button
+    # Type: string
+    # Required: NO
+    # Default: Empty string
+    description: "Sign in with your company account"
+
+    # icon: Icon identifier for login button
+    # Type: string
+    # Required: NO
+    # Default: Empty (generic icon)
+    # Options: building, flask, users, shield, key, globe
+    icon: "building"
+
+    # display_order: Sort order on login page (lower numbers first)
+    # Type: integer
+    # Required: NO
+    # Default: 999
+    display_order: 1
+
+    # ca_cert_path: Custom CA certificate for self-signed OIDC providers
+    # Type: string (file path)
+    # Required: NO
+    # Default: None (uses system CA certificates)
+    # Path: Can be absolute or relative to project root
+    # Format: MUST be in PEM format (text format starting with -----BEGIN CERTIFICATE-----)
+    # Use case: Air-gapped environments or self-signed certificates
+    # Convert: Use config/certs/convert-cert.sh to convert DER/CRT/CER to PEM
+    ca_cert_path: "config/certs/corporate-ca.cert.pem"
+
+    # scopes: OAuth 2.0 scopes to request
+    # Type: list of strings
+    # Required: NO
+    # Default: ["openid", "profile", "email"]
+    # Note: "openid" scope is required for OIDC, others are optional
+    # Common scopes: openid, profile, email, offline_access, groups, roles
+    scopes:
+      - openid
+      - profile
+      - email
+      - offline_access
+
+    # claim_mappings: Map OIDC token claims to user attributes
+    # Type: object/dictionary
+    # Required: NO
+    # Defaults:
+    #   username: "preferred_username"
+    #   email: "email"
+    #   name: "name"
+    claim_mappings:
+      # username: Claim to use as unique username
+      # Required: NO
+      # Default: "preferred_username"
+      # Common values: preferred_username, email, sub, upn
+      username: "preferred_username"
+
+      # email: Claim to use for email address
+      # Required: NO
+      # Default: "email"
+      email: "email"
+
+      # name: Claim to use for display name
+      # Required: NO
+      # Default: "name"
+      # Common values: name, given_name, displayName
+      name: "name"
+
+      # groups: Claim containing user groups (for future role mapping)
+      # Required: NO
+      # Default: "groups"
+      # Note: Not currently used but reserved for future features
+      groups: "groups"
+
+    # auto_provision: Automatically create users on first OIDC login
+    # Type: boolean (true/false)
+    # Required: NO
+    # Default: true
+    # true: New users are created automatically (set as inactive, requiring admin approval)
+    # false: Users must exist in database before OIDC login works
+    auto_provision: true
+
+    # default_role: Role assigned to auto-provisioned users
+    # Type: string
+    # Required: NO
+    # Default: "user"
+    # Options: "user" (standard access) or "admin" (full access)
+    # Note: Only applies when auto_provision is true
+    default_role: "user"
+
+    # username_prefix: Prefix added to usernames to avoid conflicts
+    # Type: string
+    # Required: NO
+    # Default: "" (no prefix)
+    # Example: "corp_" → username becomes "corp_john.doe"
+    # Use case: Multiple providers with potentially overlapping usernames
+    username_prefix: ""
+
+  # ---------------------------------------------------------------------------
+  # Example 2: Development/Staging Environment (Minimal Configuration)
+  # ---------------------------------------------------------------------------
+  # Shows only MANDATORY fields - all others use defaults
+  development:
+    # MANDATORY FIELDS ONLY
+    enabled: false
+    discovery_url: "http://localhost:7080/realms/dev/.well-known/openid-configuration"
+    client_id: "cockpit-dev"
+    client_secret: "dev-secret-change-me"
+    redirect_uri: "http://localhost:3000/login/callback"
+
+    # OPTIONAL FIELDS - Customized from defaults
+    name: "Development SSO"
+    description: "For testing and development"
+    icon: "flask"
+    display_order: 2
+    auto_provision: true
+    default_role: "admin"  # Dev users get admin access
+    username_prefix: "dev_"
+
+  # ---------------------------------------------------------------------------
+  # Example 3: Azure AD Configuration
+  # ---------------------------------------------------------------------------
+  azure:
+    enabled: false
+
+    # Azure AD Discovery URL format
+    # Replace {tenant-id} with your Azure AD tenant ID or domain name
+    discovery_url: "https://login.microsoftonline.com/{tenant-id}/v2.0/.well-known/openid-configuration"
+
+    client_id: "your-azure-app-id"
+    client_secret: "your-azure-client-secret"
+    redirect_uri: "http://localhost:3000/login/callback"
+
+    name: "Microsoft Account"
+    description: "Sign in with Microsoft"
+    icon: "building"
+
+    scopes:
+      - openid
+      - profile
+      - email
+      - User.Read  # Azure-specific scope
+
+    claim_mappings:
+      username: "preferred_username"  # or "upn" for Azure
+      email: "email"
+      name: "name"
+
+  # ---------------------------------------------------------------------------
+  # Example 4: Okta Configuration
+  # ---------------------------------------------------------------------------
+  okta:
+    enabled: false
+
+    # Okta Discovery URL format
+    # Replace {domain} with your Okta domain (e.g., dev-123456.okta.com)
+    discovery_url: "https://{domain}.okta.com/.well-known/openid-configuration"
+
+    client_id: "your-okta-client-id"
+    client_secret: "your-okta-client-secret"
+    redirect_uri: "http://localhost:3000/login/callback"
+
+    name: "Okta SSO"
+    description: "Sign in with Okta"
+    icon: "shield"
+
+    scopes:
+      - openid
+      - profile
+      - email
+      - groups  # Okta-specific scope
+
+    claim_mappings:
+      username: "preferred_username"
+      email: "email"
+      name: "name"
+      groups: "groups"
+
+# ============================================================================
+# GLOBAL OIDC SETTINGS
+# ============================================================================
+global:
+  # allow_traditional_login: Show username/password login alongside SSO
+  # Type: boolean (true/false)
+  # Required: NO
+  # Default: true
+  # true: Shows both SSO buttons and traditional login form
+  # false: SSO-only mode (hides username/password login)
+  allow_traditional_login: true
+
+  # session_timeout: OIDC session timeout in minutes
+  # Type: integer (minutes)
+  # Required: NO
+  # Default: 480 (8 hours)
+  # Note: This is separate from JWT token expiry (controlled in backend config)
+  session_timeout: 480
+
+  # auto_redirect_single_provider: Auto-redirect to OIDC if only one provider
+  # Type: boolean (true/false)
+  # Required: NO
+  # Default: false
+  # true: Skips login page and goes directly to OIDC provider
+  # false: Always shows login page with provider selection
+  # Use case: Set to true if you only use one OIDC provider
+  auto_redirect_single_provider: false
+
+# ============================================================================
+# FIELD REFERENCE SUMMARY
+# ============================================================================
+#
+# MANDATORY FIELDS (per provider):
+#   - enabled                    Must be true or false
+#   - discovery_url              OIDC discovery endpoint URL
+#   - client_id                  OAuth client ID
+#   - client_secret              OAuth client secret
+#   - redirect_uri               OAuth callback URL
+#
+# OPTIONAL FIELDS (per provider) - Defaults shown:
+#   - name                       [provider_id]
+#   - description                ""
+#   - icon                       ""
+#   - display_order              999
+#   - ca_cert_path               null
+#   - scopes                     ["openid", "profile", "email"]
+#   - claim_mappings.username    "preferred_username"
+#   - claim_mappings.email       "email"
+#   - claim_mappings.name        "name"
+#   - claim_mappings.groups      "groups"
+#   - auto_provision             true
+#   - default_role               "user"
+#   - username_prefix            ""
+#
+# OPTIONAL GLOBAL FIELDS - Defaults shown:
+#   - allow_traditional_login    true
+#   - session_timeout            480
+#   - auto_redirect_single_provider  false
+#
+# ============================================================================
+# QUICK START CHECKLIST
+# ============================================================================
+#
+# □ 1. Copy this file to: config/oidc_providers.yaml
+# □ 2. Choose a provider ID (e.g., "corporate", "production")
+# □ 3. Set enabled: true
+# □ 4. Update discovery_url with your OIDC provider URL
+# □ 5. Set client_id from your OIDC provider
+# □ 6. Set client_secret from your OIDC provider
+# □ 7. Set redirect_uri (must match OIDC provider configuration)
+# □ 8. (Optional) Adjust scopes, claim_mappings, and other settings
+# □ 9. (Optional) Set ca_cert_path if using self-signed certificates
+# □ 10. Restart backend service
+# □ 11. Test login - you should see SSO button on login page
+#
+# ============================================================================
+# TROUBLESHOOTING
+# ============================================================================
+#
+# Problem: "Provider not found" error
+# Solution: Check provider ID matches exactly (case-sensitive)
+#
+# Problem: "Missing required field" error
+# Solution: Verify all MANDATORY fields are set
+#
+# Problem: SSL/TLS certificate errors
+# Solution: Set ca_cert_path to your CA certificate (PEM format)
+#
+# Problem: "Invalid redirect_uri" error
+# Solution: Ensure redirect_uri matches OIDC provider configuration exactly
+#
+# Problem: Username conflicts between providers
+# Solution: Use username_prefix to differentiate users
+#
+# Problem: Certificate format errors
+# Solution: Use config/certs/convert-cert.sh to convert to PEM format
+#
+# For detailed troubleshooting, see: OIDC_SETUP.md
+#
+# ============================================================================

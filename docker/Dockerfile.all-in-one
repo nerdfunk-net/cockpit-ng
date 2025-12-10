@@ -1,0 +1,167 @@
+# Dockerfile.all-in-one - Complete self-contained image for air-gap deployment
+# This creates a single image that contains everything needed to run Cockpit-NG
+# No external dependencies or separate artifacts required
+
+# Allow build-time proxy args (passed from shell)
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+
+# Stage 1: Base image with system dependencies
+FROM python:3.12-slim AS base
+
+# redeclare ARG so it's available inside the stage
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+
+# Export env so apt/pip see them during RUN commands in this stage
+# ENV HTTP_PROXY=${HTTP_PROXY} \
+#     HTTPS_PROXY=${HTTPS_PROXY} \
+#     NO_PROXY=${NO_PROXY}
+
+# Install all required system packages. If proxy is set, temporarily configure apt.
+RUN if [ -n "$HTTP_PROXY" ] || [ -n "$HTTPS_PROXY" ]; then \
+      echo "Acquire::http::Proxy \"${HTTP_PROXY}\";" > /etc/apt/apt.conf.d/01proxy || true; \
+      echo "Acquire::https::Proxy \"${HTTPS_PROXY}\";" >> /etc/apt/apt.conf.d/01proxy || true; \
+    fi \
+    && apt-get update && apt-get install -y \
+       git \
+       curl \
+       wget \
+       nodejs \
+       npm \
+       supervisor \
+       build-essential \
+       python3-dev \
+       libffi-dev \
+       libssl-dev \
+       fping \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && rm -f /etc/apt/apt.conf.d/01proxy || true
+
+# Upgrade npm if network/proxy allowed during build stage (won't fail build if skipped)
+RUN npm install -g npm@latest || true
+
+# Stage 2: Build frontend
+FROM node:24-alpine AS frontend-builder
+
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+
+# ENV HTTP_PROXY=${HTTP_PROXY} \
+#     HTTPS_PROXY=${HTTPS_PROXY} \
+#     NO_PROXY=${NO_PROXY}
+
+WORKDIR /app/frontend
+
+# If proxy is provided, configure npm for this stage (config lives only in this layer)
+RUN if [ -n "${HTTP_PROXY}" ]; then npm config set proxy "${HTTP_PROXY}" && npm config set https-proxy "${HTTPS_PROXY}" || true; fi
+
+# Copy package files and install dependencies
+COPY frontend/package*.json ./
+RUN npm ci
+
+# Copy frontend source and build
+COPY frontend/ ./
+
+# Set air-gapped environment variables for build
+ENV NEXT_PUBLIC_AIR_GAPPED=true
+ENV NEXT_PUBLIC_ANALYTICS_DISABLED=true
+ENV NEXT_PUBLIC_CDN_DISABLED=true
+ENV DOCKER_BUILD=true
+
+RUN npm run build
+
+# Stage 3: Prepare Python dependencies
+FROM base AS python-builder
+
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+
+# ENV HTTP_PROXY=${HTTP_PROXY} \
+#     HTTPS_PROXY=${HTTPS_PROXY} \
+#     NO_PROXY=${NO_PROXY}
+
+# Create wheelhouse with all Python dependencies
+COPY backend/requirements.txt /tmp/
+RUN pip install --upgrade pip wheel \
+ && pip wheel -r /tmp/requirements.txt -w /tmp/wheelhouse \
+ && pip wheel supervisor -w /tmp/wheelhouse
+
+# Stage 4: Final runtime image
+FROM base AS runtime
+
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+
+# Do not set runtime ENV by default to avoid baking credentials into the image.
+# If you want the container to use the proxy automatically at runtime, uncomment the ENV lines below.
+# ENV HTTP_PROXY=${HTTP_PROXY} HTTPS_PROXY=${HTTPS_PROXY} NO_PROXY=${NO_PROXY}
+
+# Set default logging level (can be overridden at runtime with -e LOG_LEVEL=DEBUG)
+ENV LOG_LEVEL=INFO
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Install Python dependencies from local wheels (no network access needed)
+COPY --from=python-builder /tmp/wheelhouse /tmp/wheelhouse
+COPY backend/requirements.txt ./backend/
+RUN pip install --no-index --find-links /tmp/wheelhouse -r backend/requirements.txt \
+    && pip install --no-index --find-links /tmp/wheelhouse supervisor \
+    && rm -rf /tmp/wheelhouse
+
+# Copy backend source code
+COPY backend/ ./backend/
+
+# Copy built frontend from build stage
+COPY --from=frontend-builder /app/frontend/.next ./frontend/.next
+COPY --from=frontend-builder /app/frontend/public ./frontend/public
+COPY --from=frontend-builder /app/frontend/node_modules ./frontend/node_modules
+COPY --from=frontend-builder /app/frontend/package*.json ./frontend/
+COPY --from=frontend-builder /app/frontend/next.config.ts ./frontend/
+COPY --from=frontend-builder /app/frontend/postcss.config.mjs ./frontend/
+COPY --from=frontend-builder /app/frontend/tsconfig.json ./frontend/
+
+# Copy Docker configuration files
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/supervisord-web.conf /etc/supervisor/conf.d/supervisord-web.conf
+COPY docker/supervisord-worker.conf /etc/supervisor/conf.d/supervisord-worker.conf
+COPY docker/supervisord-beat.conf /etc/supervisor/conf.d/supervisord-beat.conf
+COPY docker/start.sh ./start.sh
+RUN chmod +x start.sh
+
+# Create necessary directories
+RUN mkdir -p /app/data/settings \
+    /app/data/git \
+    /app/data/cache \
+    /var/log/supervisor
+
+# Set proper permissions
+RUN chown -R root:root /app/data \
+    && chmod -R 755 /app/data
+
+# Set default frontend port (can be overridden at runtime)
+ENV FRONTEND_PORT=3000
+
+# Expose ports (backend: 8000, frontend: configurable via FRONTEND_PORT)
+EXPOSE 8000
+EXPOSE ${FRONTEND_PORT}
+
+# Health check (uses FRONTEND_PORT environment variable)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD sh -c "curl -f http://localhost:${FRONTEND_PORT} && curl -f http://localhost:8000/health || exit 1"
+
+# Use supervisor to manage both services
+CMD ["./start.sh"]
+
+# Labels
+LABEL org.opencontainers.image.title="Cockpit-NG All-in-One"
+LABEL org.opencontainers.image.description="Complete self-contained Cockpit-NG application for air-gapped environments"
+LABEL org.opencontainers.image.version="1.0"
+LABEL org.opencontainers.image.vendor="nerdfunk-net"

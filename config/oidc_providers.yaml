@@ -1,0 +1,137 @@
+# ============================================================================
+# OIDC Providers Configuration
+# ============================================================================
+# This file configures OpenID Connect (OIDC) Single Sign-On providers.
+# See oidc_providers.yaml.example for detailed documentation of all fields.
+# ============================================================================
+
+providers:
+  # ---------------------------------------------------------------------------
+  # Corporate Keycloak Instance
+  # ---------------------------------------------------------------------------
+  corporate:
+    # MANDATORY FIELDS - Required for OIDC authentication to work
+    enabled: true                                                     # Enable/disable this provider
+    discovery_url: "https://keycloak:7443/realms/cockpit/.well-known/openid-configuration"  # OIDC discovery endpoint
+    client_id: "cockpit"                                             # OAuth client ID from your OIDC provider
+    client_secret: "QihKtC9YCU6TVPV2oOlNrEoqZXF83Ix9"               # OAuth client secret (keep secure!)
+    redirect_uri: "http://localhost:3000/login/callback"            # OAuth callback URL (must match OIDC provider config)
+
+    # OPTIONAL FIELDS - Customize display and behavior
+    name: "Corporate SSO"                                            # Display name on login button
+    description: "Login with your corporate account"                 # Help text below button
+    icon: "building"                                                 # Icon: building, flask, users, shield, key, globe
+    display_order: 1                                                 # Sort order (lower numbers first)
+
+    # Custom CA Certificate (for self-signed certificates)
+    # Path can be absolute or relative to project root
+    # Must be in PEM format - use config/certs/convert-cert.sh to convert other formats
+    ca_cert_path: "config/certs/ca.cert.pem"
+
+    # OAuth Scopes - What information to request from OIDC provider
+    # Default: ["openid", "profile", "email"]
+    scopes:
+      - openid           # Required for OIDC
+      - profile          # User profile information
+      - email            # Email address
+      - offline_access   # Refresh tokens (optional)
+
+    # Claim Mapping - Map OIDC token claims to user attributes
+    # Defaults: username="preferred_username", email="email", name="name"
+    claim_mappings:
+      username: "preferred_username"  # Claim to use as username (must be unique)
+      email: "email"                  # Claim for email address
+      name: "name"                    # Claim for display name
+      groups: "groups"                # Claim for groups (reserved for future use)
+
+    # User Provisioning - Auto-create users on first login
+    # Default: auto_provision=true, default_role="user"
+    auto_provision: true              # Create users automatically on first OIDC login
+    default_role: "user"              # Role for new users: "user" or "admin"
+    username_prefix: ""               # Prefix for usernames (e.g., "corp_" → "corp_john.doe")
+
+  # ---------------------------------------------------------------------------
+  # Development Keycloak Instance (Disabled)
+  # ---------------------------------------------------------------------------
+  development:
+    # MANDATORY FIELDS
+    enabled: false
+    discovery_url: "http://127.0.0.1:7080/realms/dev/.well-known/openid-configuration"
+    client_id: "cockpit-dev"
+    client_secret: "dev-secret-123"
+    redirect_uri: ""  # Empty = use default from backend
+
+    # OPTIONAL FIELDS
+    name: "Dev Environment SSO"
+    description: "Login with your development account"
+    icon: "code"
+    display_order: 2
+
+    # Custom CA Certificate (optional - each provider can have its own)
+    # ca_cert_path: "config/certs/dev-ca.cert.pem"
+
+    scopes:
+      - openid
+      - profile
+      - email
+
+    claim_mappings:
+      username: "preferred_username"
+      email: "email"
+      name: "name"
+
+    auto_provision: true
+    default_role: "user"
+    username_prefix: ""
+
+# ============================================================================
+# Global OIDC Settings
+# ============================================================================
+global:
+  # allow_traditional_login: Show username/password login alongside SSO
+  # Default: true
+  # false = SSO-only mode (hides traditional login)
+  allow_traditional_login: true
+
+  # session_timeout: OIDC session timeout in minutes
+  # Default: 480 (8 hours)
+  session_timeout: 480
+
+  # auto_redirect_single_provider: Auto-redirect to OIDC if only one provider enabled
+  # Default: false
+  # true = Skip login page and go directly to OIDC provider
+  auto_redirect_single_provider: false
+
+# ============================================================================
+# FIELD REFERENCE SUMMARY
+# ============================================================================
+#
+# MANDATORY FIELDS (per provider):
+#   - enabled                    true/false - Enable this provider
+#   - discovery_url              OIDC discovery endpoint URL
+#   - client_id                  OAuth client ID
+#   - client_secret              OAuth client secret
+#   - redirect_uri               OAuth callback URL
+#
+# OPTIONAL FIELDS (per provider) with defaults:
+#   - name                       [provider_id]
+#   - description                ""
+#   - icon                       ""
+#   - display_order              999
+#   - ca_cert_path               null
+#   - scopes                     ["openid", "profile", "email"]
+#   - claim_mappings.username    "preferred_username"
+#   - claim_mappings.email       "email"
+#   - claim_mappings.name        "name"
+#   - claim_mappings.groups      "groups"
+#   - auto_provision             true
+#   - default_role               "user"
+#   - username_prefix            ""
+#
+# OPTIONAL GLOBAL FIELDS with defaults:
+#   - allow_traditional_login    true
+#   - session_timeout            480
+#   - auto_redirect_single_provider  false
+#
+# See oidc_providers.yaml.example for detailed documentation.
+# ============================================================================

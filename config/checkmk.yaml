@@ -1,0 +1,73 @@
+---
+monitored_site:
+  default: cmk
+  # use folders to statically map sites to a checkmk device
+  # use 0.0.0.0/0 to set a default site
+  # if by_nautobot is not none, we use this value. But only when it is not "default"
+  #
+  # Priority order: by_name > by_nautobot (if not dflt) > by_ip > by_location > default
+  #
+  by_nautobot: checkmk_site
+  by_location:
+    building: site
+  by_ip:
+    192.168.1.0/24: cmk
+  by_name:
+    lab-2: cmk
+
+folders:
+  server:
+    default: "/server/{_custom_field_data.net}/{location.name}"
+  default:
+    default: "/network/{_custom_field_data.net}/{location.name}"
+
+    # use folders to statically map folders to a checkmk device
+    by_location:
+      office: /testfolder
+    by_ip:
+      # the order is first match!
+      192.168.179.0/24: /testfolder/subfolder
+      0.0.0.0/0: "/network/{_custom_field_data.net}/{location.name}"
+    by_name:
+      lab-2: /testfolder
+
+cf2htg:
+  # use cf2htg to map custom fields to checkmk host tag groups
+  # name_of_custom_field: name_of_checkmk_host_tag_group
+  net: net
+  latency: latency
+
+tags2htg:
+  # use tags2htg to map custom tags to checkmk host tag groups
+  # name_of_tag: name_of_checkmk_host_tag_group
+  # teh value is set to true if the tag is present on the nautobot device
+  # otherwise it is set to false
+  tag-1: nb_tag
+
+additional_attributes:
+  # use additional_attributes to set additional attributes for checkmk hosts
+  # these settings will be added to the internal dictionary of the checkmk host
+  by_ip:
+    192.168.178.101:
+      alias: test
+  by_name:
+    unknown-hostname:
+      xxx: test
+
+mapping:
+  # use mappings to map a value from nautobot to a value in checkmk
+  # this is a simple key value mapping. The key is the name of the nautobot attribute
+  # the value is the name in checkmk
+  name: alias
+  location.name: location
+  location.parent.name: city
+
+compare:
+  # only compare the following attributes
+  - attributes
+  - folder
+
+ignore_attributes:
+  # ignore the following attributes in checkmk
+  - tag_address_family
+

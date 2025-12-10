@@ -1,0 +1,9 @@
+---
+import: template
+path: data/import_on_new_installation/inventory_templates/inventory_by_location.j2
+properties:
+  name: inventory-by-location
+  source: file
+  type: jinja2
+  category: inventory
+  description: Inventory by location
