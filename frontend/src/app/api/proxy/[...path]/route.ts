@@ -123,6 +123,34 @@ async function handleRequest(
     // Get response content type
     const contentType = backendResponse.headers.get('content-type')
 
+    // Handle file downloads (pass through without JSON serialization)
+    if (
+      contentType?.includes('application/x-yaml') ||
+      contentType?.includes('text/csv') ||
+      contentType?.includes('application/octet-stream') ||
+      contentType?.includes('application/zip')
+    ) {
+      console.log(`Backend ${method} file download, passing through...`)
+
+      // Get the file as blob to preserve binary data
+      const blob = await backendResponse.blob()
+
+      // Copy relevant headers from backend response
+      const responseHeaders = new Headers()
+      const headersToCopy = ['content-type', 'content-disposition', 'content-length']
+      headersToCopy.forEach(header => {
+        const value = backendResponse.headers.get(header)
+        if (value) {
+          responseHeaders.set(header, value)
+        }
+      })
+
+      return new NextResponse(blob, {
+        status: backendResponse.status,
+        headers: responseHeaders,
+      })
+    }
+
     // Handle different response types
     let responseData
     if (contentType?.includes('application/json')) {

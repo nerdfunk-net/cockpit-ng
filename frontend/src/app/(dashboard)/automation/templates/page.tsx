@@ -470,7 +470,7 @@ ip access-list {{ acl.type | default("standard") }} {{ acl.name }}
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-500 mt-0.5">•</span>
-                  Test templates with &quot;Render Template&quot; before deploying
+                  Test templates with &quot;Test Template&quot; before deploying
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-500 mt-0.5">•</span>
@@ -978,19 +978,10 @@ function UserTemplatesContent() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="list">
-            <FileCode className="h-4 w-4 mr-2" />
-            My Templates
-          </TabsTrigger>
-          <TabsTrigger value="create">
-            <Plus className="h-4 w-4 mr-2" />
-            {editingTemplate ? 'Edit Template' : 'Create Template'}
-          </TabsTrigger>
-          <TabsTrigger value="help">
-            <HelpCircle className="h-4 w-4 mr-2" />
-            Help & Examples
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="list">My Templates</TabsTrigger>
+          <TabsTrigger value="create">{editingTemplate ? 'Edit Template' : 'Create Template'}</TabsTrigger>
+          <TabsTrigger value="help">Help & Examples</TabsTrigger>
         </TabsList>
 
         {/* List Tab */}
@@ -1230,10 +1221,10 @@ function UserTemplatesContent() {
                 validateVariableName={variableManager.validateVariableName}
               />
 
-              {/* Device Selection for Nautobot Data Preview */}
-              <div className="space-y-2">
+              {/* Device Selection for Nautobot Data Preview - Testing Section */}
+              <div className="space-y-2 p-4 bg-amber-50 border-2 border-amber-200 rounded-lg">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="device-search" className="text-sm font-medium">
+                  <Label htmlFor="device-search" className="text-sm font-medium text-amber-900">
                     Device (Optional - for previewing Nautobot data)
                   </Label>
                   {selectedDevice && (
@@ -1292,12 +1283,12 @@ function UserTemplatesContent() {
                 </div>
 
                 {selectedDevice && (
-                  <div className="p-3 bg-blue-50 border-2 border-blue-200 rounded-md">
+                  <div className="p-3 bg-white border-2 border-amber-300 rounded-md">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-medium text-sm text-blue-900">{selectedDevice.name}</div>
+                        <div className="font-medium text-sm text-amber-900">{selectedDevice.name}</div>
                         {selectedDevice.primary_ip4 && (
-                          <div className="text-xs text-blue-700">
+                          <div className="text-xs text-amber-700">
                             {typeof selectedDevice.primary_ip4 === 'object'
                               ? selectedDevice.primary_ip4.address
                               : selectedDevice.primary_ip4}
@@ -1310,13 +1301,36 @@ function UserTemplatesContent() {
                         variant="ghost"
                         size="sm"
                         onClick={handleClearDevice}
-                        className="text-blue-600 hover:text-blue-800 h-7 text-xs"
+                        className="text-amber-600 hover:text-amber-800 h-7 text-xs"
                       >
                         Clear
                       </Button>
                     </div>
                   </div>
                 )}
+
+                {/* Test Template Button - Inside Testing Section */}
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleRenderTemplate}
+                    disabled={!formData.content.trim() || !selectedDevice || isRenderingTemplate}
+                    className="w-full border-2 border-amber-600 text-amber-800 hover:bg-amber-600 hover:text-white font-semibold"
+                  >
+                    {isRenderingTemplate ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Testing...
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-4 w-4 mr-2" />
+                        Test Template
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
 
               {/* Scope - Only show for admin users */}
@@ -1339,26 +1353,7 @@ function UserTemplatesContent() {
               )}
 
               {/* Actions */}
-              <div className="flex justify-between pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleRenderTemplate}
-                  disabled={!formData.content.trim() || !selectedDevice || isRenderingTemplate}
-                  className="border-2 border-blue-500 text-blue-600 hover:bg-blue-50"
-                >
-                  {isRenderingTemplate ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Rendering...
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="h-4 w-4 mr-2" />
-                      Render Template
-                    </>
-                  )}
-                </Button>
+              <div className="flex justify-end gap-3 pt-4">
                 <div className="flex gap-3">
                   <Button
                     variant="outline"

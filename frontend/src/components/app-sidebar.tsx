@@ -31,6 +31,7 @@ import {
   Server,
   Calendar,
   History,
+  Download,
 } from 'lucide-react'
 
 interface NavItem {
@@ -60,6 +61,7 @@ const navigationSections: NavSection[] = [
       { label: 'Onboard Device', href: '/onboard-device', icon: Plus },
       { label: 'Sync Devices', href: '/sync-devices', icon: RefreshCw },
       { label: 'Offboarding', href: '/offboard-device', icon: Minus },
+      { label: 'Export', href: '/nautobot-export', icon: Download },
     ],
   },
   {

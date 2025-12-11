@@ -151,6 +151,25 @@ export interface RunCommandsJobResult {
 }
 
 // ============================================================================
+// Export Devices Job Result Types
+// ============================================================================
+
+export interface ExportDevicesJobResult {
+  success: boolean
+  message: string
+  exported_devices: number
+  requested_devices: number
+  properties_count: number
+  export_format: string
+  file_path: string
+  filename: string
+  file_size_bytes: number
+  error?: string
+  // Index signature for compatibility with Record<string, unknown>
+  [key: string]: unknown
+}
+
+// ============================================================================
 // Generic Job Result (fallback)
 // ============================================================================
 
@@ -212,6 +231,18 @@ export function isRunCommandsJobResult(result: Record<string, unknown>): result 
   return (
     'command_template' in result &&
     ('successful_devices' in result || 'failed_devices' in result)
+  )
+}
+
+/**
+ * Check if result is an export_devices job result.
+ * Has file_path and export_format fields.
+ */
+export function isExportDevicesJobResult(result: Record<string, unknown>): result is ExportDevicesJobResult {
+  return (
+    'export_format' in result &&
+    'file_path' in result &&
+    'filename' in result
   )
 }
 

@@ -21,6 +21,8 @@ def seed_permissions(verbose: bool = True):
         ("nautobot.devices", "delete", "Delete Nautobot devices"),
         ("nautobot.locations", "read", "View Nautobot locations"),
         ("nautobot.locations", "write", "Create/update Nautobot locations"),
+        ("nautobot.export", "execute", "Export Nautobot device data"),
+        ("nautobot.export", "read", "Download exported device files"),
         ("settings.nautobot", "read", "View Nautobot settings"),
         ("settings.nautobot", "write", "Modify Nautobot settings"),
         # CheckMK permissions
@@ -158,6 +160,8 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "nautobot.devices:delete",
         "nautobot.locations:read",
         "nautobot.locations:write",
+        "nautobot.export:execute",
+        "nautobot.export:read",
         "settings.nautobot:read",
         # CheckMK
         "checkmk.devices:read",
@@ -207,6 +211,8 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "nautobot.devices:write",
         "nautobot.locations:read",
         "nautobot.locations:write",
+        "nautobot.export:execute",
+        "nautobot.export:read",
         # CheckMK
         "checkmk.devices:read",
         "checkmk.devices:write",

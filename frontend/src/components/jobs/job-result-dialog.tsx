@@ -17,11 +17,13 @@ import {
   isBackupJobResult,
   isSyncJobResult,
   isRunCommandsJobResult,
+  isExportDevicesJobResult,
   GenericJobResult,
 } from "./types/job-results"
 import { BackupJobResultView } from "./results/backup-job-result"
 import { SyncJobResultView } from "./results/sync-job-result"
 import { RunCommandsResultView } from "./results/run-commands-result"
+import { ExportDevicesResultView } from "./results/export-devices-result"
 import { GenericJobResultView } from "./results/generic-job-result"
 
 interface JobResultDialogProps {
@@ -34,21 +36,26 @@ interface JobResultDialogProps {
  * Routes to the appropriate result view based on job type
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function renderJobResult(result: Record<string, any>): React.ReactElement {
+function renderJobResult(result: Record<string, any>, taskId?: string): React.ReactElement {
   // Check type guards in order of specificity
-  // Run commands must be checked first as it has similar fields to other types
+  // Export devices must be checked first to avoid conflicts
+  if (isExportDevicesJobResult(result)) {
+    return <ExportDevicesResultView result={result} taskId={taskId} />
+  }
+
+  // Run commands must be checked before others as it has similar fields
   if (isRunCommandsJobResult(result)) {
     return <RunCommandsResultView result={result} />
   }
-  
+
   if (isBackupJobResult(result)) {
     return <BackupJobResultView result={result} />
   }
-  
+
   if (isSyncJobResult(result)) {
     return <SyncJobResultView result={result} />
   }
-  
+
   // Fallback to generic view
   return <GenericJobResultView result={result as GenericJobResult} />
 }
@@ -77,7 +84,7 @@ export function JobResultDialog({ jobRun, open, onOpenChange }: JobResultDialogP
         {((<TooltipProvider>
           <div className="space-y-4">
             {/* Route to the appropriate result view based on job type */}
-            {(renderJobResult(result) as React.ReactNode)}
+            {(renderJobResult(result, jobRun.celery_task_id || undefined) as React.ReactNode)}
 
             {/* Error Message (for failed jobs) - common to all types */}
             {result.error && (
