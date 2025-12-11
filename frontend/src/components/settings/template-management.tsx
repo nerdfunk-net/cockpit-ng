@@ -1184,7 +1184,7 @@ export default function TemplateManagement() {
                   <div>
                     <h3 className="font-medium text-blue-900 mb-1">Template Import Instructions</h3>
                     <p className="text-blue-800 text-sm">
-                      This feature scans the <code className="bg-blue-100 px-1 rounded">./data/import_on_new_installation</code> directory 
+                      This feature scans the <code className="bg-blue-100 px-1 rounded">./contributing-data</code> directory 
                       for YAML files containing template definitions. Each YAML file should have properties like name, source, type, 
                       category, and description. Perfect for initial setup or bulk template imports.
                     </p>
@@ -1410,7 +1410,7 @@ export default function TemplateManagement() {
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No Templates Found</h3>
                   <p className="text-gray-600 mb-4 max-w-md mx-auto">
                     No YAML template files were found in the import directory. Make sure template files are placed in 
-                    <code className="bg-gray-100 px-1 rounded mx-1">./data/import_on_new_installation</code> and click &quot;Scan Directory&quot;.
+                    <code className="bg-gray-100 px-1 rounded mx-1">./contributing-data</code> and click &quot;Scan Directory&quot;.
                   </p>
                   <Button 
                     onClick={scanImportDirectory}

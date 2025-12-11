@@ -122,7 +122,7 @@ async def scan_import_directory(
         from pathlib import Path
 
         # Import directory path
-        import_dir = Path("../data/import_on_new_installation")
+        import_dir = Path("../contributing-data")
         if not import_dir.exists():
             return TemplateScanImportResponse(
                 templates=[], total_found=0, message="Import directory not found"

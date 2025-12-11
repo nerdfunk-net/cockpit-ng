@@ -1,6 +1,6 @@
 ---
 import: template
-path: data/import_on_new_installation/parser_templates/cisco_ios_show_version.textfsm
+path: contributing-data/parser_templates/cisco_ios_show_version.textfsm
 properties:
   name: show-version-parser
   source: file

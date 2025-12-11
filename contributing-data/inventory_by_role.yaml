@@ -1,6 +1,6 @@
 ---
 import: template
-path: data/import_on_new_installation/inventory_templates/inventory_by_role.j2
+path: contributing-data/inventory_templates/inventory_by_role.j2
 properties:
   name: inventory-by-role
   source: file
