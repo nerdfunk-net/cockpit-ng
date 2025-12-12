@@ -1,6 +1,10 @@
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CheckCircle2 } from 'lucide-react'
-import { DeviceSelector, type DeviceInfo, type LogicalCondition } from '@/components/shared/device-selector'
+/**
+ * Nautobot Export Device Selection Tab
+ * Uses the unified DeviceSelectionTab component from shared/
+ */
+
+import { DeviceSelectionTab as UnifiedDeviceSelectionTab } from '@/components/shared/device-selection-tab'
+import type { DeviceInfo, LogicalCondition } from '@/components/shared/device-selector'
 
 interface DeviceSelectionTabProps {
   previewDevices: DeviceInfo[]
@@ -11,36 +15,12 @@ interface DeviceSelectionTabProps {
   onSelectionChange: (selectedIds: string[], devices: DeviceInfo[]) => void
 }
 
-export function DeviceSelectionTab({
-  previewDevices,
-  deviceConditions,
-  selectedDeviceIds,
-  selectedDevices,
-  onDevicesSelected,
-  onSelectionChange,
-}: DeviceSelectionTabProps) {
+export function DeviceSelectionTab(props: DeviceSelectionTabProps) {
   return (
-    <div className="space-y-6">
-      <DeviceSelector
-        onDevicesSelected={onDevicesSelected}
-        showActions={true}
-        showSaveLoad={true}
-        initialConditions={deviceConditions}
-        initialDevices={previewDevices}
-        enableSelection={true}
-        selectedDeviceIds={selectedDeviceIds}
-        onSelectionChange={onSelectionChange}
-      />
-
-      {selectedDevices.length > 0 && (
-        <Alert className="bg-green-50 border-green-200">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">
-            <strong>{selectedDevices.length}</strong> device{selectedDevices.length !== 1 ? 's' : ''} selected.
-            Switch to the <strong>Properties</strong> tab to select export properties, or <strong>Export</strong> tab to download data.
-          </AlertDescription>
-        </Alert>
-      )}
-    </div>
+    <UnifiedDeviceSelectionTab
+      {...props}
+      nextStepMessage="Switch to the Properties tab to select export properties, or Export tab to download data."
+      alertStyle="success"
+    />
   )
 }
