@@ -11,20 +11,20 @@ This document explains how scheduled backup tasks convert inventory definitions 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │ 1. USER CREATES BACKUP TEMPLATE                                     │
-│    - Type: "backup"                                                  │
-│    - Inventory Source: "inventory"                                   │
-│    - Inventory Name: "production_routers" (saved inventory)          │
-│    - Config Repository ID: 5                                         │
-│    - Credential: (selected)                                          │
-│    - Backup paths: (templates)                                       │
+│    - Type: "backup"                                                 │
+│    - Inventory Source: "inventory"                                  │
+│    - Inventory Name: "production_routers" (saved inventory)         │
+│    - Config Repository ID: 5                                        │
+│    - Credential: (selected)                                         │
+│    - Backup paths: (templates)                                      │
 └─────────────────────────┬───────────────────────────────────────────┘
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │ 2. USER SCHEDULES JOB USING TEMPLATE                                │
-│    - Schedule: "Daily at 2am"                                        │
-│    - Template ID: 42                                                 │
-│    - Credential ID: 7                                                │
+│    - Schedule: "Daily at 2am"                                       │
+│    - Template ID: 42                                                │
+│    - Credential ID: 7                                               │
 └─────────────────────────┬───────────────────────────────────────────┘
                           │
                           ▼
@@ -33,30 +33,30 @@ This document explains how scheduled backup tasks convert inventory definitions 
 │    - Celery Beat process runs check_job_schedules_task()            │
 │    - Task queries database for due schedules (next_run <= now)      │
 │    - Finds schedule ID 99 (next_run = 02:00:00)                     │
-│    - For this schedule:                                              │
+│    - For this schedule:                                             │
 │      Calls: job_dispatcher_task.delay(                              │
-│        template_id=42,                                               │
-│        schedule_id=99,                                               │
-│        credential_id=7,                                              │
-│        triggered_by="schedule"                                       │
-│      )                                                               │
+│        template_id=42,                                              │
+│        schedule_id=99,                                              │
+│        credential_id=7,                                             │
+│        triggered_by="schedule"                                      │
+│      )                                                              │
 │    - Updates next_run to next occurrence (tomorrow 02:00:00)        │
 └─────────────────────────┬───────────────────────────────────────────┘
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│ 4. JOB DISPATCHER                                                    │
+│ 4. JOB DISPATCHER                                                   │
 │    File: /backend/tasks/scheduling/job_dispatcher.py                │
-│                                                                      │
-│    Steps:                                                            │
+│                                                                     │
+│    Steps:                                                           │
 │    a) Load template from database (template_id=42)                  │
 │    b) Extract template properties:                                  │
-│       - inventory_source = "inventory"                               │
-│       - inventory_name = "production_routers"                        │
-│       - config_repository_id = 5                                     │
-│       - created_by = "admin"                                         │
-│                                                                      │
-│    c) ✅ CONVERT INVENTORY TO DEVICE IDS                            │
+│       - inventory_source = "inventory"                              │
+│       - inventory_name = "production_routers"                       │
+│       - config_repository_id = 5                                    │
+│       - created_by = "admin"                                        │
+│                                                                     │
+│    c) ✅ CONVERT INVENTORY TO DEVICE IDS                             │
 │       target_devices = get_target_devices(template, job_parameters) │
 └─────────────────────────┬───────────────────────────────────────────┘
                           │
@@ -64,16 +64,16 @@ This document explains how scheduled backup tasks convert inventory definitions 
 ┌─────────────────────────────────────────────────────────────────────┐
 │ 5. GET_TARGET_DEVICES FUNCTION                                      │
 │    File: /backend/tasks/utils/device_helpers.py                     │
-│                                                                      │
-│    Input: template = {                                               │
-│      "inventory_source": "inventory",                                │
-│      "inventory_name": "production_routers",                         │
-│      "created_by": "admin"                                           │
-│    }                                                                 │
-│                                                                      │
-│    Process:                                                          │
+│                                                                     │
+│    Input: template = {                                              │
+│      "inventory_source": "inventory",                               │
+│      "inventory_name": "production_routers",                        │
+│      "created_by": "admin"                                          │
+│    }                                                                │
+│                                                                     │
+│    Process:                                                         │
 │    ┌─────────────────────────────────────────────────────┐          │
-│    │ 5a. Load Saved Inventory from Database             │          │
+│    │ 5a. Load Saved Inventory from Database              │          │
 │    │     inventory_manager.get_inventory_by_name(        │          │
 │    │       "production_routers", "admin"                 │          │
 │    │     )                                               │          │
@@ -97,10 +97,10 @@ This document explains how scheduled backup tasks convert inventory definitions 
 │    │       ]                                             │          │
 │    │     }                                               │          │
 │    └─────────────────────────────────────────────────────┘          │
-│                          │                                           │
-│                          ▼                                           │
+│                          │                                          │
+│                          ▼                                          │
 │    ┌─────────────────────────────────────────────────────┐          │
-│    │ 5b. Convert Conditions to LogicalOperations        │          │
+│    │ 5b. Convert Conditions to LogicalOperations         │          │
 │    │     operations = convert_conditions_to_operations(  │          │
 │    │       inventory["conditions"]                       │          │
 │    │     )                                               │          │
@@ -125,10 +125,10 @@ This document explains how scheduled backup tasks convert inventory definitions 
 │    │       )                                             │          │
 │    │     ]                                               │          │
 │    └─────────────────────────────────────────────────────┘          │
-│                          │                                           │
-│                          ▼                                           │
+│                          │                                          │
+│                          ▼                                          │
 │    ┌─────────────────────────────────────────────────────┐          │
-│    │ 5c. ✅ EXECUTE INVENTORY WITH NEW CUSTOM FIELD     │          │
+│    │ 5c. ✅ EXECUTE INVENTORY WITH NEW CUSTOM FIELD       │         │
 │    │        TYPE LOGIC                                   │          │
 │    │                                                     │          │
 │    │     devices, _ = ansible_inventory_service          │          │
@@ -151,7 +151,7 @@ This document explains how scheduled backup tasks convert inventory definitions 
 │    │     │ query devices_by_custom_field(        │       │          │
 │    │     │   $field_value: [String]              │       │          │
 │    │     │ ) {                                   │       │          │
-│    │     │   devices(cf_checkmk_site: $field_value) {│       │          │
+│    │     │   devices(cf_checkmk_site: $field_value) {│   │          │
 │    │     │     id                                │       │          │
 │    │     │     name                              │       │          │
 │    │     │     ...                               │       │          │
@@ -169,11 +169,11 @@ This document explains how scheduled backup tasks convert inventory definitions 
 │    │       DeviceInfo(id="uuid-9abc", name="router3")    │          │
 │    │     ]                                               │          │
 │    └─────────────────────────────────────────────────────┘          │
-│                          │                                           │
-│                          ▼                                           │
+│                          │                                          │
+│                          ▼                                          │
 │    ┌─────────────────────────────────────────────────────┐          │
-│    │ 5d. Extract Device IDs                             │          │
-│    │     device_ids = [device.id for device in devices] │          │
+│    │ 5d. Extract Device IDs                              │          │
+│    │     device_ids = [device.id for device in devices]  │          │
 │    │                                                     │          │
 │    │     Returns: [                                      │          │
 │    │       "uuid-1234-5678-abcd",                        │          │
@@ -181,19 +181,19 @@ This document explains how scheduled backup tasks convert inventory definitions 
 │    │       "uuid-9abc-defg-hijk"                         │          │
 │    │     ]                                               │          │
 │    └─────────────────────────────────────────────────────┘          │
-│                                                                      │
+│                                                                     │
 │    Output: target_devices = [                                       │
 │      "uuid-1234-5678-abcd",                                         │
 │      "uuid-5678-9abc-defg",                                         │
 │      "uuid-9abc-defg-hijk"                                          │
-│    ]                                                                 │
+│    ]                                                                │
 └─────────────────────────┬───────────────────────────────────────────┘
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │ 6. EXECUTE JOB TYPE                                                 │
 │    File: /backend/tasks/execution/base_executor.py                  │
-│                                                                      │
+│                                                                     │
 │    Calls: execute_backup(                                           │
 │      schedule_id=schedule_id,                                       │
 │      credential_id=credential_id,                                   │
@@ -202,133 +202,133 @@ This document explains how scheduled backup tasks convert inventory definitions 
 │        "uuid-1234-5678-abcd",                                       │
 │        "uuid-5678-9abc-defg",                                       │
 │        "uuid-9abc-defg-hijk"                                        │
-│      ],                                                              │
+│      ],                                                             │
 │      task_context=self,                                             │
 │      template=template                                              │
-│    )                                                                 │
+│    )                                                                │
 └─────────────────────────┬───────────────────────────────────────────┘
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│ 7. BACKUP EXECUTOR                                                   │
+│ 7. BACKUP EXECUTOR                                                  │
 │    File: /backend/tasks/execution/backup_executor.py                │
-│                                                                      │
+│                                                                     │
 │    Input: target_devices = [                                        │
 │      "uuid-1234-5678-abcd",                                         │
 │      "uuid-5678-9abc-defg",                                         │
 │      "uuid-9abc-defg-hijk"                                          │
-│    ]                                                                 │
-│                                                                      │
-│    Steps:                                                            │
+│    ]                                                                │
+│                                                                     │
+│    Steps:                                                           │
 │    ┌──────────────────────────────────────────────────────┐         │
-│    │ STEP 1: Validate Inputs                             │         │
+│    │ STEP 1: Validate Inputs                              │         │
 │    │   - Check credential exists                          │         │
 │    │   - Check repository exists                          │         │
 │    │   - Validate target_devices is not empty             │         │
 │    └──────────────────────────────────────────────────────┘         │
-│                          │                                           │
-│                          ▼                                           │
+│                          │                                          │
+│                          ▼                                          │
 │    ┌──────────────────────────────────────────────────────┐         │
-│    │ STEP 2: Setup Git Repository                        │         │
+│    │ STEP 2: Setup Git Repository                         │         │
 │    │   - Clone or open repository                         │         │
 │    │   - Pull latest changes                              │         │
 │    │   - Prepare for commits                              │         │
 │    └──────────────────────────────────────────────────────┘         │
-│                          │                                           │
-│                          ▼                                           │
+│                          │                                          │
+│                          ▼                                          │
 │    ┌──────────────────────────────────────────────────────┐         │
-│    │ STEP 3: Backup Each Device (Loop)                   │         │
+│    │ STEP 3: Backup Each Device (Loop)                    │         │
 │    │                                                      │         │
-│    │   For device_id in target_devices:                  │         │
+│    │   For device_id in target_devices:                   │         │
 │    │                                                      │         │
-│    │   ┌────────────────────────────────────────┐        │         │
-│    │   │ 3a. Fetch Device Details from Nautobot│        │         │
-│    │   │     GraphQL query by device ID         │        │         │
-│    │   │     Gets: name, IP, platform, etc.     │        │         │
-│    │   └────────────────────────────────────────┘        │         │
+│    │   ┌────────────────────────────────────────┐         │         │
+│    │   │ 3a. Fetch Device Details from Nautobot│          │         │
+│    │   │     GraphQL query by device ID         │         │         │
+│    │   │     Gets: name, IP, platform, etc.     │         │         │
+│    │   └────────────────────────────────────────┘         │         │
 │    │                  │                                   │         │
 │    │                  ▼                                   │         │
-│    │   ┌────────────────────────────────────────┐        │         │
-│    │   │ 3b. Connect via SSH (Netmiko)          │        │         │
-│    │   │     - Use device IP and credentials    │        │         │
-│    │   │     - Map platform to device_type      │        │         │
-│    │   └────────────────────────────────────────┘        │         │
+│    │   ┌────────────────────────────────────────┐         │         │
+│    │   │ 3b. Connect via SSH (Netmiko)          │         │         │
+│    │   │     - Use device IP and credentials    │         │         │
+│    │   │     - Map platform to device_type      │         │         │
+│    │   └────────────────────────────────────────┘         │         │
 │    │                  │                                   │         │
 │    │                  ▼                                   │         │
-│    │   ┌────────────────────────────────────────┐        │         │
-│    │   │ 3c. Execute Commands                   │        │         │
-│    │   │     - show running-config              │        │         │
-│    │   │     - show startup-config              │        │         │
-│    │   └────────────────────────────────────────┘        │         │
+│    │   ┌────────────────────────────────────────┐         │         │
+│    │   │ 3c. Execute Commands                   │         │         │
+│    │   │     - show running-config              │         │         │
+│    │   │     - show startup-config              │         │         │
+│    │   └────────────────────────────────────────┘         │         │
 │    │                  │                                   │         │
 │    │                  ▼                                   │         │
-│    │   ┌────────────────────────────────────────┐        │         │
-│    │   │ 3d. Save Configs to Git Repo Files    │        │         │
-│    │   │     - Apply path templates             │        │         │
-│    │   │     - Write to repository files        │        │         │
-│    │   │     Example:                           │        │         │
-│    │   │     backups/router1.running-config     │        │         │
-│    │   │     backups/router1.startup-config     │        │         │
-│    │   └────────────────────────────────────────┘        │         │
+│    │   ┌────────────────────────────────────────┐         │         │
+│    │   │ 3d. Save Configs to Git Repo Files     │         │         │
+│    │   │     - Apply path templates             │         │         │
+│    │   │     - Write to repository files        │         │         │
+│    │   │     Example:                           │         │         │
+│    │   │     backups/router1.running-config     │         │         │
+│    │   │     backups/router1.startup-config     │         │         │
+│    │   └────────────────────────────────────────┘         │         │
 │    │                                                      │         │
-│    │   Success: backed_up_devices.append(device_info)    │         │
-│    │   Failure: failed_devices.append(device_info)       │         │
+│    │   Success: backed_up_devices.append(device_info)     │         │
+│    │   Failure: failed_devices.append(device_info)        │         │
 │    └──────────────────────────────────────────────────────┘         │
-│                          │                                           │
-│                          ▼                                           │
+│                          │                                          │
+│                          ▼                                          │
 │    ┌──────────────────────────────────────────────────────┐         │
-│    │ STEP 4: Git Commit and Push                         │         │
+│    │ STEP 4: Git Commit and Push                          │         │
 │    │   - git add .                                        │         │
-│    │   - git commit -m "Backup config 20251212_140500"   │         │
+│    │   - git commit -m "Backup config 20251212_140500"    │         │
 │    │   - git push                                         │         │
 │    └──────────────────────────────────────────────────────┘         │
-│                          │                                           │
-│                          ▼                                           │
+│                          │                                          │
+│                          ▼                                          │
 │    ┌──────────────────────────────────────────────────────┐         │
-│    │ STEP 5: Update Nautobot Custom Fields (Optional)    │         │
-│    │   - If write_timestamp_to_custom_field enabled      │         │
-│    │   - Update cf_last_backup = "2025-12-12"            │         │
-│    │   - For each successfully backed up device          │         │
+│    │ STEP 5: Update Nautobot Custom Fields (Optional)     │         │
+│    │   - If write_timestamp_to_custom_field enabled       │         │
+│    │   - Update cf_last_backup = "2025-12-12"             │         │
+│    │   - For each successfully backed up device           │         │
 │    └──────────────────────────────────────────────────────┘         │
-│                                                                      │
+│                                                                     │
 │    Note: Backup executor does NOT filter devices -                  │
 │          it processes the pre-filtered device ID list               │
 └─────────────────────────┬───────────────────────────────────────────┘
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│ 8. RESULT                                                            │
-│    {                                                                 │
-│      "success": true,                                                │
-│      "devices_backed_up": 3,                                         │
-│      "devices_failed": 0,                                            │
-│      "message": "Backed up 3 device configurations",                 │
-│      "backed_up_devices": [                                          │
-│        {                                                             │
-│          "device_id": "uuid-1234-5678-abcd",                         │
-│          "device_name": "router1",                                   │
-│          "device_ip": "192.168.1.1",                                 │
-│          "platform": "cisco_ios",                                    │
-│          "running_config_file": "backups/router1.running-config",    │
-│          "startup_config_file": "backups/router1.startup-config",    │
-│          "running_config_bytes": 45678,                              │
-│          "startup_config_bytes": 45123                               │
-│        },                                                            │
-│        ...                                                           │
-│      ],                                                              │
-│      "failed_devices": [],                                           │
-│      "git_commit_status": {                                          │
-│        "committed": true,                                            │
-│        "pushed": true,                                               │
-│        "commit_hash": "a1b2c3d4",                                    │
-│        "files_changed": 6                                            │
-│      },                                                              │
-│      "timestamp_update_status": {                                    │
-│        "enabled": true,                                              │
-│        "updated_count": 3,                                           │
-│        "failed_count": 0                                             │
-│      }                                                               │
-│    }                                                                 │
+│ 8. RESULT                                                           │
+│    {                                                                │
+│      "success": true,                                               │
+│      "devices_backed_up": 3,                                        │
+│      "devices_failed": 0,                                           │
+│      "message": "Backed up 3 device configurations",                │
+│      "backed_up_devices": [                                         │
+│        {                                                            │
+│          "device_id": "uuid-1234-5678-abcd",                        │
+│          "device_name": "router1",                                  │
+│          "device_ip": "192.168.1.1",                                │
+│          "platform": "cisco_ios",                                   │
+│          "running_config_file": "backups/router1.running-config",   │
+│          "startup_config_file": "backups/router1.startup-config",   │
+│          "running_config_bytes": 45678,                             │
+│          "startup_config_bytes": 45123                              │
+│        },                                                           │
+│        ...                                                          │
+│      ],                                                             │
+│      "failed_devices": [],                                          │
+│      "git_commit_status": {                                         │
+│        "committed": true,                                           │
+│        "pushed": true,                                              │
+│        "commit_hash": "a1b2c3d4",                                   │
+│        "files_changed": 6                                           │
+│      },                                                             │
+│      "timestamp_update_status": {                                   │
+│        "enabled": true,                                             │
+│        "updated_count": 3,                                          │
+│        "failed_count": 0                                            │
+│      }                                                              │
+│    }                                                                │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
