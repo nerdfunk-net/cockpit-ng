@@ -1,6 +1,6 @@
 """
 Job Schedule Management Router
-API endpoints for managing scheduled jobs (different from APScheduler jobs router)
+API endpoints for managing scheduled jobs via Celery Beat
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status

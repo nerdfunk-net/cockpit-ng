@@ -27,6 +27,49 @@ class AnsibleInventoryService:
         }
         # Cache for custom fields to avoid repeated API calls
         self._custom_fields_cache = None
+        # Cache for custom field types (key -> type mapping)
+        self._custom_field_types_cache = None
+
+    async def _get_custom_field_types(self) -> Dict[str, str]:
+        """
+        Fetch custom field types from Nautobot API and cache them.
+
+        Returns:
+            Dictionary mapping custom field keys to their types (e.g., {"checkmk_site": "select", "freifeld": "text"})
+        """
+        if self._custom_field_types_cache is not None:
+            return self._custom_field_types_cache
+
+        try:
+            # Import here to avoid circular imports
+            from services.nautobot import nautobot_service
+
+            logger.info("Fetching custom field types from Nautobot")
+
+            # Fetch custom fields for devices
+            custom_fields = await nautobot_service.get_custom_fields_for_devices()
+
+            # Build a mapping of custom field key -> type
+            type_mapping = {}
+            for field in custom_fields:
+                field_key = field.get("key")
+                field_type_dict = field.get("type", {})
+                field_type_value = field_type_dict.get("value") if isinstance(field_type_dict, dict) else None
+
+                if field_key and field_type_value:
+                    type_mapping[field_key] = field_type_value
+                    logger.info(f"Custom field '{field_key}' has type '{field_type_value}'")
+
+            logger.info(f"Loaded {len(type_mapping)} custom field types: {type_mapping}")
+
+            # Cache the result
+            self._custom_field_types_cache = type_mapping
+            return type_mapping
+
+        except Exception as e:
+            logger.error(f"Error fetching custom field types: {e}", exc_info=True)
+            # Return empty dict on error, don't cache failures
+            return {}
 
     async def preview_inventory(
         self, operations: List[LogicalOperation]
@@ -710,13 +753,34 @@ class AnsibleInventoryService:
             # Import here to avoid circular imports
             from services.nautobot import nautobot_service
 
+            # Get custom field types to determine correct GraphQL variable type
+            custom_field_types = await self._get_custom_field_types()
+
+            # Extract the custom field key (remove cf_ prefix if present)
+            cf_key = custom_field_name.replace("cf_", "")
+            cf_type = custom_field_types.get(cf_key)
+
+            # Determine the GraphQL variable type:
+            # - If type is "select": always use [String]
+            # - If type is NOT "select" (e.g., "text"):
+            #   - WITH lookup (__ic): use [String]
+            #   - WITHOUT lookup: use String
+            if cf_type == "select":
+                graphql_var_type = "[String]"
+            elif use_contains:
+                graphql_var_type = "[String]"
+            else:
+                graphql_var_type = "String"
+
+            logger.info(f"Custom field '{cf_key}' type='{cf_type}', use_contains={use_contains}, GraphQL type='{graphql_var_type}'")
+
             # Use the custom field name directly (it should already have cf_ prefix)
             filter_field = custom_field_name
 
             if use_contains:
                 # Use ic for partial matching (case-insensitive contains)
                 query = f"""
-                query devices_by_custom_field($field_value: String) {{
+                query devices_by_custom_field($field_value: {graphql_var_type}) {{
                   devices({filter_field}__ic: $field_value) {{
                     id
                     name
@@ -748,9 +812,9 @@ class AnsibleInventoryService:
                 }}
                 """
             else:
-                # For exact match - use String type for custom field filters
+                # For exact match - use determined GraphQL type
                 query = f"""
-                query devices_by_custom_field($field_value: String) {{
+                query devices_by_custom_field($field_value: {graphql_var_type}) {{
                   devices({filter_field}: $field_value) {{
                     id
                     name
@@ -782,11 +846,15 @@ class AnsibleInventoryService:
                 }}
                 """
 
-            # Pass value as string - Nautobot expects String for custom fields
-            variables = {"field_value": custom_field_value}
+            # Wrap value in array if GraphQL type is [String]; otherwise pass as string
+            if graphql_var_type == "[String]":
+                variables = {"field_value": [custom_field_value]}
+            else:
+                variables = {"field_value": custom_field_value}
 
-            logger.debug(f"Custom field query: {query}")
-            logger.debug(f"Custom field variables: {variables}")
+            logger.debug(f"Custom field '{cf_key}' GraphQL query:\n{query}")
+            logger.debug(f"Custom field '{cf_key}' variables: {variables}")
+            logger.info(f"Custom field '{cf_key}' filter: {filter_field}, type: {cf_type}, graphql_var_type: {graphql_var_type}")
 
             result = await nautobot_service.graphql_query(query, variables)
 

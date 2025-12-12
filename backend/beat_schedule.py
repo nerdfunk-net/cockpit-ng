@@ -1,6 +1,6 @@
 """
 Celery Beat periodic task schedule configuration.
-Replaces APScheduler for scheduled tasks.
+Handles all scheduled tasks including user job schedules and system maintenance.
 
 Note: Cache tasks (devices, locations, git commits) are dynamically scheduled
 based on settings in Settings -> Cache. See get_dynamic_cache_schedule().

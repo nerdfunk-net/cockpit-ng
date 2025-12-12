@@ -362,30 +362,17 @@ async def startup_services():
                 logger.warning(f"Startup cache: locations prefetch failed: {e}")
 
         async def prefetch_devices_once():
-            """Prefetch all device properties from Nautobot using the background job system."""
+            """Prefetch all device properties from Nautobot using Celery background task."""
             try:
                 logger.debug("Startup cache: prefetch_devices_once() starting")
-                from main import apscheduler_service
+                from tasks.cache_tasks import cache_all_devices_task
 
-                if not apscheduler_service:
-                    logger.warning(
-                        "Startup cache: APScheduler service not available for device prefetch"
-                    )
-                    return
+                # Trigger device caching via Celery
+                task = cache_all_devices_task.delay()
 
-                # Start the device caching job
-                result = await apscheduler_service.start_get_all_devices_job(
-                    username="system"
+                logger.debug(
+                    f"Startup cache: Device prefetch job started with task ID {task.id}"
                 )
-
-                if result.status == "pending":
-                    logger.debug(
-                        f"Startup cache: Device prefetch job started with ID {result.job_id}"
-                    )
-                else:
-                    logger.warning(
-                        f"Startup cache: Device prefetch failed to start: {result.message}"
-                    )
 
             except Exception as e:
                 logger.warning(f"Startup cache: device prefetch failed: {e}")
@@ -462,13 +449,8 @@ async def startup_services():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on application shutdown."""
-    try:
-        global apscheduler_service
-        if apscheduler_service:
-            await apscheduler_service.shutdown()
-            logger.info("APScheduler service shutdown completed")
-    except Exception as e:
-        logger.warning(f"Error during APScheduler shutdown: {e}")
+    # Note: Celery workers are managed separately and do not need shutdown here
+    logger.info("Application shutdown completed")
 
 
 if __name__ == "__main__":

@@ -160,6 +160,20 @@ class NautobotService:
             self.executor, self._sync_rest_request, endpoint, method, data
         )
 
+    async def get_custom_fields_for_devices(self) -> list:
+        """
+        Fetch custom fields for dcim.device content type from Nautobot.
+
+        Returns:
+            List of custom field dictionaries with type information
+        """
+        try:
+            result = await self.rest_request("extras/custom-fields/?content_types=dcim.device")
+            return result.get("results", [])
+        except Exception as e:
+            logger.error(f"Error fetching device custom fields: {e}", exc_info=True)
+            return []
+
     def _sync_test_connection(
         self, url: str, token: str, timeout: int = 30, verify_ssl: bool = True
     ) -> tuple[bool, str]:
