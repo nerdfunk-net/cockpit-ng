@@ -962,6 +962,91 @@ async def get_cleanup_stats(
     }
 
 
+# ============================================================================
+# Ping Network Task Endpoint
+# ============================================================================
+
+
+class PingNetworkRequest(BaseModel):
+    cidrs: List[str]
+    resolve_dns: bool = False
+    count: int = 3
+    timeout: int = 500
+    retry: int = 3
+    interval: int = 10
+
+
+@router.post("/tasks/ping-network", response_model=TaskWithJobResponse)
+@handle_celery_errors("ping network")
+async def trigger_ping_network(
+    request: PingNetworkRequest,
+    current_user: dict = Depends(require_permission("network.ping", "execute")),
+):
+    """
+    Ping CIDR network ranges and optionally resolve DNS names.
+
+    This endpoint triggers a background task that:
+    1. Expands CIDR networks to individual IP addresses
+    2. Pings all IPs using fping for efficiency
+    3. Optionally resolves DNS names for reachable hosts
+    4. Condenses unreachable IP ranges for compact display
+
+    The task is tracked in the job database and can be viewed in the Jobs/Views app.
+
+    Request Body:
+        cidrs: List of CIDR networks to ping (e.g., ['192.168.1.0/24'])
+        resolve_dns: Whether to resolve DNS names for reachable IPs (default: False)
+
+    Returns:
+        TaskWithJobResponse with task_id (for Celery) and job_id (for Jobs/Views tracking)
+    """
+    from tasks.ping_network_task import ping_network_task
+
+    if not request.cidrs:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="cidrs list cannot be empty",
+        )
+
+    # Validate CIDR formats
+    for cidr in request.cidrs:
+        try:
+            import ipaddress
+            network = ipaddress.ip_network(cidr, strict=False)
+            # Enforce /19 minimum (as specified)
+            if network.prefixlen < 19:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"CIDR network too large (minimum /19): {cidr}",
+                )
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid CIDR format: {cidr}",
+            )
+
+    # Trigger the task asynchronously
+    task = ping_network_task.delay(
+        cidrs=request.cidrs,
+        resolve_dns=request.resolve_dns,
+        executed_by=current_user.get("username", "unknown"),
+        count=request.count,
+        timeout=request.timeout,
+        retry=request.retry,
+        interval=request.interval,
+    )
+
+    # Generate job_id that will be used by the task
+    job_id = f"ping_network_{task.id}"
+
+    return TaskWithJobResponse(
+        task_id=task.id,
+        job_id=job_id,
+        status="queued",
+        message=f"Ping network task queued for {len(request.cidrs)} network(s): {task.id}",
+    )
+
+
 @router.get("/device-backup-status", response_model=BackupCheckResponse)
 async def check_device_backups(
     force_refresh: bool = False,

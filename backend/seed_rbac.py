@@ -46,6 +46,7 @@ def seed_permissions(verbose: bool = True):
         ("network.templates", "write", "Create/modify templates"),
         ("network.templates", "delete", "Delete templates"),
         ("network.netmiko", "execute", "Execute Netmiko commands"),
+        ("network.ping", "execute", "Execute network ping operations"),
         # Git permissions
         ("git.repositories", "read", "View git repositories"),
         ("git.repositories", "write", "Create/modify git repositories"),

@@ -27,6 +27,9 @@ from .onboard_device_task import onboard_device_task
 # Import export devices task
 from .export_devices_task import export_devices_task
 
+# Import ping network task
+from .ping_network_task import ping_network_task
+
 # Import periodic tasks
 from .periodic_tasks import (
     worker_health_check,
@@ -61,6 +64,8 @@ __all__ = [
     "onboard_device_task",
     # Device export
     "export_devices_task",
+    # Network tools
+    "ping_network_task",
     # Periodic tasks
     "worker_health_check",
     "load_cache_schedules_task",

@@ -32,6 +32,8 @@ import {
   Calendar,
   History,
   Download,
+  Wifi,
+  Wrench,
 } from 'lucide-react'
 
 interface NavItem {
@@ -90,6 +92,13 @@ const navigationSections: NavSection[] = [
           { label: 'Netmiko', href: '/netmiko', icon: Terminal },
           { label: 'Inventory', href: '/ansible-inventory', icon: List },
           { label: 'Templates', href: '/automation/templates', icon: FileText },
+        ],
+      },
+      {
+        label: 'Tools',
+        icon: Wrench,
+        children: [
+          { label: 'Ping', href: '/tools/ping', icon: Wifi },
         ],
       },
       { label: 'Compliance Check', href: '/compliance', icon: CheckCircle },
