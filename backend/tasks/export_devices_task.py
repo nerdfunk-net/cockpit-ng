@@ -140,7 +140,9 @@ def export_devices_task(
 
                 devices = result.get("data", {}).get("devices", [])
                 all_devices.extend(devices)
-                logger.info(f"✓ Fetched {len(devices)} devices from batch {batch_idx + 1}")
+                logger.info(
+                    f"✓ Fetched {len(devices)} devices from batch {batch_idx + 1}"
+                )
 
         finally:
             loop.close()
@@ -169,7 +171,9 @@ def export_devices_task(
         )
 
         filtered_devices = _filter_device_properties(all_devices, properties)
-        logger.info(f"✓ Filtered {len(filtered_devices)} devices to {len(properties)} properties")
+        logger.info(
+            f"✓ Filtered {len(filtered_devices)} devices to {len(properties)} properties"
+        )
 
         # STEP 3: Export to format
         logger.info("-" * 80)
@@ -197,7 +201,9 @@ def export_devices_task(
                 "error": f"Unsupported export format: {export_format}",
             }
 
-        logger.info(f"✓ Generated {export_format.upper()} content ({len(export_content)} bytes)")
+        logger.info(
+            f"✓ Generated {export_format.upper()} content ({len(export_content)} bytes)"
+        )
 
         # STEP 4: Save file
         logger.info("-" * 80)
@@ -257,6 +263,7 @@ def export_devices_task(
         # Update job run status if this task is tracked
         try:
             import job_run_manager
+
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_completed(job_run["id"], result=result)
@@ -280,6 +287,7 @@ def export_devices_task(
         # Update job run status to failed if tracked
         try:
             import job_run_manager
+
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_failed(job_run["id"], str(e))
@@ -597,7 +605,9 @@ def _export_to_yaml(devices: List[Dict[str, Any]]) -> str:
     Returns:
         YAML string
     """
-    return yaml.dump(devices, default_flow_style=False, allow_unicode=True, sort_keys=False)
+    return yaml.dump(
+        devices, default_flow_style=False, allow_unicode=True, sort_keys=False
+    )
 
 
 def _export_to_csv(devices: List[Dict[str, Any]], csv_options: Dict[str, Any]) -> str:

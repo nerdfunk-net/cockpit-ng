@@ -282,13 +282,20 @@ const GitManagement: React.FC = () => {
     setConnectionStatus(null)
 
     try {
+      // Extract credential name from "id:name" format (same as create/update)
+      const credentialName = formData.credential_name === '__none__'
+        ? null
+        : (formData.credential_name?.includes(':')
+            ? formData.credential_name.split(':')[1]
+            : formData.credential_name) || null
+
       const response = await apiCall<{ success: boolean; message: string }>('git-repositories/test-connection', {
         method: 'POST',
         body: JSON.stringify({
           url: formData.url,
           branch: formData.branch || 'main',
           auth_type: formData.auth_type || 'none',
-          credential_name: formData.credential_name === '__none__' ? null : formData.credential_name || null,
+          credential_name: credentialName,
           verify_ssl: formData.verify_ssl
         })
       })

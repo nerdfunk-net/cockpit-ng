@@ -741,7 +741,8 @@ async def trigger_export_devices(
         csv_options = {
             "delimiter": request.csv_options.get("delimiter", ","),
             "quoteChar": request.csv_options.get("quoteChar", '"'),
-            "includeHeaders": request.csv_options.get("includeHeaders", "true").lower() == "true",
+            "includeHeaders": request.csv_options.get("includeHeaders", "true").lower()
+            == "true",
         }
 
     # Trigger the task asynchronously
@@ -807,7 +808,11 @@ async def download_export_file(
 
     task_result = result.result
     if not task_result or not task_result.get("success"):
-        error_msg = task_result.get("error", "Unknown error") if task_result else "No result available"
+        error_msg = (
+            task_result.get("error", "Unknown error")
+            if task_result
+            else "No result available"
+        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Export task failed: {error_msg}",

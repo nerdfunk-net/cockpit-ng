@@ -168,7 +168,9 @@ class NautobotService:
             List of custom field dictionaries with type information
         """
         try:
-            result = await self.rest_request("extras/custom-fields/?content_types=dcim.device")
+            result = await self.rest_request(
+                "extras/custom-fields/?content_types=dcim.device"
+            )
             return result.get("results", [])
         except Exception as e:
             logger.error(f"Error fetching device custom fields: {e}", exc_info=True)

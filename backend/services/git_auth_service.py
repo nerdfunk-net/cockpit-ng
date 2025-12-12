@@ -40,13 +40,21 @@ class GitAuthenticationService:
         auth_type = repository.get("auth_type", "token")
         credential_name = repository.get("credential_name")
 
+        logger.debug(
+            f"Resolving credentials: credential_name='{credential_name}', auth_type='{auth_type}'"
+        )
+
         if not credential_name:
+            logger.debug("No credential_name provided, returning None")
             return None, None, None
 
         try:
             import credentials_manager as cred_mgr
 
             creds = cred_mgr.list_credentials(include_expired=False)
+            logger.debug(
+                f"Found {len(creds)} active credentials, searching for '{credential_name}' with type '{auth_type}'"
+            )
 
             if auth_type == "ssh_key":
                 # Look for SSH key credential
@@ -59,9 +67,13 @@ class GitAuthenticationService:
                     None,
                 )
                 if match:
+                    logger.debug(
+                        f"Found SSH key credential: id={match['id']}, username={match.get('username')}"
+                    )
                     # Get the SSH key file path
                     ssh_key_path = cred_mgr.get_ssh_key_path(match["id"])
                     if ssh_key_path:
+                        logger.debug(f"SSH key path resolved: {ssh_key_path}")
                         return match.get("username"), None, ssh_key_path
                     else:
                         logger.error(
@@ -69,7 +81,9 @@ class GitAuthenticationService:
                         )
                         return None, None, None
                 else:
-                    logger.warning(f"SSH key credential '{credential_name}' not found")
+                    logger.warning(
+                        f"SSH key credential '{credential_name}' not found in {len(creds)} credentials"
+                    )
                     return None, None, None
             else:
                 # Look for token credential (default behavior)
@@ -83,17 +97,27 @@ class GitAuthenticationService:
                 )
                 if match:
                     username = match.get("username")
+                    logger.debug(
+                        f"Found token credential: id={match['id']}, username={username}"
+                    )
                     try:
                         token = cred_mgr.get_decrypted_password(match["id"])
+                        logger.debug(
+                            f"Successfully decrypted token for '{credential_name}'"
+                        )
                         return username, token, None
                     except Exception as de:
                         logger.error(
-                            f"Failed to decrypt credential '{credential_name}': {de}"
+                            f"Failed to decrypt credential '{credential_name}': {de}",
+                            exc_info=True,
                         )
                         return None, None, None
                 else:
                     logger.warning(
-                        f"Credential '{credential_name}' not found or not token type"
+                        f"Token credential '{credential_name}' not found in {len(creds)} credentials"
+                    )
+                    logger.debug(
+                        f"Available token credentials: {[c['name'] for c in creds if c['type'] == 'token']}"
                     )
                     return None, None, None
         except Exception as ce:

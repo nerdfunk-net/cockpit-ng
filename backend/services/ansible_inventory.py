@@ -54,13 +54,21 @@ class AnsibleInventoryService:
             for field in custom_fields:
                 field_key = field.get("key")
                 field_type_dict = field.get("type", {})
-                field_type_value = field_type_dict.get("value") if isinstance(field_type_dict, dict) else None
+                field_type_value = (
+                    field_type_dict.get("value")
+                    if isinstance(field_type_dict, dict)
+                    else None
+                )
 
                 if field_key and field_type_value:
                     type_mapping[field_key] = field_type_value
-                    logger.info(f"Custom field '{field_key}' has type '{field_type_value}'")
+                    logger.info(
+                        f"Custom field '{field_key}' has type '{field_type_value}'"
+                    )
 
-            logger.info(f"Loaded {len(type_mapping)} custom field types: {type_mapping}")
+            logger.info(
+                f"Loaded {len(type_mapping)} custom field types: {type_mapping}"
+            )
 
             # Cache the result
             self._custom_field_types_cache = type_mapping
@@ -772,7 +780,9 @@ class AnsibleInventoryService:
             else:
                 graphql_var_type = "String"
 
-            logger.info(f"Custom field '{cf_key}' type='{cf_type}', use_contains={use_contains}, GraphQL type='{graphql_var_type}'")
+            logger.info(
+                f"Custom field '{cf_key}' type='{cf_type}', use_contains={use_contains}, GraphQL type='{graphql_var_type}'"
+            )
 
             # Use the custom field name directly (it should already have cf_ prefix)
             filter_field = custom_field_name
@@ -854,7 +864,9 @@ class AnsibleInventoryService:
 
             logger.debug(f"Custom field '{cf_key}' GraphQL query:\n{query}")
             logger.debug(f"Custom field '{cf_key}' variables: {variables}")
-            logger.info(f"Custom field '{cf_key}' filter: {filter_field}, type: {cf_type}, graphql_var_type: {graphql_var_type}")
+            logger.info(
+                f"Custom field '{cf_key}' filter: {filter_field}, type: {cf_type}, graphql_var_type: {graphql_var_type}"
+            )
 
             result = await nautobot_service.graphql_query(query, variables)
 
