@@ -685,6 +685,109 @@ class ExportDevicesRequest(BaseModel):
     csv_options: Optional[Dict[str, str]] = None
 
 
+class PreviewExportRequest(BaseModel):
+    """Request model for previewing export data."""
+    device_ids: List[str]
+    properties: List[str]
+    max_devices: int = 5
+
+
+class PreviewExportResponse(BaseModel):
+    """Response model for preview data."""
+    success: bool
+    devices: List[Dict]
+    total_devices: int
+    previewed_devices: int
+    message: Optional[str] = None
+
+
+@router.post("/preview-export-devices", response_model=PreviewExportResponse)
+async def preview_export_devices(
+    request: PreviewExportRequest,
+    current_user: dict = Depends(require_permission("nautobot.export", "read")),
+):
+    """
+    Preview export data by fetching full device information from Nautobot.
+
+    This endpoint fetches complete device data for a limited number of devices
+    (default 5) to provide an accurate preview of what will be exported.
+
+    Unlike the preview dialog's limited DeviceInfo, this fetches all fields
+    from Nautobot using the same GraphQL query as the actual export.
+
+    Request Body:
+        device_ids: List of Nautobot device IDs
+        properties: List of properties to include in preview
+        max_devices: Maximum number of devices to preview (default: 5)
+
+    Returns:
+        PreviewExportResponse with full device data for preview
+    """
+    from services.nautobot import NautobotService
+    from tasks.export_devices_task import _build_graphql_query, _filter_device_properties
+
+    try:
+        if not request.device_ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="device_ids list cannot be empty",
+            )
+
+        if not request.properties:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="properties list cannot be empty",
+            )
+
+        # Limit to first N devices for preview
+        preview_device_ids = request.device_ids[:request.max_devices]
+
+        # Build GraphQL query with all requested properties
+        query = _build_graphql_query(request.properties)
+
+        # Fetch device data from Nautobot
+        nautobot_service = NautobotService()
+        variables = {"id_filter": preview_device_ids}
+        result = nautobot_service._sync_graphql_query(query, variables)
+
+        if not result or "data" not in result:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to fetch device data from Nautobot",
+            )
+
+        devices = result.get("data", {}).get("devices", [])
+
+        if not devices:
+            return PreviewExportResponse(
+                success=True,
+                devices=[],
+                total_devices=len(request.device_ids),
+                previewed_devices=0,
+                message="No devices found in Nautobot"
+            )
+
+        # Filter to requested properties
+        filtered_devices = _filter_device_properties(devices, request.properties)
+
+        return PreviewExportResponse(
+            success=True,
+            devices=filtered_devices,
+            total_devices=len(request.device_ids),
+            previewed_devices=len(filtered_devices),
+            message=f"Successfully previewed {len(filtered_devices)} of {len(request.device_ids)} devices"
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error previewing export: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to preview export: {str(e)}"
+        )
+
+
 @router.post("/tasks/export-devices", response_model=TaskWithJobResponse)
 @handle_celery_errors("export devices")
 async def trigger_export_devices(

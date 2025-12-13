@@ -302,28 +302,25 @@ def _build_graphql_query(properties: List[str]) -> str:
     """
     Build GraphQL query based on requested properties.
 
-    The query uses the comprehensive device query structure provided by the user.
+    This query fetches all device data but EXCLUDES UUIDs (id fields) since they are
+    instance-specific and not portable between Nautobot instances.
     """
-    # This is the comprehensive query structure from the user's requirements
+    # Comprehensive query WITHOUT UUIDs - only portable/meaningful data
     query = """
     query Devices($id_filter: [String])
     {
       devices(id: $id_filter)
       {
-        id
         name
-        hostname: name
         asset_tag
         config_context
         _custom_field_data
-        custom_field_data : _custom_field_data
         position
         face
         serial
         local_config_context_data
         primary_ip4
         {
-          id
           description
           ip_version
           address
@@ -331,54 +328,43 @@ def _build_graphql_query(properties: List[str]) -> str:
           mask_length
           dns_name
           parent {
-            id
             prefix
           }
           status {
-            id
             name
           }
           interfaces {
-            id
             name
           }
         }
         role {
-          id
           name
         }
         device_type
         {
-          id
           model
           manufacturer
           {
-            id
             name
           }
         }
         platform
         {
-          id
           name
           manufacturer {
-            id
             name
           }
         }
         tags
         {
-          id
           name
           content_types {
-            id
             app_label
             model
           }
         }
         tenant
         {
-            id
             name
             tenant_group {
               name
@@ -386,48 +372,39 @@ def _build_graphql_query(properties: List[str]) -> str:
         }
         rack
         {
-          id
           name
           rack_group
           {
-            id
             name
           }
         }
         location
         {
-          id
           name
           description
           location_type
           {
-            id
             name
           }
           parent
           {
-            id
             name
             description
             location_type
             {
-              id
               name
             }
           }
         }
         status
         {
-          id
           name
         }
         vrfs
         {
-          id
           name
           namespace
           {
-            id
             name
           }
           rd
@@ -435,7 +412,6 @@ def _build_graphql_query(properties: List[str]) -> str:
         }
         interfaces
         {
-          id
           name
           description
           enabled
@@ -445,59 +421,47 @@ def _build_graphql_query(properties: List[str]) -> str:
           mtu
           parent_interface
           {
-            id
             name
           }
           bridged_interfaces
           {
-            id
             name
           }
           status {
-            id
             name
           }
           lag {
-            id
             name
             enabled
           }
           member_interfaces {
-            id
             name
           }
           vrf
           {
-            id
             name
             namespace
             {
-              id
               name
             }
           }
           ip_addresses {
             address
             status {
-              id
               name
             }
             role
             {
-              id
               name
             }
             tags {
-              id
               name
             }
             parent {
-              id
               network
               prefix
               prefix_length
               namespace {
-                id
                 name
               }
             }
@@ -510,41 +474,34 @@ def _build_graphql_query(properties: List[str]) -> str:
               commit_rate
               provider
               {
-                id
                 name
               }
             }
           }
           tagged_vlans
           {
-            id
             name
             vid
           }
           untagged_vlan
           {
-            id
             name
             vid
           }
           cable
           {
-            id
             termination_a_type
             status
             {
-              id
               name
             }
             color
           }
           tags
           {
-            id
             name
             content_types
             {
-              id
               app_label
               model
             }
@@ -552,12 +509,10 @@ def _build_graphql_query(properties: List[str]) -> str:
         }
         parent_bay
         {
-          id
           name
         }
         device_bays
         {
-          id
           name
         }
       }

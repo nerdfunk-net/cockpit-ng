@@ -42,6 +42,7 @@ def seed_permissions(verbose: bool = True):
         # Network automation permissions
         ("network.inventory", "read", "View Ansible inventory"),
         ("network.inventory", "write", "Modify Ansible inventory"),
+        ("network.inventory", "delete", "Delete Ansible inventory"),
         ("network.templates", "read", "View configuration templates"),
         ("network.templates", "write", "Create/modify templates"),
         ("network.templates", "delete", "Delete templates"),
@@ -179,6 +180,7 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "configs.compare:execute",
         # Network
         "network.inventory:read",
+        "network.inventory:write",
         "network.templates:read",
         # Scan & Add
         "scan:execute",
@@ -227,10 +229,12 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         # Network (full access)
         "network.inventory:read",
         "network.inventory:write",
+        "network.inventory:delete",
         "network.templates:read",
         "network.templates:write",
         "network.templates:delete",
         "network.netmiko:execute",
+        "network.ping:execute",
         # Git
         "git.repositories:read",
         "git.operations:execute",

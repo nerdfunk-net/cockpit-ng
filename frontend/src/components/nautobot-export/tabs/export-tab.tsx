@@ -1,11 +1,13 @@
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Download, FileText, AlertCircle } from 'lucide-react'
+import { Download, FileText, AlertCircle, Eye } from 'lucide-react'
 import type { DeviceInfo } from '@/components/shared/device-selector'
+import { PreviewExportDialog } from '@/components/nautobot-export/dialogs'
 
 interface ExportTabProps {
   selectedDevices: DeviceInfo[]
@@ -35,6 +37,7 @@ export function ExportTab({
   onExport,
 }: ExportTabProps) {
   const canExport = selectedDevices.length > 0 && selectedProperties.length > 0
+  const [showPreview, setShowPreview] = useState(false)
 
   return (
     <div className="space-y-6">
@@ -203,8 +206,18 @@ export function ExportTab({
         </Card>
       )}
 
-      {/* Export Button */}
-      <div className="flex justify-end">
+      {/* Export Buttons */}
+      <div className="flex justify-end gap-3">
+        <Button
+          onClick={() => setShowPreview(true)}
+          disabled={!canExport}
+          size="lg"
+          variant="outline"
+          className="gap-2 border-green-300 text-green-600 hover:bg-green-50 hover:text-green-700"
+        >
+          <Eye className="h-5 w-5" />
+          Preview
+        </Button>
         <Button
           onClick={onExport}
           disabled={!canExport}
@@ -215,6 +228,20 @@ export function ExportTab({
           Export to {exportFormat.toUpperCase()}
         </Button>
       </div>
+
+      {/* Preview Dialog */}
+      <PreviewExportDialog
+        show={showPreview}
+        onClose={() => setShowPreview(false)}
+        devices={selectedDevices}
+        properties={selectedProperties}
+        format={exportFormat}
+        csvOptions={exportFormat === 'csv' ? {
+          delimiter: csvDelimiter,
+          quoteChar: csvQuoteChar,
+          includeHeaders: csvIncludeHeaders,
+        } : undefined}
+      />
     </div>
   )
 }

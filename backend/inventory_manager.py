@@ -146,10 +146,12 @@ class InventoryManager:
             current = self._model_to_dict(current_obj)
 
             # Prepare update data
+            # If conditions are provided in update, serialize them to JSON
+            # Otherwise, use the original JSON string from the database (not the deserialized version)
             conditions_json = (
                 json.dumps(inventory_data["conditions"])
                 if "conditions" in inventory_data
-                else current["conditions"]
+                else current_obj.conditions  # Use original JSON string, not deserialized version
             )
 
             # Prepare update kwargs

@@ -25,9 +25,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Save,
-  FolderOpen
+  FolderOpen,
+  Settings
 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
+import { ManageInventoryDialog } from '@/components/ansible-inventory/dialogs/manage-inventory-dialog'
 
 export interface LogicalCondition {
   field: string
@@ -131,9 +133,10 @@ export function DeviceSelector({
   // Selected custom field (when 'custom_fields' is chosen as field type)
   const [selectedCustomField, setSelectedCustomField] = useState('')
 
-  // Save/Load Inventory modals
+  // Save/Load/Manage Inventory modals
   const [showSaveModal, setShowSaveModal] = useState(false)
   const [showLoadModal, setShowLoadModal] = useState(false)
+  const [showManageModal, setShowManageModal] = useState(false)
   // Inventory repositories no longer used - using database storage
   // const [inventoryRepositories, setInventoryRepositories] = useState<Array<{id: number, name: string, url: string, branch: string}>>([])
   // const [selectedInventoryRepo, setSelectedInventoryRepo] = useState<number | null>(null)
@@ -358,6 +361,51 @@ export function DeviceSelector({
     setShowLoadModal(true)
     // Load saved inventories from database
     await loadSavedInventories()
+  }
+
+  const openManageModal = async () => {
+    setShowManageModal(true)
+    // Load saved inventories from database
+    await loadSavedInventories()
+  }
+
+  const handleUpdateInventory = async (inventoryId: number, name: string, description: string) => {
+    try {
+      // Only send name and description - don't send conditions
+      const updateData: { name: string; description: string | null } = {
+        name,
+        description: description || null,
+      }
+
+      await apiCall(`inventory/${inventoryId}`, {
+        method: 'PUT',
+        body: JSON.stringify(updateData),
+      })
+
+      // Reload inventories to reflect the change
+      await loadSavedInventories()
+      alert('Inventory updated successfully!')
+    } catch (error) {
+      console.error('Error updating inventory:', error)
+      alert('Error updating inventory: ' + (error as Error).message)
+      throw error
+    }
+  }
+
+  const handleDeleteInventory = async (inventoryId: number, inventoryName: string) => {
+    try {
+      await apiCall(`inventory/${inventoryId}`, {
+        method: 'DELETE',
+      })
+
+      // Reload inventories to reflect the deletion
+      await loadSavedInventories()
+      alert(`Inventory "${inventoryName}" deleted successfully!`)
+    } catch (error) {
+      console.error('Error deleting inventory:', error)
+      alert('Error deleting inventory: ' + (error as Error).message)
+      throw error
+    }
   }
 
   const loadCustomFields = async () => {
@@ -900,6 +948,14 @@ export function DeviceSelector({
                     <FolderOpen className="h-4 w-4" />
                     <span>Load</span>
                   </Button>
+                  <Button
+                    onClick={openManageModal}
+                    variant="outline"
+                    className="flex items-center space-x-2 border-purple-300 text-purple-600 hover:bg-purple-50 hover:text-purple-700"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span>Manage Inventory</span>
+                  </Button>
                 </>
               )}
             </div>
@@ -1221,6 +1277,16 @@ export function DeviceSelector({
               </DialogContent>
             </Dialog>
           )}
+
+          {/* Manage Inventory Modal */}
+          <ManageInventoryDialog
+            show={showManageModal}
+            onClose={() => setShowManageModal(false)}
+            onUpdate={handleUpdateInventory}
+            onDelete={handleDeleteInventory}
+            inventories={savedInventories}
+            isLoading={isLoadingInventories}
+          />
         </>
       )}
     </div>
