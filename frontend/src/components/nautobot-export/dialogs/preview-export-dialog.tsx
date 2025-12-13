@@ -118,46 +118,172 @@ export function PreviewExportDialog({
   }
 
   const generateCSVPreview = (): string => {
-    const delimiter = csvOptions?.delimiter || ','
+    const delimiter = csvOptions?.delimiter || ';'  // Default to semicolon for import compatibility
     const quoteChar = csvOptions?.quoteChar || '"'
     const includeHeaders = csvOptions?.includeHeaders ?? true
+
+    // Build flattened rows (one per interface) - import-compatible format
+    const flattenedRows: any[] = []
+
+    previewDevices.forEach((device) => {
+      // Extract device-level fields
+      const deviceFields = extractDeviceFields(device)
+
+      // Get interfaces
+      const interfaces = device.interfaces || []
+
+      if (interfaces && interfaces.length > 0) {
+        // One row per interface
+        interfaces.forEach((iface: any) => {
+          const row = { ...deviceFields, ...extractInterfaceFields(iface, device) }
+          flattenedRows.push(row)
+        })
+      } else {
+        // No interfaces - single row with device data only
+        flattenedRows.push(deviceFields)
+      }
+    })
+
+    if (flattenedRows.length === 0) {
+      return 'No data to preview'
+    }
+
+    // Determine all unique column names
+    const allColumns = new Set<string>()
+    flattenedRows.forEach(row => {
+      Object.keys(row).forEach(key => allColumns.add(key))
+    })
+
+    // Order columns: device fields first, then interface fields, then custom fields
+    const deviceCols = ['name', 'device_type', 'serial', 'asset_tag', 'role', 'status', 'location', 'platform', 'software_version', 'tags']
+    const interfaceCols = Array.from(allColumns).filter(col => col.startsWith('interface_')).sort()
+    const customCols = Array.from(allColumns).filter(col => col.startsWith('cf_')).sort()
+    const otherCols = Array.from(allColumns).filter(col =>
+      !deviceCols.includes(col) && !col.startsWith('interface_') && !col.startsWith('cf_')
+    ).sort()
+
+    const orderedColumns: string[] = []
+    deviceCols.forEach(col => {
+      if (allColumns.has(col)) orderedColumns.push(col)
+    })
+    orderedColumns.push(...interfaceCols, ...customCols, ...otherCols)
 
     const csvLines: string[] = []
 
     // Add headers if enabled
     if (includeHeaders) {
-      const headers = properties.map(prop => `${quoteChar}${prop}${quoteChar}`)
+      const headers = orderedColumns.map(col => `${quoteChar}${col}${quoteChar}`)
       csvLines.push(headers.join(delimiter))
     }
 
-    // Use fetched preview devices
-    previewDevices.forEach((device) => {
-      const row = properties.map((prop) => {
-        let value = device[prop]
-
-        // Format the value appropriately for CSV
-        if (value === null || value === undefined) {
-          return ''
-        } else if (typeof value === 'object') {
-          value = JSON.stringify(value)
-        }
-
-        // Quote the value if it contains delimiter or quote character
+    // Add data rows
+    flattenedRows.forEach((row) => {
+      const values = orderedColumns.map((col) => {
+        const value = row[col] || ''
         const strValue = String(value)
+
+        // Quote the value
         if (strValue.includes(delimiter) || strValue.includes(quoteChar) || strValue.includes('\n')) {
           return `${quoteChar}${strValue.replace(new RegExp(quoteChar, 'g'), quoteChar + quoteChar)}${quoteChar}`
         }
-
         return `${quoteChar}${strValue}${quoteChar}`
       })
-      csvLines.push(row.join(delimiter))
+      csvLines.push(values.join(delimiter))
     })
 
     if (devices.length > 5) {
-      csvLines.push(`# ... and ${devices.length - 5} more row(s)`)
+      csvLines.push(`# ... and ${devices.length - 5} more device(s)`)
     }
 
     return csvLines.join('\n')
+  }
+
+  const extractDeviceFields = (device: any): Record<string, string> => {
+    const fields: Record<string, string> = {}
+
+    if (device.name) fields.name = String(device.name)
+    if (device.serial) fields.serial = String(device.serial)
+    if (device.asset_tag) fields.asset_tag = String(device.asset_tag)
+    if (device.software_version) fields.software_version = String(device.software_version)
+
+    // Nested objects - extract name only
+    if (device.role) fields.role = typeof device.role === 'object' ? device.role.name : String(device.role)
+    if (device.status) fields.status = typeof device.status === 'object' ? device.status.name : String(device.status)
+    if (device.location) fields.location = typeof device.location === 'object' ? device.location.name : String(device.location)
+    if (device.device_type) fields.device_type = typeof device.device_type === 'object' ? (device.device_type.model || device.device_type.name) : String(device.device_type)
+    if (device.platform) fields.platform = typeof device.platform === 'object' ? device.platform.name : String(device.platform)
+
+    // Tags - comma-separated
+    if (device.tags && Array.isArray(device.tags)) {
+      const tagNames = device.tags.map((tag: any) => typeof tag === 'object' ? tag.name : String(tag))
+      if (tagNames.length > 0) fields.tags = tagNames.join(',')
+    }
+
+    // Custom fields - prefix with cf_
+    if (device._custom_field_data && typeof device._custom_field_data === 'object') {
+      Object.entries(device._custom_field_data).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          fields[`cf_${key}`] = String(value)
+        }
+      })
+    }
+
+    return fields
+  }
+
+  const extractInterfaceFields = (iface: any, device: any): Record<string, string> => {
+    const fields: Record<string, string> = {}
+
+    if (iface.name) fields.interface_name = String(iface.name)
+    if (iface.type) fields.interface_type = String(iface.type)
+    if (iface.status) fields.interface_status = typeof iface.status === 'object' ? iface.status.name : String(iface.status)
+    if (iface.description) fields.interface_description = String(iface.description)
+    if (iface.mac_address) fields.interface_mac_address = String(iface.mac_address)
+    if (iface.mtu) fields.interface_mtu = String(iface.mtu)
+    if (iface.mode) fields.interface_mode = String(iface.mode)
+    if (iface.enabled !== undefined) fields.interface_enabled = String(iface.enabled).toLowerCase()
+
+    // IP addresses - first one
+    if (iface.ip_addresses && Array.isArray(iface.ip_addresses) && iface.ip_addresses.length > 0) {
+      const firstIp = iface.ip_addresses[0]
+      if (firstIp.address) {
+        fields.interface_ip_address = String(firstIp.address)
+
+        // Check if primary
+        if (device.primary_ip4 && typeof device.primary_ip4 === 'object') {
+          const primaryAddr = device.primary_ip4.address
+          fields.set_primary_ipv4 = primaryAddr === firstIp.address ? 'true' : 'false'
+        }
+      }
+    }
+
+    // Parent interface
+    if (iface.parent_interface) {
+      fields.interface_parent_interface = typeof iface.parent_interface === 'object' ? iface.parent_interface.name : String(iface.parent_interface)
+    }
+
+    // LAG
+    if (iface.lag) {
+      fields.interface_lag = typeof iface.lag === 'object' ? iface.lag.name : String(iface.lag)
+    }
+
+    // VLANs
+    if (iface.untagged_vlan) {
+      fields.interface_untagged_vlan = typeof iface.untagged_vlan === 'object' ? iface.untagged_vlan.name : String(iface.untagged_vlan)
+    }
+
+    if (iface.tagged_vlans && Array.isArray(iface.tagged_vlans)) {
+      const vlanNames = iface.tagged_vlans.map((vlan: any) => typeof vlan === 'object' ? vlan.name : String(vlan))
+      if (vlanNames.length > 0) fields.interface_tagged_vlans = vlanNames.join(',')
+    }
+
+    // Interface tags
+    if (iface.tags && Array.isArray(iface.tags)) {
+      const tagNames = iface.tags.map((tag: any) => typeof tag === 'object' ? tag.name : String(tag))
+      if (tagNames.length > 0) fields.interface_tags = tagNames.join(',')
+    }
+
+    return fields
   }
 
   const handleCopy = () => {

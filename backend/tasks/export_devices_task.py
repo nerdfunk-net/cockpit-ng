@@ -567,55 +567,242 @@ def _export_to_yaml(devices: List[Dict[str, Any]]) -> str:
 
 def _export_to_csv(devices: List[Dict[str, Any]], csv_options: Dict[str, Any]) -> str:
     """
-    Export devices to CSV format.
+    Export devices to import-compatible CSV format.
+
+    This format is compatible with the Nautobot Add Device CSV import feature:
+    - Semicolon-delimited by default (configurable)
+    - One row per interface (devices with multiple interfaces = multiple rows)
+    - Device fields: name, serial, asset_tag, role, status, location, device_type, platform, software_version, tags
+    - Custom fields: prefixed with cf_ (e.g., cf_net)
+    - Interface fields: prefixed with interface_ (e.g., interface_name, interface_ip_address, interface_type)
+    - Nested objects flattened to name-only values
 
     Args:
-        devices: List of device dictionaries
+        devices: List of device dictionaries from GraphQL
         csv_options: CSV formatting options
-            - delimiter: Field delimiter (default: ",")
+            - delimiter: Field delimiter (default: ";")
             - quoteChar: Quote character (default: '"')
             - includeHeaders: Include header row (default: True)
 
     Returns:
-        CSV string
+        Import-compatible CSV string
     """
     if not devices:
         return ""
 
-    delimiter = csv_options.get("delimiter", ",")
+    delimiter = csv_options.get("delimiter", ";")  # Default to semicolon for import compatibility
     quotechar = csv_options.get("quoteChar", '"')
     include_headers = csv_options.get("includeHeaders", True)
 
-    # Get all property names from first device
-    headers = list(devices[0].keys())
+    # Build flattened rows (one per interface)
+    flattened_rows = []
+
+    for device in devices:
+        # Extract device-level fields
+        device_fields = _extract_device_fields(device)
+
+        # Get interfaces
+        interfaces = device.get("interfaces", [])
+
+        if interfaces:
+            # One row per interface
+            for interface in interfaces:
+                row = device_fields.copy()
+                row.update(_extract_interface_fields(interface, device))
+                flattened_rows.append(row)
+        else:
+            # No interfaces - single row with device data only
+            flattened_rows.append(device_fields)
+
+    if not flattened_rows:
+        return ""
+
+    # Determine all unique column names across all rows
+    all_columns = set()
+    for row in flattened_rows:
+        all_columns.update(row.keys())
+
+    # Order columns: device fields first, then interface fields, then custom fields
+    device_cols = ['name', 'device_type', 'serial', 'asset_tag', 'role', 'status', 'location', 'platform', 'software_version', 'tags']
+    interface_cols = [col for col in sorted(all_columns) if col.startswith('interface_')]
+    custom_cols = [col for col in sorted(all_columns) if col.startswith('cf_')]
+    other_cols = [col for col in sorted(all_columns) if col not in device_cols and col not in interface_cols and col not in custom_cols]
+
+    # Final column order
+    ordered_columns = []
+    for col in device_cols:
+        if col in all_columns:
+            ordered_columns.append(col)
+    ordered_columns.extend(interface_cols)
+    ordered_columns.extend(custom_cols)
+    ordered_columns.extend(other_cols)
 
     # Create CSV in memory
     output = io.StringIO()
     writer = csv.DictWriter(
         output,
-        fieldnames=headers,
+        fieldnames=ordered_columns,
         delimiter=delimiter,
         quotechar=quotechar,
         quoting=csv.QUOTE_MINIMAL,
+        extrasaction='ignore'
     )
 
     if include_headers:
         writer.writeheader()
 
-    # Write rows, converting complex objects to JSON strings
-    for device in devices:
-        row = {}
-        for key, value in device.items():
-            if value is None:
-                row[key] = ""
-            elif isinstance(value, (dict, list)):
-                # Convert complex objects to JSON
-                row[key] = json.dumps(value)
-            else:
-                row[key] = str(value)
-        writer.writerow(row)
+    # Write rows
+    for row in flattened_rows:
+        # Fill in missing columns with empty strings
+        complete_row = {col: row.get(col, "") for col in ordered_columns}
+        writer.writerow(complete_row)
 
     csv_content = output.getvalue()
     output.close()
 
     return csv_content
+
+
+def _extract_device_fields(device: Dict[str, Any]) -> Dict[str, str]:
+    """
+    Extract and flatten device-level fields for CSV export.
+
+    Returns a dict with import-compatible field names and string values.
+    """
+    fields = {}
+
+    # Direct string/number fields
+    if device.get("name"):
+        fields["name"] = str(device["name"])
+
+    if device.get("serial"):
+        fields["serial"] = str(device["serial"])
+
+    if device.get("asset_tag"):
+        fields["asset_tag"] = str(device["asset_tag"])
+
+    if device.get("software_version"):
+        fields["software_version"] = str(device["software_version"])
+
+    # Nested object fields - extract name only
+    if device.get("role") and isinstance(device["role"], dict):
+        fields["role"] = str(device["role"].get("name", ""))
+    elif device.get("role"):
+        fields["role"] = str(device["role"])
+
+    if device.get("status") and isinstance(device["status"], dict):
+        fields["status"] = str(device["status"].get("name", ""))
+    elif device.get("status"):
+        fields["status"] = str(device["status"])
+
+    if device.get("location") and isinstance(device["location"], dict):
+        fields["location"] = str(device["location"].get("name", ""))
+    elif device.get("location"):
+        fields["location"] = str(device["location"])
+
+    if device.get("device_type") and isinstance(device["device_type"], dict):
+        fields["device_type"] = str(device["device_type"].get("model", ""))
+    elif device.get("device_type"):
+        fields["device_type"] = str(device["device_type"])
+
+    if device.get("platform") and isinstance(device["platform"], dict):
+        fields["platform"] = str(device["platform"].get("name", ""))
+    elif device.get("platform"):
+        fields["platform"] = str(device["platform"])
+
+    # Tags - comma-separated list of tag names
+    if device.get("tags") and isinstance(device["tags"], list):
+        tag_names = [tag.get("name", str(tag)) if isinstance(tag, dict) else str(tag) for tag in device["tags"]]
+        if tag_names:
+            fields["tags"] = ",".join(tag_names)
+
+    # Custom fields - prefix with cf_
+    if device.get("_custom_field_data") and isinstance(device["_custom_field_data"], dict):
+        for cf_key, cf_value in device["_custom_field_data"].items():
+            if cf_value is not None:
+                fields[f"cf_{cf_key}"] = str(cf_value)
+
+    return fields
+
+
+def _extract_interface_fields(interface: Dict[str, Any], device: Dict[str, Any]) -> Dict[str, str]:
+    """
+    Extract and flatten interface-level fields for CSV export.
+
+    All interface fields are prefixed with 'interface_' for import compatibility.
+    Returns a dict with import-compatible field names and string values.
+    """
+    fields = {}
+
+    # Interface name (required)
+    if interface.get("name"):
+        fields["interface_name"] = str(interface["name"])
+
+    # Interface type (required)
+    if interface.get("type"):
+        fields["interface_type"] = str(interface["type"])
+
+    # Interface status
+    if interface.get("status") and isinstance(interface["status"], dict):
+        fields["interface_status"] = str(interface["status"].get("name", ""))
+    elif interface.get("status"):
+        fields["interface_status"] = str(interface["status"])
+
+    # Interface description
+    if interface.get("description"):
+        fields["interface_description"] = str(interface["description"])
+
+    # MAC address
+    if interface.get("mac_address"):
+        fields["interface_mac_address"] = str(interface["mac_address"])
+
+    # MTU
+    if interface.get("mtu"):
+        fields["interface_mtu"] = str(interface["mtu"])
+
+    # Mode
+    if interface.get("mode"):
+        fields["interface_mode"] = str(interface["mode"])
+
+    # Enabled
+    if interface.get("enabled") is not None:
+        fields["interface_enabled"] = str(interface["enabled"]).lower()
+
+    # IP addresses - find the first one and check if it's primary
+    if interface.get("ip_addresses") and isinstance(interface["ip_addresses"], list) and len(interface["ip_addresses"]) > 0:
+        first_ip = interface["ip_addresses"][0]
+        if first_ip.get("address"):
+            fields["interface_ip_address"] = str(first_ip["address"])
+
+            # Check if this IP matches the device's primary_ip4
+            if device.get("primary_ip4") and isinstance(device["primary_ip4"], dict):
+                primary_addr = device["primary_ip4"].get("address")
+                if primary_addr == first_ip.get("address"):
+                    fields["set_primary_ipv4"] = "true"
+                else:
+                    fields["set_primary_ipv4"] = "false"
+
+    # Parent interface
+    if interface.get("parent_interface") and isinstance(interface["parent_interface"], dict):
+        fields["interface_parent_interface"] = str(interface["parent_interface"].get("name", ""))
+
+    # LAG
+    if interface.get("lag") and isinstance(interface["lag"], dict):
+        fields["interface_lag"] = str(interface["lag"].get("name", ""))
+
+    # VLANs
+    if interface.get("untagged_vlan") and isinstance(interface["untagged_vlan"], dict):
+        fields["interface_untagged_vlan"] = str(interface["untagged_vlan"].get("name", ""))
+
+    if interface.get("tagged_vlans") and isinstance(interface["tagged_vlans"], list):
+        vlan_names = [vlan.get("name", str(vlan)) if isinstance(vlan, dict) else str(vlan) for vlan in interface["tagged_vlans"]]
+        if vlan_names:
+            fields["interface_tagged_vlans"] = ",".join(vlan_names)
+
+    # Interface tags
+    if interface.get("tags") and isinstance(interface["tags"], list):
+        tag_names = [tag.get("name", str(tag)) if isinstance(tag, dict) else str(tag) for tag in interface["tags"]]
+        if tag_names:
+            fields["interface_tags"] = ",".join(tag_names)
+
+    return fields
