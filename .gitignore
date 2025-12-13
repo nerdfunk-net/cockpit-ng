@@ -197,3 +197,4 @@ apscheduler_jobs.db
 /backend/data/cache
 /backend/node_modules
 /data/ssh_keys
+/backend/data
