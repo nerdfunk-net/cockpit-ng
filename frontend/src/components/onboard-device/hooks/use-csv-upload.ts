@@ -5,7 +5,8 @@ import { useApi } from '@/hooks/use-api'
 import { validateCSVHeaders, resolveNameToId, resolveLocationNameToId } from '../utils/helpers'
 import type { ParsedCSVRow, BulkOnboardingResult, CSVLookupData } from '../types'
 
-const REQUIRED_CSV_HEADERS = ['ip_address', 'location', 'namespace', 'role', 'status']
+// Only ip_address is required in CSV - other fields will use app defaults if not provided
+const REQUIRED_CSV_HEADERS = ['ip_address']
 
 export function useCSVUpload() {
   const callApi = useApi()
@@ -161,17 +162,25 @@ export function useCSVUpload() {
 
           // Transform CSV row fields to match backend DeviceOnboardRequest model
           // Convert names to IDs using lookup data
+          // For fields not provided in CSV, use app defaults from lookupData.defaults
+          const defaults = lookupData.defaults || {}
+
+          // Strip netmask/prefix from IP address if present (e.g., "192.168.1.1/24" -> "192.168.1.1")
+          // Nautobot doesn't accept CIDR notation for the onboarding IP address
+          const ipAddress = row.ip_address.split('/')[0].trim()
+
           const requestBody = {
-            ip_address: row.ip_address,
-            location_id: resolveLocationNameToId(row.location, lookupData.locations),
-            namespace_id: resolveNameToId(row.namespace, lookupData.namespaces),
-            role_id: resolveNameToId(row.role, lookupData.deviceRoles),
-            status_id: resolveNameToId(row.status, lookupData.deviceStatuses),
-            platform_id: row.platform ? resolveNameToId(row.platform, lookupData.platforms) : 'detect',
-            secret_groups_id: row.secret_groups ? resolveNameToId(row.secret_groups, lookupData.secretGroups) : '',
-            interface_status_id: row.interface_status ? resolveNameToId(row.interface_status, lookupData.interfaceStatuses) : '',
-            ip_address_status_id: row.ip_address_status ? resolveNameToId(row.ip_address_status, lookupData.ipAddressStatuses) : '',
-            prefix_status_id: row.prefix_status ? resolveNameToId(row.prefix_status, lookupData.prefixStatuses) : '',
+            ip_address: ipAddress,
+            // Use CSV value if provided, otherwise use app default
+            location_id: row.location ? resolveLocationNameToId(row.location, lookupData.locations) : (defaults.location || ''),
+            namespace_id: row.namespace ? resolveNameToId(row.namespace, lookupData.namespaces) : (defaults.namespace || ''),
+            role_id: row.role ? resolveNameToId(row.role, lookupData.deviceRoles) : (defaults.device_role || ''),
+            status_id: row.status ? resolveNameToId(row.status, lookupData.deviceStatuses) : (defaults.device_status || ''),
+            platform_id: row.platform ? resolveNameToId(row.platform, lookupData.platforms) : (defaults.platform || 'detect'),
+            secret_groups_id: row.secret_groups ? resolveNameToId(row.secret_groups, lookupData.secretGroups) : (defaults.secret_group || ''),
+            interface_status_id: row.interface_status ? resolveNameToId(row.interface_status, lookupData.interfaceStatuses) : (defaults.interface_status || ''),
+            ip_address_status_id: row.ip_address_status ? resolveNameToId(row.ip_address_status, lookupData.ipAddressStatuses) : (defaults.ip_address_status || ''),
+            prefix_status_id: row.prefix_status ? resolveNameToId(row.prefix_status, lookupData.prefixStatuses) : (defaults.ip_prefix_status || ''),
             port: row.port || 22,
             timeout: row.timeout || 30,
             tags: tagIds,
@@ -187,14 +196,14 @@ export function useCSVUpload() {
           )
 
           results.push({
-            ip_address: row.ip_address,
+            ip_address: ipAddress,
             status: 'success',
             message: result.message || 'Onboarding initiated successfully',
             job_id: result.job_id
           })
         } catch (error) {
           results.push({
-            ip_address: row.ip_address,
+            ip_address: ipAddress,
             status: 'error',
             message: error instanceof Error ? error.message : 'Unknown error'
           })

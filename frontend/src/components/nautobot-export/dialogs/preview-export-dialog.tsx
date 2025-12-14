@@ -53,7 +53,7 @@ export function PreviewExportDialog({
       const deviceIds = devices.map(d => d.id)
       const response = await apiCall<{
         success: boolean
-        devices: any[]
+        preview_content: string
         total_devices: number
         previewed_devices: number
         message?: string
@@ -63,11 +63,16 @@ export function PreviewExportDialog({
           device_ids: deviceIds,
           properties: properties,
           max_devices: 5,
+          export_format: format,
+          csv_options: csvOptions ? {
+            ...csvOptions,
+            includeHeaders: csvOptions.includeHeaders?.toString() ?? 'true',
+          } : undefined,
         }),
       })
 
       if (response.success) {
-        setPreviewDevices(response.devices)
+        setPreviewDevices([{ preview_content: response.preview_content }])
       } else {
         setError(response.message || 'Failed to fetch preview data')
       }
@@ -80,11 +85,11 @@ export function PreviewExportDialog({
   }
 
   const generatePreview = (): string => {
-    if (format === 'yaml') {
-      return generateYAMLPreview()
-    } else {
-      return generateCSVPreview()
+    // Return the backend-generated preview content
+    if (previewDevices.length > 0 && previewDevices[0].preview_content) {
+      return previewDevices[0].preview_content
     }
+    return ''
   }
 
   const generateYAMLPreview = (): string => {
@@ -155,7 +160,7 @@ export function PreviewExportDialog({
     })
 
     // Order columns: device fields first, then interface fields, then custom fields
-    const deviceCols = ['name', 'device_type', 'serial', 'asset_tag', 'role', 'status', 'location', 'platform', 'software_version', 'tags']
+    const deviceCols = ['name', 'device_type', 'ip_address', 'serial', 'asset_tag', 'role', 'status', 'location', 'platform', 'namespace', 'software_version', 'tags']
     const interfaceCols = Array.from(allColumns).filter(col => col.startsWith('interface_')).sort()
     const customCols = Array.from(allColumns).filter(col => col.startsWith('cf_')).sort()
     const otherCols = Array.from(allColumns).filter(col =>
@@ -217,6 +222,21 @@ export function PreviewExportDialog({
     if (device.tags && Array.isArray(device.tags)) {
       const tagNames = device.tags.map((tag: any) => typeof tag === 'object' ? tag.name : String(tag))
       if (tagNames.length > 0) fields.tags = tagNames.join(',')
+    }
+
+    // Primary IPv4 address - extract from primary_ip4 object
+    if (device.primary_ip4 && typeof device.primary_ip4 === 'object') {
+      const primaryAddr = device.primary_ip4.address
+      if (primaryAddr) fields.ip_address = String(primaryAddr)
+
+      // Extract namespace from primary IP's parent prefix
+      if (device.primary_ip4.parent && typeof device.primary_ip4.parent === 'object') {
+        const parent = device.primary_ip4.parent
+        if (parent.namespace && typeof parent.namespace === 'object') {
+          const namespaceName = parent.namespace.name
+          if (namespaceName) fields.namespace = String(namespaceName)
+        }
+      }
     }
 
     // Custom fields - prefix with cf_

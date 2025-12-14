@@ -693,12 +693,14 @@ class PreviewExportRequest(BaseModel):
     device_ids: List[str]
     properties: List[str]
     max_devices: int = 5
+    export_format: str = "yaml"  # "yaml" or "csv"
+    csv_options: Optional[Dict[str, str]] = None
 
 
 class PreviewExportResponse(BaseModel):
     """Response model for preview data."""
     success: bool
-    devices: List[Dict]
+    preview_content: str  # The actual CSV/YAML preview content
     total_devices: int
     previewed_devices: int
     message: Optional[str] = None
@@ -727,7 +729,7 @@ async def preview_export_devices(
         PreviewExportResponse with full device data for preview
     """
     from services.nautobot import NautobotService
-    from tasks.export_devices_task import _build_graphql_query, _filter_device_properties
+    from tasks.export_devices_task import _build_graphql_query, _filter_device_properties, _export_to_yaml, _export_to_csv
 
     try:
         if not request.device_ids:
@@ -764,7 +766,7 @@ async def preview_export_devices(
         if not devices:
             return PreviewExportResponse(
                 success=True,
-                devices=[],
+                preview_content="",
                 total_devices=len(request.device_ids),
                 previewed_devices=0,
                 message="No devices found in Nautobot"
@@ -773,9 +775,30 @@ async def preview_export_devices(
         # Filter to requested properties
         filtered_devices = _filter_device_properties(devices, request.properties)
 
+        # Generate preview content using the same export functions
+        export_format = request.export_format.strip().rstrip('_')
+        if export_format == "yaml":
+            preview_content = _export_to_yaml(filtered_devices)
+        elif export_format == "csv":
+            csv_options = request.csv_options or {}
+            preview_content = _export_to_csv(filtered_devices, csv_options)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported export format: {export_format}"
+            )
+
+        # Add note about additional devices if truncated
+        if len(request.device_ids) > request.max_devices:
+            additional_count = len(request.device_ids) - len(filtered_devices)
+            if export_format == "csv":
+                preview_content += f"\n# ... and {additional_count} more device(s)"
+            else:
+                preview_content += f"\n# ... and {additional_count} more device(s)"
+
         return PreviewExportResponse(
             success=True,
-            devices=filtered_devices,
+            preview_content=preview_content,
             total_devices=len(request.device_ids),
             previewed_devices=len(filtered_devices),
             message=f"Successfully previewed {len(filtered_devices)} of {len(request.device_ids)} devices"

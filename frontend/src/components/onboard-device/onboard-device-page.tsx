@@ -329,7 +329,8 @@ export function OnboardDevicePage() {
       ipAddressStatuses,
       prefixStatuses,
       secretGroups,
-      availableTags: availableTags.map(tag => ({ id: tag.id, name: tag.name }))
+      availableTags: availableTags.map(tag => ({ id: tag.id, name: tag.name })),
+      defaults: nautobotDefaults || undefined
     }
     csvUpload.performBulkOnboarding(csvUpload.parsedData, lookupData)
   }, [
@@ -343,7 +344,8 @@ export function OnboardDevicePage() {
     ipAddressStatuses,
     prefixStatuses,
     secretGroups,
-    availableTags
+    availableTags,
+    nautobotDefaults
   ])
 
   // Handle network scan IPs selection

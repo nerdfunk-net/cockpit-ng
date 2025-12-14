@@ -23,11 +23,14 @@ export default function NautobotExportPage() {
   const [selectedProperties, setSelectedProperties] = useState<string[]>([
     'name',
     'device_type',
+    'role',
+    'status',
+    'location',
     'asset_tag',
-    'config_context',
     '_custom_field_data',
     'serial',
     'primary_ip4',
+    'namespace',
     'interfaces',
     'tags',
   ])

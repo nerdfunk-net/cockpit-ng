@@ -123,4 +123,5 @@ export interface CSVLookupData {
   prefixStatuses: DropdownOption[]
   secretGroups: DropdownOption[]
   availableTags: DropdownOption[]
+  defaults?: NautobotDefaults
 }

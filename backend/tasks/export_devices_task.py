@@ -626,7 +626,7 @@ def _export_to_csv(devices: List[Dict[str, Any]], csv_options: Dict[str, Any]) -
         all_columns.update(row.keys())
 
     # Order columns: device fields first, then interface fields, then custom fields
-    device_cols = ['name', 'device_type', 'serial', 'asset_tag', 'role', 'status', 'location', 'platform', 'software_version', 'tags']
+    device_cols = ['name', 'device_type', 'ip_address', 'serial', 'asset_tag', 'role', 'status', 'location', 'platform', 'namespace', 'software_version', 'tags']
     interface_cols = [col for col in sorted(all_columns) if col.startswith('interface_')]
     custom_cols = [col for col in sorted(all_columns) if col.startswith('cf_')]
     other_cols = [col for col in sorted(all_columns) if col not in device_cols and col not in interface_cols and col not in custom_cols]
@@ -718,6 +718,20 @@ def _extract_device_fields(device: Dict[str, Any]) -> Dict[str, str]:
         tag_names = [tag.get("name", str(tag)) if isinstance(tag, dict) else str(tag) for tag in device["tags"]]
         if tag_names:
             fields["tags"] = ",".join(tag_names)
+
+    # Primary IPv4 address - extract address from primary_ip4 object
+    if device.get("primary_ip4") and isinstance(device["primary_ip4"], dict):
+        primary_addr = device["primary_ip4"].get("address")
+        if primary_addr:
+            fields["ip_address"] = str(primary_addr)
+
+        # Extract namespace from primary IP's parent prefix
+        if device["primary_ip4"].get("parent") and isinstance(device["primary_ip4"]["parent"], dict):
+            parent = device["primary_ip4"]["parent"]
+            if parent.get("namespace") and isinstance(parent["namespace"], dict):
+                namespace_name = parent["namespace"].get("name")
+                if namespace_name:
+                    fields["namespace"] = str(namespace_name)
 
     # Custom fields - prefix with cf_
     if device.get("_custom_field_data") and isinstance(device["_custom_field_data"], dict):

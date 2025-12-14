@@ -22,14 +22,24 @@ const AVAILABLE_PROPERTIES: PropertyItem[] = [
     description: 'Device type/model information',
   },
   {
+    id: 'role',
+    label: 'Role',
+    description: 'Device role',
+  },
+  {
+    id: 'status',
+    label: 'Status',
+    description: 'Device status',
+  },
+  {
+    id: 'location',
+    label: 'Location',
+    description: 'Device location/site',
+  },
+  {
     id: 'asset_tag',
     label: 'Asset Tag',
     description: 'Asset tag identifier',
-  },
-  {
-    id: 'config_context',
-    label: 'Config Context',
-    description: 'Configuration context data',
   },
   {
     id: '_custom_field_data',
@@ -45,6 +55,11 @@ const AVAILABLE_PROPERTIES: PropertyItem[] = [
     id: 'primary_ip4',
     label: 'Primary IPv4',
     description: 'Primary IPv4 address',
+  },
+  {
+    id: 'namespace',
+    label: 'Namespace',
+    description: 'IP namespace',
   },
   {
     id: 'interfaces',
