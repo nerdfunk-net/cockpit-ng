@@ -227,37 +227,111 @@ class DeviceCreationService:
                     "namespace": interface.namespace,
                 }
 
-                ip_response = await nautobot_service.rest_request(
-                    endpoint="ipam/ip-addresses/", method="POST", data=ip_payload
-                )
+                try:
+                    ip_response = await nautobot_service.rest_request(
+                        endpoint="ipam/ip-addresses/", method="POST", data=ip_payload
+                    )
 
-                if ip_response and "id" in ip_response:
-                    ip_address_map[interface.name] = ip_response["id"]
-                    workflow_status["step2_ip_addresses"]["data"].append(
-                        {
-                            "interface": interface.name,
-                            "ip_address": interface.ip_address,
-                            "id": ip_response["id"],
-                            "status": "success",
-                        }
-                    )
-                    logger.info(
-                        f"Created IP address {interface.ip_address} with ID: {ip_response['id']}"
-                    )
-                else:
+                    if ip_response and "id" in ip_response:
+                        ip_address_map[interface.name] = ip_response["id"]
+                        workflow_status["step2_ip_addresses"]["data"].append(
+                            {
+                                "interface": interface.name,
+                                "ip_address": interface.ip_address,
+                                "id": ip_response["id"],
+                                "status": "success",
+                            }
+                        )
+                        logger.info(
+                            f"Created IP address {interface.ip_address} with ID: {ip_response['id']}"
+                        )
+                    else:
+                        workflow_status["step2_ip_addresses"]["errors"].append(
+                            {
+                                "interface": interface.name,
+                                "ip_address": interface.ip_address,
+                                "error": "No IP ID returned from Nautobot",
+                            }
+                        )
+                        logger.warning(
+                            f"Failed to create IP address {interface.ip_address} "
+                            f"for interface {interface.name}"
+                        )
+
+                except Exception as create_error:
+                    error_msg = str(create_error)
+
+                    # Check if this is an "already exists" error
+                    if "already exists" in error_msg.lower():
+                        logger.info(
+                            f"IP address {interface.ip_address} already exists in IPAM, looking it up..."
+                        )
+
+                        # Try to find the existing IP address using GraphQL
+                        try:
+                            query = """
+                            query GetIPAddress($filter: [String], $namespace: [String]) {
+                              ip_addresses(address: $filter, namespace: $namespace) {
+                                id
+                                address
+                              }
+                            }
+                            """
+
+                            variables = {
+                                "filter": [interface.ip_address],
+                                "namespace": [interface.namespace]
+                            }
+
+                            result = await nautobot_service.graphql_query(query, variables)
+
+                            if result and "data" in result and "ip_addresses" in result["data"]:
+                                ip_addresses = result["data"]["ip_addresses"]
+                                if ip_addresses and len(ip_addresses) > 0:
+                                    existing_ip = ip_addresses[0]
+                                    ip_id = existing_ip["id"]
+                                    ip_address_map[interface.name] = ip_id
+                                    workflow_status["step2_ip_addresses"]["data"].append(
+                                        {
+                                            "interface": interface.name,
+                                            "ip_address": interface.ip_address,
+                                            "id": ip_id,
+                                            "status": "existing",
+                                        }
+                                    )
+                                    logger.info(
+                                        f"Found existing IP address {interface.ip_address} with ID: {ip_id}"
+                                    )
+                                    continue  # Skip error handling below
+                                else:
+                                    logger.warning(
+                                        f"IP address {interface.ip_address} reported as existing but lookup returned no results"
+                                    )
+                            else:
+                                logger.warning(
+                                    f"Failed to query existing IP address {interface.ip_address}"
+                                )
+
+                        except Exception as lookup_error:
+                            logger.error(
+                                f"Error looking up existing IP address {interface.ip_address}: {str(lookup_error)}"
+                            )
+
+                    # If we get here, either it wasn't an "already exists" error,
+                    # or the lookup failed - record the original error
                     workflow_status["step2_ip_addresses"]["errors"].append(
                         {
                             "interface": interface.name,
                             "ip_address": interface.ip_address,
-                            "error": "No IP ID returned from Nautobot",
+                            "error": error_msg,
                         }
                     )
-                    logger.warning(
-                        f"Failed to create IP address {interface.ip_address} "
-                        f"for interface {interface.name}"
+                    logger.error(
+                        f"Error creating IP address {interface.ip_address}: {error_msg}"
                     )
 
             except Exception as e:
+                # Catch any outer exceptions not related to IP creation
                 error_msg = str(e)
                 workflow_status["step2_ip_addresses"]["errors"].append(
                     {
@@ -267,7 +341,7 @@ class DeviceCreationService:
                     }
                 )
                 logger.error(
-                    f"Error creating IP address {interface.ip_address}: {error_msg}"
+                    f"Unexpected error processing IP address {interface.ip_address}: {error_msg}"
                 )
 
         # Update status based on results

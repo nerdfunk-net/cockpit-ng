@@ -189,6 +189,9 @@ def export_devices_task(
             },
         )
 
+        # Normalize export_format by stripping whitespace and underscores
+        export_format = export_format.strip().rstrip('_')
+
         if export_format == "yaml":
             export_content = _export_to_yaml(filtered_devices)
             file_extension = "yaml"

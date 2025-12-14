@@ -19,6 +19,7 @@ export function useOnboardingForm() {
     prefix_status_id: '',
     port: 22,
     timeout: 30,
+    onboarding_timeout: 120,
     sync_options: ['cables', 'software', 'vlans', 'vrfs']
   })
 

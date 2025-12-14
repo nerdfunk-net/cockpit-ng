@@ -43,6 +43,7 @@ class OnboardDeviceRequest(BaseModel):
     platform_id: str
     port: int = 22
     timeout: int = 30
+    onboarding_timeout: int = 120
     sync_options: List[str] = ["cables", "software", "vlans", "vrfs"]
     tags: Optional[List[str]] = None
     custom_fields: Optional[Dict[str, str]] = None
@@ -142,7 +143,7 @@ async def trigger_onboard_device(
 
     This endpoint triggers a background task that:
     1. Calls Nautobot onboarding job
-    2. Waits for job completion (max 90 seconds)
+    2. Waits for job completion (configurable timeout)
     3. Retrieves the device UUID from the IP address
     4. Updates the device with tags and custom fields
 
@@ -158,7 +159,8 @@ async def trigger_onboard_device(
         secret_groups_id: Secret group ID
         platform_id: Platform ID or "detect"
         port: SSH port (default: 22)
-        timeout: Connection timeout (default: 30)
+        timeout: SSH connection timeout (default: 30)
+        onboarding_timeout: Max time to wait for onboarding job (default: 120, recommended for auto-detect)
         sync_options: List of sync options (cables, software, vlans, vrfs)
         tags: List of tag IDs to apply (optional)
         custom_fields: Dict of custom field key-value pairs (optional)
@@ -182,6 +184,7 @@ async def trigger_onboard_device(
         platform_id=request.platform_id,
         port=request.port,
         timeout=request.timeout,
+        onboarding_timeout=request.onboarding_timeout,
         sync_options=request.sync_options,
         tags=request.tags,
         custom_fields=request.custom_fields,
@@ -931,14 +934,39 @@ async def download_export_file(
     filename = task_result.get("filename", os.path.basename(file_path))
     export_format = task_result.get("export_format", "yaml")
 
+    logger.info(f"Download endpoint - RAW values from task_result:")
+    logger.info(f"  - filename: '{filename}'")
+    logger.info(f"  - export_format: '{export_format}'")
+    logger.info(f"  - file_path: '{file_path}'")
+
+    # Sanitize export_format and filename (remove trailing underscores)
+    export_format = export_format.strip().rstrip('_')
+    filename = filename.strip().rstrip('_')
+
+    logger.info(f"Download endpoint - SANITIZED values:")
+    logger.info(f"  - filename: '{filename}'")
+    logger.info(f"  - export_format: '{export_format}'")
+
     # Determine media type
     media_type = "application/x-yaml" if export_format == "yaml" else "text/csv"
 
-    return FileResponse(
+    logger.info(f"Download endpoint - FileResponse parameters:")
+    logger.info(f"  - path: '{file_path}'")
+    logger.info(f"  - filename: '{filename}'")
+    logger.info(f"  - media_type: '{media_type}'")
+
+    # Create FileResponse with manually set Content-Disposition header to avoid filename issues
+    response = FileResponse(
         path=file_path,
-        filename=filename,
         media_type=media_type,
     )
+    # Manually set Content-Disposition header to ensure correct filename
+    # Don't quote the filename - browsers interpret quotes differently (Safari includes them in filename)
+    response.headers["Content-Disposition"] = f'attachment; filename={filename}'
+
+    logger.info(f"Download endpoint - Content-Disposition header: {response.headers['Content-Disposition']}")
+
+    return response
 
 
 # ============================================================================

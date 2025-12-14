@@ -70,8 +70,8 @@ export function JobResultDialog({ jobRun, open, onOpenChange }: JobResultDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-6xl w-[90vw] max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-6xl w-[90vw] max-h-[85vh] flex flex-col">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Eye className="h-5 w-5 text-blue-500" />
             Job Result: {jobRun.job_name}
@@ -81,33 +81,35 @@ export function JobResultDialog({ jobRun, open, onOpenChange }: JobResultDialogP
           </DialogDescription>
         </DialogHeader>
 
-        {((<TooltipProvider>
-          <div className="space-y-4">
-            {/* Route to the appropriate result view based on job type */}
-            {(renderJobResult(result, jobRun.celery_task_id || undefined) as React.ReactNode)}
+        <div className="overflow-y-auto flex-1 -mx-6 px-6">
+          {((<TooltipProvider>
+            <div className="space-y-4 py-2">
+              {/* Route to the appropriate result view based on job type */}
+              {(renderJobResult(result, jobRun.celery_task_id || undefined) as React.ReactNode)}
 
-            {/* Error Message (for failed jobs) - common to all types */}
-            {result.error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-                <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-red-800">Error</p>
-                  <p className="text-sm text-red-700">{String(result.error)}</p>
+              {/* Error Message (for failed jobs) - common to all types */}
+              {result.error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                  <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-red-800">Error</p>
+                    <p className="text-sm text-red-700">{String(result.error)}</p>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Raw JSON (collapsible) - common to all types */}
-            <details className="border rounded-lg">
-              <summary className="px-4 py-2 cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50">
-                View Raw JSON
-              </summary>
-              <pre className="p-4 bg-gray-900 text-gray-100 text-xs overflow-x-auto rounded-b-lg">
-                {JSON.stringify(result, null, 2)}
-              </pre>
-            </details>
-          </div>
-        </TooltipProvider>) as React.ReactNode)}
+              {/* Raw JSON (collapsible) - common to all types */}
+              <details className="border rounded-lg">
+                <summary className="px-4 py-2 cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50">
+                  View Raw JSON
+                </summary>
+                <pre className="p-4 bg-gray-900 text-gray-100 text-xs overflow-x-auto rounded-b-lg">
+                  {JSON.stringify(result, null, 2)}
+                </pre>
+              </details>
+            </div>
+          </TooltipProvider>) as React.ReactNode)}
+        </div>
       </DialogContent>
     </Dialog>
   )

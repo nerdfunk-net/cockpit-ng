@@ -31,6 +31,7 @@ export interface OnboardFormData {
   prefix_status_id: string
   port: number
   timeout: number
+  onboarding_timeout: number
   sync_options: string[]
 }
 

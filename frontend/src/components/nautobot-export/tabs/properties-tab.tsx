@@ -17,6 +17,11 @@ const AVAILABLE_PROPERTIES: PropertyItem[] = [
     description: 'Device name',
   },
   {
+    id: 'device_type',
+    label: 'Device Type',
+    description: 'Device type/model information',
+  },
+  {
     id: 'asset_tag',
     label: 'Asset Tag',
     description: 'Asset tag identifier',
@@ -40,6 +45,11 @@ const AVAILABLE_PROPERTIES: PropertyItem[] = [
     id: 'primary_ip4',
     label: 'Primary IPv4',
     description: 'Primary IPv4 address',
+  },
+  {
+    id: 'interfaces',
+    label: 'Interfaces',
+    description: 'Network interfaces with IP addresses',
   },
   {
     id: 'tags',

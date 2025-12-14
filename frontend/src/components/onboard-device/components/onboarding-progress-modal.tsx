@@ -203,6 +203,11 @@ export function OnboardingProgressModal({
     onOpenChange(false)
   }
 
+  const handleRunInBackground = () => {
+    setIsPolling(false)
+    onOpenChange(false)
+  }
+
   const canClose = !isPolling || taskStatus?.status === 'SUCCESS' || taskStatus?.status === 'FAILURE' || taskStatus?.status === 'REVOKED'
 
   return (
@@ -439,13 +444,24 @@ export function OnboardingProgressModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex justify-end gap-2">
-          {isPolling && (
-            <p className="text-xs text-muted-foreground mr-auto flex items-center gap-1">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Polling status... ({pollCount})
-            </p>
-          )}
+        <div className="flex justify-between gap-2">
+          <div className="flex items-center gap-2">
+            {isPolling && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Polling status... ({pollCount})
+              </p>
+            )}
+            {isPolling && taskStatus?.status !== 'SUCCESS' && taskStatus?.status !== 'FAILURE' && taskStatus?.status !== 'REVOKED' && (
+              <Button
+                onClick={handleRunInBackground}
+                variant="outline"
+                size="sm"
+              >
+                Run in Background
+              </Button>
+            )}
+          </div>
           <Button
             onClick={handleClose}
             disabled={!canClose}

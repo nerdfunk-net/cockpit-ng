@@ -408,12 +408,23 @@ export function OnboardingFormFields({
             </div>
 
             <div className="space-y-1 w-28">
-              <Label className="text-[11px] font-medium">Timeout (sec)</Label>
+              <Label className="text-[11px] font-medium">SSH Timeout (sec)</Label>
               <Input
                 type="number"
                 value={formData.timeout}
                 onChange={e => onFormDataChange('timeout', parseInt(e.target.value, 10))}
                 className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+              />
+            </div>
+
+            <div className="space-y-1 w-32">
+              <Label className="text-[11px] font-medium">Onboarding Timeout (sec)</Label>
+              <Input
+                type="number"
+                value={formData.onboarding_timeout}
+                onChange={e => onFormDataChange('onboarding_timeout', parseInt(e.target.value, 10))}
+                className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                title="Maximum time to wait for the onboarding job to complete (recommended: 120s for auto-detect)"
               />
             </div>
 

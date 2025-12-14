@@ -26,6 +26,7 @@ def onboard_device_task(
     platform_id: str,
     port: int,
     timeout: int,
+    onboarding_timeout: int = 120,
     sync_options: Optional[List[str]] = None,
     tags: Optional[List[str]] = None,
     custom_fields: Optional[Dict[str, str]] = None,
@@ -35,7 +36,7 @@ def onboard_device_task(
 
     Process:
     1. Call Nautobot onboarding job (handles multiple IPs)
-    2. Wait for job completion (max 90 seconds)
+    2. Wait for job completion (configurable timeout, default 120 seconds)
     3. For each IP address:
        a. Get device UUID from IP address
        b. Update device with tags and custom fields
@@ -54,7 +55,8 @@ def onboard_device_task(
         secret_groups_id: Secret group ID
         platform_id: Platform ID or "detect"
         port: SSH port
-        timeout: Connection timeout
+        timeout: SSH connection timeout
+        onboarding_timeout: Max time to wait for onboarding job completion (default: 120s)
         sync_options: List of sync options (cables, software, vlans, vrfs)
         tags: List of tag IDs to apply
         custom_fields: Dict of custom field key-value pairs
@@ -112,10 +114,10 @@ def onboard_device_task(
             },
         )
 
-        # Step 2: Wait for job completion (max 90 seconds + extra time for multiple devices)
-        max_wait = 90 + (device_count - 1) * 30  # Add 30 seconds per additional device
+        # Step 2: Wait for job completion (use configurable onboarding_timeout)
+        # Use the user-configured timeout directly
         job_success, job_result = _wait_for_job_completion(
-            self, job_id, max_wait=max_wait
+            self, job_id, max_wait=onboarding_timeout
         )
 
         if not job_success:
