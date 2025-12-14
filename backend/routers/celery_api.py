@@ -15,6 +15,7 @@ import logging
 import redis
 import os
 
+import job_run_manager
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -47,6 +48,32 @@ class OnboardDeviceRequest(BaseModel):
     sync_options: List[str] = ["cables", "software", "vlans", "vrfs"]
     tags: Optional[List[str]] = None
     custom_fields: Optional[Dict[str, str]] = None
+
+
+class BulkOnboardDeviceConfig(BaseModel):
+    """Configuration for a single device in bulk onboarding."""
+
+    ip_address: str
+    location_id: Optional[str] = None
+    namespace_id: Optional[str] = None
+    role_id: Optional[str] = None
+    status_id: Optional[str] = None
+    interface_status_id: Optional[str] = None
+    ip_address_status_id: Optional[str] = None
+    prefix_status_id: Optional[str] = None
+    secret_groups_id: Optional[str] = None
+    platform_id: Optional[str] = None
+    port: Optional[int] = None
+    timeout: Optional[int] = None
+    tags: Optional[List[str]] = None
+    custom_fields: Optional[Dict[str, str]] = None
+
+
+class BulkOnboardDevicesRequest(BaseModel):
+    """Request model for bulk device onboarding from CSV."""
+
+    devices: List[BulkOnboardDeviceConfig]
+    default_config: Dict  # Default values for missing device-specific fields
 
 
 class SyncDevicesToCheckmkRequest(BaseModel):
@@ -194,6 +221,81 @@ async def trigger_onboard_device(
         task_id=task.id,
         status="queued",
         message=f"Device onboarding task queued for {request.ip_address}: {task.id}",
+    )
+
+
+@router.post("/tasks/bulk-onboard-devices", response_model=TaskResponse)
+@handle_celery_errors("bulk onboard devices")
+async def trigger_bulk_onboard_devices(
+    request: BulkOnboardDevicesRequest,
+    current_user: dict = Depends(require_permission("devices.onboard", "execute")),
+):
+    """
+    Bulk onboard multiple devices from CSV data using a single Celery task.
+
+    This endpoint triggers a background task that processes multiple devices,
+    creating a single trackable job in the Jobs/View interface.
+
+    Request Body:
+        devices: List of device configurations, each containing:
+            - ip_address: Device IP address (required)
+            - location_id, namespace_id, role_id, etc. (optional, uses defaults if missing)
+            - tags: List of tag IDs (optional)
+            - custom_fields: Dict of custom field values (optional)
+        default_config: Default configuration to use when device-specific values are missing:
+            - location_id, namespace_id, role_id, status_id, etc.
+            - onboarding_timeout: Max wait time for each device (default: 120s)
+            - sync_options: List of sync options
+
+    Returns:
+        TaskResponse with task_id for tracking progress via /tasks/{task_id}
+    """
+    from tasks.bulk_onboard_task import bulk_onboard_devices_task
+
+    # Convert device configs to dicts
+    devices_data = [device.model_dump() for device in request.devices]
+    device_count = len(devices_data)
+
+    if device_count == 0:
+        return TaskResponse(
+            task_id="",
+            status="error",
+            message="No devices provided for bulk onboarding",
+        )
+
+    # Get username from authenticated user
+    username = current_user.get("username", "unknown")
+
+    # Submit task to Celery queue
+    task = bulk_onboard_devices_task.delay(
+        devices=devices_data,
+        default_config=request.default_config,
+    )
+
+    # Extract IP addresses for target_devices
+    ip_addresses = [d.get("ip_address", "unknown") for d in devices_data]
+
+    # Create job run entry for Jobs/View visibility
+    try:
+        job_run = job_run_manager.create_job_run(
+            job_name=f"Bulk Onboard {device_count} Devices (CSV)",
+            job_type="bulk_onboard",
+            triggered_by="manual",
+            target_devices=ip_addresses,
+            executed_by=username,
+        )
+        job_run_id = job_run.get("id")
+        if job_run_id:
+            job_run_manager.mark_started(job_run_id, task.id)
+            logger.info(f"Created job run {job_run_id} for bulk onboard task {task.id}")
+    except Exception as e:
+        # Don't fail the task if job run creation fails
+        logger.warning(f"Failed to create job run entry: {e}")
+
+    return TaskResponse(
+        task_id=task.id,
+        status="queued",
+        message=f"Bulk onboarding task queued for {device_count} devices: {task.id}",
     )
 
 

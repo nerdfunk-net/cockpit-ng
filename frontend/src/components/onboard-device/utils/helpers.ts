@@ -82,7 +82,8 @@ export function findDefaultOption(
 /**
  * Resolves a name or ID to an ID from a list of options.
  * First checks if the value is already an ID (UUID format), then tries to find by name.
- * Returns the original value if no match found (for backward compatibility).
+ * Also checks network_driver field for platforms (e.g., "cisco_ios").
+ * Returns empty string if no match found.
  */
 export function resolveNameToId(
   value: string,
@@ -102,17 +103,29 @@ export function resolveNameToId(
   // Try to find by exact name match (case-insensitive)
   const lowerValue = value.toLowerCase()
   const match = options.find(
-    opt => 
-      opt.name.toLowerCase() === lowerValue || 
-      (opt.display && opt.display.toLowerCase() === lowerValue)
+    opt => {
+      // Check standard fields
+      if (opt.name.toLowerCase() === lowerValue) return true
+      if (opt.display && opt.display.toLowerCase() === lowerValue) return true
+      
+      // Check network_driver for platforms (e.g., "cisco_ios")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const anyOpt = opt as any
+      if (anyOpt.network_driver && anyOpt.network_driver.toLowerCase() === lowerValue) return true
+      
+      // Check slug field (common in Nautobot)
+      if (anyOpt.slug && anyOpt.slug.toLowerCase() === lowerValue) return true
+      
+      return false
+    }
   )
   
   if (match) {
     return match.id
   }
   
-  // Return original value if no match (backend will handle validation)
-  return value
+  // Return empty string if no match - let backend use defaults
+  return ''
 }
 
 /**

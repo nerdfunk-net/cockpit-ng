@@ -23,7 +23,7 @@ import { NetworkScanModal } from './components/network-scan-modal'
 import { TagsModal } from '@/components/shared/tags-modal'
 import { CustomFieldsModal } from '@/components/shared/custom-fields-modal'
 import { OnboardingProgressModal } from './components/onboarding-progress-modal'
-import type { StatusMessage, LocationItem, OnboardFormData } from './types'
+import type { StatusMessage, LocationItem, OnboardFormData, CSVLookupData } from './types'
 import { useApi } from '@/hooks/use-api'
 
 interface TagItem {
@@ -318,8 +318,23 @@ export function OnboardDevicePage() {
   }, [csvUpload, loadTagsForCSV])
 
   // Handle CSV bulk onboarding with lookup data for name-to-ID conversion
-  const handleCSVUpload = useCallback(() => {
-    const lookupData = {
+  const handleCSVUpload = useCallback(async (): Promise<string | null> => {
+    // Use current form selections as defaults (user's choices in the UI)
+    // These override the backend settings for CSV uploads
+    const formDefaults: CSVLookupData['defaults'] = {
+      location: formData.location_id,
+      namespace: formData.namespace_id,
+      device_role: formData.role_id,
+      device_status: formData.status_id,
+      platform: formData.platform_id,
+      secret_group: formData.secret_groups_id,
+      interface_status: formData.interface_status_id,
+      ip_address_status: formData.ip_address_status_id,
+      ip_prefix_status: formData.prefix_status_id,
+      csv_delimiter: nautobotDefaults?.csv_delimiter || ',',
+    }
+
+    const lookupData: CSVLookupData = {
       locations,
       namespaces,
       deviceRoles,
@@ -330,11 +345,13 @@ export function OnboardDevicePage() {
       prefixStatuses,
       secretGroups,
       availableTags: availableTags.map(tag => ({ id: tag.id, name: tag.name })),
-      defaults: nautobotDefaults || undefined
+      // Use form selections as defaults, fall back to backend settings
+      defaults: formDefaults
     }
-    csvUpload.performBulkOnboarding(csvUpload.parsedData, lookupData)
+    return csvUpload.performBulkOnboarding(csvUpload.parsedData, lookupData)
   }, [
     csvUpload,
+    formData,
     locations,
     namespaces,
     deviceRoles,
@@ -345,7 +362,7 @@ export function OnboardDevicePage() {
     prefixStatuses,
     secretGroups,
     availableTags,
-    nautobotDefaults
+    nautobotDefaults,
   ])
 
   // Handle network scan IPs selection
@@ -641,8 +658,9 @@ export function OnboardDevicePage() {
         csvFile={csvUpload.csvFile}
         parsedData={csvUpload.parsedData}
         isParsing={csvUpload.isParsing}
-        isUploading={csvUpload.isUploading}
-        bulkResults={csvUpload.bulkResults}
+        isSubmitting={csvUpload.isSubmitting}
+        taskId={csvUpload.taskId}
+        submitError={csvUpload.submitError}
         parseError={csvUpload.parseError}
         onFileSelect={csvUpload.parseCSV}
         onUpload={handleCSVUpload}

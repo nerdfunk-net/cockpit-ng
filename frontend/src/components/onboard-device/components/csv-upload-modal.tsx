@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -22,8 +22,51 @@ import {
   TableRow
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 import { Upload, FileSpreadsheet, Loader2, CheckCircle2, XCircle, HelpCircle, AlertCircle } from 'lucide-react'
-import type { ParsedCSVRow, BulkOnboardingResult } from '../types'
+import { useApi } from '@/hooks/use-api'
+import type { ParsedCSVRow } from '../types'
+
+interface DeviceResult {
+  ip_address: string
+  status: 'success' | 'error'
+  message: string
+  device_id?: string
+  device_name?: string
+  job_id?: string
+  stage?: string
+}
+
+interface TaskProgress {
+  stage?: string
+  status?: string
+  progress?: number
+  device_count?: number
+  processed?: number
+  successful?: number
+  failed?: number
+  current_device?: number
+  current_ip?: string
+  devices?: DeviceResult[]
+}
+
+interface TaskStatus {
+  task_id: string
+  status: 'PENDING' | 'PROGRESS' | 'SUCCESS' | 'FAILURE' | 'REVOKED'
+  result?: {
+    success: boolean
+    partial_success?: boolean
+    message?: string
+    error?: string
+    device_count?: number
+    successful_devices?: number
+    failed_devices?: number
+    devices?: DeviceResult[]
+    stage?: string
+  }
+  error?: string
+  progress?: TaskProgress
+}
 
 interface CSVUploadModalProps {
   open: boolean
@@ -31,11 +74,12 @@ interface CSVUploadModalProps {
   csvFile: File | null
   parsedData: ParsedCSVRow[]
   isParsing: boolean
-  isUploading: boolean
-  bulkResults: BulkOnboardingResult[]
+  isSubmitting: boolean
+  taskId: string | null
+  submitError: string
   parseError: string
   onFileSelect: (file: File) => void
-  onUpload: () => void
+  onUpload: () => Promise<string | null>
 }
 
 export function CSVUploadModal({
@@ -44,13 +88,59 @@ export function CSVUploadModal({
   csvFile,
   parsedData,
   isParsing,
-  isUploading,
-  bulkResults,
+  isSubmitting,
+  taskId,
+  submitError,
   parseError,
   onFileSelect,
   onUpload
 }: CSVUploadModalProps) {
+  const { apiCall } = useApi()
   const [showHelp, setShowHelp] = useState(false)
+  const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null)
+  const [_isPolling, setIsPolling] = useState(false)
+
+  // Poll for task status when we have a taskId
+  const pollTaskStatus = useCallback(async () => {
+    if (!taskId) return
+
+    try {
+      const status = await apiCall<TaskStatus>(`celery/tasks/${taskId}`, {
+        method: 'GET'
+      })
+
+      setTaskStatus(status)
+
+      // Stop polling if task is complete
+      if (['SUCCESS', 'FAILURE', 'REVOKED'].includes(status.status)) {
+        setIsPolling(false)
+      }
+    } catch (error) {
+      console.error('Error polling task status:', error)
+      setIsPolling(false)
+    }
+  }, [taskId, apiCall])
+
+  // Start polling when taskId is set
+  useEffect(() => {
+    if (!taskId) {
+      setTaskStatus(null)
+      setIsPolling(false)
+      return
+    }
+
+    setIsPolling(true)
+    const initialPoll = setTimeout(() => pollTaskStatus(), 0)
+
+    const interval = setInterval(() => {
+      pollTaskStatus()
+    }, 2000)
+
+    return () => {
+      clearTimeout(initialPoll)
+      clearInterval(interval)
+    }
+  }, [taskId, pollTaskStatus])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -59,8 +149,46 @@ export function CSVUploadModal({
     }
   }
 
-  const successCount = bulkResults.filter(r => r.status === 'success').length
-  const errorCount = bulkResults.filter(r => r.status === 'error').length
+  const handleUpload = async () => {
+    await onUpload()
+  }
+
+  const getProgressValue = (): number => {
+    if (taskStatus?.status === 'SUCCESS') return 100
+    if (taskStatus?.status === 'FAILURE') return 0
+    if (taskStatus?.progress?.progress) return taskStatus.progress.progress
+    return 0
+  }
+
+  const getStatusMessage = (): string => {
+    if (!taskStatus) return 'Initializing...'
+
+    if (taskStatus.status === 'SUCCESS' && taskStatus.result) {
+      return taskStatus.result.message || 'Bulk onboarding completed!'
+    }
+
+    if (taskStatus.status === 'FAILURE') {
+      return taskStatus.error || taskStatus.result?.error || 'Bulk onboarding failed'
+    }
+
+    if (taskStatus.status === 'PROGRESS' && taskStatus.progress) {
+      return taskStatus.progress.status || 'Processing...'
+    }
+
+    if (taskStatus.status === 'PENDING') {
+      return 'Task queued, waiting to start...'
+    }
+
+    return 'Processing...'
+  }
+
+  // Get device results from either progress or final result
+  const deviceResults = taskStatus?.result?.devices || taskStatus?.progress?.devices || []
+  const successCount = taskStatus?.result?.successful_devices ?? taskStatus?.progress?.successful ?? deviceResults.filter(r => r.status === 'success').length
+  const errorCount = taskStatus?.result?.failed_devices ?? taskStatus?.progress?.failed ?? deviceResults.filter(r => r.status === 'error').length
+
+  const isTaskRunning = taskId && ['PENDING', 'PROGRESS'].includes(taskStatus?.status || '')
+  const isTaskComplete = taskId && ['SUCCESS', 'FAILURE', 'REVOKED'].includes(taskStatus?.status || '')
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -82,34 +210,44 @@ export function CSVUploadModal({
           </div>
           <DialogDescription>
             Upload a CSV file with device information to onboard multiple devices at once.
-            Required columns: ip_address, location, namespace, role, status
+            Only required column: ip_address (other fields use app defaults if not provided)
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* File Upload */}
-          <div className="space-y-2">
-            <Label htmlFor="csv-file">Select CSV File</Label>
-            <Input
-              id="csv-file"
-              type="file"
-              accept=".csv"
-              onChange={handleFileChange}
-              disabled={isUploading || isParsing}
-              className="cursor-pointer"
-            />
-            {csvFile && (
-              <p className="text-sm text-slate-600">
-                Selected: {csvFile.name} ({(csvFile.size / 1024).toFixed(2)} KB)
-              </p>
-            )}
-          </div>
+          {/* File Upload - only show if no task is running */}
+          {!taskId && (
+            <div className="space-y-2">
+              <Label htmlFor="csv-file">Select CSV File</Label>
+              <Input
+                id="csv-file"
+                type="file"
+                accept=".csv"
+                onChange={handleFileChange}
+                disabled={isSubmitting || isParsing}
+                className="cursor-pointer"
+              />
+              {csvFile && (
+                <p className="text-sm text-slate-600">
+                  Selected: {csvFile.name} ({(csvFile.size / 1024).toFixed(2)} KB)
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Parse Error */}
           {parseError && (
             <Alert className="border-red-200 bg-red-50">
               <XCircle className="h-4 w-4 text-red-600" />
               <AlertDescription className="text-red-800">{parseError}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Submit Error */}
+          {submitError && (
+            <Alert className="border-red-200 bg-red-50">
+              <XCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">{submitError}</AlertDescription>
             </Alert>
           )}
 
@@ -121,10 +259,10 @@ export function CSVUploadModal({
             </div>
           )}
 
-          {/* Parsed Data Preview */}
-          {parsedData.length > 0 && bulkResults.length === 0 && (
+          {/* Parsed Data Preview - show before submitting */}
+          {parsedData.length > 0 && !taskId && (
             <div className="space-y-2">
-              <Label>Parsed Data ({parsedData.length} rows)</Label>
+              <Label>Parsed Data ({parsedData.length} devices)</Label>
               <div className="border rounded-md max-h-60 overflow-auto">
                 <Table>
                   <TableHeader>
@@ -140,10 +278,10 @@ export function CSVUploadModal({
                     {parsedData.map((row) => (
                       <TableRow key={row.ip_address}>
                         <TableCell className="font-mono text-sm">{row.ip_address}</TableCell>
-                        <TableCell>{row.location}</TableCell>
-                        <TableCell>{row.namespace}</TableCell>
-                        <TableCell>{row.role}</TableCell>
-                        <TableCell>{row.status}</TableCell>
+                        <TableCell>{row.location || <span className="text-muted-foreground italic">default</span>}</TableCell>
+                        <TableCell>{row.namespace || <span className="text-muted-foreground italic">default</span>}</TableCell>
+                        <TableCell>{row.role || <span className="text-muted-foreground italic">default</span>}</TableCell>
+                        <TableCell>{row.status || <span className="text-muted-foreground italic">default</span>}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -152,11 +290,17 @@ export function CSVUploadModal({
             </div>
           )}
 
-          {/* Upload Results */}
-          {bulkResults.length > 0 && (
-            <div className="space-y-2">
+          {/* Task Progress Section */}
+          {taskId && (
+            <div className="space-y-4">
+              {/* Progress Header */}
               <div className="flex items-center justify-between">
-                <Label>Upload Results</Label>
+                <div className="flex items-center gap-2">
+                  {isTaskRunning && <Loader2 className="h-5 w-5 animate-spin text-blue-500" />}
+                  {taskStatus?.status === 'SUCCESS' && <CheckCircle2 className="h-5 w-5 text-green-500" />}
+                  {taskStatus?.status === 'FAILURE' && <XCircle className="h-5 w-5 text-red-500" />}
+                  <span className="font-medium">{getStatusMessage()}</span>
+                </div>
                 <div className="flex items-center space-x-3">
                   <Badge variant="default" className="bg-green-600">
                     <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -168,63 +312,101 @@ export function CSVUploadModal({
                   </Badge>
                 </div>
               </div>
-              <div className="border rounded-md max-h-60 overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>IP Address</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Message</TableHead>
-                      <TableHead>Job ID</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {bulkResults.map((result) => (
-                      <TableRow key={result.ip_address}>
-                        <TableCell className="font-mono text-sm">{result.ip_address}</TableCell>
-                        <TableCell>
-                          {result.status === 'success' ? (
-                            <Badge variant="default" className="bg-green-600">
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              Success
-                            </Badge>
-                          ) : (
-                            <Badge variant="destructive">
-                              <XCircle className="h-3 w-3 mr-1" />
-                              Failed
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm">{result.message}</TableCell>
-                        <TableCell className="font-mono text-xs">{result.job_id || '-'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+
+              {/* Progress Bar */}
+              <Progress value={getProgressValue()} className="h-2" />
+
+              {/* Task ID for reference */}
+              <p className="text-xs text-muted-foreground">
+                Task ID: <code className="bg-muted px-1 rounded">{taskId}</code>
+                {' — '}Track this job in <span className="font-medium">Jobs / View</span>
+              </p>
+
+              {/* Device Results Table */}
+              {deviceResults.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Device Results</Label>
+                  <div className="border rounded-md max-h-60 overflow-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>IP Address</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Device Name</TableHead>
+                          <TableHead>Message</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {deviceResults.map((result) => (
+                          <TableRow key={result.ip_address}>
+                            <TableCell className="font-mono text-sm">{result.ip_address}</TableCell>
+                            <TableCell>
+                              {result.status === 'success' ? (
+                                <Badge variant="default" className="bg-green-600">
+                                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  Success
+                                </Badge>
+                              ) : (
+                                <Badge variant="destructive">
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                  Failed
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm">{result.device_name || '-'}</TableCell>
+                            <TableCell className="text-sm max-w-xs truncate" title={result.message}>
+                              {result.message}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Uploading Indicator */}
-          {isUploading && (
+          {/* Submitting Indicator */}
+          {isSubmitting && !taskId && (
             <div className="flex items-center space-x-2 text-blue-600">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>
-                Uploading devices... ({bulkResults.length}/{parsedData.length})
-              </span>
+              <span>Submitting bulk onboarding task...</span>
             </div>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isUploading}>
-            {bulkResults.length > 0 ? 'Close' : 'Cancel'}
-          </Button>
-          {parsedData.length > 0 && bulkResults.length === 0 && (
-            <Button onClick={onUpload} disabled={isUploading || isParsing}>
-              <Upload className="h-4 w-4 mr-2" />
-              Upload {parsedData.length} Device{parsedData.length > 1 ? 's' : ''}
+          {/* When task is running, show both Close (to dismiss) and Cancel (to stop task) */}
+          {isTaskRunning && (
+            <>
+              <Button variant="outline" onClick={onClose}>
+                Close
+              </Button>
+              <Button variant="destructive" onClick={onClose} disabled={isSubmitting}>
+                Cancel Task
+              </Button>
+            </>
+          )}
+          {/* When task is complete, show Close button */}
+          {isTaskComplete && (
+            <Button variant="outline" onClick={onClose}>
+              Close
             </Button>
+          )}
+          {/* Before task starts, show Cancel and Upload buttons */}
+          {!taskId && (
+            <>
+              <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+                Cancel
+              </Button>
+              {parsedData.length > 0 && (
+                <Button onClick={handleUpload} disabled={isSubmitting || isParsing}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Onboard {parsedData.length} Device{parsedData.length > 1 ? 's' : ''}
+                </Button>
+              )}
+            </>
           )}
         </DialogFooter>
       </DialogContent>
@@ -254,19 +436,22 @@ export function CSVUploadModal({
             </div>
 
             <div>
-              <h4 className="font-semibold mb-2">Required Columns</h4>
+              <h4 className="font-semibold mb-2">Required Column</h4>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                 <li><code className="bg-muted px-1 py-0.5 rounded">ip_address</code> - Device IP address (IPv4 format)</li>
-                <li><code className="bg-muted px-1 py-0.5 rounded">location</code> - Location name or ID</li>
-                <li><code className="bg-muted px-1 py-0.5 rounded">namespace</code> - Namespace name or ID</li>
-                <li><code className="bg-muted px-1 py-0.5 rounded">role</code> - Device role name or ID</li>
-                <li><code className="bg-muted px-1 py-0.5 rounded">status</code> - Device status name or ID</li>
               </ul>
+              <p className="text-xs text-muted-foreground mt-1">
+                All other fields will use your app&apos;s default Nautobot settings if not provided in the CSV.
+              </p>
             </div>
 
             <div>
               <h4 className="font-semibold mb-2">Optional Columns</h4>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground text-xs">
+                <li><code className="bg-muted px-1 py-0.5 rounded">location</code> - Location name or ID</li>
+                <li><code className="bg-muted px-1 py-0.5 rounded">namespace</code> - Namespace name or ID</li>
+                <li><code className="bg-muted px-1 py-0.5 rounded">role</code> - Device role name or ID</li>
+                <li><code className="bg-muted px-1 py-0.5 rounded">status</code> - Device status name or ID</li>
                 <li><code className="bg-muted px-1 py-0.5 rounded">platform</code> - Platform name or ID (e.g., cisco_ios, juniper_junos)</li>
                 <li><code className="bg-muted px-1 py-0.5 rounded">port</code> - SSH port number (default: 22)</li>
                 <li><code className="bg-muted px-1 py-0.5 rounded">timeout</code> - Connection timeout in seconds (default: 30)</li>
@@ -297,10 +482,10 @@ export function CSVUploadModal({
                 <div className="text-xs text-blue-800">
                   <p className="font-semibold mb-1">Important Notes:</p>
                   <ul className="list-disc list-inside space-y-1">
-                    <li>All devices will be onboarded asynchronously using background jobs</li>
-                    <li>You can track onboarding progress using the Job ID returned for each device</li>
+                    <li>All devices are processed in a single background job (Celery task)</li>
+                    <li>You can track progress in real-time and view the job in <strong>Jobs / View</strong></li>
                     <li>Ensure the IP addresses are reachable and credentials are configured in Nautobot</li>
-                    <li>Location, namespace, role, and status must exist in Nautobot before importing</li>
+                    <li>Location, namespace, role, and status must exist in Nautobot (or use defaults)</li>
                     <li>Tags: Use semicolon (;) or pipe (|) to separate multiple tags within the tags column</li>
                     <li>Custom fields: Column names starting with <code className="bg-muted px-1 py-0.5 rounded">cf_</code> are treated as custom fields</li>
                   </ul>

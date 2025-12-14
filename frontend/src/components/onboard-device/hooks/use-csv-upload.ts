@@ -3,10 +3,17 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useApi } from '@/hooks/use-api'
 import { validateCSVHeaders, resolveNameToId, resolveLocationNameToId } from '../utils/helpers'
-import type { ParsedCSVRow, BulkOnboardingResult, CSVLookupData } from '../types'
+import type { ParsedCSVRow, CSVLookupData } from '../types'
 
 // Only ip_address is required in CSV - other fields will use app defaults if not provided
 const REQUIRED_CSV_HEADERS = ['ip_address']
+
+// Response from the bulk onboard Celery endpoint
+interface BulkOnboardResponse {
+  task_id: string
+  status: string
+  message: string
+}
 
 export function useCSVUpload() {
   const callApi = useApi()
@@ -14,8 +21,9 @@ export function useCSVUpload() {
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [parsedData, setParsedData] = useState<ParsedCSVRow[]>([])
   const [isParsing, setIsParsing] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
-  const [bulkResults, setBulkResults] = useState<BulkOnboardingResult[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [taskId, setTaskId] = useState<string | null>(null)
+  const [submitError, setSubmitError] = useState<string>('')
   const [parseError, setParseError] = useState<string>('')
 
   const openModal = useCallback(() => {
@@ -23,7 +31,8 @@ export function useCSVUpload() {
     setCsvFile(null)
     setParsedData([])
     setParseError('')
-    setBulkResults([])
+    setSubmitError('')
+    setTaskId(null)
   }, [])
 
   const closeModal = useCallback(() => {
@@ -31,12 +40,23 @@ export function useCSVUpload() {
     setCsvFile(null)
     setParsedData([])
     setParseError('')
-    setBulkResults([])
+    setSubmitError('')
+    setTaskId(null)
+  }, [])
+
+  const resetState = useCallback(() => {
+    setCsvFile(null)
+    setParsedData([])
+    setParseError('')
+    setSubmitError('')
+    setTaskId(null)
   }, [])
 
   const parseCSV = useCallback((file: File) => {
     setIsParsing(true)
     setParseError('')
+    setSubmitError('')
+    setTaskId(null)
     setCsvFile(file)
 
     const reader = new FileReader()
@@ -140,15 +160,24 @@ export function useCSVUpload() {
     reader.readAsText(file)
   }, [])
 
+  /**
+   * Submit bulk onboarding via Celery task.
+   * This creates a single trackable job for all devices.
+   */
   const performBulkOnboarding = useCallback(
-    async (data: ParsedCSVRow[], lookupData: CSVLookupData) => {
-      setIsUploading(true)
-      setBulkResults([])
+    async (data: ParsedCSVRow[], lookupData: CSVLookupData): Promise<string | null> => {
+      setIsSubmitting(true)
+      setSubmitError('')
+      setTaskId(null)
 
-      const results: BulkOnboardingResult[] = []
+      try {
+        const defaults = lookupData.defaults || {}
 
-      for (const row of data) {
-        try {
+        // Transform CSV rows into device configs for Celery task
+        const devices = data.map(row => {
+          // Strip netmask/prefix from IP address if present
+          const ipAddress = row.ip_address.split('/')[0].trim()
+
           // Convert tag names to IDs
           let tagIds: string[] | undefined
           if (row.tags && row.tags.length > 0 && lookupData.availableTags.length > 0) {
@@ -160,59 +189,67 @@ export function useCSVUpload() {
             }
           }
 
-          // Transform CSV row fields to match backend DeviceOnboardRequest model
-          // Convert names to IDs using lookup data
-          // For fields not provided in CSV, use app defaults from lookupData.defaults
-          const defaults = lookupData.defaults || {}
-
-          // Strip netmask/prefix from IP address if present (e.g., "192.168.1.1/24" -> "192.168.1.1")
-          // Nautobot doesn't accept CIDR notation for the onboarding IP address
-          const ipAddress = row.ip_address.split('/')[0].trim()
-
-          const requestBody = {
+          return {
             ip_address: ipAddress,
-            // Use CSV value if provided, otherwise use app default
-            location_id: row.location ? resolveLocationNameToId(row.location, lookupData.locations) : (defaults.location || ''),
-            namespace_id: row.namespace ? resolveNameToId(row.namespace, lookupData.namespaces) : (defaults.namespace || ''),
-            role_id: row.role ? resolveNameToId(row.role, lookupData.deviceRoles) : (defaults.device_role || ''),
-            status_id: row.status ? resolveNameToId(row.status, lookupData.deviceStatuses) : (defaults.device_status || ''),
-            platform_id: row.platform ? resolveNameToId(row.platform, lookupData.platforms) : (defaults.platform || 'detect'),
-            secret_groups_id: row.secret_groups ? resolveNameToId(row.secret_groups, lookupData.secretGroups) : (defaults.secret_group || ''),
-            interface_status_id: row.interface_status ? resolveNameToId(row.interface_status, lookupData.interfaceStatuses) : (defaults.interface_status || ''),
-            ip_address_status_id: row.ip_address_status ? resolveNameToId(row.ip_address_status, lookupData.ipAddressStatuses) : (defaults.ip_address_status || ''),
-            prefix_status_id: row.prefix_status ? resolveNameToId(row.prefix_status, lookupData.prefixStatuses) : (defaults.ip_prefix_status || ''),
-            port: row.port || 22,
-            timeout: row.timeout || 30,
+            // Use CSV value if provided (resolved to ID), otherwise leave undefined to use defaults
+            location_id: row.location ? resolveLocationNameToId(row.location, lookupData.locations) : undefined,
+            namespace_id: row.namespace ? resolveNameToId(row.namespace, lookupData.namespaces) : undefined,
+            role_id: row.role ? resolveNameToId(row.role, lookupData.deviceRoles) : undefined,
+            status_id: row.status ? resolveNameToId(row.status, lookupData.deviceStatuses) : undefined,
+            platform_id: row.platform ? resolveNameToId(row.platform, lookupData.platforms) : undefined,
+            secret_groups_id: row.secret_groups ? resolveNameToId(row.secret_groups, lookupData.secretGroups) : undefined,
+            interface_status_id: row.interface_status ? resolveNameToId(row.interface_status, lookupData.interfaceStatuses) : undefined,
+            ip_address_status_id: row.ip_address_status ? resolveNameToId(row.ip_address_status, lookupData.ipAddressStatuses) : undefined,
+            prefix_status_id: row.prefix_status ? resolveNameToId(row.prefix_status, lookupData.prefixStatuses) : undefined,
+            port: row.port || undefined,
+            timeout: row.timeout || undefined,
             tags: tagIds,
-            custom_fields: row.custom_fields
+            custom_fields: row.custom_fields,
           }
+        })
 
-          const result = await callApi.apiCall<{ message: string; job_id: string }>(
-            '/nautobot/devices/onboard',
-            {
-              method: 'POST',
-              body: requestBody
-            }
-          )
-
-          results.push({
-            ip_address: ipAddress,
-            status: 'success',
-            message: result.message || 'Onboarding initiated successfully',
-            job_id: result.job_id
-          })
-        } catch (error) {
-          results.push({
-            ip_address: ipAddress,
-            status: 'error',
-            message: error instanceof Error ? error.message : 'Unknown error'
-          })
+        // Build default config from app settings
+        const defaultConfig = {
+          location_id: defaults.location || '',
+          namespace_id: defaults.namespace || '',
+          role_id: defaults.device_role || '',
+          status_id: defaults.device_status || '',
+          platform_id: defaults.platform || 'detect',
+          secret_groups_id: defaults.secret_group || '',
+          interface_status_id: defaults.interface_status || '',
+          ip_address_status_id: defaults.ip_address_status || '',
+          prefix_status_id: defaults.ip_prefix_status || '',
+          port: 22,
+          timeout: 30,
+          onboarding_timeout: 120,
+          sync_options: ['cables', 'software', 'vlans', 'vrfs'],
         }
 
-        setBulkResults([...results])
-      }
+        // Submit to Celery bulk onboard endpoint
+        const response = await callApi.apiCall<BulkOnboardResponse>(
+          'celery/tasks/bulk-onboard-devices',
+          {
+            method: 'POST',
+            body: {
+              devices,
+              default_config: defaultConfig,
+            }
+          }
+        )
 
-      setIsUploading(false)
+        if (response.task_id) {
+          setTaskId(response.task_id)
+          setIsSubmitting(false)
+          return response.task_id
+        } else {
+          throw new Error(response.message || 'Failed to start bulk onboarding task')
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        setSubmitError(errorMessage)
+        setIsSubmitting(false)
+        return null
+      }
     },
     [callApi]
   )
@@ -223,26 +260,30 @@ export function useCSVUpload() {
       csvFile,
       parsedData,
       isParsing,
-      isUploading,
-      bulkResults,
+      isSubmitting,
+      taskId,
+      submitError,
       parseError,
       openModal,
       closeModal,
+      resetState,
       parseCSV,
-      performBulkOnboarding
+      performBulkOnboarding,
     }),
     [
       showModal,
       csvFile,
       parsedData,
       isParsing,
-      isUploading,
-      bulkResults,
+      isSubmitting,
+      taskId,
+      submitError,
       parseError,
       openModal,
       closeModal,
+      resetState,
       parseCSV,
-      performBulkOnboarding
+      performBulkOnboarding,
     ]
   )
 }

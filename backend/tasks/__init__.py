@@ -24,6 +24,9 @@ from .test_tasks import test_task, test_progress_task
 # Import onboard device task
 from .onboard_device_task import onboard_device_task
 
+# Import bulk onboard devices task
+from .bulk_onboard_task import bulk_onboard_devices_task
+
 # Import export devices task
 from .export_devices_task import export_devices_task
 
