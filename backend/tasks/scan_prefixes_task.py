@@ -110,15 +110,9 @@ def _update_ip_in_nautobot(
         if results:
             # IP exists, update it
             ip_id = results[0].get("id")
-            logger.info(f"Updating existing IP {ip_address} (ID: {ip_id})")
-            logger.info(
-                f"Setting custom field '{response_custom_field_name}' = '{current_date}'"
-            )
 
             # Custom fields nested without cf_ prefix for REST API PATCH
             update_data = {"custom_fields": {response_custom_field_name: current_date}}
-
-            logger.info(f"Update data: {update_data}")
 
             response = requests.patch(
                 f"{base_url}/api/ipam/ip-addresses/{ip_id}/",
@@ -137,14 +131,14 @@ def _update_ip_in_nautobot(
             updated_cf_value = updated_ip.get("custom_fields", {}).get(
                 response_custom_field_name
             )
-            logger.info(
+            logger.debug(
                 f"Updated IP {ip_address} with custom field {response_custom_field_name}={updated_cf_value}"
             )
             return True
 
         else:
             # IP doesn't exist, create it
-            logger.info(f"Creating new IP {ip_address} in prefix {prefix_cidr}")
+            logger.debug(f"Creating new IP {ip_address} in prefix {prefix_cidr}")
 
             # First, get the prefix ID
             response = requests.get(
@@ -187,10 +181,10 @@ def _update_ip_in_nautobot(
             if dns_name:
                 create_data["dns_name"] = dns_name
 
-            logger.info(
+            logger.debug(
                 f"Creating IP with custom field '{response_custom_field_name}' = '{current_date}'"
             )
-            logger.info(f"Create data: {create_data}")
+            logger.debug(f"Create data: {create_data}")
 
             response = requests.post(
                 f"{base_url}/api/ipam/ip-addresses/",
@@ -209,7 +203,7 @@ def _update_ip_in_nautobot(
             created_cf_value = created_ip.get("custom_fields", {}).get(
                 response_custom_field_name
             )
-            logger.info(
+            logger.debug(
                 f"Created IP {ip_address} with custom field {response_custom_field_name}={created_cf_value}"
             )
             return True
@@ -272,7 +266,7 @@ def _update_prefix_last_scan(
             json=update_data,
         )
         response.raise_for_status()
-        logger.info(f"Updated prefix {prefix_cidr} last_scan to {current_date}")
+        logger.debug(f"Updated prefix {prefix_cidr} last_scan to {current_date}")
         return True
 
     except Exception as e:
@@ -393,7 +387,7 @@ def _execute_scan_prefixes(
                 cidr_ips = _expand_cidr_to_ips(cidr)
                 all_ips.extend(cidr_ips)
                 prefix_ips[cidr] = cidr_ips
-                logger.info(f"Expanded {cidr} to {len(cidr_ips)} IPs")
+                logger.debug(f"Expanded {cidr} to {len(cidr_ips)} IPs")
             except Exception as e:
                 logger.error(f"Failed to expand prefix {cidr}: {e}")
                 prefix_ips[cidr] = []

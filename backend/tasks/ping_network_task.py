@@ -78,7 +78,7 @@ def _fping_networks(
             for ip in ip_list:
                 temp_file.write(f"{ip}\n")
 
-        logger.info(
+        logger.debug(
             f"Created temporary file {temp_file_path} with {len(ip_list)} IP addresses"
         )
 
@@ -95,7 +95,7 @@ def _fping_networks(
             str(interval),  # Interval between packets in ms
         ]
 
-        logger.info(f"Running fping command: {' '.join(cmd)} < {temp_file_path}")
+        logger.debug(f"Running fping command: {' '.join(cmd)} < {temp_file_path}")
 
         # Build full command with input redirection
         full_cmd = f"{' '.join(cmd)} < {temp_file_path}"
@@ -111,11 +111,11 @@ def _fping_networks(
         )
 
         # Log raw fping output for debugging
-        logger.info(f"fping return code: {result.returncode}")
-        logger.info(
+        logger.debug(f"fping return code: {result.returncode}")
+        logger.debug(
             f"fping stdout length: {len(result.stdout) if result.stdout else 0} bytes"
         )
-        logger.info(
+        logger.debug(
             f"fping stderr length: {len(result.stderr) if result.stderr else 0} bytes"
         )
 
@@ -133,11 +133,11 @@ def _fping_networks(
         if result.stderr:
             all_output += result.stderr
 
-        logger.info(f"Combined output length: {len(all_output)} bytes")
+        logger.debug(f"Combined output length: {len(all_output)} bytes")
 
         if all_output:
             lines = all_output.strip().split("\n")
-            logger.info(f"Parsing {len(lines)} total lines from fping output")
+            logger.debug(f"Parsing {len(lines)} total lines from fping output")
 
             # Count lines with statistics format
             stats_lines = 0
@@ -166,7 +166,7 @@ def _fping_networks(
 
                                 if rcv_count > 0:
                                     alive_ips.add(ip)
-                                    logger.info(
+                                    logger.debug(
                                         f"Found alive IP: {ip} (rcv={rcv_count})"
                                     )
                             except (IndexError, ValueError) as e:
@@ -174,7 +174,7 @@ def _fping_networks(
                                     f"Failed to parse statistics line: {line} - {e}"
                                 )
 
-            logger.info(f"Processed {stats_lines} statistics lines")
+            logger.debug(f"Processed {stats_lines} statistics lines")
 
         logger.info(
             f"fping discovered {len(alive_ips)} alive hosts out of {len(ip_list)} targets"
@@ -340,7 +340,7 @@ def ping_network_task(
                 cidr_ips = _expand_cidr_to_ips(cidr)
                 all_ips.extend(cidr_ips)
                 network_ips[cidr] = cidr_ips
-                logger.info(f"Expanded {cidr} to {len(cidr_ips)} IPs")
+                logger.debug(f"Expanded {cidr} to {len(cidr_ips)} IPs")
             except Exception as e:
                 logger.error(f"Failed to expand CIDR {cidr}: {e}")
                 network_ips[cidr] = []
