@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -189,18 +189,24 @@ export default function PingPage() {
         {/* Page Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="bg-gradient-to-br from-emerald-100 to-teal-100 p-3 rounded-xl shadow-sm">
-              <Wifi className="h-6 w-6 text-emerald-600" />
+            <div className="bg-blue-100 p-2 rounded-lg">
+              <Wifi className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Network Ping Tool</h1>
-              <p className="text-slate-600 mt-1">Ping CIDR networks and resolve DNS names</p>
+              <h1 className="text-3xl font-bold text-gray-900">Network Ping Tool</h1>
+              <p className="text-gray-600 mt-1">Ping CIDR networks and resolve DNS names</p>
             </div>
           </div>
         </div>
 
-        <Card>
-          <CardContent className="pt-6 space-y-6">
+        <Card className="shadow-lg border-0 overflow-hidden p-0">
+          <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
+            <CardTitle className="flex items-center space-x-2 text-sm font-medium">
+              <Wifi className="h-4 w-4" />
+              <span>Network Ping Configuration</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-6">
             {/* CIDR Networks Section */}
             <div className="space-y-4">
               <Label className="text-base font-semibold text-slate-700">CIDR Networks</Label>
@@ -216,7 +222,7 @@ export default function PingPage() {
                           onChange={(e) => handleCidrChange(input.id, e.target.value)}
                           className={input.error
                             ? 'border-red-500 focus:ring-red-500 bg-white'
-                            : 'focus:ring-emerald-500 focus:border-emerald-500 border-slate-300 bg-white font-mono text-slate-900 placeholder:text-slate-400 shadow-sm'}
+                            : 'focus:ring-blue-500 focus:border-blue-500 border-slate-300 bg-white font-mono text-slate-900 placeholder:text-slate-400 shadow-sm'}
                         />
                         {input.error && (
                           <div className="flex items-center gap-1 mt-1 text-sm text-red-600 bg-red-50 p-2 rounded-md border border-red-200">
@@ -230,7 +236,7 @@ export default function PingPage() {
                         size="icon"
                         variant="outline"
                         onClick={handleAddRow}
-                        className="flex-shrink-0 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-600 transition-colors"
+                        className="flex-shrink-0 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-colors"
                       >
                         <Plus className="w-4 h-4" />
                       </Button>
@@ -260,7 +266,7 @@ export default function PingPage() {
                   id="resolve-dns"
                   checked={resolveDns}
                   onCheckedChange={(checked) => setResolveDns(checked as boolean)}
-                  className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                  className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                 />
                 <Label
                   htmlFor="resolve-dns"
@@ -279,14 +285,14 @@ export default function PingPage() {
               <button
                 type="button"
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-emerald-600 transition-colors"
+                className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors"
               >
                 {showAdvanced ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                 Advanced Options
               </button>
 
               {showAdvanced && (
-                <div className="mt-4 grid grid-cols-2 gap-4 bg-gradient-to-br from-emerald-50 to-teal-50 p-4 rounded-lg border border-emerald-200">
+                <div className="mt-4 grid grid-cols-2 gap-4 bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
                   <div className="space-y-2">
                     <Label htmlFor="count" className="text-sm font-medium text-slate-700">
                       Ping Count
@@ -298,7 +304,7 @@ export default function PingPage() {
                       max="10"
                       value={count}
                       onChange={(e) => setCount(parseInt(e.target.value) || 3)}
-                      className="focus:ring-emerald-500 focus:border-emerald-500 border-emerald-300 bg-white font-mono text-slate-900 shadow-sm"
+                      className="focus:ring-blue-500 focus:border-blue-500 border-blue-300 bg-white font-mono text-slate-900 shadow-sm"
                     />
                     <p className="text-xs text-slate-600">Number of pings per host (1-10)</p>
                   </div>
@@ -315,7 +321,7 @@ export default function PingPage() {
                       step="100"
                       value={timeout}
                       onChange={(e) => setTimeout(parseInt(e.target.value) || 500)}
-                      className="focus:ring-emerald-500 focus:border-emerald-500 border-emerald-300 bg-white font-mono text-slate-900 shadow-sm"
+                      className="focus:ring-blue-500 focus:border-blue-500 border-blue-300 bg-white font-mono text-slate-900 shadow-sm"
                     />
                     <p className="text-xs text-slate-600">Individual target timeout (100-5000ms)</p>
                   </div>
@@ -331,7 +337,7 @@ export default function PingPage() {
                       max="10"
                       value={retry}
                       onChange={(e) => setRetry(parseInt(e.target.value) || 3)}
-                      className="focus:ring-emerald-500 focus:border-emerald-500 border-emerald-300 bg-white font-mono text-slate-900 shadow-sm"
+                      className="focus:ring-blue-500 focus:border-blue-500 border-blue-300 bg-white font-mono text-slate-900 shadow-sm"
                     />
                     <p className="text-xs text-slate-600">Number of retries (0-10)</p>
                   </div>
@@ -347,7 +353,7 @@ export default function PingPage() {
                       max="1000"
                       value={interval}
                       onChange={(e) => setInterval(parseInt(e.target.value) || 10)}
-                      className="focus:ring-emerald-500 focus:border-emerald-500 border-emerald-300 bg-white font-mono text-slate-900 shadow-sm"
+                      className="focus:ring-blue-500 focus:border-blue-500 border-blue-300 bg-white font-mono text-slate-900 shadow-sm"
                     />
                     <p className="text-xs text-slate-600">Interval between packets (1-1000ms)</p>
                   </div>
@@ -360,7 +366,7 @@ export default function PingPage() {
               <Button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="min-w-[150px] bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md hover:shadow-lg transition-all"
+                className="min-w-[150px] bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
               >
                 {isSubmitting ? (
                   <>
