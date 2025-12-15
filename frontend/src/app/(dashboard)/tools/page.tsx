@@ -7,7 +7,8 @@ import {
   Shield,
   KeyRound,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Database
 } from 'lucide-react'
 
 interface ToolLink {
@@ -30,6 +31,12 @@ const tools: ToolLink[] = [
     description: 'Upload or scan for CA certificates and add them to the system trust store. Manage SSL/TLS certificates for secure connections.',
     href: '/add-certificate',
     icon: <KeyRound className="w-6 h-6" />,
+  },
+  {
+    title: 'Database Migration',
+    description: 'Analyze database schema status and perform migrations to match the application data models.',
+    href: '/tools/database-migration',
+    icon: <Database className="w-6 h-6" />,
   },
 ]
 
@@ -93,7 +100,7 @@ export default function ToolsPage() {
               <div className="text-sm text-amber-800">
                 <p className="font-medium mb-1">Developer Tools</p>
                 <p>
-                  These tools are intended for debugging and administrative purposes. 
+                  These tools are intended for debugging and administrative purposes.
                   They are not shown in the main navigation but are accessible to authenticated users.
                 </p>
               </div>

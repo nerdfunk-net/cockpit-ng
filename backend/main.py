@@ -39,6 +39,7 @@ from routers.rbac import router as rbac_router
 from routers.compliance import router as compliance_router
 from routers.compliance_check import router as compliance_check_router
 from routers.certificates import router as certificates_router
+from routers.tools import router as tools_router
 from health import router as health_router
 
 # Import auth dependency
@@ -85,6 +86,7 @@ app.include_router(rbac_router)
 app.include_router(compliance_router)
 app.include_router(compliance_check_router)
 app.include_router(certificates_router)
+app.include_router(tools_router)
 app.include_router(health_router)
 
 
