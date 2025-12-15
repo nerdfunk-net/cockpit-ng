@@ -30,6 +30,7 @@ interface NautobotDefaults {
   device_role: string
   secret_group: string
   csv_delimiter: string
+  csv_quote_char: string
 }
 
 interface NautobotOption {
@@ -111,7 +112,8 @@ export default function NautobotSettingsForm() {
     namespace: '',
     device_role: '',
     secret_group: '',
-    csv_delimiter: ','
+    csv_delimiter: ',',
+    csv_quote_char: '"'
   })
 
   const [status, setStatus] = useState<StatusType>('idle')
@@ -358,7 +360,8 @@ export default function NautobotSettingsForm() {
       namespace: '',
       device_role: '',
       secret_group: '',
-      csv_delimiter: ','
+      csv_delimiter: ',',
+      csv_quote_char: '"'
     })
     showMessage('Defaults reset', 'success')
   }
@@ -1059,6 +1062,25 @@ export default function NautobotSettingsForm() {
                   />
                   <p className="text-xs text-gray-500">
                     Default delimiter for CSV file uploads (default: comma)
+                  </p>
+                </div>
+
+                {/* CSV Quote Character */}
+                <div className="space-y-2">
+                  <Label htmlFor="default-csv-quote-char" className="text-sm font-medium text-gray-700">
+                    CSV Quote Character
+                  </Label>
+                  <Input
+                    id="default-csv-quote-char"
+                    type="text"
+                    maxLength={1}
+                    placeholder='"'
+                    value={defaults.csv_quote_char}
+                    onChange={(e) => updateDefault('csv_quote_char', e.target.value)}
+                    className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Default quote character for CSV file uploads (default: double quote)
                   </p>
                 </div>
               </div>

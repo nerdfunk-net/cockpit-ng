@@ -662,8 +662,15 @@ export function OnboardDevicePage() {
         taskId={csvUpload.taskId}
         submitError={csvUpload.submitError}
         parseError={csvUpload.parseError}
+        csvDelimiter={csvUpload.csvDelimiter}
+        csvQuoteChar={csvUpload.csvQuoteChar}
+        parallelJobs={csvUpload.parallelJobs}
         onFileSelect={csvUpload.parseCSV}
         onUpload={handleCSVUpload}
+        onDelimiterChange={csvUpload.setCsvDelimiter}
+        onQuoteCharChange={csvUpload.setCsvQuoteChar}
+        onParallelJobsChange={csvUpload.setParallelJobs}
+        onReparse={() => csvUpload.csvFile && csvUpload.parseCSV(csvUpload.csvFile)}
       />
 
       {/* Tags Modal */}

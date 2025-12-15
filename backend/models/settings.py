@@ -105,6 +105,7 @@ class NautobotDefaultsRequest(BaseModel):
     device_role: Optional[str] = None
     secret_group: Optional[str] = None
     csv_delimiter: Optional[str] = ","
+    csv_quote_char: Optional[str] = '"'
 
 
 class DeviceOffboardingRequest(BaseModel):

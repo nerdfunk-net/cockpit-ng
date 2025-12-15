@@ -74,6 +74,7 @@ class BulkOnboardDevicesRequest(BaseModel):
 
     devices: List[BulkOnboardDeviceConfig]
     default_config: Dict  # Default values for missing device-specific fields
+    parallel_jobs: Optional[int] = 1  # Number of parallel jobs to create (default: 1 = sequential)
 
 
 class SyncDevicesToCheckmkRequest(BaseModel):
@@ -231,10 +232,10 @@ async def trigger_bulk_onboard_devices(
     current_user: dict = Depends(require_permission("devices.onboard", "execute")),
 ):
     """
-    Bulk onboard multiple devices from CSV data using a single Celery task.
+    Bulk onboard multiple devices from CSV data using one or more Celery tasks.
 
-    This endpoint triggers a background task that processes multiple devices,
-    creating a single trackable job in the Jobs/View interface.
+    This endpoint triggers background task(s) that process multiple devices.
+    If parallel_jobs > 1, devices are split into batches and processed concurrently.
 
     Request Body:
         devices: List of device configurations, each containing:
@@ -246,11 +247,13 @@ async def trigger_bulk_onboard_devices(
             - location_id, namespace_id, role_id, status_id, etc.
             - onboarding_timeout: Max wait time for each device (default: 120s)
             - sync_options: List of sync options
+        parallel_jobs: Number of parallel jobs to create (default: 1)
 
     Returns:
-        TaskResponse with task_id for tracking progress via /tasks/{task_id}
+        TaskResponse with task_id(s) for tracking progress via /tasks/{task_id}
     """
     from tasks.bulk_onboard_task import bulk_onboard_devices_task
+    import math
 
     # Convert device configs to dicts
     devices_data = [device.model_dump() for device in request.devices]
@@ -266,36 +269,79 @@ async def trigger_bulk_onboard_devices(
     # Get username from authenticated user
     username = current_user.get("username", "unknown")
 
-    # Submit task to Celery queue
-    task = bulk_onboard_devices_task.delay(
-        devices=devices_data,
-        default_config=request.default_config,
-    )
-
-    # Extract IP addresses for target_devices
-    ip_addresses = [d.get("ip_address", "unknown") for d in devices_data]
-
-    # Create job run entry for Jobs/View visibility
-    try:
-        job_run = job_run_manager.create_job_run(
-            job_name=f"Bulk Onboard {device_count} Devices (CSV)",
-            job_type="bulk_onboard",
-            triggered_by="manual",
-            target_devices=ip_addresses,
-            executed_by=username,
+    # Determine number of parallel jobs (clamp to reasonable range)
+    parallel_jobs = max(1, min(request.parallel_jobs or 1, device_count))
+    
+    # Single job mode (original behavior)
+    if parallel_jobs == 1:
+        task = bulk_onboard_devices_task.delay(
+            devices=devices_data,
+            default_config=request.default_config,
         )
-        job_run_id = job_run.get("id")
-        if job_run_id:
-            job_run_manager.mark_started(job_run_id, task.id)
-            logger.info(f"Created job run {job_run_id} for bulk onboard task {task.id}")
-    except Exception as e:
-        # Don't fail the task if job run creation fails
-        logger.warning(f"Failed to create job run entry: {e}")
 
+        ip_addresses = [d.get("ip_address", "unknown") for d in devices_data]
+
+        try:
+            job_run = job_run_manager.create_job_run(
+                job_name=f"Bulk Onboard {device_count} Devices (CSV)",
+                job_type="bulk_onboard",
+                triggered_by="manual",
+                target_devices=ip_addresses,
+                executed_by=username,
+            )
+            job_run_id = job_run.get("id")
+            if job_run_id:
+                job_run_manager.mark_started(job_run_id, task.id)
+                logger.info(f"Created job run {job_run_id} for bulk onboard task {task.id}")
+        except Exception as e:
+            logger.warning(f"Failed to create job run entry: {e}")
+
+        return TaskResponse(
+            task_id=task.id,
+            status="queued",
+            message=f"Bulk onboarding task queued for {device_count} devices: {task.id}",
+        )
+    
+    # Parallel jobs mode - split devices into batches
+    batch_size = math.ceil(device_count / parallel_jobs)
+    task_ids = []
+    
+    for batch_num in range(parallel_jobs):
+        start_idx = batch_num * batch_size
+        end_idx = min(start_idx + batch_size, device_count)
+        batch_devices = devices_data[start_idx:end_idx]
+        
+        if not batch_devices:
+            continue
+            
+        # Create task for this batch
+        task = bulk_onboard_devices_task.delay(
+            devices=batch_devices,
+            default_config=request.default_config,
+        )
+        task_ids.append(task.id)
+        
+        # Create job run entry for this batch
+        ip_addresses = [d.get("ip_address", "unknown") for d in batch_devices]
+        try:
+            job_run = job_run_manager.create_job_run(
+                job_name=f"Bulk Onboard Batch {batch_num + 1}/{parallel_jobs} ({len(batch_devices)} devices)",
+                job_type="bulk_onboard",
+                triggered_by="manual",
+                target_devices=ip_addresses,
+                executed_by=username,
+            )
+            job_run_id = job_run.get("id")
+            if job_run_id:
+                job_run_manager.mark_started(job_run_id, task.id)
+                logger.info(f"Created job run {job_run_id} for batch {batch_num + 1} task {task.id}")
+        except Exception as e:
+            logger.warning(f"Failed to create job run entry for batch {batch_num + 1}: {e}")
+    
     return TaskResponse(
-        task_id=task.id,
+        task_id=",".join(task_ids),  # Return comma-separated task IDs
         status="queued",
-        message=f"Bulk onboarding task queued for {device_count} devices: {task.id}",
+        message=f"Created {len(task_ids)} parallel jobs for {device_count} devices ({batch_size} devices per job)",
     )
 
 

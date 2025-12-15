@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Download } from 'lucide-react'
 import type { DeviceInfo, LogicalCondition } from '@/components/shared/device-selector'
@@ -40,6 +40,37 @@ export default function NautobotExportPage() {
   const [csvDelimiter, setCsvDelimiter] = useState(',')
   const [csvQuoteChar, setCsvQuoteChar] = useState('"')
   const [csvIncludeHeaders, setCsvIncludeHeaders] = useState(true)
+
+  // Load CSV defaults from backend on mount
+  useEffect(() => {
+    const loadDefaults = async () => {
+      try {
+        const response = await apiCall<{
+          success: boolean
+          data: {
+            csv_delimiter?: string
+            csv_quote_char?: string
+          }
+        }>('settings/nautobot/defaults', {
+          method: 'GET'
+        })
+
+        if (response.success && response.data) {
+          if (response.data.csv_delimiter) {
+            setCsvDelimiter(response.data.csv_delimiter)
+          }
+          if (response.data.csv_quote_char) {
+            setCsvQuoteChar(response.data.csv_quote_char)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load CSV defaults:', error)
+        // Use hardcoded defaults on error
+      }
+    }
+
+    loadDefaults()
+  }, [apiCall])
 
   const handleDevicesSelected = useMemo(
     () => (devices: DeviceInfo[], conditions: LogicalCondition[]) => {

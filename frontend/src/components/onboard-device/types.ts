@@ -66,11 +66,11 @@ export interface CSVRow {
 }
 
 export interface ParsedCSVRow {
-  ip_address: string
-  location: string
-  namespace: string
-  role: string
-  status: string
+  ip_address?: string
+  location?: string
+  namespace?: string
+  role?: string
+  status?: string
   platform?: string
   port?: number
   timeout?: number

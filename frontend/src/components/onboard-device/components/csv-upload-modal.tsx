@@ -78,8 +78,15 @@ interface CSVUploadModalProps {
   taskId: string | null
   submitError: string
   parseError: string
+  csvDelimiter: string
+  csvQuoteChar: string
+  parallelJobs: number
   onFileSelect: (file: File) => void
   onUpload: () => Promise<string | null>
+  onDelimiterChange: (delimiter: string) => void
+  onQuoteCharChange: (quoteChar: string) => void
+  onParallelJobsChange: (jobs: number) => void
+  onReparse: () => void
 }
 
 export function CSVUploadModal({
@@ -92,28 +99,107 @@ export function CSVUploadModal({
   taskId,
   submitError,
   parseError,
+  csvDelimiter,
+  csvQuoteChar,
+  parallelJobs,
   onFileSelect,
-  onUpload
+  onUpload,
+  onDelimiterChange,
+  onQuoteCharChange,
+  onParallelJobsChange,
+  onReparse
 }: CSVUploadModalProps) {
   const { apiCall } = useApi()
   const [showHelp, setShowHelp] = useState(false)
+  const [showOptionalSettings, setShowOptionalSettings] = useState(false)
   const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null)
   const [_isPolling, setIsPolling] = useState(false)
 
-  // Poll for task status when we have a taskId
+  // Poll for task status when we have a taskId (or multiple task IDs)
   const pollTaskStatus = useCallback(async () => {
     if (!taskId) return
 
     try {
-      const status = await apiCall<TaskStatus>(`celery/tasks/${taskId}`, {
-        method: 'GET'
-      })
+      // Handle multiple task IDs (comma-separated)
+      const taskIds = taskId.split(',').map(id => id.trim())
+      
+      if (taskIds.length === 1) {
+        // Single task - use original logic
+        const status = await apiCall<TaskStatus>(`celery/tasks/${taskId}`, {
+          method: 'GET'
+        })
 
-      setTaskStatus(status)
+        setTaskStatus(status)
 
-      // Stop polling if task is complete
-      if (['SUCCESS', 'FAILURE', 'REVOKED'].includes(status.status)) {
-        setIsPolling(false)
+        // Stop polling if task is complete
+        if (['SUCCESS', 'FAILURE', 'REVOKED'].includes(status.status)) {
+          setIsPolling(false)
+        }
+      } else {
+        // Multiple tasks - fetch all and aggregate
+        const statuses = await Promise.all(
+          taskIds.map(id => 
+            apiCall<TaskStatus>(`celery/tasks/${id}`, { method: 'GET' })
+              .catch(err => {
+                console.error(`Error fetching task ${id}:`, err)
+                return null
+              })
+          )
+        )
+
+        // Filter out failed fetches
+        const validStatuses = statuses.filter(s => s !== null) as TaskStatus[]
+        
+        if (validStatuses.length === 0) {
+          setIsPolling(false)
+          return
+        }
+
+        // Aggregate results
+        const allComplete = validStatuses.every(s => 
+          ['SUCCESS', 'FAILURE', 'REVOKED'].includes(s.status)
+        )
+        const anyFailed = validStatuses.some(s => s.status === 'FAILURE')
+        const allSuccess = validStatuses.every(s => s.status === 'SUCCESS')
+
+        // Combine device results from all tasks
+        const allDevices: DeviceResult[] = []
+        let totalSuccessful = 0
+        let totalFailed = 0
+
+        validStatuses.forEach(status => {
+          const devices = status.result?.devices || status.progress?.devices || []
+          allDevices.push(...devices)
+          totalSuccessful += status.result?.successful_devices ?? status.progress?.successful ?? 0
+          totalFailed += status.result?.failed_devices ?? status.progress?.failed ?? 0
+        })
+
+        // Create aggregated status
+        const aggregatedStatus: TaskStatus = {
+          task_id: taskId,
+          status: allComplete ? (anyFailed ? 'FAILURE' : 'SUCCESS') : 'PROGRESS',
+          result: allComplete ? {
+            success: allSuccess,
+            message: `Completed ${validStatuses.length} parallel jobs`,
+            device_count: allDevices.length,
+            successful_devices: totalSuccessful,
+            failed_devices: totalFailed,
+            devices: allDevices,
+          } : undefined,
+          progress: !allComplete ? {
+            status: `Processing ${validStatuses.length} parallel jobs...`,
+            device_count: allDevices.length,
+            successful: totalSuccessful,
+            failed: totalFailed,
+            devices: allDevices,
+          } : undefined,
+        }
+
+        setTaskStatus(aggregatedStatus)
+
+        if (allComplete) {
+          setIsPolling(false)
+        }
       }
     } catch (error) {
       console.error('Error polling task status:', error)
@@ -231,6 +317,110 @@ export function CSVUploadModal({
                 <p className="text-sm text-slate-600">
                   Selected: {csvFile.name} ({(csvFile.size / 1024).toFixed(2)} KB)
                 </p>
+              )}
+            </div>
+          )}
+
+          {/* Optional CSV Settings - only show if no task is running */}
+          {!taskId && (
+            <div className="border rounded-lg overflow-hidden">
+              <div 
+                className="bg-blue-50 border-b border-blue-200 px-4 py-3 cursor-pointer hover:bg-blue-100 transition-colors"
+                onClick={() => setShowOptionalSettings(!showOptionalSettings)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-900">
+                      CSV Format and Jobs Settings (Optional)
+                    </span>
+                  </div>
+                  <span className="text-xs text-blue-700">
+                    {showOptionalSettings ? 'Click to hide' : 'Click to configure'}
+                  </span>
+                </div>
+              </div>
+              
+              {showOptionalSettings && (
+                <div className="p-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="csv-delimiter" className="text-sm">
+                        Delimiter
+                      </Label>
+                      <Input
+                        id="csv-delimiter"
+                        value={csvDelimiter}
+                        onChange={(e) => onDelimiterChange(e.target.value)}
+                        disabled={isSubmitting || isParsing}
+                        placeholder=","
+                        maxLength={1}
+                        className="font-mono"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Character separating values (default: comma)
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="csv-quote" className="text-sm">
+                        Quote Character
+                      </Label>
+                      <Input
+                        id="csv-quote"
+                        value={csvQuoteChar}
+                        onChange={(e) => onQuoteCharChange(e.target.value)}
+                        disabled={isSubmitting || isParsing}
+                        placeholder='"'
+                        maxLength={1}
+                        className="font-mono"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Character for quoting values (default: double quote)
+                      </p>
+                    </div>
+                    
+                    {csvFile && (
+                      <div className="col-span-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={onReparse}
+                          disabled={isSubmitting || isParsing}
+                          className="w-full"
+                        >
+                          Re-parse with New Settings
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Parallel Jobs Control */}
+                  <div className="border-t pt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="parallel-jobs" className="text-sm font-medium">
+                        Parallel Jobs
+                      </Label>
+                      <Input
+                        id="parallel-jobs"
+                        type="number"
+                        min={1}
+                        max={parsedData.length || 100}
+                        value={parallelJobs}
+                        onChange={(e) => onParallelJobsChange(Math.max(1, parseInt(e.target.value) || 1))}
+                        disabled={isSubmitting || isParsing}
+                        className="w-32"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Number of parallel jobs to create. Higher values speed up onboarding but require more Celery workers.
+                        {parsedData.length > 0 && (
+                          <> With {parsedData.length} devices and {parallelJobs} job{parallelJobs > 1 ? 's' : ''}, 
+                          each job will process ~{Math.ceil(parsedData.length / parallelJobs)} device{Math.ceil(parsedData.length / parallelJobs) > 1 ? 's' : ''}.</>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -429,7 +619,8 @@ export function CSVUploadModal({
               <h4 className="font-semibold mb-2">File Format</h4>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                 <li>First row must contain column headers</li>
-                <li>Delimiter: comma (,)</li>
+                <li>Delimiter: configurable (default comma, can be changed in Optional Settings)</li>
+                <li>Quote character: configurable (default double quote, can be changed in Optional Settings)</li>
                 <li>Each row represents one device to onboard</li>
                 <li>Empty or malformed rows will be skipped</li>
               </ul>

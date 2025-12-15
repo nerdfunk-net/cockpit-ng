@@ -15,6 +15,54 @@ interface BulkOnboardResponse {
   message: string
 }
 
+/**
+ * Parse a CSV line respecting quoted values
+ * @param line - CSV line to parse
+ * @param delimiter - Delimiter character (default: comma)
+ * @param quoteChar - Quote character (default: double quote)
+ * @returns Array of parsed values
+ */
+function parseCSVLine(line: string, delimiter: string = ',', quoteChar: string = '"'): string[] {
+  const values: string[] = []
+  let currentValue = ''
+  let inQuotes = false
+  let i = 0
+
+  while (i < line.length) {
+    const char = line[i]
+
+    if (char === quoteChar) {
+      if (inQuotes && line[i + 1] === quoteChar) {
+        // Escaped quote (two quotes in a row)
+        currentValue += quoteChar
+        i += 2
+        continue
+      }
+      // Toggle quote state
+      inQuotes = !inQuotes
+      i++
+      continue
+    }
+
+    if (char === delimiter && !inQuotes) {
+      // End of field
+      values.push(currentValue.trim())
+      currentValue = ''
+      i++
+      continue
+    }
+
+    // Regular character
+    currentValue += char
+    i++
+  }
+
+  // Add the last field
+  values.push(currentValue.trim())
+
+  return values
+}
+
 export function useCSVUpload() {
   const callApi = useApi()
   const [showModal, setShowModal] = useState(false)
@@ -25,6 +73,36 @@ export function useCSVUpload() {
   const [taskId, setTaskId] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string>('')
   const [parseError, setParseError] = useState<string>('')
+  const [csvDelimiter, setCsvDelimiter] = useState<string>(',')
+  const [csvQuoteChar, setCsvQuoteChar] = useState<string>('"')
+  const [parallelJobs, setParallelJobs] = useState<number>(1)
+
+  // Load CSV settings from backend on mount
+  const loadCSVSettings = useCallback(async () => {
+    try {
+      const response = await callApi.apiCall<{
+        success: boolean
+        data: {
+          csv_delimiter?: string
+          csv_quote_char?: string
+        }
+      }>('settings/nautobot/defaults', {
+        method: 'GET'
+      })
+
+      if (response.success && response.data) {
+        if (response.data.csv_delimiter) {
+          setCsvDelimiter(response.data.csv_delimiter)
+        }
+        if (response.data.csv_quote_char) {
+          setCsvQuoteChar(response.data.csv_quote_char)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load CSV settings:', error)
+      // Use defaults on error
+    }
+  }, [callApi])
 
   const openModal = useCallback(() => {
     setShowModal(true)
@@ -33,7 +111,10 @@ export function useCSVUpload() {
     setParseError('')
     setSubmitError('')
     setTaskId(null)
-  }, [])
+    
+    // Load CSV settings from backend
+    loadCSVSettings()
+  }, [loadCSVSettings])
 
   const closeModal = useCallback(() => {
     setShowModal(false)
@@ -52,12 +133,16 @@ export function useCSVUpload() {
     setTaskId(null)
   }, [])
 
-  const parseCSV = useCallback((file: File) => {
+  const parseCSV = useCallback((file: File, delimiter?: string, quoteChar?: string) => {
     setIsParsing(true)
     setParseError('')
     setSubmitError('')
     setTaskId(null)
     setCsvFile(file)
+
+    // Use provided delimiters or current state values
+    const effectiveDelimiter = delimiter !== undefined ? delimiter : csvDelimiter
+    const effectiveQuoteChar = quoteChar !== undefined ? quoteChar : csvQuoteChar
 
     const reader = new FileReader()
     reader.onload = e => {
@@ -78,7 +163,7 @@ export function useCSVUpload() {
           setIsParsing(false)
           return
         }
-        const headers = firstLine.split(',').map(h => h.trim().toLowerCase())
+        const headers = parseCSVLine(firstLine, effectiveDelimiter, effectiveQuoteChar).map(h => h.trim().toLowerCase())
         const validation = validateCSVHeaders(headers, REQUIRED_CSV_HEADERS)
 
         if (!validation.isValid) {
@@ -95,7 +180,7 @@ export function useCSVUpload() {
           const line = lines[i]
           if (!line) continue
           
-          const values = line.split(',').map(v => v.trim())
+          const values = parseCSVLine(line, effectiveDelimiter, effectiveQuoteChar)
           if (values.length !== headers.length) {
             continue // Skip malformed rows
           }
@@ -158,7 +243,7 @@ export function useCSVUpload() {
     }
 
     reader.readAsText(file)
-  }, [])
+  }, [csvDelimiter, csvQuoteChar])
 
   /**
    * Submit bulk onboarding via Celery task.
@@ -171,54 +256,57 @@ export function useCSVUpload() {
       setTaskId(null)
 
       try {
-        const defaults = lookupData.defaults || {}
+        const defaults = lookupData.defaults
 
         // Transform CSV rows into device configs for Celery task
-        const devices = data.map(row => {
-          // Strip netmask/prefix from IP address if present
-          const ipAddress = row.ip_address.split('/')[0].trim()
+        const devices = data
+          .filter(row => !!row?.ip_address)
+          .map(row => {
+            // Strip netmask/prefix from IP address if present
+            // Non-null assertion is safe here because we filtered for truthy ip_address above
+            const ipAddress = row.ip_address!.split('/')[0]!.trim()
 
-          // Convert tag names to IDs
-          let tagIds: string[] | undefined
-          if (row.tags && row.tags.length > 0 && lookupData.availableTags.length > 0) {
-            tagIds = row.tags
-              .map(tagName => resolveNameToId(tagName, lookupData.availableTags))
-              .filter(id => id.length > 0)
-            if (tagIds.length === 0) {
-              tagIds = undefined
+            // Convert tag names to IDs
+            let tagIds: string[] | undefined
+            if (row.tags && row.tags.length > 0 && lookupData.availableTags.length > 0) {
+              tagIds = row.tags
+                .map(tagName => resolveNameToId(tagName, lookupData.availableTags))
+                .filter(id => id.length > 0)
+              if (tagIds.length === 0) {
+                tagIds = undefined
+              }
             }
-          }
 
-          return {
-            ip_address: ipAddress,
-            // Use CSV value if provided (resolved to ID), otherwise leave undefined to use defaults
-            location_id: row.location ? resolveLocationNameToId(row.location, lookupData.locations) : undefined,
-            namespace_id: row.namespace ? resolveNameToId(row.namespace, lookupData.namespaces) : undefined,
-            role_id: row.role ? resolveNameToId(row.role, lookupData.deviceRoles) : undefined,
-            status_id: row.status ? resolveNameToId(row.status, lookupData.deviceStatuses) : undefined,
-            platform_id: row.platform ? resolveNameToId(row.platform, lookupData.platforms) : undefined,
-            secret_groups_id: row.secret_groups ? resolveNameToId(row.secret_groups, lookupData.secretGroups) : undefined,
-            interface_status_id: row.interface_status ? resolveNameToId(row.interface_status, lookupData.interfaceStatuses) : undefined,
-            ip_address_status_id: row.ip_address_status ? resolveNameToId(row.ip_address_status, lookupData.ipAddressStatuses) : undefined,
-            prefix_status_id: row.prefix_status ? resolveNameToId(row.prefix_status, lookupData.prefixStatuses) : undefined,
-            port: row.port || undefined,
-            timeout: row.timeout || undefined,
-            tags: tagIds,
-            custom_fields: row.custom_fields,
-          }
-        })
+            return {
+              ip_address: ipAddress,
+              // Use CSV value if provided (resolved to ID), otherwise leave undefined to use defaults
+              location_id: row.location ? resolveLocationNameToId(row.location, lookupData.locations) : undefined,
+              namespace_id: row.namespace ? resolveNameToId(row.namespace, lookupData.namespaces) : undefined,
+              role_id: row.role ? resolveNameToId(row.role, lookupData.deviceRoles) : undefined,
+              status_id: row.status ? resolveNameToId(row.status, lookupData.deviceStatuses) : undefined,
+              platform_id: row.platform ? resolveNameToId(row.platform, lookupData.platforms) : undefined,
+              secret_groups_id: row.secret_groups ? resolveNameToId(row.secret_groups, lookupData.secretGroups) : undefined,
+              interface_status_id: row.interface_status ? resolveNameToId(row.interface_status, lookupData.interfaceStatuses) : undefined,
+              ip_address_status_id: row.ip_address_status ? resolveNameToId(row.ip_address_status, lookupData.ipAddressStatuses) : undefined,
+              prefix_status_id: row.prefix_status ? resolveNameToId(row.prefix_status, lookupData.prefixStatuses) : undefined,
+              port: row.port || undefined,
+              timeout: row.timeout || undefined,
+              tags: tagIds,
+              custom_fields: row.custom_fields,
+            }
+          })
 
         // Build default config from app settings
         const defaultConfig = {
-          location_id: defaults.location || '',
-          namespace_id: defaults.namespace || '',
-          role_id: defaults.device_role || '',
-          status_id: defaults.device_status || '',
-          platform_id: defaults.platform || 'detect',
-          secret_groups_id: defaults.secret_group || '',
-          interface_status_id: defaults.interface_status || '',
-          ip_address_status_id: defaults.ip_address_status || '',
-          prefix_status_id: defaults.ip_prefix_status || '',
+          location_id: defaults?.location || '',
+          namespace_id: defaults?.namespace || '',
+          role_id: defaults?.device_role || '',
+          status_id: defaults?.device_status || '',
+          platform_id: defaults?.platform || 'detect',
+          secret_groups_id: defaults?.secret_group || '',
+          interface_status_id: defaults?.interface_status || '',
+          ip_address_status_id: defaults?.ip_address_status || '',
+          prefix_status_id: defaults?.ip_prefix_status || '',
           port: 22,
           timeout: 30,
           onboarding_timeout: 120,
@@ -233,6 +321,7 @@ export function useCSVUpload() {
             body: {
               devices,
               default_config: defaultConfig,
+              parallel_jobs: parallelJobs,
             }
           }
         )
@@ -251,7 +340,7 @@ export function useCSVUpload() {
         return null
       }
     },
-    [callApi]
+    [callApi, parallelJobs]
   )
 
   return useMemo(
@@ -264,6 +353,12 @@ export function useCSVUpload() {
       taskId,
       submitError,
       parseError,
+      csvDelimiter,
+      csvQuoteChar,
+      parallelJobs,
+      setCsvDelimiter,
+      setCsvQuoteChar,
+      setParallelJobs,
       openModal,
       closeModal,
       resetState,
@@ -279,6 +374,9 @@ export function useCSVUpload() {
       taskId,
       submitError,
       parseError,
+      csvDelimiter,
+      csvQuoteChar,
+      parallelJobs,
       openModal,
       closeModal,
       resetState,

@@ -929,6 +929,7 @@ class NautobotDefault(Base):
     device_role = Column(String(255))
     secret_group = Column(String(255))
     csv_delimiter = Column(String(10), default=",")
+    csv_quote_char = Column(String(10), default='"')
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

@@ -106,6 +106,7 @@ class NautobotDefaults:
     device_role: str = ""
     secret_group: str = ""
     csv_delimiter: str = ","
+    csv_quote_char: str = '"'
 
 
 @dataclass
@@ -602,6 +603,7 @@ class SettingsManager:
                     "device_role": settings.device_role,
                     "secret_group": settings.secret_group,
                     "csv_delimiter": settings.csv_delimiter or ",",
+                    "csv_quote_char": settings.csv_quote_char or '"',
                 }
             else:
                 # Return default values if no record exists
@@ -628,6 +630,7 @@ class SettingsManager:
                 "device_role": defaults.get("device_role", ""),
                 "secret_group": defaults.get("secret_group", ""),
                 "csv_delimiter": defaults.get("csv_delimiter", ","),
+                "csv_quote_char": defaults.get("csv_quote_char", '"'),
             }
 
             if existing:
