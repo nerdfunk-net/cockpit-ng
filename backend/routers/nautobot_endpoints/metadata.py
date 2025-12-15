@@ -713,6 +713,23 @@ async def get_nautobot_device_custom_fields(
         )
 
 
+@router.get("/custom-fields/prefixes", summary="🔶 REST: List Prefix Custom Fields")
+async def get_nautobot_prefix_custom_fields(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
+    """Get Nautobot custom fields specifically for ipam.prefix content type."""
+    try:
+        result = await nautobot_service.rest_request(
+            "extras/custom-fields/?content_types=ipam.prefix"
+        )
+        return result.get("results", [])
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch prefix custom fields: {str(e)}",
+        )
+
+
 @router.get("/custom-field-choices/{custom_field_name}")
 async def get_nautobot_custom_field_choices(
     custom_field_name: str,

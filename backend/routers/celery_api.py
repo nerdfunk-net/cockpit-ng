@@ -1349,6 +1349,85 @@ async def trigger_ping_network(
     )
 
 
+class ScanPrefixesRequest(BaseModel):
+    custom_field_name: str
+    custom_field_value: str
+    response_custom_field_name: Optional[str] = None
+    resolve_dns: bool = False
+    ping_count: int = 3
+    timeout_ms: int = 500
+    retries: int = 3
+    interval_ms: int = 10
+
+
+@router.post("/tasks/scan-prefixes", response_model=TaskWithJobResponse)
+@handle_celery_errors("scan prefixes")
+async def trigger_scan_prefixes(
+    request: ScanPrefixesRequest,
+    current_user: dict = Depends(require_permission("network.scan", "execute")),
+):
+    """
+    Scan network prefixes from Nautobot filtered by custom field value.
+
+    This endpoint triggers a background task that:
+    1. Queries Nautobot for prefixes with specific custom field value using GraphQL
+    2. Expands prefixes to individual IP addresses
+    3. Pings all IPs using fping for efficiency
+    4. Optionally resolves DNS names for reachable hosts
+    5. Condenses unreachable IP ranges for compact display
+
+    The task is tracked in the job database and can be viewed in the Jobs/Views app.
+
+    Request Body:
+        custom_field_name: Name of custom field on ipam.prefix (without 'cf_' prefix)
+        custom_field_value: Value to filter prefixes by (e.g., 'true')
+        resolve_dns: Whether to resolve DNS names for reachable IPs (default: False)
+        ping_count: Number of pings per host (default: 3, range: 1-10)
+        timeout_ms: Individual target timeout in ms (default: 500, range: 100-30000)
+        retries: Number of retries (default: 3, range: 0-5)
+        interval_ms: Interval between packets in ms (default: 10, range: 0-10000)
+
+    Returns:
+        TaskWithJobResponse with task_id (for Celery) and job_id (for Jobs/Views tracking)
+    """
+    from tasks.scan_prefixes_task import scan_prefixes_task
+
+    if not request.custom_field_name:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="custom_field_name cannot be empty",
+        )
+
+    if not request.custom_field_value:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="custom_field_value cannot be empty",
+        )
+
+    # Trigger the task asynchronously
+    task = scan_prefixes_task.delay(
+        custom_field_name=request.custom_field_name,
+        custom_field_value=request.custom_field_value,
+        response_custom_field_name=request.response_custom_field_name,
+        resolve_dns=request.resolve_dns,
+        ping_count=request.ping_count,
+        timeout_ms=request.timeout_ms,
+        retries=request.retries,
+        interval_ms=request.interval_ms,
+        executed_by=current_user.get("username", "unknown"),
+    )
+
+    # Generate job_id that will be used by the task
+    job_id = f"scan_prefixes_{task.id}"
+
+    return TaskWithJobResponse(
+        task_id=task.id,
+        job_id=job_id,
+        status="queued",
+        message=f"Scan prefixes task queued (field: {request.custom_field_name}={request.custom_field_value}): {task.id}",
+    )
+
+
 @router.get("/device-backup-status", response_model=BackupCheckResponse)
 async def check_device_backups(
     force_refresh: bool = False,

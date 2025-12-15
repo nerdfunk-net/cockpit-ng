@@ -8,7 +8,7 @@ from datetime import datetime
 
 
 # Valid job template types (cache_devices removed - now handled by system tasks)
-JobTemplateType = Literal["backup", "compare_devices", "run_commands", "sync_devices"]
+JobTemplateType = Literal["backup", "compare_devices", "run_commands", "sync_devices", "scan_prefixes"]
 
 # Inventory source options
 InventorySource = Literal["all", "inventory"]
@@ -66,6 +66,49 @@ class JobTemplateBase(BaseModel):
         True,
         description="Whether to activate CheckMK changes after sync_devices job completes (only applies to sync_devices type)",
     )
+    scan_resolve_dns: bool = Field(
+        False,
+        description="Whether to resolve DNS names during network scanning (only applies to scan_prefixes type)",
+    )
+    scan_ping_count: Optional[int] = Field(
+        None,
+        ge=1,
+        le=10,
+        description="Number of ping attempts for each host (only applies to scan_prefixes type)",
+    )
+    scan_timeout_ms: Optional[int] = Field(
+        None,
+        ge=100,
+        le=30000,
+        description="Timeout in milliseconds for network operations (only applies to scan_prefixes type)",
+    )
+    scan_retries: Optional[int] = Field(
+        None,
+        ge=0,
+        le=5,
+        description="Number of retry attempts for failed operations (only applies to scan_prefixes type)",
+    )
+    scan_interval_ms: Optional[int] = Field(
+        None,
+        ge=0,
+        le=10000,
+        description="Interval in milliseconds between scan operations (only applies to scan_prefixes type)",
+    )
+    scan_custom_field_name: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="Name of the custom field to use for prefix selection (only applies to scan_prefixes type)",
+    )
+    scan_custom_field_value: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="Value of the custom field to filter prefixes (only applies to scan_prefixes type)",
+    )
+    scan_response_custom_field_name: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="Name of the custom field to write scan results to (only applies to scan_prefixes type)",
+    )
     is_global: bool = Field(
         False,
         description="Whether this template is global (available to all users) or private",
@@ -93,6 +136,14 @@ class JobTemplateUpdate(BaseModel):
     write_timestamp_to_custom_field: Optional[bool] = None
     timestamp_custom_field_name: Optional[str] = Field(None, max_length=255)
     activate_changes_after_sync: Optional[bool] = None
+    scan_resolve_dns: Optional[bool] = None
+    scan_ping_count: Optional[int] = Field(None, ge=1, le=10)
+    scan_timeout_ms: Optional[int] = Field(None, ge=100, le=30000)
+    scan_retries: Optional[int] = Field(None, ge=0, le=5)
+    scan_interval_ms: Optional[int] = Field(None, ge=0, le=10000)
+    scan_custom_field_name: Optional[str] = Field(None, max_length=255)
+    scan_custom_field_value: Optional[str] = Field(None, max_length=255)
+    scan_response_custom_field_name: Optional[str] = Field(None, max_length=255)
     is_global: Optional[bool] = None
 
 

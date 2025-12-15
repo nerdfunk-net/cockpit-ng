@@ -15,7 +15,7 @@ from sqlalchemy import (
     Index,
     LargeBinary,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 from core.database import Base
 
@@ -361,7 +361,10 @@ class JobSchedule(Base):
     next_run = Column(DateTime(timezone=True))
 
     # Relationship to JobTemplate
-    template = relationship("JobTemplate", backref="schedules")
+    template = relationship(
+        "JobTemplate",
+        backref=backref("schedules", cascade="all, delete-orphan")
+    )
 
 
 class JobTemplate(Base):
@@ -403,6 +406,28 @@ class JobTemplate(Base):
     activate_changes_after_sync = Column(
         Boolean, nullable=False, default=True
     )  # Whether to activate CheckMK changes after sync_devices job completes
+    scan_resolve_dns = Column(
+        Boolean, nullable=False, default=False
+    )  # Whether to resolve DNS names during network scanning (scan_prefixes type)
+    scan_ping_count = Column(Integer)  # Number of ping attempts (scan_prefixes type)
+    scan_timeout_ms = Column(
+        Integer
+    )  # Timeout in milliseconds for network operations (scan_prefixes type)
+    scan_retries = Column(
+        Integer
+    )  # Number of retry attempts for failed operations (scan_prefixes type)
+    scan_interval_ms = Column(
+        Integer
+    )  # Interval in milliseconds between scan operations (scan_prefixes type)
+    scan_custom_field_name = Column(
+        String(255)
+    )  # Name of custom field for prefix selection (scan_prefixes type)
+    scan_custom_field_value = Column(
+        String(255)
+    )  # Value of custom field to filter prefixes (scan_prefixes type)
+    scan_response_custom_field_name = Column(
+        String(255)
+    )  # Name of custom field to write scan results to (scan_prefixes type)
     is_global = Column(Boolean, nullable=False, default=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     created_by = Column(String(255))  # Username of creator

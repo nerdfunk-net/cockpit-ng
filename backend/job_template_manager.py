@@ -30,6 +30,14 @@ def create_job_template(
     write_timestamp_to_custom_field: bool = False,
     timestamp_custom_field_name: Optional[str] = None,
     activate_changes_after_sync: bool = True,
+    scan_resolve_dns: bool = False,
+    scan_ping_count: Optional[int] = None,
+    scan_timeout_ms: Optional[int] = None,
+    scan_retries: Optional[int] = None,
+    scan_interval_ms: Optional[int] = None,
+    scan_custom_field_name: Optional[str] = None,
+    scan_custom_field_value: Optional[str] = None,
+    scan_response_custom_field_name: Optional[str] = None,
     is_global: bool = False,
 ) -> Dict[str, Any]:
     """Create a new job template"""
@@ -52,6 +60,14 @@ def create_job_template(
         write_timestamp_to_custom_field=write_timestamp_to_custom_field,
         timestamp_custom_field_name=timestamp_custom_field_name,
         activate_changes_after_sync=activate_changes_after_sync,
+        scan_resolve_dns=scan_resolve_dns,
+        scan_ping_count=scan_ping_count,
+        scan_timeout_ms=scan_timeout_ms,
+        scan_retries=scan_retries,
+        scan_interval_ms=scan_interval_ms,
+        scan_custom_field_name=scan_custom_field_name,
+        scan_custom_field_value=scan_custom_field_value,
+        scan_response_custom_field_name=scan_response_custom_field_name,
         is_global=is_global,
         user_id=user_id if not is_global else None,
         created_by=created_by,
@@ -113,6 +129,14 @@ def update_job_template(
     write_timestamp_to_custom_field: Optional[bool] = None,
     timestamp_custom_field_name: Optional[str] = None,
     activate_changes_after_sync: Optional[bool] = None,
+    scan_resolve_dns: Optional[bool] = None,
+    scan_ping_count: Optional[int] = None,
+    scan_timeout_ms: Optional[int] = None,
+    scan_retries: Optional[int] = None,
+    scan_interval_ms: Optional[int] = None,
+    scan_custom_field_name: Optional[str] = None,
+    scan_custom_field_value: Optional[str] = None,
+    scan_response_custom_field_name: Optional[str] = None,
     is_global: Optional[bool] = None,
     user_id: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
@@ -150,6 +174,22 @@ def update_job_template(
         update_data["timestamp_custom_field_name"] = timestamp_custom_field_name
     if activate_changes_after_sync is not None:
         update_data["activate_changes_after_sync"] = activate_changes_after_sync
+    if scan_resolve_dns is not None:
+        update_data["scan_resolve_dns"] = scan_resolve_dns
+    if scan_ping_count is not None:
+        update_data["scan_ping_count"] = scan_ping_count
+    if scan_timeout_ms is not None:
+        update_data["scan_timeout_ms"] = scan_timeout_ms
+    if scan_retries is not None:
+        update_data["scan_retries"] = scan_retries
+    if scan_interval_ms is not None:
+        update_data["scan_interval_ms"] = scan_interval_ms
+    if scan_custom_field_name is not None:
+        update_data["scan_custom_field_name"] = scan_custom_field_name
+    if scan_custom_field_value is not None:
+        update_data["scan_custom_field_value"] = scan_custom_field_value
+    if scan_response_custom_field_name is not None:
+        update_data["scan_response_custom_field_name"] = scan_response_custom_field_name
     if is_global is not None:
         update_data["is_global"] = is_global
         if is_global:
@@ -201,6 +241,11 @@ def get_job_types() -> List[Dict[str, str]]:
             "label": "Sync Devices",
             "description": "Synchronize devices with CheckMK",
         },
+        {
+            "value": "scan_prefixes",
+            "label": "Scan Prefixes",
+            "description": "Scan network prefixes for devices",
+        },
     ]
 
 
@@ -221,6 +266,14 @@ def _model_to_dict(template) -> Dict[str, Any]:
         "write_timestamp_to_custom_field": template.write_timestamp_to_custom_field,
         "timestamp_custom_field_name": template.timestamp_custom_field_name,
         "activate_changes_after_sync": template.activate_changes_after_sync,
+        "scan_resolve_dns": template.scan_resolve_dns,
+        "scan_ping_count": template.scan_ping_count,
+        "scan_timeout_ms": template.scan_timeout_ms,
+        "scan_retries": template.scan_retries,
+        "scan_interval_ms": template.scan_interval_ms,
+        "scan_custom_field_name": template.scan_custom_field_name,
+        "scan_custom_field_value": template.scan_custom_field_value,
+        "scan_response_custom_field_name": template.scan_response_custom_field_name,
         "is_global": template.is_global,
         "user_id": template.user_id,
         "created_by": template.created_by,

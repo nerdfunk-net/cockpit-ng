@@ -42,6 +42,7 @@ def execute_job_type(
     from .backup_executor import execute_backup
     from .command_executor import execute_run_commands
     from .compare_executor import execute_compare_devices
+    from .scan_prefixes_executor import execute_scan_prefixes
 
     # Map job_type to execution function
     job_executors = {
@@ -50,6 +51,7 @@ def execute_job_type(
         "backup": execute_backup,
         "run_commands": execute_run_commands,
         "compare_devices": execute_compare_devices,
+        "scan_prefixes": execute_scan_prefixes,
     }
 
     executor = job_executors.get(job_type)

@@ -24,6 +24,7 @@ import { BackupJobTemplate } from "./job-template-types/BackupJobTemplate"
 import { RunCommandsJobTemplate } from "./job-template-types/RunCommandsJobTemplate"
 import { SyncDevicesJobTemplate } from "./job-template-types/SyncDevicesJobTemplate"
 import { CompareDevicesJobTemplate } from "./job-template-types/CompareDevicesJobTemplate"
+import { ScanPrefixesJobTemplate } from "./job-template-types/ScanPrefixesJobTemplate"
 
 interface JobTemplate {
   id: number
@@ -40,6 +41,14 @@ interface JobTemplate {
   write_timestamp_to_custom_field?: boolean
   timestamp_custom_field_name?: string
   activate_changes_after_sync?: boolean
+  scan_resolve_dns?: boolean
+  scan_ping_count?: number
+  scan_timeout_ms?: number
+  scan_retries?: number
+  scan_interval_ms?: number
+  scan_custom_field_name?: string
+  scan_custom_field_value?: string
+  scan_response_custom_field_name?: string
   is_global: boolean
   user_id?: number
   created_by?: string
@@ -127,6 +136,14 @@ export function JobTemplatesPage() {
   const [formWriteTimestampToCustomField, setFormWriteTimestampToCustomField] = useState(false)
   const [formTimestampCustomFieldName, setFormTimestampCustomFieldName] = useState("")
   const [formActivateChangesAfterSync, setFormActivateChangesAfterSync] = useState(true)
+  const [formScanResolveDns, setFormScanResolveDns] = useState(false)
+  const [formScanPingCount, setFormScanPingCount] = useState("")
+  const [formScanTimeoutMs, setFormScanTimeoutMs] = useState("")
+  const [formScanRetries, setFormScanRetries] = useState("")
+  const [formScanIntervalMs, setFormScanIntervalMs] = useState("")
+  const [formScanCustomFieldName, setFormScanCustomFieldName] = useState("")
+  const [formScanCustomFieldValue, setFormScanCustomFieldValue] = useState("")
+  const [formScanResponseCustomFieldName, setFormScanResponseCustomFieldName] = useState("")
   const [formIsGlobal, setFormIsGlobal] = useState(false)
 
   // Get job type label
@@ -148,6 +165,8 @@ export function JobTemplatesPage() {
         return "bg-cyan-500"
       case "sync_devices":
         return "bg-orange-500"
+      case "scan_prefixes":
+        return "bg-purple-500"
       default:
         return "bg-gray-500"
     }
@@ -327,6 +346,14 @@ export function JobTemplatesPage() {
     setFormWriteTimestampToCustomField(false)
     setFormTimestampCustomFieldName("")
     setFormActivateChangesAfterSync(true)
+    setFormScanResolveDns(false)
+    setFormScanPingCount("")
+    setFormScanTimeoutMs("")
+    setFormScanRetries("")
+    setFormScanIntervalMs("")
+    setFormScanCustomFieldName("")
+    setFormScanCustomFieldValue("")
+    setFormScanResponseCustomFieldName("")
     setFormIsGlobal(false)
     setEditingTemplate(null)
     setSavedInventories([])
@@ -347,6 +374,14 @@ export function JobTemplatesPage() {
     setFormWriteTimestampToCustomField(template.write_timestamp_to_custom_field ?? false)
     setFormTimestampCustomFieldName(template.timestamp_custom_field_name || "")
     setFormActivateChangesAfterSync(template.activate_changes_after_sync ?? true)
+    setFormScanResolveDns(template.scan_resolve_dns ?? false)
+    setFormScanPingCount(template.scan_ping_count?.toString() || "")
+    setFormScanTimeoutMs(template.scan_timeout_ms?.toString() || "")
+    setFormScanRetries(template.scan_retries?.toString() || "")
+    setFormScanIntervalMs(template.scan_interval_ms?.toString() || "")
+    setFormScanCustomFieldName(template.scan_custom_field_name || "")
+    setFormScanCustomFieldValue(template.scan_custom_field_value || "")
+    setFormScanResponseCustomFieldName(template.scan_response_custom_field_name || "")
     setFormIsGlobal(template.is_global)
     setIsDialogOpen(true)
   }, [])
@@ -424,6 +459,14 @@ export function JobTemplatesPage() {
         write_timestamp_to_custom_field: formJobType === "backup" ? formWriteTimestampToCustomField : undefined,
         timestamp_custom_field_name: formJobType === "backup" && formWriteTimestampToCustomField ? formTimestampCustomFieldName : undefined,
         activate_changes_after_sync: formJobType === "sync_devices" ? formActivateChangesAfterSync : undefined,
+        scan_resolve_dns: formJobType === "scan_prefixes" ? formScanResolveDns : undefined,
+        scan_ping_count: formJobType === "scan_prefixes" && formScanPingCount ? parseInt(formScanPingCount) : undefined,
+        scan_timeout_ms: formJobType === "scan_prefixes" && formScanTimeoutMs ? parseInt(formScanTimeoutMs) : undefined,
+        scan_retries: formJobType === "scan_prefixes" && formScanRetries ? parseInt(formScanRetries) : undefined,
+        scan_interval_ms: formJobType === "scan_prefixes" && formScanIntervalMs ? parseInt(formScanIntervalMs) : undefined,
+        scan_custom_field_name: formJobType === "scan_prefixes" ? formScanCustomFieldName : undefined,
+        scan_custom_field_value: formJobType === "scan_prefixes" ? formScanCustomFieldValue : undefined,
+        scan_response_custom_field_name: formJobType === "scan_prefixes" ? formScanResponseCustomFieldName : undefined,
         is_global: formIsGlobal
       }
 
@@ -490,7 +533,7 @@ export function JobTemplatesPage() {
         variant: "destructive"
       })
     }
-  }, [token, formName, formJobType, formDescription, formConfigRepoId, formInventorySource, formInventoryName, formCommandTemplate, formBackupRunningConfigPath, formBackupStartupConfigPath, formWriteTimestampToCustomField, formTimestampCustomFieldName, formActivateChangesAfterSync, formIsGlobal, editingTemplate, resetForm, fetchTemplates, toast])
+  }, [token, formName, formJobType, formDescription, formConfigRepoId, formInventorySource, formInventoryName, formCommandTemplate, formBackupRunningConfigPath, formBackupStartupConfigPath, formWriteTimestampToCustomField, formTimestampCustomFieldName, formActivateChangesAfterSync, formScanResolveDns, formScanPingCount, formScanTimeoutMs, formScanRetries, formScanIntervalMs, formScanCustomFieldName, formScanCustomFieldValue, formScanResponseCustomFieldName, formIsGlobal, editingTemplate, resetForm, fetchTemplates, toast])
 
   const handleDeleteTemplate = useCallback(async (templateId: number) => {
     if (!token) return
@@ -597,14 +640,17 @@ export function JobTemplatesPage() {
                 />
               )}
 
-              <JobTemplateInventorySection
-                formInventorySource={formInventorySource}
-                setFormInventorySource={setFormInventorySource}
-                formInventoryName={formInventoryName}
-                setFormInventoryName={setFormInventoryName}
-                savedInventories={savedInventories}
-                loadingInventories={loadingInventories}
-              />
+              {/* Inventory Section - Not shown for scan_prefixes */}
+              {formJobType !== "scan_prefixes" && (
+                <JobTemplateInventorySection
+                  formInventorySource={formInventorySource}
+                  setFormInventorySource={setFormInventorySource}
+                  formInventoryName={formInventoryName}
+                  setFormInventoryName={setFormInventoryName}
+                  savedInventories={savedInventories}
+                  loadingInventories={loadingInventories}
+                />
+              )}
 
               {/* Job Type Specific Sections */}
               {formJobType === "backup" && (
@@ -637,6 +683,27 @@ export function JobTemplatesPage() {
                 <SyncDevicesJobTemplate
                   formActivateChangesAfterSync={formActivateChangesAfterSync}
                   setFormActivateChangesAfterSync={setFormActivateChangesAfterSync}
+                />
+              )}
+
+              {formJobType === "scan_prefixes" && (
+                <ScanPrefixesJobTemplate
+                  formScanResolveDns={formScanResolveDns}
+                  setFormScanResolveDns={setFormScanResolveDns}
+                  formScanPingCount={formScanPingCount}
+                  setFormScanPingCount={setFormScanPingCount}
+                  formScanTimeoutMs={formScanTimeoutMs}
+                  setFormScanTimeoutMs={setFormScanTimeoutMs}
+                  formScanRetries={formScanRetries}
+                  setFormScanRetries={setFormScanRetries}
+                  formScanIntervalMs={formScanIntervalMs}
+                  setFormScanIntervalMs={setFormScanIntervalMs}
+                  formScanCustomFieldName={formScanCustomFieldName}
+                  setFormScanCustomFieldName={setFormScanCustomFieldName}
+                  formScanCustomFieldValue={formScanCustomFieldValue}
+                  setFormScanCustomFieldValue={setFormScanCustomFieldValue}
+                  formScanResponseCustomFieldName={formScanResponseCustomFieldName}
+                  setFormScanResponseCustomFieldName={setFormScanResponseCustomFieldName}
                 />
               )}
             </div>

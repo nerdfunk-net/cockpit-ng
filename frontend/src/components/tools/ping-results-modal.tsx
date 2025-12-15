@@ -131,10 +131,10 @@ export default function PingResultsModal({ taskId, onClose }: PingResultsModalPr
       <DialogContent className="!max-w-6xl max-h-[85vh] overflow-y-auto w-[90vw]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div className="bg-gradient-to-br from-emerald-100 to-teal-100 p-2 rounded-lg">
-              <Wifi className="w-5 h-5 text-emerald-600" />
+            <div className="bg-blue-100 p-2 rounded-lg">
+              <Wifi className="w-5 h-5 text-blue-600" />
             </div>
-            <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+            <span className="text-gray-900">
               Ping Network Results
             </span>
           </DialogTitle>
@@ -148,14 +148,14 @@ export default function PingResultsModal({ taskId, onClose }: PingResultsModalPr
 
         {/* Progress Section */}
         {(taskStatus === 'PENDING' || taskStatus === 'PROGRESS') && (
-          <div className="space-y-4 bg-gradient-to-br from-emerald-50 to-teal-50 p-6 rounded-lg border border-emerald-200">
+          <div className="space-y-4 bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
             <div className="flex items-center gap-3">
-              <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />
+              <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
               <span className="text-sm font-medium text-slate-700">
                 {progress?.status || 'Starting...'}
               </span>
             </div>
-            <Progress value={progressPercentage} className="w-full [&>div]:bg-gradient-to-r [&>div]:from-emerald-500 [&>div]:to-teal-500" />
+            <Progress value={progressPercentage} className="w-full [&>div]:bg-blue-600" />
             <div className="text-sm text-slate-600 font-medium">
               {progress?.current || 0} / {progress?.total || 0} processed
             </div>
@@ -167,7 +167,7 @@ export default function PingResultsModal({ taskId, onClose }: PingResultsModalPr
           <div className="space-y-4">
             {/* Summary */}
             <div className="grid grid-cols-4 gap-4">
-              <Card className="border-emerald-200 bg-gradient-to-br from-slate-50 to-slate-100">
+              <Card className="border-blue-200 bg-gradient-to-br from-slate-50 to-slate-100">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm text-slate-600 font-semibold">Total IPs</CardTitle>
                 </CardHeader>
@@ -175,7 +175,7 @@ export default function PingResultsModal({ taskId, onClose }: PingResultsModalPr
                   <div className="text-2xl font-bold text-slate-700">{taskResult.total_ips_scanned}</div>
                 </CardContent>
               </Card>
-              <Card className="border-teal-200 bg-gradient-to-br from-slate-50 to-slate-100">
+              <Card className="border-blue-200 bg-gradient-to-br from-slate-50 to-slate-100">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm text-slate-600 font-semibold">Networks</CardTitle>
                 </CardHeader>
@@ -208,16 +208,16 @@ export default function PingResultsModal({ taskId, onClose }: PingResultsModalPr
             {/* Network Results */}
             <div className="space-y-4">
               {taskResult.networks.map((network) => (
-                <Card key={network.network} className="border-l-4 border-l-emerald-500 shadow-md hover:shadow-lg transition-shadow">
-                  <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50">
+                <Card key={network.network} className="border-l-4 border-l-blue-500 shadow-md hover:shadow-lg transition-shadow overflow-hidden p-0">
+                  <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 border-b-0 rounded-none m-0 py-3 px-4">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg font-mono text-slate-700">{network.network}</CardTitle>
                       <div className="flex gap-2">
-                        <Badge variant="outline" className="bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border-green-300 font-semibold shadow-sm">
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300 font-semibold shadow-sm">
                           <CheckCircle className="w-3 h-3 mr-1" />
                           {network.reachable_count}
                         </Badge>
-                        <Badge variant="outline" className="bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border-red-300 font-semibold shadow-sm">
+                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300 font-semibold shadow-sm">
                           <XCircle className="w-3 h-3 mr-1" />
                           {network.unreachable_count}
                         </Badge>
@@ -228,7 +228,7 @@ export default function PingResultsModal({ taskId, onClose }: PingResultsModalPr
                     {/* Reachable IPs */}
                     {network.reachable.length > 0 && (
                       <div>
-                        <h4 className="text-sm font-semibold text-green-700 mb-3 flex items-center gap-2 bg-gradient-to-r from-green-50 to-emerald-50 p-2 rounded-md border border-green-200">
+                        <h4 className="text-sm font-semibold text-green-700 mb-3 flex items-center gap-2 bg-green-50 p-2 rounded-md border border-green-200">
                           <Wifi className="w-4 h-4" />
                           Reachable ({network.reachable_count})
                         </h4>
@@ -236,7 +236,7 @@ export default function PingResultsModal({ taskId, onClose }: PingResultsModalPr
                           {network.reachable.map((host) => (
                             <div
                               key={host.ip}
-                              className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-md border border-green-200 hover:border-green-300 transition-colors shadow-sm"
+                              className="flex items-center justify-between p-3 bg-green-50 rounded-md border border-green-200 hover:border-green-300 transition-colors shadow-sm"
                             >
                               <span className="font-mono text-sm font-medium text-slate-700">{host.ip}</span>
                               {host.hostname && (
@@ -251,7 +251,7 @@ export default function PingResultsModal({ taskId, onClose }: PingResultsModalPr
                     {/* Unreachable IPs */}
                     {network.unreachable.length > 0 && (
                       <div>
-                        <h4 className="text-sm font-semibold text-red-700 mb-3 flex items-center gap-2 bg-gradient-to-r from-red-50 to-rose-50 p-2 rounded-md border border-red-200">
+                        <h4 className="text-sm font-semibold text-red-700 mb-3 flex items-center gap-2 bg-red-50 p-2 rounded-md border border-red-200">
                           <WifiOff className="w-4 h-4" />
                           Unreachable ({network.unreachable_count})
                         </h4>
@@ -260,7 +260,7 @@ export default function PingResultsModal({ taskId, onClose }: PingResultsModalPr
                             <Badge
                               key={ipRange}
                               variant="outline"
-                              className="bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border-red-300 font-mono font-semibold shadow-sm hover:shadow transition-shadow"
+                              className="bg-red-50 text-red-700 border-red-300 font-mono font-semibold shadow-sm hover:shadow transition-shadow"
                             >
                               {ipRange}
                             </Badge>
@@ -277,7 +277,7 @@ export default function PingResultsModal({ taskId, onClose }: PingResultsModalPr
 
         {/* Error Section */}
         {taskStatus === 'FAILURE' && taskResult && !taskResult.success && (
-          <Card className="bg-gradient-to-br from-red-50 to-rose-50 border-red-300 shadow-md">
+          <Card className="bg-red-50 border-red-300 shadow-md">
             <CardContent className="pt-6">
               <div className="flex items-start gap-3">
                 <div className="bg-red-100 p-2 rounded-lg">

@@ -105,37 +105,67 @@ def _fping_networks(
             text=True,
         )
 
-        # Parse fping output
-        # Format examples:
-        # "8.8.8.8 is alive"
-        # "8.8.8.8 : duplicate for [0], 64 bytes, 538 ms"
-        # "100.113.172.23 is unreachable"
+        # Log raw fping output for debugging
+        logger.info(f"fping return code: {result.returncode}")
+        logger.info(f"fping stdout length: {len(result.stdout) if result.stdout else 0} bytes")
+        logger.info(f"fping stderr length: {len(result.stderr) if result.stderr else 0} bytes")
 
-        # Process both stdout and stderr as fping can output to both
+        # Parse fping output
+        # When using -c flag, fping outputs statistics format in STDERR:
+        # "192.168.178.1   : xmt/rcv/%loss = 3/1/66%, min/avg/max = 0.05/0.05/0.05"
+        # "192.168.178.2   : xmt/rcv/%loss = 3/0/100%"
+        #
+        # We look for lines with "xmt/rcv/%loss" where rcv > 0
+
+        # Process both stdout and stderr as fping outputs to both
         all_output = ""
         if result.stdout:
             all_output += result.stdout
         if result.stderr:
             all_output += result.stderr
 
+        logger.info(f"Combined output length: {len(all_output)} bytes")
+
         if all_output:
-            for line in all_output.strip().split("\n"):
+            lines = all_output.strip().split("\n")
+            logger.info(f"Parsing {len(lines)} total lines from fping output")
+
+            # Count lines with statistics format
+            stats_lines = 0
+            
+            for idx, line in enumerate(lines):
                 line = line.strip()
                 if not line:
                     continue
 
-                # Extract IP address from the beginning of the line
-                parts = line.split()
-                if len(parts) >= 3:
-                    ip = parts[0]
-                    status_indicator = parts[1] + " " + parts[2]  # "is alive" or "is unreachable"
+                # Look for statistics lines: "IP : xmt/rcv/%loss = ..."
+                if "xmt/rcv/%loss" in line:
+                    stats_lines += 1
+                    parts = line.split()
+                    if len(parts) >= 1:
+                        ip = parts[0]
+                        
+                        if _is_valid_ip(ip):
+                            # Parse the rcv count from "xmt/rcv/%loss = X/Y/Z%"
+                            # Example: "192.168.178.1   : xmt/rcv/%loss = 3/2/33%"
+                            try:
+                                # Find the stats part after "="
+                                stats_part = line.split("=")[1].strip()
+                                # Split "3/2/33%" and get rcv count (second number)
+                                stats = stats_part.split("/")
+                                rcv_count = int(stats[1])
+                                
+                                if rcv_count > 0:
+                                    alive_ips.add(ip)
+                                    logger.info(f"Found alive IP: {ip} (rcv={rcv_count})")
+                            except (IndexError, ValueError) as e:
+                                logger.warning(f"Failed to parse statistics line: {line} - {e}")
 
-                    if _is_valid_ip(ip):
-                        if "is alive" in status_indicator:
-                            alive_ips.add(ip)
-                        # We ignore "is unreachable" and other statuses (like duplicates)
+            logger.info(f"Processed {stats_lines} statistics lines")
 
         logger.info(f"fping discovered {len(alive_ips)} alive hosts out of {len(ip_list)} targets")
+        if alive_ips:
+            logger.info(f"Alive IPs: {sorted(list(alive_ips))[:50]}")  # Log first 50 alive IPs
 
     except subprocess.TimeoutExpired:
         logger.warning("fping command timed out")
