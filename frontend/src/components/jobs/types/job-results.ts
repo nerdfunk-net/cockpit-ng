@@ -151,6 +151,28 @@ export interface RunCommandsJobResult {
 }
 
 // ============================================================================
+// Bulk Onboard Job Result Types
+// ============================================================================
+
+export interface BulkOnboardDeviceResult {
+  device_id: string
+  device_name: string
+  ip_address: string
+  status: 'success' | 'failed'
+  message: string
+  job_id?: string
+}
+
+export interface BulkOnboardJobResult {
+  device_count: number
+  successful_devices: number
+  failed_devices: number
+  devices: BulkOnboardDeviceResult[]
+  // Index signature for compatibility with Record<string, unknown>
+  [key: string]: unknown
+}
+
+// ============================================================================
 // Export Devices Job Result Types
 // ============================================================================
 
@@ -207,7 +229,7 @@ export interface GenericJobResult {
  */
 export function isBackupJobResult(result: Record<string, unknown>): result is BackupJobResult {
   return (
-    'backed_up_devices' in result || 
+    'backed_up_devices' in result ||
     ('devices_backed_up' in result && 'devices_failed' in result)
   )
 }
@@ -238,6 +260,7 @@ export function isRunCommandsJobResult(result: Record<string, unknown>): result 
  * Check if result is an export_devices job result.
  * Has file_path and export_format fields.
  */
+
 export function isExportDevicesJobResult(result: Record<string, unknown>): result is ExportDevicesJobResult {
   return (
     'export_format' in result &&
@@ -245,6 +268,19 @@ export function isExportDevicesJobResult(result: Record<string, unknown>): resul
     'filename' in result
   )
 }
+
+/**
+ * Check if result is a bulk_onboard job result.
+ * Has device_count and devices array.
+ */
+export function isBulkOnboardJobResult(result: Record<string, unknown>): result is BulkOnboardJobResult {
+  return (
+    'device_count' in result &&
+    'devices' in result &&
+    Array.isArray(result.devices)
+  )
+}
+
 
 // ============================================================================
 // Utility Functions
