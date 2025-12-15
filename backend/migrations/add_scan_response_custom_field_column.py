@@ -1,7 +1,7 @@
 """
 Migration: Add scan_response_custom_field_name column to job_templates table
 
-This migration adds the scan_response_custom_field_name column to the job_templates 
+This migration adds the scan_response_custom_field_name column to the job_templates
 table to support writing scan results to a custom field in the "Scan Prefixes" job type.
 
 Run this migration once to update existing databases.
@@ -41,7 +41,9 @@ def upgrade():
         existing_columns = [row[0] for row in result]
 
         if "scan_response_custom_field_name" in existing_columns:
-            logger.info("Column scan_response_custom_field_name already exists, skipping migration")
+            logger.info(
+                "Column scan_response_custom_field_name already exists, skipping migration"
+            )
             return
 
         # Add scan_response_custom_field_name column
@@ -85,7 +87,9 @@ def downgrade():
         existing_columns = [row[0] for row in result]
 
         if "scan_response_custom_field_name" not in existing_columns:
-            logger.info("Column scan_response_custom_field_name does not exist, skipping downgrade")
+            logger.info(
+                "Column scan_response_custom_field_name does not exist, skipping downgrade"
+            )
             return
 
         # Remove scan_response_custom_field_name column

@@ -280,18 +280,26 @@ class DeviceCreationService:
 
                             variables = {
                                 "filter": [interface.ip_address],
-                                "namespace": [interface.namespace]
+                                "namespace": [interface.namespace],
                             }
 
-                            result = await nautobot_service.graphql_query(query, variables)
+                            result = await nautobot_service.graphql_query(
+                                query, variables
+                            )
 
-                            if result and "data" in result and "ip_addresses" in result["data"]:
+                            if (
+                                result
+                                and "data" in result
+                                and "ip_addresses" in result["data"]
+                            ):
                                 ip_addresses = result["data"]["ip_addresses"]
                                 if ip_addresses and len(ip_addresses) > 0:
                                     existing_ip = ip_addresses[0]
                                     ip_id = existing_ip["id"]
                                     ip_address_map[interface.name] = ip_id
-                                    workflow_status["step2_ip_addresses"]["data"].append(
+                                    workflow_status["step2_ip_addresses"][
+                                        "data"
+                                    ].append(
                                         {
                                             "interface": interface.name,
                                             "ip_address": interface.ip_address,

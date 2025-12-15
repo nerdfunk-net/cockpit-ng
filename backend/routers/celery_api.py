@@ -74,7 +74,9 @@ class BulkOnboardDevicesRequest(BaseModel):
 
     devices: List[BulkOnboardDeviceConfig]
     default_config: Dict  # Default values for missing device-specific fields
-    parallel_jobs: Optional[int] = 1  # Number of parallel jobs to create (default: 1 = sequential)
+    parallel_jobs: Optional[int] = (
+        1  # Number of parallel jobs to create (default: 1 = sequential)
+    )
 
 
 class SyncDevicesToCheckmkRequest(BaseModel):
@@ -271,7 +273,7 @@ async def trigger_bulk_onboard_devices(
 
     # Determine number of parallel jobs (clamp to reasonable range)
     parallel_jobs = max(1, min(request.parallel_jobs or 1, device_count))
-    
+
     # Single job mode (original behavior)
     if parallel_jobs == 1:
         task = bulk_onboard_devices_task.delay(
@@ -292,7 +294,9 @@ async def trigger_bulk_onboard_devices(
             job_run_id = job_run.get("id")
             if job_run_id:
                 job_run_manager.mark_started(job_run_id, task.id)
-                logger.info(f"Created job run {job_run_id} for bulk onboard task {task.id}")
+                logger.info(
+                    f"Created job run {job_run_id} for bulk onboard task {task.id}"
+                )
         except Exception as e:
             logger.warning(f"Failed to create job run entry: {e}")
 
@@ -301,26 +305,26 @@ async def trigger_bulk_onboard_devices(
             status="queued",
             message=f"Bulk onboarding task queued for {device_count} devices: {task.id}",
         )
-    
+
     # Parallel jobs mode - split devices into batches
     batch_size = math.ceil(device_count / parallel_jobs)
     task_ids = []
-    
+
     for batch_num in range(parallel_jobs):
         start_idx = batch_num * batch_size
         end_idx = min(start_idx + batch_size, device_count)
         batch_devices = devices_data[start_idx:end_idx]
-        
+
         if not batch_devices:
             continue
-            
+
         # Create task for this batch
         task = bulk_onboard_devices_task.delay(
             devices=batch_devices,
             default_config=request.default_config,
         )
         task_ids.append(task.id)
-        
+
         # Create job run entry for this batch
         ip_addresses = [d.get("ip_address", "unknown") for d in batch_devices]
         try:
@@ -334,10 +338,14 @@ async def trigger_bulk_onboard_devices(
             job_run_id = job_run.get("id")
             if job_run_id:
                 job_run_manager.mark_started(job_run_id, task.id)
-                logger.info(f"Created job run {job_run_id} for batch {batch_num + 1} task {task.id}")
+                logger.info(
+                    f"Created job run {job_run_id} for batch {batch_num + 1} task {task.id}"
+                )
         except Exception as e:
-            logger.warning(f"Failed to create job run entry for batch {batch_num + 1}: {e}")
-    
+            logger.warning(
+                f"Failed to create job run entry for batch {batch_num + 1}: {e}"
+            )
+
     return TaskResponse(
         task_id=",".join(task_ids),  # Return comma-separated task IDs
         status="queued",
@@ -838,6 +846,7 @@ class ExportDevicesRequest(BaseModel):
 
 class PreviewExportRequest(BaseModel):
     """Request model for previewing export data."""
+
     device_ids: List[str]
     properties: List[str]
     max_devices: int = 5
@@ -847,6 +856,7 @@ class PreviewExportRequest(BaseModel):
 
 class PreviewExportResponse(BaseModel):
     """Response model for preview data."""
+
     success: bool
     preview_content: str  # The actual CSV/YAML preview content
     total_devices: int
@@ -877,7 +887,12 @@ async def preview_export_devices(
         PreviewExportResponse with full device data for preview
     """
     from services.nautobot import NautobotService
-    from tasks.export_devices_task import _build_graphql_query, _filter_device_properties, _export_to_yaml, _export_to_csv
+    from tasks.export_devices_task import (
+        _build_graphql_query,
+        _filter_device_properties,
+        _export_to_yaml,
+        _export_to_csv,
+    )
 
     try:
         if not request.device_ids:
@@ -893,7 +908,7 @@ async def preview_export_devices(
             )
 
         # Limit to first N devices for preview
-        preview_device_ids = request.device_ids[:request.max_devices]
+        preview_device_ids = request.device_ids[: request.max_devices]
 
         # Build GraphQL query with all requested properties
         query = _build_graphql_query(request.properties)
@@ -917,14 +932,14 @@ async def preview_export_devices(
                 preview_content="",
                 total_devices=len(request.device_ids),
                 previewed_devices=0,
-                message="No devices found in Nautobot"
+                message="No devices found in Nautobot",
             )
 
         # Filter to requested properties
         filtered_devices = _filter_device_properties(devices, request.properties)
 
         # Generate preview content using the same export functions
-        export_format = request.export_format.strip().rstrip('_')
+        export_format = request.export_format.strip().rstrip("_")
         if export_format == "yaml":
             preview_content = _export_to_yaml(filtered_devices)
         elif export_format == "csv":
@@ -933,7 +948,7 @@ async def preview_export_devices(
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unsupported export format: {export_format}"
+                detail=f"Unsupported export format: {export_format}",
             )
 
         # Add note about additional devices if truncated
@@ -949,7 +964,7 @@ async def preview_export_devices(
             preview_content=preview_content,
             total_devices=len(request.device_ids),
             previewed_devices=len(filtered_devices),
-            message=f"Successfully previewed {len(filtered_devices)} of {len(request.device_ids)} devices"
+            message=f"Successfully previewed {len(filtered_devices)} of {len(request.device_ids)} devices",
         )
 
     except HTTPException:
@@ -958,7 +973,7 @@ async def preview_export_devices(
         logger.error(f"Error previewing export: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to preview export: {str(e)}"
+            detail=f"Failed to preview export: {str(e)}",
         )
 
 
@@ -1105,23 +1120,23 @@ async def download_export_file(
     filename = task_result.get("filename", os.path.basename(file_path))
     export_format = task_result.get("export_format", "yaml")
 
-    logger.info(f"Download endpoint - RAW values from task_result:")
+    logger.info("Download endpoint - RAW values from task_result:")
     logger.info(f"  - filename: '{filename}'")
     logger.info(f"  - export_format: '{export_format}'")
     logger.info(f"  - file_path: '{file_path}'")
 
     # Sanitize export_format and filename (remove trailing underscores)
-    export_format = export_format.strip().rstrip('_')
-    filename = filename.strip().rstrip('_')
+    export_format = export_format.strip().rstrip("_")
+    filename = filename.strip().rstrip("_")
 
-    logger.info(f"Download endpoint - SANITIZED values:")
+    logger.info("Download endpoint - SANITIZED values:")
     logger.info(f"  - filename: '{filename}'")
     logger.info(f"  - export_format: '{export_format}'")
 
     # Determine media type
     media_type = "application/x-yaml" if export_format == "yaml" else "text/csv"
 
-    logger.info(f"Download endpoint - FileResponse parameters:")
+    logger.info("Download endpoint - FileResponse parameters:")
     logger.info(f"  - path: '{file_path}'")
     logger.info(f"  - filename: '{filename}'")
     logger.info(f"  - media_type: '{media_type}'")
@@ -1133,9 +1148,11 @@ async def download_export_file(
     )
     # Manually set Content-Disposition header to ensure correct filename
     # Don't quote the filename - browsers interpret quotes differently (Safari includes them in filename)
-    response.headers["Content-Disposition"] = f'attachment; filename={filename}'
+    response.headers["Content-Disposition"] = f"attachment; filename={filename}"
 
-    logger.info(f"Download endpoint - Content-Disposition header: {response.headers['Content-Disposition']}")
+    logger.info(
+        f"Download endpoint - Content-Disposition header: {response.headers['Content-Disposition']}"
+    )
 
     return response
 
@@ -1314,6 +1331,7 @@ async def trigger_ping_network(
     for cidr in request.cidrs:
         try:
             import ipaddress
+
             network = ipaddress.ip_network(cidr, strict=False)
             # Enforce /19 minimum (as specified)
             if network.prefixlen < 19:
@@ -1321,7 +1339,7 @@ async def trigger_ping_network(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"CIDR network too large (minimum /19): {cidr}",
                 )
-        except ValueError as e:
+        except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid CIDR format: {cidr}",

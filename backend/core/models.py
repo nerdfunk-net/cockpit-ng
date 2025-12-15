@@ -362,8 +362,7 @@ class JobSchedule(Base):
 
     # Relationship to JobTemplate
     template = relationship(
-        "JobTemplate",
-        backref=backref("schedules", cascade="all, delete-orphan")
+        "JobTemplate", backref=backref("schedules", cascade="all, delete-orphan")
     )
 
 

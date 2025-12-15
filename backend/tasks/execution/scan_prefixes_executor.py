@@ -75,8 +75,10 @@ def execute_scan_prefixes(
         interval_ms = template.get("scan_interval_ms") or 10
 
         logger.info(f"Scanning prefixes with {custom_field_name}={custom_field_value}")
-        logger.info(f"Scan options: resolve_dns={resolve_dns}, ping_count={ping_count}, "
-                   f"timeout={timeout_ms}ms, retries={retries}, interval={interval_ms}ms")
+        logger.info(
+            f"Scan options: resolve_dns={resolve_dns}, ping_count={ping_count}, "
+            f"timeout={timeout_ms}ms, retries={retries}, interval={interval_ms}ms"
+        )
 
         # Execute the scan logic directly (the job_run is already created by dispatcher)
         # Pass task_context=None to prevent creating a duplicate job_run

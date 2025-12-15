@@ -7,7 +7,6 @@ from celery import shared_task
 import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-import socket
 
 import job_run_manager
 from services.nautobot import NautobotService
@@ -17,8 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def _fetch_prefixes_by_custom_field(
-    custom_field_name: str,
-    custom_field_value: str
+    custom_field_name: str, custom_field_value: str
 ) -> List[str]:
     """
     Fetch prefixes from Nautobot filtered by custom field value using GraphQL.
@@ -72,33 +70,33 @@ def _update_ip_in_nautobot(
 ) -> bool:
     """
     Update or create IP address in Nautobot with scan date using REST API.
-    
+
     Args:
         ip_address: IP address to update/create (e.g., '192.168.1.1')
         prefix_cidr: Parent prefix CIDR (e.g., '192.168.1.0/24')
         response_custom_field_name: Custom field name to write scan date
         dns_name: Optional DNS name from reverse lookup
-        
+
     Returns:
         bool: True if successful, False otherwise
     """
     import requests
     from services.nautobot import nautobot_service
-    
+
     current_date = datetime.now().strftime("%Y-%m-%d")
-    
+
     try:
         config = nautobot_service._get_config()
         if not config["url"] or not config["token"]:
             logger.error("Nautobot URL and token must be configured")
             return False
-            
+
         base_url = config["url"].rstrip("/")
         headers = {
             "Authorization": f"Token {config['token']}",
             "Content-Type": "application/json",
         }
-        
+
         # Step 1: Check if IP address exists
         response = requests.get(
             f"{base_url}/api/ipam/ip-addresses/",
@@ -106,46 +104,48 @@ def _update_ip_in_nautobot(
             params={"address": ip_address},
         )
         response.raise_for_status()
-        
+
         results = response.json().get("results", [])
-        
+
         if results:
             # IP exists, update it
             ip_id = results[0].get("id")
             logger.info(f"Updating existing IP {ip_address} (ID: {ip_id})")
-            logger.info(f"Setting custom field '{response_custom_field_name}' = '{current_date}'")
-            
+            logger.info(
+                f"Setting custom field '{response_custom_field_name}' = '{current_date}'"
+            )
+
             # Custom fields nested without cf_ prefix for REST API PATCH
-            update_data = {
-                "custom_fields": {
-                    response_custom_field_name: current_date
-                }
-            }
-            
+            update_data = {"custom_fields": {response_custom_field_name: current_date}}
+
             logger.info(f"Update data: {update_data}")
-            
+
             response = requests.patch(
                 f"{base_url}/api/ipam/ip-addresses/{ip_id}/",
                 headers=headers,
                 json=update_data,
             )
-            
+
             if not response.ok:
                 logger.error(f"Failed to update IP. Status: {response.status_code}")
                 logger.error(f"Response body: {response.text}")
-            
+
             response.raise_for_status()
-            
+
             # Verify the update
             updated_ip = response.json()
-            updated_cf_value = updated_ip.get("custom_fields", {}).get(response_custom_field_name)
-            logger.info(f"Updated IP {ip_address} with custom field {response_custom_field_name}={updated_cf_value}")
+            updated_cf_value = updated_ip.get("custom_fields", {}).get(
+                response_custom_field_name
+            )
+            logger.info(
+                f"Updated IP {ip_address} with custom field {response_custom_field_name}={updated_cf_value}"
+            )
             return True
-            
+
         else:
             # IP doesn't exist, create it
             logger.info(f"Creating new IP {ip_address} in prefix {prefix_cidr}")
-            
+
             # First, get the prefix ID
             response = requests.get(
                 f"{base_url}/api/ipam/prefixes/",
@@ -153,14 +153,14 @@ def _update_ip_in_nautobot(
                 params={"prefix": prefix_cidr},
             )
             response.raise_for_status()
-            
+
             prefixes = response.json().get("results", [])
             if not prefixes:
                 logger.error(f"Prefix {prefix_cidr} not found in Nautobot")
                 return False
-                
+
             prefix_id = prefixes[0].get("id")
-            
+
             # Get the "Active" status ID
             response = requests.get(
                 f"{base_url}/api/extras/statuses/",
@@ -168,48 +168,52 @@ def _update_ip_in_nautobot(
                 params={"name": "Active"},
             )
             response.raise_for_status()
-            
+
             statuses = response.json().get("results", [])
             if not statuses:
                 logger.error("Active status not found in Nautobot")
                 return False
-                
+
             status_id = statuses[0].get("id")
-            
+
             # Create new IP address with custom fields nested
             create_data = {
                 "address": ip_address,
                 "status": {"id": status_id},
                 "parent": {"id": prefix_id},
-                "custom_fields": {
-                    response_custom_field_name: current_date
-                }
+                "custom_fields": {response_custom_field_name: current_date},
             }
-            
+
             if dns_name:
                 create_data["dns_name"] = dns_name
-            
-            logger.info(f"Creating IP with custom field '{response_custom_field_name}' = '{current_date}'")
+
+            logger.info(
+                f"Creating IP with custom field '{response_custom_field_name}' = '{current_date}'"
+            )
             logger.info(f"Create data: {create_data}")
-            
+
             response = requests.post(
                 f"{base_url}/api/ipam/ip-addresses/",
                 headers=headers,
                 json=create_data,
             )
-            
+
             if not response.ok:
                 logger.error(f"Failed to create IP. Status: {response.status_code}")
                 logger.error(f"Response body: {response.text}")
-                
+
             response.raise_for_status()
-            
+
             # Verify the creation
             created_ip = response.json()
-            created_cf_value = created_ip.get("custom_fields", {}).get(response_custom_field_name)
-            logger.info(f"Created IP {ip_address} with custom field {response_custom_field_name}={created_cf_value}")
+            created_cf_value = created_ip.get("custom_fields", {}).get(
+                response_custom_field_name
+            )
+            logger.info(
+                f"Created IP {ip_address} with custom field {response_custom_field_name}={created_cf_value}"
+            )
             return True
-            
+
     except Exception as e:
         logger.error(f"Error updating IP {ip_address} in Nautobot: {e}", exc_info=True)
         return False
@@ -220,30 +224,30 @@ def _update_prefix_last_scan(
 ) -> bool:
     """
     Update prefix's last_scan custom field with current date using REST API.
-    
+
     Args:
         prefix_cidr: Prefix CIDR (e.g., '192.168.1.0/24')
-        
+
     Returns:
         bool: True if successful, False otherwise
     """
     import requests
     from services.nautobot import nautobot_service
-    
+
     current_date = datetime.now().strftime("%Y-%m-%d")
-    
+
     try:
         config = nautobot_service._get_config()
         if not config["url"] or not config["token"]:
             logger.error("Nautobot URL and token must be configured")
             return False
-            
+
         base_url = config["url"].rstrip("/")
         headers = {
             "Authorization": f"Token {config['token']}",
             "Content-Type": "application/json",
         }
-        
+
         # Get prefix
         response = requests.get(
             f"{base_url}/api/ipam/prefixes/",
@@ -251,21 +255,17 @@ def _update_prefix_last_scan(
             params={"prefix": prefix_cidr},
         )
         response.raise_for_status()
-        
+
         prefixes = response.json().get("results", [])
         if not prefixes:
             logger.error(f"Prefix {prefix_cidr} not found")
             return False
-            
+
         prefix_id = prefixes[0].get("id")
-        
+
         # Update last_scan custom field
-        update_data = {
-            "custom_fields": {
-                "last_scan": current_date
-            }
-        }
-        
+        update_data = {"custom_fields": {"last_scan": current_date}}
+
         response = requests.patch(
             f"{base_url}/api/ipam/prefixes/{prefix_id}/",
             headers=headers,
@@ -274,7 +274,7 @@ def _update_prefix_last_scan(
         response.raise_for_status()
         logger.info(f"Updated prefix {prefix_cidr} last_scan to {current_date}")
         return True
-        
+
     except Exception as e:
         logger.error(f"Error updating prefix {prefix_cidr}: {e}", exc_info=True)
         return False
@@ -340,17 +340,19 @@ def _execute_scan_prefixes(
             # Mark job as started with our task ID
             job_run_manager.mark_started(job_run_id, task_context.request.id)
 
-        logger.info(f"Scan prefixes task started: custom_field={custom_field_name}, value={custom_field_value}")
+        logger.info(
+            f"Scan prefixes task started: custom_field={custom_field_name}, value={custom_field_value}"
+        )
 
         # Step 1: Fetch prefixes from Nautobot
         if task_context:
             task_context.update_state(
-                state='PROGRESS',
+                state="PROGRESS",
                 meta={
-                    'status': f'Fetching prefixes with {custom_field_name}={custom_field_value}...',
-                    'current': 0,
-                    'total': 1,
-                }
+                    "status": f"Fetching prefixes with {custom_field_name}={custom_field_value}...",
+                    "current": 0,
+                    "total": 1,
+                },
             )
 
         cidrs = _fetch_prefixes_by_custom_field(custom_field_name, custom_field_value)
@@ -378,12 +380,12 @@ def _execute_scan_prefixes(
 
         if task_context:
             task_context.update_state(
-                state='PROGRESS',
+                state="PROGRESS",
                 meta={
-                    'status': 'Expanding prefixes to IP addresses...',
-                    'current': 0,
-                    'total': len(cidrs),
-                }
+                    "status": "Expanding prefixes to IP addresses...",
+                    "current": 0,
+                    "total": len(cidrs),
+                },
             )
 
         for idx, cidr in enumerate(cidrs):
@@ -399,12 +401,12 @@ def _execute_scan_prefixes(
         # Step 3: Ping all IPs using fping
         if task_context:
             task_context.update_state(
-                state='PROGRESS',
+                state="PROGRESS",
                 meta={
-                    'status': f'Pinging {len(all_ips)} IP addresses...',
-                    'current': 0,
-                    'total': len(all_ips),
-                }
+                    "status": f"Pinging {len(all_ips)} IP addresses...",
+                    "current": 0,
+                    "total": len(all_ips),
+                },
             )
 
         alive_ips = _fping_networks(
@@ -412,9 +414,11 @@ def _execute_scan_prefixes(
             count=ping_count,
             timeout=timeout_ms,
             retry=retries,
-            interval=interval_ms
+            interval=interval_ms,
         )
-        logger.info(f"fping found {len(alive_ips)} alive hosts out of {len(all_ips)} targets")
+        logger.info(
+            f"fping found {len(alive_ips)} alive hosts out of {len(all_ips)} targets"
+        )
 
         # Step 4: Process results per prefix
         prefix_results: List[Dict[str, Any]] = []
@@ -422,12 +426,12 @@ def _execute_scan_prefixes(
         for idx, (cidr, cidr_ips) in enumerate(prefix_ips.items()):
             if task_context:
                 task_context.update_state(
-                    state='PROGRESS',
+                    state="PROGRESS",
                     meta={
-                        'status': f'Processing prefix {idx + 1}/{len(cidrs)}...',
-                        'current': idx + 1,
-                        'total': len(cidrs),
-                    }
+                        "status": f"Processing prefix {idx + 1}/{len(cidrs)}...",
+                        "current": idx + 1,
+                        "total": len(cidrs),
+                    },
                 )
 
             reachable: List[Dict[str, str]] = []
@@ -437,14 +441,14 @@ def _execute_scan_prefixes(
                 if ip in alive_ips:
                     ip_data = {"ip": ip}
                     hostname = None
-                    
+
                     if resolve_dns:
                         hostname = _resolve_dns(ip)
                         if hostname:
                             ip_data["hostname"] = hostname
-                    
+
                     reachable.append(ip_data)
-                    
+
                     # Update Nautobot if response custom field is specified
                     if response_custom_field_name:
                         try:
@@ -461,7 +465,7 @@ def _execute_scan_prefixes(
 
             # Condense unreachable ranges
             unreachable_condensed = _condense_ip_ranges(unreachable)
-            
+
             # Update prefix last_scan custom field if response field is specified
             if response_custom_field_name:
                 try:
@@ -469,14 +473,16 @@ def _execute_scan_prefixes(
                 except Exception as e:
                     logger.error(f"Failed to update prefix {cidr} last_scan: {e}")
 
-            prefix_results.append({
-                "prefix": cidr,
-                "total_ips": len(cidr_ips),
-                "reachable_count": len(reachable),
-                "unreachable_count": len(unreachable),
-                "reachable": reachable,
-                "unreachable": unreachable_condensed,
-            })
+            prefix_results.append(
+                {
+                    "prefix": cidr,
+                    "total_ips": len(cidr_ips),
+                    "reachable_count": len(reachable),
+                    "unreachable_count": len(unreachable),
+                    "reachable": reachable,
+                    "unreachable": unreachable_condensed,
+                }
+            )
 
         result = {
             "success": True,
@@ -492,12 +498,11 @@ def _execute_scan_prefixes(
 
         # Mark job as completed if we created it
         if created_job_run and job_run_id:
-            job_run_manager.mark_completed(
-                job_run_id,
-                result=result
-            )
+            job_run_manager.mark_completed(job_run_id, result=result)
 
-        logger.info(f"Scan prefixes task completed: {len(alive_ips)}/{len(all_ips)} reachable")
+        logger.info(
+            f"Scan prefixes task completed: {len(alive_ips)}/{len(all_ips)} reachable"
+        )
         return result
 
     except Exception as e:
@@ -505,10 +510,7 @@ def _execute_scan_prefixes(
 
         # Mark job as failed if we created it
         if created_job_run and job_run_id:
-            job_run_manager.mark_failed(
-                job_run_id,
-                error_message=str(e)
-            )
+            job_run_manager.mark_failed(job_run_id, error_message=str(e))
 
         return {
             "success": False,
@@ -528,7 +530,7 @@ def scan_prefixes_task(
     timeout_ms: int = 500,
     retries: int = 3,
     interval_ms: int = 10,
-    executed_by: str = "unknown"
+    executed_by: str = "unknown",
 ) -> Dict[str, Any]:
     """
     Celery task wrapper for scan prefixes.

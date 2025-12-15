@@ -65,6 +65,7 @@ __all__ = [
     "test_progress_task",
     # Device onboarding
     "onboard_device_task",
+    "bulk_onboard_devices_task",
     # Device export
     "export_devices_task",
     # Network tools

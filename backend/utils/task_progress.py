@@ -5,7 +5,7 @@ This module provides a helper class for consistent and structured
 progress updates in Celery tasks.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class ProgressUpdater:
@@ -36,11 +36,7 @@ class ProgressUpdater:
         self.task = task_instance
 
     def update(
-        self,
-        stage: str,
-        status: str,
-        progress: int,
-        **extra_fields: Any
+        self, stage: str, status: str, progress: int, **extra_fields: Any
     ) -> None:
         """
         Update task progress with consistent structure.
@@ -65,7 +61,7 @@ class ProgressUpdater:
             "stage": stage,
             "status": status,
             "progress": min(max(progress, 0), 100),  # Clamp to 0-100
-            **extra_fields
+            **extra_fields,
         }
         self.task.update_state(state="PROGRESS", meta=meta)
 
@@ -80,15 +76,12 @@ class ProgressUpdater:
         Example:
             >>> updater.error("Connection timeout", device_ip="192.168.1.1")
         """
-        meta = {
-            "stage": "error",
-            "status": message,
-            "progress": 0,
-            **extra_fields
-        }
+        meta = {"stage": "error", "status": message, "progress": 0, **extra_fields}
         self.task.update_state(state="FAILURE", meta=meta)
 
-    def complete(self, message: str = "Task completed successfully", **extra_fields: Any) -> None:
+    def complete(
+        self, message: str = "Task completed successfully", **extra_fields: Any
+    ) -> None:
         """
         Mark task as complete.
 
@@ -99,10 +92,5 @@ class ProgressUpdater:
         Example:
             >>> updater.complete("Device onboarded", device_id="abc-123")
         """
-        meta = {
-            "stage": "complete",
-            "status": message,
-            "progress": 100,
-            **extra_fields
-        }
+        meta = {"stage": "complete", "status": message, "progress": 100, **extra_fields}
         self.task.update_state(state="SUCCESS", meta=meta)

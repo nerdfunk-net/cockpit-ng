@@ -8,7 +8,9 @@ from datetime import datetime
 
 
 # Valid job template types (cache_devices removed - now handled by system tasks)
-JobTemplateType = Literal["backup", "compare_devices", "run_commands", "sync_devices", "scan_prefixes"]
+JobTemplateType = Literal[
+    "backup", "compare_devices", "run_commands", "sync_devices", "scan_prefixes"
+]
 
 # Inventory source options
 InventorySource = Literal["all", "inventory"]

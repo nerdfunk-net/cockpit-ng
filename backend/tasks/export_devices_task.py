@@ -6,7 +6,6 @@ Results are stored as files and can be downloaded from the Jobs/View interface.
 from celery_app import celery_app
 import logging
 from typing import Optional, List, Dict, Any
-import json
 import yaml
 import csv
 import io
@@ -190,7 +189,7 @@ def export_devices_task(
         )
 
         # Normalize export_format by stripping whitespace and underscores
-        export_format = export_format.strip().rstrip('_')
+        export_format = export_format.strip().rstrip("_")
 
         if export_format == "yaml":
             export_content = _export_to_yaml(filtered_devices)
@@ -593,7 +592,9 @@ def _export_to_csv(devices: List[Dict[str, Any]], csv_options: Dict[str, Any]) -
     if not devices:
         return ""
 
-    delimiter = csv_options.get("delimiter", ";")  # Default to semicolon for import compatibility
+    delimiter = csv_options.get(
+        "delimiter", ";"
+    )  # Default to semicolon for import compatibility
     quotechar = csv_options.get("quoteChar", '"')
     include_headers = csv_options.get("includeHeaders", True)
 
@@ -626,10 +627,31 @@ def _export_to_csv(devices: List[Dict[str, Any]], csv_options: Dict[str, Any]) -
         all_columns.update(row.keys())
 
     # Order columns: device fields first, then interface fields, then custom fields
-    device_cols = ['name', 'device_type', 'ip_address', 'serial', 'asset_tag', 'role', 'status', 'location', 'platform', 'namespace', 'software_version', 'tags']
-    interface_cols = [col for col in sorted(all_columns) if col.startswith('interface_')]
-    custom_cols = [col for col in sorted(all_columns) if col.startswith('cf_')]
-    other_cols = [col for col in sorted(all_columns) if col not in device_cols and col not in interface_cols and col not in custom_cols]
+    device_cols = [
+        "name",
+        "device_type",
+        "ip_address",
+        "serial",
+        "asset_tag",
+        "role",
+        "status",
+        "location",
+        "platform",
+        "namespace",
+        "software_version",
+        "tags",
+    ]
+    interface_cols = [
+        col for col in sorted(all_columns) if col.startswith("interface_")
+    ]
+    custom_cols = [col for col in sorted(all_columns) if col.startswith("cf_")]
+    other_cols = [
+        col
+        for col in sorted(all_columns)
+        if col not in device_cols
+        and col not in interface_cols
+        and col not in custom_cols
+    ]
 
     # Final column order
     ordered_columns = []
@@ -648,7 +670,7 @@ def _export_to_csv(devices: List[Dict[str, Any]], csv_options: Dict[str, Any]) -
         delimiter=delimiter,
         quotechar=quotechar,
         quoting=csv.QUOTE_MINIMAL,
-        extrasaction='ignore'
+        extrasaction="ignore",
     )
 
     if include_headers:
@@ -715,7 +737,10 @@ def _extract_device_fields(device: Dict[str, Any]) -> Dict[str, str]:
 
     # Tags - comma-separated list of tag names
     if device.get("tags") and isinstance(device["tags"], list):
-        tag_names = [tag.get("name", str(tag)) if isinstance(tag, dict) else str(tag) for tag in device["tags"]]
+        tag_names = [
+            tag.get("name", str(tag)) if isinstance(tag, dict) else str(tag)
+            for tag in device["tags"]
+        ]
         if tag_names:
             fields["tags"] = ",".join(tag_names)
 
@@ -726,7 +751,9 @@ def _extract_device_fields(device: Dict[str, Any]) -> Dict[str, str]:
             fields["ip_address"] = str(primary_addr)
 
         # Extract namespace from primary IP's parent prefix
-        if device["primary_ip4"].get("parent") and isinstance(device["primary_ip4"]["parent"], dict):
+        if device["primary_ip4"].get("parent") and isinstance(
+            device["primary_ip4"]["parent"], dict
+        ):
             parent = device["primary_ip4"]["parent"]
             if parent.get("namespace") and isinstance(parent["namespace"], dict):
                 namespace_name = parent["namespace"].get("name")
@@ -734,7 +761,9 @@ def _extract_device_fields(device: Dict[str, Any]) -> Dict[str, str]:
                     fields["namespace"] = str(namespace_name)
 
     # Custom fields - prefix with cf_
-    if device.get("_custom_field_data") and isinstance(device["_custom_field_data"], dict):
+    if device.get("_custom_field_data") and isinstance(
+        device["_custom_field_data"], dict
+    ):
         for cf_key, cf_value in device["_custom_field_data"].items():
             if cf_value is not None:
                 fields[f"cf_{cf_key}"] = str(cf_value)
@@ -742,7 +771,9 @@ def _extract_device_fields(device: Dict[str, Any]) -> Dict[str, str]:
     return fields
 
 
-def _extract_interface_fields(interface: Dict[str, Any], device: Dict[str, Any]) -> Dict[str, str]:
+def _extract_interface_fields(
+    interface: Dict[str, Any], device: Dict[str, Any]
+) -> Dict[str, str]:
     """
     Extract and flatten interface-level fields for CSV export.
 
@@ -786,7 +817,11 @@ def _extract_interface_fields(interface: Dict[str, Any], device: Dict[str, Any])
         fields["interface_enabled"] = str(interface["enabled"]).lower()
 
     # IP addresses - find the first one and check if it's primary
-    if interface.get("ip_addresses") and isinstance(interface["ip_addresses"], list) and len(interface["ip_addresses"]) > 0:
+    if (
+        interface.get("ip_addresses")
+        and isinstance(interface["ip_addresses"], list)
+        and len(interface["ip_addresses"]) > 0
+    ):
         first_ip = interface["ip_addresses"][0]
         if first_ip.get("address"):
             fields["interface_ip_address"] = str(first_ip["address"])
@@ -800,8 +835,12 @@ def _extract_interface_fields(interface: Dict[str, Any], device: Dict[str, Any])
                     fields["set_primary_ipv4"] = "false"
 
     # Parent interface
-    if interface.get("parent_interface") and isinstance(interface["parent_interface"], dict):
-        fields["interface_parent_interface"] = str(interface["parent_interface"].get("name", ""))
+    if interface.get("parent_interface") and isinstance(
+        interface["parent_interface"], dict
+    ):
+        fields["interface_parent_interface"] = str(
+            interface["parent_interface"].get("name", "")
+        )
 
     # LAG
     if interface.get("lag") and isinstance(interface["lag"], dict):
@@ -809,16 +848,24 @@ def _extract_interface_fields(interface: Dict[str, Any], device: Dict[str, Any])
 
     # VLANs
     if interface.get("untagged_vlan") and isinstance(interface["untagged_vlan"], dict):
-        fields["interface_untagged_vlan"] = str(interface["untagged_vlan"].get("name", ""))
+        fields["interface_untagged_vlan"] = str(
+            interface["untagged_vlan"].get("name", "")
+        )
 
     if interface.get("tagged_vlans") and isinstance(interface["tagged_vlans"], list):
-        vlan_names = [vlan.get("name", str(vlan)) if isinstance(vlan, dict) else str(vlan) for vlan in interface["tagged_vlans"]]
+        vlan_names = [
+            vlan.get("name", str(vlan)) if isinstance(vlan, dict) else str(vlan)
+            for vlan in interface["tagged_vlans"]
+        ]
         if vlan_names:
             fields["interface_tagged_vlans"] = ",".join(vlan_names)
 
     # Interface tags
     if interface.get("tags") and isinstance(interface["tags"], list):
-        tag_names = [tag.get("name", str(tag)) if isinstance(tag, dict) else str(tag) for tag in interface["tags"]]
+        tag_names = [
+            tag.get("name", str(tag)) if isinstance(tag, dict) else str(tag)
+            for tag in interface["tags"]
+        ]
         if tag_names:
             fields["interface_tags"] = ",".join(tag_names)
 

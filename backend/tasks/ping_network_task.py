@@ -5,13 +5,12 @@ Pings CIDR networks and optionally resolves DNS names.
 
 from celery import shared_task
 import logging
-import time
 import ipaddress
 import subprocess
 import tempfile
 import os
 import socket
-from typing import List, Dict, Any, Set, Tuple
+from typing import List, Dict, Any, Set
 
 import job_run_manager
 
@@ -53,7 +52,7 @@ def _fping_networks(
     count: int = 3,
     timeout: int = 500,
     retry: int = 3,
-    interval: int = 10
+    interval: int = 10,
 ) -> Set[str]:
     """Use fping to ping multiple IP addresses efficiently using a temporary file.
 
@@ -73,21 +72,27 @@ def _fping_networks(
     try:
         # Create temporary file with all IP addresses
         with tempfile.NamedTemporaryFile(
-            mode='w', delete=False, suffix='.txt', prefix='fping_targets_'
+            mode="w", delete=False, suffix=".txt", prefix="fping_targets_"
         ) as temp_file:
             temp_file_path = temp_file.name
             for ip in ip_list:
                 temp_file.write(f"{ip}\n")
 
-        logger.info(f"Created temporary file {temp_file_path} with {len(ip_list)} IP addresses")
+        logger.info(
+            f"Created temporary file {temp_file_path} with {len(ip_list)} IP addresses"
+        )
 
         # Build fping command with options
         cmd = [
             "fping",
-            "-c", str(count),      # Number of pings per target
-            "-t", str(timeout),    # Timeout in ms
-            "-r", str(retry),      # Number of retries
-            "-i", str(interval),   # Interval between packets in ms
+            "-c",
+            str(count),  # Number of pings per target
+            "-t",
+            str(timeout),  # Timeout in ms
+            "-r",
+            str(retry),  # Number of retries
+            "-i",
+            str(interval),  # Interval between packets in ms
         ]
 
         logger.info(f"Running fping command: {' '.join(cmd)} < {temp_file_path}")
@@ -107,8 +112,12 @@ def _fping_networks(
 
         # Log raw fping output for debugging
         logger.info(f"fping return code: {result.returncode}")
-        logger.info(f"fping stdout length: {len(result.stdout) if result.stdout else 0} bytes")
-        logger.info(f"fping stderr length: {len(result.stderr) if result.stderr else 0} bytes")
+        logger.info(
+            f"fping stdout length: {len(result.stdout) if result.stdout else 0} bytes"
+        )
+        logger.info(
+            f"fping stderr length: {len(result.stderr) if result.stderr else 0} bytes"
+        )
 
         # Parse fping output
         # When using -c flag, fping outputs statistics format in STDERR:
@@ -132,7 +141,7 @@ def _fping_networks(
 
             # Count lines with statistics format
             stats_lines = 0
-            
+
             for idx, line in enumerate(lines):
                 line = line.strip()
                 if not line:
@@ -144,7 +153,7 @@ def _fping_networks(
                     parts = line.split()
                     if len(parts) >= 1:
                         ip = parts[0]
-                        
+
                         if _is_valid_ip(ip):
                             # Parse the rcv count from "xmt/rcv/%loss = X/Y/Z%"
                             # Example: "192.168.178.1   : xmt/rcv/%loss = 3/2/33%"
@@ -154,18 +163,26 @@ def _fping_networks(
                                 # Split "3/2/33%" and get rcv count (second number)
                                 stats = stats_part.split("/")
                                 rcv_count = int(stats[1])
-                                
+
                                 if rcv_count > 0:
                                     alive_ips.add(ip)
-                                    logger.info(f"Found alive IP: {ip} (rcv={rcv_count})")
+                                    logger.info(
+                                        f"Found alive IP: {ip} (rcv={rcv_count})"
+                                    )
                             except (IndexError, ValueError) as e:
-                                logger.warning(f"Failed to parse statistics line: {line} - {e}")
+                                logger.warning(
+                                    f"Failed to parse statistics line: {line} - {e}"
+                                )
 
             logger.info(f"Processed {stats_lines} statistics lines")
 
-        logger.info(f"fping discovered {len(alive_ips)} alive hosts out of {len(ip_list)} targets")
+        logger.info(
+            f"fping discovered {len(alive_ips)} alive hosts out of {len(ip_list)} targets"
+        )
         if alive_ips:
-            logger.info(f"Alive IPs: {sorted(list(alive_ips))[:50]}")  # Log first 50 alive IPs
+            logger.info(
+                f"Alive IPs: {sorted(list(alive_ips))[:50]}"
+            )  # Log first 50 alive IPs
 
     except subprocess.TimeoutExpired:
         logger.warning("fping command timed out")
@@ -180,7 +197,9 @@ def _fping_networks(
                 os.unlink(temp_file_path)
                 logger.debug(f"Cleaned up temporary file {temp_file_path}")
             except Exception as e:
-                logger.warning(f"Failed to clean up temporary file {temp_file_path}: {e}")
+                logger.warning(
+                    f"Failed to clean up temporary file {temp_file_path}: {e}"
+                )
 
     return alive_ips
 
@@ -229,8 +248,8 @@ def _condense_ip_ranges(ips: List[str]) -> List[str]:
                 condensed.append(range_start)
             else:
                 # Extract last octet for condensed format
-                start_parts = range_start.split('.')
-                end_parts = range_end.split('.')
+                start_parts = range_start.split(".")
+                end_parts = range_end.split(".")
                 if start_parts[:3] == end_parts[:3]:
                     condensed.append(f"{range_start} - {end_parts[3]}")
                 else:
@@ -245,8 +264,8 @@ def _condense_ip_ranges(ips: List[str]) -> List[str]:
     if range_start == range_end:
         condensed.append(range_start)
     else:
-        start_parts = range_start.split('.')
-        end_parts = range_end.split('.')
+        start_parts = range_start.split(".")
+        end_parts = range_end.split(".")
         if start_parts[:3] == end_parts[:3]:
             condensed.append(f"{range_start} - {end_parts[3]}")
         else:
@@ -264,7 +283,7 @@ def ping_network_task(
     count: int = 3,
     timeout: int = 500,
     retry: int = 3,
-    interval: int = 10
+    interval: int = 10,
 ) -> Dict[str, Any]:
     """
     Ping network CIDR ranges and optionally resolve DNS names.
@@ -298,20 +317,22 @@ def ping_network_task(
         # Mark job as started
         job_run_manager.mark_started(job_run_id, self.request.id)
 
-        logger.info(f"Ping network task started: {len(cidrs)} networks, resolve_dns={resolve_dns}")
+        logger.info(
+            f"Ping network task started: {len(cidrs)} networks, resolve_dns={resolve_dns}"
+        )
 
         # Expand all CIDRs to IP lists
         all_ips: List[str] = []
         network_ips: Dict[str, List[str]] = {}
 
         self.update_state(
-            state='PROGRESS',
+            state="PROGRESS",
             meta={
-                'status': 'Expanding CIDR networks...',
-                'current': 0,
-                'total': len(cidrs),
-                'networks_processed': 0,
-            }
+                "status": "Expanding CIDR networks...",
+                "current": 0,
+                "total": len(cidrs),
+                "networks_processed": 0,
+            },
         )
 
         for idx, cidr in enumerate(cidrs):
@@ -326,30 +347,32 @@ def ping_network_task(
 
         # Ping all IPs using fping
         self.update_state(
-            state='PROGRESS',
+            state="PROGRESS",
             meta={
-                'status': f'Pinging {len(all_ips)} IP addresses...',
-                'current': 0,
-                'total': len(all_ips),
-                'networks_processed': 0,
-            }
+                "status": f"Pinging {len(all_ips)} IP addresses...",
+                "current": 0,
+                "total": len(all_ips),
+                "networks_processed": 0,
+            },
         )
 
         alive_ips = _fping_networks(all_ips, count, timeout, retry, interval)
-        logger.info(f"fping found {len(alive_ips)} alive hosts out of {len(all_ips)} targets")
+        logger.info(
+            f"fping found {len(alive_ips)} alive hosts out of {len(all_ips)} targets"
+        )
 
         # Process results per network
         network_results: List[Dict[str, Any]] = []
 
         for idx, (cidr, cidr_ips) in enumerate(network_ips.items()):
             self.update_state(
-                state='PROGRESS',
+                state="PROGRESS",
                 meta={
-                    'status': f'Processing network {idx + 1}/{len(cidrs)}...',
-                    'current': idx + 1,
-                    'total': len(cidrs),
-                    'networks_processed': idx,
-                }
+                    "status": f"Processing network {idx + 1}/{len(cidrs)}...",
+                    "current": idx + 1,
+                    "total": len(cidrs),
+                    "networks_processed": idx,
+                },
             )
 
             reachable: List[Dict[str, str]] = []
@@ -369,14 +392,16 @@ def ping_network_task(
             # Condense unreachable ranges
             unreachable_condensed = _condense_ip_ranges(unreachable)
 
-            network_results.append({
-                "network": cidr,
-                "total_ips": len(cidr_ips),
-                "reachable_count": len(reachable),
-                "unreachable_count": len(unreachable),
-                "reachable": reachable,
-                "unreachable": unreachable_condensed,
-            })
+            network_results.append(
+                {
+                    "network": cidr,
+                    "total_ips": len(cidr_ips),
+                    "reachable_count": len(reachable),
+                    "unreachable_count": len(unreachable),
+                    "reachable": reachable,
+                    "unreachable": unreachable_condensed,
+                }
+            )
 
         result = {
             "success": True,
@@ -389,12 +414,11 @@ def ping_network_task(
         }
 
         # Mark job as completed
-        job_run_manager.mark_completed(
-            job_run_id,
-            result=result
-        )
+        job_run_manager.mark_completed(job_run_id, result=result)
 
-        logger.info(f"Ping network task completed: {len(alive_ips)}/{len(all_ips)} reachable")
+        logger.info(
+            f"Ping network task completed: {len(alive_ips)}/{len(all_ips)} reachable"
+        )
         return result
 
     except Exception as e:
@@ -402,10 +426,7 @@ def ping_network_task(
 
         # Mark job as failed
         if job_run_id:
-            job_run_manager.mark_failed(
-                job_run_id,
-                error_message=str(e)
-            )
+            job_run_manager.mark_failed(job_run_id, error_message=str(e))
 
         return {
             "success": False,

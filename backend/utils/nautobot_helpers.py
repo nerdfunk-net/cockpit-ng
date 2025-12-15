@@ -29,16 +29,10 @@ def get_nautobot_config() -> Tuple[str, str]:
     try:
         db_settings = settings_manager.get_nautobot_settings()
         if db_settings and db_settings.get("url") and db_settings.get("token"):
-            return (
-                db_settings["url"].rstrip("/"),
-                db_settings["token"]
-            )
+            return (db_settings["url"].rstrip("/"), db_settings["token"])
         raise Exception("No database settings")
     except Exception:
-        return (
-            settings.nautobot_url.rstrip("/"),
-            settings.nautobot_token
-        )
+        return (settings.nautobot_url.rstrip("/"), settings.nautobot_token)
 
 
 def get_nautobot_headers(token: str) -> dict:

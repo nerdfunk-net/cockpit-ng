@@ -84,7 +84,7 @@ def onboard_device_task(
             f"Initiating onboarding for {device_count} device(s)",
             5,
             device_count=device_count,
-            ip_addresses=ip_list
+            ip_addresses=ip_list,
         )
 
         # Step 1: Call Nautobot onboarding job (sends all IPs at once)
@@ -109,7 +109,7 @@ def onboard_device_task(
             10,
             job_id=job_id,
             job_url=job_url,
-            device_count=device_count
+            device_count=device_count,
         )
 
         # Step 2: Wait for job completion (use configurable onboarding_timeout)
@@ -152,7 +152,7 @@ def onboard_device_task(
                 job_url=job_url,
                 current_device=device_num,
                 device_count=device_count,
-                current_ip=single_ip
+                current_ip=single_ip,
             )
 
             # Process single device
@@ -404,7 +404,7 @@ def _wait_for_job_completion(task_instance, job_id: str, max_wait: int = 90) -> 
         tuple: (success: bool, result: str)
     """
     import requests
-    from utils.nautobot_helpers import get_nautobot_config, get_nautobot_headers
+    from utils.nautobot_helpers import get_nautobot_config
 
     # Get Nautobot config
     nautobot_url, nautobot_token = get_nautobot_config()
