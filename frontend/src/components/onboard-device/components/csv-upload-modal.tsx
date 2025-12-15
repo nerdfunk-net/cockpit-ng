@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -113,11 +113,15 @@ export function CSVUploadModal({
   const [showHelp, setShowHelp] = useState(false)
   const [showOptionalSettings, setShowOptionalSettings] = useState(false)
   const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null)
-  const [_isPolling, setIsPolling] = useState(false)
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Poll for task status when we have a taskId (or multiple task IDs)
   const pollTaskStatus = useCallback(async () => {
-    if (!taskId) return
+    if (!taskId) {
+      setTaskStatus(null)
+      return
+    }
 
     try {
       // Handle multiple task IDs (comma-separated)
@@ -131,10 +135,7 @@ export function CSVUploadModal({
 
         setTaskStatus(status)
 
-        // Stop polling if task is complete
-        if (['SUCCESS', 'FAILURE', 'REVOKED'].includes(status.status)) {
-          setIsPolling(false)
-        }
+        // Polling will stop automatically via cleanup when status changes
       } else {
         // Multiple tasks - fetch all and aggregate
         const statuses = await Promise.all(
@@ -149,9 +150,8 @@ export function CSVUploadModal({
 
         // Filter out failed fetches
         const validStatuses = statuses.filter(s => s !== null) as TaskStatus[]
-        
+
         if (validStatuses.length === 0) {
-          setIsPolling(false)
           return
         }
 
@@ -197,34 +197,45 @@ export function CSVUploadModal({
 
         setTaskStatus(aggregatedStatus)
 
-        if (allComplete) {
-          setIsPolling(false)
-        }
+        // Polling will stop automatically via cleanup when all tasks complete
       }
     } catch (error) {
       console.error('Error polling task status:', error)
-      setIsPolling(false)
     }
   }, [taskId, apiCall])
 
-  // Start polling when taskId is set
+  // Start/stop polling based on taskId changes
   useEffect(() => {
+    // Clean up any existing polling
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current)
+      pollingIntervalRef.current = null
+    }
+    if (pollingTimeoutRef.current) {
+      clearTimeout(pollingTimeoutRef.current)
+      pollingTimeoutRef.current = null
+    }
+
     if (!taskId) {
-      setTaskStatus(null)
-      setIsPolling(false)
       return
     }
 
-    setIsPolling(true)
-    const initialPoll = setTimeout(() => pollTaskStatus(), 0)
+    // Start polling
+    pollingTimeoutRef.current = setTimeout(() => {
+      void pollTaskStatus()
+    }, 0)
 
-    const interval = setInterval(() => {
-      pollTaskStatus()
+    pollingIntervalRef.current = setInterval(() => {
+      void pollTaskStatus()
     }, 2000)
 
     return () => {
-      clearTimeout(initialPoll)
-      clearInterval(interval)
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+      }
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current)
+      }
     }
   }, [taskId, pollTaskStatus])
 

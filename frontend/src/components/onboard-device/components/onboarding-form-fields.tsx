@@ -14,8 +14,7 @@ import {
 import { Search, Tags, FileText } from 'lucide-react'
 import { LocationSelector } from './location-selector'
 import type { DropdownOption, LocationItem, OnboardFormData, IPValidation } from '../types'
-
-const EMPTY_OPTIONS: DropdownOption[] = []
+import { EMPTY_DROPDOWN_OPTIONS } from '../constants'
 
 interface OnboardingFormFieldsProps {
   formData: OnboardFormData
@@ -49,14 +48,14 @@ export function OnboardingFormFields({
   formData,
   ipValidation,
   locations,
-  namespaces = EMPTY_OPTIONS,
-  deviceRoles = EMPTY_OPTIONS,
-  platforms = EMPTY_OPTIONS,
-  deviceStatuses = EMPTY_OPTIONS,
-  interfaceStatuses = EMPTY_OPTIONS,
-  ipAddressStatuses = EMPTY_OPTIONS,
-  prefixStatuses = EMPTY_OPTIONS,
-  secretGroups = EMPTY_OPTIONS,
+  namespaces = EMPTY_DROPDOWN_OPTIONS,
+  deviceRoles = EMPTY_DROPDOWN_OPTIONS,
+  platforms = EMPTY_DROPDOWN_OPTIONS,
+  deviceStatuses = EMPTY_DROPDOWN_OPTIONS,
+  interfaceStatuses = EMPTY_DROPDOWN_OPTIONS,
+  ipAddressStatuses = EMPTY_DROPDOWN_OPTIONS,
+  prefixStatuses = EMPTY_DROPDOWN_OPTIONS,
+  secretGroups = EMPTY_DROPDOWN_OPTIONS,
   locationSearchValue,
   deviceSearchQuery,
   onIPChange,

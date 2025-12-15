@@ -332,7 +332,7 @@ export function ManageInventoryDialog({
                   ) : (
                     <div className="space-y-1">
                       {selectedInventory.conditions.map((condition, index) => (
-                        <div key={index} className="flex items-center gap-2">
+                        <div key={`condition-${condition.field}-${condition.operator}-${condition.value}`} className="flex items-center gap-2">
                           {index > 0 && (
                             <Badge
                               variant="outline"

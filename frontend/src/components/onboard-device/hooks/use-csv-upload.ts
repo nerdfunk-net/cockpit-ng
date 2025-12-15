@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useApi } from '@/hooks/use-api'
 import { validateCSVHeaders, resolveNameToId, resolveLocationNameToId } from '../utils/helpers'
+import { parseCSVLine } from '@/utils/csv-parser'
 import type { ParsedCSVRow, CSVLookupData } from '../types'
 
 // Only ip_address is required in CSV - other fields will use app defaults if not provided
@@ -13,54 +14,6 @@ interface BulkOnboardResponse {
   task_id: string
   status: string
   message: string
-}
-
-/**
- * Parse a CSV line respecting quoted values
- * @param line - CSV line to parse
- * @param delimiter - Delimiter character (default: comma)
- * @param quoteChar - Quote character (default: double quote)
- * @returns Array of parsed values
- */
-function parseCSVLine(line: string, delimiter: string = ',', quoteChar: string = '"'): string[] {
-  const values: string[] = []
-  let currentValue = ''
-  let inQuotes = false
-  let i = 0
-
-  while (i < line.length) {
-    const char = line[i]
-
-    if (char === quoteChar) {
-      if (inQuotes && line[i + 1] === quoteChar) {
-        // Escaped quote (two quotes in a row)
-        currentValue += quoteChar
-        i += 2
-        continue
-      }
-      // Toggle quote state
-      inQuotes = !inQuotes
-      i++
-      continue
-    }
-
-    if (char === delimiter && !inQuotes) {
-      // End of field
-      values.push(currentValue.trim())
-      currentValue = ''
-      i++
-      continue
-    }
-
-    // Regular character
-    currentValue += char
-    i++
-  }
-
-  // Add the last field
-  values.push(currentValue.trim())
-
-  return values
 }
 
 export function useCSVUpload() {

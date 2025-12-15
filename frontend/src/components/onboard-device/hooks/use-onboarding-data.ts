@@ -7,23 +7,21 @@ import type {
   OnboardFormData
 } from '../types'
 import { buildLocationHierarchy, findDefaultOption } from '../utils/helpers'
-
-const EMPTY_LOCATIONS: LocationItem[] = []
-const EMPTY_OPTIONS: DropdownOption[] = []
+import { EMPTY_LOCATIONS, EMPTY_DROPDOWN_OPTIONS } from '../constants'
 
 export function useOnboardingData() {
   const { apiCall } = useApi()
 
   // Dropdown data
   const [locations, setLocations] = useState<LocationItem[]>(EMPTY_LOCATIONS)
-  const [namespaces, setNamespaces] = useState<DropdownOption[]>(EMPTY_OPTIONS)
-  const [deviceRoles, setDeviceRoles] = useState<DropdownOption[]>(EMPTY_OPTIONS)
-  const [platforms, setPlatforms] = useState<DropdownOption[]>(EMPTY_OPTIONS)
-  const [deviceStatuses, setDeviceStatuses] = useState<DropdownOption[]>(EMPTY_OPTIONS)
-  const [interfaceStatuses, setInterfaceStatuses] = useState<DropdownOption[]>(EMPTY_OPTIONS)
-  const [ipAddressStatuses, setIpAddressStatuses] = useState<DropdownOption[]>(EMPTY_OPTIONS)
-  const [prefixStatuses, setPrefixStatuses] = useState<DropdownOption[]>(EMPTY_OPTIONS)
-  const [secretGroups, setSecretGroups] = useState<DropdownOption[]>(EMPTY_OPTIONS)
+  const [namespaces, setNamespaces] = useState<DropdownOption[]>(EMPTY_DROPDOWN_OPTIONS)
+  const [deviceRoles, setDeviceRoles] = useState<DropdownOption[]>(EMPTY_DROPDOWN_OPTIONS)
+  const [platforms, setPlatforms] = useState<DropdownOption[]>(EMPTY_DROPDOWN_OPTIONS)
+  const [deviceStatuses, setDeviceStatuses] = useState<DropdownOption[]>(EMPTY_DROPDOWN_OPTIONS)
+  const [interfaceStatuses, setInterfaceStatuses] = useState<DropdownOption[]>(EMPTY_DROPDOWN_OPTIONS)
+  const [ipAddressStatuses, setIpAddressStatuses] = useState<DropdownOption[]>(EMPTY_DROPDOWN_OPTIONS)
+  const [prefixStatuses, setPrefixStatuses] = useState<DropdownOption[]>(EMPTY_DROPDOWN_OPTIONS)
+  const [secretGroups, setSecretGroups] = useState<DropdownOption[]>(EMPTY_DROPDOWN_OPTIONS)
 
   // Default values from settings
   const [nautobotDefaults, setNautobotDefaults] = useState<NautobotDefaults | null>(null)

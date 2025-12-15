@@ -1,4 +1,5 @@
 import type { LocationItem, DropdownOption } from '../types'
+import { EMPTY_STRING_ARRAY } from '../constants'
 
 /**
  * Validates an IP address or comma-separated list of IP addresses
@@ -80,6 +81,67 @@ export function findDefaultOption(
 }
 
 /**
+ * Base interface for items that can be resolved by name or ID
+ */
+interface ResolvableItem {
+  id: string
+  name: string
+  display?: string
+  [key: string]: unknown
+}
+
+/**
+ * Generic resolver function that converts a name or ID to an ID
+ *
+ * @param value - The value to resolve (name or ID)
+ * @param items - Array of items to search
+ * @param additionalFields - Additional fields to check (e.g., 'slug', 'hierarchicalPath')
+ * @param fallbackValue - Value to return if no match found (default: empty string)
+ * @returns The resolved ID or fallback value
+ */
+function resolveToId<T extends ResolvableItem>(
+  value: string,
+  items: T[],
+  additionalFields: string[] = EMPTY_STRING_ARRAY,
+  fallbackValue: string = ''
+): string {
+  if (!value) return fallbackValue
+
+  // Check if value is already a UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (uuidRegex.test(value)) {
+    if (items.some(item => item.id === value)) {
+      return value
+    }
+  }
+
+  // Try to find by exact match (case-insensitive)
+  const lowerValue = value.toLowerCase()
+  const match = items.find(item => {
+    // Check standard fields
+    if (item.name.toLowerCase() === lowerValue) return true
+    if (item.display && item.display.toLowerCase() === lowerValue) return true
+
+    // Check additional fields
+    for (const field of additionalFields) {
+      const fieldValue = item[field]
+      if (fieldValue && String(fieldValue).toLowerCase() === lowerValue) {
+        return true
+      }
+    }
+
+    return false
+  })
+
+  if (match) {
+    return match.id
+  }
+
+  // Return fallback value if no match
+  return fallbackValue
+}
+
+/**
  * Resolves a name or ID to an ID from a list of options.
  * First checks if the value is already an ID (UUID format), then tries to find by name.
  * Also checks network_driver field for platforms (e.g., "cisco_ios").
@@ -89,78 +151,19 @@ export function resolveNameToId(
   value: string,
   options: DropdownOption[]
 ): string {
-  if (!value) return ''
-  
-  // Check if value is already a UUID (ID format)
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  if (uuidRegex.test(value)) {
-    // Verify the ID exists in options
-    if (options.some(opt => opt.id === value)) {
-      return value
-    }
-  }
-  
-  // Try to find by exact name match (case-insensitive)
-  const lowerValue = value.toLowerCase()
-  const match = options.find(
-    opt => {
-      // Check standard fields
-      if (opt.name.toLowerCase() === lowerValue) return true
-      if (opt.display && opt.display.toLowerCase() === lowerValue) return true
-      
-      // Check network_driver for platforms (e.g., "cisco_ios")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const anyOpt = opt as any
-      if (anyOpt.network_driver && anyOpt.network_driver.toLowerCase() === lowerValue) return true
-      
-      // Check slug field (common in Nautobot)
-      if (anyOpt.slug && anyOpt.slug.toLowerCase() === lowerValue) return true
-      
-      return false
-    }
-  )
-  
-  if (match) {
-    return match.id
-  }
-  
-  // Return empty string if no match - let backend use defaults
-  return ''
+  return resolveToId(value, options as ResolvableItem[], ['network_driver', 'slug'], '')
 }
 
 /**
  * Resolves a location name or ID to an ID.
  * Locations have hierarchical paths, so we need to handle those too.
+ * Returns the original value if no match found (for backward compatibility).
  */
 export function resolveLocationNameToId(
   value: string,
   locations: LocationItem[]
 ): string {
-  if (!value) return ''
-  
-  // Check if value is already a UUID
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  if (uuidRegex.test(value)) {
-    if (locations.some(loc => loc.id === value)) {
-      return value
-    }
-  }
-  
-  // Try to find by name, display, or hierarchical path (case-insensitive)
-  const lowerValue = value.toLowerCase()
-  const match = locations.find(
-    loc => 
-      loc.name.toLowerCase() === lowerValue || 
-      (loc.display && loc.display.toLowerCase() === lowerValue) ||
-      (loc.hierarchicalPath && loc.hierarchicalPath.toLowerCase() === lowerValue)
-  )
-  
-  if (match) {
-    return match.id
-  }
-  
-  // Return original value if no match
-  return value
+  return resolveToId(value, locations as ResolvableItem[], ['hierarchicalPath'], value)
 }
 
 /**

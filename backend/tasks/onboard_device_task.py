@@ -7,6 +7,7 @@ import logging
 import time
 import asyncio
 from typing import Dict, List, Optional
+from utils.task_progress import ProgressUpdater
 
 logger = logging.getLogger(__name__)
 
@@ -74,16 +75,16 @@ def onboard_device_task(
             f"Starting device onboarding for {device_count} IP(s): {', '.join(ip_list)}"
         )
 
+        # Initialize progress updater
+        updater = ProgressUpdater(self)
+
         # Update progress
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "stage": "onboarding",
-                "status": f"Initiating onboarding for {device_count} device(s)",
-                "progress": 5,
-                "device_count": device_count,
-                "ip_addresses": ip_list,
-            },
+        updater.update(
+            "onboarding",
+            f"Initiating onboarding for {device_count} device(s)",
+            5,
+            device_count=device_count,
+            ip_addresses=ip_list
         )
 
         # Step 1: Call Nautobot onboarding job (sends all IPs at once)
@@ -102,16 +103,13 @@ def onboard_device_task(
         )
 
         logger.info(f"Nautobot onboarding job started: {job_id}")
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "stage": "waiting",
-                "status": f"Waiting for onboarding job to complete ({device_count} devices)",
-                "progress": 10,
-                "job_id": job_id,
-                "job_url": job_url,
-                "device_count": device_count,
-            },
+        updater.update(
+            "waiting",
+            f"Waiting for onboarding job to complete ({device_count} devices)",
+            10,
+            job_id=job_id,
+            job_url=job_url,
+            device_count=device_count
         )
 
         # Step 2: Wait for job completion (use configurable onboarding_timeout)
@@ -146,18 +144,15 @@ def onboard_device_task(
             progress_per_device = 45 / device_count
             current_progress = int(base_progress + (idx * progress_per_device))
 
-            self.update_state(
-                state="PROGRESS",
-                meta={
-                    "stage": "processing_devices",
-                    "status": f"Processing device {device_num}/{device_count}: {single_ip}",
-                    "progress": current_progress,
-                    "job_id": job_id,
-                    "job_url": job_url,
-                    "current_device": device_num,
-                    "device_count": device_count,
-                    "current_ip": single_ip,
-                },
+            updater.update(
+                "processing_devices",
+                f"Processing device {device_num}/{device_count}: {single_ip}",
+                current_progress,
+                job_id=job_id,
+                job_url=job_url,
+                current_device=device_num,
+                device_count=device_count,
+                current_ip=single_ip
             )
 
             # Process single device
@@ -357,20 +352,10 @@ def _trigger_nautobot_onboarding(
         tuple: (job_id, job_url)
     """
     import requests
-    from settings_manager import settings_manager
-    from config import settings
+    from utils.nautobot_helpers import get_nautobot_config, get_nautobot_headers
 
     # Get Nautobot config
-    try:
-        db_settings = settings_manager.get_nautobot_settings()
-        if db_settings and db_settings.get("url") and db_settings.get("token"):
-            nautobot_url = db_settings["url"].rstrip("/")
-            nautobot_token = db_settings["token"]
-        else:
-            raise Exception("No database settings")
-    except Exception:
-        nautobot_url = settings.nautobot_url.rstrip("/")
-        nautobot_token = settings.nautobot_token
+    nautobot_url, nautobot_token = get_nautobot_config()
 
     # Prepare job data
     job_data = {
@@ -392,10 +377,7 @@ def _trigger_nautobot_onboarding(
 
     # Call Nautobot job API
     job_url = f"{nautobot_url}/api/extras/jobs/Sync%20Devices%20From%20Network/run/"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Token {nautobot_token}",
-    }
+    headers = get_nautobot_headers(nautobot_token)
 
     response = requests.post(job_url, json=job_data, headers=headers, timeout=30)
     response.raise_for_status()
@@ -422,20 +404,10 @@ def _wait_for_job_completion(task_instance, job_id: str, max_wait: int = 90) -> 
         tuple: (success: bool, result: str)
     """
     import requests
-    from settings_manager import settings_manager
-    from config import settings
+    from utils.nautobot_helpers import get_nautobot_config, get_nautobot_headers
 
     # Get Nautobot config
-    try:
-        db_settings = settings_manager.get_nautobot_settings()
-        if db_settings and db_settings.get("url") and db_settings.get("token"):
-            nautobot_url = db_settings["url"].rstrip("/")
-            nautobot_token = db_settings["token"]
-        else:
-            raise Exception("No database settings")
-    except Exception:
-        nautobot_url = settings.nautobot_url.rstrip("/")
-        nautobot_token = settings.nautobot_token
+    nautobot_url, nautobot_token = get_nautobot_config()
 
     headers = {
         "Authorization": f"Token {nautobot_token}",
@@ -580,28 +552,15 @@ async def _async_get_device_id(ip_address: str) -> tuple:
 def _update_device_tags(device_id: str, tag_ids: List[str]) -> dict:
     """Update device tags in Nautobot."""
     import requests
-    from settings_manager import settings_manager
-    from config import settings
+    from utils.nautobot_helpers import get_nautobot_config, get_nautobot_headers
 
     try:
         # Get Nautobot config
-        try:
-            db_settings = settings_manager.get_nautobot_settings()
-            if db_settings and db_settings.get("url") and db_settings.get("token"):
-                nautobot_url = db_settings["url"].rstrip("/")
-                nautobot_token = db_settings["token"]
-            else:
-                raise Exception("No database settings")
-        except Exception:
-            nautobot_url = settings.nautobot_url.rstrip("/")
-            nautobot_token = settings.nautobot_token
+        nautobot_url, nautobot_token = get_nautobot_config()
 
         # Update device tags via REST API
         url = f"{nautobot_url}/api/dcim/devices/{device_id}/"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Token {nautobot_token}",
-        }
+        headers = get_nautobot_headers(nautobot_token)
 
         # PATCH to update only tags
         data = {"tags": tag_ids}
@@ -624,28 +583,15 @@ def _update_device_tags(device_id: str, tag_ids: List[str]) -> dict:
 def _update_device_custom_fields(device_id: str, custom_fields: Dict[str, str]) -> dict:
     """Update device custom fields in Nautobot."""
     import requests
-    from settings_manager import settings_manager
-    from config import settings
+    from utils.nautobot_helpers import get_nautobot_config, get_nautobot_headers
 
     try:
         # Get Nautobot config
-        try:
-            db_settings = settings_manager.get_nautobot_settings()
-            if db_settings and db_settings.get("url") and db_settings.get("token"):
-                nautobot_url = db_settings["url"].rstrip("/")
-                nautobot_token = db_settings["token"]
-            else:
-                raise Exception("No database settings")
-        except Exception:
-            nautobot_url = settings.nautobot_url.rstrip("/")
-            nautobot_token = settings.nautobot_token
+        nautobot_url, nautobot_token = get_nautobot_config()
 
         # Update device custom fields via REST API
         url = f"{nautobot_url}/api/dcim/devices/{device_id}/"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Token {nautobot_token}",
-        }
+        headers = get_nautobot_headers(nautobot_token)
 
         # PATCH to update only custom fields
         data = {"custom_fields": custom_fields}
@@ -690,8 +636,7 @@ def _sync_network_data(
         dict: Result with success status, job_id, and message
     """
     import requests
-    from settings_manager import settings_manager
-    from config import settings
+    from utils.nautobot_helpers import get_nautobot_config, get_nautobot_headers
 
     # Default sync options if none provided
     if sync_options is None:
@@ -699,16 +644,7 @@ def _sync_network_data(
 
     try:
         # Get Nautobot config
-        try:
-            db_settings = settings_manager.get_nautobot_settings()
-            if db_settings and db_settings.get("url") and db_settings.get("token"):
-                nautobot_url = db_settings["url"].rstrip("/")
-                nautobot_token = db_settings["token"]
-            else:
-                raise Exception("No database settings")
-        except Exception:
-            nautobot_url = settings.nautobot_url.rstrip("/")
-            nautobot_token = settings.nautobot_token
+        nautobot_url, nautobot_token = get_nautobot_config()
 
         # Prepare sync job data with user-specified options
         job_data = {
@@ -727,10 +663,7 @@ def _sync_network_data(
 
         # Call Nautobot sync job API
         job_url = f"{nautobot_url}/api/extras/jobs/Sync%20Network%20Data%20From%20Network/run/"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Token {nautobot_token}",
-        }
+        headers = get_nautobot_headers(nautobot_token)
 
         logger.info(f"Triggering network data sync job for device {device_id}")
         response = requests.post(job_url, json=job_data, headers=headers, timeout=30)

@@ -34,7 +34,7 @@ export function PreviewExportDialog({
   const { apiCall } = useApi()
   const [copied, setCopied] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [previewDevices, setPreviewDevices] = useState<any[]>([])
+  const [previewDevices, setPreviewDevices] = useState<unknown[]>([])
   const [error, setError] = useState<string | null>(null)
 
   // Fetch full device data when dialog opens
@@ -86,8 +86,11 @@ export function PreviewExportDialog({
 
   const generatePreview = (): string => {
     // Return the backend-generated preview content
-    if (previewDevices.length > 0 && previewDevices[0].preview_content) {
-      return previewDevices[0].preview_content
+    if (previewDevices.length > 0) {
+      const device = previewDevices[0] as { preview_content?: string }
+      if (device.preview_content) {
+        return device.preview_content
+      }
     }
     return ''
   }
