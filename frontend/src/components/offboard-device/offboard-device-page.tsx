@@ -215,6 +215,7 @@ export function OffboardDevicePage() {
 
   // Modal state for results
   const [showResultsModal, setShowResultsModal] = useState(false)
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false)
   const [offboardSummary, setOffboardSummary] = useState<OffboardSummary | null>(null)
 
   // Check authentication
@@ -608,6 +609,22 @@ export function OffboardDevicePage() {
     }
   }
 
+  const confirmOffboard = () => {
+    if (!isFormValid()) {
+      setStatusMessage({
+        type: 'error',
+        message: 'Please select at least one device to offboard'
+      })
+      return
+    }
+    setShowConfirmationModal(true)
+  }
+
+  const handleConfirmRemove = () => {
+    setShowConfirmationModal(false)
+    handleOffboardDevices()
+  }
+
   const getStatusBadgeClass = (status: string) => {
     const statusLower = status.toLowerCase()
     if (statusLower.includes('active') || statusLower.includes('online')) return 'bg-blue-500'
@@ -646,12 +663,11 @@ export function OffboardDevicePage() {
 
       {/* Status Messages */}
       {statusMessage && (
-        <Alert className={`${
-          statusMessage.type === 'error' ? 'border-red-500 bg-red-50' :
-          statusMessage.type === 'success' ? 'border-green-500 bg-green-50' :
-          statusMessage.type === 'warning' ? 'border-yellow-500 bg-yellow-50' :
-          'border-blue-500 bg-blue-50'
-        }`}>
+        <Alert className={`${statusMessage.type === 'error' ? 'border-red-500 bg-red-50' :
+            statusMessage.type === 'success' ? 'border-green-500 bg-green-50' :
+              statusMessage.type === 'warning' ? 'border-yellow-500 bg-yellow-50' :
+                'border-blue-500 bg-blue-50'
+          }`}>
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-2">
               {statusMessage.type === 'error' && <AlertCircle className="h-4 w-4 text-red-500 mt-0.5" />}
@@ -755,7 +771,7 @@ export function OffboardDevicePage() {
               {/* Offboard Button */}
               <div className="pt-4">
                 <Button
-                  onClick={handleOffboardDevices}
+                  onClick={confirmOffboard}
                   disabled={!isFormValid() || isSubmitting}
                   className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
                 >
@@ -775,6 +791,31 @@ export function OffboardDevicePage() {
             </div>
           </div>
         </div>
+
+        {/* Confirmation Modal */}
+        <Dialog open={showConfirmationModal} onOpenChange={setShowConfirmationModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Device Offboarding</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p>
+                Are you sure you want to offboard <strong>{selectedDevices.size}</strong> device{selectedDevices.size !== 1 ? 's' : ''}?
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                This action will remove the selected devices and their associated data according to your settings.
+              </p>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowConfirmationModal(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleConfirmRemove}>
+                Remove
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Devices Table */}
         <div className="lg:col-span-3">
@@ -1138,9 +1179,8 @@ export function OffboardDevicePage() {
                 {offboardSummary.results.map(result => (
                   <div
                     key={result.device_id}
-                    className={`border rounded-lg p-4 ${
-                      result.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
-                    }`}
+                    className={`border rounded-lg p-4 ${result.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-2">
@@ -1154,11 +1194,10 @@ export function OffboardDevicePage() {
                         </span>
                       </div>
                       <Badge
-                        className={`${
-                          result.success
+                        className={`${result.success
                             ? 'bg-green-500 hover:bg-green-600'
                             : 'bg-red-500 hover:bg-red-600'
-                        } text-white`}
+                          } text-white`}
                       >
                         {result.success ? 'Success' : 'Failed'}
                       </Badge>
