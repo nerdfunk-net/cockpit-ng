@@ -76,6 +76,7 @@ class NetmikoService:
         enable_mode: bool = False,
         write_config: bool = False,
         session_id: str | None = None,
+        privileged: bool = False,
     ) -> Dict[str, Any]:
         """
         Connect to a device and execute commands.
@@ -86,9 +87,10 @@ class NetmikoService:
             username: SSH username
             password: SSH password
             commands: List of commands to execute
-            enable_mode: Whether to enter config mode
+            enable_mode: Whether to enter config mode (configure terminal)
             write_config: Whether to save config after successful execution
             session_id: Optional session ID for cancellation support
+            privileged: Whether to enter privileged exec mode (enable)
 
         Returns:
             Dictionary with execution results
@@ -100,6 +102,7 @@ class NetmikoService:
             "device": host_ip,
             "success": False,
             "output": "",
+            "command_outputs": {},
             "error": None,
             "cancelled": False,
         }
@@ -122,14 +125,24 @@ class NetmikoService:
                 "password": password,
                 "timeout": 30,
                 "session_timeout": 60,
+                # "secret": password, # Use password as enable secret if needed
             }
 
             # Connect to the device
             with ConnectHandler(**device) as connection:
                 logger.info(f"Successfully connected to {host_ip}")
 
-                output = ""
+                if privileged:
+                    try:
+                        logger.info(f"Entering privileged mode on {host_ip}")
+                        connection.enable()
+                        logger.info("Privileged mode enabled")
+                    except Exception as e:
+                        logger.warning(f"Failed to enter privileged mode on {host_ip}: {e}")
 
+                command_outputs = {}
+                output = ""
+                
                 if enable_mode:
                     logger.info(f"Entering config mode on {host_ip}")
                     # send_config_set automatically:
@@ -152,12 +165,14 @@ class NetmikoService:
                             read_timeout=30,
                             expect_string=None,  # Auto-detect prompt
                         )
-
-                        # Format output with separators
-                        output += f"\n{'=' * 60}\n"
-                        output += f"Command {idx}: {command}\n"
-                        output += f"{'=' * 60}\n"
-                        output += cmd_output + "\n"
+                        
+                        # Store raw output mapped to command
+                        command_outputs[command] = cmd_output
+                        
+                        # Clean concatenation for backward compatibility (optional, but good for logging)
+                        if output:
+                            output += "\n"
+                        output += cmd_output
 
                 # Save config if requested and execution was successful
                 if write_config:
@@ -172,22 +187,18 @@ class NetmikoService:
                         save_output += connection.send_command(
                             "\n", expect_string=None, read_timeout=30
                         )
-                        output += f"\n{'=' * 60}\n"
-                        output += "Save Config to Startup\n"
-                        output += f"{'=' * 60}\n"
-                        output += save_output + "\n"
+                        command_outputs["write_config"] = save_output
+                        output += f"\n{save_output}"
                         logger.info(f"Config saved to startup on {host_ip}")
                     except Exception as save_error:
                         logger.warning(
                             f"Failed to save config on {host_ip}: {save_error}"
                         )
-                        output += f"\n{'=' * 60}\n"
-                        output += "Save Config to Startup - WARNING\n"
-                        output += f"{'=' * 60}\n"
-                        output += f"Failed to save config: {str(save_error)}\n"
+                        command_outputs["write_config_error"] = str(save_error)
 
                 result["success"] = True
                 result["output"] = output
+                result["command_outputs"] = command_outputs
                 logger.info(f"Command execution successful on {host_ip}")
 
         except NetmikoTimeoutException as e:

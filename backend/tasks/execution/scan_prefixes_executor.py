@@ -73,11 +73,12 @@ def execute_scan_prefixes(
         timeout_ms = template.get("scan_timeout_ms") or 500
         retries = template.get("scan_retries") or 3
         interval_ms = template.get("scan_interval_ms") or 10
+        scan_max_ips = template.get("scan_max_ips")
 
         logger.info(f"Scanning prefixes with {custom_field_name}={custom_field_value}")
         logger.info(
             f"Scan options: resolve_dns={resolve_dns}, ping_count={ping_count}, "
-            f"timeout={timeout_ms}ms, retries={retries}, interval={interval_ms}ms"
+            f"timeout={timeout_ms}ms, retries={retries}, interval={interval_ms}ms, max_ips={scan_max_ips}"
         )
 
         # Execute the scan logic directly (the job_run is already created by dispatcher)
@@ -95,6 +96,7 @@ def execute_scan_prefixes(
             interval_ms=interval_ms,
             executed_by="scheduled" if schedule_id else "manual",
             task_context=None,  # Don't pass context - prevents duplicate job_run creation
+            scan_max_ips=scan_max_ips,
             job_run_id=None,
         )
 

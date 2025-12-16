@@ -38,6 +38,8 @@ interface ScanPrefixesJobTemplateProps {
   setFormScanCustomFieldValue: (value: string) => void
   formScanResponseCustomFieldName: string
   setFormScanResponseCustomFieldName: (value: string) => void
+  formScanMaxIps: string
+  setFormScanMaxIps: (value: string) => void
 }
 
 const EMPTY_CUSTOM_FIELDS: CustomField[] = []
@@ -59,10 +61,12 @@ export function ScanPrefixesJobTemplate({
   setFormScanCustomFieldValue,
   formScanResponseCustomFieldName,
   setFormScanResponseCustomFieldName,
+  formScanMaxIps,
+  setFormScanMaxIps,
 }: ScanPrefixesJobTemplateProps) {
   const token = useAuthStore(state => state.token)
   const [customFields, setCustomFields] = useState<CustomField[]>(EMPTY_CUSTOM_FIELDS)
-  const [selectedFieldChoices, setSelectedFieldChoices] = useState<Array<{value: string, display: string}>>([])
+  const [selectedFieldChoices, setSelectedFieldChoices] = useState<Array<{ value: string, display: string }>>([])
   const [loadingCustomFields, setLoadingCustomFields] = useState(false)
 
   // Fetch custom fields for ipam.prefix
@@ -234,90 +238,106 @@ export function ScanPrefixesJobTemplate({
           <Label className="text-sm font-semibold text-purple-900">Scan Options</Label>
         </div>
 
-      <div className="flex items-center space-x-3">
-        <Switch
-          id="scan-resolve-dns"
-          checked={formScanResolveDns}
-          onCheckedChange={setFormScanResolveDns}
-        />
-        <Label htmlFor="scan-resolve-dns" className="text-sm text-purple-900 cursor-pointer">
-          Resolve DNS
-        </Label>
+        <div className="flex items-center space-x-3">
+          <Switch
+            id="scan-resolve-dns"
+            checked={formScanResolveDns}
+            onCheckedChange={setFormScanResolveDns}
+          />
+          <Label htmlFor="scan-resolve-dns" className="text-sm text-purple-900 cursor-pointer">
+            Resolve DNS
+          </Label>
+        </div>
+        <p className="text-xs text-purple-700">
+          When enabled, DNS names will be resolved during network scanning.
+        </p>
+
+        <div className="grid grid-cols-2 gap-4 mt-4">
+          <div className="space-y-2">
+            <Label htmlFor="scan-ping-count" className="text-sm text-purple-900">
+              Ping Count
+            </Label>
+            <Input
+              id="scan-ping-count"
+              type="number"
+              min="1"
+              max="10"
+              value={formScanPingCount}
+              onChange={(e) => setFormScanPingCount(e.target.value)}
+              placeholder="3"
+              className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+            />
+            <p className="text-xs text-purple-700">Number of ping attempts per host (1-10)</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="scan-timeout-ms" className="text-sm text-purple-900">
+              Timeout (ms)
+            </Label>
+            <Input
+              id="scan-timeout-ms"
+              type="number"
+              min="100"
+              max="30000"
+              value={formScanTimeoutMs}
+              onChange={(e) => setFormScanTimeoutMs(e.target.value)}
+              placeholder="1000"
+              className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+            />
+            <p className="text-xs text-purple-700">Timeout in milliseconds (100-30000)</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="scan-retries" className="text-sm text-purple-900">
+              Retries
+            </Label>
+            <Input
+              id="scan-retries"
+              type="number"
+              min="0"
+              max="5"
+              value={formScanRetries}
+              onChange={(e) => setFormScanRetries(e.target.value)}
+              placeholder="2"
+              className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+            />
+            <p className="text-xs text-purple-700">Number of retry attempts (0-5)</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="scan-max-ips" className="text-sm text-purple-900">
+              Max IPs per Scan
+            </Label>
+            <Input
+              id="scan-max-ips"
+              type="number"
+              min="0"
+              value={formScanMaxIps}
+              onChange={(e) => setFormScanMaxIps(e.target.value)}
+              placeholder="No limit"
+              className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+            />
+            <p className="text-xs text-purple-700">Maximum number of IPs to scan. Larger jobs will be split.</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="scan-interval-ms" className="text-sm text-purple-900">
+              Interval (ms)
+            </Label>
+            <Input
+              id="scan-interval-ms"
+              type="number"
+              min="0"
+              max="10000"
+              value={formScanIntervalMs}
+              onChange={(e) => setFormScanIntervalMs(e.target.value)}
+              placeholder="100"
+              className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+            />
+            <p className="text-xs text-purple-700">Interval between scans in milliseconds (0-10000)</p>
+          </div>
+        </div>
       </div>
-      <p className="text-xs text-purple-700">
-        When enabled, DNS names will be resolved during network scanning.
-      </p>
-
-      <div className="grid grid-cols-2 gap-4 mt-4">
-        <div className="space-y-2">
-          <Label htmlFor="scan-ping-count" className="text-sm text-purple-900">
-            Ping Count
-          </Label>
-          <Input
-            id="scan-ping-count"
-            type="number"
-            min="1"
-            max="10"
-            value={formScanPingCount}
-            onChange={(e) => setFormScanPingCount(e.target.value)}
-            placeholder="3"
-            className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
-          />
-          <p className="text-xs text-purple-700">Number of ping attempts per host (1-10)</p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="scan-timeout-ms" className="text-sm text-purple-900">
-            Timeout (ms)
-          </Label>
-          <Input
-            id="scan-timeout-ms"
-            type="number"
-            min="100"
-            max="30000"
-            value={formScanTimeoutMs}
-            onChange={(e) => setFormScanTimeoutMs(e.target.value)}
-            placeholder="1000"
-            className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
-          />
-          <p className="text-xs text-purple-700">Timeout in milliseconds (100-30000)</p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="scan-retries" className="text-sm text-purple-900">
-            Retries
-          </Label>
-          <Input
-            id="scan-retries"
-            type="number"
-            min="0"
-            max="5"
-            value={formScanRetries}
-            onChange={(e) => setFormScanRetries(e.target.value)}
-            placeholder="2"
-            className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
-          />
-          <p className="text-xs text-purple-700">Number of retry attempts (0-5)</p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="scan-interval-ms" className="text-sm text-purple-900">
-            Interval (ms)
-          </Label>
-          <Input
-            id="scan-interval-ms"
-            type="number"
-            min="0"
-            max="10000"
-            value={formScanIntervalMs}
-            onChange={(e) => setFormScanIntervalMs(e.target.value)}
-            placeholder="100"
-            className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
-          />
-          <p className="text-xs text-purple-700">Interval between scans in milliseconds (0-10000)</p>
-        </div>
-      </div>
-    </div>
     </>
   )
 }

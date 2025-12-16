@@ -49,6 +49,7 @@ interface JobTemplate {
   scan_custom_field_name?: string
   scan_custom_field_value?: string
   scan_response_custom_field_name?: string
+  scan_max_ips?: number
   is_global: boolean
   user_id?: number
   created_by?: string
@@ -106,7 +107,7 @@ export function JobTemplatesPage() {
   const token = useAuthStore(state => state.token)
   const user = useAuthStore(state => state.user)
   const { toast } = useToast()
-  
+
   const [templates, setTemplates] = useState<JobTemplate[]>(EMPTY_TEMPLATES)
   const [jobTypes, setJobTypes] = useState<JobType[]>(EMPTY_TYPES)
   const [configRepos, setConfigRepos] = useState<GitRepository[]>(EMPTY_REPOS)
@@ -144,6 +145,7 @@ export function JobTemplatesPage() {
   const [formScanCustomFieldName, setFormScanCustomFieldName] = useState("")
   const [formScanCustomFieldValue, setFormScanCustomFieldValue] = useState("")
   const [formScanResponseCustomFieldName, setFormScanResponseCustomFieldName] = useState("")
+  const [formScanMaxIps, setFormScanMaxIps] = useState("")
   const [formIsGlobal, setFormIsGlobal] = useState(false)
 
   // Get job type label
@@ -354,6 +356,7 @@ export function JobTemplatesPage() {
     setFormScanCustomFieldName("")
     setFormScanCustomFieldValue("")
     setFormScanResponseCustomFieldName("")
+    setFormScanMaxIps("")
     setFormIsGlobal(false)
     setEditingTemplate(null)
     setSavedInventories([])
@@ -382,6 +385,7 @@ export function JobTemplatesPage() {
     setFormScanCustomFieldName(template.scan_custom_field_name || "")
     setFormScanCustomFieldValue(template.scan_custom_field_value || "")
     setFormScanResponseCustomFieldName(template.scan_response_custom_field_name || "")
+    setFormScanMaxIps(template.scan_max_ips?.toString() || "")
     setFormIsGlobal(template.is_global)
     setIsDialogOpen(true)
   }, [])
@@ -467,6 +471,7 @@ export function JobTemplatesPage() {
         scan_custom_field_name: formJobType === "scan_prefixes" ? formScanCustomFieldName : undefined,
         scan_custom_field_value: formJobType === "scan_prefixes" ? formScanCustomFieldValue : undefined,
         scan_response_custom_field_name: formJobType === "scan_prefixes" ? formScanResponseCustomFieldName : undefined,
+        scan_max_ips: formJobType === "scan_prefixes" && formScanMaxIps ? parseInt(formScanMaxIps) : undefined,
         is_global: formIsGlobal
       }
 
@@ -533,7 +538,7 @@ export function JobTemplatesPage() {
         variant: "destructive"
       })
     }
-  }, [token, formName, formJobType, formDescription, formConfigRepoId, formInventorySource, formInventoryName, formCommandTemplate, formBackupRunningConfigPath, formBackupStartupConfigPath, formWriteTimestampToCustomField, formTimestampCustomFieldName, formActivateChangesAfterSync, formScanResolveDns, formScanPingCount, formScanTimeoutMs, formScanRetries, formScanIntervalMs, formScanCustomFieldName, formScanCustomFieldValue, formScanResponseCustomFieldName, formIsGlobal, editingTemplate, resetForm, fetchTemplates, toast])
+  }, [token, formName, formJobType, formDescription, formConfigRepoId, formInventorySource, formInventoryName, formCommandTemplate, formBackupRunningConfigPath, formBackupStartupConfigPath, formWriteTimestampToCustomField, formTimestampCustomFieldName, formActivateChangesAfterSync, formScanResolveDns, formScanPingCount, formScanTimeoutMs, formScanRetries, formScanIntervalMs, formScanCustomFieldName, formScanCustomFieldValue, formScanResponseCustomFieldName, formScanMaxIps, formIsGlobal, editingTemplate, resetForm, fetchTemplates, toast])
 
   const handleDeleteTemplate = useCallback(async (templateId: number) => {
     if (!token) return
@@ -613,7 +618,7 @@ export function JobTemplatesPage() {
                 </DialogDescription>
               </DialogHeader>
             </div>
-            
+
             {/* Form content */}
             <div className="px-6 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
               <JobTemplateCommonFields
@@ -704,21 +709,23 @@ export function JobTemplatesPage() {
                   setFormScanCustomFieldValue={setFormScanCustomFieldValue}
                   formScanResponseCustomFieldName={formScanResponseCustomFieldName}
                   setFormScanResponseCustomFieldName={setFormScanResponseCustomFieldName}
+                  formScanMaxIps={formScanMaxIps}
+                  setFormScanMaxIps={setFormScanMaxIps}
                 />
               )}
             </div>
 
             {/* Footer */}
             <div className="flex justify-end gap-3 px-6 py-3 bg-gray-50 border-t border-gray-200">
-              <Button 
-                variant="outline" 
-                onClick={() => { setIsDialogOpen(false); resetForm(); }} 
+              <Button
+                variant="outline"
+                onClick={() => { setIsDialogOpen(false); resetForm(); }}
                 className="h-9 px-4 border-gray-300 text-gray-700 hover:bg-gray-100"
               >
                 Cancel
               </Button>
-              <Button 
-                onClick={handleSaveTemplate} 
+              <Button
+                onClick={handleSaveTemplate}
                 className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white"
               >
                 {editingTemplate ? (
@@ -765,89 +772,89 @@ export function JobTemplatesPage() {
             </div>
           </div>
           <div className="bg-white">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead className="font-semibold text-gray-700">Name</TableHead>
-                <TableHead className="font-semibold text-gray-700">Type</TableHead>
-                <TableHead className="font-semibold text-gray-700">Inventory</TableHead>
-                <TableHead className="font-semibold text-gray-700">Scope</TableHead>
-                <TableHead className="font-semibold text-gray-700">Created By</TableHead>
-                <TableHead className="font-semibold text-gray-700 w-24">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {templates.map((template) => (
-                <TableRow key={template.id} className="hover:bg-gray-50">
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-medium text-gray-900">{template.name}</span>
-                      {template.description && (
-                        <span className="text-xs text-gray-500 truncate max-w-xs">
-                          {template.description}
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className={`h-2 w-2 rounded-full ${getJobTypeColor(template.job_type)}`} />
-                      <span className="text-gray-700">{getJobTypeLabel(template.job_type)}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {template.inventory_source === "all" ? (
-                      <Badge variant="outline" className="text-blue-600 border-blue-200">
-                        <Globe className="h-3 w-3 mr-1" />
-                        All Devices
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-green-600 border-green-200">
-                        <FileText className="h-3 w-3 mr-1" />
-                        {template.inventory_name || "Inventory"}
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {template.is_global ? (
-                      <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
-                        <Globe className="h-3 w-3 mr-1" />
-                        Global
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="bg-gray-100 text-gray-600">
-                        <Lock className="h-3 w-3 mr-1" />
-                        Private
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-gray-600 text-sm">
-                    {template.created_by || "-"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEditTemplate(template)}
-                        className="h-8 w-8 p-0 text-gray-500 hover:text-blue-600"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDeleteTemplate(template.id)}
-                        className="h-8 w-8 p-0 text-gray-500 hover:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="font-semibold text-gray-700">Name</TableHead>
+                  <TableHead className="font-semibold text-gray-700">Type</TableHead>
+                  <TableHead className="font-semibold text-gray-700">Inventory</TableHead>
+                  <TableHead className="font-semibold text-gray-700">Scope</TableHead>
+                  <TableHead className="font-semibold text-gray-700">Created By</TableHead>
+                  <TableHead className="font-semibold text-gray-700 w-24">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {templates.map((template) => (
+                  <TableRow key={template.id} className="hover:bg-gray-50">
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-900">{template.name}</span>
+                        {template.description && (
+                          <span className="text-xs text-gray-500 truncate max-w-xs">
+                            {template.description}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className={`h-2 w-2 rounded-full ${getJobTypeColor(template.job_type)}`} />
+                        <span className="text-gray-700">{getJobTypeLabel(template.job_type)}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {template.inventory_source === "all" ? (
+                        <Badge variant="outline" className="text-blue-600 border-blue-200">
+                          <Globe className="h-3 w-3 mr-1" />
+                          All Devices
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-green-600 border-green-200">
+                          <FileText className="h-3 w-3 mr-1" />
+                          {template.inventory_name || "Inventory"}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {template.is_global ? (
+                        <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+                          <Globe className="h-3 w-3 mr-1" />
+                          Global
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-gray-100 text-gray-600">
+                          <Lock className="h-3 w-3 mr-1" />
+                          Private
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-gray-600 text-sm">
+                      {template.created_by || "-"}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEditTemplate(template)}
+                          className="h-8 w-8 p-0 text-gray-500 hover:text-blue-600"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteTemplate(template.id)}
+                          className="h-8 w-8 p-0 text-gray-500 hover:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </div>
       )}

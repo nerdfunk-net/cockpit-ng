@@ -374,6 +374,7 @@ def backup_devices_task(
                     password=password,
                     commands=commands,
                     enable_mode=False,
+                    privileged=True,
                 )
 
                 if not result["success"]:
@@ -390,37 +391,32 @@ def backup_devices_task(
                 device_backup_info["ssh_connection_success"] = True
                 logger.info(f"[{idx}] ✓ SSH connection successful")
 
-                # Parse output - Netmiko concatenates all outputs
-                output = result["output"]
-                logger.info(f"[{idx}] Total output received: {len(output)} bytes")
+                # Parse output - using structured outcomes from NetmikoService
+                command_outputs = result.get("command_outputs", {})
                 logger.info(f"[{idx}] Parsing configuration output...")
+                logger.debug(f"[{idx}] Available command outputs keys: {list(command_outputs.keys())}")
 
-                # Split outputs (simple approach - looking for config markers)
-                running_config = ""
-                startup_config = ""
+                running_config = command_outputs.get("show running-config", "").strip()
+                startup_config = command_outputs.get("show startup-config", "").strip()
 
-                # Try to split by looking for the second command in output
-                if "show startup-config" in output:
-                    parts = output.split("show startup-config")
-                    running_config = parts[0].strip()
-                    if len(parts) > 1:
-                        startup_config = parts[1].strip()
-                    logger.info(f"[{idx}] Split output by 'show startup-config' marker")
-                elif (
-                    "Building configuration" in output
-                    or "Current configuration" in output
-                ):
-                    # Fallback: try to find configuration markers
-                    running_config = output.strip()
-                    logger.info(
-                        f"[{idx}] Using entire output as running config (no split marker found)"
-                    )
-                else:
-                    # Last resort: use entire output
-                    running_config = output.strip()
-                    logger.info(
-                        f"[{idx}] Using entire output as running config (no markers found)"
-                    )
+                logger.debug(f"[{idx}] Raw startup config from command_outputs: '{command_outputs.get('show startup-config')}'")
+                logger.debug(f"[{idx}] Cleaned startup config: '{startup_config}'")
+                
+                logger.debug(f"[{idx}] Running config length: {len(running_config)}")
+                logger.debug(f"[{idx}] Startup config length: {len(startup_config)}")
+                if not startup_config:
+                    logger.debug(f"[{idx}] Startup config content (first 100 chars): '{command_outputs.get('show startup-config', '')[:100]}'")
+
+                # Fallback to general output if structured data is missing (backward compatibility)
+                if not running_config and not startup_config:
+                    output = result["output"]
+                    if "show startup-config" in output:
+                        parts = output.split("show startup-config")
+                        running_config = parts[0].strip()
+                        if len(parts) > 1:
+                            startup_config = parts[1].strip()
+                    else:
+                        running_config = output.strip()
 
                 # Validate we got configs
                 if running_config:
@@ -439,8 +435,9 @@ def backup_devices_task(
                         f"[{idx}] ✓ Startup config: {len(startup_config)} bytes"
                     )
                 else:
-                    logger.warning(
-                        f"[{idx}] ⚠ Startup config is empty or not retrieved"
+                    # Not all devices support startup-config, or it might be empty
+                    logger.info(
+                        f"[{idx}] Startup config is empty or not retrieved"
                     )
 
                 # Save configs to files

@@ -111,6 +111,11 @@ class JobTemplateBase(BaseModel):
         max_length=255,
         description="Name of the custom field to write scan results to (only applies to scan_prefixes type)",
     )
+    scan_max_ips: Optional[int] = Field(
+        None,
+        ge=1,
+        description="Maximum number of IPs to scan per job (only applies to scan_prefixes type)",
+    )
     is_global: bool = Field(
         False,
         description="Whether this template is global (available to all users) or private",
@@ -146,6 +151,7 @@ class JobTemplateUpdate(BaseModel):
     scan_custom_field_name: Optional[str] = Field(None, max_length=255)
     scan_custom_field_value: Optional[str] = Field(None, max_length=255)
     scan_response_custom_field_name: Optional[str] = Field(None, max_length=255)
+    scan_max_ips: Optional[int] = Field(None, ge=1)
     is_global: Optional[bool] = None
 
 

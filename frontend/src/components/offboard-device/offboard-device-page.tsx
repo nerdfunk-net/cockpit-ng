@@ -349,7 +349,7 @@ export function OffboardDevicePage() {
 
     if (filters.deviceName) {
       filtered = filtered.filter(device =>
-        device.name.toLowerCase().includes(filters.deviceName.toLowerCase())
+        device.name && device.name.toLowerCase().includes(filters.deviceName.toLowerCase())
       )
     }
 
@@ -664,9 +664,9 @@ export function OffboardDevicePage() {
       {/* Status Messages */}
       {statusMessage && (
         <Alert className={`${statusMessage.type === 'error' ? 'border-red-500 bg-red-50' :
-            statusMessage.type === 'success' ? 'border-green-500 bg-green-50' :
-              statusMessage.type === 'warning' ? 'border-yellow-500 bg-yellow-50' :
-                'border-blue-500 bg-blue-50'
+          statusMessage.type === 'success' ? 'border-green-500 bg-green-50' :
+            statusMessage.type === 'warning' ? 'border-yellow-500 bg-yellow-50' :
+              'border-blue-500 bg-blue-50'
           }`}>
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-2">
@@ -1032,7 +1032,7 @@ export function OffboardDevicePage() {
                           />
                         </td>
                         <td className="pl-4 pr-2 py-3 w-48 text-sm font-medium text-gray-900">
-                          {device.name}
+                          {device.name || 'Unnamed Device'}
                         </td>
                         <td className="px-4 py-3 w-32 text-sm text-gray-600">
                           {device.primary_ip4?.address || 'N/A'}
@@ -1195,8 +1195,8 @@ export function OffboardDevicePage() {
                       </div>
                       <Badge
                         className={`${result.success
-                            ? 'bg-green-500 hover:bg-green-600'
-                            : 'bg-red-500 hover:bg-red-600'
+                          ? 'bg-green-500 hover:bg-green-600'
+                          : 'bg-red-500 hover:bg-red-600'
                           } text-white`}
                       >
                         {result.success ? 'Success' : 'Failed'}

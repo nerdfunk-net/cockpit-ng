@@ -38,6 +38,7 @@ def create_job_template(
     scan_custom_field_name: Optional[str] = None,
     scan_custom_field_value: Optional[str] = None,
     scan_response_custom_field_name: Optional[str] = None,
+    scan_max_ips: Optional[int] = None,
     is_global: bool = False,
 ) -> Dict[str, Any]:
     """Create a new job template"""
@@ -68,6 +69,7 @@ def create_job_template(
         scan_custom_field_name=scan_custom_field_name,
         scan_custom_field_value=scan_custom_field_value,
         scan_response_custom_field_name=scan_response_custom_field_name,
+        scan_max_ips=scan_max_ips,
         is_global=is_global,
         user_id=user_id if not is_global else None,
         created_by=created_by,
@@ -137,6 +139,7 @@ def update_job_template(
     scan_custom_field_name: Optional[str] = None,
     scan_custom_field_value: Optional[str] = None,
     scan_response_custom_field_name: Optional[str] = None,
+    scan_max_ips: Optional[int] = None,
     is_global: Optional[bool] = None,
     user_id: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
@@ -190,6 +193,8 @@ def update_job_template(
         update_data["scan_custom_field_value"] = scan_custom_field_value
     if scan_response_custom_field_name is not None:
         update_data["scan_response_custom_field_name"] = scan_response_custom_field_name
+    if scan_max_ips is not None:
+        update_data["scan_max_ips"] = scan_max_ips
     if is_global is not None:
         update_data["is_global"] = is_global
         if is_global:
@@ -274,6 +279,7 @@ def _model_to_dict(template) -> Dict[str, Any]:
         "scan_custom_field_name": template.scan_custom_field_name,
         "scan_custom_field_value": template.scan_custom_field_value,
         "scan_response_custom_field_name": template.scan_response_custom_field_name,
+        "scan_max_ips": template.scan_max_ips,
         "is_global": template.is_global,
         "user_id": template.user_id,
         "created_by": template.created_by,

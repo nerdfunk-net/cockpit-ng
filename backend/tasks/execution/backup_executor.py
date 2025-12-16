@@ -510,24 +510,47 @@ def execute_backup(
                 output = result["output"]
                 logger.info(f"[{idx}] Output: {len(output)} bytes")
 
-                # Parse configs
-                running_config = ""
-                startup_config = ""
+                # Parse output - using structured outcomes from NetmikoService
+                command_outputs = result.get("command_outputs", {})
+                logger.info(f"[{idx}] Parsing configuration output...")
+                logger.debug(
+                    f"[{idx}] Available command outputs keys: {list(command_outputs.keys())}"
+                )
 
-                if "show startup-config" in output:
-                    parts = output.split("show startup-config")
-                    running_config = parts[0].strip()
-                    if len(parts) > 1:
-                        startup_config = parts[1].strip()
-                else:
-                    running_config = output.strip()
+                running_config = command_outputs.get("show running-config", "").strip()
+                startup_config = command_outputs.get("show startup-config", "").strip()
 
+                logger.debug(
+                    f"[{idx}] Raw startup config from command_outputs: '{command_outputs.get('show startup-config')}'"
+                )
+                logger.debug(f"[{idx}] Cleaned startup config: '{startup_config}'")
+
+                logger.debug(f"[{idx}] Running config length: {len(running_config)}")
+                logger.debug(f"[{idx}] Startup config length: {len(startup_config)}")
+                if not startup_config:
+                    logger.debug(
+                        f"[{idx}] Startup config content (first 100 chars): '{command_outputs.get('show startup-config', '')[:100]}'"
+                    )
+
+                # Fallback to general output if structured data is missing (backward compatibility)
+                if not running_config and not startup_config:
+                    if "show startup-config" in output:
+                        parts = output.split("show startup-config")
+                        running_config = parts[0].strip()
+                        if len(parts) > 1:
+                            startup_config = parts[1].strip()
+                    else:
+                        running_config = output.strip()
+
+                # Validate we got configs
                 if running_config:
                     device_backup_info["running_config_success"] = True
                     device_backup_info["running_config_bytes"] = len(running_config)
                     logger.info(
                         f"[{idx}] ✓ Running config: {len(running_config)} bytes"
                     )
+                else:
+                    logger.warning(f"[{idx}] ⚠ Running config is empty!")
 
                 if startup_config:
                     device_backup_info["startup_config_success"] = True
@@ -535,6 +558,9 @@ def execute_backup(
                     logger.info(
                         f"[{idx}] ✓ Startup config: {len(startup_config)} bytes"
                     )
+                else:
+                    # Not all devices support startup-config, or it might be empty
+                    logger.info(f"[{idx}] Startup config is empty or not retrieved")
 
                 # Generate file paths using templates or defaults
                 from utils.path_template import replace_template_variables

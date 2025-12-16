@@ -33,6 +33,9 @@ from .export_devices_task import export_devices_task
 # Import ping network task
 from .ping_network_task import ping_network_task
 
+# Import scan prefixes task
+from .scan_prefixes_task import scan_prefixes_task
+
 # Import periodic tasks
 from .periodic_tasks import (
     worker_health_check,
@@ -70,6 +73,7 @@ __all__ = [
     "export_devices_task",
     # Network tools
     "ping_network_task",
+    "scan_prefixes_task",
     # Periodic tasks
     "worker_health_check",
     "load_cache_schedules_task",
