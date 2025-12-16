@@ -236,8 +236,8 @@ export default function DatabaseMigrationPage() {
                                             <div className="mb-2">
                                                 <p className="text-xs font-bold uppercase text-gray-500 mb-1">Changes Applied:</p>
                                                 <ul className="list-disc list-inside text-sm space-y-1 text-gray-700">
-                                                    {migrationResult.changes.map((change, i) => (
-                                                        <li key={`change-${i}`}>{change}</li>
+                                                    {migrationResult.changes.map((change) => (
+                                                        <li key={change}>{change}</li>
                                                     ))}
                                                 </ul>
                                             </div>
@@ -246,8 +246,8 @@ export default function DatabaseMigrationPage() {
                                             <div>
                                                 <p className="text-xs font-bold uppercase text-red-500 mb-1">Errors:</p>
                                                 <ul className="list-disc list-inside text-sm space-y-1 text-red-700">
-                                                    {migrationResult.errors.map((err, i) => (
-                                                        <li key={`error-${i}`}>{err}</li>
+                                                    {migrationResult.errors.map((err) => (
+                                                        <li key={err}>{err}</li>
                                                     ))}
                                                 </ul>
                                             </div>

@@ -40,7 +40,7 @@ export interface LogicalCondition {
 
 export interface DeviceInfo {
   id: string
-  name: string
+  name?: string | null // Name can be null/undefined for unnamed devices
   location?: string
   role?: string
   device_type?: { name: string } | string
@@ -707,7 +707,7 @@ export function DeviceSelector({
     }
   }
 
-  const formatDeviceValue = (value: string | { name?: string; address?: string } | undefined) => {
+  const formatDeviceValue = (value: string | { name?: string; address?: string } | null | undefined) => {
     if (!value) return 'N/A'
     if (typeof value === 'object') {
       return value.name || value.address?.split('/')[0] || 'N/A'

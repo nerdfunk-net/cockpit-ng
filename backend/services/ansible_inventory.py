@@ -723,9 +723,12 @@ class AnsibleInventoryService:
                     if tag.get("name")
                 ]
 
+            # Get device name, handling None/null case
+            device_name = device_data.get("name")
+
             device = DeviceInfo(
                 id=device_data.get("id", ""),
-                name=device_data.get("name", ""),
+                name=device_name,  # Can be None for unnamed devices
                 primary_ip4=primary_ip,
                 status=status,
                 device_type=device_type,
@@ -908,8 +911,11 @@ class AnsibleInventoryService:
             # Convert devices to dict format for template rendering
             all_devices = []
             for device in devices:
+                # Provide fallback for unnamed devices (consistent with other apps)
+                device_name = device.name or "Unnamed Device"
+
                 device_dict = {
-                    "name": device.name,
+                    "name": device_name,
                     "uuid": device.id,
                     "location": device.location,
                     "role": device.role,

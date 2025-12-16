@@ -10,6 +10,7 @@ import {
   Plus,
   Trash2,
   Edit,
+  Copy,
   FileText,
   Globe,
   Lock,
@@ -578,6 +579,69 @@ export function JobTemplatesPage() {
     }
   }, [token, fetchTemplates, toast])
 
+  const handleCopyTemplate = useCallback(async (template: JobTemplate) => {
+    if (!token) return
+
+    try {
+      // Create a copy of the template with "copy_of_" prefix
+      const copyPayload = {
+        name: `copy_of_${template.name}`,
+        job_type: template.job_type,
+        description: template.description || undefined,
+        config_repository_id: template.config_repository_id || undefined,
+        inventory_source: template.inventory_source,
+        inventory_name: template.inventory_name || undefined,
+        command_template_name: template.command_template_name || undefined,
+        backup_running_config_path: template.backup_running_config_path || undefined,
+        backup_startup_config_path: template.backup_startup_config_path || undefined,
+        write_timestamp_to_custom_field: template.write_timestamp_to_custom_field,
+        timestamp_custom_field_name: template.timestamp_custom_field_name || undefined,
+        activate_changes_after_sync: template.activate_changes_after_sync,
+        scan_resolve_dns: template.scan_resolve_dns,
+        scan_ping_count: template.scan_ping_count,
+        scan_timeout_ms: template.scan_timeout_ms,
+        scan_retries: template.scan_retries,
+        scan_interval_ms: template.scan_interval_ms,
+        scan_custom_field_name: template.scan_custom_field_name || undefined,
+        scan_custom_field_value: template.scan_custom_field_value || undefined,
+        scan_response_custom_field_name: template.scan_response_custom_field_name || undefined,
+        scan_max_ips: template.scan_max_ips,
+        is_global: template.is_global
+      }
+
+      const response = await fetch("/api/proxy/api/job-templates", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(copyPayload),
+      })
+
+      if (response.ok) {
+        fetchTemplates()
+        toast({
+          title: "Template Copied",
+          description: `Job template "${copyPayload.name}" has been created successfully.`,
+        })
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Copy Failed",
+          description: error.detail || "Failed to copy template.",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error("Error copying template:", error)
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive"
+      })
+    }
+  }, [token, fetchTemplates, toast])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -838,14 +902,25 @@ export function JobTemplatesPage() {
                           variant="ghost"
                           onClick={() => handleEditTemplate(template)}
                           className="h-8 w-8 p-0 text-gray-500 hover:text-blue-600"
+                          title="Edit template"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
+                          onClick={() => handleCopyTemplate(template)}
+                          className="h-8 w-8 p-0 text-gray-500 hover:text-green-600"
+                          title="Copy template"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           onClick={() => handleDeleteTemplate(template.id)}
                           className="h-8 w-8 p-0 text-gray-500 hover:text-red-600"
+                          title="Delete template"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

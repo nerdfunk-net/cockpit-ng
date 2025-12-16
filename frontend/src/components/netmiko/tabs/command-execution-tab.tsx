@@ -9,7 +9,7 @@ import { LoadingButton } from '../ui/loading-button'
 import type { StoredCredential, Template } from '../types'
 
 interface CommandExecutionTabProps {
-  selectedDevices: Array<{ name: string }>
+  selectedDevices: Array<{ name?: string | null }>
   // Credentials
   storedCredentials: StoredCredential[]
   selectedCredentialId: string
