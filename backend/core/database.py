@@ -72,7 +72,55 @@ def init_db():
     """
     try:
         logger.info("Initializing database tables...")
+
         # Import all models to ensure they're registered with Base.metadata
+        # This is required for the schema migration tool to work correctly
+        from core.models import (
+            # User Management
+            User,
+            UserProfile,
+            Role,
+            Permission,
+            RolePermission,
+            UserRole,
+            UserPermission,
+            # Settings
+            Setting,
+            SettingsMetadata,
+            CacheSetting,
+            CelerySetting,
+            CheckMKSetting,
+            GitSetting,
+            NautobotSetting,
+            NautobotDefault,
+            DeviceOffboardingSetting,
+            # Credentials & Auth
+            Credential,
+            LoginCredential,
+            # Git
+            GitRepository,
+            # Jobs & Scheduling
+            Job,
+            JobSchedule,
+            JobTemplate,
+            JobRun,
+            # Nautobot to CheckMK Sync
+            NB2CMKSync,
+            NB2CMKJob,
+            NB2CMKJobResult,
+            # Compliance
+            ComplianceRule,
+            ComplianceCheck,
+            RegexPattern,
+            SNMPMapping,
+            # Templates
+            Template,
+            TemplateVersion,
+            # Inventory
+            Inventory,
+        )
+
+        logger.info(f"Loaded {len(Base.metadata.tables)} model definitions")
         Base.metadata.create_all(bind=engine)
         # Run migrations for existing tables
         migrate_cache_settings_table()

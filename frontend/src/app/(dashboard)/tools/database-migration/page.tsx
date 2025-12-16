@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
     Table,
     TableBody,
@@ -39,6 +40,12 @@ interface MigrationResponse {
     errors: string[]
 }
 
+interface SeedRbacResponse {
+    success: boolean
+    message: string
+    output: string
+}
+
 export default function DatabaseMigrationPage() {
     const { apiCall } = useApi()
     const [status, setStatus] = useState<SchemaStatus | null>(null)
@@ -46,6 +53,12 @@ export default function DatabaseMigrationPage() {
     const [migrating, setMigrating] = useState(false)
     const [migrationResult, setMigrationResult] = useState<MigrationResponse | null>(null)
     const [error, setError] = useState<string | null>(null)
+
+    // RBAC seeding state
+    const [showSeedDialog, setShowSeedDialog] = useState(false)
+    const [seeding, setSeeding] = useState(false)
+    const [seedResult, setSeedResult] = useState<SeedRbacResponse | null>(null)
+    const [showSeedOutputModal, setShowSeedOutputModal] = useState(false)
 
     const fetchStatus = useCallback(async () => {
         setLoading(true)
@@ -71,6 +84,8 @@ export default function DatabaseMigrationPage() {
             setMigrationResult(data)
             if (data.success) {
                 await fetchStatus() // Refresh status on success
+                // Show dialog asking if user wants to seed RBAC
+                setShowSeedDialog(true)
             }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Network or server error during migration'
@@ -82,6 +97,29 @@ export default function DatabaseMigrationPage() {
             })
         } finally {
             setMigrating(false)
+        }
+    }
+
+    const handleSeedRbac = async () => {
+        setShowSeedDialog(false)
+        setSeeding(true)
+        setSeedResult(null)
+        try {
+            const data = await apiCall<SeedRbacResponse>('tools/rbac/seed', {
+                method: 'POST'
+            })
+            setSeedResult(data)
+            setShowSeedOutputModal(true)
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to seed RBAC'
+            setSeedResult({
+                success: false,
+                message: errorMessage,
+                output: `Error: ${errorMessage}`
+            })
+            setShowSeedOutputModal(true)
+        } finally {
+            setSeeding(false)
         }
     }
 
@@ -258,6 +296,51 @@ export default function DatabaseMigrationPage() {
                         ) : null}
                     </CardContent>
                 </Card>
+
+                {/* Seed RBAC Confirmation Dialog */}
+                <Dialog open={showSeedDialog} onOpenChange={setShowSeedDialog}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Seed RBAC System?</DialogTitle>
+                            <DialogDescription>
+                                The database migration was successful. Would you like to seed the RBAC system with default permissions and roles?
+                                This will ensure all permissions are up-to-date with the new database schema.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setShowSeedDialog(false)}>
+                                Skip
+                            </Button>
+                            <Button onClick={handleSeedRbac} className="bg-blue-600 hover:bg-blue-700">
+                                Seed RBAC
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Seed RBAC Output Modal */}
+                <Dialog open={showSeedOutputModal} onOpenChange={setShowSeedOutputModal}>
+                    <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+                        <DialogHeader>
+                            <DialogTitle>
+                                {seedResult?.success ? '✅ RBAC Seeding Complete' : '❌ RBAC Seeding Failed'}
+                            </DialogTitle>
+                            <DialogDescription>
+                                {seedResult?.message}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="flex-1 overflow-y-auto">
+                            <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-sm font-mono whitespace-pre-wrap">
+                                {seedResult?.output || 'No output available'}
+                            </pre>
+                        </div>
+                        <DialogFooter>
+                            <Button onClick={() => setShowSeedOutputModal(false)}>
+                                Close
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     )

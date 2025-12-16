@@ -17,7 +17,58 @@ class SchemaManager:
     def __init__(self, db_engine: Engine = engine):
         self.engine = db_engine
         self.inspector = inspect(self.engine)
+
+        # Import all models to ensure they're registered with Base.metadata
+        # This is required for schema detection to work correctly
+        from core.models import (
+            # User Management
+            User,
+            UserProfile,
+            Role,
+            Permission,
+            RolePermission,
+            UserRole,
+            UserPermission,
+            # Settings
+            Setting,
+            SettingsMetadata,
+            CacheSetting,
+            CelerySetting,
+            CheckMKSetting,
+            GitSetting,
+            NautobotSetting,
+            NautobotDefault,
+            DeviceOffboardingSetting,
+            # Credentials & Auth
+            Credential,
+            LoginCredential,
+            # Git
+            GitRepository,
+            # Jobs & Scheduling
+            Job,
+            JobSchedule,
+            JobTemplate,
+            JobRun,
+            # Nautobot to CheckMK Sync
+            NB2CMKSync,
+            NB2CMKJob,
+            NB2CMKJobResult,
+            # Compliance
+            ComplianceRule,
+            ComplianceCheck,
+            RegexPattern,
+            SNMPMapping,
+            # Templates
+            Template,
+            TemplateVersion,
+            # Inventory
+            Inventory,
+        )
+
         self.metadata = Base.metadata
+        logger.info(
+            f"SchemaManager initialized with {len(self.metadata.tables)} model definitions"
+        )
 
     def get_schema_status(self) -> Dict[str, Any]:
         """
