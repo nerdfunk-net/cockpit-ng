@@ -56,7 +56,6 @@ export default function DatabaseMigrationPage() {
 
     // RBAC seeding state
     const [showSeedDialog, setShowSeedDialog] = useState(false)
-    const [seeding, setSeeding] = useState(false)
     const [seedResult, setSeedResult] = useState<SeedRbacResponse | null>(null)
     const [showSeedOutputModal, setShowSeedOutputModal] = useState(false)
 
@@ -102,7 +101,6 @@ export default function DatabaseMigrationPage() {
 
     const handleSeedRbac = async () => {
         setShowSeedDialog(false)
-        setSeeding(true)
         setSeedResult(null)
         try {
             const data = await apiCall<SeedRbacResponse>('tools/rbac/seed', {
@@ -118,8 +116,6 @@ export default function DatabaseMigrationPage() {
                 output: `Error: ${errorMessage}`
             })
             setShowSeedOutputModal(true)
-        } finally {
-            setSeeding(false)
         }
     }
 
