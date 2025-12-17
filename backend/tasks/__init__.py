@@ -44,6 +44,9 @@ from .periodic_tasks import (
     cleanup_celery_data_task,
 )
 
+# Import backup tasks
+from .backup_tasks import backup_single_device_task, finalize_backup_task
+
 # Import background job tasks (outside tasks package)
 from services.background_jobs import (  # noqa: F401
     cache_all_devices_task,
@@ -58,6 +61,9 @@ __all__ = [
     # Active tasks
     "check_job_schedules_task",
     "dispatch_job",
+    # Backup tasks
+    "backup_single_device_task",
+    "finalize_backup_task",
     # Legacy tasks (deprecated)
     "cache_devices_task",
     "sync_checkmk_task",

@@ -2,7 +2,7 @@
 Backup tasks for backing up device configurations to Git repository.
 """
 
-from celery import shared_task, group
+from celery import shared_task, group, chord
 import logging
 from datetime import datetime
 from typing import List, Optional, Dict, Any
@@ -12,7 +12,152 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
-@shared_task(name="tasks.backup_single_device")
+@shared_task(name="tasks.finalize_backup_task")
+def finalize_backup_task(
+    device_results: List[Dict[str, Any]],
+    repo_config: Dict[str, Any],
+) -> Dict[str, Any]:
+    """
+    Finalize backup after all devices are backed up (chord callback).
+    
+    This task:
+    1. Collects results from all parallel backup tasks
+    2. Commits and pushes changes to Git
+    3. Updates Nautobot custom fields if enabled
+    
+    Args:
+        device_results: List of backup results from all device tasks
+        repo_config: Repository and configuration info
+    
+    Returns:
+        dict: Final backup status
+    """
+    from services.nautobot import NautobotService
+    from services.git_service import git_service
+    
+    logger.info("=" * 80)
+    logger.info("FINALIZE BACKUP (CHORD CALLBACK)")
+    logger.info("=" * 80)
+    
+    # Separate successful and failed backups
+    backed_up_devices = [r for r in device_results if not r.get("error")]
+    failed_devices = [r for r in device_results if r.get("error")]
+    
+    logger.info(f"Total devices processed: {len(device_results)}")
+    logger.info(f"Successful backups: {len(backed_up_devices)}")
+    logger.info(f"Failed backups: {len(failed_devices)}")
+    
+    git_commit_status = {
+        "committed": False,
+        "pushed": False,
+        "commit_hash": None,
+        "files_changed": 0,
+    }
+    
+    # Commit and push to Git
+    if backed_up_devices:
+        try:
+            logger.info("-" * 80)
+            logger.info("COMMITTING AND PUSHING TO GIT")
+            logger.info("-" * 80)
+            
+            repo_dir = Path(repo_config["repo_dir"])
+            repository = repo_config["repository"]
+            current_date = repo_config["current_date"]
+            
+            from git import Repo
+            git_repo = Repo(repo_dir)
+            
+            commit_message = f"Backup config {current_date}"
+            logger.info(f"Committing with message: '{commit_message}'")
+            
+            result = git_service.commit_and_push(
+                repository=dict(repository),
+                message=commit_message,
+                repo=git_repo,
+                add_all=True,
+                branch=repository.get("branch") or "main",
+            )
+            
+            git_commit_status["files_changed"] = result.files_changed
+            git_commit_status["commit_hash"] = result.commit_sha[:8] if result.commit_sha else None
+            git_commit_status["committed"] = result.commit_sha is not None
+            git_commit_status["pushed"] = result.pushed
+            
+            if result.success:
+                logger.info(f"✓ {result.message}")
+                if result.commit_sha:
+                    logger.info(f"  - Commit: {result.commit_sha[:8]}")
+                logger.info(f"  - Files changed: {result.files_changed}")
+                logger.info(f"  - Pushed: {result.pushed}")
+            else:
+                logger.error(f"✗ {result.message}")
+        except Exception as e:
+            logger.error(f"✗ Git operation failed: {e}", exc_info=True)
+    else:
+        logger.warning("⚠ No devices backed up - skipping commit")
+    
+    # Update Nautobot custom fields
+    timestamp_update_status = {
+        "enabled": repo_config.get("write_timestamp_to_custom_field", False),
+        "custom_field_name": repo_config.get("timestamp_custom_field_name"),
+        "updated_count": 0,
+        "failed_count": 0,
+        "errors": [],
+    }
+    
+    if (
+        repo_config.get("write_timestamp_to_custom_field")
+        and repo_config.get("timestamp_custom_field_name")
+        and backed_up_devices
+    ):
+        logger.info("-" * 80)
+        logger.info("UPDATING NAUTOBOT CUSTOM FIELDS")
+        logger.info("-" * 80)
+        
+        nautobot_service = NautobotService()
+        backup_date = datetime.now().strftime("%Y-%m-%d")
+        custom_field_name = repo_config["timestamp_custom_field_name"]
+        
+        for device_info in backed_up_devices:
+            device_id = device_info.get("device_id")
+            device_name = device_info.get("device_name", device_id)
+            
+            try:
+                update_data = {
+                    "custom_fields": {custom_field_name: backup_date}
+                }
+                
+                nautobot_service._sync_rest_request(
+                    endpoint=f"dcim/devices/{device_id}/",
+                    method="PATCH",
+                    data=update_data,
+                )
+                
+                logger.info(f"✓ Updated custom field for {device_name}")
+                timestamp_update_status["updated_count"] += 1
+            except Exception as e:
+                error_msg = f"Failed to update custom field for {device_name}: {str(e)}"
+                logger.error(f"✗ {error_msg}")
+                timestamp_update_status["failed_count"] += 1
+                timestamp_update_status["errors"].append(error_msg)
+    
+    logger.info("=" * 80)
+    logger.info("BACKUP FINALIZED")
+    logger.info("=" * 80)
+    
+    return {
+        "success": len(failed_devices) == 0,
+        "backed_up_count": len(backed_up_devices),
+        "failed_count": len(failed_devices),
+        "backed_up_devices": backed_up_devices,
+        "failed_devices": failed_devices,
+        "git_commit_status": git_commit_status,
+        "timestamp_update_status": timestamp_update_status,
+    }
+
+
+@shared_task(name="tasks.backup_single_device_task")
 def backup_single_device_task(
     device_id: str,
     device_index: int,
@@ -21,6 +166,8 @@ def backup_single_device_task(
     username: str,
     password: str,
     current_date: str,
+    backup_running_config_path: Optional[str] = None,
+    backup_startup_config_path: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Backup a single device configuration.
@@ -36,13 +183,14 @@ def backup_single_device_task(
         username: Device SSH username
         password: Device SSH password
         current_date: Timestamp string for file naming
+        backup_running_config_path: Optional template path for running config
+        backup_startup_config_path: Optional template path for startup config
 
     Returns:
         dict: Device backup information with success status and details
     """
     from services.nautobot import NautobotService
     from services.netmiko_service import NetmikoService
-    from tasks.execution.backup_executor import map_platform_to_netmiko
 
     device_backup_info = {
         "device_id": device_id,
@@ -66,17 +214,89 @@ def backup_single_device_task(
         nautobot_service = NautobotService()
         netmiko_service = NetmikoService()
 
-        # Get device details from Nautobot using GraphQL
+        # Get device details from Nautobot using GraphQL (with full data for path templating)
         logger.info(f"[{device_index}] Fetching device details from Nautobot...")
         query = """
         query getDevice($deviceId: ID!) {
           device(id: $deviceId) {
             id
             name
+            hostname: name
+            asset_tag
+            serial
+            _custom_field_data
+            custom_field_data: _custom_field_data
             primary_ip4 {
+              id
               address
+              host
+              mask_length
             }
             platform {
+              id
+              name
+              manufacturer {
+                id
+                name
+              }
+            }
+            device_type {
+              id
+              model
+              manufacturer {
+                id
+                name
+              }
+            }
+            role {
+              id
+              name
+            }
+            location {
+              id
+              name
+              description
+              location_type {
+                id
+                name
+              }
+              parent {
+                id
+                name
+                description
+                location_type {
+                  id
+                  name
+                }
+                parent {
+                  id
+                  name
+                  description
+                }
+              }
+            }
+            tenant {
+              id
+              name
+              tenant_group {
+                id
+                name
+              }
+            }
+            rack {
+              id
+              name
+              rack_group {
+                id
+                name
+              }
+            }
+            status {
+              id
+              name
+            }
+            tags {
+              id
               name
             }
           }
@@ -207,18 +427,33 @@ def backup_single_device_task(
                 f"[{device_index}] Startup config is empty or not retrieved"
             )
 
-        # Save configs to files
+        # Generate file paths using templates or defaults
         repo_path = Path(repo_dir)
-        config_dir = repo_path / "backups"
-        config_dir.mkdir(exist_ok=True)
-        logger.info(f"[{device_index}] Config directory: {config_dir}")
-
-        running_file = (
-            config_dir / f"{device_name}.{current_date}.running-config"
-        )
-        startup_file = (
-            config_dir / f"{device_name}.{current_date}.startup-config"
-        )
+        
+        if backup_running_config_path:
+            from utils.path_template import replace_template_variables
+            running_path = replace_template_variables(backup_running_config_path, device)
+            running_path = running_path.lstrip("/")
+            logger.info(f"[{device_index}] Using templated running config path: {running_path}")
+        else:
+            running_path = f"backups/{device_name}.{current_date}.running-config"
+            logger.info(f"[{device_index}] Using default running config path: {running_path}")
+        
+        if backup_startup_config_path:
+            from utils.path_template import replace_template_variables
+            startup_path = replace_template_variables(backup_startup_config_path, device)
+            startup_path = startup_path.lstrip("/")
+            logger.info(f"[{device_index}] Using templated startup config path: {startup_path}")
+        else:
+            startup_path = f"backups/{device_name}.{current_date}.startup-config"
+            logger.info(f"[{device_index}] Using default startup config path: {startup_path}")
+        
+        running_file = repo_path / running_path
+        startup_file = repo_path / startup_path
+        
+        # Ensure parent directories exist
+        running_file.parent.mkdir(parents=True, exist_ok=True)
+        startup_file.parent.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"[{device_index}] Writing configs to disk...")
         running_file.write_text(running_config)
@@ -545,226 +780,224 @@ def backup_devices_task(
             logger.info("Using sequential execution (parallel_tasks=1)")
             for idx, device_id in enumerate(inventory, 1):
                 device_backup_info = {
-                "device_id": device_id,
-                "device_name": None,
-                "device_ip": None,
-                "platform": None,
-                "nautobot_fetch_success": False,
-                "ssh_connection_success": False,
-                "running_config_success": False,
-                "startup_config_success": False,
-                "running_config_bytes": 0,
-                "startup_config_bytes": 0,
-                "error": None,
-            }
-
-            try:
-                logger.info(f"\n{'=' * 60}")
-                logger.info(f"Device {idx}/{total_devices}: {device_id}")
-                logger.info(f"{'=' * 60}")
-
-                progress = 20 + int((idx / total_devices) * 70)
-                self.update_state(
-                    state="PROGRESS",
-                    meta={
-                        "current": progress,
-                        "total": 100,
-                        "status": f"Backing up device {idx}/{total_devices} ({device_id})...",
-                    },
-                )
-
-                # Get device details from Nautobot using GraphQL
-                logger.info(f"[{idx}] Fetching device details from Nautobot...")
-                query = """
-                query getDevice($deviceId: ID!) {
-                  device(id: $deviceId) {
-                    id
-                    name
-                    primary_ip4 {
-                      address
-                    }
-                    platform {
-                      name
-                    }
-                  }
+                    "device_id": device_id,
+                    "device_name": None,
+                    "device_ip": None,
+                    "platform": None,
+                    "nautobot_fetch_success": False,
+                    "ssh_connection_success": False,
+                    "running_config_success": False,
+                    "startup_config_success": False,
+                    "running_config_bytes": 0,
+                    "startup_config_bytes": 0,
+                    "error": None,
                 }
-                """
-                variables = {"deviceId": device_id}
-                device_data = nautobot_service._sync_graphql_query(query, variables)
 
-                if (
-                    not device_data
-                    or "data" not in device_data
-                    or not device_data["data"].get("device")
-                ):
-                    logger.error(f"[{idx}] ✗ Failed to get device data from Nautobot")
-                    logger.error(f"[{idx}] Response: {device_data}")
-                    device_backup_info["error"] = (
-                        "Failed to fetch device data from Nautobot"
-                    )
-                    failed_devices.append(device_backup_info)
-                    continue
+                try:
+                    logger.info(f"\n{'=' * 60}")
+                    logger.info(f"Device {idx}/{total_devices}: {device_id}")
+                    logger.info(f"{'=' * 60}")
 
-                device = device_data["data"]["device"]
-                device_name = device.get("name", device_id)
-                primary_ip = (
-                    device.get("primary_ip4", {}).get("address", "").split("/")[0]
-                )
-                platform = (
-                    device.get("platform", {}).get("name", "unknown")
-                    if device.get("platform")
-                    else "unknown"
-                )
-
-                device_backup_info["device_name"] = device_name
-                device_backup_info["device_ip"] = primary_ip
-                device_backup_info["platform"] = platform
-                device_backup_info["nautobot_fetch_success"] = True
-
-                logger.info(f"[{idx}] ✓ Device data fetched from Nautobot")
-                logger.info(f"[{idx}]   - Name: {device_name}")
-                logger.info(f"[{idx}]   - Primary IP: {primary_ip or 'NOT SET'}")
-                logger.info(f"[{idx}]   - Platform: {platform}")
-
-                if not primary_ip:
-                    logger.error(
-                        f"[{idx}] ✗ Device has no primary IP address - cannot connect"
-                    )
-                    device_backup_info["error"] = "No primary IP address"
-                    failed_devices.append(device_backup_info)
-                    continue
-
-                # Determine device type for Netmiko
-                device_type = map_platform_to_netmiko(platform)
-                logger.info(f"[{idx}] Netmiko device type: {device_type}")
-
-                logger.info(
-                    f"[{idx}] Connecting to {device_name} ({primary_ip}) via SSH..."
-                )
-                logger.info(f"[{idx}]   - Username: {username}")
-                logger.info(f"[{idx}]   - Device type: {device_type}")
-
-                # Connect and execute backup commands
-                commands = ["show running-config", "show startup-config"]
-                result = netmiko_service._connect_and_execute(
-                    device_ip=primary_ip,
-                    device_type=device_type,
-                    username=username,
-                    password=password,
-                    commands=commands,
-                    enable_mode=False,
-                    privileged=True,
-                )
-
-                if not result["success"]:
-                    logger.error(
-                        f"[{idx}] ✗ SSH connection or command execution failed"
-                    )
-                    logger.error(f"[{idx}] Error: {result.get('error')}")
-                    device_backup_info["error"] = result.get(
-                        "error", "SSH connection failed"
-                    )
-                    failed_devices.append(device_backup_info)
-                    continue
-
-                device_backup_info["ssh_connection_success"] = True
-                logger.info(f"[{idx}] ✓ SSH connection successful")
-
-                # Parse output - using structured outcomes from NetmikoService
-                command_outputs = result.get("command_outputs", {})
-                logger.info(f"[{idx}] Parsing configuration output...")
-                logger.debug(f"[{idx}] Available command outputs keys: {list(command_outputs.keys())}")
-
-                running_config = command_outputs.get("show running-config", "").strip()
-                startup_config = command_outputs.get("show startup-config", "").strip()
-
-                logger.debug(f"[{idx}] Raw startup config from command_outputs: '{command_outputs.get('show startup-config')}'")
-                logger.debug(f"[{idx}] Cleaned startup config: '{startup_config}'")
-                
-                logger.debug(f"[{idx}] Running config length: {len(running_config)}")
-                logger.debug(f"[{idx}] Startup config length: {len(startup_config)}")
-                if not startup_config:
-                    logger.debug(f"[{idx}] Startup config content (first 100 chars): '{command_outputs.get('show startup-config', '')[:100]}'")
-
-                # Fallback to general output if structured data is missing (backward compatibility)
-                if not running_config and not startup_config:
-                    output = result["output"]
-                    if "show startup-config" in output:
-                        parts = output.split("show startup-config")
-                        running_config = parts[0].strip()
-                        if len(parts) > 1:
-                            startup_config = parts[1].strip()
-                    else:
-                        running_config = output.strip()
-
-                # Validate we got configs
-                if running_config:
-                    device_backup_info["running_config_success"] = True
-                    device_backup_info["running_config_bytes"] = len(running_config)
-                    logger.info(
-                        f"[{idx}] ✓ Running config: {len(running_config)} bytes"
-                    )
-                else:
-                    logger.warning(f"[{idx}] ⚠ Running config is empty!")
-
-                if startup_config:
-                    device_backup_info["startup_config_success"] = True
-                    device_backup_info["startup_config_bytes"] = len(startup_config)
-                    logger.info(
-                        f"[{idx}] ✓ Startup config: {len(startup_config)} bytes"
-                    )
-                else:
-                    # Not all devices support startup-config, or it might be empty
-                    logger.info(
-                        f"[{idx}] Startup config is empty or not retrieved"
+                    progress = 20 + int((idx / total_devices) * 70)
+                    self.update_state(
+                        state="PROGRESS",
+                        meta={
+                            "current": progress,
+                            "total": 100,
+                            "status": f"Backing up device {idx}/{total_devices} ({device_id})...",
+                        },
                     )
 
-                # Save configs to files
-                config_dir = repo_dir / "backups"
-                config_dir.mkdir(exist_ok=True)
-                logger.info(f"[{idx}] Config directory: {config_dir}")
-
-                running_file = (
-                    config_dir / f"{device_name}.{current_date}.running-config"
-                )
-                startup_file = (
-                    config_dir / f"{device_name}.{current_date}.startup-config"
-                )
-
-                logger.info(f"[{idx}] Writing configs to disk...")
-                running_file.write_text(running_config)
-                logger.info(f"[{idx}]   - Running config → {running_file.name}")
-
-                if startup_config:
-                    startup_file.write_text(startup_config)
-                    logger.info(f"[{idx}]   - Startup config → {startup_file.name}")
-
-                logger.info(f"[{idx}] ✓ Backup completed for {device_name}")
-
-                backed_up_devices.append(
-                    {
-                        "device_id": device_id,
-                        "device_name": device_name,
-                        "device_ip": primary_ip,
-                        "platform": platform,
-                        "running_config_file": str(running_file.relative_to(repo_dir)),
-                        "startup_config_file": str(startup_file.relative_to(repo_dir))
-                        if startup_config
-                        else None,
-                        "running_config_bytes": len(running_config),
-                        "startup_config_bytes": len(startup_config)
-                        if startup_config
-                        else 0,
-                        "ssh_connection_success": True,
-                        "running_config_success": True,
-                        "startup_config_success": bool(startup_config),
+                    # Get device details from Nautobot using GraphQL
+                    logger.info(f"[{idx}] Fetching device details from Nautobot...")
+                    query = """
+                    query getDevice($deviceId: ID!) {
+                      device(id: $deviceId) {
+                        id
+                        name
+                        primary_ip4 {
+                          address
+                        }
+                        platform {
+                          name
+                        }
+                      }
                     }
-                )
+                    """
+                    variables = {"deviceId": device_id}
+                    device_data = nautobot_service._sync_graphql_query(query, variables)
 
-            except Exception as e:
-                logger.error(f"[{idx}] ✗ Exception during backup: {e}", exc_info=True)
-                device_backup_info["error"] = str(e)
-                failed_devices.append(device_backup_info)
+                    if (
+                        not device_data
+                        or "data" not in device_data
+                        or not device_data["data"].get("device")
+                    ):
+                        logger.error(f"[{idx}] ✗ Failed to get device data from Nautobot")
+                        logger.error(f"[{idx}] Response: {device_data}")
+                        device_backup_info["error"] = (
+                            "Failed to fetch device data from Nautobot"
+                        )
+                        failed_devices.append(device_backup_info)
+                        continue
+
+                    device = device_data["data"]["device"]
+                    device_name = device.get("name", device_id)
+                    primary_ip = (
+                        device.get("primary_ip4", {}).get("address", "").split("/")[0]
+                    )
+                    platform = (
+                        device.get("platform", {}).get("name", "unknown")
+                        if device.get("platform")
+                        else "unknown"
+                    )
+
+                    device_backup_info["device_name"] = device_name
+                    device_backup_info["device_ip"] = primary_ip
+                    device_backup_info["platform"] = platform
+                    device_backup_info["nautobot_fetch_success"] = True
+
+                    logger.info(f"[{idx}] ✓ Device data fetched from Nautobot")
+                    logger.info(f"[{idx}]   - Name: {device_name}")
+                    logger.info(f"[{idx}]   - Primary IP: {primary_ip or 'NOT SET'}")
+                    logger.info(f"[{idx}]   - Platform: {platform}")
+
+                    if not primary_ip:
+                        logger.error(
+                            f"[{idx}] ✗ Device has no primary IP address - cannot connect"
+                        )
+                        device_backup_info["error"] = "No primary IP address"
+                        failed_devices.append(device_backup_info)
+                        continue
+                    # Determine device type for Netmiko
+                    device_type = map_platform_to_netmiko(platform)
+                    logger.info(f"[{idx}] Netmiko device type: {device_type}")
+
+                    logger.info(
+                        f"[{idx}] Connecting to {device_name} ({primary_ip}) via SSH..."
+                    )
+                    logger.info(f"[{idx}]   - Username: {username}")
+                    logger.info(f"[{idx}]   - Device type: {device_type}")
+
+                    # Connect and execute backup commands
+                    commands = ["show running-config", "show startup-config"]
+                    result = netmiko_service._connect_and_execute(
+                        device_ip=primary_ip,
+                        device_type=device_type,
+                        username=username,
+                        password=password,
+                        commands=commands,
+                        enable_mode=False,
+                        privileged=True,
+                    )
+
+                    if not result["success"]:
+                        logger.error(
+                            f"[{idx}] ✗ SSH connection or command execution failed"
+                        )
+                        logger.error(f"[{idx}] Error: {result.get('error')}")
+                        device_backup_info["error"] = result.get(
+                            "error", "SSH connection failed"
+                        )
+                        failed_devices.append(device_backup_info)
+                        continue
+
+                    device_backup_info["ssh_connection_success"] = True
+                    logger.info(f"[{idx}] ✓ SSH connection successful")
+                    # Parse output - using structured outcomes from NetmikoService
+                    command_outputs = result.get("command_outputs", {})
+                    logger.info(f"[{idx}] Parsing configuration output...")
+                    logger.debug(f"[{idx}] Available command outputs keys: {list(command_outputs.keys())}")
+
+                    running_config = command_outputs.get("show running-config", "").strip()
+                    startup_config = command_outputs.get("show startup-config", "").strip()
+
+                    logger.debug(f"[{idx}] Raw startup config from command_outputs: '{command_outputs.get('show startup-config')}'")
+                    logger.debug(f"[{idx}] Cleaned startup config: '{startup_config}'")
+                    
+                    logger.debug(f"[{idx}] Running config length: {len(running_config)}")
+                    logger.debug(f"[{idx}] Startup config length: {len(startup_config)}")
+                    if not startup_config:
+                        logger.debug(f"[{idx}] Startup config content (first 100 chars): '{command_outputs.get('show startup-config', '')[:100]}'")
+
+                    # Fallback to general output if structured data is missing (backward compatibility)
+                    if not running_config and not startup_config:
+                        output = result["output"]
+                        if "show startup-config" in output:
+                            parts = output.split("show startup-config")
+                            running_config = parts[0].strip()
+                            if len(parts) > 1:
+                                startup_config = parts[1].strip()
+                        else:
+                            running_config = output.strip()
+
+                    # Validate we got configs
+                    if running_config:
+                        device_backup_info["running_config_success"] = True
+                        device_backup_info["running_config_bytes"] = len(running_config)
+                        logger.info(
+                            f"[{idx}] ✓ Running config: {len(running_config)} bytes"
+                        )
+                    else:
+                        logger.warning(f"[{idx}] ⚠ Running config is empty!")
+
+                    if startup_config:
+                        device_backup_info["startup_config_success"] = True
+                        device_backup_info["startup_config_bytes"] = len(startup_config)
+                        logger.info(
+                            f"[{idx}] ✓ Startup config: {len(startup_config)} bytes"
+                        )
+                    else:
+                        # Not all devices support startup-config, or it might be empty
+                        logger.info(
+                            f"[{idx}] Startup config is empty or not retrieved"
+                        )
+
+                    # Save configs to files
+                    config_dir = repo_dir / "backups"
+                    config_dir.mkdir(exist_ok=True)
+                    logger.info(f"[{idx}] Config directory: {config_dir}")
+
+                    running_file = (
+                        config_dir / f"{device_name}.{current_date}.running-config"
+                    )
+                    startup_file = (
+                        config_dir / f"{device_name}.{current_date}.startup-config"
+                    )
+
+                    logger.info(f"[{idx}] Writing configs to disk...")
+                    running_file.write_text(running_config)
+                    logger.info(f"[{idx}]   - Running config → {running_file.name}")
+
+                    if startup_config:
+                        startup_file.write_text(startup_config)
+                        logger.info(f"[{idx}]   - Startup config → {startup_file.name}")
+
+                    logger.info(f"[{idx}] ✓ Backup completed for {device_name}")
+
+                    backed_up_devices.append(
+                        {
+                            "device_id": device_id,
+                            "device_name": device_name,
+                            "device_ip": primary_ip,
+                            "platform": platform,
+                            "running_config_file": str(running_file.relative_to(repo_dir)),
+                            "startup_config_file": str(startup_file.relative_to(repo_dir))
+                            if startup_config
+                            else None,
+                            "running_config_bytes": len(running_config),
+                            "startup_config_bytes": len(startup_config)
+                            if startup_config
+                            else 0,
+                            "ssh_connection_success": True,
+                            "running_config_success": True,
+                            "startup_config_success": bool(startup_config),
+                        }
+                    )
+
+                except Exception as e:
+                    logger.error(f"[{idx}] ✗ Exception during backup: {e}", exc_info=True)
+                    device_backup_info["error"] = str(e)
+                    failed_devices.append(device_backup_info)
 
         # Summary after all devices
         logger.info("\n" + "=" * 80)

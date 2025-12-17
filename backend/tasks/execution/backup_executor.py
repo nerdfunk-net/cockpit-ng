@@ -319,15 +319,15 @@ def execute_backup(
 
         total_devices = len(target_devices)
 
-        # Execute backups in parallel if parallel_tasks > 1
+        # Use chord pattern for parallel execution
         if parallel_tasks > 1:
-            logger.info(f"Using parallel execution with {parallel_tasks} workers")
-
-            # Import the subtask
-            from tasks.backup_tasks import backup_single_device_task
-
-            # Create a group of subtasks for parallel execution
-            job = group(
+            logger.info(f"Using parallel execution with {parallel_tasks} workers (chord pattern)")
+            
+            from tasks.backup_tasks import backup_single_device_task, finalize_backup_task
+            from celery import chord
+            
+            # Create chord: group of parallel tasks + callback
+            backup_chord = chord(
                 backup_single_device_task.s(
                     device_id=device_id,
                     device_index=idx,
@@ -336,31 +336,41 @@ def execute_backup(
                     username=username,
                     password=password,
                     current_date=current_date,
+                    backup_running_config_path=backup_running_config_path,
+                    backup_startup_config_path=backup_startup_config_path,
                 )
                 for idx, device_id in enumerate(target_devices, 1)
+            )(
+                # Callback with repo config
+                finalize_backup_task.s({
+                    "repo_dir": str(repo_dir),
+                    "repository": dict(repository),
+                    "current_date": current_date,
+                    "write_timestamp_to_custom_field": write_timestamp_to_custom_field,
+                    "timestamp_custom_field_name": timestamp_custom_field_name,
+                })
             )
+            
+            # Return immediately - chord callback will handle finalization
+            logger.info(f"Chord created for {total_devices} devices")
+            logger.info("Parallel backup tasks launched - finalization will happen in callback")
+            
+            return {
+                "success": True,
+                "status": "parallel_execution_started",
+                "message": f"Parallel backup of {total_devices} devices started using chord pattern",
+                "backed_up_count": 0,
+                "failed_count": 0,
+                "chord_id": backup_chord.id,
+            }
 
-            # Execute in parallel and wait for all results
-            result_group = job.apply_async()
-            results = result_group.get()  # Blocks until all tasks complete
+        # Sequential execution (fallback for parallel_tasks = 1)
+        logger.info("Using sequential execution")
+        nautobot_service = NautobotService()
+        netmiko_service = NetmikoService()
 
-            # Process results
-            for result in results:
-                if result.get("error"):
-                    failed_devices.append(result)
-                else:
-                    backed_up_devices.append(result)
-
-            logger.info(f"Parallel backup completed: {len(backed_up_devices)} succeeded, {len(failed_devices)} failed")
-
-        else:
-            # Sequential execution (original behavior when parallel_tasks = 1)
-            logger.info("Using sequential execution (parallel_tasks=1)")
-            nautobot_service = NautobotService()
-            netmiko_service = NetmikoService()
-
-            for idx, device_id in enumerate(target_devices, 1):
-                device_backup_info = {
+        for idx, device_id in enumerate(target_devices, 1):
+            device_backup_info = {
                 "device_id": device_id,
                 "device_name": None,
                 "device_ip": None,
@@ -395,85 +405,85 @@ def execute_backup(
                 query getDevice($deviceId: ID!) {
                   device(id: $deviceId) {
                     id
-                    name
-                    hostname: name
-                    asset_tag
-                    serial
-                    _custom_field_data
-                    custom_field_data: _custom_field_data
-                    primary_ip4 {
-                      id
-                      address
-                      host
-                      mask_length
-                    }
-                    platform {
-                      id
-                      name
-                      manufacturer {
-                        id
                         name
-                      }
-                    }
-                    device_type {
-                      id
-                      model
-                      manufacturer {
-                        id
-                        name
-                      }
-                    }
-                    role {
-                      id
-                      name
-                    }
-                    location {
-                      id
-                      name
-                      description
-                      location_type {
-                        id
-                        name
-                      }
-                      parent {
-                        id
-                        name
-                        description
-                        location_type {
+                        hostname: name
+                        asset_tag
+                        serial
+                        _custom_field_data
+                        custom_field_data: _custom_field_data
+                        primary_ip4 {
+                          id
+                          address
+                          host
+                          mask_length
+                        }
+                        platform {
+                          id
+                          name
+                          manufacturer {
+                            id
+                            name
+                          }
+                        }
+                        device_type {
+                          id
+                          model
+                          manufacturer {
+                            id
+                            name
+                          }
+                        }
+                        role {
                           id
                           name
                         }
-                        parent {
+                        location {
                           id
                           name
                           description
+                          location_type {
+                            id
+                            name
+                          }
+                          parent {
+                            id
+                            name
+                            description
+                            location_type {
+                              id
+                              name
+                            }
+                            parent {
+                              id
+                              name
+                              description
+                            }
+                          }
                         }
-                      }
-                    }
-                    tenant {
-                      id
-                      name
-                      tenant_group {
-                        id
-                        name
-                      }
-                    }
-                    rack {
-                      id
-                      name
-                      rack_group {
-                        id
-                        name
-                      }
-                    }
-                    status {
-                      id
-                      name
-                    }
-                    tags {
-                      id
-                      name
-                    }
+                        tenant {
+                          id
+                          name
+                          tenant_group {
+                            id
+                            name
+                          }
+                        }
+                        rack {
+                          id
+                          name
+                          rack_group {
+                            id
+                            name
+                          }
+                        }
+                        status {
+                          id
+                          name
+                        }
+                        tags {
+                          id
+                          name
+                        }
                   }
                 }
                 """
