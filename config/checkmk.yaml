@@ -31,6 +31,11 @@ folders:
     by_name:
       lab-2: /testfolder
 
+attr2htg:
+  # use attr2htg to map nautobot attributes like status to checkmk host tag groups
+  # name_of_nautboot_attr: name_of_checkmk_host_tag_group
+  status.name: status
+
 cf2htg:
   # use cf2htg to map custom fields to checkmk host tag groups
   # name_of_custom_field: name_of_checkmk_host_tag_group

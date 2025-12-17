@@ -86,6 +86,7 @@ class DeviceNormalizationService:
         self._process_additional_attributes(device_data, extensions)
         self._process_cf2htg_mappings(device_data, extensions)
         self._process_tags2htg_mappings(device_data, extensions)
+        self._process_attr2htg_mappings(device_data, extensions)
         self._process_field_mappings(device_data, extensions)
 
         return extensions
@@ -317,6 +318,59 @@ class DeviceNormalizationService:
 
         except Exception as e:
             logger.error(f"Error processing tags2htg mappings for device: {e}")
+            # Don't fail the whole process, just log the error
+
+    def _process_attr2htg_mappings(
+        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+    ) -> None:
+        """Process Attribute to Host Tag Group mappings.
+
+        Maps Nautobot core attributes (like status, role, location) to CheckMK host tag groups.
+        Supports dot notation for nested attributes (e.g., "status.name").
+
+        Args:
+            device_data: Device data from Nautobot
+            extensions: Extensions object to update
+        """
+        try:
+            config = config_service.load_checkmk_config()
+            attr2htg_config = config.get("attr2htg", {})
+            device_name = device_data.get("name", "")
+
+            if attr2htg_config:
+                logger.info(
+                    f"Processing attr2htg mappings for device '{device_name}': {attr2htg_config}"
+                )
+
+                for nautobot_attr, host_tag_group_name in attr2htg_config.items():
+                    try:
+                        # Use existing _extract_field_value to handle dot notation
+                        attr_value = self._extract_field_value(device_data, nautobot_attr)
+
+                        if attr_value is not None and attr_value != "":
+                            # Handle nested objects (extract name if it's a dict)
+                            if isinstance(attr_value, dict) and "name" in attr_value:
+                                attr_value = attr_value["name"]
+
+                            # Convert value to string and set as host tag
+                            tag_key = f"tag_{host_tag_group_name}"
+                            extensions.attributes[tag_key] = str(attr_value)
+                            logger.info(
+                                f"Added host tag group for device '{device_name}': {nautobot_attr} → {tag_key} = {attr_value}"
+                            )
+                        else:
+                            logger.debug(
+                                f"Skipping attr2htg mapping '{nautobot_attr}' for device '{device_name}' - no value found"
+                            )
+
+                    except Exception as e:
+                        logger.warning(
+                            f"Error processing attr2htg mapping '{nautobot_attr}' → '{host_tag_group_name}' for device '{device_name}': {e}"
+                        )
+                        continue
+
+        except Exception as e:
+            logger.error(f"Error processing attr2htg mappings for device: {e}")
             # Don't fail the whole process, just log the error
 
     def _process_field_mappings(
