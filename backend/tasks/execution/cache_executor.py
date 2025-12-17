@@ -19,6 +19,7 @@ def execute_cache_devices(
     target_devices: Optional[list],
     task_context,
     template: Optional[dict] = None,
+    job_run_id: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     Execute cache_devices job.
