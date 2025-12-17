@@ -362,7 +362,7 @@ def execute_backup(
             
             return {
                 "success": True,
-                "status": "parallel_execution_started",
+                "status": "running",
                 "message": f"Parallel backup of {total_devices} devices started using chord pattern",
                 "backed_up_count": 0,
                 "failed_count": 0,
