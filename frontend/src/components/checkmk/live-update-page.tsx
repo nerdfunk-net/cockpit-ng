@@ -882,11 +882,6 @@ export default function LiveUpdatePage() {
     return 'outline' // Gray
   }
 
-  const isDeviceOffline = (status: string) => {
-    const statusLower = status.toLowerCase()
-    return statusLower.includes('offline') || statusLower.includes('failed')
-  }
-
   const activeFiltersCount = [
     deviceNameFilter,
     roleFilter,
@@ -1306,8 +1301,6 @@ export default function LiveUpdatePage() {
                   </tr>
                 ) : (
                   paginatedDevices.map((device) => {
-                    const isOffline = isDeviceOffline(device.status?.name || '')
-                    
                     return (
                       <tr 
                         key={`live-update-device-${device.id}`} 
