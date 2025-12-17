@@ -22,6 +22,7 @@ def execute_backup(
     target_devices: Optional[list],
     task_context,
     template: Optional[dict] = None,
+    job_run_id: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     Execute backup job.
@@ -34,6 +35,7 @@ def execute_backup(
         job_parameters: Additional job parameters (contains config_repository_id)
         target_devices: List of device UUIDs to backup
         task_context: Celery task context for progress updates
+        job_run_id: Job run ID for result tracking
 
     Returns:
         dict: Backup results with detailed information
@@ -341,13 +343,14 @@ def execute_backup(
                 )
                 for idx, device_id in enumerate(target_devices, 1)
             )(
-                # Callback with repo config
+                # Callback with repo config and job_run_id
                 finalize_backup_task.s({
                     "repo_dir": str(repo_dir),
                     "repository": dict(repository),
                     "current_date": current_date,
                     "write_timestamp_to_custom_field": write_timestamp_to_custom_field,
                     "timestamp_custom_field_name": timestamp_custom_field_name,
+                    "job_run_id": job_run_id,  # Pass job_run_id for result storage
                 })
             )
             

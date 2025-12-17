@@ -24,16 +24,18 @@ def finalize_backup_task(
     1. Collects results from all parallel backup tasks
     2. Commits and pushes changes to Git
     3. Updates Nautobot custom fields if enabled
+    4. Updates job_run with detailed results
     
     Args:
         device_results: List of backup results from all device tasks
-        repo_config: Repository and configuration info
+        repo_config: Repository and configuration info (includes job_run_id)
     
     Returns:
         dict: Final backup status
     """
     from services.nautobot import NautobotService
     from services.git_service import git_service
+    import job_run_manager
     
     logger.info("=" * 80)
     logger.info("FINALIZE BACKUP (CHORD CALLBACK)")
@@ -146,7 +148,8 @@ def finalize_backup_task(
     logger.info("BACKUP FINALIZED")
     logger.info("=" * 80)
     
-    return {
+    # Prepare final result
+    final_result = {
         "success": len(failed_devices) == 0,
         "backed_up_count": len(backed_up_devices),
         "failed_count": len(failed_devices),
@@ -154,7 +157,20 @@ def finalize_backup_task(
         "failed_devices": failed_devices,
         "git_commit_status": git_commit_status,
         "timestamp_update_status": timestamp_update_status,
+        "devices_backed_up": len(backed_up_devices),  # For UI compatibility
+        "devices_failed": len(failed_devices),  # For UI compatibility
     }
+    
+    # Update job_run with detailed results if job_run_id provided
+    job_run_id = repo_config.get("job_run_id")
+    if job_run_id:
+        try:
+            job_run_manager.mark_completed(job_run_id, result=final_result)
+            logger.info(f"✓ Updated job_run {job_run_id} with detailed results")
+        except Exception as e:
+            logger.error(f"Failed to update job_run {job_run_id}: {e}", exc_info=True)
+    
+    return final_result
 
 
 @shared_task(name="tasks.backup_single_device_task")

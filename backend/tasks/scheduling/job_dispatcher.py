@@ -102,6 +102,7 @@ def dispatch_job(
             target_devices=target_devices,
             task_context=self,
             template=template,
+            job_run_id=job_run_id,
         )
 
         # Mark as completed or failed based on result
