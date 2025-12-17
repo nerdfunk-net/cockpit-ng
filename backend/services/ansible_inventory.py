@@ -20,6 +20,7 @@ class AnsibleInventoryService:
             "name": self._query_devices_by_name,
             "location": self._query_devices_by_location,
             "role": self._query_devices_by_role,
+            "status": self._query_devices_by_status,
             "tag": self._query_devices_by_tag,
             "device_type": self._query_devices_by_devicetype,
             "manufacturer": self._query_devices_by_manufacturer,
@@ -394,74 +395,76 @@ class AnsibleInventoryService:
     async def _query_devices_by_location(
         self, location_filter: str, use_contains: bool = False
     ) -> List[DeviceInfo]:
-        """Query devices by location using GraphQL."""
+        """Query devices by location using GraphQL.
+
+        This method queries devices directly by location filter, which automatically
+        includes devices from child locations in the hierarchy.
+
+        For example, querying location="Europe" will return devices from all child
+        locations like "Germany", "Berlin", etc.
+        """
         from services.nautobot import nautobot_service
 
-        # Use different queries based on match type
+        # Query devices directly by location - this includes hierarchical locations
+        # The location filter in Nautobot automatically includes devices from descendant locations
         if use_contains:
-            # Regular expression query for contains
+            # Use case-insensitive contains for location name
             query = """
             query devices_by_location ($location_filter: [String]) {
-                locations (name__ire: $location_filter) {
+                devices (location__name__ic: $location_filter) {
+                    id
                     name
-                    devices {
-                        id
+                    role {
                         name
-                        role {
-                            name
-                        }
-                        location {
-                            name
-                        }
-                        primary_ip4 {
-                            address
-                        }
-                        status {
-                            name
-                        }
-                        device_type {
-                            model
-                        }
-                        tags {
-                            name
-                        }
-                        platform {
-                            name
-                        }
+                    }
+                    location {
+                        name
+                    }
+                    primary_ip4 {
+                        address
+                    }
+                    status {
+                        name
+                    }
+                    device_type {
+                        model
+                    }
+                    tags {
+                        name
+                    }
+                    platform {
+                        name
                     }
                 }
             }
             """
         else:
-            # Exact name query
+            # Exact location name match - includes devices from this location and all descendants
             query = """
             query devices_by_location ($location_filter: [String]) {
-                locations (name: $location_filter) {
+                devices (location: $location_filter) {
+                    id
                     name
-                    devices {
-                        id
+                    role {
                         name
-                        role {
-                            name
-                        }
-                        location {
-                            name
-                        }
-                        primary_ip4 {
-                            address
-                        }
-                        status {
-                            name
-                        }
-                        device_type {
-                            model
-                        }
-                        tags {
-                            name
-                        }
-                        platform {
-                            name
-                        }
+                    }
+                    location {
+                        name
+                    }
+                    primary_ip4 {
+                        address
+                    }
+                    status {
+                        name
+                    }
+                    device_type {
+                        model
+                    }
+                    tags {
+                        name
+                    }
+                    platform {
+                        name
                     }
                 }
             }
@@ -470,12 +473,11 @@ class AnsibleInventoryService:
         variables = {"location_filter": [location_filter]}
         result = await nautobot_service.graphql_query(query, variables)
 
-        # Extract devices from locations
-        devices = []
-        for location in result.get("data", {}).get("locations", []):
-            devices.extend(location.get("devices", []))
+        logger.info(f"GraphQL result for location query '{location_filter}': Found {len(result.get('data', {}).get('devices', []))} devices")
 
-        return self._parse_device_data(devices)
+        # Extract devices directly from the devices query
+        devices_data = result.get("data", {}).get("devices", [])
+        return self._parse_device_data(devices_data)
 
     async def _query_devices_by_role(self, role_filter: str) -> List[DeviceInfo]:
         """Query devices by role using GraphQL."""
@@ -512,6 +514,45 @@ class AnsibleInventoryService:
         """
 
         variables = {"role_filter": [role_filter]}
+        result = await nautobot_service.graphql_query(query, variables)
+
+        return self._parse_device_data(result.get("data", {}).get("devices", []))
+
+    async def _query_devices_by_status(self, status_filter: str) -> List[DeviceInfo]:
+        """Query devices by status using GraphQL."""
+        from services.nautobot import nautobot_service
+
+        query = """
+        query devices_by_status($status_filter: [String]) {
+            devices(status: $status_filter) {
+                id
+                name
+                primary_ip4 {
+                    address
+                }
+                status {
+                    name
+                }
+                device_type {
+                    model
+                }
+                role {
+                    name
+                }
+                location {
+                    name
+                }
+                tags {
+                    name
+                }
+                platform {
+                    name
+                }
+            }
+        }
+        """
+
+        variables = {"status_filter": [status_filter]}
         result = await nautobot_service.graphql_query(query, variables)
 
         return self._parse_device_data(result.get("data", {}).get("devices", []))
@@ -1104,6 +1145,7 @@ class AnsibleInventoryService:
             endpoint_map = {
                 "location": "dcim/locations/",
                 "role": "extras/roles/?content_types=dcim.device",
+                "status": "extras/statuses/?content_types=dcim.device",
                 "device_type": "dcim/device-types/",
                 "manufacturer": "dcim/manufacturers/",
                 "platform": "dcim/platforms/",
@@ -1133,6 +1175,9 @@ class AnsibleInventoryService:
             elif field_name == "role":
                 for role in results:
                     values.append({"value": role["name"], "label": role["name"]})
+            elif field_name == "status":
+                for status_item in results:
+                    values.append({"value": status_item["name"], "label": status_item["name"]})
             elif field_name == "device_type":
                 for device_type in results:
                     # Create a descriptive label with manufacturer

@@ -156,6 +156,7 @@ async def get_field_options(
                 {"value": "name", "label": "Device Name"},
                 {"value": "location", "label": "Location"},
                 {"value": "role", "label": "Role"},
+                {"value": "status", "label": "Status"},
                 {"value": "tag", "label": "Tag"},
                 {"value": "device_type", "label": "Device Type"},
                 {"value": "manufacturer", "label": "Manufacturer"},
