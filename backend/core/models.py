@@ -430,6 +430,9 @@ class JobTemplate(Base):
     scan_max_ips = Column(
         Integer
     )  # Maximum number of IPs to scan per job (scan_prefixes type)
+    parallel_tasks = Column(
+        Integer, nullable=False, default=1
+    )  # Number of parallel tasks for backup execution (backup type)
     is_global = Column(Boolean, nullable=False, default=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     created_by = Column(String(255))  # Username of creator

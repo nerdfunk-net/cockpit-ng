@@ -51,6 +51,7 @@ interface JobTemplate {
   scan_custom_field_value?: string
   scan_response_custom_field_name?: string
   scan_max_ips?: number
+  parallel_tasks?: number
   is_global: boolean
   user_id?: number
   created_by?: string
@@ -137,6 +138,7 @@ export function JobTemplatesPage() {
   const [formBackupStartupConfigPath, setFormBackupStartupConfigPath] = useState("")
   const [formWriteTimestampToCustomField, setFormWriteTimestampToCustomField] = useState(false)
   const [formTimestampCustomFieldName, setFormTimestampCustomFieldName] = useState("")
+  const [formParallelTasks, setFormParallelTasks] = useState(1)
   const [formActivateChangesAfterSync, setFormActivateChangesAfterSync] = useState(true)
   const [formScanResolveDns, setFormScanResolveDns] = useState(false)
   const [formScanPingCount, setFormScanPingCount] = useState("")
@@ -348,6 +350,7 @@ export function JobTemplatesPage() {
     setFormBackupStartupConfigPath("")
     setFormWriteTimestampToCustomField(false)
     setFormTimestampCustomFieldName("")
+    setFormParallelTasks(1)
     setFormActivateChangesAfterSync(true)
     setFormScanResolveDns(false)
     setFormScanPingCount("")
@@ -377,6 +380,7 @@ export function JobTemplatesPage() {
     setFormBackupStartupConfigPath(template.backup_startup_config_path || "")
     setFormWriteTimestampToCustomField(template.write_timestamp_to_custom_field ?? false)
     setFormTimestampCustomFieldName(template.timestamp_custom_field_name || "")
+    setFormParallelTasks(template.parallel_tasks || 1)
     setFormActivateChangesAfterSync(template.activate_changes_after_sync ?? true)
     setFormScanResolveDns(template.scan_resolve_dns ?? false)
     setFormScanPingCount(template.scan_ping_count?.toString() || "")
@@ -463,6 +467,7 @@ export function JobTemplatesPage() {
         backup_startup_config_path: formJobType === "backup" ? formBackupStartupConfigPath : undefined,
         write_timestamp_to_custom_field: formJobType === "backup" ? formWriteTimestampToCustomField : undefined,
         timestamp_custom_field_name: formJobType === "backup" && formWriteTimestampToCustomField ? formTimestampCustomFieldName : undefined,
+        parallel_tasks: formJobType === "backup" ? formParallelTasks : undefined,
         activate_changes_after_sync: formJobType === "sync_devices" ? formActivateChangesAfterSync : undefined,
         scan_resolve_dns: formJobType === "scan_prefixes" ? formScanResolveDns : undefined,
         scan_ping_count: formJobType === "scan_prefixes" && formScanPingCount ? parseInt(formScanPingCount) : undefined,
@@ -539,7 +544,7 @@ export function JobTemplatesPage() {
         variant: "destructive"
       })
     }
-  }, [token, formName, formJobType, formDescription, formConfigRepoId, formInventorySource, formInventoryName, formCommandTemplate, formBackupRunningConfigPath, formBackupStartupConfigPath, formWriteTimestampToCustomField, formTimestampCustomFieldName, formActivateChangesAfterSync, formScanResolveDns, formScanPingCount, formScanTimeoutMs, formScanRetries, formScanIntervalMs, formScanCustomFieldName, formScanCustomFieldValue, formScanResponseCustomFieldName, formScanMaxIps, formIsGlobal, editingTemplate, resetForm, fetchTemplates, toast])
+  }, [token, formName, formJobType, formDescription, formConfigRepoId, formInventorySource, formInventoryName, formCommandTemplate, formBackupRunningConfigPath, formBackupStartupConfigPath, formWriteTimestampToCustomField, formTimestampCustomFieldName, formParallelTasks, formActivateChangesAfterSync, formScanResolveDns, formScanPingCount, formScanTimeoutMs, formScanRetries, formScanIntervalMs, formScanCustomFieldName, formScanCustomFieldValue, formScanResponseCustomFieldName, formScanMaxIps, formIsGlobal, editingTemplate, resetForm, fetchTemplates, toast])
 
   const handleDeleteTemplate = useCallback(async (templateId: number) => {
     if (!token) return
@@ -596,6 +601,7 @@ export function JobTemplatesPage() {
         backup_startup_config_path: template.backup_startup_config_path || undefined,
         write_timestamp_to_custom_field: template.write_timestamp_to_custom_field,
         timestamp_custom_field_name: template.timestamp_custom_field_name || undefined,
+        parallel_tasks: template.parallel_tasks || 1,
         activate_changes_after_sync: template.activate_changes_after_sync,
         scan_resolve_dns: template.scan_resolve_dns,
         scan_ping_count: template.scan_ping_count,
@@ -732,6 +738,8 @@ export function JobTemplatesPage() {
                   setFormWriteTimestampToCustomField={setFormWriteTimestampToCustomField}
                   formTimestampCustomFieldName={formTimestampCustomFieldName}
                   setFormTimestampCustomFieldName={setFormTimestampCustomFieldName}
+                  formParallelTasks={formParallelTasks}
+                  setFormParallelTasks={setFormParallelTasks}
                   customFields={customFields}
                 />
               )}

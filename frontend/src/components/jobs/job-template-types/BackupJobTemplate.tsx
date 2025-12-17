@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { FileText, Clock } from "lucide-react"
+import { FileText, Clock, Zap } from "lucide-react"
 
 interface CustomField {
   id: string
@@ -25,6 +25,8 @@ interface BackupJobTemplateProps {
   setFormWriteTimestampToCustomField: (value: boolean) => void
   formTimestampCustomFieldName: string
   setFormTimestampCustomFieldName: (value: string) => void
+  formParallelTasks: number
+  setFormParallelTasks: (value: number) => void
   customFields: CustomField[]
 }
 
@@ -37,6 +39,8 @@ export function BackupJobTemplate({
   setFormWriteTimestampToCustomField,
   formTimestampCustomFieldName,
   setFormTimestampCustomFieldName,
+  formParallelTasks,
+  setFormParallelTasks,
   customFields,
 }: BackupJobTemplateProps) {
   return (
@@ -148,6 +152,40 @@ export function BackupJobTemplate({
         <p className="text-xs text-teal-600 mt-2">
           When enabled, the backup completion timestamp will be written to the selected custom field in Nautobot
         </p>
+      </div>
+
+      {/* Parallel Execution Section */}
+      <div className="rounded-lg border border-purple-200 bg-purple-50/30 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Zap className="h-4 w-4 text-purple-600" />
+          <Label className="text-sm font-semibold text-purple-900">Parallel Execution</Label>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="parallel-tasks" className="text-sm text-purple-900 font-medium">
+              Number of Parallel Tasks
+            </Label>
+            <Badge variant="secondary" className="text-xs">
+              {formParallelTasks === 1 ? "Sequential" : `${formParallelTasks} workers`}
+            </Badge>
+          </div>
+          <Input
+            id="parallel-tasks"
+            type="number"
+            min="1"
+            max="50"
+            value={formParallelTasks}
+            onChange={(e) => {
+              const value = parseInt(e.target.value) || 1
+              setFormParallelTasks(Math.min(50, Math.max(1, value)))
+            }}
+            className="h-9 bg-white border-purple-200 focus:ring-purple-500 focus:border-purple-500"
+          />
+          <p className="text-xs text-purple-600 leading-relaxed">
+            <span className="font-semibold">Recommended:</span> 1 = sequential (safe, slow), 5-10 = moderate parallel execution, 20+ = high parallel execution (requires sufficient Celery workers)
+          </p>
+        </div>
       </div>
     </>
   )

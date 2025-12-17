@@ -9,6 +9,8 @@ import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
 from git.exc import GitCommandError
+from celery import group
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +85,7 @@ def execute_backup(
         backup_startup_config_path = None
         write_timestamp_to_custom_field = False
         timestamp_custom_field_name = None
+        parallel_tasks = 1  # Default to sequential execution
 
         if job_parameters:
             config_repository_id = job_parameters.get("config_repository_id")
@@ -114,6 +117,7 @@ def execute_backup(
                         timestamp_custom_field_name = template.get(
                             "timestamp_custom_field_name"
                         )
+                        parallel_tasks = template.get("parallel_tasks", 1)
                         logger.info(
                             f"Config repository ID from template: {config_repository_id}"
                         )
@@ -306,18 +310,57 @@ def execute_backup(
         # STEP 3: Backup each device
         logger.info("-" * 80)
         logger.info(f"STEP 3: BACKING UP {len(target_devices)} DEVICES")
+        logger.info(f"Parallel tasks: {parallel_tasks}")
         logger.info("-" * 80)
-
-        nautobot_service = NautobotService()
-        netmiko_service = NetmikoService()
 
         backed_up_devices = []
         failed_devices = []
         current_date = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         total_devices = len(target_devices)
-        for idx, device_id in enumerate(target_devices, 1):
-            device_backup_info = {
+
+        # Execute backups in parallel if parallel_tasks > 1
+        if parallel_tasks > 1:
+            logger.info(f"Using parallel execution with {parallel_tasks} workers")
+
+            # Import the subtask
+            from tasks.backup_tasks import backup_single_device_task
+
+            # Create a group of subtasks for parallel execution
+            job = group(
+                backup_single_device_task.s(
+                    device_id=device_id,
+                    device_index=idx,
+                    total_devices=total_devices,
+                    repo_dir=str(repo_dir),
+                    username=username,
+                    password=password,
+                    current_date=current_date,
+                )
+                for idx, device_id in enumerate(target_devices, 1)
+            )
+
+            # Execute in parallel and wait for all results
+            result_group = job.apply_async()
+            results = result_group.get()  # Blocks until all tasks complete
+
+            # Process results
+            for result in results:
+                if result.get("error"):
+                    failed_devices.append(result)
+                else:
+                    backed_up_devices.append(result)
+
+            logger.info(f"Parallel backup completed: {len(backed_up_devices)} succeeded, {len(failed_devices)} failed")
+
+        else:
+            # Sequential execution (original behavior when parallel_tasks = 1)
+            logger.info("Using sequential execution (parallel_tasks=1)")
+            nautobot_service = NautobotService()
+            netmiko_service = NetmikoService()
+
+            for idx, device_id in enumerate(target_devices, 1):
+                device_backup_info = {
                 "device_id": device_id,
                 "device_name": None,
                 "device_ip": None,

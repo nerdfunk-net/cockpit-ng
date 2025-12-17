@@ -775,6 +775,7 @@ class BackupDevicesRequest(BaseModel):
     credential_id: Optional[int] = None
     write_timestamp_to_custom_field: Optional[bool] = False
     timestamp_custom_field_name: Optional[str] = None
+    parallel_tasks: int = 1
 
 
 @router.post("/tasks/backup-devices", response_model=TaskResponse)
@@ -823,6 +824,7 @@ async def trigger_backup_devices(
         credential_id=request.credential_id,
         write_timestamp_to_custom_field=request.write_timestamp_to_custom_field,
         timestamp_custom_field_name=request.timestamp_custom_field_name,
+        parallel_tasks=request.parallel_tasks,
     )
 
     return TaskResponse(

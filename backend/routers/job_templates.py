@@ -69,6 +69,7 @@ async def create_job_template(
             scan_custom_field_value=template_data.scan_custom_field_value,
             scan_response_custom_field_name=template_data.scan_response_custom_field_name,
             scan_max_ips=template_data.scan_max_ips,
+            parallel_tasks=template_data.parallel_tasks,
             is_global=template_data.is_global,
         )
 
@@ -210,6 +211,7 @@ async def update_job_template(
             scan_custom_field_value=update_data.scan_custom_field_value,
             scan_response_custom_field_name=update_data.scan_response_custom_field_name,
             scan_max_ips=update_data.scan_max_ips,
+            parallel_tasks=update_data.parallel_tasks,
             is_global=update_data.is_global,
             user_id=current_user["user_id"],
         )

@@ -127,6 +127,7 @@ def init_db():
         migrate_job_templates_table()
         migrate_nb2cmk_job_results_table()
         migrate_git_repositories_table()
+        migrate_job_templates_parallel_tasks()
         # Commit the DDL changes
         engine.dispose()
         logger.info(
@@ -348,3 +349,47 @@ def migrate_git_repositories_table():
 
     except Exception as e:
         logger.warning(f"Could not migrate git_repositories table: {e}")
+
+
+def migrate_job_templates_parallel_tasks():
+    """
+    Add parallel_tasks column to job_templates table if it doesn't exist.
+    Called during application startup.
+    """
+    from sqlalchemy import text, inspect
+
+    columns_to_add = [
+        ("parallel_tasks", "INTEGER DEFAULT 1 NOT NULL"),
+    ]
+
+    try:
+        # Use inspector to check existing columns
+        inspector = inspect(engine)
+
+        # Check if table exists
+        if "job_templates" not in inspector.get_table_names():
+            logger.debug("job_templates table doesn't exist yet, skipping migration")
+            return
+
+        existing_columns = {
+            col["name"] for col in inspector.get_columns("job_templates")
+        }
+
+        with engine.connect() as conn:
+            for column_name, column_def in columns_to_add:
+                if column_name not in existing_columns:
+                    logger.info(f"Adding column {column_name} to job_templates table")
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE job_templates ADD COLUMN {column_name} {column_def}"
+                        )
+                    )
+                    conn.commit()
+                    logger.info(f"Successfully added column {column_name}")
+                else:
+                    logger.debug(
+                        f"Column {column_name} already exists in job_templates"
+                    )
+
+    except Exception as e:
+        logger.warning(f"Could not migrate job_templates table for parallel_tasks: {e}")
