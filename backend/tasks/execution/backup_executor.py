@@ -340,6 +340,7 @@ def execute_backup(
                     current_date=current_date,
                     backup_running_config_path=backup_running_config_path,
                     backup_startup_config_path=backup_startup_config_path,
+                    job_run_id=job_run_id,  # Pass for progress tracking
                 )
                 for idx, device_id in enumerate(target_devices, 1)
             )(
@@ -351,6 +352,7 @@ def execute_backup(
                     "write_timestamp_to_custom_field": write_timestamp_to_custom_field,
                     "timestamp_custom_field_name": timestamp_custom_field_name,
                     "job_run_id": job_run_id,  # Pass job_run_id for result storage
+                    "total_devices": total_devices,  # For progress tracking
                 })
             )
             

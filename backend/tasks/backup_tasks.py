@@ -173,8 +173,9 @@ def finalize_backup_task(
     return final_result
 
 
-@shared_task(name="tasks.backup_single_device_task")
+@shared_task(name="tasks.backup_single_device_task", bind=True)
 def backup_single_device_task(
+    self,
     device_id: str,
     device_index: int,
     total_devices: int,
@@ -184,6 +185,7 @@ def backup_single_device_task(
     current_date: str,
     backup_running_config_path: Optional[str] = None,
     backup_startup_config_path: Optional[str] = None,
+    job_run_id: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     Backup a single device configuration.
@@ -208,6 +210,20 @@ def backup_single_device_task(
     from services.nautobot import NautobotService
     from services.netmiko_service import NetmikoService
 
+    # Update progress if job_run_id provided
+    if job_run_id:
+        try:
+            from celery_app import celery_app
+            redis_client = celery_app.backend.client
+            progress_key = f"cockpit-ng:job-progress:{job_run_id}"
+            completed = redis_client.incr(progress_key)
+            redis_client.expire(progress_key, 3600)  # Expire after 1 hour
+            
+            progress_pct = int((completed / total_devices) * 100)
+            logger.info(f"Progress: {completed}/{total_devices} devices backed up ({progress_pct}%)")
+        except Exception as e:
+            logger.warning(f"Failed to update progress counter: {e}")
+    
     device_backup_info = {
         "device_id": device_id,
         "device_name": None,

@@ -213,6 +213,69 @@ async def get_job_run(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/{run_id}/progress")
+async def get_job_progress(
+    run_id: int, current_user: dict = Depends(require_permission("jobs", "read"))
+):
+    """
+    Get progress information for a running backup job.
+    
+    Returns progress counter from Redis for parallel backup jobs.
+    """
+    try:
+        from celery_app import celery_app
+        
+        # Get job run to check status
+        run = job_run_manager.get_job_run(run_id)
+        if not run:
+            raise HTTPException(status_code=404, detail=f"Job run {run_id} not found")
+        
+        # Only provide progress for running jobs
+        if run["status"] != "running":
+            return {
+                "status": run["status"],
+                "completed": None,
+                "total": None,
+                "percentage": None,
+            }
+        
+        # Get progress from Redis
+        redis_client = celery_app.backend.client
+        progress_key = f"cockpit-ng:job-progress:{run_id}"
+        completed = redis_client.get(progress_key)
+        
+        if completed is None:
+            # No progress tracking for this job (maybe sequential mode)
+            return {
+                "status": "running",
+                "completed": None,
+                "total": None,
+                "percentage": None,
+                "message": "Progress tracking not available for this job"
+            }
+        
+        completed = int(completed)
+        
+        # Try to get total from result field (set during job start)
+        result = run.get("result", {})
+        total = result.get("total_devices") if isinstance(result, dict) else None
+        
+        percentage = int((completed / total) * 100) if total and total > 0 else None
+        
+        return {
+            "status": "running",
+            "completed": completed,
+            "total": total,
+            "percentage": percentage,
+            "message": f"Backed up {completed} devices" + (f" of {total}" if total else "")
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting progress for job run {run_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/schedule/{schedule_id}")
 async def get_schedule_runs(
     schedule_id: int,

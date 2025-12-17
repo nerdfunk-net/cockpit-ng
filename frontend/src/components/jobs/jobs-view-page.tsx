@@ -25,7 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { History, RefreshCw, XCircle, ChevronLeft, ChevronRight, Trash2, Eye, ChevronDown } from "lucide-react"
+import { History, RefreshCw, XCircle, ChevronLeft, ChevronRight, Trash2, Eye, ChevronDown, Loader2 } from "lucide-react"
 import { useAuthStore } from "@/lib/auth-store"
 import { useToast } from "@/hooks/use-toast"
 import { JobResultDialog } from "./job-result-dialog"
@@ -51,6 +51,7 @@ export function JobsViewPage() {
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [clearing, setClearing] = useState(false)
   const [viewingResult, setViewingResult] = useState<JobRun | null>(null)
+  const [jobProgress, setJobProgress] = useState<Record<number, { completed: number; total: number; percentage: number }>>({})
 
   // Fetch available templates for filter dropdown
   const fetchTemplates = useCallback(async () => {
@@ -282,11 +283,68 @@ export function JobsViewPage() {
     if (!hasRunningJobs) return
 
     const interval = setInterval(() => {
+      console.log('[Jobs] Auto-refreshing job list...')
       fetchJobRuns()
-    }, 5000)
+    }, 3000) // Refresh every 3 seconds for faster updates
 
     return () => clearInterval(interval)
   }, [jobRuns, fetchJobRuns])
+
+  // Poll progress for running backup jobs
+  useEffect(() => {
+    if (!token) return
+
+    const runningBackupJobs = jobRuns.filter(run => 
+      run.status === "running" && 
+      (run.job_type === "backup" || run.job_type === "Backup")
+    )
+
+    if (runningBackupJobs.length === 0) {
+      setJobProgress({})
+      return
+    }
+
+    const fetchProgress = async () => {
+      const progressPromises = runningBackupJobs.map(async (run) => {
+        try {
+          const response = await fetch(`/api/proxy/job-runs/${run.id}/progress`, {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          })
+          if (response.ok) {
+            const data = await response.json()
+            return { runId: run.id, progress: data }
+          }
+        } catch (error) {
+          console.error(`Error fetching progress for job ${run.id}:`, error)
+        }
+        return null
+      })
+
+      const results = await Promise.all(progressPromises)
+      const newProgress: Record<number, { completed: number; total: number; percentage: number }> = {}
+      
+      results.forEach(result => {
+        if (result && result.progress.completed !== null && result.progress.total !== null) {
+          newProgress[result.runId] = {
+            completed: result.progress.completed,
+            total: result.progress.total,
+            percentage: result.progress.percentage || 0,
+          }
+          console.log(`[Job ${result.runId}] Progress: ${result.progress.completed}/${result.progress.total} (${result.progress.percentage}%)`)
+        }
+      })
+
+      setJobProgress(newProgress)
+    }
+
+    fetchProgress()
+    const interval = setInterval(fetchProgress, 3000) // Poll every 3 seconds
+
+    return () => clearInterval(interval)
+  }, [jobRuns, token])
 
   const getStatusBadgeClasses = (status: string): string => {
     const classes: Record<string, string> = {
@@ -338,6 +396,39 @@ export function JobsViewPage() {
       minute: "2-digit",
     })
   }
+
+  const viewJobResult = useCallback(async (runId: number) => {
+    if (!token) return
+    
+    try {
+      // Fetch fresh job details to avoid stale cached data
+      const response = await fetch(`/api/proxy/job-runs/${runId}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+      
+      if (response.ok) {
+        const freshJobRun = await response.json()
+        setViewingResult(freshJobRun)
+        console.log('[Jobs] Opened result dialog with fresh data for job', runId)
+      } else {
+        toast({
+          title: "Failed to load job details",
+          description: "Could not fetch the latest job information",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching job details:", error)
+      toast({
+        title: "Error loading job",
+        description: "An error occurred while loading job details",
+        variant: "destructive",
+      })
+    }
+  }, [token, toast])
 
   if (loading && jobRuns.length === 0) {
     return (
@@ -666,9 +757,31 @@ export function JobsViewPage() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Badge className={`text-xs border ${getStatusBadgeClasses(run.status)}`}>
-                          {run.status}
-                        </Badge>
+                        <div className="space-y-1.5">
+                          <Badge className={`text-xs border ${getStatusBadgeClasses(run.status)}`}>
+                            {run.status === "running" && jobProgress[run.id] ? (
+                              <span className="flex items-center gap-1.5">
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                <span className="font-semibold">{jobProgress[run.id]?.percentage ?? 0}%</span>
+                              </span>
+                            ) : (
+                              run.status
+                            )}
+                          </Badge>
+                          {run.status === "running" && jobProgress[run.id] && (
+                            <div className="flex items-center gap-1.5 text-xs">
+                              <div className="h-1.5 flex-1 bg-gray-200 rounded-full overflow-hidden max-w-[80px]">
+                                <div 
+                                  className="h-full bg-blue-500 transition-all duration-300"
+                                  style={{ width: `${jobProgress[run.id]?.percentage ?? 0}%` }}
+                                />
+                              </div>
+                              <span className="text-gray-600 font-mono text-xs whitespace-nowrap">
+                                {jobProgress[run.id]?.completed ?? 0}/{jobProgress[run.id]?.total ?? 0}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={`text-xs ${getTriggerBadgeClasses(run.triggered_by)}`}>
@@ -704,7 +817,7 @@ export function JobsViewPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                                  onClick={() => setViewingResult(run)}
+                                  onClick={() => viewJobResult(run.id)}
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
