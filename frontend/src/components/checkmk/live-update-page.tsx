@@ -1335,7 +1335,6 @@ export default function LiveUpdatePage() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleGetDiff(device)}
-                              disabled={isOffline}
                               title="Get Diff"
                             >
                               <GitCompare className="h-3 w-3" />
@@ -1345,7 +1344,6 @@ export default function LiveUpdatePage() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleSync(device)}
-                              disabled={isOffline}
                               title="Sync Device"
                             >
                               <RefreshCw className="h-3 w-3" />
@@ -1356,7 +1354,6 @@ export default function LiveUpdatePage() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  disabled={isOffline}
                                   title="Start Discovery"
                                 >
                                   <Radar className="h-3 w-3" />
