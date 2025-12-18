@@ -66,6 +66,7 @@ const InventoryRenderer = ({ data, depth = 0 }: { data: unknown; depth?: number 
     return (
       <div className="space-y-2 w-full">
         {data.map((item, index) => (
+          // eslint-disable-next-line react/no-array-index-key
           <div key={index} className="flex items-start gap-3 w-full">
             <span className="text-gray-500 font-medium select-none min-w-[40px]">[{index}]</span>
             <div className="flex-1 min-w-0">
@@ -148,6 +149,7 @@ const InventoryRenderer = ({ data, depth = 0 }: { data: unknown; depth?: number 
                 </thead>
                 <tbody>
                   {((objData.Table as Record<string, unknown>).Rows as Record<string, unknown>[]).map((row, idx) => (
+                    // eslint-disable-next-line react/no-array-index-key
                     <tr key={idx} className="hover:bg-gray-50">
                       {Object.entries(row).map(([key, value]) => (
                         <td key={key} className="border border-gray-300 px-2 py-1">
@@ -209,6 +211,7 @@ const JsonRenderer = ({ data, depth = 0, groupIndex = 0 }: { data: unknown; dept
     return (
       <div className="space-y-2 w-full">
         {data.map((item, index) => (
+          // eslint-disable-next-line react/no-array-index-key
           <div key={index} className="flex items-start gap-3 w-full">
             <span className="text-gray-500 font-medium select-none min-w-[40px]">[{index}]</span>
             <div className="flex-1 min-w-0">
@@ -582,7 +585,7 @@ export default function HostsInventoryPage() {
       setCheckingNautobot(false)
       setIsSyncModalOpen(false)
     }
-  }, [apiCall, showMessage])
+  }, [apiCall, showMessage, checkmkConfig, loadCheckmkConfig, loadNautobotMetadata])
 
   // Load Nautobot metadata for sync mapping
   const loadNautobotMetadata = useCallback(async () => {
@@ -641,7 +644,7 @@ export default function HostsInventoryPage() {
 
   // Initialize property mappings from CheckMK host with config-based reverse mapping
   const initializePropertyMappings = useCallback((host: CheckMKHost) => {
-    const mappings: Record<string, { nautobotField: string; value: unknown }> = {}
+    const mappings: Record<string, { nautobotField: string; value: unknown; isCore?: boolean }> = {}
     
     // Extract all tag_ attributes from CheckMK
     const attrs = host.attributes || {}
@@ -760,24 +763,32 @@ export default function HostsInventoryPage() {
         const isStatusAttribute = reverseAttr2htg[key] && reverseAttr2htg[key].startsWith('status')
         
         // Priority 1: Check if we have a reverse mapping from CheckMK config
-        if (reverseAttr2htg[key]) {
+        const attrPath = reverseAttr2htg[key]
+        if (attrPath) {
           // Map to Nautobot attribute (e.g., "status.name" → "status")
-          const attrPath = reverseAttr2htg[key]
-          nautobotField = attrPath.split('.')[0] // Get first part (e.g., "status")
+          nautobotField = attrPath.split('.')[0] || 'no_mapping' // Get first part (e.g., "status")
           isCore = true
-        } else if (reverseCf2htg[key]) {
-          // Map to custom field from config - only if it exists in Nautobot
-          const cfKey = reverseCf2htg[key].replace('custom_field_', '')
-          if (customFieldKeys.has(cfKey.toLowerCase())) {
-            nautobotField = reverseCf2htg[key]
+        } else {
+          const cfPath = reverseCf2htg[key]
+          if (cfPath) {
+            // Map to custom field from config - only if it exists in Nautobot
+            const cfKey = cfPath.replace('custom_field_', '')
+            if (customFieldKeys.has(cfKey.toLowerCase())) {
+              nautobotField = cfPath
+            }
+          } else {
+            const tagPath = reverseTags2htg[key]
+            if (tagPath) {
+              // Map to custom field from tags - only if it exists in Nautobot
+              const cfKey = tagPath.replace('custom_field_', '')
+              if (customFieldKeys.has(cfKey.toLowerCase())) {
+                nautobotField = tagPath
+              }
+            }
           }
-        } else if (reverseTags2htg[key]) {
-          // Map to custom field from tags - only if it exists in Nautobot
-          const cfKey = reverseTags2htg[key].replace('custom_field_', '')
-          if (customFieldKeys.has(cfKey.toLowerCase())) {
-            nautobotField = reverseTags2htg[key]
-          }
-        } else if (customFieldKeys.has(cleanKey)) {
+        }
+        
+        if (customFieldKeys.has(cleanKey) && nautobotField === 'no_mapping') {
           // Priority 2: Check if there's a matching custom field in Nautobot
           // e.g., tag_latency → custom_field_latency if "latency" custom field exists
           nautobotField = `custom_field_${cleanKey}`
@@ -820,13 +831,19 @@ export default function HostsInventoryPage() {
 
   // Update property mapping
   const updatePropertyMapping = useCallback((checkMkKey: string, nautobotField: string) => {
-    setPropertyMappings(prev => ({
-      ...prev,
-      [checkMkKey]: {
-        ...prev[checkMkKey],
-        nautobotField
+    setPropertyMappings(prev => {
+      const existing = prev[checkMkKey]
+      if (!existing) return prev
+      
+      return {
+        ...prev,
+        [checkMkKey]: {
+          nautobotField,
+          value: existing.value,
+          isCore: existing.isCore
+        }
       }
-    }))
+    })
   }, [])
 
   // Resolve Nautobot ID from name/value
@@ -873,7 +890,7 @@ export default function HostsInventoryPage() {
       
       const customFields: Record<string, string> = {}
       
-      Object.entries(propertyMappings).forEach(([checkMkKey, mapping]) => {
+      Object.entries(propertyMappings).forEach(([_checkMkKey, mapping]) => {
         const { nautobotField, value } = mapping
         
         // Skip fields with no mapping
@@ -914,8 +931,6 @@ export default function HostsInventoryPage() {
       if (!devicePayload.device_type) {
         throw new Error('Device type is required')
       }
-      
-      console.log('Syncing device to Nautobot:', devicePayload)
       
       // Call the add-device endpoint
       await apiCall('nautobot/add-device', {
@@ -1770,9 +1785,6 @@ export default function HostsInventoryPage() {
                                     ? checkMkKey.replace('tag_', '')
                                     : checkMkKey
                                   
-                                  // For role field without value, show dropdown with role options
-                                  const isEmptyRole = mapping.nautobotField === 'role' && !mapping.value
-                                  
                                   return (
                                     <tr key={`core-${checkMkKey}`} className="border-b hover:bg-blue-50">
                                       <td className="p-3">
@@ -1788,10 +1800,18 @@ export default function HostsInventoryPage() {
                                           <Select
                                             value={String(mapping.value)}
                                             onValueChange={(value) => {
-                                              setPropertyMappings(prev => ({
-                                                ...prev,
-                                                [checkMkKey]: { ...prev[checkMkKey], value }
-                                              }))
+                                              setPropertyMappings(prev => {
+                                                const existing = prev[checkMkKey]
+                                                if (!existing) return prev
+                                                return {
+                                                  ...prev,
+                                                  [checkMkKey]: {
+                                                    nautobotField: existing.nautobotField,
+                                                    value,
+                                                    isCore: existing.isCore
+                                                  }
+                                                }
+                                              })
                                             }}
                                           >
                                             <SelectTrigger className={`w-full bg-white ${!mapping.value ? 'border-orange-300' : 'border-gray-300'}`}>
@@ -1828,7 +1848,7 @@ export default function HostsInventoryPage() {
                                               {mapping.nautobotField === 'role' && 'Role'}
                                             </Badge>
                                           </div>
-                                          {['location', 'role', 'status'].includes(mapping.nautobotField) && mapping.value && (
+                                          {['location', 'role', 'status'].includes(mapping.nautobotField) && Boolean(mapping.value) && (
                                             <p className="text-xs text-gray-600">
                                               Will be matched to Nautobot {mapping.nautobotField}
                                             </p>
@@ -1915,7 +1935,7 @@ export default function HostsInventoryPage() {
                                                 <SelectItem value="no_mapping">
                                                   <span className="flex items-center gap-2">
                                                     <Badge className="bg-gray-400 text-white text-xs">Skip</Badge>
-                                                    No mapping (don't sync)
+                                                    No mapping (don&apos;t sync)
                                                   </span>
                                                 </SelectItem>
                                                 <SelectItem disabled value="_core_separator">--- Core Attributes ---</SelectItem>
