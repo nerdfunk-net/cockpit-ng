@@ -381,6 +381,101 @@ async def get_host(
         )
 
 
+@router.get("/inventory/{hostname}", response_model=CheckMKOperationResponse)
+async def get_host_inventory(
+    hostname: str,
+    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
+):
+    """Get inventory data for a specific host"""
+    try:
+        from settings_manager import settings_manager
+        import requests
+        from urllib.parse import urlparse
+
+        # Get CheckMK settings
+        db_settings = settings_manager.get_checkmk_settings()
+        if not db_settings or not all(
+            key in db_settings for key in ["url", "site", "username", "password"]
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="CheckMK settings not configured. Please configure CheckMK settings first.",
+            )
+
+        # Parse URL
+        url = db_settings["url"].rstrip("/")
+        if url.startswith(("http://", "https://")):
+            parsed_url = urlparse(url)
+            protocol = parsed_url.scheme
+            host = parsed_url.netloc
+        else:
+            protocol = "https"
+            host = url
+
+        site = db_settings["site"]
+
+        # Build inventory API URL
+        inventory_url = f"{protocol}://{host}/{site}/check_mk/host_inv_api.py"
+
+        # Prepare request parameters
+        params = {
+            "host": hostname,
+            "output_format": "json"
+        }
+
+        # Make request to CheckMK inventory API
+        auth = (db_settings["username"], db_settings["password"])
+        verify_ssl = db_settings.get("verify_ssl", True)
+
+        logger.info(f"Fetching inventory for host {hostname} from {inventory_url}")
+
+        response = requests.get(
+            inventory_url,
+            params=params,
+            auth=auth,
+            verify=verify_ssl,
+            timeout=30
+        )
+
+        # Check response status
+        if response.status_code == 404:
+            logger.info(f"Inventory not found for host {hostname}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Inventory data not found for host '{hostname}'",
+            )
+        elif response.status_code != 200:
+            logger.error(f"CheckMK inventory API error: {response.status_code} - {response.text}")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"CheckMK inventory API error: {response.status_code}",
+            )
+
+        # Parse JSON response
+        inventory_data = response.json()
+
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Inventory for host {hostname} retrieved successfully",
+            data=inventory_data
+        )
+
+    except HTTPException:
+        raise
+    except requests.RequestException as e:
+        logger.error(f"Request error getting inventory for {hostname}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to connect to CheckMK inventory API: {str(e)}",
+        )
+    except Exception as e:
+        logger.error(f"Error getting inventory for {hostname}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get inventory for {hostname}: {str(e)}",
+        )
+
+
 @router.post("/hosts", response_model=CheckMKOperationResponse)
 async def create_host(
     request: CheckMKHostCreateRequest,

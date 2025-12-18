@@ -98,12 +98,11 @@ class CheckMKClient:
             request_headers["If-Match"] = etag
 
         # Enhanced debug logging for troubleshooting
-        self.logger.debug("DEBUG: Making CheckMK API request:")
-        self.logger.debug(f"DEBUG: Method: {method}")
-        self.logger.debug(f"DEBUG: URL: {url}")
-        self.logger.debug(f"DEBUG: Params: {params}")
-        self.logger.debug(f"DEBUG: JSON Data: {json_data}")
-        self.logger.debug(f"DEBUG: Headers: {dict(request_headers)}")
+        self.logger.debug(f"Making CheckMK API request: {method} {url}")
+        if params:
+            self.logger.debug(f"Params: {params}")
+        if json_data:
+            self.logger.debug(f"JSON Data: {json_data}")
 
         try:
             response = self.session.request(
@@ -115,19 +114,18 @@ class CheckMKClient:
                 timeout=self.timeout,
             )
 
-            self.logger.debug(f"DEBUG: Response Status: {response.status_code}")
-            self.logger.debug(f"DEBUG: Response Headers: {dict(response.headers)}")
+            self.logger.debug(f"Response Status: {response.status_code}")
             if response.content:
                 try:
                     response_json = response.json()
-                    self.logger.debug(f"DEBUG: Response Body: {response_json}")
+                    self.logger.debug(f"Response Body (first 500 chars): {str(response_json)[:500]}")
                 except (json.JSONDecodeError, ValueError):
-                    self.logger.debug(f"DEBUG: Response Text: {response.text}")
+                    self.logger.debug(f"Response Text (first 500 chars): {response.text[:500]}")
 
             return response
 
         except requests.exceptions.RequestException as e:
-            self.logger.error(f"DEBUG: Request exception: {str(e)}")
+            self.logger.error(f"Request exception: {str(e)}")
             raise CheckMKAPIError(f"Request failed: {str(e)}")
 
     def _handle_response(self, response: requests.Response) -> Dict:
@@ -146,11 +144,10 @@ class CheckMKClient:
                 error_data = response.json() if response.content else {}
 
                 # Enhanced error logging
-                self.logger.error("DEBUG: API Error Details:")
-                self.logger.error(f"DEBUG: Status Code: {response.status_code}")
-                self.logger.error(f"DEBUG: Response Text: {response.text}")
-                self.logger.error(f"DEBUG: Response Headers: {dict(response.headers)}")
-                self.logger.error(f"DEBUG: Error Data: {error_data}")
+                self.logger.error("API Error Details:")
+                self.logger.error(f"Status Code: {response.status_code}")
+                self.logger.error(f"Response Text: {response.text[:500]}")
+                self.logger.error(f"Error Data: {error_data}")
 
                 error_msg = f"API request failed: {response.status_code}"
                 if error_data:
@@ -170,10 +167,10 @@ class CheckMKClient:
                     response_data=error_data,
                 )
         except json.JSONDecodeError as e:
-            self.logger.error(f"DEBUG: JSON decode error: {str(e)}")
-            self.logger.error(f"DEBUG: Raw response: {response.text}")
+            self.logger.error(f"JSON decode error: {str(e)}")
+            self.logger.error(f"Raw response (first 500 chars): {response.text[:500]}")
             raise CheckMKAPIError(
-                f"Invalid JSON response: {response.text}",
+                f"Invalid JSON response: {response.text[:500]}",
                 status_code=response.status_code,
             )
 
