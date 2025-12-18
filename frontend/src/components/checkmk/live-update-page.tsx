@@ -1211,7 +1211,12 @@ export default function LiveUpdatePage() {
                       </div>
                     </div>
                   </th>
-                  <th className="text-left p-2 font-medium">IP Address</th>
+                  <th className="text-left p-2 font-medium">
+                    <div className="space-y-1">
+                      <div>IP Address</div>
+                      <div className="h-8" />
+                    </div>
+                  </th>
                   <th className="text-left p-2 font-medium">
                     <div className="space-y-1">
                       <div>Role</div>
@@ -1262,14 +1267,19 @@ export default function LiveUpdatePage() {
                     </div>
                   </th>
                   <th className="text-left p-2 font-medium">
-                    <SearchableDropdown
-                      label="Location"
-                      placeholder="Filter by location..."
-                      options={Array.from(filterOptions.locations).sort()}
-                      value={selectedLocation}
-                      onSelect={setSelectedLocation}
-                      onClear={() => setSelectedLocation('')}
-                    />
+                    <div className="space-y-1">
+                      <div>Location</div>
+                      <div>
+                        <SearchableDropdown
+                          label=""
+                          placeholder="Filter by location..."
+                          options={Array.from(filterOptions.locations).sort()}
+                          value={selectedLocation}
+                          onSelect={setSelectedLocation}
+                          onClear={() => setSelectedLocation('')}
+                        />
+                      </div>
+                    </div>
                   </th>
                   <th className="text-left p-2 font-medium">
                     <div className="space-y-1">
@@ -1289,7 +1299,12 @@ export default function LiveUpdatePage() {
                       </div>
                     </div>
                   </th>
-                  <th className="text-left p-2 font-medium">Actions</th>
+                  <th className="text-left p-2 font-medium">
+                    <div className="space-y-1">
+                      <div>Actions</div>
+                      <div className="h-8" />
+                    </div>
+                  </th>
                 </tr>
               </thead>
               <tbody>
