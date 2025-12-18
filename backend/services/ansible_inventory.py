@@ -473,7 +473,9 @@ class AnsibleInventoryService:
         variables = {"location_filter": [location_filter]}
         result = await nautobot_service.graphql_query(query, variables)
 
-        logger.info(f"GraphQL result for location query '{location_filter}': Found {len(result.get('data', {}).get('devices', []))} devices")
+        logger.info(
+            f"GraphQL result for location query '{location_filter}': Found {len(result.get('data', {}).get('devices', []))} devices"
+        )
 
         # Extract devices directly from the devices query
         devices_data = result.get("data", {}).get("devices", [])
@@ -1177,7 +1179,9 @@ class AnsibleInventoryService:
                     values.append({"value": role["name"], "label": role["name"]})
             elif field_name == "status":
                 for status_item in results:
-                    values.append({"value": status_item["name"], "label": status_item["name"]})
+                    values.append(
+                        {"value": status_item["name"], "label": status_item["name"]}
+                    )
             elif field_name == "device_type":
                 for device_type in results:
                     # Create a descriptive label with manufacturer

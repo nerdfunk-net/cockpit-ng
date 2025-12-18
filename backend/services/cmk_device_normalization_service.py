@@ -345,7 +345,9 @@ class DeviceNormalizationService:
                 for nautobot_attr, host_tag_group_name in attr2htg_config.items():
                     try:
                         # Use existing _extract_field_value to handle dot notation
-                        attr_value = self._extract_field_value(device_data, nautobot_attr)
+                        attr_value = self._extract_field_value(
+                            device_data, nautobot_attr
+                        )
 
                         if attr_value is not None and attr_value != "":
                             # Handle nested objects (extract name if it's a dict)

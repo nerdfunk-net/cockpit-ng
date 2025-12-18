@@ -118,9 +118,13 @@ class CheckMKClient:
             if response.content:
                 try:
                     response_json = response.json()
-                    self.logger.debug(f"Response Body (first 500 chars): {str(response_json)[:500]}")
+                    self.logger.debug(
+                        f"Response Body (first 500 chars): {str(response_json)[:500]}"
+                    )
                 except (json.JSONDecodeError, ValueError):
-                    self.logger.debug(f"Response Text (first 500 chars): {response.text[:500]}")
+                    self.logger.debug(
+                        f"Response Text (first 500 chars): {response.text[:500]}"
+                    )
 
             return response
 

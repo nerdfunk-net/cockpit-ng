@@ -109,7 +109,9 @@ def dispatch_job(
         # For parallel jobs (status='running'), let the callback handle completion
         result_status = result.get("status")
         if result_status == "running":
-            logger.info(f"Job {job_name} is running asynchronously - callback will handle completion")
+            logger.info(
+                f"Job {job_name} is running asynchronously - callback will handle completion"
+            )
         elif result.get("success") or result_status == "completed":
             job_run_manager.mark_completed(job_run_id, result=result)
             logger.info(f"Job {job_name} completed successfully")

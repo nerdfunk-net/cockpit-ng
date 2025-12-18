@@ -4,7 +4,7 @@ Backup tasks for backing up device configurations to Git repository.
 Refactored to use service layer for better separation of concerns.
 """
 
-from celery import shared_task, group, chord
+from celery import shared_task, group
 import logging
 from datetime import datetime
 from typing import List, Optional, Dict, Any
@@ -12,14 +12,12 @@ from git.exc import GitCommandError
 from pathlib import Path
 
 from models.backup_models import (
-    DeviceBackupInfo,
     GitStatus,
     CredentialInfo,
     GitCommitStatus,
     TimestampUpdateStatus,
 )
 from services.device_backup_service import DeviceBackupService
-from utils.netmiko_platform_mapper import map_platform_to_netmiko
 
 logger = logging.getLogger(__name__)
 
@@ -31,57 +29,58 @@ def finalize_backup_task(
 ) -> Dict[str, Any]:
     """
     Finalize backup after all devices are backed up (chord callback).
-    
+
     This is a thin Celery task wrapper that handles finalization steps.
-    
+
     This task:
     1. Collects results from all parallel backup tasks
     2. Commits and pushes changes to Git
     3. Updates Nautobot custom fields if enabled
     4. Updates job_run with detailed results
-    
+
     Args:
         device_results: List of backup results from all device tasks
         repo_config: Repository and configuration info (includes job_run_id)
-    
+
     Returns:
         dict: Final backup status
     """
     from services.git_service import git_service
     import job_run_manager
-    
+
     logger.info("=" * 80)
     logger.info("FINALIZE BACKUP (CHORD CALLBACK)")
     logger.info("=" * 80)
-    
+
     # Separate successful and failed backups
     backed_up_devices = [r for r in device_results if not r.get("error")]
     failed_devices = [r for r in device_results if r.get("error")]
-    
+
     logger.info(f"Total devices processed: {len(device_results)}")
     logger.info(f"Successful backups: {len(backed_up_devices)}")
     logger.info(f"Failed backups: {len(failed_devices)}")
-    
+
     # Initialize status objects
     git_commit_status = GitCommitStatus()
-    
+
     # Commit and push to Git
     if backed_up_devices:
         try:
             logger.info("-" * 80)
             logger.info("COMMITTING AND PUSHING TO GIT")
             logger.info("-" * 80)
-            
+
             repo_dir = Path(repo_config["repo_dir"])
             repository = repo_config["repository"]
             current_date = repo_config["current_date"]
-            
+
             from git import Repo
+
             git_repo = Repo(repo_dir)
-            
+
             commit_message = f"Backup config {current_date}"
             logger.info(f"Committing with message: '{commit_message}'")
-            
+
             result = git_service.commit_and_push(
                 repository=dict(repository),
                 message=commit_message,
@@ -89,12 +88,14 @@ def finalize_backup_task(
                 add_all=True,
                 branch=repository.get("branch") or "main",
             )
-            
+
             git_commit_status.files_changed = result.files_changed
-            git_commit_status.commit_hash = result.commit_sha[:8] if result.commit_sha else None
+            git_commit_status.commit_hash = (
+                result.commit_sha[:8] if result.commit_sha else None
+            )
             git_commit_status.committed = result.commit_sha is not None
             git_commit_status.pushed = result.pushed
-            
+
             if result.success:
                 logger.info(f"✓ {result.message}")
                 if result.commit_sha:
@@ -107,13 +108,13 @@ def finalize_backup_task(
             logger.error(f"✗ Git operation failed: {e}", exc_info=True)
     else:
         logger.warning("⚠ No devices backed up - skipping commit")
-    
+
     # Update Nautobot custom fields (delegated to service)
     timestamp_update_status = TimestampUpdateStatus(
         enabled=repo_config.get("write_timestamp_to_custom_field", False),
         custom_field_name=repo_config.get("timestamp_custom_field_name"),
     )
-    
+
     if (
         repo_config.get("write_timestamp_to_custom_field")
         and repo_config.get("timestamp_custom_field_name")
@@ -121,16 +122,16 @@ def finalize_backup_task(
     ):
         backup_service = DeviceBackupService()
         custom_field_name = repo_config["timestamp_custom_field_name"]
-        
+
         timestamp_update_status = backup_service.update_nautobot_timestamps(
             devices=backed_up_devices,
             custom_field_name=custom_field_name,
         )
-    
+
     logger.info("=" * 80)
     logger.info("BACKUP FINALIZED")
     logger.info("=" * 80)
-    
+
     # Prepare final result
     final_result = {
         "success": len(failed_devices) == 0,
@@ -143,7 +144,7 @@ def finalize_backup_task(
         "devices_backed_up": len(backed_up_devices),  # For UI compatibility
         "devices_failed": len(failed_devices),  # For UI compatibility
     }
-    
+
     # Update job_run with detailed results if job_run_id provided
     job_run_id = repo_config.get("job_run_id")
     if job_run_id:
@@ -152,7 +153,7 @@ def finalize_backup_task(
             logger.info(f"✓ Updated job_run {job_run_id} with detailed results")
         except Exception as e:
             logger.error(f"Failed to update job_run {job_run_id}: {e}", exc_info=True)
-    
+
     return final_result
 
 
@@ -195,16 +196,19 @@ def backup_single_device_task(
     if job_run_id:
         try:
             from celery_app import celery_app
+
             redis_client = celery_app.backend.client
             progress_key = f"cockpit-ng:job-progress:{job_run_id}"
             completed = redis_client.incr(progress_key)
             redis_client.expire(progress_key, 3600)  # Expire after 1 hour
-            
+
             progress_pct = int((completed / total_devices) * 100)
-            logger.info(f"Progress: {completed}/{total_devices} devices backed up ({progress_pct}%)")
+            logger.info(
+                f"Progress: {completed}/{total_devices} devices backed up ({progress_pct}%)"
+            )
         except Exception as e:
             logger.warning(f"Failed to update progress counter: {e}")
-    
+
     # Delegate to service layer
     backup_service = DeviceBackupService()
     result = backup_service.backup_single_device(
@@ -217,9 +221,9 @@ def backup_single_device_task(
         current_date=current_date,
         backup_running_config_path=backup_running_config_path,
         backup_startup_config_path=backup_startup_config_path,
-        job_run_id=job_run_id
+        job_run_id=job_run_id,
     )
-    
+
     return result.to_dict()
 
 
@@ -277,16 +281,15 @@ def backup_devices_task(
         # Import services
         from services.git_service import git_service
         from services.git_auth_service import git_auth_service
-        from services.nautobot import NautobotService
 
         # Step 1: Validate inputs (delegated to service)
         backup_service = DeviceBackupService()
-        
+
         try:
             repository, credential = backup_service.validate_backup_inputs(
                 inventory=inventory,
                 config_repository_id=config_repository_id,
-                credential_id=credential_id
+                credential_id=credential_id,
             )
         except ValueError as e:
             logger.error(f"ERROR: {e}")
@@ -342,7 +345,9 @@ def backup_devices_task(
             git_repo = git_service.open_or_clone(dict(repository))
 
             git_status.repository_existed = repo_dir.exists()
-            git_status.operation = "opened" if git_status.repository_existed else "cloned"
+            git_status.operation = (
+                "opened" if git_status.repository_existed else "cloned"
+            )
 
             logger.info(f"✓ Repository ready at {repo_dir}")
             logger.info(f"  - Current branch: {git_repo.active_branch}")
@@ -426,7 +431,9 @@ def backup_devices_task(
                 else:
                     backed_up_devices.append(result)
 
-            logger.info(f"Parallel backup completed: {len(backed_up_devices)} succeeded, {len(failed_devices)} failed")
+            logger.info(
+                f"Parallel backup completed: {len(backed_up_devices)} succeeded, {len(failed_devices)} failed"
+            )
 
         else:
             # Sequential execution - use service for each device
@@ -453,7 +460,7 @@ def backup_devices_task(
                     current_date=current_date,
                     backup_running_config_path=None,
                     backup_startup_config_path=None,
-                    job_run_id=None
+                    job_run_id=None,
                 )
 
                 if result.error:
@@ -500,7 +507,9 @@ def backup_devices_task(
                 )
 
                 git_commit_status.files_changed = result.files_changed
-                git_commit_status.commit_hash = result.commit_sha[:8] if result.commit_sha else None
+                git_commit_status.commit_hash = (
+                    result.commit_sha[:8] if result.commit_sha else None
+                )
                 git_commit_status.committed = result.commit_sha is not None
                 git_commit_status.pushed = result.pushed
 
@@ -514,7 +523,9 @@ def backup_devices_task(
                     logger.error(f"✗ {result.message}")
                     raise GitCommandError("commit_and_push", 1, result.message.encode())
             else:
-                logger.warning("⚠ No devices backed up successfully - skipping Git commit")
+                logger.warning(
+                    "⚠ No devices backed up successfully - skipping Git commit"
+                )
 
         except GitCommandError as e:
             logger.error(f"✗ Failed to commit/push: {e}")
@@ -572,9 +583,10 @@ def backup_devices_task(
         return {
             "success": False,
             "error": str(e),
-            "git_status": git_status.model_dump() if isinstance(git_status, GitStatus) else git_status,
-            "credential_info": credential_info.model_dump() if isinstance(credential_info, CredentialInfo) else credential_info,
+            "git_status": git_status.model_dump()
+            if isinstance(git_status, GitStatus)
+            else git_status,
+            "credential_info": credential_info.model_dump()
+            if isinstance(credential_info, CredentialInfo)
+            else credential_info,
         }
-
-
-

@@ -39,7 +39,9 @@ class DeviceInfo(BaseModel):
     """Device information for inventory."""
 
     id: str = Field(..., description="Device UUID")
-    name: Optional[str] = Field(None, description="Device name (can be None for unnamed devices)")
+    name: Optional[str] = Field(
+        None, description="Device name (can be None for unnamed devices)"
+    )
     location: Optional[str] = Field(None, description="Device location")
     role: Optional[str] = Field(None, description="Device role")
     tags: List[str] = Field(default_factory=list, description="Device tags")

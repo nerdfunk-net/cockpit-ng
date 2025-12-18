@@ -138,11 +138,13 @@ class NetmikoService:
                         connection.enable()
                         logger.info("Privileged mode enabled")
                     except Exception as e:
-                        logger.warning(f"Failed to enter privileged mode on {host_ip}: {e}")
+                        logger.warning(
+                            f"Failed to enter privileged mode on {host_ip}: {e}"
+                        )
 
                 command_outputs = {}
                 output = ""
-                
+
                 if enable_mode:
                     logger.info(f"Entering config mode on {host_ip}")
                     # send_config_set automatically:
@@ -165,10 +167,10 @@ class NetmikoService:
                             read_timeout=30,
                             expect_string=None,  # Auto-detect prompt
                         )
-                        
+
                         # Store raw output mapped to command
                         command_outputs[command] = cmd_output
-                        
+
                         # Clean concatenation for backward compatibility (optional, but good for logging)
                         if output:
                             output += "\n"

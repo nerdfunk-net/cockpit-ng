@@ -5,10 +5,8 @@ Tests the device configuration retrieval and storage logic.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock, call
+from unittest.mock import patch
 from pathlib import Path
-import tempfile
-import shutil
 
 from services.device_config_service import DeviceConfigService
 from models.backup_models import DeviceBackupInfo
@@ -73,7 +71,9 @@ class TestDeviceConfigService:
     def test_fetch_device_from_nautobot_graphql_error(self):
         """Test device fetch when GraphQL query fails."""
         # Arrange
-        self.mock_nautobot.execute_graphql_query.side_effect = Exception("GraphQL error")
+        self.mock_nautobot.execute_graphql_query.side_effect = Exception(
+            "GraphQL error"
+        )
 
         # Act
         result = self.service.fetch_device_from_nautobot("device-uuid-123")
@@ -81,14 +81,18 @@ class TestDeviceConfigService:
         # Assert
         assert result is None
 
-    def test_retrieve_device_configs_success(self, sample_device_backup_info, sample_netmiko_connection):
+    def test_retrieve_device_configs_success(
+        self, sample_device_backup_info, sample_netmiko_connection
+    ):
         """Test successful config retrieval via Netmiko."""
         # Arrange
         credential = {"username": "admin", "password": "password123"}
         self.mock_netmiko.connect_to_device.return_value = sample_netmiko_connection
 
         # Act
-        result = self.service.retrieve_device_configs(sample_device_backup_info, credential)
+        result = self.service.retrieve_device_configs(
+            sample_device_backup_info, credential
+        )
 
         # Assert
         assert result is not None
@@ -96,14 +100,20 @@ class TestDeviceConfigService:
         assert "hostname switch01" in result["running-config"]
         self.mock_netmiko.connect_to_device.assert_called_once()
 
-    def test_retrieve_device_configs_connection_failure(self, sample_device_backup_info):
+    def test_retrieve_device_configs_connection_failure(
+        self, sample_device_backup_info
+    ):
         """Test config retrieval when Netmiko connection fails."""
         # Arrange
         credential = {"username": "admin", "password": "wrong"}
-        self.mock_netmiko.connect_to_device.side_effect = Exception("Authentication failed")
+        self.mock_netmiko.connect_to_device.side_effect = Exception(
+            "Authentication failed"
+        )
 
         # Act
-        result = self.service.retrieve_device_configs(sample_device_backup_info, credential)
+        result = self.service.retrieve_device_configs(
+            sample_device_backup_info, credential
+        )
 
         # Assert
         assert result is None
@@ -144,7 +154,9 @@ end
         # Assert
         assert result == raw_output
 
-    def test_save_configs_to_disk_success(self, sample_device_backup_info, sample_backup_configs, tmp_path):
+    def test_save_configs_to_disk_success(
+        self, sample_device_backup_info, sample_backup_configs, tmp_path
+    ):
         """Test saving configs to disk successfully."""
         # Arrange
         base_path = tmp_path / "configs"
@@ -160,16 +172,18 @@ end
 
         # Assert
         assert result is True
-        
+
         # Check files were created
         expected_path = base_path / "Region1" / "DC1" / "switch01"
         assert expected_path.exists()
-        
+
         running_config_file = expected_path / f"switch01_running-config_{date_str}.txt"
         assert running_config_file.exists()
         assert "hostname switch01" in running_config_file.read_text()
 
-    def test_save_configs_to_disk_creates_directories(self, sample_device_backup_info, sample_backup_configs, tmp_path):
+    def test_save_configs_to_disk_creates_directories(
+        self, sample_device_backup_info, sample_backup_configs, tmp_path
+    ):
         """Test that save_configs_to_disk creates nested directory structure."""
         # Arrange
         base_path = tmp_path / "new_configs"
@@ -189,7 +203,9 @@ end
         assert expected_path.exists()
         assert expected_path.is_dir()
 
-    def test_save_configs_to_disk_io_error(self, sample_device_backup_info, sample_backup_configs):
+    def test_save_configs_to_disk_io_error(
+        self, sample_device_backup_info, sample_backup_configs
+    ):
         """Test save_configs_to_disk handles IO errors gracefully."""
         # Arrange
         base_path = "/invalid/path/that/cannot/be/created"

@@ -418,10 +418,7 @@ async def get_host_inventory(
         inventory_url = f"{protocol}://{host}/{site}/check_mk/host_inv_api.py"
 
         # Prepare request parameters
-        params = {
-            "host": hostname,
-            "output_format": "json"
-        }
+        params = {"host": hostname, "output_format": "json"}
 
         # Make request to CheckMK inventory API
         auth = (db_settings["username"], db_settings["password"])
@@ -430,11 +427,7 @@ async def get_host_inventory(
         logger.info(f"Fetching inventory for host {hostname} from {inventory_url}")
 
         response = requests.get(
-            inventory_url,
-            params=params,
-            auth=auth,
-            verify=verify_ssl,
-            timeout=30
+            inventory_url, params=params, auth=auth, verify=verify_ssl, timeout=30
         )
 
         # Check response status
@@ -445,7 +438,9 @@ async def get_host_inventory(
                 detail=f"Inventory data not found for host '{hostname}'",
             )
         elif response.status_code != 200:
-            logger.error(f"CheckMK inventory API error: {response.status_code} - {response.text}")
+            logger.error(
+                f"CheckMK inventory API error: {response.status_code} - {response.text}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=f"CheckMK inventory API error: {response.status_code}",
@@ -457,7 +452,7 @@ async def get_host_inventory(
         return CheckMKOperationResponse(
             success=True,
             message=f"Inventory for host {hostname} retrieved successfully",
-            data=inventory_data
+            data=inventory_data,
         )
 
     except HTTPException:

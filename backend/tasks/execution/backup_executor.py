@@ -9,8 +9,6 @@ import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
 from git.exc import GitCommandError
-from celery import group
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -323,11 +321,16 @@ def execute_backup(
 
         # Use chord pattern for parallel execution
         if parallel_tasks > 1:
-            logger.info(f"Using parallel execution with {parallel_tasks} workers (chord pattern)")
-            
-            from tasks.backup_tasks import backup_single_device_task, finalize_backup_task
+            logger.info(
+                f"Using parallel execution with {parallel_tasks} workers (chord pattern)"
+            )
+
+            from tasks.backup_tasks import (
+                backup_single_device_task,
+                finalize_backup_task,
+            )
             from celery import chord
-            
+
             # Create chord: group of parallel tasks + callback
             backup_chord = chord(
                 backup_single_device_task.s(
@@ -345,21 +348,25 @@ def execute_backup(
                 for idx, device_id in enumerate(target_devices, 1)
             )(
                 # Callback with repo config and job_run_id
-                finalize_backup_task.s({
-                    "repo_dir": str(repo_dir),
-                    "repository": dict(repository),
-                    "current_date": current_date,
-                    "write_timestamp_to_custom_field": write_timestamp_to_custom_field,
-                    "timestamp_custom_field_name": timestamp_custom_field_name,
-                    "job_run_id": job_run_id,  # Pass job_run_id for result storage
-                    "total_devices": total_devices,  # For progress tracking
-                })
+                finalize_backup_task.s(
+                    {
+                        "repo_dir": str(repo_dir),
+                        "repository": dict(repository),
+                        "current_date": current_date,
+                        "write_timestamp_to_custom_field": write_timestamp_to_custom_field,
+                        "timestamp_custom_field_name": timestamp_custom_field_name,
+                        "job_run_id": job_run_id,  # Pass job_run_id for result storage
+                        "total_devices": total_devices,  # For progress tracking
+                    }
+                )
             )
-            
+
             # Return immediately - chord callback will handle finalization
             logger.info(f"Chord created for {total_devices} devices")
-            logger.info("Parallel backup tasks launched - finalization will happen in callback")
-            
+            logger.info(
+                "Parallel backup tasks launched - finalization will happen in callback"
+            )
+
             return {
                 "success": True,
                 "status": "running",

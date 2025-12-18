@@ -159,15 +159,17 @@ def _update_ip_in_nautobot(
             def get_prefix_len(p):
                 try:
                     return int(p.get("prefix", "").split("/")[1])
-                except:
+                except (ValueError, IndexError, AttributeError):
                     return 0
-            
+
             # Sort by prefix length descending (longest match)
             prefixes.sort(key=get_prefix_len, reverse=True)
-            
+
             best_prefix = prefixes[0]
             prefix_id = best_prefix.get("id")
-            logger.debug(f"Found parent prefix: {best_prefix.get('prefix')} (ID: {prefix_id})")
+            logger.debug(
+                f"Found parent prefix: {best_prefix.get('prefix')} (ID: {prefix_id})"
+            )
 
             # Get the "Active" status ID
             response = requests.get(
@@ -277,22 +279,25 @@ def _update_prefix_last_scan(
             )
             response.raise_for_status()
             prefixes = response.json().get("results", [])
-            
+
             if not prefixes:
                 logger.warning(f"No parent prefix found for {prefix_cidr}")
                 return False
-                
+
             # Pick most specific
             def get_prefix_len(p):
                 try:
                     return int(p.get("prefix", "").split("/")[1])
-                except:
+                except (ValueError, IndexError, AttributeError):
                     return 0
+
             prefixes.sort(key=get_prefix_len, reverse=True)
 
         best_prefix = prefixes[0]
         prefix_id = best_prefix.get("id")
-        logger.debug(f"Updating last_scan for prefix: {best_prefix.get('prefix')} (ID: {prefix_id})")
+        logger.debug(
+            f"Updating last_scan for prefix: {best_prefix.get('prefix')} (ID: {prefix_id})"
+        )
 
         # Update last_scan custom field
         update_data = {"custom_fields": {"last_scan": current_date}}
@@ -327,7 +332,7 @@ def _execute_scan_prefixes(
 ) -> Dict[str, Any]:
     """
     Execute scan prefixes logic (internal function).
-    
+
     This function:
     1. Determines prefixes to scan:
        - Uses 'explicit_prefixes' if provided (Execution Mode)
@@ -338,7 +343,7 @@ def _execute_scan_prefixes(
        - Expands to IPs
        - Pings IPs
        - Updates results
-    
+
     Args:
         custom_field_name: Name of custom field on ipam.prefix (without 'cf_' prefix)
         custom_field_value: Value to filter prefixes by
@@ -394,12 +399,14 @@ def _execute_scan_prefixes(
                         "total": 1,
                     },
                 )
-            cidrs = _fetch_prefixes_by_custom_field(custom_field_name, custom_field_value)
+            cidrs = _fetch_prefixes_by_custom_field(
+                custom_field_name, custom_field_value
+            )
 
         if not cidrs:
             result = {
                 "success": True,
-                "message": f"No prefixes found to scan",
+                "message": "No prefixes found to scan",
                 "prefixes": [],
                 "total_prefixes": 0,
                 "total_ips_scanned": 0,
@@ -420,12 +427,15 @@ def _execute_scan_prefixes(
 
         for cidr in cidrs:
             try:
-                # Quick count without expanding fully if possible, but _expand handles exclusion/network addr 
+                # Quick count without expanding fully if possible, but _expand handles exclusion/network addr
                 # so safer to rely on library or simple math: 2^(32-prefix_len) - 2
                 # For accuracy with fping task logic, we'll estimate or just use quick math
                 net = ipaddress.ip_network(cidr, strict=False)
-                count = net.num_addresses - 2 if net.prefixlen < 31 else net.num_addresses # rough est
-                if count < 0: count = 0
+                count = (
+                    net.num_addresses - 2 if net.prefixlen < 31 else net.num_addresses
+                )  # rough est
+                if count < 0:
+                    count = 0
                 prefix_ip_counts[cidr] = count
                 total_ips_count += count
             except Exception:
@@ -436,9 +446,9 @@ def _execute_scan_prefixes(
             # Check for large prefixes that need splitting themselves
             # To handle large single prefixes, we will split them into smaller subnets
             # until they fit within scan_max_ips or we reach a reasonable limit (/30)
-            
+
             final_cidrs = []
-            
+
             for cidr in cidrs:
                 count = prefix_ip_counts.get(cidr, 0)
                 if count > scan_max_ips:
@@ -449,39 +459,45 @@ def _execute_scan_prefixes(
                         # We want subnets small enough to fit in scan_max_ips
                         # e.g. if max=100, we need /26 (64) or /25 (128 - wait, 128 > 100)
                         # So we need net count <= max_ips
-                        
+
                         current_subnets = [net]
-                        
+
                         # Iteratively split until all chunks are small enough
                         # This avoids calculating optimal prefix math and handles varying sizes
-                        while any(sn.num_addresses > scan_max_ips for sn in current_subnets):
+                        while any(
+                            sn.num_addresses > scan_max_ips for sn in current_subnets
+                        ):
                             next_subnets = []
                             for sn in current_subnets:
                                 if sn.num_addresses > scan_max_ips:
-                                    if sn.prefixlen >= 30: # Don't split /30 or smaller
+                                    if sn.prefixlen >= 30:  # Don't split /30 or smaller
                                         next_subnets.append(sn)
                                     else:
-                                        next_subnets.extend(list(sn.subnets(prefixlen_diff=1)))
+                                        next_subnets.extend(
+                                            list(sn.subnets(prefixlen_diff=1))
+                                        )
                                 else:
                                     next_subnets.append(sn)
                             current_subnets = next_subnets
-                            
+
                             # Safety break
                             if len(current_subnets) > 1000:
-                                logger.warning(f"Prefix splitting generated too many subnets for {cidr}, stopping split.")
+                                logger.warning(
+                                    f"Prefix splitting generated too many subnets for {cidr}, stopping split."
+                                )
                                 break
-                        
+
                         final_cidrs.extend([str(sn) for sn in current_subnets])
-                        
-                    except Exception as e:
+
+                    except (ValueError, TypeError) as e:
                         logger.error(f"Failed to split large prefix {cidr}: {e}")
                         final_cidrs.append(cidr)
                 else:
                     final_cidrs.append(cidr)
-            
+
             # Replaced original cidrs with potentially split ones
             cidrs = final_cidrs
-            
+
             # Recalculate counts for batching
             prefix_ip_counts = {}
             for cidr in cidrs:
@@ -489,11 +505,13 @@ def _execute_scan_prefixes(
                     net = ipaddress.ip_network(cidr, strict=False)
                     # Simple count
                     prefix_ip_counts[cidr] = net.num_addresses
-                except:
+                except (ValueError, TypeError):
                     prefix_ip_counts[cidr] = 0
 
-            logger.info(f"Total IPs ({total_ips_count}) exceeds max ({scan_max_ips}). Splitting job.")
-            
+            logger.info(
+                f"Total IPs ({total_ips_count}) exceeds max ({scan_max_ips}). Splitting job."
+            )
+
             if task_context:
                 task_context.update_state(
                     state="PROGRESS",
@@ -511,16 +529,16 @@ def _execute_scan_prefixes(
 
             for cidr in cidrs:
                 count = prefix_ip_counts.get(cidr, 0)
-                
+
                 # Check directly if adding this limit exceeds max (should verify single items fit now)
                 if current_batch and (current_batch_count + count > scan_max_ips):
                     batches.append(current_batch)
                     current_batch = []
                     current_batch_count = 0
-                
+
                 current_batch.append(cidr)
                 current_batch_count += count
-            
+
             if current_batch:
                 batches.append(current_batch)
 
@@ -539,11 +557,13 @@ def _execute_scan_prefixes(
                     retries=retries,
                     interval_ms=interval_ms,
                     executed_by=executed_by,
-                    scan_max_ips=scan_max_ips, # Pass recursive limit
-                    explicit_prefixes=batch 
+                    scan_max_ips=scan_max_ips,  # Pass recursive limit
+                    explicit_prefixes=batch,
                 )
                 sub_task_ids.append(sub_task.id)
-                logger.info(f"Spawned sub-task {sub_task.id} for batch {i+1}/{len(batches)}")
+                logger.info(
+                    f"Spawned sub-task {sub_task.id} for batch {i + 1}/{len(batches)}"
+                )
 
             result = {
                 "success": True,
@@ -551,12 +571,12 @@ def _execute_scan_prefixes(
                 "total_prefixes": len(cidrs),
                 "total_ips_to_scan": total_ips_count,
                 "split_into_batches": len(batches),
-                "sub_task_ids": sub_task_ids
+                "sub_task_ids": sub_task_ids,
             }
-            
+
             if created_job_run:
                 job_run_manager.mark_completed(job_run_id, result=result)
-            
+
             return result
 
         # Step 3: Normal Execution (Expand & Scan)

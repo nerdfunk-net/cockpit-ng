@@ -4,28 +4,28 @@ Integration tests for backup Celery tasks.
 Tests the end-to-end backup workflow with mocked external dependencies.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from celery import Celery
+from unittest.mock import Mock, patch
 
 from tasks.backup_tasks import (
     backup_single_device_task,
     backup_devices_task,
     finalize_backup_task,
 )
-from models.backup_models import DeviceBackupInfo, GitStatus
+from models.backup_models import DeviceBackupInfo
 
 
 class TestBackupSingleDeviceTask:
     """Integration tests for backup_single_device_task."""
 
     @patch("tasks.backup_tasks.DeviceBackupService")
-    def test_backup_single_device_task_success(self, mock_service_class, sample_credential, sample_repository):
+    def test_backup_single_device_task_success(
+        self, mock_service_class, sample_credential, sample_repository
+    ):
         """Test successful single device backup task."""
         # Arrange
         mock_service = Mock()
         mock_service_class.return_value = mock_service
-        
+
         device_info_dict = {
             "device_id": "dev1",
             "device_name": "switch01",
@@ -34,7 +34,7 @@ class TestBackupSingleDeviceTask:
             "location_hierarchy": ["Region1", "DC1"],
             "device_role": "Access Switch",
         }
-        
+
         mock_service.backup_single_device.return_value = {
             "success": True,
             "device_id": "dev1",
@@ -56,12 +56,14 @@ class TestBackupSingleDeviceTask:
         mock_service.backup_single_device.assert_called_once()
 
     @patch("tasks.backup_tasks.DeviceBackupService")
-    def test_backup_single_device_task_failure(self, mock_service_class, sample_credential):
+    def test_backup_single_device_task_failure(
+        self, mock_service_class, sample_credential
+    ):
         """Test single device backup task failure."""
         # Arrange
         mock_service = Mock()
         mock_service_class.return_value = mock_service
-        
+
         device_info_dict = {
             "device_id": "dev1",
             "device_name": "switch01",
@@ -70,7 +72,7 @@ class TestBackupSingleDeviceTask:
             "location_hierarchy": ["Region1", "DC1"],
             "device_role": "Access Switch",
         }
-        
+
         mock_service.backup_single_device.return_value = {
             "success": False,
             "device_id": "dev1",
@@ -103,18 +105,19 @@ class TestBackupDevicesTask:
         # Arrange
         mock_service = Mock()
         mock_service_class.return_value = mock_service
-        
+
         # Mock validation
         from models.backup_models import CredentialInfo
+
         mock_service.validate_backup_inputs.return_value = (
             CredentialInfo(credential_id=1, credential_name="default"),
             sample_repository,
         )
-        
+
         # Mock Git setup
         mock_git_repo = Mock()
         mock_git_service.setup_repository.return_value = (mock_git_repo, None)
-        
+
         device_ids = ["dev1", "dev2"]
 
         # Act
@@ -124,8 +127,8 @@ class TestBackupDevicesTask:
                 "success": True,
                 "device_id": "dev1",
             }
-            
-            result = backup_devices_task(
+
+            backup_devices_task(
                 device_ids=device_ids,
                 credential_id=1,
                 repo_id=1,
@@ -145,14 +148,15 @@ class TestBackupDevicesTask:
         # Arrange
         mock_service = Mock()
         mock_service_class.return_value = mock_service
-        
+
         # Mock validation
-        from models.backup_models import CredentialInfo, DeviceBackupInfo
+        from models.backup_models import CredentialInfo
+
         mock_service.validate_backup_inputs.return_value = (
             CredentialInfo(credential_id=1, credential_name="default"),
             sample_repository,
         )
-        
+
         # Mock device fetching
         device_info = DeviceBackupInfo(
             device_id="dev1",
@@ -162,23 +166,27 @@ class TestBackupDevicesTask:
             location_hierarchy=["Region1", "DC1"],
             device_role="Access Switch",
         )
-        
+
         with patch("tasks.backup_tasks.git_service") as mock_git_service:
             mock_git_repo = Mock()
             mock_git_service.setup_repository.return_value = (mock_git_repo, None)
-            
+
             # Mock backup results
             mock_service.backup_single_device.return_value = {
                 "success": True,
                 "device_id": "dev1",
                 "device_name": "switch01",
             }
-            
+
             # Mock device config service
-            with patch("tasks.backup_tasks.DeviceConfigService") as mock_config_service_class:
+            with patch(
+                "tasks.backup_tasks.DeviceConfigService"
+            ) as mock_config_service_class:
                 mock_config_service = Mock()
                 mock_config_service_class.return_value = mock_config_service
-                mock_config_service.fetch_device_from_nautobot.return_value = device_info
+                mock_config_service.fetch_device_from_nautobot.return_value = (
+                    device_info
+                )
 
                 # Act
                 result = backup_devices_task(
@@ -225,7 +233,7 @@ class TestFinalizeBackupTask:
             {"success": True, "device_id": "dev1", "device_name": "switch01"},
             {"success": True, "device_id": "dev2", "device_name": "switch02"},
         ]
-        
+
         repo_config = {
             "job_run_id": 1,
             "repository": {"name": "test-repo"},
@@ -246,9 +254,14 @@ class TestFinalizeBackupTask:
         # Arrange
         device_results = [
             {"success": True, "device_id": "dev1", "device_name": "switch01"},
-            {"success": False, "device_id": "dev2", "device_name": "switch02", "error": "Timeout"},
+            {
+                "success": False,
+                "device_id": "dev2",
+                "device_name": "switch02",
+                "error": "Timeout",
+            },
         ]
-        
+
         repo_config = {
             "job_run_id": 1,
             "repository": {"name": "test-repo"},
@@ -270,7 +283,7 @@ class TestFinalizeBackupTask:
             {"success": False, "device_id": "dev1", "error": "Connection failed"},
             {"success": False, "device_id": "dev2", "error": "Authentication failed"},
         ]
-        
+
         repo_config = {
             "job_run_id": 1,
             "repository": {"name": "test-repo"},

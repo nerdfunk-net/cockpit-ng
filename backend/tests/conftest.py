@@ -4,7 +4,6 @@ Pytest configuration and shared fixtures for backup tests.
 
 import pytest
 from unittest.mock import Mock, MagicMock
-from pathlib import Path
 from typing import Dict, Any
 from git import Repo
 
@@ -83,7 +82,9 @@ def sample_repository() -> Dict[str, Any]:
 def sample_netmiko_connection():
     """Mock Netmiko connection object."""
     conn = MagicMock()
-    conn.send_command = Mock(return_value="hostname switch01\n!\ninterface GigabitEthernet0/1")
+    conn.send_command = Mock(
+        return_value="hostname switch01\n!\ninterface GigabitEthernet0/1"
+    )
     conn.disconnect = Mock()
     return conn
 
@@ -94,13 +95,13 @@ def sample_git_repo(tmp_path):
     repo_path = tmp_path / "test-repo"
     repo_path.mkdir()
     repo = Repo.init(repo_path)
-    
+
     # Create initial commit
     test_file = repo_path / "README.md"
     test_file.write_text("Test repository")
     repo.index.add(["README.md"])
     repo.index.commit("Initial commit")
-    
+
     return repo
 
 
@@ -108,7 +109,7 @@ def sample_git_repo(tmp_path):
 def sample_device_backup_info():
     """Sample DeviceBackupInfo model."""
     from models.backup_models import DeviceBackupInfo
-    
+
     return DeviceBackupInfo(
         device_id="device-uuid-123",
         device_name="switch01",
@@ -123,7 +124,7 @@ def sample_device_backup_info():
 def sample_git_status():
     """Sample GitStatus model."""
     from models.backup_models import GitStatus
-    
+
     return GitStatus(
         repository_name="test-backup-repo",
         initialized=True,

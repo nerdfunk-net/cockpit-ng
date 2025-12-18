@@ -5,17 +5,13 @@ Tests the high-level backup orchestration logic.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime
+from unittest.mock import Mock
 
 from services.device_backup_service import DeviceBackupService
 from models.backup_models import (
-    DeviceBackupInfo,
     CredentialInfo,
-    GitStatus,
     GitCommitStatus,
     TimestampUpdateStatus,
-    BackupResult,
 )
 
 
@@ -76,7 +72,9 @@ class TestDeviceBackupService:
     ):
         """Test successful single device backup."""
         # Arrange
-        self.mock_device_config_service.retrieve_device_configs.return_value = sample_backup_configs
+        self.mock_device_config_service.retrieve_device_configs.return_value = (
+            sample_backup_configs
+        )
         self.mock_device_config_service.save_configs_to_disk.return_value = True
 
         # Act
@@ -121,7 +119,9 @@ class TestDeviceBackupService:
     ):
         """Test single device backup when saving to disk fails."""
         # Arrange
-        self.mock_device_config_service.retrieve_device_configs.return_value = sample_backup_configs
+        self.mock_device_config_service.retrieve_device_configs.return_value = (
+            sample_backup_configs
+        )
         self.mock_device_config_service.save_configs_to_disk.return_value = False
 
         # Act
@@ -285,7 +285,9 @@ class TestDeviceBackupService:
         )
 
         # Assert
-        assert result["success"] is True  # Still success if at least one device backed up
+        assert (
+            result["success"] is True
+        )  # Still success if at least one device backed up
         assert result["backed_up_count"] == 1
         assert result["failed_count"] == 1
 

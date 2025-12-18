@@ -12,6 +12,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+
 @router.get("/schema/status", dependencies=[Depends(verify_token)])
 async def get_schema_status() -> Dict[str, Any]:
     """
@@ -19,6 +20,7 @@ async def get_schema_status() -> Dict[str, Any]:
     """
     manager = SchemaManager()
     return manager.get_schema_status()
+
 
 @router.post("/schema/migrate", dependencies=[Depends(verify_token)])
 async def migrate_schema() -> Dict[str, Any]:
@@ -28,6 +30,7 @@ async def migrate_schema() -> Dict[str, Any]:
     """
     manager = SchemaManager()
     return manager.perform_migration()
+
 
 @router.post("/rbac/seed", dependencies=[Depends(verify_token)])
 async def seed_rbac() -> Dict[str, Any]:
@@ -55,7 +58,7 @@ async def seed_rbac() -> Dict[str, Any]:
             return {
                 "success": True,
                 "message": "RBAC system seeded successfully",
-                "output": output
+                "output": output,
             }
         finally:
             # Restore stdout
@@ -64,6 +67,5 @@ async def seed_rbac() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error seeding RBAC: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to seed RBAC system: {str(e)}"
+            status_code=500, detail=f"Failed to seed RBAC system: {str(e)}"
         )
