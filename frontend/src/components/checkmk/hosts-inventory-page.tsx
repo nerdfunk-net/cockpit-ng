@@ -513,21 +513,302 @@ export default function HostsInventoryPage() {
     void loadInventory(host.host_name)
   }, [loadInventory])
 
+  // Sync to Nautobot modal state
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false)
+  const [selectedHostForSync, setSelectedHostForSync] = useState<CheckMKHost | null>(null)
+  const [nautobotDevice, setNautobotDevice] = useState<Record<string, unknown> | null>(null)
+  const [checkingNautobot, setCheckingNautobot] = useState(false)
+  const [nautobotMetadata, setNautobotMetadata] = useState<{
+    locations: Array<{ id: string; name: string }>
+    roles: Array<{ id: string; name: string }>
+    statuses: Array<{ id: string; name: string }>
+    deviceTypes: Array<{ id: string; name: string }>
+    platforms: Array<{ id: string; name: string }>
+    customFields: Array<{ id: string; name: string; key: string }>
+  } | null>(null)
+  const [propertyMappings, setPropertyMappings] = useState<Record<string, {
+    nautobotField: string
+    value: unknown
+    isCore?: boolean
+  }>>({})
+  const [loadingMetadata, setLoadingMetadata] = useState(false)
+
   const handleSyncToNautobot = useCallback(async (host: CheckMKHost) => {
     try {
-      showMessage(`Syncing ${host.host_name} to Nautobot...`, 'info')
-
-      // TODO: Implement sync endpoint
-      await apiCall(`checkmk/sync-to-nautobot/${encodeURIComponent(host.host_name)}`, {
-        method: 'POST'
-      })
-
-      showMessage(`Successfully synced ${host.host_name} to Nautobot`, 'success')
+      setSelectedHostForSync(host)
+      setCheckingNautobot(true)
+      setIsSyncModalOpen(true)
+      setNautobotDevice(null)
+      
+      // Search for device in Nautobot by name
+      showMessage(`Searching for ${host.host_name} in Nautobot...`, 'info')
+      
+      try {
+        const searchResult = await apiCall<{ data: { devices: unknown[] } }>(`nautobot/devices?filter_type=name&filter_value=${encodeURIComponent(host.host_name)}`)
+        
+        if (searchResult?.data?.devices && searchResult.data.devices.length > 0) {
+          const deviceBasic = searchResult.data.devices[0] as Record<string, unknown>
+          
+          // Get detailed device information
+          const deviceId = deviceBasic.id as string
+          const deviceDetails = await apiCall<Record<string, unknown>>(`nautobot/devices/${deviceId}`)
+          
+          setNautobotDevice(deviceDetails || null)
+          showMessage(`Device found in Nautobot`, 'success')
+        } else {
+          setNautobotDevice(null)
+          showMessage(`Device not found in Nautobot - will create new`, 'info')
+        }
+      } catch (err) {
+        console.error('Error searching Nautobot:', err)
+        setNautobotDevice(null)
+      }
+      
+      setCheckingNautobot(false)
+      
+      // Load CheckMK config (will be used for intelligent mapping)
+      if (!checkmkConfig) {
+        await loadCheckmkConfig()
+      }
+      
+      // Load Nautobot metadata (locations, roles, etc.)
+      await loadNautobotMetadata()
+      
+      // Note: initializePropertyMappings will be called via useEffect when checkmkConfig changes
+      
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to sync to Nautobot'
-      showMessage(`Failed to sync ${host.host_name}: ${message}`, 'error')
+      const message = err instanceof Error ? err.message : 'Failed to prepare sync'
+      showMessage(`Failed to prepare sync for ${host.host_name}: ${message}`, 'error')
+      setCheckingNautobot(false)
+      setIsSyncModalOpen(false)
     }
   }, [apiCall, showMessage])
+
+  // Load Nautobot metadata for sync mapping
+  const loadNautobotMetadata = useCallback(async () => {
+    try {
+      setLoadingMetadata(true)
+      
+      const [locations, roles, statuses, deviceTypes, platforms, customFields] = await Promise.all([
+        apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/locations'),
+        apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/roles/devices'),
+        apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/statuses/device'),
+        apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/device-types'),
+        apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/platforms'),
+        apiCall<{ results: Array<{ id: string; name: string; key: string }> }>('nautobot/custom-fields/devices'),
+      ])
+      
+      // Handle different response formats: some endpoints return { results: [...] }, others return array directly
+      const extractResults = <T,>(response: { results?: T[] } | T[] | undefined): T[] => {
+        if (!response) return []
+        if (Array.isArray(response)) return response
+        return response.results || []
+      }
+      
+      setNautobotMetadata({
+        locations: extractResults(locations),
+        roles: extractResults(roles),
+        statuses: extractResults(statuses),
+        deviceTypes: extractResults(deviceTypes),
+        platforms: extractResults(platforms),
+        customFields: extractResults(customFields),
+      })
+    } catch (err) {
+      console.error('Failed to load Nautobot metadata:', err)
+      showMessage('Failed to load Nautobot metadata', 'error')
+    } finally {
+      setLoadingMetadata(false)
+    }
+  }, [apiCall, showMessage])
+
+  // Load CheckMK config for reverse mapping
+  const [checkmkConfig, setCheckmkConfig] = useState<{
+    attr2htg?: Record<string, string>
+    cf2htg?: Record<string, string>
+    tags2htg?: Record<string, string>
+  } | null>(null)
+
+  const loadCheckmkConfig = useCallback(async () => {
+    try {
+      const config = await apiCall<Record<string, unknown>>('config/checkmk.yaml')
+      setCheckmkConfig(config || null)
+    } catch (err) {
+      console.error('Failed to load CheckMK config:', err)
+      // Continue without config
+      setCheckmkConfig(null)
+    }
+  }, [apiCall])
+
+  // Initialize property mappings from CheckMK host with config-based reverse mapping
+  const initializePropertyMappings = useCallback((host: CheckMKHost) => {
+    const mappings: Record<string, { nautobotField: string; value: unknown }> = {}
+    
+    // Extract all tag_ attributes from CheckMK
+    const attrs = host.attributes || {}
+    
+    // Add host_name
+    mappings['host_name'] = {
+      nautobotField: 'name',
+      value: host.host_name,
+      isCore: true
+    }
+    
+    // Add IP address if available
+    if (attrs.ipaddress) {
+      mappings['ipaddress'] = {
+        nautobotField: 'primary_ip4',
+        value: attrs.ipaddress,
+        isCore: true
+      }
+    }
+    
+    // Check for Location attribute (case-insensitive) - takes priority over folder
+    const locationKey = Object.keys(attrs).find(key => key.toLowerCase() === 'location')
+    if (locationKey && attrs[locationKey]) {
+      mappings[locationKey] = {
+        nautobotField: 'location',
+        value: attrs[locationKey],
+        isCore: true
+      }
+    } else if (host.folder) {
+      // Fallback to folder if no Location attribute
+      mappings['folder'] = {
+        nautobotField: 'location',
+        value: host.folder,
+        isCore: true
+      }
+    }
+    
+    // Check for status attribute (tag_status or status)
+    const statusKey = Object.keys(attrs).find(key => key.toLowerCase() === 'status' || key === 'tag_status')
+    if (statusKey && attrs[statusKey]) {
+      mappings[statusKey] = {
+        nautobotField: 'status',
+        value: attrs[statusKey],
+        isCore: true
+      }
+    }
+    
+    // Check for role attribute (tag_role or role)
+    const roleKey = Object.keys(attrs).find(key => key.toLowerCase() === 'role' || key === 'tag_role')
+    if (roleKey && attrs[roleKey]) {
+      mappings[roleKey] = {
+        nautobotField: 'role',
+        value: attrs[roleKey],
+        isCore: true
+      }
+    } else {
+      // Role is mandatory - add empty mapping to be filled by user
+      mappings['role'] = {
+        nautobotField: 'role',
+        value: '',
+        isCore: true
+      }
+    }
+    
+    // Reverse mapping from CheckMK config
+    // The config has attr2htg (nautobot_attr: checkmk_htg) and cf2htg (nautobot_cf: checkmk_htg)
+    // We need to reverse these: checkmk_htg → nautobot field
+    const reverseAttr2htg: Record<string, string> = {}
+    const reverseCf2htg: Record<string, string> = {}
+    const reverseTags2htg: Record<string, string> = {}
+    
+    if (checkmkConfig) {
+      // Reverse attr2htg: "status.name": "status" → tag_status maps to "status"
+      if (checkmkConfig.attr2htg) {
+        Object.entries(checkmkConfig.attr2htg).forEach(([nautobotAttr, checkmkHtg]) => {
+          reverseAttr2htg[`tag_${checkmkHtg}`] = nautobotAttr
+        })
+      }
+      
+      // Reverse cf2htg: "net": "net" → tag_net maps to custom_field_net
+      if (checkmkConfig.cf2htg) {
+        Object.entries(checkmkConfig.cf2htg).forEach(([nautobotCf, checkmkHtg]) => {
+          reverseCf2htg[`tag_${checkmkHtg}`] = `custom_field_${nautobotCf}`
+        })
+      }
+      
+      // Reverse tags2htg: similar to cf2htg
+      if (checkmkConfig.tags2htg) {
+        Object.entries(checkmkConfig.tags2htg).forEach(([nautobotTag, checkmkHtg]) => {
+          reverseTags2htg[`tag_${checkmkHtg}`] = `custom_field_${nautobotTag}`
+        })
+      }
+    }
+    
+    // Build a map of custom field keys from Nautobot metadata (if available)
+    const customFieldKeys = new Set<string>()
+    if (nautobotMetadata?.customFields) {
+      nautobotMetadata.customFields.forEach(cf => {
+        customFieldKeys.add(cf.key.toLowerCase())
+      })
+    }
+    
+    // Add all tag_ attributes with intelligent mapping
+    Object.keys(attrs).forEach(key => {
+      if (key.startsWith('tag_')) {
+        const cleanKey = key.replace('tag_', '').toLowerCase()
+        
+        // Skip if already processed as a core attribute (status, role)
+        if (mappings[key]) {
+          return
+        }
+        let nautobotField = 'no_mapping'
+        let isCore = false
+        
+        // Check if this is a core attribute (status)
+        const isStatusAttribute = reverseAttr2htg[key] && reverseAttr2htg[key].startsWith('status')
+        
+        // Priority 1: Check if we have a reverse mapping from CheckMK config
+        if (reverseAttr2htg[key]) {
+          // Map to Nautobot attribute (e.g., "status.name" → "status")
+          const attrPath = reverseAttr2htg[key]
+          nautobotField = attrPath.split('.')[0] // Get first part (e.g., "status")
+          isCore = true
+        } else if (reverseCf2htg[key]) {
+          // Map to custom field from config - only if it exists in Nautobot
+          const cfKey = reverseCf2htg[key].replace('custom_field_', '')
+          if (customFieldKeys.has(cfKey.toLowerCase())) {
+            nautobotField = reverseCf2htg[key]
+          }
+        } else if (reverseTags2htg[key]) {
+          // Map to custom field from tags - only if it exists in Nautobot
+          const cfKey = reverseTags2htg[key].replace('custom_field_', '')
+          if (customFieldKeys.has(cfKey.toLowerCase())) {
+            nautobotField = reverseTags2htg[key]
+          }
+        } else if (customFieldKeys.has(cleanKey)) {
+          // Priority 2: Check if there's a matching custom field in Nautobot
+          // e.g., tag_latency → custom_field_latency if "latency" custom field exists
+          nautobotField = `custom_field_${cleanKey}`
+        }
+        // Otherwise use 'no_mapping' - attribute won't be synced
+        
+        // Mark as core if it maps to a core Nautobot attribute
+        const isCoreNautobotField = ['name', 'primary_ip4', 'location', 'status', 'role', 'device_type', 'platform'].includes(nautobotField)
+        
+        mappings[key] = {
+          nautobotField,
+          value: attrs[key],
+          isCore: isStatusAttribute || isCore || isCoreNautobotField
+        }
+      }
+    })
+    
+    setPropertyMappings(mappings)
+  }, [checkmkConfig, nautobotMetadata])
+
+  // Load CheckMK config on mount
+  useEffect(() => {
+    void loadCheckmkConfig()
+  }, [loadCheckmkConfig])
+
+  // Initialize mappings when host is selected and config is loaded
+  useEffect(() => {
+    if (selectedHostForSync && isSyncModalOpen) {
+      initializePropertyMappings(selectedHostForSync)
+    }
+  }, [selectedHostForSync, isSyncModalOpen, initializePropertyMappings])
 
   // Pagination
   const totalPages = Math.ceil(filteredHosts.length / pageSize)
@@ -536,6 +817,122 @@ export default function HostsInventoryPage() {
     const end = start + pageSize
     return filteredHosts.slice(start, end)
   }, [filteredHosts, currentPage, pageSize])
+
+  // Update property mapping
+  const updatePropertyMapping = useCallback((checkMkKey: string, nautobotField: string) => {
+    setPropertyMappings(prev => ({
+      ...prev,
+      [checkMkKey]: {
+        ...prev[checkMkKey],
+        nautobotField
+      }
+    }))
+  }, [])
+
+  // Resolve Nautobot ID from name/value
+  const resolveNautobotId = useCallback((field: string, value: unknown): string => {
+    if (!nautobotMetadata || !value) return String(value)
+    
+    const valueStr = String(value).toLowerCase()
+    
+    // Map field to metadata array
+    const fieldMappings: Record<string, Array<{ id: string; name: string }>> = {
+      'location': nautobotMetadata.locations,
+      'role': nautobotMetadata.roles,
+      'status': nautobotMetadata.statuses,
+      'device_type': nautobotMetadata.deviceTypes,
+      'platform': nautobotMetadata.platforms,
+    }
+    
+    const metadataArray = fieldMappings[field]
+    if (!metadataArray) return String(value)
+    
+    // Try to find exact match first
+    const exactMatch = metadataArray.find(item => item.name.toLowerCase() === valueStr)
+    if (exactMatch) return exactMatch.id
+    
+    // Try partial match
+    const partialMatch = metadataArray.find(item => item.name.toLowerCase().includes(valueStr))
+    if (partialMatch) return partialMatch.id
+    
+    // Return original value if no match
+    return String(value)
+  }, [nautobotMetadata])
+
+  // Execute sync to Nautobot
+  const executeSyncToNautobot = useCallback(async () => {
+    if (!selectedHostForSync) return
+    
+    try {
+      showMessage(`Syncing ${selectedHostForSync.host_name} to Nautobot...`, 'info')
+      
+      // Build the device payload from mappings
+      const devicePayload: Record<string, unknown> = {
+        interfaces: [] // Empty for now, can be extended later
+      }
+      
+      const customFields: Record<string, string> = {}
+      
+      Object.entries(propertyMappings).forEach(([checkMkKey, mapping]) => {
+        const { nautobotField, value } = mapping
+        
+        // Skip fields with no mapping
+        if (nautobotField === 'no_mapping') {
+          return
+        }
+        
+        if (nautobotField.startsWith('custom_field_')) {
+          // Custom field
+          const fieldKey = nautobotField.replace('custom_field_', '')
+          customFields[fieldKey] = String(value)
+        } else {
+          // Standard field - resolve ID if needed
+          const resolvedValue = ['location', 'role', 'status', 'device_type', 'platform'].includes(nautobotField)
+            ? resolveNautobotId(nautobotField, value)
+            : value
+          devicePayload[nautobotField] = resolvedValue
+        }
+      })
+      
+      if (Object.keys(customFields).length > 0) {
+        devicePayload.custom_fields = customFields
+      }
+      
+      // Make sure required fields are present
+      if (!devicePayload.name) {
+        throw new Error('Device name is required')
+      }
+      if (!devicePayload.role) {
+        throw new Error('Device role is required')
+      }
+      if (!devicePayload.status) {
+        throw new Error('Device status is required')
+      }
+      if (!devicePayload.location) {
+        throw new Error('Device location is required')
+      }
+      if (!devicePayload.device_type) {
+        throw new Error('Device type is required')
+      }
+      
+      console.log('Syncing device to Nautobot:', devicePayload)
+      
+      // Call the add-device endpoint
+      await apiCall('nautobot/add-device', {
+        method: 'POST',
+        body: JSON.stringify(devicePayload)
+      })
+      
+      showMessage(`Successfully synced ${selectedHostForSync.host_name} to Nautobot`, 'success')
+      setIsSyncModalOpen(false)
+      
+      // Optionally reload the hosts list to update any sync status
+      
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to sync to Nautobot'
+      showMessage(`Failed to sync ${selectedHostForSync.host_name}: ${message}`, 'error')
+    }
+  }, [selectedHostForSync, propertyMappings, apiCall, showMessage, resolveNautobotId])
 
   // Selection handlers
   const handleSelectHost = useCallback((hostName: string, checked: boolean) => {
@@ -1267,6 +1664,347 @@ export default function HostsInventoryPage() {
                 No inventory data available
               </div>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sync to Nautobot Modal */}
+      <Dialog open={isSyncModalOpen} onOpenChange={setIsSyncModalOpen}>
+        <DialogContent className="!max-w-[72vw] !w-[72vw] max-h-[90vh] overflow-hidden flex flex-col p-0" style={{ maxWidth: '72vw', width: '72vw' }}>
+          <DialogHeader className="sr-only">
+            <DialogTitle>Sync to Nautobot - {selectedHostForSync?.host_name}</DialogTitle>
+            <DialogDescription>Map CheckMK properties to Nautobot fields and sync the device</DialogDescription>
+          </DialogHeader>
+          
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 px-6">
+            <div>
+              <h2 className="text-lg font-semibold">Sync Device to Nautobot</h2>
+              <p className="text-blue-100 text-sm">{selectedHostForSync?.host_name}</p>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto bg-white p-6">
+            {checkingNautobot ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="mt-2 text-sm text-muted-foreground">Checking Nautobot...</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Nautobot Device Status */}
+                {nautobotDevice ? (
+                  <Card className="border-blue-200 bg-blue-50">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 mt-0.5">
+                          <Badge className="bg-blue-500">Found in Nautobot</Badge>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-700">
+                            This device already exists in Nautobot. The sync will update its properties.
+                          </p>
+                          <div className="mt-2 space-y-1 text-xs">
+                            <div><span className="font-semibold">Name:</span> {(nautobotDevice.name as string) || 'N/A'}</div>
+                            <div><span className="font-semibold">Location:</span> {((nautobotDevice.location as Record<string, unknown>)?.name as string) || 'N/A'}</div>
+                            <div><span className="font-semibold">Role:</span> {((nautobotDevice.role as Record<string, unknown>)?.name as string) || 'N/A'}</div>
+                            <div><span className="font-semibold">Status:</span> {((nautobotDevice.status as Record<string, unknown>)?.name as string) || 'N/A'}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="border-amber-200 bg-amber-50">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 mt-0.5">
+                          <Badge className="bg-amber-500">Not in Nautobot</Badge>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-700">
+                            This device does not exist in Nautobot. A new device will be created.
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Property Mapping Table */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Property Mapping</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Map CheckMK properties to Nautobot fields. Select the appropriate Nautobot field for each CheckMK property.
+                  </p>
+
+                  {loadingMetadata ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+                        <p className="mt-2 text-xs text-muted-foreground">Loading Nautobot metadata...</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Core Attributes Section */}
+                      <div>
+                        <h4 className="text-md font-semibold text-gray-900 mb-3">Core Attributes (Required)</h4>
+                        <div className="border rounded-lg overflow-hidden">
+                          <table className="w-full">
+                            <thead className="bg-blue-100 border-b">
+                              <tr>
+                                <th className="text-left p-3 font-semibold text-sm text-gray-900">CheckMK Property</th>
+                                <th className="text-left p-3 font-semibold text-sm text-gray-900">Current Value</th>
+                                <th className="text-left p-3 font-semibold text-sm text-gray-900">Nautobot Field</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white">
+                              {Object.entries(propertyMappings)
+                                .filter(([, mapping]) => mapping.isCore)
+                                .map(([checkMkKey, mapping]) => {
+                                  const displayKey = checkMkKey.startsWith('tag_') 
+                                    ? checkMkKey.replace('tag_', '')
+                                    : checkMkKey
+                                  
+                                  // For role field without value, show dropdown with role options
+                                  const isEmptyRole = mapping.nautobotField === 'role' && !mapping.value
+                                  
+                                  return (
+                                    <tr key={`core-${checkMkKey}`} className="border-b hover:bg-blue-50">
+                                      <td className="p-3">
+                                        <code className="text-xs bg-blue-100 px-2 py-1 rounded font-mono text-blue-900">
+                                          {displayKey}
+                                        </code>
+                                        {mapping.nautobotField === 'role' && (
+                                          <Badge className="ml-2 bg-orange-500 text-white text-xs">Required</Badge>
+                                        )}
+                                      </td>
+                                      <td className="p-3">
+                                        {mapping.nautobotField === 'role' ? (
+                                          <Select
+                                            value={String(mapping.value)}
+                                            onValueChange={(value) => {
+                                              setPropertyMappings(prev => ({
+                                                ...prev,
+                                                [checkMkKey]: { ...prev[checkMkKey], value }
+                                              }))
+                                            }}
+                                          >
+                                            <SelectTrigger className={`w-full bg-white ${!mapping.value ? 'border-orange-300' : 'border-gray-300'}`}>
+                                              <SelectValue placeholder="Select a role..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {nautobotMetadata?.roles && nautobotMetadata.roles.length > 0 ? (
+                                                nautobotMetadata.roles.map((role) => (
+                                                  <SelectItem key={role.id} value={role.name}>
+                                                    {role.name}
+                                                  </SelectItem>
+                                                ))
+                                              ) : (
+                                                <SelectItem value="loading" disabled>
+                                                  Loading roles...
+                                                </SelectItem>
+                                              )}
+                                            </SelectContent>
+                                          </Select>
+                                        ) : (
+                                          <span className="text-sm text-gray-900 font-medium">
+                                            {String(mapping.value)}
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="p-3">
+                                        <div className="space-y-2">
+                                          <div className="flex items-center gap-2">
+                                            <Badge className="bg-blue-600 text-white">
+                                              {mapping.nautobotField === 'name' && 'Device Name'}
+                                              {mapping.nautobotField === 'primary_ip4' && 'Primary IPv4'}
+                                              {mapping.nautobotField === 'location' && 'Location'}
+                                              {mapping.nautobotField === 'status' && 'Status'}
+                                              {mapping.nautobotField === 'role' && 'Role'}
+                                            </Badge>
+                                          </div>
+                                          {['location', 'role', 'status'].includes(mapping.nautobotField) && mapping.value && (
+                                            <p className="text-xs text-gray-600">
+                                              Will be matched to Nautobot {mapping.nautobotField}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Custom Fields Section */}
+                      {Object.entries(propertyMappings).some(([, mapping]) => !mapping.isCore) && (
+                        <div>
+                          <h4 className="text-md font-semibold text-gray-900 mb-3">Custom Fields & Tags</h4>
+                          <div className="border rounded-lg overflow-hidden">
+                            <table className="w-full">
+                              <thead className="bg-gray-100 border-b">
+                                <tr>
+                                  <th className="text-left p-3 font-semibold text-sm text-gray-900">CheckMK Property</th>
+                                  <th className="text-left p-3 font-semibold text-sm text-gray-900">Current Value</th>
+                                  <th className="text-left p-3 font-semibold text-sm text-gray-900">Nautobot Field</th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white">
+                                {Object.entries(propertyMappings)
+                                  .filter(([, mapping]) => !mapping.isCore)
+                                  .map(([checkMkKey, mapping]) => {
+                                    const displayKey = checkMkKey.startsWith('tag_') 
+                                      ? checkMkKey.replace('tag_', '')
+                                      : checkMkKey
+                                    
+                                    return (
+                                      <tr key={`custom-${checkMkKey}`} className="border-b hover:bg-gray-50">
+                                        <td className="p-3">
+                                          <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono text-gray-900">
+                                            {displayKey}
+                                          </code>
+                                        </td>
+                                        <td className="p-3">
+                                          <span className="text-sm text-gray-900">
+                                            {String(mapping.value)}
+                                          </span>
+                                        </td>
+                                        <td className="p-3">
+                                          <div className="space-y-2">
+                                            <Select
+                                              value={mapping.nautobotField}
+                                              onValueChange={(value) => updatePropertyMapping(checkMkKey, value)}
+                                            >
+                                              <SelectTrigger className="w-full bg-white border-gray-300">
+                                                <SelectValue>
+                                                  {mapping.nautobotField === 'no_mapping' ? (
+                                                    <span className="flex items-center gap-2">
+                                                      <Badge className="bg-gray-400 text-white text-xs">Skip</Badge>
+                                                      No mapping
+                                                    </span>
+                                                  ) : mapping.nautobotField.startsWith('custom_field_') ? (
+                                                    <span className="flex items-center gap-2">
+                                                      <Badge className="bg-purple-600 text-white text-xs">CF</Badge>
+                                                      {mapping.nautobotField.replace('custom_field_', 'cf_')}
+                                                    </span>
+                                                  ) : (
+                                                    <span className="flex items-center gap-2">
+                                                      <Badge className="bg-blue-600 text-white text-xs">Core</Badge>
+                                                      {mapping.nautobotField === 'name' && 'Device Name'}
+                                                      {mapping.nautobotField === 'location' && 'Location'}
+                                                      {mapping.nautobotField === 'role' && 'Role'}
+                                                      {mapping.nautobotField === 'status' && 'Status'}
+                                                      {mapping.nautobotField === 'device_type' && 'Device Type'}
+                                                      {mapping.nautobotField === 'platform' && 'Platform'}
+                                                      {mapping.nautobotField === 'primary_ip4' && 'Primary IPv4'}
+                                                      {mapping.nautobotField === 'serial' && 'Serial Number'}
+                                                      {mapping.nautobotField === 'asset_tag' && 'Asset Tag'}
+                                                      {mapping.nautobotField === 'software_version' && 'Software Version'}
+                                                    </span>
+                                                  )}
+                                                </SelectValue>
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="no_mapping">
+                                                  <span className="flex items-center gap-2">
+                                                    <Badge className="bg-gray-400 text-white text-xs">Skip</Badge>
+                                                    No mapping (don't sync)
+                                                  </span>
+                                                </SelectItem>
+                                                <SelectItem disabled value="_core_separator">--- Core Attributes ---</SelectItem>
+                                                <SelectItem value="name">Device Name</SelectItem>
+                                                <SelectItem value="location">Location</SelectItem>
+                                                <SelectItem value="role">Role</SelectItem>
+                                                <SelectItem value="status">Status</SelectItem>
+                                                <SelectItem value="device_type">Device Type</SelectItem>
+                                                <SelectItem value="platform">Platform</SelectItem>
+                                                <SelectItem value="primary_ip4">Primary IPv4</SelectItem>
+                                                <SelectItem value="serial">Serial Number</SelectItem>
+                                                <SelectItem value="asset_tag">Asset Tag</SelectItem>
+                                                <SelectItem value="software_version">Software Version</SelectItem>
+                                                
+                                                {nautobotMetadata?.customFields && nautobotMetadata.customFields.length > 0 && (
+                                                  <>
+                                                    <SelectItem disabled value="_separator">--- Custom Fields ---</SelectItem>
+                                                    {nautobotMetadata.customFields.map((cf) => (
+                                                      <SelectItem key={cf.id} value={`custom_field_${cf.key}`}>
+                                                        {cf.name} (CF: cf_{cf.key})
+                                                      </SelectItem>
+                                                    ))}
+                                                  </>
+                                                )}
+                                              </SelectContent>
+                                            </Select>
+                                            
+                                            {mapping.nautobotField === 'no_mapping' ? (
+                                              <p className="text-xs text-gray-500 italic">
+                                                This attribute will not be synced to Nautobot
+                                              </p>
+                                            ) : mapping.nautobotField.startsWith('custom_field_') ? (
+                                              <p className="text-xs text-gray-600">
+                                                Maps to custom field: cf_{mapping.nautobotField.replace('custom_field_', '')}
+                                              </p>
+                                            ) : null}
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    )
+                                  })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Required Fields Notice */}
+                <Card className="border-orange-200 bg-orange-50">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-0.5 text-orange-600">
+                        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-orange-800 mb-1">Required Fields</p>
+                        <p className="text-xs text-orange-700">
+                          Make sure to map the following required fields: <strong>name, role, status, location, device_type</strong>
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
+
+          {/* Footer Actions */}
+          <div className="border-t bg-gray-50 px-6 py-4 flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setIsSyncModalOpen(false)}
+              disabled={checkingNautobot}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={executeSyncToNautobot}
+              disabled={checkingNautobot || loadingMetadata}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Sync to Nautobot
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
