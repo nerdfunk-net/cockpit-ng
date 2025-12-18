@@ -402,13 +402,6 @@ class TemplateManager:
             "change_notes": version.change_notes,
         }
 
-    # File system operations removed - all content now stored in database
-    # These methods kept for reference only, no longer used
-
-    # def _save_template_to_file(...)
-    # def _load_template_from_file(...)
-    # def _remove_template_file(...)
-
     def _create_template_version_obj(
         self,
         version_repo: TemplateVersionRepository,

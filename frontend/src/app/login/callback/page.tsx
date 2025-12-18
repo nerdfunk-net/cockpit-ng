@@ -87,7 +87,7 @@ function OIDCCallbackContent() {
             id: data.user?.id?.toString() || '1',
             username: data.user?.username || 'unknown',
             email: data.user?.email,
-            role: data.user?.role,
+            roles: data.user?.roles || [],
             permissions: data.user?.permissions,
           })
 

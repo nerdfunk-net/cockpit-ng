@@ -119,52 +119,6 @@ async def test_endpoint():
     return {"message": "Test endpoint working", "timestamp": datetime.now().isoformat()}
 
 
-# Legacy compatibility endpoints that might still be used by frontend
-@app.get("/api/stats")
-async def get_statistics():
-    """
-    Get dashboard statistics - legacy endpoint.
-    Redirects to Nautobot stats.
-    """
-    # Import here to avoid circular imports
-
-    # This would need token verification in a real implementation
-    # For now, just return basic stats
-    return {
-        "message": "Use /api/nautobot/stats for detailed statistics",
-        "timestamp": datetime.now().isoformat(),
-    }
-
-
-# GraphQL endpoint compatibility
-@app.post("/api/graphql")
-async def graphql_endpoint(query_data: dict, current_user: str = Depends(verify_token)):
-    """
-    Legacy GraphQL endpoint - maintains backward compatibility.
-    Forwards requests to the Nautobot GraphQL service.
-    """
-    from services.nautobot import nautobot_service
-    from fastapi import HTTPException, status
-
-    try:
-        query = query_data.get("query")
-        variables = query_data.get("variables", {})
-
-        if not query:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="GraphQL query is required",
-            )
-
-        result = await nautobot_service.graphql_query(query, variables)
-        return result
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"GraphQL query failed: {str(e)}",
-        )
-
-
 @app.post("/api/nautobot/graphql")
 async def nautobot_graphql_endpoint(query_data: dict):
     """

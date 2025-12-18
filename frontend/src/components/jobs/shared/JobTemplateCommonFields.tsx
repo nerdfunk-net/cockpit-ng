@@ -13,7 +13,7 @@ interface JobType {
 }
 
 interface User {
-  role?: string
+  roles: string[]
 }
 
 interface JobTemplateCommonFieldsProps {
@@ -111,7 +111,7 @@ export function JobTemplateCommonFields({
               id="is-global"
               checked={formIsGlobal}
               onCheckedChange={setFormIsGlobal}
-              disabled={user?.role !== "admin"}
+              disabled={!user?.roles?.includes("admin")}
             />
             <Label htmlFor="is-global" className="text-sm font-medium text-indigo-900 cursor-pointer flex items-center gap-2">
               {formIsGlobal ? (
@@ -127,7 +127,7 @@ export function JobTemplateCommonFields({
               )}
             </Label>
           </div>
-          {user?.role === "admin" && (
+          {user?.roles?.includes("admin") && (
             <Badge variant="secondary" className="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-100">
               Admin
             </Badge>

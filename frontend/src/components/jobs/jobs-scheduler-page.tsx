@@ -989,7 +989,7 @@ export function JobsSchedulerPage() {
                   </Label>
                 </div>
 
-                {user?.role === "admin" && !editingJob && (
+                {user?.roles?.includes("admin") && !editingJob && (
                   <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
                     <Switch
                       id="is-global"

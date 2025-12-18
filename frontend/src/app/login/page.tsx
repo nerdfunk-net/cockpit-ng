@@ -107,9 +107,8 @@ export default function LoginPage() {
           id: data.user?.id?.toString() || '1',
           username: data.user?.username || username,
           email: data.user?.email,
-          role: data.user?.role,
+          roles: data.user?.roles || [],
           permissions: data.user?.permissions,
-          roles: data.user?.roles,  // Pass through RBAC roles
         })
         
         console.log('About to redirect to /')

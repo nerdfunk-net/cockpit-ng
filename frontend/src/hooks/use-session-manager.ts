@@ -134,7 +134,7 @@ export function useSessionManager(config: SessionConfig = EMPTY_CONFIG) {
           id: data.user.id?.toString() || data.user.username,
           username: data.user.username,
           email: data.user.email || `${data.user.username}@demo.com`,
-          role: data.user.role,
+          roles: data.user.roles || [],
           permissions: data.user.permissions,
         })
         return true

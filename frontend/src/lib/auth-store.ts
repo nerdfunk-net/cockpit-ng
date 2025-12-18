@@ -5,9 +5,8 @@ interface User {
   id: string
   username: string
   email?: string
-  role?: string  // Legacy single role (for backward compatibility)
-  roles?: string[]  // New RBAC roles array
-  permissions?: number | Array<{ resource: string; action: string }>  // Legacy bitwise OR new RBAC permissions array
+  roles: string[]  // RBAC roles array
+  permissions?: number | Array<{ resource: string; action: string }>
 }
 
 interface AuthState {
@@ -57,8 +56,7 @@ const setCookieUser = (user: User) => {
     id: user.id,
     username: user.username,
     email: user.email,
-    role: user.role,
-    roles: user.roles,  // Keep roles array (small)
+    roles: user.roles,
     // Omit permissions array - too large for cookies
     // Permissions can be fetched on demand if needed
   }
@@ -84,11 +82,10 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
   login: (token: string, user: User) => {
     // Debug logging
     console.log('[AUTH] Login called with user:', user)
-    console.log('[AUTH] User role (legacy):', user.role)
-    console.log('[AUTH] User roles (RBAC array):', user.roles)
+    console.log('[AUTH] User roles:', user.roles)
     console.log('[AUTH] User permissions count:', Array.isArray(user.permissions) ? user.permissions.length : 0)
     console.log('[AUTH] Roles is array?', Array.isArray(user.roles))
-    console.log('[AUTH] Has admin in roles?', Array.isArray(user.roles) && user.roles.includes('admin'))
+    console.log('[AUTH] Has admin in roles?', user.roles.includes('admin'))
     
     // Set cookies with minimal user data (excluding permissions to avoid size limit)
     setCookieToken(token)
@@ -130,18 +127,8 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
     console.log('[AUTH] User from cookie:', user)
     
     if (token && user) {
-      console.log('[AUTH] Hydrating with user role:', user.role)
       console.log('[AUTH] Hydrating with user roles:', user.roles)
       console.log('[AUTH] Hydrating with user permissions:', user.permissions)
-      
-      // Migration: If user doesn't have roles array (old cookie format), convert legacy role to roles array
-      if (!user.roles && user.role) {
-        console.log('[AUTH] MIGRATION: Converting legacy role to roles array')
-        user.roles = [user.role]
-        // Update cookie with migrated data
-        setCookieUser(user)
-        console.log('[AUTH] MIGRATION: Updated user with roles:', user.roles)
-      }
       
       set({
         token,
