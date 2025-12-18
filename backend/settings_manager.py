@@ -70,7 +70,7 @@ class CacheSettings:
     enabled: bool = True
     ttl_seconds: int = 600  # 10 minutes
     prefetch_on_startup: bool = True
-    refresh_interval_minutes: int = 15  # background refresh cadence (for git commits)
+    refresh_interval_minutes: int = 15  # DEPRECATED: Use Celery Beat intervals instead
     max_commits: int = 500  # limit per branch
     # Map of items to prefetch on startup, e.g., {"git": true, "locations": false}
     prefetch_items: Dict[str, bool] = None

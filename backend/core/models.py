@@ -925,7 +925,7 @@ class CacheSetting(Base):
     enabled = Column(Boolean, nullable=False, default=True)
     ttl_seconds = Column(Integer, nullable=False, default=600)
     prefetch_on_startup = Column(Boolean, nullable=False, default=True)
-    refresh_interval_minutes = Column(Integer, nullable=False, default=15)
+    refresh_interval_minutes = Column(Integer, nullable=False, default=15)  # DEPRECATED: No longer used
     max_commits = Column(Integer, nullable=False, default=500)
     prefetch_items = Column(Text)  # JSON string
     # Cache task intervals (in minutes) - 0 means disabled

@@ -379,31 +379,6 @@ async def startup_services():
             except Exception as e:
                 logger.warning(f"Startup cache: device prefetch failed: {e}")
 
-        async def refresh_loop():
-            # Periodically refresh cache if configured
-            interval_min = int(cache_cfg.get("refresh_interval_minutes", 0))
-            if interval_min <= 0:
-                return
-            # Small initial delay to let app finish bootstrapping
-            await asyncio.sleep(2)
-            while True:
-                # Get current prefetch settings to determine what to refresh
-                current_cfg = settings_manager.get_cache_settings()
-                current_items = current_cfg.get("prefetch_items") or {
-                    "git": True,
-                    "locations": False,
-                    "devices": False,
-                }
-
-                # Refresh enabled items
-                if current_items.get("git", True):
-                    await prefetch_commits_once()
-                if current_items.get("devices", False):
-                    await prefetch_devices_once()
-                # Note: locations don't typically need frequent refresh
-
-                await asyncio.sleep(interval_min * 60)
-
         # Kick off a one-time prefetch without blocking startup (if enabled)
         if cache_cfg.get("prefetch_on_startup", True):
             prefetch_items = cache_cfg.get("prefetch_items") or {
@@ -428,21 +403,12 @@ async def startup_services():
                     logger.debug(f"Startup cache: prefetch disabled for '{key}'")
                 else:
                     logger.debug(f"Startup cache: no prefetch handler for '{key}'")
-        # Start background refresh if requested (applies to git commits and devices)
-        if int(cache_cfg.get("refresh_interval_minutes", 0)) > 0:
-            # Start refresh loop if git or devices prefetch is enabled
-            p_items = cache_cfg.get("prefetch_items") or {
-                "git": True,
-                "locations": False,
-                "devices": False,
-            }
-            if p_items.get("git", True) or p_items.get("devices", False):
-                logger.debug("Startup cache: starting refresh loop task")
-                asyncio.create_task(refresh_loop())
-            else:
-                logger.debug(
-                    "Startup cache: refresh loop disabled because both git and devices prefetch are off"
-                )
+        
+        # Note: Periodic cache refresh is now handled by Celery Beat (tasks/periodic_tasks.py)
+        # Configure intervals in Settings → Cache:
+        # - devices_cache_interval_minutes
+        # - locations_cache_interval_minutes
+        # - git_commits_cache_interval_minutes
 
     except Exception as e:
         logger.warning(f"Startup cache: Failed to initialize cache prefetch: {e}")

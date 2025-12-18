@@ -53,7 +53,7 @@ class CacheSettingsRequest(BaseModel):
     enabled: bool = True
     ttl_seconds: int = 600
     prefetch_on_startup: bool = True
-    refresh_interval_minutes: int = 15
+    refresh_interval_minutes: int = 15  # DEPRECATED: No longer used, kept for API compatibility
     max_commits: int = 500
     # Optional map of prefetchable items toggles, e.g., {"git": true, "locations": false}
     prefetch_items: Optional[Dict[str, bool]] = None

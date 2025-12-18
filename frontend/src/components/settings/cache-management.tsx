@@ -412,23 +412,6 @@ export default function CacheManagement() {
                 />
               </div>
 
-              {/* Refresh Interval */}
-              <div className="space-y-2">
-                <Label htmlFor="refresh">Refresh Interval - Minutes</Label>
-                <Input
-                  id="refresh"
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={settings.refresh_interval_minutes}
-                  onChange={(e) => setSettings(prev => ({ ...prev, refresh_interval_minutes: parseInt(e.target.value) || 0 }))}
-                  placeholder="0"
-                />
-                <p className="text-sm text-gray-500">
-                  Automatic background refresh interval (0 disables periodic refresh)
-                </p>
-              </div>
-
               {/* Prefetch Items */}
               <div className="space-y-3">
                 <Label className="text-base font-medium">Startup Prefetch Items</Label>
