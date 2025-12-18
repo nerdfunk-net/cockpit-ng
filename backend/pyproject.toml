@@ -1,0 +1,62 @@
+[tool.pytest.ini_options]
+# Pytest configuration for Cockpit-NG backend tests
+
+# Test discovery
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# Output options
+addopts = [
+    "-v",                          # Verbose output
+    "--strict-markers",            # Strict marker validation
+    "--tb=short",                  # Short traceback format
+    "--cov=services",              # Coverage for services
+    "--cov=models",                # Coverage for models
+    "--cov=tasks",                 # Coverage for tasks
+    "--cov=utils",                 # Coverage for utils
+    "--cov-report=term-missing",   # Show missing lines in terminal
+    "--cov-report=html",           # Generate HTML coverage report
+    "--cov-report=xml",            # Generate XML coverage report for CI
+]
+
+# Markers
+markers = [
+    "unit: Unit tests (fast, no external dependencies)",
+    "integration: Integration tests (may use external services)",
+    "slow: Tests that take a long time to run",
+    "celery: Tests that require Celery",
+]
+
+# Ignore warnings from third-party libraries
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+# Coverage settings
+[tool.coverage.run]
+source = ["services", "models", "tasks", "utils"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/migrations/*",
+    "*/venv/*",
+    "*/.venv/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
