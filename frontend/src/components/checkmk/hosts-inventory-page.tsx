@@ -87,6 +87,7 @@ export default function HostsInventoryPage() {
     loadingMetadata,
     handleSyncToNautobot,
     updatePropertyMapping,
+    updatePropertyMappings,
     executeSyncToNautobot,
     closeSyncModal
   } = useNautobotSync({ checkmkConfig, onMessage: showMessage })
@@ -550,7 +551,7 @@ export default function HostsInventoryPage() {
         loadingMetadata={loadingMetadata}
         onSync={executeSyncToNautobot}
         onUpdateMapping={updatePropertyMapping}
-        onUpdatePropertyMappings={() => {/* Handled internally by hook */}}
+        onUpdatePropertyMappings={updatePropertyMappings}
       />
     </div>
   )

@@ -18,6 +18,7 @@ interface UseNautobotSyncReturn {
   loadingMetadata: boolean
   handleSyncToNautobot: (host: CheckMKHost) => Promise<void>
   updatePropertyMapping: (checkMkKey: string, nautobotField: string) => void
+  updatePropertyMappings: (mappings: Record<string, PropertyMapping>) => void
   executeSyncToNautobot: () => Promise<void>
   closeSyncModal: () => void
 }
@@ -160,6 +161,13 @@ export function useNautobotSync({
   }, [])
 
   /**
+   * Update all property mappings at once (used by modal for role selection)
+   */
+  const updatePropertyMappings = useCallback((mappings: Record<string, PropertyMapping>) => {
+    setPropertyMappings(mappings)
+  }, [])
+
+  /**
    * Execute sync to Nautobot
    */
   const executeSyncToNautobot = useCallback(async () => {
@@ -230,6 +238,7 @@ export function useNautobotSync({
     loadingMetadata,
     handleSyncToNautobot,
     updatePropertyMapping,
+    updatePropertyMappings,
     executeSyncToNautobot,
     closeSyncModal
   }), [
@@ -242,6 +251,7 @@ export function useNautobotSync({
     loadingMetadata,
     handleSyncToNautobot,
     updatePropertyMapping,
+    updatePropertyMappings,
     executeSyncToNautobot,
     closeSyncModal
   ])
