@@ -220,6 +220,40 @@ export interface GenericJobResult {
 }
 
 // ============================================================================
+// Update Devices Job Result Types
+// ============================================================================
+
+export interface UpdateDeviceSuccess {
+  device_id: string
+  device_name: string
+  updates: Record<string, unknown>
+  result: Record<string, unknown>
+}
+
+export interface UpdateDeviceFailure {
+  device_id?: string
+  device_name?: string
+  identifier: string
+  error: string
+}
+
+export interface UpdateDevicesJobResult {
+  success: boolean
+  dry_run: boolean
+  summary: {
+    total: number
+    successful: number
+    failed: number
+    skipped: number
+  }
+  successes: UpdateDeviceSuccess[]
+  failures: UpdateDeviceFailure[]
+  skipped: UpdateDeviceFailure[]
+  // Index signature for compatibility with Record<string, unknown>
+  [key: string]: unknown
+}
+
+// ============================================================================
 // Type Guards
 // ============================================================================
 
@@ -278,6 +312,23 @@ export function isBulkOnboardJobResult(result: Record<string, unknown>): result 
     'device_count' in result &&
     'devices' in result &&
     Array.isArray(result.devices)
+  )
+}
+
+/**
+ * Check if result is an update_devices job result.
+ * Has dry_run flag and summary object with total/successful/failed/skipped counts.
+ */
+export function isUpdateDevicesJobResult(result: Record<string, unknown>): result is UpdateDevicesJobResult {
+  return (
+    'dry_run' in result &&
+    'summary' in result &&
+    typeof result.summary === 'object' &&
+    result.summary !== null &&
+    'total' in result.summary &&
+    'successful' in result.summary &&
+    'failed' in result.summary &&
+    'skipped' in result.summary
   )
 }
 

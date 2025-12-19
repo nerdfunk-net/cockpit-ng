@@ -19,6 +19,7 @@ import {
   isRunCommandsJobResult,
   isExportDevicesJobResult,
   isBulkOnboardJobResult,
+  isUpdateDevicesJobResult,
   GenericJobResult,
 } from "./types/job-results"
 import { BackupJobResultView } from "./results/backup-job-result"
@@ -26,6 +27,7 @@ import { SyncJobResultView } from "./results/sync-job-result"
 import { RunCommandsResultView } from "./results/run-commands-result"
 import { ExportDevicesResultView } from "./results/export-devices-result"
 import { BulkOnboardResultView } from "./results/bulk-onboard-result"
+import { UpdateDevicesResultView } from "./results/update-devices-result"
 import { GenericJobResultView } from "./results/generic-job-result"
 
 interface JobResultDialogProps {
@@ -60,6 +62,10 @@ function renderJobResult(result: Record<string, any>, taskId?: string): React.Re
 
   if (isBulkOnboardJobResult(result)) {
     return <BulkOnboardResultView result={result} />
+  }
+
+  if (isUpdateDevicesJobResult(result)) {
+    return <UpdateDevicesResultView result={result} />
   }
 
   // Fallback to generic view
