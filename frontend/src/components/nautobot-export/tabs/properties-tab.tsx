@@ -1,16 +1,34 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Info } from 'lucide-react'
+import { Info, GripVertical, Eye, EyeOff } from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { useState, useEffect } from 'react'
 
 interface PropertyItem {
   id: string
   label: string
   description: string
+  enabled: boolean
 }
 
-const AVAILABLE_PROPERTIES: PropertyItem[] = [
+const DEFAULT_PROPERTIES: Omit<PropertyItem, 'enabled'>[] = [
   {
     id: 'name',
     label: 'Name',
@@ -78,6 +96,95 @@ const AVAILABLE_PROPERTIES: PropertyItem[] = [
   },
 ]
 
+interface SortablePropertyItemProps {
+  property: PropertyItem
+  onToggle: (id: string) => void
+}
+
+function SortablePropertyItem({ property, onToggle }: SortablePropertyItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: property.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`
+        group relative flex items-center gap-2 p-2 rounded-md border transition-all
+        ${isDragging ? 'border-blue-400 bg-blue-50 shadow-lg z-50 opacity-90' : ''}
+        ${property.enabled 
+          ? 'border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 hover:border-blue-300 hover:shadow' 
+          : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+        }
+      `}
+    >
+      {/* Drag Handle */}
+      <button
+        {...attributes}
+        {...listeners}
+        className={`
+          cursor-grab active:cursor-grabbing p-1 rounded transition-colors
+          ${property.enabled ? 'text-blue-600 hover:bg-blue-100' : 'text-gray-400 hover:bg-gray-100'}
+        `}
+        aria-label="Drag to reorder"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+
+      {/* Property Content */}
+      <div className="flex-1 min-w-0">
+        <Label
+          className={`text-sm font-medium block cursor-pointer leading-tight ${
+            property.enabled ? 'text-gray-900' : 'text-gray-500'
+          }`}
+          onClick={() => onToggle(property.id)}
+        >
+          {property.label}
+        </Label>
+        <p className={`text-xs leading-tight ${property.enabled ? 'text-gray-600' : 'text-gray-400'}`}>
+          {property.description}
+        </p>
+      </div>
+
+      {/* Toggle Button */}
+      <button
+        onClick={() => onToggle(property.id)}
+        className={`
+          px-2 py-1 rounded transition-all flex items-center gap-1.5 font-medium text-xs
+          ${property.enabled 
+            ? 'bg-blue-600 text-white hover:bg-blue-700' 
+            : 'bg-gray-300 text-gray-600 hover:bg-gray-400'
+          }
+        `}
+        aria-label={property.enabled ? 'Disable property' : 'Enable property'}
+      >
+        {property.enabled ? (
+          <>
+            <Eye className="h-3.5 w-3.5" />
+            <span>Export</span>
+          </>
+        ) : (
+          <>
+            <EyeOff className="h-3.5 w-3.5" />
+            <span>Skip</span>
+          </>
+        )}
+      </button>
+    </div>
+  )
+}
+
 interface PropertiesTabProps {
   selectedProperties: string[]
   onPropertiesChange: (properties: string[]) => void
@@ -87,94 +194,173 @@ export function PropertiesTab({
   selectedProperties,
   onPropertiesChange,
 }: PropertiesTabProps) {
-  const handlePropertyToggle = (propertyId: string) => {
-    if (selectedProperties.includes(propertyId)) {
-      onPropertiesChange(selectedProperties.filter(p => p !== propertyId))
-    } else {
-      onPropertiesChange([...selectedProperties, propertyId])
+  // Initialize properties with enabled state based on selectedProperties
+  const [properties, setProperties] = useState<PropertyItem[]>(() => {
+    // Create initial order based on selectedProperties, then add remaining
+    const selectedSet = new Set(selectedProperties)
+    const orderedProps: PropertyItem[] = []
+    
+    // First add selected properties in their order
+    selectedProperties.forEach(id => {
+      const prop = DEFAULT_PROPERTIES.find(p => p.id === id)
+      if (prop) {
+        orderedProps.push({ ...prop, enabled: true })
+      }
+    })
+    
+    // Then add unselected properties
+    DEFAULT_PROPERTIES.forEach(prop => {
+      if (!selectedSet.has(prop.id)) {
+        orderedProps.push({ ...prop, enabled: false })
+      }
+    })
+    
+    return orderedProps
+  })
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  // Sync changes back to parent
+  useEffect(() => {
+    const enabledPropertyIds = properties
+      .filter(p => p.enabled)
+      .map(p => p.id)
+    onPropertiesChange(enabledPropertyIds)
+  }, [properties, onPropertiesChange])
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      setProperties((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id)
+        const newIndex = items.findIndex((item) => item.id === over.id)
+        return arrayMove(items, oldIndex, newIndex)
+      })
     }
   }
 
-  const handleSelectAll = () => {
-    onPropertiesChange(AVAILABLE_PROPERTIES.map(p => p.id))
+  const handleToggle = (id: string) => {
+    setProperties((items) =>
+      items.map((item) =>
+        item.id === id ? { ...item, enabled: !item.enabled } : item
+      )
+    )
   }
 
-  const handleDeselectAll = () => {
-    onPropertiesChange([])
+  const handleEnableAll = () => {
+    setProperties((items) => items.map((item) => ({ ...item, enabled: true })))
   }
+
+  const handleDisableAll = () => {
+    setProperties((items) => items.map((item) => ({ ...item, enabled: false })))
+  }
+
+  const handleOnboardingPreset = () => {
+    const onboardingOrder = [
+      'primary_ip4',
+      'location',
+      'role',
+      'platform',
+      'status',
+      'namespace',
+      'tags',
+      '_custom_field_data',
+    ]
+    
+    const enabledIds = new Set(onboardingOrder)
+    
+    // Create new ordered array: enabled properties first (in order), then disabled ones
+    const enabledProps = onboardingOrder
+      .map(id => properties.find(p => p.id === id))
+      .filter((p): p is PropertyItem => p !== undefined)
+      .map(p => ({ ...p, enabled: true }))
+    
+    const disabledProps = properties
+      .filter(p => !enabledIds.has(p.id))
+      .map(p => ({ ...p, enabled: false }))
+    
+    setProperties([...enabledProps, ...disabledProps])
+  }
+
+  const enabledCount = properties.filter(p => p.enabled).length
 
   return (
-    <div className="space-y-6">
-      <Alert className="bg-blue-50 border-blue-200">
+    <div className="space-y-3">
+      <Alert className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 py-2">
         <Info className="h-4 w-4 text-blue-600" />
-        <AlertDescription className="text-blue-800">
-          Select the properties you want to include in your export. At least one property must be selected.
+        <AlertDescription className="text-blue-900 text-sm">
+          <strong>Drag and drop</strong> to reorder (CSV column order). Click <strong>Export/Skip</strong> to toggle.
         </AlertDescription>
       </Alert>
 
-      <Card>
-        <CardHeader>
+      <Card className="border-2">
+        <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 py-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Export Properties</CardTitle>
-              <CardDescription>
-                Choose which device properties to include in the export
+              <CardTitle className="text-lg">Export Properties</CardTitle>
+              <CardDescription className="text-xs mt-0.5">
+                Customize which properties to export and their order
               </CardDescription>
             </div>
             <div className="flex gap-2">
               <button
-                onClick={handleSelectAll}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                onClick={handleOnboardingPreset}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded transition-colors"
               >
-                Select All
+                Onboarding
               </button>
-              <span className="text-gray-300">|</span>
               <button
-                onClick={handleDeselectAll}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                onClick={handleEnableAll}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
               >
-                Deselect All
+                Enable All
+              </button>
+              <button
+                onClick={handleDisableAll}
+                className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded transition-colors"
+              >
+                Disable All
               </button>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {AVAILABLE_PROPERTIES.map((property) => (
-              <div
-                key={property.id}
-                className="flex items-start space-x-3 p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-colors"
-              >
-                <Checkbox
-                  id={property.id}
-                  checked={selectedProperties.includes(property.id)}
-                  onCheckedChange={() => handlePropertyToggle(property.id)}
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <Label
-                    htmlFor={property.id}
-                    className="text-sm font-medium text-gray-900 cursor-pointer"
-                  >
-                    {property.label}
-                  </Label>
-                  <p className="text-xs text-gray-500 mt-1">{property.description}</p>
-                </div>
+        <CardContent className="pt-3 pb-3">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={properties.map(p => p.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-1 max-w-2xl mx-auto">
+                {properties.map((property) => (
+                  <SortablePropertyItem
+                    key={property.id}
+                    property={property}
+                    onToggle={handleToggle}
+                  />
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
 
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-700">
-              <strong>Selected:</strong>{' '}
-              {selectedProperties.length > 0 ? (
-                <span className="text-blue-600 font-medium">
-                  {selectedProperties.length} propert{selectedProperties.length !== 1 ? 'ies' : 'y'}
-                </span>
-              ) : (
-                <span className="text-red-600 font-medium">No properties selected</span>
-              )}
+          <div className="mt-3 p-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded border border-blue-200">
+            <p className="text-xs font-medium text-gray-900">
+              <span className="text-blue-600 font-bold text-base">{enabledCount}</span> of {properties.length} properties enabled
             </p>
+            {enabledCount === 0 && (
+              <p className="text-xs text-red-600 font-medium mt-0.5">
+                ⚠️ At least one property must be enabled to export
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
