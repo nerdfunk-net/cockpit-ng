@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Info, GripVertical, Eye, EyeOff } from 'lucide-react'
+import { Info, GripVertical, Eye, EyeOff, Filter } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -299,38 +299,34 @@ export function PropertiesTab({
         </AlertDescription>
       </Alert>
 
-      <Card className="border-2">
-        <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 py-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg">Export Properties</CardTitle>
-              <CardDescription className="text-xs mt-0.5">
-                Customize which properties to export and their order
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleOnboardingPreset}
-                className="px-3 py-1.5 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded transition-colors"
-              >
-                Onboarding
-              </button>
-              <button
-                onClick={handleEnableAll}
-                className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
-              >
-                Enable All
-              </button>
-              <button
-                onClick={handleDisableAll}
-                className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded transition-colors"
-              >
-                Disable All
-              </button>
-            </div>
+      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+          <div className="flex items-center space-x-2">
+            <Filter className="h-4 w-4" />
+            <span className="text-sm font-medium">Export Properties</span>
           </div>
-        </CardHeader>
-        <CardContent className="pt-3 pb-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleOnboardingPreset}
+              className="px-3 py-1.5 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded transition-colors"
+            >
+              Onboarding
+            </button>
+            <button
+              onClick={handleEnableAll}
+              className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-white hover:bg-blue-50 rounded transition-colors"
+            >
+              Enable All
+            </button>
+            <button
+              onClick={handleDisableAll}
+              className="px-3 py-1.5 text-xs font-medium text-white bg-blue-700 hover:bg-blue-800 rounded transition-colors border border-blue-400"
+            >
+              Disable All
+            </button>
+          </div>
+        </div>
+        <div className="p-3">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -362,8 +358,8 @@ export function PropertiesTab({
               </p>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }
