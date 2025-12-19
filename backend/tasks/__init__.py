@@ -3,20 +3,11 @@ Celery tasks package.
 Tasks are organized by function:
 - scheduling: Schedule checking and job dispatching
 - execution: Job type executors
-- legacy: Deprecated tasks (will be removed)
 - utils: Helper functions
 """
 
 # Import scheduling tasks
 from .scheduling import check_job_schedules_task, dispatch_job
-
-# Import legacy tasks (for backwards compatibility)
-from .legacy import (
-    cache_devices_task,
-    sync_checkmk_task,
-    backup_configs_task,
-    ansible_playbook_task,
-)
 
 # Import test tasks
 from .test_tasks import test_task, test_progress_task
@@ -64,11 +55,6 @@ __all__ = [
     # Backup tasks
     "backup_single_device_task",
     "finalize_backup_task",
-    # Legacy tasks (deprecated)
-    "cache_devices_task",
-    "sync_checkmk_task",
-    "backup_configs_task",
-    "ansible_playbook_task",
     # Test tasks
     "test_task",
     "test_progress_task",
