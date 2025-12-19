@@ -242,7 +242,7 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="!max-w-[880px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-blue-600" />
@@ -308,10 +308,10 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
                         Click to browse or drag and drop your CSV file here
                       </p>
                     </div>
-                    <Button type="button" variant="outline" size="sm">
-                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    <div className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2">
+                      <FileSpreadsheet className="h-4 w-4" />
                       Select CSV File
-                    </Button>
+                    </div>
                   </div>
                 </label>
               </div>
