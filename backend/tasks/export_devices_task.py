@@ -155,9 +155,26 @@ def export_devices_task(
 
         logger.info(f"✓ Total devices fetched: {len(all_devices)}")
 
-        # STEP 2: Filter properties
+        # STEP 2: Filter devices by required properties
         logger.info("-" * 80)
-        logger.info("STEP 2: FILTERING PROPERTIES")
+        logger.info("STEP 2: FILTERING DEVICES BY REQUIREMENTS")
+        logger.info("-" * 80)
+
+        # If primary_ip4 is requested, exclude devices without it
+        if "primary_ip4" in properties:
+            devices_before = len(all_devices)
+            all_devices = [
+                device for device in all_devices
+                if device.get("primary_ip4") and device["primary_ip4"].get("address")
+            ]
+            devices_excluded = devices_before - len(all_devices)
+            if devices_excluded > 0:
+                logger.info(f"✓ Excluded {devices_excluded} devices without primary_ip4")
+            logger.info(f"✓ {len(all_devices)} devices remaining after filtering")
+
+        # STEP 3: Filter properties
+        logger.info("-" * 80)
+        logger.info("STEP 3: FILTERING PROPERTIES")
         logger.info("-" * 80)
 
         self.update_state(
@@ -174,9 +191,9 @@ def export_devices_task(
             f"✓ Filtered {len(filtered_devices)} devices to {len(properties)} properties"
         )
 
-        # STEP 3: Export to format
+        # STEP 4: Export to format
         logger.info("-" * 80)
-        logger.info(f"STEP 3: EXPORTING TO {export_format.upper()}")
+        logger.info(f"STEP 4: EXPORTING TO {export_format.upper()}")
         logger.info("-" * 80)
 
         self.update_state(
@@ -222,8 +239,13 @@ def export_devices_task(
         )
 
         # Create exports directory if it doesn't exist
-        export_dir = os.path.join(os.path.dirname(__file__), "..", "data", "exports")
+        # Use centralized data_directory from config to ensure consistent paths
+        # in both development and production environments
+        from config import settings
+        export_dir = os.path.join(settings.data_directory, "exports")
         os.makedirs(export_dir, exist_ok=True)
+        
+        logger.info(f"Export directory: {export_dir} (absolute: {os.path.abspath(export_dir)})")
 
         # Generate filename with timestamp
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")

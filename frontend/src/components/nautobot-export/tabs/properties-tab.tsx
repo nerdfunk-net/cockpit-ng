@@ -22,6 +22,11 @@ const AVAILABLE_PROPERTIES: PropertyItem[] = [
     description: 'Device type/model information',
   },
   {
+    id: 'platform',
+    label: 'Platform',
+    description: 'Device platform (e.g., cisco_ios, juniper_junos)',
+  },
+  {
     id: 'role',
     label: 'Role',
     description: 'Device role',

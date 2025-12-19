@@ -937,6 +937,14 @@ async def preview_export_devices(
                 message="No devices found in Nautobot",
             )
 
+        # Apply same filtering as export task
+        # If primary_ip4 is requested, exclude devices without it
+        if "primary_ip4" in request.properties:
+            devices = [
+                device for device in devices
+                if device.get("primary_ip4") and device["primary_ip4"].get("address")
+            ]
+
         # Filter to requested properties
         filtered_devices = _filter_device_properties(devices, request.properties)
 
@@ -1113,10 +1121,21 @@ async def download_export_file(
         )
 
     file_path = task_result.get("file_path")
-    if not file_path or not os.path.exists(file_path):
+    if not file_path:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Export file not found",
+            detail="Export file path not found in task result",
+        )
+    
+    logger.info(f"Download endpoint - checking file: {file_path}")
+    logger.info(f"  - File exists: {os.path.exists(file_path)}")
+    logger.info(f"  - Current working directory: {os.getcwd()}")
+    logger.info(f"  - Absolute path: {os.path.abspath(file_path)}")
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Export file not found at path: {file_path}",
         )
 
     filename = task_result.get("filename", os.path.basename(file_path))
