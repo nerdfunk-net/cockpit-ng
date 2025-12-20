@@ -165,6 +165,35 @@ async def refresh_token(request: Request):
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
+        # Get user with RBAC roles - same as login endpoint
+        import rbac_manager as rbac
+        user_with_roles = rbac.get_user_with_rbac(user["id"])
+
+        if not user_with_roles:
+            logger.warning(
+                f"get_user_with_rbac returned None for user_id={user['id']}, using base user"
+            )
+            user_with_roles = user
+            user_with_roles["roles"] = []
+            user_with_roles["permissions"] = []
+
+        # Extract role names for the response
+        role_names = [r["name"] for r in user_with_roles.get("roles", [])]
+
+        # Set primary role (for legacy compatibility)
+        # Priority: admin > operator > network_engineer > viewer > first role
+        primary_role = None
+        if "admin" in role_names:
+            primary_role = "admin"
+        elif "operator" in role_names:
+            primary_role = "operator"
+        elif "network_engineer" in role_names:
+            primary_role = "network_engineer"
+        elif "viewer" in role_names:
+            primary_role = "viewer"
+        elif role_names:
+            primary_role = role_names[0]
+
         access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
         access_token = create_access_token(
             data={
@@ -180,12 +209,14 @@ async def refresh_token(request: Request):
             token_type="bearer",
             expires_in=settings.access_token_expire_minutes * 60,
             user={
-                "id": user["id"],
-                "username": user["username"],
-                "realname": user["realname"],
-                "role": user["role"],
-                "permissions": user["permissions"],
-                "debug": user["debug"],
+                "id": user_with_roles["id"],
+                "username": user_with_roles["username"],
+                "realname": user_with_roles["realname"],
+                "email": user_with_roles.get("email"),
+                "role": primary_role,  # Legacy field for compatibility
+                "roles": role_names,  # CRITICAL FIX: Include roles array for sidebar
+                "permissions": user_with_roles.get("permissions", []),  # New RBAC permissions
+                "debug": user_with_roles.get("debug", False),
             },
         )
     except HTTPException:

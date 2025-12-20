@@ -127,14 +127,25 @@ export function useSessionManager(config: SessionConfig = EMPTY_CONFIG) {
       }
 
       const data = await response.json()
-      
+
       if (data.access_token && data.user) {
         console.log('Session Manager: Token refreshed successfully')
+
+        // Handle both new RBAC roles (array) and legacy role (string) for backwards compatibility
+        let roles: string[] = []
+        if (Array.isArray(data.user.roles)) {
+          roles = data.user.roles
+        } else if (data.user.role && typeof data.user.role === 'string') {
+          // Fallback: if roles array missing, use legacy single role field
+          roles = [data.user.role]
+          console.warn('Session Manager: Using legacy "role" field, "roles" array missing in refresh response')
+        }
+
         login(data.access_token, {
           id: data.user.id?.toString() || data.user.username,
           username: data.user.username,
           email: data.user.email || `${data.user.username}@demo.com`,
-          roles: data.user.roles || [],
+          roles: roles,
           permissions: data.user.permissions,
         })
         return true
