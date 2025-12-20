@@ -1178,6 +1178,14 @@ async def download_export_file(
     # Manually set Content-Disposition header to ensure correct filename
     # Don't quote the filename - browsers interpret quotes differently (Safari includes them in filename)
     response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+
+    logger.info(
+        f"Download endpoint - Content-Disposition header: {response.headers['Content-Disposition']}"
+    )
+
+    return response
+
+
 @router.post("/tasks/update-devices-from-csv", response_model=TaskWithJobResponse)
 @handle_celery_errors("update devices from CSV")
 async def trigger_update_devices_from_csv(

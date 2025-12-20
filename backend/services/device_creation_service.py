@@ -499,18 +499,20 @@ class DeviceCreationService:
                             )
 
                             # Determine primary IPv4
-                            if (
-                                interface.ip_address
-                                and "/" in interface.ip_address
-                                and ":" not in interface.ip_address
-                            ):
+                            # Check if this is an IPv4 address (not IPv6)
+                            is_ipv4 = interface.ip_address and ":" not in interface.ip_address
+                            
+                            if is_ipv4:
                                 if interface.is_primary_ipv4:
                                     primary_ipv4_id = ip_id
                                     logger.info(
-                                        f"Interface {interface.name} marked as primary IPv4"
+                                        f"Interface {interface.name} marked as primary IPv4 (explicit)"
                                     )
                                 elif primary_ipv4_id is None:
                                     primary_ipv4_id = ip_id
+                                    logger.info(
+                                        f"Interface {interface.name} set as primary IPv4 (first IPv4 found)"
+                                    )
 
                         except Exception as e:
                             interface_result["ip_assignment_error"] = str(e)
