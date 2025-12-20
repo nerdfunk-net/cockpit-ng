@@ -345,7 +345,9 @@ class NautobotService:
             result = await self.graphql_query(query, {"content_type": [content_type]})
             statuses = result.get("data", {}).get("statuses", [])
             for status in statuses:
-                if status["name"].lower() == status_name.lower():
+                # Safely handle None values for status name
+                status_name_value = status.get("name")
+                if status_name_value and status_name and status_name_value.lower() == status_name.lower():
                     return status["id"]
         except Exception as e:
             logger.warning(

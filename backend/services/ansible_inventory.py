@@ -248,6 +248,13 @@ class AnsibleInventoryService:
             Tuple of (device_ids_set, operations_count, devices_data)
         """
         try:
+            # Validate condition values - prevent None/empty values from causing issues
+            if not condition.field or condition.value is None or condition.value == "":
+                logger.warning(
+                    f"Skipping condition with empty field or value: field={condition.field}, value={condition.value}"
+                )
+                return set(), 0, {}
+
             # Check if this is a custom field (starts with cf_)
             if condition.field.startswith("cf_"):
                 # Keep the full field name with cf_ prefix for GraphQL query
@@ -318,6 +325,11 @@ class AnsibleInventoryService:
     ) -> List[DeviceInfo]:
         """Query devices by name using GraphQL."""
         from services.nautobot import nautobot_service
+
+        # Validate filter value - check for None first before calling .strip()
+        if not name_filter or (isinstance(name_filter, str) and name_filter.strip() == ""):
+            logger.warning("Empty name_filter provided, returning empty result")
+            return []
 
         # Use different queries based on match type
         if use_contains:
@@ -405,6 +417,11 @@ class AnsibleInventoryService:
         """
         from services.nautobot import nautobot_service
 
+        # Validate filter value - check for None first before calling .strip()
+        if not location_filter or (isinstance(location_filter, str) and location_filter.strip() == ""):
+            logger.warning("Empty location_filter provided, returning empty result")
+            return []
+
         # Query devices directly by location - this includes hierarchical locations
         # The location filter in Nautobot automatically includes devices from descendant locations
         if use_contains:
@@ -485,6 +502,11 @@ class AnsibleInventoryService:
         """Query devices by role using GraphQL."""
         from services.nautobot import nautobot_service
 
+        # Validate filter value - check for None first before calling .strip()
+        if not role_filter or (isinstance(role_filter, str) and role_filter.strip() == ""):
+            logger.warning("Empty role_filter provided, returning empty result")
+            return []
+
         query = """
         query devices_by_role($role_filter: [String]) {
             devices(role: $role_filter) {
@@ -524,6 +546,11 @@ class AnsibleInventoryService:
         """Query devices by status using GraphQL."""
         from services.nautobot import nautobot_service
 
+        # Validate filter value - check for None first before calling .strip()
+        if not status_filter or (isinstance(status_filter, str) and status_filter.strip() == ""):
+            logger.warning("Empty status_filter provided, returning empty result")
+            return []
+
         query = """
         query devices_by_status($status_filter: [String]) {
             devices(status: $status_filter) {
@@ -562,6 +589,11 @@ class AnsibleInventoryService:
     async def _query_devices_by_tag(self, tag_filter: str) -> List[DeviceInfo]:
         """Query devices by tag using GraphQL."""
         from services.nautobot import nautobot_service
+
+        # Validate filter value - check for None first before calling .strip()
+        if not tag_filter or (isinstance(tag_filter, str) and tag_filter.strip() == ""):
+            logger.warning("Empty tag_filter provided, returning empty result")
+            return []
 
         query = """
         query devices_by_tag($tag_filter: [String]) {
@@ -604,6 +636,11 @@ class AnsibleInventoryService:
         """Query devices by device type using GraphQL."""
         from services.nautobot import nautobot_service
 
+        # Validate filter value - check for None first before calling .strip()
+        if not devicetype_filter or (isinstance(devicetype_filter, str) and devicetype_filter.strip() == ""):
+            logger.warning("Empty devicetype_filter provided, returning empty result")
+            return []
+
         query = """
         query devices_by_devicetype($devicetype_filter: [String]) {
             devices(device_type: $devicetype_filter) {
@@ -645,6 +682,11 @@ class AnsibleInventoryService:
         """Query devices by manufacturer using GraphQL."""
         from services.nautobot import nautobot_service
 
+        # Validate filter value - check for None first before calling .strip()
+        if not manufacturer_filter or (isinstance(manufacturer_filter, str) and manufacturer_filter.strip() == ""):
+            logger.warning("Empty manufacturer_filter provided, returning empty result")
+            return []
+
         query = """
         query devices_by_manufacturer($manufacturer_filter: [String]) {
             devices(manufacturer: $manufacturer_filter) {
@@ -685,6 +727,11 @@ class AnsibleInventoryService:
     ) -> List[DeviceInfo]:
         """Query devices by platform using GraphQL."""
         from services.nautobot import nautobot_service
+
+        # Validate filter value - check for None first before calling .strip()
+        if not platform_filter or (isinstance(platform_filter, str) and platform_filter.strip() == ""):
+            logger.warning("Empty platform_filter provided, returning empty result")
+            return []
 
         query = """
         query devices_by_platform($platform_filter: [String]) {
@@ -806,6 +853,11 @@ class AnsibleInventoryService:
         try:
             # Import here to avoid circular imports
             from services.nautobot import nautobot_service
+
+            # Validate filter value - check for None first before calling .strip()
+            if not custom_field_name or not custom_field_value or (isinstance(custom_field_value, str) and custom_field_value.strip() == ""):
+                logger.warning("Empty custom_field_name or custom_field_value provided, returning empty result")
+                return []
 
             # Get custom field types to determine correct GraphQL variable type
             custom_field_types = await self._get_custom_field_types()
@@ -1105,7 +1157,8 @@ class AnsibleInventoryService:
                                             "label": str(choice_value),
                                         }
                                     )
-                            values.sort(key=lambda x: x["label"].lower())
+                            # Sort safely - handle None or empty labels
+                            values.sort(key=lambda x: (x.get("label") or "").lower())
                             logger.info(
                                 f"Retrieved {len(values)} choices for custom field '{cf_key}'"
                             )
@@ -1138,8 +1191,8 @@ class AnsibleInventoryService:
                             }
                         )
 
-                # Sort values by label
-                values.sort(key=lambda x: x["label"].lower())
+                # Sort values by label - handle None or empty labels safely
+                values.sort(key=lambda x: (x.get("label") or "").lower())
                 logger.info(f"Retrieved {len(values)} custom field options")
                 return values
 
@@ -1205,8 +1258,8 @@ class AnsibleInventoryService:
                 for tag in results:
                     values.append({"value": tag["name"], "label": tag["name"]})
 
-            # Sort values by label
-            values.sort(key=lambda x: x["label"].lower())
+            # Sort values by label - handle None or empty labels safely
+            values.sort(key=lambda x: (x.get("label") or "").lower())
 
             logger.info(f"Retrieved {len(values)} values for field '{field_name}'")
             return values
