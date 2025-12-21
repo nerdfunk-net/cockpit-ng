@@ -17,6 +17,14 @@ const SidebarContext = createContext<SidebarContextType | undefined>(undefined)
 // Navigation sections - all collapsed by default on login
 const navigationSectionTitles = ['General', 'Nautobot', 'CheckMK', 'Network', 'Jobs', 'Settings']
 
+// Collapsible menu items - all collapsed by default on login
+const collapsibleMenuItems = [
+  'Network-Configs',
+  'Network-Automation',
+  'Network-Tools',
+  'Settings-Connections',
+]
+
 export function SidebarProvider({ children }: { children: ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -24,7 +32,10 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
     new Set(navigationSectionTitles)
   )
-  const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set())
+  // Initialize with ALL collapsible items collapsed
+  const [collapsedItems, setCollapsedItems] = useState<Set<string>>(
+    new Set(collapsibleMenuItems)
+  )
 
   const toggleCollapsed = () => {
     setIsCollapsed(!isCollapsed)

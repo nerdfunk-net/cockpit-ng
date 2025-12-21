@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
-import { Loader2, CheckCircle, XCircle, Server, Settings, RotateCcw, Shield, FileText, Network, AlertCircle } from 'lucide-react'
+import { Loader2, CheckCircle, XCircle, Server, Settings, RotateCcw, Shield, FileText, AlertCircle } from 'lucide-react'
 
 interface CheckMKSettings {
   url: string
@@ -51,7 +51,6 @@ export default function CheckMKSettingsForm() {
   
   // YAML content states
   const [checkmkYaml, setCheckmkYaml] = useState('')
-  const [snmpMappingYaml, setSnmpMappingYaml] = useState('')
   const [checkmkQueriesYaml, setCheckmkQueriesYaml] = useState('')
   const [yamlLoading, setYamlLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('connection')
@@ -92,17 +91,13 @@ export default function CheckMKSettingsForm() {
   const loadYamlFiles = useCallback(async () => {
     try {
       setYamlLoading(true)
-      const [checkmkResponse, snmpResponse, queriesResponse] = await Promise.all([
+      const [checkmkResponse, queriesResponse] = await Promise.all([
         apiCall('config/checkmk.yaml'),
-        apiCall('config/snmp_mapping.yaml'),
         apiCall('config/checkmk_queries.yaml')
-      ]) as [{ success?: boolean; data?: string }, { success?: boolean; data?: string }, { success?: boolean; data?: string }]
-      
+      ]) as [{ success?: boolean; data?: string }, { success?: boolean; data?: string }]
+
       if (checkmkResponse.success) {
         setCheckmkYaml(checkmkResponse.data || '')
-      }
-      if (snmpResponse.success) {
-        setSnmpMappingYaml(snmpResponse.data || '')
       }
       if (queriesResponse.success) {
         setCheckmkQueriesYaml(queriesResponse.data || '')
@@ -280,7 +275,7 @@ export default function CheckMKSettingsForm() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-4 w-full">
+        <TabsList className="grid grid-cols-3 w-full">
           <TabsTrigger value="connection" className="flex items-center space-x-2">
             <Settings className="h-4 w-4" />
             <span>Connection</span>
@@ -288,10 +283,6 @@ export default function CheckMKSettingsForm() {
           <TabsTrigger value="checkmk-config" className="flex items-center space-x-2">
             <FileText className="h-4 w-4" />
             <span>CheckMK Config</span>
-          </TabsTrigger>
-          <TabsTrigger value="snmp-mapping" className="flex items-center space-x-2">
-            <Network className="h-4 w-4" />
-            <span>SNMP Mapping</span>
           </TabsTrigger>
           <TabsTrigger value="queries" className="flex items-center space-x-2">
             <FileText className="h-4 w-4" />
@@ -542,76 +533,6 @@ export default function CheckMKSettingsForm() {
                     <FileText className="h-4 w-4" />
                   )}
                   <span>Save Configuration</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* SNMP Mapping Tab */}
-        <TabsContent value="snmp-mapping" className="space-y-6">
-          <Card className="shadow-lg border-0 overflow-hidden p-0">
-            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
-              <CardTitle className="flex items-center space-x-2 text-sm font-medium">
-                <Network className="h-4 w-4" />
-                <span>SNMP Mapping Configuration (snmp_mapping.yaml)</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">SNMP Mapping Content</Label>
-                <Textarea
-                  value={snmpMappingYaml}
-                  onChange={(e) => setSnmpMappingYaml(e.target.value)}
-                  placeholder="YAML content will be loaded here..."
-                  className="w-full h-96 font-mono text-sm border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                />
-                <p className="text-xs text-gray-500">
-                  Edit the SNMP mapping configuration YAML file. This defines SNMP credentials and mapping for different devices.
-                </p>
-              </div>
-              
-              <div className="flex justify-end space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={loadYamlFiles}
-                  disabled={yamlLoading || validating}
-                  className="flex items-center space-x-2"
-                >
-                  {yamlLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RotateCcw className="h-4 w-4" />
-                  )}
-                  <span>Reload</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => validateYaml(snmpMappingYaml, 'snmp_mapping.yaml')}
-                  disabled={yamlLoading || validating || !snmpMappingYaml}
-                  className="flex items-center space-x-2"
-                >
-                  {validating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <CheckCircle className="h-4 w-4" />
-                  )}
-                  <span>Check YAML</span>
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => saveYamlFile('snmp_mapping.yaml', snmpMappingYaml)}
-                  disabled={yamlLoading || validating}
-                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white"
-                >
-                  {yamlLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Network className="h-4 w-4" />
-                  )}
-                  <span>Save Mapping</span>
                 </Button>
               </div>
             </CardContent>

@@ -34,6 +34,8 @@ import {
   Download,
   Wifi,
   Wrench,
+  Plug,
+  Settings,
 } from 'lucide-react'
 
 interface NavItem {
@@ -116,8 +118,15 @@ const navigationSections: NavSection[] = [
   {
     title: 'Settings',
     items: [
-      { label: 'Nautobot', href: '/settings/nautobot', icon: Database },
-      { label: 'CheckMK', href: '/settings/checkmk', icon: Shield },
+      { label: 'Common', href: '/settings/common', icon: Settings },
+      {
+        label: 'Connections',
+        icon: Plug,
+        children: [
+          { label: 'Nautobot', href: '/settings/nautobot', icon: Database },
+          { label: 'CheckMK', href: '/settings/checkmk', icon: Shield },
+        ],
+      },
       { label: 'Compliance', href: '/settings/compliance', icon: CheckCircle },
       { label: 'Templates', href: '/settings/templates', icon: FileText },
       { label: 'Git Management', href: '/settings/git', icon: GitBranch },
