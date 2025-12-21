@@ -489,6 +489,7 @@ export function JobsViewPage() {
     { value: "sync_devices", label: "Sync Devices" },
     { value: "run_commands", label: "Run Commands" },
     { value: "compare_devices", label: "Compare Devices" },
+    { value: "scan_prefixes", label: "Scan Prefixes" },
   ]
 
   const triggerOptions = [
