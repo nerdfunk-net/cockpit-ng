@@ -1,0 +1,16 @@
+apiVersion: 1
+
+datasources:
+  - name: InfluxDB
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    jsonData:
+      version: Flux
+      organization: nerdfunk
+      defaultBucket: network_metrics
+      tlsSkipVerify: true
+    secureJsonData:
+      token: your-very-long-random-token-here
+    editable: true
+    isDefault: true

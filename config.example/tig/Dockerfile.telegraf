@@ -1,0 +1,12 @@
+FROM telegraf:1.29
+
+# SNMP Tools installieren
+RUN apt-get update && \
+    apt-get install -y snmp && \
+    rm -rf /var/lib/apt/lists/*
+
+# MIB-Lookup komplett deaktivieren - nur numerische OIDs
+RUN echo "mibs :" > /etc/snmp/snmp.conf
+
+# SNMP Fehler unterdrücken
+ENV MIBS=""

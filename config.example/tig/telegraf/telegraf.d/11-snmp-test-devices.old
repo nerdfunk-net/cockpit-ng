@@ -1,0 +1,62 @@
+# SNMP Monitoring für Test-Geräte (test-1 bis test-4)
+[[inputs.snmp]]
+  agents = [
+    "192.168.178.240",  # LAB
+  ]
+  
+  # SNMPv3 Konfiguration (kann anders sein als Lab)
+  version = 3
+  sec_level = "authPriv"
+  sec_name = "noc"
+  auth_protocol = "SHA-2-256"
+  auth_password = "noc"
+  priv_protocol = "AES-256"
+  priv_password = "SHA-2-256"
+  
+  timeout = "10s"
+  retries = 3
+  agent_host_tag = "agent_host"
+  
+  [inputs.snmp.tags]
+    environment = "test"
+    location = "home-lab"
+    snmp_version = "v3"
+
+  # Gleiche Metrics wie Lab-Devices
+  [[inputs.snmp.field]]
+    name = "hostname"
+    oid = "SNMPv2-MIB::sysName.0"
+    is_tag = true
+
+  [[inputs.snmp.field]]
+    name = "uptime"
+    oid = "DISMAN-EVENT-MIB::sysUpTimeInstance"
+
+  [[inputs.snmp.table]]
+    name = "interface"
+    inherit_tags = ["hostname"]
+    
+    [[inputs.snmp.table.field]]
+      name = "ifName"
+      oid = "IF-MIB::ifName"
+      is_tag = true
+    
+    [[inputs.snmp.table.field]]
+      name = "ifOperStatus"
+      oid = "IF-MIB::ifOperStatus"
+    
+    [[inputs.snmp.table.field]]
+      name = "ifInOctets"
+      oid = "IF-MIB::ifInOctets"
+    
+    [[inputs.snmp.table.field]]
+      name = "ifOutOctets"
+      oid = "IF-MIB::ifOutOctets"
+    
+    [[inputs.snmp.table.field]]
+      name = "ifInErrors"
+      oid = "IF-MIB::ifInErrors"
+    
+    [[inputs.snmp.table.field]]
+      name = "ifOutErrors"
+      oid = "IF-MIB::ifOutErrors"
