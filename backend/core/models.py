@@ -916,6 +916,40 @@ class CheckMKSetting(Base):
     )
 
 
+class GrafanaSetting(Base):
+    """Grafana deployment settings."""
+
+    __tablename__ = "grafana_settings"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    deployment_method = Column(String(50), nullable=False, default="local")  # local, sftp, git
+    # Local deployment
+    local_root_path = Column(String(1000))
+    # SFTP deployment
+    sftp_hostname = Column(String(500))
+    sftp_port = Column(Integer, default=22)
+    sftp_path = Column(String(1000))
+    sftp_username = Column(String(255))
+    sftp_password = Column(String(500))
+    use_global_credentials = Column(Boolean, default=False)
+    global_credential_id = Column(Integer)
+    # Git deployment
+    git_repository_id = Column(Integer)
+    # Common settings
+    dashboards_path = Column(String(500), default="dashboards/")
+    datasources_path = Column(String(500), default="datasources/")
+    telegraf_config_path = Column(String(500), default="telegraf/")
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
 class CacheSetting(Base):
     """Cache configuration for Git data and Nautobot resources."""
 

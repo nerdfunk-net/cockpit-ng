@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -12,10 +13,19 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog'
 import { useApi } from '@/hooks/use-api'
+import { useAuthStore } from '@/lib/auth-store'
 import { cn } from '@/lib/utils'
-import { Loader2, CheckCircle, RotateCcw, Network, AlertCircle, Settings } from 'lucide-react'
+import { Loader2, CheckCircle, RotateCcw, Network, AlertCircle, Settings, Download, GitPullRequest, FileText } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export default function CommonSettingsForm() {
   const { apiCall } = useApi()
@@ -34,6 +44,17 @@ export default function CommonSettingsForm() {
   const [showValidationDialog, setShowValidationDialog] = useState(false)
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
+
+  // Import from Git state
+  const [showImportDialog, setShowImportDialog] = useState(false)
+  const [gitRepos, setGitRepos] = useState<Array<{id: number; name: string; category: string; is_active: boolean; last_sync?: string | null}>>([])
+  const [selectedRepoId, setSelectedRepoId] = useState<number | null>(null)
+  const [repoStatus, setRepoStatus] = useState<{ahead_count: number; behind_count: number; is_clean: boolean; is_synced?: boolean} | null>(null)
+  const [repoFiles, setRepoFiles] = useState<Array<{name: string; path: string; directory: string}>>([])
+  const [selectedFile, setSelectedFile] = useState<string | null>(null)
+  const [fileFilter, setFileFilter] = useState('')
+  const [importLoading, setImportLoading] = useState(false)
+  const [importStep, setImportStep] = useState<'select-repo' | 'check-sync' | 'select-file'>('select-repo')
 
   const showMessage = useCallback((msg: string, type: 'success' | 'error') => {
     setMessage(msg)
@@ -117,6 +138,190 @@ export default function CommonSettingsForm() {
       setYamlLoading(false)
     }
   }, [apiCall, showMessage])
+
+  const loadGitRepos = useCallback(async () => {
+    try {
+      const response = await apiCall('git-repositories/') as { 
+        repositories?: Array<{id: number; name: string; category: string; is_active: boolean; last_sync?: string | null}>
+        total?: number
+      }
+      
+      if (response.repositories) {
+        // Filter for cockpit_configs category (case-insensitive)
+        const cockpitRepos = response.repositories.filter(repo => 
+          repo.category?.toLowerCase() === 'cockpit_configs' && repo.is_active
+        )
+        
+        setGitRepos(cockpitRepos)
+      }
+    } catch (error) {
+      console.error('Error loading git repositories:', error)
+      showMessage('Failed to load git repositories', 'error')
+    }
+  }, [apiCall, showMessage])
+
+  const loadRepoFiles = useCallback(async (repoId: number) => {
+    try {
+      const response = await apiCall(`git/${repoId}/files/search?query=&limit=5000`) as {
+        success?: boolean
+        data?: {
+          files: Array<{name: string; path: string; directory: string}>
+          total_count?: number
+          has_more?: boolean
+        }
+      }
+      
+      if (response.success && response.data?.files) {
+        setRepoFiles(response.data.files)
+        
+        if (response.data.has_more) {
+          showMessage(`Warning: Repository has more than ${response.data.files.length} files. Only showing first ${response.data.files.length}. Use the filter to narrow results.`, 'error')
+        }
+      }
+    } catch (error) {
+      console.error('Error loading repository files:', error)
+      showMessage('Failed to load repository files', 'error')
+    }
+  }, [apiCall, showMessage])
+
+  const checkRepoStatus = useCallback(async (repoId: number) => {
+    try {
+      setImportLoading(true)
+      
+      // First check if repo has been synced before
+      const repoInfo = gitRepos.find(r => r.id === repoId)
+      const hasBeenSynced = repoInfo && 'last_sync' in repoInfo && (repoInfo.last_sync as string | null) !== null
+      
+      if (!hasBeenSynced) {
+        // Repo never synced, needs initial clone
+        setRepoStatus({ ahead_count: 0, behind_count: 1, is_clean: true })
+        setImportStep('check-sync')
+        setImportLoading(false)
+        return
+      }
+      
+      const response = await apiCall(`git/${repoId}/status`) as {
+        success?: boolean
+        data?: {ahead_count: number; behind_count: number; is_clean: boolean; is_synced: boolean}
+      }
+      
+      if (response.success && response.data) {
+        setRepoStatus(response.data)
+        
+        // If repo is behind, stay on sync check step
+        if (response.data.behind_count > 0) {
+          setImportStep('check-sync')
+        } else {
+          // Load files if already synced
+          await loadRepoFiles(repoId)
+          setImportStep('select-file')
+        }
+      }
+    } catch (error) {
+      console.error('Error checking repo status:', error)
+      // If status check fails, it likely means repo doesn't exist locally
+      setRepoStatus({ ahead_count: 0, behind_count: 1, is_clean: true })
+      setImportStep('check-sync')
+    } finally {
+      setImportLoading(false)
+    }
+  }, [apiCall, gitRepos, loadRepoFiles])
+
+  const syncRepo = useCallback(async (repoId: number) => {
+    try {
+      setImportLoading(true)
+      const response = await apiCall(`git/${repoId}/sync`, {
+        method: 'POST',
+      }) as { success?: boolean; message?: string }
+      
+      if (response.success) {
+        showMessage('Repository synced successfully', 'success')
+        // Reload status and files
+        await checkRepoStatus(repoId)
+      } else {
+        showMessage(response.message || 'Failed to sync repository', 'error')
+      }
+    } catch (error) {
+      console.error('Error syncing repository:', error)
+      showMessage('Failed to sync repository', 'error')
+    } finally {
+      setImportLoading(false)
+    }
+  }, [apiCall, showMessage, checkRepoStatus])
+
+  const importFileFromGit = useCallback(async () => {
+    if (!selectedRepoId || !selectedFile) return
+    
+    try {
+      setImportLoading(true)
+      
+      // Get auth token
+      const token = useAuthStore.getState().token
+      if (!token) {
+        showMessage('Not authenticated', 'error')
+        return
+      }
+      
+      // Read file content directly from git repo using the file-content endpoint
+      const fileResponse = await fetch(`/api/proxy/git/${selectedRepoId}/file-content?path=${encodeURIComponent(selectedFile)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (!fileResponse.ok) {
+        const errorText = await fileResponse.text()
+        console.error('Failed to read file:', errorText)
+        showMessage('Failed to read file content from repository', 'error')
+        return
+      }
+      
+      const fileContent = await fileResponse.text()
+      
+      // Check if content is double-encoded JSON string
+      let processedContent = fileContent
+      try {
+        // If content starts with a quote, it might be a JSON string
+        if (fileContent.startsWith('"') && fileContent.endsWith('"')) {
+          processedContent = JSON.parse(fileContent)
+        }
+      } catch {
+        // Not JSON, use as-is
+      }
+      
+      // Load content into the editor
+      setSnmpMappingYaml(processedContent)
+      
+      // Close dialog
+      setShowImportDialog(false)
+      
+      // Reset state
+      setSelectedRepoId(null)
+      setSelectedFile(null)
+      setFileFilter('')
+      setRepoStatus(null)
+      setRepoFiles([])
+      setImportStep('select-repo')
+      
+      showMessage(`File "${selectedFile}" imported successfully. Click "Save Mapping" to persist changes.`, 'success')
+    } catch {
+      console.error('Error importing file from repository')
+      showMessage('Failed to import file from repository', 'error')
+    } finally {
+      setImportLoading(false)
+    }
+  }, [selectedRepoId, selectedFile, showMessage])
+
+  const handleOpenImportDialog = useCallback(async () => {
+    setShowImportDialog(true)
+    setImportStep('select-repo')
+    await loadGitRepos()
+  }, [loadGitRepos])
+
+  const handleRepoSelect = useCallback(async (repoId: number) => {
+    setSelectedRepoId(repoId)
+    await checkRepoStatus(repoId)
+  }, [checkRepoStatus])
 
   useEffect(() => {
     loadYamlFiles()
@@ -242,6 +447,16 @@ export default function CommonSettingsForm() {
                 <Button
                   type="button"
                   variant="outline"
+                  onClick={handleOpenImportDialog}
+                  disabled={yamlLoading || validating}
+                  className="flex items-center space-x-2"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>Import from Git</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => validateYaml(snmpMappingYaml, 'snmp_mapping.yaml')}
                   disabled={yamlLoading || validating || !snmpMappingYaml}
                   className="flex items-center space-x-2"
@@ -271,6 +486,183 @@ export default function CommonSettingsForm() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Import from Git Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <Download className="h-5 w-5" />
+              <span>Import SNMP Mapping from Git</span>
+            </DialogTitle>
+            <DialogDescription>
+              {importStep === 'select-repo' && 'Select a Cockpit Configs repository to import from'}
+              {importStep === 'check-sync' && 'Check repository synchronization status'}
+              {importStep === 'select-file' && 'Select a file to import'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Step 1: Select Repository */}
+            {importStep === 'select-repo' && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Cockpit Configs Repository</Label>
+                  {gitRepos.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No Cockpit Configs repositories found. Please add a repository with category &quot;Cockpit Configs&quot; first.
+                    </p>
+                  ) : (
+                    <Select
+                      value={selectedRepoId?.toString()}
+                      onValueChange={(value) => handleRepoSelect(parseInt(value))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a repository" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {gitRepos.map((repo) => (
+                          <SelectItem key={repo.id} value={repo.id.toString()}>
+                            {repo.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Check Sync Status */}
+            {importStep === 'check-sync' && repoStatus && (
+              <div className="space-y-4">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-yellow-900">Repository Not Synced</h4>
+                      <p className="text-sm text-yellow-800 mt-1">
+                        This repository is {repoStatus.behind_count} commit(s) behind the remote.
+                        Please sync the repository to get the latest files.
+                      </p>
+                      <Button
+                        onClick={() => selectedRepoId && syncRepo(selectedRepoId)}
+                        disabled={importLoading}
+                        className="mt-3 flex items-center space-x-2"
+                      >
+                        {importLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <GitPullRequest className="h-4 w-4" />
+                        )}
+                        <span>Sync Repository (Git Pull)</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Select File */}
+            {importStep === 'select-file' && (
+              <div className="space-y-4">
+                {repoStatus && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <span className="text-sm text-green-800">
+                        Repository is up to date
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label>Select File to Import</Label>
+                  {repoFiles.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No files found in this repository.
+                    </p>
+                  ) : (
+                    <>
+                      <Input
+                        type="text"
+                        placeholder="Filter files..."
+                        value={fileFilter}
+                        onChange={(e) => setFileFilter(e.target.value)}
+                        className="mb-2"
+                      />
+                      <Select
+                        value={selectedFile || ''}
+                        onValueChange={setSelectedFile}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a file" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[300px]">
+                          {repoFiles
+                            .filter(file => 
+                              fileFilter === '' || 
+                              file.path.toLowerCase().includes(fileFilter.toLowerCase())
+                            )
+                            .map((file) => (
+                            <SelectItem key={file.path} value={file.path}>
+                              <div className="flex items-center space-x-2">
+                                <FileText className="h-4 w-4" />
+                                <span>{file.path}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {fileFilter && (
+                        <p className="text-xs text-muted-foreground">
+                          Showing {repoFiles.filter(file => file.path.toLowerCase().includes(fileFilter.toLowerCase())).length} of {repoFiles.length} files
+                        </p>
+                      )}
+                    </>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    The selected file content will be loaded into the editor.
+                    You must click &quot;Save Mapping&quot; to persist the changes.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowImportDialog(false)
+                setSelectedRepoId(null)
+                setSelectedFile(null)
+                setFileFilter('')
+                setRepoStatus(null)
+                setRepoFiles([])
+                setImportStep('select-repo')
+              }}
+            >
+              Cancel
+            </Button>
+            {importStep === 'select-file' && selectedFile && (
+              <Button
+                onClick={importFileFromGit}
+                disabled={importLoading || !selectedFile}
+                className="flex items-center space-x-2"
+              >
+                {importLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                <span>Import File</span>
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

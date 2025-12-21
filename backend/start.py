@@ -51,6 +51,10 @@ def main():
         level=getattr(logging, settings.log_level),
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
+    
+    # Suppress debug logging from GitPython
+    logging.getLogger('git.cmd').setLevel(logging.WARNING)
+    logging.getLogger('git.repo').setLevel(logging.WARNING)
 
     global logger
     logger = logging.getLogger(__name__)

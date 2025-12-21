@@ -82,6 +82,41 @@ class CheckMKTestRequest(BaseModel):
     verify_ssl: bool = True
 
 
+class GrafanaSettingsRequest(BaseModel):
+    """Grafana settings request model."""
+
+    deployment_method: Literal["local", "sftp", "git"]
+    # Local deployment
+    local_root_path: Optional[str] = None
+    # SFTP deployment
+    sftp_hostname: Optional[str] = None
+    sftp_port: int = 22
+    sftp_path: Optional[str] = None
+    sftp_username: Optional[str] = None
+    sftp_password: Optional[str] = None
+    use_global_credentials: bool = False
+    global_credential_id: Optional[int] = None
+    # Git deployment
+    git_repository_id: Optional[int] = None
+    # Common settings
+    dashboards_path: str = "dashboards/"
+    datasources_path: str = "datasources/"
+    telegraf_config_path: str = "telegraf/"
+
+
+class GrafanaTestRequest(BaseModel):
+    """Grafana connection test request model."""
+
+    deployment_method: Literal["local", "sftp", "git"]
+    local_root_path: Optional[str] = None
+    sftp_hostname: Optional[str] = None
+    sftp_port: int = 22
+    sftp_path: Optional[str] = None
+    sftp_username: Optional[str] = None
+    sftp_password: Optional[str] = None
+    git_repository_id: Optional[int] = None
+
+
 class GitTestRequest(BaseModel):
     """Git connection test request model."""
 

@@ -476,9 +476,9 @@ const GitManagement: React.FC = () => {
 
   const getCategoryBadgeColor = (category: string) => {
     switch (category) {
-      case 'configs': return 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+      case 'device_configs': return 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+      case 'cockpit_configs': return 'bg-cyan-100 text-cyan-800 hover:bg-cyan-200'
       case 'templates': return 'bg-purple-100 text-purple-800 hover:bg-purple-200'
-      case 'onboarding': return 'bg-green-100 text-green-800 hover:bg-green-200'
       case 'ansible': return 'bg-orange-100 text-orange-800 hover:bg-orange-200'
       default: return 'bg-gray-100 text-gray-800 hover:bg-gray-200'
     }
@@ -749,9 +749,9 @@ const GitManagement: React.FC = () => {
                         <SelectValue placeholder="Select Category" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="configs">Configs</SelectItem>
+                        <SelectItem value="device_configs">Device Configs</SelectItem>
+                        <SelectItem value="cockpit_configs">Cockpit Configs</SelectItem>
                         <SelectItem value="templates">Templates</SelectItem>
-                        <SelectItem value="onboarding">Onboarding</SelectItem>
                         <SelectItem value="ansible">Ansible</SelectItem>
                       </SelectContent>
                     </Select>
@@ -1004,9 +1004,9 @@ const GitManagement: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="configs">Configs</SelectItem>
+                    <SelectItem value="device_configs">Device Configs</SelectItem>
+                    <SelectItem value="cockpit_configs">Cockpit Configs</SelectItem>
                     <SelectItem value="templates">Templates</SelectItem>
-                    <SelectItem value="onboarding">Onboarding</SelectItem>
                     <SelectItem value="ansible">Ansible</SelectItem>
                   </SelectContent>
                 </Select>

@@ -11,9 +11,9 @@ from enum import Enum
 class GitCategory(str, Enum):
     """Git repository categories."""
 
-    CONFIGS = "configs"
+    CONFIGS = "device_configs"
+    COCKPIT_CONFIGS = "cockpit_configs"
     TEMPLATES = "templates"
-    ONBOARDING = "onboarding"
     ANSIBLE = "ansible"
 
 

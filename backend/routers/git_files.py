@@ -394,3 +394,91 @@ async def get_file_complete_history(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Git file complete history error: {str(e)}",
         )
+
+
+@router.get("/file-content")
+async def get_file_content(
+    repo_id: int,
+    path: str,
+    current_user: dict = Depends(require_permission("git.repositories", "read")),
+):
+    """Read the content of a file from a Git repository.
+
+    Args:
+        repo_id: Git repository ID
+        path: Relative path to the file within the repository
+        current_user: Current authenticated user
+
+    Returns:
+        Plain text content of the file
+    """
+    try:
+        # Get repository details
+        repository = git_repo_manager.get_repository(repo_id)
+        if not repository:
+            raise HTTPException(status_code=404, detail="Repository not found")
+
+        # Resolve repository working directory
+        repo_path = git_repo_path(repository)
+
+        if not os.path.exists(repo_path):
+            raise HTTPException(
+                status_code=404,
+                detail=f"Repository directory not found: {repo_path}",
+            )
+
+        # Construct full file path
+        file_path = os.path.join(repo_path, path)
+
+        # Security check: ensure the file is within the repository
+        file_path_resolved = os.path.realpath(file_path)
+        repo_path_resolved = os.path.realpath(repo_path)
+
+        if not file_path_resolved.startswith(repo_path_resolved):
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied: file path is outside repository",
+            )
+
+        # Check if file exists
+        if not os.path.exists(file_path_resolved):
+            raise HTTPException(
+                status_code=404,
+                detail=f"File not found: {path}",
+            )
+
+        # Check if it's a file (not a directory)
+        if not os.path.isfile(file_path_resolved):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Path is not a file: {path}",
+            )
+
+        # Read file content
+        try:
+            with open(file_path_resolved, "r", encoding="utf-8") as f:
+                content = f.read()
+        except UnicodeDecodeError:
+            # If file is binary, return error
+            raise HTTPException(
+                status_code=400,
+                detail=f"File is not a text file: {path}",
+            )
+
+        logger.info(
+            f"User {current_user.get('username')} read file {path} from repository {repository['name']}"
+        )
+
+        # Return plain text content
+        from fastapi.responses import PlainTextResponse
+        return PlainTextResponse(content=content)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error reading file content: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error reading file content: {str(e)}",
+        )
+
