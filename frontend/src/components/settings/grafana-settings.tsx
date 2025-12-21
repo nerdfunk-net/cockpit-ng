@@ -15,7 +15,9 @@ import {
 } from '@/components/ui/select'
 import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
-import { Loader2, CheckCircle, XCircle, BarChart3, Settings as SettingsIcon, AlertCircle } from 'lucide-react'
+import { Loader2, CheckCircle, XCircle, BarChart3, Settings as SettingsIcon, Activity, FileText, RotateCcw } from 'lucide-react'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Textarea } from '@/components/ui/textarea'
 
 interface GrafanaSettings {
   deployment_method: 'local' | 'sftp' | 'git'
@@ -61,6 +63,20 @@ interface CredentialsResponse {
   data?: Credential[]
 }
 
+interface GitRepository {
+  id: number
+  name: string
+  url: string
+  category: string
+  branch: string
+  last_sync: string | null
+}
+
+interface GitRepositoriesResponse {
+  repositories: GitRepository[]
+  total: number
+}
+
 type StatusType = 'idle' | 'testing' | 'success' | 'error' | 'saving'
 
 export default function GrafanaSettingsForm() {
@@ -87,6 +103,12 @@ export default function GrafanaSettingsForm() {
   const [activeTab, setActiveTab] = useState('connection')
   const [credentials, setCredentials] = useState<Credential[]>([])
   const [loadingCredentials, setLoadingCredentials] = useState(false)
+  const [gitRepositories, setGitRepositories] = useState<GitRepository[]>([])
+  const [loadingGitRepos, setLoadingGitRepos] = useState(false)
+  const [telegrafConfig, setTelegrafConfig] = useState('')
+  const [loadingTelegrafConfig, setLoadingTelegrafConfig] = useState(false)
+  const [savingTelegrafConfig, setSavingTelegrafConfig] = useState(false)
+  const [telegrafConfigOpen, setTelegrafConfigOpen] = useState(true)
 
   const showMessage = useCallback((msg: string, type: 'success' | 'error') => {
     setMessage(msg)
@@ -139,6 +161,26 @@ export default function GrafanaSettingsForm() {
       showMessage('Failed to load credentials', 'error')
     } finally {
       setLoadingCredentials(false)
+    }
+  }, [apiCall, showMessage])
+
+  const loadGitRepositories = useCallback(async () => {
+    try {
+      setLoadingGitRepos(true)
+      const response = await apiCall('git-repositories') as GitRepositoriesResponse
+
+      if (response.repositories) {
+        // Filter for Cockpit Configs category (case-insensitive)
+        const cockpitRepos = response.repositories.filter(repo =>
+          repo.category.toLowerCase() === 'cockpit_configs'
+        )
+        setGitRepositories(cockpitRepos)
+      }
+    } catch (error) {
+      console.error('Error loading git repositories:', error)
+      showMessage('Failed to load git repositories', 'error')
+    } finally {
+      setLoadingGitRepos(false)
     }
   }, [apiCall, showMessage])
 
@@ -203,6 +245,52 @@ export default function GrafanaSettingsForm() {
     setSettings(prev => ({ ...prev, [key]: value }))
   }, [])
 
+  const loadTelegrafConfig = useCallback(async () => {
+    try {
+      setLoadingTelegrafConfig(true)
+      const response = await apiCall('settings/grafana/telegraf/config') as {
+        success: boolean
+        data?: string
+        message?: string
+      }
+
+      if (response.success && response.data) {
+        setTelegrafConfig(response.data)
+      } else {
+        showMessage(response.message || 'Failed to load Telegraf config', 'error')
+      }
+    } catch (error) {
+      console.error('Error loading Telegraf config:', error)
+      showMessage('Failed to load Telegraf config', 'error')
+    } finally {
+      setLoadingTelegrafConfig(false)
+    }
+  }, [apiCall, showMessage])
+
+  const saveTelegrafConfig = useCallback(async () => {
+    try {
+      setSavingTelegrafConfig(true)
+      const response = await apiCall('settings/grafana/telegraf/save-config', {
+        method: 'POST',
+        body: JSON.stringify({ content: telegrafConfig }),
+      }) as {
+        success: boolean
+        message?: string
+      }
+
+      if (response.success) {
+        showMessage('Telegraf configuration saved successfully', 'success')
+      } else {
+        showMessage(response.message || 'Failed to save Telegraf config', 'error')
+      }
+    } catch (error) {
+      console.error('Error saving Telegraf config:', error)
+      showMessage('Failed to save Telegraf config', 'error')
+    } finally {
+      setSavingTelegrafConfig(false)
+    }
+  }, [apiCall, telegrafConfig, showMessage])
+
   useEffect(() => {
     loadSettings()
   }, [loadSettings])
@@ -212,6 +300,18 @@ export default function GrafanaSettingsForm() {
       loadCredentials()
     }
   }, [settings.deployment_method, credentials.length, loadCredentials])
+
+  useEffect(() => {
+    if (settings.deployment_method === 'git' && gitRepositories.length === 0) {
+      loadGitRepositories()
+    }
+  }, [settings.deployment_method, gitRepositories.length, loadGitRepositories])
+
+  useEffect(() => {
+    if (activeTab === 'telegraf' && !telegrafConfig && !loadingTelegrafConfig) {
+      loadTelegrafConfig()
+    }
+  }, [activeTab, telegrafConfig, loadingTelegrafConfig, loadTelegrafConfig])
 
   if (isLoading) {
     return (
@@ -261,9 +361,9 @@ export default function GrafanaSettingsForm() {
             <SettingsIcon className="h-4 w-4" />
             <span>Connection</span>
           </TabsTrigger>
-          <TabsTrigger value="telegraf" disabled className="flex items-center space-x-2">
-            <AlertCircle className="h-4 w-4" />
-            <span>Telegraf (Coming Soon)</span>
+          <TabsTrigger value="telegraf" className="flex items-center space-x-2">
+            <Activity className="h-4 w-4" />
+            <span>Telegraf</span>
           </TabsTrigger>
           <TabsTrigger value="grafana" disabled className="flex items-center space-x-2">
             <BarChart3 className="h-4 w-4" />
@@ -328,8 +428,8 @@ export default function GrafanaSettingsForm() {
 
               {/* SFTP Deployment */}
               {settings.deployment_method === 'sftp' && (
-                <div className="p-4 bg-purple-50 border border-purple-200 rounded-md space-y-4">
-                  <h3 className="font-semibold text-purple-900">SFTP Configuration</h3>
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-md space-y-4">
+                  <h3 className="font-semibold text-blue-900">SFTP Configuration</h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -342,7 +442,7 @@ export default function GrafanaSettingsForm() {
                         placeholder="grafana.example.com"
                         value={settings.sftp_hostname}
                         onChange={(e) => updateSetting('sftp_hostname', e.target.value)}
-                        className="w-full border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                        className="w-full border-blue-300 focus:border-blue-500 focus:ring-blue-500"
                       />
                     </div>
 
@@ -356,7 +456,7 @@ export default function GrafanaSettingsForm() {
                         placeholder="22"
                         value={settings.sftp_port}
                         onChange={(e) => updateSetting('sftp_port', parseInt(e.target.value) || 22)}
-                        className="w-full border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                        className="w-full border-blue-300 focus:border-blue-500 focus:ring-blue-500"
                       />
                     </div>
                   </div>
@@ -371,7 +471,7 @@ export default function GrafanaSettingsForm() {
                       placeholder="/etc/grafana/provisioning"
                       value={settings.sftp_path}
                       onChange={(e) => updateSetting('sftp_path', e.target.value)}
-                      className="w-full border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                      className="w-full border-blue-300 focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
 
@@ -380,8 +480,8 @@ export default function GrafanaSettingsForm() {
                       Credential <span className="text-red-500">*</span>
                     </Label>
                     {loadingCredentials ? (
-                      <div className="flex items-center space-x-2 p-2 border border-purple-300 rounded-md">
-                        <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
+                      <div className="flex items-center space-x-2 p-2 border border-blue-300 rounded-md">
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
                         <span className="text-sm text-gray-600">Loading credentials...</span>
                       </div>
                     ) : credentials.length > 0 ? (
@@ -389,7 +489,7 @@ export default function GrafanaSettingsForm() {
                         value={settings.global_credential_id?.toString() || ''}
                         onValueChange={(value) => updateSetting('global_credential_id', parseInt(value) || null)}
                       >
-                        <SelectTrigger id="credential-id" className="w-full border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                        <SelectTrigger id="credential-id" className="w-full border-blue-300 focus:border-blue-500 focus:ring-blue-500">
                           <SelectValue placeholder="Select a credential" />
                         </SelectTrigger>
                         <SelectContent>
@@ -406,13 +506,13 @@ export default function GrafanaSettingsForm() {
                         </SelectContent>
                       </Select>
                     ) : (
-                      <div className="p-3 border border-purple-200 rounded-md bg-purple-50">
-                        <p className="text-sm text-purple-700">
+                      <div className="p-3 border border-blue-200 rounded-md bg-blue-50">
+                        <p className="text-sm text-blue-700">
                           No credentials configured. Go to Settings / Credentials to add one.
                         </p>
                       </div>
                     )}
-                    <p className="text-xs text-purple-700">
+                    <p className="text-xs text-blue-700">
                       Select a credential from Settings / Credentials to use for SFTP authentication
                     </p>
                   </div>
@@ -421,22 +521,47 @@ export default function GrafanaSettingsForm() {
 
               {/* Git Deployment */}
               {settings.deployment_method === 'git' && (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-md space-y-4">
-                  <h3 className="font-semibold text-green-900">Git Repository</h3>
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-md space-y-4">
+                  <h3 className="font-semibold text-blue-900">Git Repository</h3>
                   <div className="space-y-2">
                     <Label htmlFor="git-repository-id" className="text-sm font-medium text-gray-700">
-                      Git Repository ID <span className="text-red-500">*</span>
+                      Git Repository <span className="text-red-500">*</span>
                     </Label>
-                    <Input
-                      id="git-repository-id"
-                      type="number"
-                      placeholder="1"
-                      value={settings.git_repository_id || ''}
-                      onChange={(e) => updateSetting('git_repository_id', parseInt(e.target.value) || null)}
-                      className="w-full border-green-300 focus:border-green-500 focus:ring-green-500"
-                    />
-                    <p className="text-xs text-green-700">
-                      Select a configured Git repository from Settings / Git Management
+                    {loadingGitRepos ? (
+                      <div className="flex items-center space-x-2 p-2 border border-blue-300 rounded-md">
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                        <span className="text-sm text-gray-600">Loading repositories...</span>
+                      </div>
+                    ) : gitRepositories.length > 0 ? (
+                      <Select
+                        value={settings.git_repository_id?.toString() || ''}
+                        onValueChange={(value) => updateSetting('git_repository_id', parseInt(value) || null)}
+                      >
+                        <SelectTrigger id="git-repository-id" className="w-full border-blue-300 focus:border-blue-500 focus:ring-blue-500">
+                          <SelectValue placeholder="Select a repository" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {gitRepositories.map((repo) => (
+                            <SelectItem key={repo.id} value={repo.id.toString()}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{repo.name}</span>
+                                <span className="text-xs text-gray-500">
+                                  {repo.url} • {repo.branch}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="p-3 border border-blue-200 rounded-md bg-blue-50">
+                        <p className="text-sm text-blue-700">
+                          No Cockpit Configs repositories found. Go to Settings / Git Management to add one.
+                        </p>
+                      </div>
+                    )}
+                    <p className="text-xs text-blue-700">
+                      Select a Cockpit Configs repository from Settings / Git Management
                     </p>
                   </div>
                 </div>
@@ -524,6 +649,80 @@ export default function GrafanaSettingsForm() {
                   <span>Save Settings</span>
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="telegraf" className="space-y-6">
+          <Card className="shadow-lg border-0 overflow-hidden p-0">
+            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
+              <CardTitle className="flex items-center space-x-2 text-sm font-medium">
+                <Activity className="h-4 w-4" />
+                <span>Telegraf Configuration</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-6">
+              <Collapsible open={telegrafConfigOpen} onOpenChange={setTelegrafConfigOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" className="w-full flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="h-4 w-4" />
+                      <span>Telegraf Base Configuration (telegraf.conf)</span>
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {telegrafConfigOpen ? 'Click to collapse' : 'Click to expand'}
+                    </span>
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-4 space-y-4">
+                  {loadingTelegrafConfig ? (
+                    <div className="flex items-center justify-center h-64">
+                      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700">
+                          Configuration Content
+                        </Label>
+                        <Textarea
+                          value={telegrafConfig}
+                          onChange={(e) => setTelegrafConfig(e.target.value)}
+                          placeholder="Telegraf configuration will be loaded here..."
+                          className="w-full h-96 font-mono text-sm border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        />
+                        <p className="text-xs text-gray-500">
+                          Edit the Telegraf base configuration file. This file is stored at ./config/tig/telegraf/telegraf.conf
+                        </p>
+                      </div>
+
+                      <div className="flex justify-end space-x-2">
+                        <Button
+                          variant="outline"
+                          onClick={loadTelegrafConfig}
+                          disabled={loadingTelegrafConfig || savingTelegrafConfig}
+                          className="flex items-center space-x-2"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                          <span>Reload</span>
+                        </Button>
+                        <Button
+                          onClick={saveTelegrafConfig}
+                          disabled={loadingTelegrafConfig || savingTelegrafConfig}
+                          className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          {savingTelegrafConfig ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <FileText className="h-4 w-4" />
+                          )}
+                          <span>Save Config</span>
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
             </CardContent>
           </Card>
         </TabsContent>

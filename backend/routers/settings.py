@@ -646,6 +646,81 @@ async def test_git_connection(
         }
 
 
+@router.get("/grafana/telegraf/config")
+async def get_telegraf_config(
+    current_user: dict = Depends(require_permission("settings.nautobot", "write")),
+):
+    """Get Telegraf configuration file content."""
+    try:
+        from pathlib import Path
+
+        # Path to the telegraf config file
+        config_path = Path(__file__).parent.parent.parent / "config" / "tig" / "telegraf" / "telegraf.conf"
+
+        # Check if file exists
+        if not config_path.exists():
+            return {
+                "success": False,
+                "message": f"Telegraf config file not found at {config_path}",
+                "data": ""
+            }
+
+        # Read file content
+        with open(config_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        logger.info(f"Successfully read Telegraf config for user: {current_user.get('username')}")
+        return {
+            "success": True,
+            "data": content,
+            "message": "Successfully loaded Telegraf configuration"
+        }
+
+    except Exception as e:
+        logger.error(f"Error reading Telegraf config: {e}")
+        return {
+            "success": False,
+            "message": f"Failed to read Telegraf config: {str(e)}",
+            "data": ""
+        }
+
+
+@router.post("/grafana/telegraf/save-config")
+async def save_telegraf_config(
+    file_content: dict,
+    current_user: dict = Depends(require_permission("settings.nautobot", "write")),
+):
+    """Save Telegraf configuration file content."""
+    try:
+        from pathlib import Path
+
+        # Get content from request body
+        content = file_content.get("content", "")
+
+        # Path to the telegraf config file
+        config_path = Path(__file__).parent.parent.parent / "config" / "tig" / "telegraf" / "telegraf.conf"
+
+        # Ensure parent directory exists
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Write file content
+        with open(config_path, "w", encoding="utf-8") as f:
+            f.write(content)
+
+        logger.info(f"Successfully saved Telegraf config by user: {current_user.get('username')}")
+        return {
+            "success": True,
+            "message": "Telegraf configuration saved successfully"
+        }
+
+    except Exception as e:
+        logger.error(f"Error saving Telegraf config: {e}")
+        return {
+            "success": False,
+            "message": f"Failed to save Telegraf config: {str(e)}"
+        }
+
+
 @router.post("/reset")
 async def reset_settings_to_defaults(
     current_user: dict = Depends(require_permission("settings.nautobot", "write")),
