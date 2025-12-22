@@ -241,6 +241,7 @@ class SettingsManager:
         """Get current Grafana settings"""
         try:
             from repositories.settings_repository import GrafanaSettingRepository
+
             repo = GrafanaSettingRepository()
             settings = repo.get_settings()
 
@@ -528,23 +529,47 @@ class SettingsManager:
         """Update Grafana settings"""
         try:
             from repositories.settings_repository import GrafanaSettingRepository
+
             repo = GrafanaSettingRepository()
             existing = repo.get_settings()
 
             update_data = {
-                "deployment_method": settings.get("deployment_method", self.default_grafana.deployment_method),
-                "local_root_path": settings.get("local_root_path", self.default_grafana.local_root_path),
-                "sftp_hostname": settings.get("sftp_hostname", self.default_grafana.sftp_hostname),
+                "deployment_method": settings.get(
+                    "deployment_method", self.default_grafana.deployment_method
+                ),
+                "local_root_path": settings.get(
+                    "local_root_path", self.default_grafana.local_root_path
+                ),
+                "sftp_hostname": settings.get(
+                    "sftp_hostname", self.default_grafana.sftp_hostname
+                ),
                 "sftp_port": settings.get("sftp_port", self.default_grafana.sftp_port),
                 "sftp_path": settings.get("sftp_path", self.default_grafana.sftp_path),
-                "sftp_username": settings.get("sftp_username", self.default_grafana.sftp_username),
-                "sftp_password": settings.get("sftp_password", self.default_grafana.sftp_password),
-                "use_global_credentials": settings.get("use_global_credentials", self.default_grafana.use_global_credentials),
-                "global_credential_id": settings.get("global_credential_id", self.default_grafana.global_credential_id),
-                "git_repository_id": settings.get("git_repository_id", self.default_grafana.git_repository_id),
-                "dashboards_path": settings.get("dashboards_path", self.default_grafana.dashboards_path),
-                "datasources_path": settings.get("datasources_path", self.default_grafana.datasources_path),
-                "telegraf_config_path": settings.get("telegraf_config_path", self.default_grafana.telegraf_config_path),
+                "sftp_username": settings.get(
+                    "sftp_username", self.default_grafana.sftp_username
+                ),
+                "sftp_password": settings.get(
+                    "sftp_password", self.default_grafana.sftp_password
+                ),
+                "use_global_credentials": settings.get(
+                    "use_global_credentials",
+                    self.default_grafana.use_global_credentials,
+                ),
+                "global_credential_id": settings.get(
+                    "global_credential_id", self.default_grafana.global_credential_id
+                ),
+                "git_repository_id": settings.get(
+                    "git_repository_id", self.default_grafana.git_repository_id
+                ),
+                "dashboards_path": settings.get(
+                    "dashboards_path", self.default_grafana.dashboards_path
+                ),
+                "datasources_path": settings.get(
+                    "datasources_path", self.default_grafana.datasources_path
+                ),
+                "telegraf_config_path": settings.get(
+                    "telegraf_config_path", self.default_grafana.telegraf_config_path
+                ),
             }
 
             if existing:

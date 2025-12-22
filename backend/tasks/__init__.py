@@ -66,6 +66,8 @@ __all__ = [
     "bulk_onboard_devices_task",
     # Device export
     "export_devices_task",
+    # Device update
+    "update_devices_from_csv_task",
     # Network tools
     "ping_network_task",
     "scan_prefixes_task",

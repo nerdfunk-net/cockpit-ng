@@ -500,8 +500,10 @@ class DeviceCreationService:
 
                             # Determine primary IPv4
                             # Check if this is an IPv4 address (not IPv6)
-                            is_ipv4 = interface.ip_address and ":" not in interface.ip_address
-                            
+                            is_ipv4 = (
+                                interface.ip_address and ":" not in interface.ip_address
+                            )
+
                             if is_ipv4:
                                 if interface.is_primary_ipv4:
                                     primary_ipv4_id = ip_id

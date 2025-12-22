@@ -8,7 +8,7 @@ for better code organization and maintainability.
 from __future__ import annotations
 import logging
 from datetime import datetime
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 import asyncio
 
 # Import routers
@@ -43,7 +43,6 @@ from routers.tools import router as tools_router
 from health import router as health_router
 
 # Import auth dependency
-from core.auth import verify_token
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -357,7 +356,7 @@ async def startup_services():
                     logger.debug(f"Startup cache: prefetch disabled for '{key}'")
                 else:
                     logger.debug(f"Startup cache: no prefetch handler for '{key}'")
-        
+
         # Note: Periodic cache refresh is now handled by Celery Beat (tasks/periodic_tasks.py)
         # Configure intervals in Settings → Cache:
         # - devices_cache_interval_minutes

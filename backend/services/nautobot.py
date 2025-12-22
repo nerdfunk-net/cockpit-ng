@@ -347,7 +347,11 @@ class NautobotService:
             for status in statuses:
                 # Safely handle None values for status name
                 status_name_value = status.get("name")
-                if status_name_value and status_name and status_name_value.lower() == status_name.lower():
+                if (
+                    status_name_value
+                    and status_name
+                    and status_name_value.lower() == status_name.lower()
+                ):
                     return status["id"]
         except Exception as e:
             logger.warning(

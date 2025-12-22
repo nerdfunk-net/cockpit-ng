@@ -327,7 +327,9 @@ class AnsibleInventoryService:
         from services.nautobot import nautobot_service
 
         # Validate filter value - check for None first before calling .strip()
-        if not name_filter or (isinstance(name_filter, str) and name_filter.strip() == ""):
+        if not name_filter or (
+            isinstance(name_filter, str) and name_filter.strip() == ""
+        ):
             logger.warning("Empty name_filter provided, returning empty result")
             return []
 
@@ -424,7 +426,9 @@ class AnsibleInventoryService:
         from services.nautobot import nautobot_service
 
         # Validate filter value - check for None first before calling .strip()
-        if not location_filter or (isinstance(location_filter, str) and location_filter.strip() == ""):
+        if not location_filter or (
+            isinstance(location_filter, str) and location_filter.strip() == ""
+        ):
             logger.warning("Empty location_filter provided, returning empty result")
             return []
 
@@ -515,7 +519,9 @@ class AnsibleInventoryService:
         from services.nautobot import nautobot_service
 
         # Validate filter value - check for None first before calling .strip()
-        if not role_filter or (isinstance(role_filter, str) and role_filter.strip() == ""):
+        if not role_filter or (
+            isinstance(role_filter, str) and role_filter.strip() == ""
+        ):
             logger.warning("Empty role_filter provided, returning empty result")
             return []
 
@@ -562,7 +568,9 @@ class AnsibleInventoryService:
         from services.nautobot import nautobot_service
 
         # Validate filter value - check for None first before calling .strip()
-        if not status_filter or (isinstance(status_filter, str) and status_filter.strip() == ""):
+        if not status_filter or (
+            isinstance(status_filter, str) and status_filter.strip() == ""
+        ):
             logger.warning("Empty status_filter provided, returning empty result")
             return []
 
@@ -658,7 +666,9 @@ class AnsibleInventoryService:
         from services.nautobot import nautobot_service
 
         # Validate filter value - check for None first before calling .strip()
-        if not devicetype_filter or (isinstance(devicetype_filter, str) and devicetype_filter.strip() == ""):
+        if not devicetype_filter or (
+            isinstance(devicetype_filter, str) and devicetype_filter.strip() == ""
+        ):
             logger.warning("Empty devicetype_filter provided, returning empty result")
             return []
 
@@ -707,7 +717,9 @@ class AnsibleInventoryService:
         from services.nautobot import nautobot_service
 
         # Validate filter value - check for None first before calling .strip()
-        if not manufacturer_filter or (isinstance(manufacturer_filter, str) and manufacturer_filter.strip() == ""):
+        if not manufacturer_filter or (
+            isinstance(manufacturer_filter, str) and manufacturer_filter.strip() == ""
+        ):
             logger.warning("Empty manufacturer_filter provided, returning empty result")
             return []
 
@@ -756,7 +768,9 @@ class AnsibleInventoryService:
         from services.nautobot import nautobot_service
 
         # Validate filter value - check for None first before calling .strip()
-        if not platform_filter or (isinstance(platform_filter, str) and platform_filter.strip() == ""):
+        if not platform_filter or (
+            isinstance(platform_filter, str) and platform_filter.strip() == ""
+        ):
             logger.warning("Empty platform_filter provided, returning empty result")
             return []
 
@@ -823,9 +837,11 @@ class AnsibleInventoryService:
                 device_type = device_data["device_type"]["model"]
 
             manufacturer = None
-            if device_data.get("device_type") and device_data["device_type"].get(
-                "manufacturer"
-            ) and device_data["device_type"]["manufacturer"].get("name"):
+            if (
+                device_data.get("device_type")
+                and device_data["device_type"].get("manufacturer")
+                and device_data["device_type"]["manufacturer"].get("name")
+            ):
                 manufacturer = device_data["device_type"]["manufacturer"]["name"]
 
             role = None
@@ -891,8 +907,17 @@ class AnsibleInventoryService:
             from services.nautobot import nautobot_service
 
             # Validate filter value - check for None first before calling .strip()
-            if not custom_field_name or not custom_field_value or (isinstance(custom_field_value, str) and custom_field_value.strip() == ""):
-                logger.warning("Empty custom_field_name or custom_field_value provided, returning empty result")
+            if (
+                not custom_field_name
+                or not custom_field_value
+                or (
+                    isinstance(custom_field_value, str)
+                    and custom_field_value.strip() == ""
+                )
+            ):
+                logger.warning(
+                    "Empty custom_field_name or custom_field_value provided, returning empty result"
+                )
                 return []
 
             # Get custom field types to determine correct GraphQL variable type

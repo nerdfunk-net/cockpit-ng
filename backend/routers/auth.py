@@ -167,6 +167,7 @@ async def refresh_token(request: Request):
 
         # Get user with RBAC roles - same as login endpoint
         import rbac_manager as rbac
+
         user_with_roles = rbac.get_user_with_rbac(user["id"])
 
         if not user_with_roles:
@@ -215,7 +216,9 @@ async def refresh_token(request: Request):
                 "email": user_with_roles.get("email"),
                 "role": primary_role,  # Legacy field for compatibility
                 "roles": role_names,  # CRITICAL FIX: Include roles array for sidebar
-                "permissions": user_with_roles.get("permissions", []),  # New RBAC permissions
+                "permissions": user_with_roles.get(
+                    "permissions", []
+                ),  # New RBAC permissions
                 "debug": user_with_roles.get("debug", False),
             },
         )

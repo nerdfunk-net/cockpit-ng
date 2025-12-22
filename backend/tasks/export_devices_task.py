@@ -164,12 +164,15 @@ def export_devices_task(
         if "primary_ip4" in properties:
             devices_before = len(all_devices)
             all_devices = [
-                device for device in all_devices
+                device
+                for device in all_devices
                 if device.get("primary_ip4") and device["primary_ip4"].get("address")
             ]
             devices_excluded = devices_before - len(all_devices)
             if devices_excluded > 0:
-                logger.info(f"✓ Excluded {devices_excluded} devices without primary_ip4")
+                logger.info(
+                    f"✓ Excluded {devices_excluded} devices without primary_ip4"
+                )
             logger.info(f"✓ {len(all_devices)} devices remaining after filtering")
 
         # STEP 3: Filter properties
@@ -242,10 +245,13 @@ def export_devices_task(
         # Use centralized data_directory from config to ensure consistent paths
         # in both development and production environments
         from config import settings
+
         export_dir = os.path.join(settings.data_directory, "exports")
         os.makedirs(export_dir, exist_ok=True)
-        
-        logger.info(f"Export directory: {export_dir} (absolute: {os.path.abspath(export_dir)})")
+
+        logger.info(
+            f"Export directory: {export_dir} (absolute: {os.path.abspath(export_dir)})"
+        )
 
         # Generate filename with timestamp
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")

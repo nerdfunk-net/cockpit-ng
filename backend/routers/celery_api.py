@@ -949,7 +949,8 @@ async def preview_export_devices(
         # If primary_ip4 is requested, exclude devices without it
         if "primary_ip4" in request.properties:
             devices = [
-                device for device in devices
+                device
+                for device in devices
                 if device.get("primary_ip4") and device["primary_ip4"].get("address")
             ]
 
@@ -1134,12 +1135,12 @@ async def download_export_file(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Export file path not found in task result",
         )
-    
+
     logger.info(f"Download endpoint - checking file: {file_path}")
     logger.info(f"  - File exists: {os.path.exists(file_path)}")
     logger.info(f"  - Current working directory: {os.getcwd()}")
     logger.info(f"  - Absolute path: {os.path.abspath(file_path)}")
-    
+
     if not os.path.exists(file_path):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -1256,14 +1257,6 @@ async def trigger_update_devices_from_csv(
         status="queued",
         message=f"Update devices task queued{' (dry run mode)' if request.dry_run else ''}: {task.id}",
     )
-
-
-
-    logger.info(
-        f"Download endpoint - Content-Disposition header: {response.headers['Content-Disposition']}"
-    )
-
-    return response
 
 
 # ============================================================================

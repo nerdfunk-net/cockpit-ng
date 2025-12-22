@@ -471,6 +471,7 @@ async def get_file_content(
 
         # Return plain text content
         from fastapi.responses import PlainTextResponse
+
         return PlainTextResponse(content=content)
 
     except HTTPException:
@@ -481,4 +482,3 @@ async def get_file_content(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error reading file content: {str(e)}",
         )
-

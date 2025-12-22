@@ -655,25 +655,33 @@ async def get_telegraf_config(
         from pathlib import Path
 
         # Path to the telegraf config file
-        config_path = Path(__file__).parent.parent.parent / "config" / "tig" / "telegraf" / "telegraf.conf"
+        config_path = (
+            Path(__file__).parent.parent.parent
+            / "config"
+            / "tig"
+            / "telegraf"
+            / "telegraf.conf"
+        )
 
         # Check if file exists
         if not config_path.exists():
             return {
                 "success": False,
                 "message": f"Telegraf config file not found at {config_path}",
-                "data": ""
+                "data": "",
             }
 
         # Read file content
         with open(config_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        logger.info(f"Successfully read Telegraf config for user: {current_user.get('username')}")
+        logger.info(
+            f"Successfully read Telegraf config for user: {current_user.get('username')}"
+        )
         return {
             "success": True,
             "data": content,
-            "message": "Successfully loaded Telegraf configuration"
+            "message": "Successfully loaded Telegraf configuration",
         }
 
     except Exception as e:
@@ -681,7 +689,7 @@ async def get_telegraf_config(
         return {
             "success": False,
             "message": f"Failed to read Telegraf config: {str(e)}",
-            "data": ""
+            "data": "",
         }
 
 
@@ -698,7 +706,13 @@ async def save_telegraf_config(
         content = file_content.get("content", "")
 
         # Path to the telegraf config file
-        config_path = Path(__file__).parent.parent.parent / "config" / "tig" / "telegraf" / "telegraf.conf"
+        config_path = (
+            Path(__file__).parent.parent.parent
+            / "config"
+            / "tig"
+            / "telegraf"
+            / "telegraf.conf"
+        )
 
         # Ensure parent directory exists
         config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -707,17 +721,16 @@ async def save_telegraf_config(
         with open(config_path, "w", encoding="utf-8") as f:
             f.write(content)
 
-        logger.info(f"Successfully saved Telegraf config by user: {current_user.get('username')}")
-        return {
-            "success": True,
-            "message": "Telegraf configuration saved successfully"
-        }
+        logger.info(
+            f"Successfully saved Telegraf config by user: {current_user.get('username')}"
+        )
+        return {"success": True, "message": "Telegraf configuration saved successfully"}
 
     except Exception as e:
         logger.error(f"Error saving Telegraf config: {e}")
         return {
             "success": False,
-            "message": f"Failed to save Telegraf config: {str(e)}"
+            "message": f"Failed to save Telegraf config: {str(e)}",
         }
 
 

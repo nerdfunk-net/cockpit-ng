@@ -114,14 +114,16 @@ def update_devices_from_csv_task(
         # Check for at least one identifier field
         identifier_fields = ["id", "name", "ip_address"]
         has_identifier = any(f in headers for f in identifier_fields)
-        
+
         if not has_identifier:
             return {
                 "success": False,
                 "error": f"CSV is missing identifier columns. At least one of {identifier_fields} is required.",
             }
-        
-        logger.info(f"Identifier fields found in CSV: {[f for f in identifier_fields if f in headers]}")
+
+        logger.info(
+            f"Identifier fields found in CSV: {[f for f in identifier_fields if f in headers]}"
+        )
 
         # STEP 3: Update devices in Nautobot
         logger.info("-" * 80)
@@ -130,7 +132,7 @@ def update_devices_from_csv_task(
         logger.info("-" * 80)
 
         nautobot_service = NautobotService()
-        
+
         successes = []
         failures = []
         skipped = []
@@ -139,28 +141,32 @@ def update_devices_from_csv_task(
             device_id = row.get("id")
             device_name = row.get("name")
             ip_address = row.get("ip_address")
-            
+
             # Determine identifier for logging
             identifier = device_id or device_name or ip_address or f"row-{idx}"
 
             try:
                 logger.info(f"Processing device {idx}/{total_devices}: {identifier}")
-                
+
                 # RESOLVE DEVICE UUID
                 # If we don't have the UUID, we need to look it up by name or IP
                 if not device_id:
-                    logger.info(f"Device ID not provided, resolving from name or IP...")
-                    device_id = asyncio.run(_resolve_device_id(
-                        nautobot_service,
-                        device_name=device_name,
-                        ip_address=ip_address
-                    ))
-                    
+                    logger.info("Device ID not provided, resolving from name or IP...")
+                    device_id = asyncio.run(
+                        _resolve_device_id(
+                            nautobot_service,
+                            device_name=device_name,
+                            ip_address=ip_address,
+                        )
+                    )
+
                     if not device_id:
-                        raise Exception(f"Could not resolve device UUID from name='{device_name}' or ip_address='{ip_address}'")
-                    
+                        raise Exception(
+                            f"Could not resolve device UUID from name='{device_name}' or ip_address='{ip_address}'"
+                        )
+
                     logger.info(f"Resolved device UUID: {device_id}")
-                
+
                 # Get final device name for logging (if not already available)
                 if not device_name:
                     device_name = device_id
@@ -184,46 +190,56 @@ def update_devices_from_csv_task(
 
                 if not update_data:
                     logger.info(f"No update data for device {device_name}, skipping")
-                    skipped.append({
-                        "device_id": device_id,
-                        "device_name": device_name,
-                        "reason": "No fields to update",
-                    })
+                    skipped.append(
+                        {
+                            "device_id": device_id,
+                            "device_name": device_name,
+                            "reason": "No fields to update",
+                        }
+                    )
                     continue
 
                 if dry_run:
-                    logger.info(f"[DRY RUN] Would update device {device_name} with: {update_data}")
-                    successes.append({
-                        "device_id": device_id,
-                        "device_name": device_name,
-                        "updates": update_data,
-                        "dry_run": True,
-                    })
+                    logger.info(
+                        f"[DRY RUN] Would update device {device_name} with: {update_data}"
+                    )
+                    successes.append(
+                        {
+                            "device_id": device_id,
+                            "device_name": device_name,
+                            "updates": update_data,
+                            "dry_run": True,
+                        }
+                    )
                 else:
                     # Actually update the device
                     logger.info(f"Updating device {device_name} with: {update_data}")
-                    result = asyncio.run(_update_device_in_nautobot(
-                        nautobot_service,
-                        device_id,
-                        update_data
-                    ))
+                    result = asyncio.run(
+                        _update_device_in_nautobot(
+                            nautobot_service, device_id, update_data
+                        )
+                    )
 
-                    successes.append({
-                        "device_id": device_id,
-                        "device_name": device_name,
-                        "updates": update_data,
-                        "result": result,
-                    })
+                    successes.append(
+                        {
+                            "device_id": device_id,
+                            "device_name": device_name,
+                            "updates": update_data,
+                            "result": result,
+                        }
+                    )
                     logger.info(f"Successfully updated device {device_name}")
 
             except Exception as e:
                 error_msg = str(e)
                 logger.error(f"Failed to update device {device_name}: {error_msg}")
-                failures.append({
-                    "device_id": device_id,
-                    "device_name": device_name,
-                    "error": error_msg,
-                })
+                failures.append(
+                    {
+                        "device_id": device_id,
+                        "device_name": device_name,
+                        "error": error_msg,
+                    }
+                )
 
         # STEP 4: Prepare results
         logger.info("-" * 80)
@@ -243,7 +259,7 @@ def update_devices_from_csv_task(
         failure_count = len(failures)
         skipped_count = len(skipped)
 
-        logger.info(f"Update complete:")
+        logger.info("Update complete:")
         logger.info(f"  - Successful: {success_count}")
         logger.info(f"  - Failed: {failure_count}")
         logger.info(f"  - Skipped: {skipped_count}")
@@ -280,7 +296,7 @@ def update_devices_from_csv_task(
     except Exception as e:
         error_msg = f"Update devices task failed: {str(e)}"
         logger.error(error_msg, exc_info=True)
-        
+
         error_result = {
             "success": False,
             "error": error_msg,
@@ -307,15 +323,15 @@ async def _resolve_device_id(
 ) -> Optional[str]:
     """
     Resolve device UUID from device name or primary IPv4 address.
-    
+
     If ip_address is provided, it looks up the IP address object first,
     then finds the device assigned to that IP.
-    
+
     Args:
         nautobot_service: NautobotService instance
         device_name: Device name to search for
         ip_address: Primary IPv4 address to search for
-    
+
     Returns:
         Device UUID if found, None otherwise
     """
@@ -333,23 +349,25 @@ async def _resolve_device_id(
             """
             variables = {"name": device_name}
             result = await nautobot_service.graphql_query(query, variables)
-            
+
             if "errors" in result:
-                logger.error(f"GraphQL error looking up device by name: {result['errors']}")
+                logger.error(
+                    f"GraphQL error looking up device by name: {result['errors']}"
+                )
                 return None
-            
+
             devices = result.get("data", {}).get("devices", [])
             if devices and len(devices) > 0:
                 device_id = devices[0].get("id")
                 logger.info(f"Found device by name '{device_name}': {device_id}")
                 return device_id
-            
+
             logger.warning(f"No device found with name: {device_name}")
-        
+
         # Case 2: Look up by primary IPv4 address
         if ip_address:
             logger.info(f"Looking up device by primary IPv4: {ip_address}")
-            
+
             # Query for IP address and get the device it's assigned to as primary IP
             query = """
             query GetIPAddress($address: [String]) {
@@ -365,41 +383,47 @@ async def _resolve_device_id(
             """
             variables = {"address": [ip_address]}
             result = await nautobot_service.graphql_query(query, variables)
-            
+
             if "errors" in result:
                 logger.error(f"GraphQL error looking up IP address: {result['errors']}")
                 return None
-            
+
             ip_addresses = result.get("data", {}).get("ip_addresses", [])
             if not ip_addresses or len(ip_addresses) == 0:
                 logger.warning(f"No IP address found: {ip_address}")
                 return None
-            
+
             # Get the device from primary_ip4_for
             ip_obj = ip_addresses[0]
             devices = ip_obj.get("primary_ip4_for")
-            
+
             if not devices:
-                logger.warning(f"IP address {ip_address} is not set as primary IP for any device")
+                logger.warning(
+                    f"IP address {ip_address} is not set as primary IP for any device"
+                )
                 return None
-            
+
             # primary_ip4_for can be a list or a single device
             if isinstance(devices, list):
                 if len(devices) == 0:
-                    logger.warning(f"IP address {ip_address} is not set as primary IP for any device")
+                    logger.warning(
+                        f"IP address {ip_address} is not set as primary IP for any device"
+                    )
                     return None
                 device = devices[0]
             else:
                 device = devices
-            
+
             device_id = device.get("id")
             device_name_found = device.get("name")
-            logger.info(f"Found device by IP '{ip_address}': {device_name_found} ({device_id})")
+            logger.info(
+                f"Found device by IP '{ip_address}': {device_name_found} ({device_id})"
+            )
             return device_id
-        
+
         logger.error("No device name or primary IP provided for lookup")
         return None
-        
+
     except Exception as e:
         logger.error(f"Error resolving device ID: {e}", exc_info=True)
         return None
@@ -408,38 +432,40 @@ async def _resolve_device_id(
 def _prepare_update_data(row: Dict[str, str], headers: List[str]) -> Dict[str, Any]:
     """
     Prepare update data from CSV row.
-    
+
     Filters out empty values and identifier fields (id, name, ip_address).
     Handles special fields like tags (converts to list).
     Handles nested fields like 'platform.name' by extracting just the nested value.
-    
+
     Args:
         row: CSV row as dictionary
         headers: List of column headers
-    
+
     Returns:
         Dictionary of fields to update
     """
     update_data = {}
-    
+
     # Fields to exclude from updates (identifiers that are used to locate the device)
     excluded_fields = {"id", "name", "ip_address"}
-    
+
     for field in headers:
         if field in excluded_fields:
             continue
-            
+
         value = row.get(field, "").strip()
-        
+
         # Skip empty values
         if not value:
             continue
-        
+
         # Handle special fields
         if field == "tags":
             # Tags should be a list - split by comma if it's a comma-separated string
             if "," in value:
-                update_data[field] = [tag.strip() for tag in value.split(",") if tag.strip()]
+                update_data[field] = [
+                    tag.strip() for tag in value.split(",") if tag.strip()
+                ]
             else:
                 update_data[field] = [value]
         # Handle nested fields (e.g., "platform.name" -> extract just the name)
@@ -450,48 +476,44 @@ def _prepare_update_data(row: Dict[str, str], headers: List[str]) -> Dict[str, A
             update_data[base_field] = value
         else:
             update_data[field] = value
-    
+
     return update_data
 
 
 async def _update_device_in_nautobot(
-    nautobot_service,
-    device_id: str,
-    update_data: Dict[str, Any]
+    nautobot_service, device_id: str, update_data: Dict[str, Any]
 ) -> Dict[str, Any]:
     """
     Update a device in Nautobot using REST API.
-    
+
     Args:
         nautobot_service: NautobotService instance
         device_id: Device UUID
         update_data: Dictionary of fields to update
-    
+
     Returns:
         Result of the update operation
     """
     logger.debug(f"Updating device {device_id} via REST API")
     logger.debug(f"Update data: {update_data}")
-    
+
     # Use REST API to update the device (PATCH request with JSON format)
     endpoint = f"dcim/devices/{device_id}/?format=json"
-    
+
     result = await nautobot_service.rest_request(
-        endpoint=endpoint,
-        method="PATCH",
-        data=update_data
+        endpoint=endpoint, method="PATCH", data=update_data
     )
-    
+
     return result
 
 
 def _build_update_mutation(update_data: Dict[str, Any]) -> str:
     """
     Deprecated: This function is no longer used as we now use REST API instead of GraphQL mutations.
-    
+
     Args:
         update_data: Dictionary of fields to update
-    
+
     Returns:
         GraphQL mutation string
     """

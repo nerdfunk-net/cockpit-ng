@@ -35,7 +35,7 @@ def run_migration():
         if count > 0:
             print(f"Found {count} repository/repositories with category 'configs'")
             print("Updating category from 'configs' to 'device_configs'...")
-            
+
             conn.execute(
                 text("""
                     UPDATE git_repositories 
@@ -43,7 +43,7 @@ def run_migration():
                     WHERE category = 'configs'
                 """)
             )
-            
+
             conn.commit()
             print(f"Successfully updated {count} repository/repositories.")
         else:

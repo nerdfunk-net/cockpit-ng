@@ -922,7 +922,9 @@ class GrafanaSetting(Base):
     __tablename__ = "grafana_settings"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    deployment_method = Column(String(50), nullable=False, default="local")  # local, sftp, git
+    deployment_method = Column(
+        String(50), nullable=False, default="local"
+    )  # local, sftp, git
     # Local deployment
     local_root_path = Column(String(1000))
     # SFTP deployment
@@ -959,7 +961,9 @@ class CacheSetting(Base):
     enabled = Column(Boolean, nullable=False, default=True)
     ttl_seconds = Column(Integer, nullable=False, default=600)
     prefetch_on_startup = Column(Boolean, nullable=False, default=True)
-    refresh_interval_minutes = Column(Integer, nullable=False, default=15)  # DEPRECATED: No longer used
+    refresh_interval_minutes = Column(
+        Integer, nullable=False, default=15
+    )  # DEPRECATED: No longer used
     max_commits = Column(Integer, nullable=False, default=500)
     prefetch_items = Column(Text)  # JSON string
     # Cache task intervals (in minutes) - 0 means disabled
