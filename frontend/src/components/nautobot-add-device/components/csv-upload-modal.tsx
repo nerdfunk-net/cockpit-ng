@@ -39,6 +39,7 @@ import {
   NAUTOBOT_DEVICE_FIELDS,
   NAUTOBOT_INTERFACE_FIELDS,
 } from '../types'
+import { useApi } from '@/hooks/use-api'
 
 interface LookupData {
   roles: Array<{ id: string; name: string }>
@@ -88,7 +89,12 @@ export function CSVUploadModal({
   onReset,
 }: CSVUploadModalProps) {
   const [showHelp, setShowHelp] = useState(false)
-  
+  const [isCheckingIPs, setIsCheckingIPs] = useState(false)
+  const [ipCheckResults, setIpCheckResults] = useState<Array<{device: string, ip: string, assignedTo: string}>>([])
+  const [isCheckingConflicts, setIsCheckingConflicts] = useState(false)
+  const [ipConflicts, setIpConflicts] = useState<Set<string>>(new Set())
+  const { apiCall } = useApi()
+
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -141,9 +147,147 @@ export function CSVUploadModal({
     return deviceType?.display || deviceType?.model || deviceTypeIdOrName
   }
 
+  const handleCheckIPs = useCallback(async () => {
+    if (!parseResult) return
+
+    setIsCheckingIPs(true)
+    setIpCheckResults([])
+
+    const assignedIPs: Array<{device: string, ip: string, assignedTo: string}> = []
+
+    try {
+      // Loop through all devices and their interfaces
+      for (const device of parseResult.devices) {
+        for (const iface of device.interfaces) {
+          if (iface.ip_address) {
+            // Check if IP is already assigned in Nautobot
+            try {
+              // Strip netmask from IP address for query (e.g., "192.168.1.1/24" -> "192.168.1.1")
+              const ipOnly = iface.ip_address.split('/')[0]
+              if (!ipOnly) continue
+
+              const data = await apiCall(
+                `nautobot/ipam/ip-addresses/detailed?address=${encodeURIComponent(ipOnly)}&get_address=true&get_name=true&get_primary_ip4_for=true&get_interfaces=false`
+              ) as { count: number; ip_addresses: Array<{
+                primary_ip4_for?: Array<{ name: string }>
+                interfaces?: Array<{ name: string; device: { name: string } }>
+              }> }
+
+              if (data.count > 0 && data.ip_addresses && data.ip_addresses.length > 0) {
+                const ipData = data.ip_addresses[0]
+                if (!ipData) continue
+
+                let assignedDevice: string | null = null
+
+                // Check if IP is assigned as primary to another device
+                if (ipData.primary_ip4_for && ipData.primary_ip4_for.length > 0) {
+                  assignedDevice = ipData.primary_ip4_for[0]?.name ?? null
+                }
+                // Also check if IP is assigned to any interface
+                else if (ipData.interfaces && ipData.interfaces.length > 0) {
+                  assignedDevice = ipData.interfaces[0]?.device?.name ?? null
+                }
+
+                // Flag any IP that's already assigned in Nautobot
+                if (assignedDevice) {
+                  assignedIPs.push({
+                    device: device.name,
+                    ip: iface.ip_address,
+                    assignedTo: assignedDevice
+                  })
+                }
+              }
+            } catch (error) {
+              // Log but continue checking other IPs
+              console.error(`Error checking IP ${iface.ip_address}:`, error)
+            }
+          }
+        }
+      }
+
+      setIpCheckResults(assignedIPs)
+
+      // Remove devices with assigned IPs from the parse result
+      if (assignedIPs.length > 0 && parseResult) {
+        const devicesToRemove = new Set(assignedIPs.map(r => r.device))
+        const filteredDevices = parseResult.devices.filter(d => !devicesToRemove.has(d.name))
+
+        // Update parseResult with filtered devices
+        parseResult.devices = filteredDevices
+      }
+
+    } catch (error) {
+      console.error('Error checking IPs:', error)
+    } finally {
+      setIsCheckingIPs(false)
+    }
+  }, [parseResult, apiCall])
+
+  const handleCheckConflicts = useCallback(async () => {
+    if (!parseResult) return
+
+    setIsCheckingConflicts(true)
+    setIpConflicts(new Set())
+
+    const conflicts = new Set<string>()
+
+    try {
+      // Loop through all devices and their interfaces
+      for (const device of parseResult.devices) {
+        for (const iface of device.interfaces) {
+          if (iface.ip_address) {
+            // Check if IP is already assigned in Nautobot
+            try {
+              // Strip netmask from IP address for query
+              const ipOnly = iface.ip_address.split('/')[0]
+              if (!ipOnly) continue
+
+              const data = await apiCall(
+                `nautobot/ipam/ip-addresses/detailed?address=${encodeURIComponent(ipOnly)}&get_address=true&get_name=true&get_primary_ip4_for=true&get_interfaces=false`
+              ) as { count: number; ip_addresses: Array<{
+                primary_ip4_for?: Array<{ name: string }>
+                interfaces?: Array<{ name: string; device: { name: string } }>
+              }> }
+
+              if (data.count > 0 && data.ip_addresses && data.ip_addresses.length > 0) {
+                const ipData = data.ip_addresses[0]
+                if (!ipData) continue
+
+                let assignedDevice: string | null = null
+
+                // Check if IP is assigned as primary to another device
+                if (ipData.primary_ip4_for && ipData.primary_ip4_for.length > 0) {
+                  assignedDevice = ipData.primary_ip4_for[0]?.name ?? null
+                }
+                // Also check if IP is assigned to any interface
+                else if (ipData.interfaces && ipData.interfaces.length > 0) {
+                  assignedDevice = ipData.interfaces[0]?.device?.name ?? null
+                }
+
+                // Only flag if it's assigned to a DIFFERENT device (conflict)
+                if (assignedDevice && assignedDevice !== device.name) {
+                  conflicts.add(device.name)
+                }
+              }
+            } catch (error) {
+              console.error(`Error checking IP ${iface.ip_address}:`, error)
+            }
+          }
+        }
+      }
+
+      setIpConflicts(conflicts)
+
+    } catch (error) {
+      console.error('Error checking IP conflicts:', error)
+    } finally {
+      setIsCheckingConflicts(false)
+    }
+  }, [parseResult, apiCall])
+
   return (
     <Dialog open={showModal} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[900px] sm:!max-w-[900px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
@@ -289,14 +433,83 @@ export function CSVUploadModal({
                 )}
                 <Button
                   size="sm"
+                  variant="outline"
+                  onClick={handleCheckIPs}
+                  disabled={isCheckingIPs || isCheckingConflicts || !parseResult}
+                  className="ml-auto"
+                >
+                  {isCheckingIPs ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      Checking...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Check IP
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCheckConflicts}
+                  disabled={isCheckingIPs || isCheckingConflicts || !parseResult}
+                >
+                  {isCheckingConflicts ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      Checking...
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      Check IP Conflicts
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
                   variant="ghost"
                   onClick={() => onShowMappingConfig(true)}
-                  className="ml-auto"
                 >
                   <Settings2 className="h-4 w-4 mr-1" />
                   Configure Mapping
                 </Button>
               </div>
+
+              {/* IP Check Results (devices removed) */}
+              {ipCheckResults.length > 0 && (
+                <Alert className="border-yellow-200 bg-yellow-50">
+                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-800">
+                    <div className="space-y-2">
+                      <p className="font-semibold">
+                        {ipCheckResults.length} device(s) removed due to IP conflicts:
+                      </p>
+                      <ul className="text-xs space-y-1">
+                        {ipCheckResults.map((result) => (
+                          <li key={`${result.device}-${result.ip}`}>
+                            <strong>{result.device}</strong> - IP {result.ip} is already assigned to <strong>{result.assignedTo}</strong>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* IP Conflicts (devices marked) */}
+              {ipConflicts.size > 0 && (
+                <Alert className="border-red-200 bg-red-50">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800">
+                    <p className="font-semibold">
+                      {ipConflicts.size} device(s) have IP conflicts (marked in red below)
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              )}
 
               {/* Validation Errors */}
               {parseResult.validationErrors.length > 0 && (
@@ -332,17 +545,28 @@ export function CSVUploadModal({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {parseResult.devices.slice(0, 10).map((device) => (
-                      <TableRow key={device.name}>
-                        <TableCell className="font-medium">{device.name}</TableCell>
-                        <TableCell>{getRoleName(device.role) || <span className="text-muted-foreground">default</span>}</TableCell>
-                        <TableCell>{getLocationName(device.location) || <span className="text-muted-foreground">default</span>}</TableCell>
-                        <TableCell>{getDeviceTypeName(device.device_type) || <span className="text-red-500">missing</span>}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline">{device.interfaces.length}</Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {parseResult.devices.slice(0, 10).map((device) => {
+                      const hasConflict = ipConflicts.has(device.name)
+                      return (
+                        <TableRow
+                          key={device.name}
+                          className={hasConflict ? 'bg-red-50 border-l-4 border-l-red-500' : ''}
+                        >
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {hasConflict && <AlertCircle className="h-4 w-4 text-red-500" />}
+                              {device.name}
+                            </div>
+                          </TableCell>
+                          <TableCell>{getRoleName(device.role) || <span className="text-muted-foreground">default</span>}</TableCell>
+                          <TableCell>{getLocationName(device.location) || <span className="text-muted-foreground">default</span>}</TableCell>
+                          <TableCell>{getDeviceTypeName(device.device_type) || <span className="text-red-500">missing</span>}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline">{device.interfaces.length}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
                   </TableBody>
                 </Table>
                 {parseResult.devices.length > 10 && (

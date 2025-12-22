@@ -347,6 +347,9 @@ class AnsibleInventoryService:
                     }
                     device_type {
                         model
+                        manufacturer {
+                            name
+                        }
                     }
                     role {
                         name
@@ -378,6 +381,9 @@ class AnsibleInventoryService:
                     }
                     device_type {
                         model
+                        manufacturer {
+                            name
+                        }
                     }
                     role {
                         name
@@ -445,6 +451,9 @@ class AnsibleInventoryService:
                     }
                     device_type {
                         model
+                        manufacturer {
+                            name
+                        }
                     }
                     tags {
                         name
@@ -476,6 +485,9 @@ class AnsibleInventoryService:
                     }
                     device_type {
                         model
+                        manufacturer {
+                            name
+                        }
                     }
                     tags {
                         name
@@ -520,6 +532,9 @@ class AnsibleInventoryService:
                 }
                 device_type {
                     model
+                    manufacturer {
+                        name
+                    }
                 }
                 role {
                     name
@@ -564,6 +579,9 @@ class AnsibleInventoryService:
                 }
                 device_type {
                     model
+                    manufacturer {
+                        name
+                    }
                 }
                 role {
                     name
@@ -608,6 +626,9 @@ class AnsibleInventoryService:
                 }
                 device_type {
                     model
+                    manufacturer {
+                        name
+                    }
                 }
                 role {
                     name
@@ -654,6 +675,9 @@ class AnsibleInventoryService:
                 }
                 device_type {
                     model
+                    manufacturer {
+                        name
+                    }
                 }
                 role {
                     name
@@ -700,6 +724,9 @@ class AnsibleInventoryService:
                 }
                 device_type {
                     model
+                    manufacturer {
+                        name
+                    }
                 }
                 role {
                     name
@@ -746,6 +773,9 @@ class AnsibleInventoryService:
                 }
                 device_type {
                     model
+                    manufacturer {
+                        name
+                    }
                 }
                 role {
                     name
@@ -792,6 +822,12 @@ class AnsibleInventoryService:
             ):
                 device_type = device_data["device_type"]["model"]
 
+            manufacturer = None
+            if device_data.get("device_type") and device_data["device_type"].get(
+                "manufacturer"
+            ) and device_data["device_type"]["manufacturer"].get("name"):
+                manufacturer = device_data["device_type"]["manufacturer"]["name"]
+
             role = None
             if device_data.get("role") and device_data["role"].get("name"):
                 role = device_data["role"]["name"]
@@ -826,7 +862,7 @@ class AnsibleInventoryService:
                 location=location,
                 platform=platform,
                 tags=tags,
-                manufacturer=None,  # Note: manufacturer not in all queries
+                manufacturer=manufacturer,
             )
 
             devices.append(device)
@@ -1201,7 +1237,7 @@ class AnsibleInventoryService:
                 "location": "dcim/locations/?limit=0",
                 "role": "extras/roles/?content_types=dcim.device&limit=0",
                 "status": "extras/statuses/?content_types=dcim.device&limit=0",
-                "device_type": "dcim/device-types/?limit=0",
+                "device_type": "dcim/device-types/?limit=0&depth=1",  # depth=1 to include manufacturer
                 "manufacturer": "dcim/manufacturers/?limit=0",
                 "platform": "dcim/platforms/?limit=0",
                 "tag": "extras/tags/?content_types=dcim.device&limit=0",
@@ -1238,9 +1274,12 @@ class AnsibleInventoryService:
             elif field_name == "device_type":
                 for device_type in results:
                     # Create a descriptive label with manufacturer
-                    manufacturer_name = device_type.get("manufacturer", {}).get(
-                        "name", "Unknown"
-                    )
+                    manufacturer_data = device_type.get("manufacturer")
+                    if manufacturer_data and isinstance(manufacturer_data, dict):
+                        manufacturer_name = manufacturer_data.get("name", "Unknown")
+                    else:
+                        manufacturer_name = "Unknown"
+
                     model = device_type.get("model", device_type.get("name", "Unknown"))
                     label = f"{manufacturer_name} {model}"
                     values.append({"value": model, "label": label})

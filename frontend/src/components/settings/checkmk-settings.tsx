@@ -91,16 +91,41 @@ export default function CheckMKSettingsForm() {
   const loadYamlFiles = useCallback(async () => {
     try {
       setYamlLoading(true)
-      const [checkmkResponse, queriesResponse] = await Promise.all([
+
+      // Load files independently so one missing file doesn't break the other
+      const [checkmkResponse, queriesResponse] = await Promise.allSettled([
         apiCall('config/checkmk.yaml'),
         apiCall('config/checkmk_queries.yaml')
-      ]) as [{ success?: boolean; data?: string }, { success?: boolean; data?: string }]
+      ])
 
-      if (checkmkResponse.success) {
-        setCheckmkYaml(checkmkResponse.data || '')
+      // Handle checkmk.yaml
+      if (checkmkResponse.status === 'fulfilled') {
+        const response = checkmkResponse.value as { success?: boolean; data?: string; message?: string }
+        if (response.success && response.data) {
+          setCheckmkYaml(response.data)
+        } else {
+          // File doesn't exist, set empty content
+          setCheckmkYaml('')
+          console.log('checkmk.yaml not found, using empty content')
+        }
+      } else {
+        setCheckmkYaml('')
+        console.warn('Failed to load checkmk.yaml:', checkmkResponse.reason)
       }
-      if (queriesResponse.success) {
-        setCheckmkQueriesYaml(queriesResponse.data || '')
+
+      // Handle checkmk_queries.yaml
+      if (queriesResponse.status === 'fulfilled') {
+        const response = queriesResponse.value as { success?: boolean; data?: string; message?: string }
+        if (response.success && response.data) {
+          setCheckmkQueriesYaml(response.data)
+        } else {
+          // File doesn't exist, set empty content
+          setCheckmkQueriesYaml('')
+          console.log('checkmk_queries.yaml not found, using empty content')
+        }
+      } else {
+        setCheckmkQueriesYaml('')
+        console.warn('Failed to load checkmk_queries.yaml:', queriesResponse.reason)
       }
     } catch (error) {
       console.error('Error loading YAML files:', error)
