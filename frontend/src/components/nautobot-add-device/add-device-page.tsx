@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, Trash2, Server, Network, AlertCircle, CheckCircle2, Info, Settings, FileSpreadsheet, Tags, FileText, Loader2, Upload } from 'lucide-react'
+import { Plus, Trash2, Server, Network, AlertCircle, CheckCircle2, Info, Settings, FileSpreadsheet, Tags, FileText, Loader2, Upload, X } from 'lucide-react'
 import { useCSVUpload } from './hooks/use-csv-upload'
 import { CSVUploadModal } from './components/csv-upload-modal'
 import { BulkUpdateModal } from './components/bulk-update-modal'
@@ -903,15 +903,19 @@ export function AddDevicePage() {
         message: statusMessages.join('\n')
       })
 
-      // Only reset form if completely successful
+      // Only reset device-specific fields if completely successful
+      // Preserve common fields (role, status, location, device type) for adding similar devices
       if (result.success && !hasErrors && !hasWarnings) {
         setTimeout(() => {
           setDeviceName('')
-          setSelectedRole('')
-          setSelectedStatus('')
-          setSelectedLocation('')
-          setSelectedDeviceType('')
-          setInterfaces([{ id: '1', name: '', type: '', status: '', ip_address: '' }])
+          setInterfaces([{
+            id: '1',
+            name: '',
+            type: '',
+            status: nautobotDefaults?.interface_status || '',
+            ip_address: '',
+            namespace: nautobotDefaults?.namespace || ''
+          }])
           setStatusMessage(null)
         }, 5000)
       }
@@ -925,7 +929,27 @@ export function AddDevicePage() {
     } finally {
       setIsLoading(false)
     }
-  }, [validateForm, deviceName, selectedRole, selectedStatus, selectedLocation, selectedDeviceType, interfaces, selectedSoftwareVersion, softwareVersions, selectedTags, customFieldValues])
+  }, [validateForm, deviceName, selectedRole, selectedStatus, selectedLocation, selectedDeviceType, interfaces, selectedSoftwareVersion, softwareVersions, selectedTags, customFieldValues, nautobotDefaults])
+
+  const handleClearForm = useCallback(() => {
+    setDeviceName('')
+    setSelectedRole('')
+    setSelectedStatus('')
+    setSelectedLocation('')
+    setSelectedDeviceType('')
+    setSelectedSoftwareVersion('')
+    setSelectedTags([])
+    setCustomFieldValues({})
+    setInterfaces([{
+      id: '1',
+      name: '',
+      type: '',
+      status: nautobotDefaults?.interface_status || '',
+      ip_address: '',
+      namespace: nautobotDefaults?.namespace || ''
+    }])
+    setStatusMessage(null)
+  }, [nautobotDefaults])
 
   if (isLoadingData) {
     return (
@@ -1412,8 +1436,18 @@ export function AddDevicePage() {
         </div>
       </div>
 
-      {/* Submit Button */}
-      <div className="flex justify-end">
+      {/* Submit Buttons */}
+      <div className="flex justify-end gap-3">
+        <Button
+          onClick={handleClearForm}
+          disabled={isLoading}
+          variant="outline"
+          size="lg"
+          className="min-w-[150px]"
+        >
+          <X className="h-4 w-4 mr-2" />
+          Clear Form
+        </Button>
         <Button
           onClick={handleSubmit}
           disabled={isLoading}
