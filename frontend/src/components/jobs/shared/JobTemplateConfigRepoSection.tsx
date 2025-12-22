@@ -29,7 +29,7 @@ export function JobTemplateConfigRepoSection({
         <span className="text-xs text-slate-500">(Optional)</span>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="config-repo" className="text-xs text-slate-600">Git Repository (category=configs)</Label>
+        <Label htmlFor="config-repo" className="text-xs text-slate-600">Git Repository (category=Device Configs)</Label>
         <Select
           value={formConfigRepoId?.toString() || "none"}
           onValueChange={(v) => setFormConfigRepoId(v === "none" ? null : parseInt(v))}

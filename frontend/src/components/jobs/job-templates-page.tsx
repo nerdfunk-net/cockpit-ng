@@ -226,7 +226,7 @@ export function JobTemplatesPage() {
     if (!token) return
 
     try {
-      const response = await fetch("/api/proxy/api/git-repositories?category=configs", {
+      const response = await fetch("/api/proxy/api/git-repositories?category=device_configs", {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",

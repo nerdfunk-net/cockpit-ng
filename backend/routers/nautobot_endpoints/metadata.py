@@ -208,7 +208,7 @@ async def get_nautobot_device_roles(
     """Get Nautobot roles specifically for dcim.device content type."""
     try:
         result = await nautobot_service.rest_request(
-            "extras/roles/?content_types=dcim.device"
+            "extras/roles/?content_types=dcim.device&limit=0"
         )
         return result.get("results", [])
     except Exception as e:
@@ -224,7 +224,7 @@ async def get_nautobot_platforms(
 ):
     """Get Nautobot platforms."""
     try:
-        result = await nautobot_service.rest_request("dcim/platforms/")
+        result = await nautobot_service.rest_request("dcim/platforms/?limit=0")
         return result.get("results", [])
     except Exception as e:
         raise HTTPException(
@@ -368,7 +368,7 @@ async def get_nautobot_device_types(
 ):
     """Get Nautobot device types."""
     try:
-        result = await nautobot_service.rest_request("dcim/device-types/")
+        result = await nautobot_service.rest_request("dcim/device-types/?limit=0")
         return result.get("results", [])
     except Exception as e:
         raise HTTPException(
@@ -383,7 +383,7 @@ async def get_nautobot_manufacturers(
 ):
     """Get Nautobot manufacturers."""
     try:
-        result = await nautobot_service.rest_request("dcim/manufacturers/")
+        result = await nautobot_service.rest_request("dcim/manufacturers/?limit=0")
         return result.get("results", [])
     except Exception as e:
         raise HTTPException(
@@ -398,7 +398,7 @@ async def get_nautobot_tags(
 ):
     """Get Nautobot tags."""
     try:
-        result = await nautobot_service.rest_request("extras/tags/")
+        result = await nautobot_service.rest_request("extras/tags/?limit=0")
         return result.get("results", [])
     except Exception as e:
         raise HTTPException(

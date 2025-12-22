@@ -797,7 +797,7 @@ async def trigger_backup_devices(
 
     Request Body:
         inventory: List of device IDs to backup
-        config_repository_id: ID of Git repository for configs (category=configs)
+        config_repository_id: ID of Git repository for configs (category=device_configs)
         credential_id: Optional ID of credential for device authentication
 
     Returns:

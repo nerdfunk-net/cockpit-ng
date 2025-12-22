@@ -1198,13 +1198,13 @@ class AnsibleInventoryService:
 
             # Map field names to REST API endpoints
             endpoint_map = {
-                "location": "dcim/locations/",
-                "role": "extras/roles/?content_types=dcim.device",
-                "status": "extras/statuses/?content_types=dcim.device",
-                "device_type": "dcim/device-types/",
-                "manufacturer": "dcim/manufacturers/",
-                "platform": "dcim/platforms/",
-                "tag": "extras/tags/?content_types=dcim.device",
+                "location": "dcim/locations/?limit=0",
+                "role": "extras/roles/?content_types=dcim.device&limit=0",
+                "status": "extras/statuses/?content_types=dcim.device&limit=0",
+                "device_type": "dcim/device-types/?limit=0",
+                "manufacturer": "dcim/manufacturers/?limit=0",
+                "platform": "dcim/platforms/?limit=0",
+                "tag": "extras/tags/?content_types=dcim.device&limit=0",
             }
 
             endpoint = endpoint_map.get(field_name)

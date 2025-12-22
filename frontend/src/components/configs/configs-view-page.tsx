@@ -146,8 +146,8 @@ export default function ConfigsViewPage() {
     try {
       const response = await apiCall<{ repositories: Repository[] }>('git-repositories/')
       if (response?.repositories) {
-        // Filter only repositories of category "configs"
-        const configRepos = response.repositories.filter(repo => repo.category === 'configs')
+        // Filter only repositories of category "device_configs"
+        const configRepos = response.repositories.filter(repo => repo.category === 'device_configs')
         setRepositories(configRepos)
         
         // Auto-select first config repository if available
