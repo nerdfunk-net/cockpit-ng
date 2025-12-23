@@ -31,8 +31,12 @@ export function useApi() {
     const { method = 'GET', body, headers = EMPTY_HEADERS } = options
     
     const defaultHeaders: Record<string, string> = {
-      'Content-Type': 'application/json',
       ...headers
+    }
+
+    // Only set Content-Type to application/json if body is not FormData
+    if (!(body instanceof FormData)) {
+      defaultHeaders['Content-Type'] = 'application/json'
     }
 
     // Use ref to get current token value
@@ -46,7 +50,12 @@ export function useApi() {
     }
 
     if (body && ['POST', 'PUT', 'PATCH'].includes(method)) {
-      fetchOptions.body = typeof body === 'string' ? body : JSON.stringify(body)
+      if (body instanceof FormData) {
+        // Let browser set Content-Type with boundary for FormData
+        fetchOptions.body = body
+      } else {
+        fetchOptions.body = typeof body === 'string' ? body : JSON.stringify(body)
+      }
     }
 
     const response = await fetch(`/api/proxy/${endpoint}`, fetchOptions)

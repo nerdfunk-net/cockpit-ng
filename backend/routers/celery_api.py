@@ -3,7 +3,7 @@ Celery task management API endpoints.
 All Celery-related endpoints are under /api/celery/*
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from celery.result import AsyncResult
 from core.auth import require_permission
@@ -357,7 +357,7 @@ async def trigger_bulk_onboard_devices(
 @handle_celery_errors("get task status")
 async def get_task_status(
     task_id: str,
-    current_user: dict = Depends(require_permission("settings.celery", "read")),
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """
     Get the status and result of a Celery task.
@@ -1720,3 +1720,74 @@ async def check_device_backups(
 
     finally:
         session.close()
+
+
+@router.post("/tasks/check-ip", response_model=TaskResponse)
+async def check_ip_task_endpoint(
+    csv_file: UploadFile = File(...),
+    delimiter: str = Form(","),
+    quote_char: str = Form('"'),
+    current_user: dict = Depends(require_permission("nautobot.devices", "read"))
+):
+    """
+    Compare CSV device list with Nautobot devices.
+    
+    Uploads a CSV file containing device information and compares it with
+    devices in Nautobot to check for IP address matches and name consistency.
+    
+    Required CSV columns: ip_address, name
+    """
+    try:
+        logger.info(f"Received check IP request with delimiter='{delimiter}', quote_char='{quote_char}'")
+        
+        # Validate file type
+        if not csv_file.filename or not csv_file.filename.endswith('.csv'):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File must be a CSV file"
+            )
+        
+        # Read CSV content
+        csv_content = await csv_file.read()
+        csv_string = csv_content.decode('utf-8')
+        
+        # Validate CSV has content
+        if not csv_string.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="CSV file is empty"
+            )
+        
+        # Submit Celery task
+        task = celery_app.send_task(
+            'tasks.check_ip_task.check_ip_task',
+            args=[csv_string, delimiter, quote_char]
+        )
+        
+        # Register job in job system
+        job_run = job_run_manager.create_job_run(
+            job_name="Check IP Addresses",
+            job_type="check_ip",
+            triggered_by="manual",
+            executed_by=current_user["username"]
+        )
+        
+        if job_run:
+            job_run_manager.mark_started(job_run["id"], task.id)
+        
+        logger.info(f"Started check IP task {task.id} for file {csv_file.filename}")
+        
+        return TaskResponse(
+            task_id=task.id,
+            status="started",
+            message=f"IP check task started for {csv_file.filename}"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting check IP task: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to start check IP task: {str(e)}"
+        )

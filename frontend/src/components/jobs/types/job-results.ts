@@ -254,6 +254,35 @@ export interface UpdateDevicesJobResult {
 }
 
 // ============================================================================
+// Check IP Job Result Types
+// ============================================================================
+
+export interface CheckIPDeviceResult {
+  ip_address: string
+  device_name: string
+  status: 'match' | 'name_mismatch' | 'ip_not_found' | 'error'
+  nautobot_device_name?: string
+  error?: string
+}
+
+export interface CheckIPJobResult {
+  success: boolean
+  message?: string
+  error?: string
+  total_devices?: number
+  processed_devices?: number
+  statistics: {
+    matches: number
+    name_mismatches: number
+    ip_not_found: number
+    errors: number
+  }
+  results: CheckIPDeviceResult[]
+  // Index signature for compatibility with Record<string, unknown>
+  [key: string]: unknown
+}
+
+// ============================================================================
 // Type Guards
 // ============================================================================
 
@@ -329,6 +358,24 @@ export function isUpdateDevicesJobResult(result: Record<string, unknown>): resul
     'successful' in result.summary &&
     'failed' in result.summary &&
     'skipped' in result.summary
+  )
+}
+
+/**
+ * Check if result is a check_ip job result.
+ * Has statistics object with matches/name_mismatches/ip_not_found/errors counts.
+ */
+export function isCheckIPJobResult(result: Record<string, unknown>): result is CheckIPJobResult {
+  return (
+    'statistics' in result &&
+    typeof result.statistics === 'object' &&
+    result.statistics !== null &&
+    'matches' in result.statistics &&
+    'name_mismatches' in result.statistics &&
+    'ip_not_found' in result.statistics &&
+    'errors' in result.statistics &&
+    'results' in result &&
+    Array.isArray(result.results)
   )
 }
 

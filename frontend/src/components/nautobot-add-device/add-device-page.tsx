@@ -393,7 +393,6 @@ export function AddDevicePage() {
       const newTags = prev.includes(tagId)
         ? prev.filter(id => id !== tagId)
         : [...prev, tagId]
-      console.log('Tag toggled:', tagId, 'New tags:', newTags)
       return newTags
     })
   }, [])
@@ -440,7 +439,6 @@ export function AddDevicePage() {
         ...prev,
         [key]: value
       }
-      console.log('Custom field updated:', key, '=', value, 'All values:', newValues)
       return newValues
     })
   }, [])
@@ -827,15 +825,6 @@ export function AddDevicePage() {
         interfaces: transformedInterfaces
       }
 
-      // DEBUG: Log device data being sent
-      console.log('=== DEVICE DATA DEBUG ===')
-      console.log('Selected tags state:', selectedTags)
-      console.log('Selected tags length:', selectedTags.length)
-      console.log('Custom field values state:', customFieldValues)
-      console.log('Custom field values keys:', Object.keys(customFieldValues))
-      console.log('Filtered custom fields:', filteredCustomFields)
-      console.log('Device data being sent:', JSON.stringify(deviceData, null, 2))
-
       const response = await fetch('/api/proxy/nautobot/add-device', {
         method: 'POST',
         headers: {
@@ -952,7 +941,7 @@ export function AddDevicePage() {
     } finally {
       setIsLoading(false)
     }
-  }, [validateForm, deviceName, selectedRole, selectedStatus, selectedLocation, selectedDeviceType, interfaces, selectedSoftwareVersion, softwareVersions, selectedTags, customFieldValues, nautobotDefaults])
+  }, [validateForm, deviceName, selectedRole, selectedStatus, selectedLocation, selectedDeviceType, selectedPlatform, serialNumber, interfaces, selectedSoftwareVersion, softwareVersions, selectedTags, customFieldValues])
 
   const handleClearForm = useCallback(() => {
     setDeviceName('')

@@ -20,6 +20,7 @@ import {
   isExportDevicesJobResult,
   isBulkOnboardJobResult,
   isUpdateDevicesJobResult,
+  isCheckIPJobResult,
   GenericJobResult,
 } from "./types/job-results"
 import { BackupJobResultView } from "./results/backup-job-result"
@@ -28,6 +29,7 @@ import { RunCommandsResultView } from "./results/run-commands-result"
 import { ExportDevicesResultView } from "./results/export-devices-result"
 import { BulkOnboardResultView } from "./results/bulk-onboard-result"
 import { UpdateDevicesResultView } from "./results/update-devices-result"
+import { CheckIPResultView } from "./results/check-ip-result"
 import { GenericJobResultView } from "./results/generic-job-result"
 
 interface JobResultDialogProps {
@@ -45,6 +47,11 @@ function renderJobResult(result: Record<string, any>, taskId?: string): React.Re
   // Export devices must be checked first to avoid conflicts
   if (isExportDevicesJobResult(result)) {
     return <ExportDevicesResultView result={result} taskId={taskId} />
+  }
+
+  // Check IP result has unique statistics structure
+  if (isCheckIPJobResult(result)) {
+    return <CheckIPResultView result={result} />
   }
 
   // Run commands must be checked before others as it has similar fields
