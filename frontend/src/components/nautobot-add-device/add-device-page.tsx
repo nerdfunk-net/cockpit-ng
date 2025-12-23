@@ -37,6 +37,19 @@ interface DeviceType {
   display?: string
 }
 
+interface Platform {
+  id: string
+  name: string
+  display: string
+  description?: string
+  network_driver?: string
+  manufacturer?: {
+    id: string
+    object_type: string
+    url: string
+  }
+}
+
 interface SoftwareVersion {
   id: string
   version: string
@@ -150,10 +163,12 @@ export function AddDevicePage() {
 
   // Device fields
   const [deviceName, setDeviceName] = useState('')
+  const [serialNumber, setSerialNumber] = useState('')
   const [selectedRole, setSelectedRole] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('')
   const [selectedLocation, setSelectedLocation] = useState('')
   const [selectedDeviceType, setSelectedDeviceType] = useState('')
+  const [selectedPlatform, setSelectedPlatform] = useState('')
   const [selectedSoftwareVersion, setSelectedSoftwareVersion] = useState('')
 
   // Interface management
@@ -166,6 +181,7 @@ export function AddDevicePage() {
   const [statuses, setStatuses] = useState<DropdownOption[]>(EMPTY_DROPDOWN_OPTIONS)
   const [locations, setLocations] = useState<LocationItem[]>(EMPTY_LOCATIONS)
   const [deviceTypes, setDeviceTypes] = useState<DeviceType[]>(EMPTY_DEVICE_TYPES)
+  const [platforms, setPlatforms] = useState<Platform[]>([])
   const [softwareVersions, setSoftwareVersions] = useState<SoftwareVersion[]>(EMPTY_SOFTWARE_VERSIONS)
   const [interfaceTypes, setInterfaceTypes] = useState<DropdownOption[]>(EMPTY_DROPDOWN_OPTIONS)
   const [interfaceStatuses, setInterfaceStatuses] = useState<DropdownOption[]>(EMPTY_DROPDOWN_OPTIONS)
@@ -470,6 +486,14 @@ export function AddDevicePage() {
       })
       if (deviceTypesData && Array.isArray(deviceTypesData)) {
         setDeviceTypes(deviceTypesData)
+      }
+
+      // Load platforms
+      const platformsData = await apiCall<Platform[]>('nautobot/platforms', {
+        method: 'GET'
+      })
+      if (platformsData && Array.isArray(platformsData)) {
+        setPlatforms(platformsData)
       }
 
       // Load software versions
@@ -791,11 +815,12 @@ export function AddDevicePage() {
 
       const deviceData = {
         name: deviceName,
+        serial: serialNumber || undefined,
         role: selectedRole,
         status: selectedStatus,
         location: selectedLocation,
         device_type: selectedDeviceType,
-        platform: platformId || undefined,
+        platform: selectedPlatform || platformId || undefined,
         software_version: selectedSoftwareVersion || undefined,
         tags: selectedTags.length > 0 ? selectedTags : undefined,
         custom_fields: Object.keys(filteredCustomFields).length > 0 ? filteredCustomFields : undefined,
@@ -903,21 +928,19 @@ export function AddDevicePage() {
         message: statusMessages.join('\n')
       })
 
-      // Only reset device-specific fields if completely successful
-      // Preserve common fields (role, status, location, device type) for adding similar devices
-      if (result.success && !hasErrors && !hasWarnings) {
+      // Auto-clear success messages after 3 seconds
+      if (messageType === 'success') {
         setTimeout(() => {
-          setDeviceName('')
-          setInterfaces([{
-            id: '1',
-            name: '',
-            type: '',
-            status: nautobotDefaults?.interface_status || '',
-            ip_address: '',
-            namespace: nautobotDefaults?.namespace || ''
-          }])
           setStatusMessage(null)
-        }, 5000)
+        }, 3000)
+      }
+
+      // Clear only software version, tags, and custom fields after successful submission
+      // Preserve all other fields (device name, serial, interfaces, etc.) for adding similar devices
+      if (result.success && !hasErrors && !hasWarnings) {
+        setSelectedSoftwareVersion('')
+        setSelectedTags([])
+        setCustomFieldValues({})
       }
 
     } catch (error) {
@@ -933,10 +956,12 @@ export function AddDevicePage() {
 
   const handleClearForm = useCallback(() => {
     setDeviceName('')
+    setSerialNumber('')
     setSelectedRole('')
     setSelectedStatus('')
     setSelectedLocation('')
     setSelectedDeviceType('')
+    setSelectedPlatform('')
     setSelectedSoftwareVersion('')
     setSelectedTags([])
     setCustomFieldValues({})
@@ -1068,6 +1093,20 @@ export function AddDevicePage() {
               />
             </div>
 
+            {/* Serial Number */}
+            <div className="space-y-1">
+              <Label htmlFor="serial-number" className="text-xs font-medium">
+                Serial Number
+              </Label>
+              <Input
+                id="serial-number"
+                placeholder="e.g., ABC123456789"
+                value={serialNumber}
+                onChange={(e) => setSerialNumber(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+
             {/* Role */}
             <div className="space-y-1">
               <Label htmlFor="role" className="text-xs font-medium">
@@ -1160,6 +1199,10 @@ export function AddDevicePage() {
                     const q = e.target.value
                     setDeviceTypeSearch(q)
                     setShowDeviceTypeDropdown(true)
+                    // If user clears the field completely, also clear the selection
+                    if (q === '') {
+                      setSelectedDeviceType('')
+                    }
                   }}
                   onFocus={() => setShowDeviceTypeDropdown(true)}
                   disabled={isLoading}
@@ -1184,6 +1227,25 @@ export function AddDevicePage() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Platform */}
+            <div className="space-y-1">
+              <Label htmlFor="platform" className="text-xs font-medium">
+                Platform
+              </Label>
+              <Select value={selectedPlatform} onValueChange={setSelectedPlatform} disabled={isLoading}>
+                <SelectTrigger id="platform">
+                  <SelectValue placeholder="Select platform" />
+                </SelectTrigger>
+                <SelectContent>
+                  {platforms.map(platform => (
+                    <SelectItem key={platform.id} value={platform.id}>
+                      {platform.display || platform.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Software Version */}
