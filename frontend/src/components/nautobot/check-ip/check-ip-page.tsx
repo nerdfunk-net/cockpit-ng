@@ -278,7 +278,7 @@ export function CheckIPPage() {
             <Search className="h-6 w-6 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Check IP</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Check IP & Names</h1>
             <p className="text-gray-600 mt-1">Compare CSV device list with Nautobot devices</p>
           </div>
         </div>

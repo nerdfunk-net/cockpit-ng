@@ -71,7 +71,7 @@ const navigationSections: NavSection[] = [
         label: 'Tools',
         icon: Wrench,
         children: [
-          { label: 'Check IP', href: '/nautobot/tools/check-ip', icon: Search },
+          { label: 'Check IP & Names', href: '/nautobot/tools/check-ip', icon: Search },
         ],
       },
       { label: 'Export', href: '/nautobot-export', icon: Download },

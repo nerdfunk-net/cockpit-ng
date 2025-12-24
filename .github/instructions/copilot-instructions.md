@@ -85,6 +85,9 @@ frontend/
 │   │   ├── app-sidebar.tsx         # Main application sidebar
 │   │   ├── dashboard-layout.tsx    # Dashboard wrapper component
 │   │   ├── dashboard-overview.tsx  # Dashboard home page
+│   │   ├── dashboard-checkmk-sync-status.tsx  # CheckMK sync status widget
+│   │   ├── dashboard-device-backup-status.tsx # Device backup status widget
+│   │   ├── dashboard-job-stats.tsx # Job statistics widget
 │   │   ├── session-status.tsx      # Session status indicator
 │   │   ├── sidebar-context.tsx     # Sidebar state management
 │   │   ├── auth/                   # Authentication components
@@ -115,12 +118,30 @@ frontend/
 │   │   │   ├── file-compare.tsx
 │   │   │   ├── git-compare.tsx
 │   │   │   └── file-history-compare.tsx
+│   │   ├── compliance/             # Compliance monitoring and SNMP
+│   │   │   ├── compliance-page.tsx
+│   │   │   ├── hooks/
+│   │   │   └── tabs/
 │   │   ├── configs/                # Configuration management
 │   │   │   └── configs-view-page.tsx
+│   │   ├── jobs/                   # Job templates and scheduler
+│   │   │   ├── job-templates-page.tsx
+│   │   │   ├── jobs-scheduler-page.tsx
+│   │   │   ├── jobs-view-page.tsx
+│   │   │   ├── job-result-dialog.tsx
+│   │   │   ├── job-template-types/
+│   │   │   ├── results/
+│   │   │   ├── shared/
+│   │   │   └── types/
+│   │   ├── nautobot/               # Nautobot-specific tools
+│   │   │   └── check-ip/           # IP and device name validation
+│   │   ├── nautobot-add-device/    # Add devices to Nautobot
+│   │   ├── nautobot-export/        # Export Nautobot data
 │   │   ├── onboard-device/         # Device onboarding
 │   │   ├── offboard-device/        # Device offboarding
-│   │   ├── scan-and-add/           # Network scanning
 │   │   ├── sync-devices/           # Nautobot sync
+│   │   ├── tools/                  # Utility tools
+│   │   │   └── ping-results-modal.tsx
 │   │   ├── debug/                  # Debug utilities
 │   │   ├── shared/                 # Shared/reusable components
 │   │   │   └── device-selector.tsx
@@ -185,39 +206,71 @@ backend/
 │   ├── __init__.py
 │   ├── auth.py                     # Authentication models
 │   ├── user_management.py          # User management models
-│   └── rbac.py                     # RBAC models
+│   ├── rbac.py                     # RBAC models
+│   ├── ansible_inventory.py        # Ansible inventory models
+│   ├── backup_models.py            # Backup operation models
+│   ├── checkmk.py                  # CheckMK models
+│   ├── credentials.py              # Credential models
+│   ├── files.py                    # File operation models
+│   ├── git.py                      # Git operation models
+│   ├── git_repositories.py         # Git repository models
+│   ├── job_models.py               # Job execution models
+│   ├── job_templates.py            # Job template models
+│   ├── jobs.py                     # Job scheduling models
+│   ├── nautobot.py                 # Nautobot models
+│   ├── nb2cmk.py                   # Nautobot to CheckMK sync models
+│   ├── settings.py                 # Settings models
+│   └── templates.py                # Template models
 │
 ├── routers/                         # API route handlers
 │   ├── __init__.py
 │   ├── auth.py                     # /auth/* endpoints (login, logout, etc.)
 │   ├── profile.py                  # /profile/* endpoints
-│   ├── user_management.py          # /users/* endpoints (CRUD)
 │   ├── rbac.py                     # /rbac/* endpoints (roles, permissions)
 │   ├── oidc.py                     # /oidc/* endpoints (OpenID Connect)
 │   ├── nautobot.py                 # /nautobot/* endpoints (Nautobot API proxy)
+│   ├── nautobot_endpoints/         # Nautobot endpoint modules
+│   │   ├── devices.py              # Device endpoints
+│   │   ├── dcim_interfaces.py      # DCIM interfaces
+│   │   ├── ipam_addresses.py       # IPAM IP addresses
+│   │   ├── ipam_prefixes.py        # IPAM prefixes
+│   │   ├── ipam_ip_address_to_interface.py  # IP-to-interface mapping
+│   │   └── metadata.py             # Metadata endpoints
 │   ├── checkmk.py                  # /checkmk/* endpoints (CheckMK integration)
 │   ├── nb2cmk.py                   # /nb2cmk/* endpoints (Nautobot to CheckMK sync)
 │   ├── netmiko.py                  # /netmiko/* endpoints (device connections)
 │   ├── ansible_inventory.py        # /ansible-inventory/* endpoints
+│   ├── inventory.py                # /inventory/* endpoints
 │   ├── templates.py                # /templates/* endpoints (Jinja2 templates)
 │   ├── credentials.py              # /credentials/* endpoints (encrypted credentials)
+│   ├── certificates.py             # /certificates/* endpoints (SSL certificates)
 │   ├── git_repositories.py         # /git-repositories/* endpoints
 │   ├── git_operations.py           # /git/* endpoints (Git operations)
 │   ├── git_files.py                # /git-files/* endpoints
 │   ├── git_compare.py              # /git-compare/* endpoints
+│   ├── git_debug.py                # /git-debug/* endpoints
+│   ├── git_version_control.py      # /git-version-control/* endpoints
+│   ├── git.py                      # Git router
 │   ├── file_compare.py             # /file-compare/* endpoints
-│   ├── jobs.py                     # /jobs/* endpoints (background jobs)
+│   ├── job_templates.py            # /job-templates/* endpoints
+│   ├── job_schedules.py            # /job-schedules/* endpoints
+│   ├── job_runs.py                 # /job-runs/* endpoints
+│   ├── compliance.py               # /compliance/* endpoints
+│   ├── compliance_check.py         # /compliance-check/* endpoints
 │   ├── cache.py                    # /cache/* endpoints (cache management)
+│   ├── celery_api.py               # /celery/* endpoints (Celery task management)
 │   ├── config.py                   # /config/* endpoints (YAML config files)
 │   ├── settings.py                 # /settings/* endpoints (app settings)
 │   ├── scan_and_add.py             # /scan-and-add/* endpoints (network scanning)
-│   └── offboarding.py              # /offboarding/* endpoints (device offboarding)
+│   └── tools.py                    # /tools/* endpoints (utility tools)
 │
 ├── services/                        # Business logic layer
 │   ├── __init__.py
 │   ├── user_management.py          # User management service
 │   ├── oidc_service.py             # OIDC service
 │   ├── nautobot.py                 # Nautobot API client service
+│   ├── nautobot_helpers/           # Nautobot helper modules
+│   │   └── cache_helpers.py        # Nautobot cache helpers
 │   ├── checkmk.py                  # CheckMK API service
 │   ├── cmk_config_service.py       # CheckMK configuration service
 │   ├── cmk_device_normalization_service.py  # Device normalization
@@ -228,14 +281,30 @@ backend/
 │   ├── netmiko_service.py          # Netmiko device connections
 │   ├── ansible_inventory.py        # Ansible inventory generation
 │   ├── render_service.py           # Jinja2 template rendering
-│   ├── git_utils.py                # Git operations utilities
+│   ├── device_backup_service.py    # Device backup operations
+│   ├── device_config_service.py    # Device configuration management
+│   ├── device_creation_service.py  # Device creation workflows
+│   ├── device_query_service.py     # Device query operations
+│   ├── compliance_check_service.py # Compliance checking
+│   ├── git_service.py              # Git service
+│   ├── git_auth_service.py         # Git authentication service
+│   ├── git_cache_service.py        # Git cache service
+│   ├── git_config_service.py       # Git configuration service
+│   ├── git_connection_service.py   # Git connection service
+│   ├── git_diff_service.py         # Git diff operations
+│   ├── git_operations_service.py   # Git operations service
 │   ├── git_shared_utils.py         # Shared Git utilities
+│   ├── git_env.py                  # Git environment handling
+│   ├── git_paths.py                # Git path utilities
 │   ├── cache_service.py            # Caching service
-│   ├── apscheduler_job_service.py  # Background job scheduling
-│   ├── job_database_service.py     # Job persistence service
 │   ├── network_scan_service.py     # Network scanning service
 │   ├── scan_service.py             # Device scanning service
-│   └── offboarding_service.py      # Device offboarding workflows
+│   ├── offboarding_service.py      # Device offboarding workflows
+│   └── background_jobs/            # Background job services
+│       ├── base.py                 # Base job service
+│       ├── checkmk_device_jobs.py  # CheckMK device jobs
+│       ├── device_cache_jobs.py    # Device cache jobs
+│       └── location_cache_jobs.py  # Location cache jobs
 │
 ├── user_db_manager.py              # User database operations (SQLAlchemy)
 ├── rbac_manager.py                 # RBAC database operations
@@ -245,7 +314,57 @@ backend/
 ├── git_repositories_manager.py     # Git repository configuration
 ├── settings_manager.py             # Application settings manager
 ├── connection_tester.py            # Network connection testing
+├── compliance_manager.py           # Compliance management
+├── inventory_manager.py            # Inventory management
+├── job_template_manager.py         # Job template management
+├── job_run_manager.py              # Job run management
+├── jobs_manager.py                 # Jobs management
 ├── seed_rbac.py                    # RBAC initialization
+├── set_admin_password.py           # Admin password management
+├── celery_app.py                   # Celery application setup
+├── celery_worker.py                # Celery worker
+├── celery_beat.py                  # Celery beat scheduler
+├── beat_schedule.py                # Beat schedule configuration
+├── start_celery.py                 # Celery startup script
+├── start_beat.py                   # Beat startup script
+│
+├── tasks/                          # Celery tasks
+│   ├── __init__.py
+│   ├── backup_tasks.py             # Device backup tasks
+│   ├── bulk_onboard_task.py        # Bulk device onboarding
+│   ├── check_ip_task.py            # IP address checking tasks
+│   ├── export_devices_task.py      # Device export tasks
+│   ├── job_tasks.py                # Job execution tasks
+│   ├── onboard_device_task.py      # Device onboarding tasks
+│   ├── periodic_tasks.py           # Periodic scheduled tasks
+│   ├── ping_network_task.py        # Network ping tasks
+│   ├── scan_prefixes_task.py       # Network prefix scanning
+│   ├── test_tasks.py               # Test tasks
+│   ├── update_devices_task.py      # Device update tasks
+│   ├── execution/                  # Task executors
+│   │   ├── base_executor.py        # Base executor class
+│   │   ├── backup_executor.py      # Backup executor
+│   │   ├── cache_executor.py       # Cache executor
+│   │   ├── command_executor.py     # Command executor
+│   │   ├── compare_executor.py     # Compare executor
+│   │   ├── scan_prefixes_executor.py # Scan prefixes executor
+│   │   └── sync_executor.py        # Sync executor
+│   ├── scheduling/                 # Task scheduling
+│   │   ├── job_dispatcher.py       # Job dispatcher
+│   │   └── schedule_checker.py     # Schedule checker
+│   └── utils/                      # Task utilities
+│       ├── condition_helpers.py    # Condition helpers
+│       └── device_helpers.py       # Device helpers
+│
+├── utils/                          # Utility modules
+│   ├── __init__.py
+│   ├── cmk_folder_utils.py         # CheckMK folder utilities
+│   ├── cmk_site_utils.py           # CheckMK site utilities
+│   ├── nautobot_helpers.py         # Nautobot helper functions
+│   ├── netmiko_platform_mapper.py  # Netmiko platform mapping
+│   ├── path_template.py            # Path template utilities
+│   └── task_progress.py            # Task progress tracking
+│
 └── checkmk/                        # CheckMK client library
     ├── __init__.py
     └── client.py                   # CheckMK API client
@@ -258,10 +377,14 @@ config/
 ├── oidc_providers.yaml             # OIDC providers configuration
 ├── oidc_providers.yaml.example     # OIDC config template
 ├── checkmk.yaml                    # CheckMK configuration
+├── checkmk_queries.yaml            # CheckMK query definitions
 ├── snmp_mapping.yaml               # SNMP device mapping
 ├── README.md                        # Configuration documentation
-└── certs/                          # SSL certificates directory
-    └── README.md
+├── certs/                          # SSL certificates directory
+│   ├── README.md
+│   └── convert-cert.sh            # Certificate conversion utility
+└── tig/                            # TIG stack configuration
+    └── telegraf/                   # Telegraf monitoring configuration
 ```
 
 ### Data (`/data`)

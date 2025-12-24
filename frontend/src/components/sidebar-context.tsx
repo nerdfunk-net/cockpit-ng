@@ -19,6 +19,7 @@ const navigationSectionTitles = ['General', 'Nautobot', 'CheckMK', 'Network', 'J
 
 // Collapsible menu items - all collapsed by default on login
 const collapsibleMenuItems = [
+  'Nautobot-Tools',
   'Network-Configs',
   'Network-Automation',
   'Network-Tools',
