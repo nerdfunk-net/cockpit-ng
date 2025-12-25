@@ -25,6 +25,7 @@ class AnsibleInventoryService:
             "device_type": self._query_devices_by_devicetype,
             "manufacturer": self._query_devices_by_manufacturer,
             "platform": self._query_devices_by_platform,
+            "has_primary": self._query_devices_by_has_primary,
         }
         # Cache for custom fields to avoid repeated API calls
         self._custom_fields_cache = None
@@ -811,6 +812,58 @@ class AnsibleInventoryService:
         result = await nautobot_service.graphql_query(query, variables)
 
         return self._parse_device_data(result.get("data", {}).get("devices", []))
+
+    async def _query_devices_by_has_primary(
+        self, has_primary_filter: str
+    ) -> List[DeviceInfo]:
+        """Query devices by whether they have a primary IP using GraphQL."""
+        from services.nautobot import nautobot_service
+
+        # Convert string "True"/"False" to boolean
+        has_primary_bool = has_primary_filter.lower() == "true"
+
+        logger.info(f"Querying devices with has_primary_ip={has_primary_bool}")
+
+        query = """
+        query devices_by_has_primary($has_primary: Boolean) {
+            devices(has_primary_ip: $has_primary) {
+                id
+                name
+                primary_ip4 {
+                    address
+                }
+                status {
+                    name
+                }
+                device_type {
+                    model
+                    manufacturer {
+                        name
+                    }
+                }
+                role {
+                    name
+                }
+                location {
+                    name
+                }
+                tags {
+                    name
+                }
+                platform {
+                    name
+                }
+            }
+        }
+        """
+
+        variables = {"has_primary": has_primary_bool}
+        result = await nautobot_service.graphql_query(query, variables)
+
+        devices = self._parse_device_data(result.get("data", {}).get("devices", []))
+        logger.info(f"Found {len(devices)} devices with has_primary_ip={has_primary_bool}")
+
+        return devices
 
     def _parse_device_data(
         self, devices_data: List[Dict[str, Any]]

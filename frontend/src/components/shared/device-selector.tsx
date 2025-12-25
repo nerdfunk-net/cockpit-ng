@@ -419,7 +419,7 @@ export function DeviceSelector({
   }
 
   const loadFieldValues = async (fieldName: string) => {
-    if (!fieldName || fieldName === 'custom_fields') return
+    if (!fieldName || fieldName === 'custom_fields' || fieldName === 'has_primary') return
 
     setIsLoadingFieldValues(true)
     try {
@@ -510,7 +510,7 @@ export function DeviceSelector({
   }
 
   const updateOperatorOptions = (fieldName: string) => {
-    const restrictedFields = ['role', 'tag', 'device_type', 'manufacturer', 'platform', 'location']
+    const restrictedFields = ['role', 'tag', 'device_type', 'manufacturer', 'platform', 'location', 'has_primary']
     const isCustomField = fieldName && fieldName.startsWith('cf_')
 
     if (restrictedFields.includes(fieldName)) {
@@ -792,7 +792,17 @@ export function DeviceSelector({
             {/* Value Input */}
             <div className="space-y-2">
               <Label htmlFor="value">Value</Label>
-              {currentField === 'location' ? (
+              {currentField === 'has_primary' ? (
+                <Select value={currentValue} onValueChange={setCurrentValue}>
+                  <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                    <SelectValue placeholder="Select value..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="True">True</SelectItem>
+                    <SelectItem value="False">False</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : currentField === 'location' ? (
                 <div className="relative">
                   <Input
                     placeholder="Search locations..."

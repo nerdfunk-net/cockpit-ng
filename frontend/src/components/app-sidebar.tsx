@@ -38,6 +38,7 @@ import {
   Plug,
   Settings,
   BarChart3,
+  Edit,
 } from 'lucide-react'
 
 interface NavItem {
@@ -72,6 +73,7 @@ const navigationSections: NavSection[] = [
         icon: Wrench,
         children: [
           { label: 'Check IP & Names', href: '/nautobot/tools/check-ip', icon: Search },
+          { label: 'Bulk Edit', href: '/nautobot/tools/bulk-edit', icon: Edit },
         ],
       },
       { label: 'Export', href: '/nautobot-export', icon: Download },
