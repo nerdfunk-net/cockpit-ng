@@ -342,6 +342,7 @@ class AnsibleInventoryService:
                 devices(name__ire: $name_filter) {
                     id
                     name
+                    serial
                     primary_ip4 {
                         address
                     }
@@ -376,6 +377,7 @@ class AnsibleInventoryService:
                 devices(name: $name_filter) {
                     id
                     name
+                    serial
                     primary_ip4 {
                         address
                     }
@@ -442,6 +444,7 @@ class AnsibleInventoryService:
                 devices (location__name__ic: $location_filter) {
                     id
                     name
+                    serial
                     role {
                         name
                     }
@@ -476,6 +479,7 @@ class AnsibleInventoryService:
                 devices (location: $location_filter) {
                     id
                     name
+                    serial
                     role {
                         name
                     }
@@ -531,6 +535,7 @@ class AnsibleInventoryService:
             devices(role: $role_filter) {
                 id
                 name
+                serial
                 primary_ip4 {
                     address
                 }
@@ -580,6 +585,7 @@ class AnsibleInventoryService:
             devices(status: $status_filter) {
                 id
                 name
+                serial
                 primary_ip4 {
                     address
                 }
@@ -627,6 +633,7 @@ class AnsibleInventoryService:
             devices(tags: $tag_filter) {
                 id
                 name
+                serial
                 primary_ip4 {
                     address
                 }
@@ -678,6 +685,7 @@ class AnsibleInventoryService:
             devices(device_type: $devicetype_filter) {
                 id
                 name
+                serial
                 primary_ip4 {
                     address
                 }
@@ -729,6 +737,7 @@ class AnsibleInventoryService:
             devices(manufacturer: $manufacturer_filter) {
                 id
                 name
+                serial
                 primary_ip4 {
                     address
                 }
@@ -780,6 +789,7 @@ class AnsibleInventoryService:
             devices(platform: $platform_filter) {
                 id
                 name
+                serial
                 primary_ip4 {
                     address
                 }
@@ -829,6 +839,7 @@ class AnsibleInventoryService:
             devices(has_primary_ip: $has_primary) {
                 id
                 name
+                serial
                 primary_ip4 {
                     address
                 }
@@ -921,9 +932,13 @@ class AnsibleInventoryService:
             # Get device name, handling None/null case
             device_name = device_data.get("name")
 
+            # Get serial number
+            serial = device_data.get("serial")
+
             device = DeviceInfo(
                 id=device_data.get("id", ""),
                 name=device_name,  # Can be None for unnamed devices
+                serial=serial,
                 primary_ip4=primary_ip,
                 status=status,
                 device_type=device_type,
@@ -1006,6 +1021,7 @@ class AnsibleInventoryService:
                   devices({filter_field}__ic: $field_value) {{
                     id
                     name
+                    serial
                     role {{
                       name
                     }}
@@ -1040,6 +1056,7 @@ class AnsibleInventoryService:
                   devices({filter_field}: $field_value) {{
                     id
                     name
+                    serial
                     role {{
                       name
                     }}

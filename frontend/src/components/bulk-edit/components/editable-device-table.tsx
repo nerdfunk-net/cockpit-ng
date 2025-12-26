@@ -6,7 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ArrowUp, ArrowDown } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
+import { fetchDeviceTypesWithManufacturer } from '@/services/nautobot-graphql'
 import type { DeviceInfo } from '@/components/shared/device-selector'
 import type { ColumnDefinition } from '../tabs/bulk-edit-tab'
 
@@ -48,6 +50,9 @@ export function EditableDeviceTable({
   const [deviceTypeOptions, setDeviceTypeOptions] = useState<FieldOption[]>([])
   const [platformOptions, setPlatformOptions] = useState<FieldOption[]>([])
 
+  // Device type to manufacturer mapping
+  const [deviceTypeToManufacturer, setDeviceTypeToManufacturer] = useState<Map<string, string>>(new Map())
+
   // Location search state
   const [locationSearchValue, setLocationSearchValue] = useState<string>('')
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
@@ -64,10 +69,10 @@ export function EditableDeviceTable({
       try {
         console.log('[BulkEdit] Loading field options...')
         // Load all field options in parallel
-        const [roles, locationsRaw, deviceTypes, platforms] = await Promise.all([
+        const [roles, locationsRaw, deviceTypesRaw, platforms] = await Promise.all([
           apiCall<{ field: string; values: FieldOption[] }>('ansible-inventory/field-values/role'),
           apiCall<Array<{ id: string; name: string; parent?: { id: string } }>>('nautobot/locations'),
-          apiCall<{ field: string; values: FieldOption[] }>('ansible-inventory/field-values/device_type'),
+          fetchDeviceTypesWithManufacturer(apiCall),
           apiCall<{ field: string; values: FieldOption[] }>('ansible-inventory/field-values/platform'),
         ])
 
@@ -95,10 +100,39 @@ export function EditableDeviceTable({
         console.log('[BulkEdit] Built hierarchical locations:', locationsWithHierarchy.length)
         console.log('[BulkEdit] Sample locations:', locationsWithHierarchy.slice(0, 3))
 
+        // Build device type options and manufacturer mapping from GraphQL response
+        const deviceTypeMapping = new Map<string, string>()
+        console.log('[BulkEdit] Device types GraphQL response:', deviceTypesRaw)
+
+        // Extract device types from GraphQL response
+        const deviceTypesArray = deviceTypesRaw?.data?.device_types || []
+        console.log('[BulkEdit] Device types array:', deviceTypesArray)
+
+        const deviceTypes = deviceTypesArray.map((dt: { id: string; model: string; manufacturer: { id: string; name: string } }) => {
+          const modelName = dt.model
+          const manufacturerName = dt.manufacturer?.name || ''
+
+          console.log('[BulkEdit] Processing device type:', modelName, 'manufacturer:', manufacturerName)
+
+          if (manufacturerName) {
+            deviceTypeMapping.set(modelName, manufacturerName)
+          }
+
+          return {
+            value: modelName,
+            label: modelName
+          }
+        })
+        deviceTypes.sort((a, b) => a.label.localeCompare(b.label))
+
+        console.log('[BulkEdit] Loaded device types:', deviceTypes.length)
+        console.log('[BulkEdit] deviceTypeMapping entries:', Array.from(deviceTypeMapping.entries()))
+
         setRoleOptions(roles.values || [])
         setLocationOptions(locationsWithHierarchy)
-        setDeviceTypeOptions(deviceTypes.values || [])
+        setDeviceTypeOptions(deviceTypes)
         setPlatformOptions(platforms.values || [])
+        setDeviceTypeToManufacturer(deviceTypeMapping)
       } catch (error) {
         console.error('Failed to load field options:', error)
       }
@@ -141,9 +175,16 @@ export function EditableDeviceTable({
       setLocationSearchValue(locationOption?.label || currentValue)
     }
 
+    // For device_type field, log the current device for debugging
+    if (column.field === 'device_type') {
+      console.log('[BulkEdit] Clicked device_type field, device:', device)
+      console.log('[BulkEdit] Current value:', currentValue)
+      console.log('[BulkEdit] Device type options:', deviceTypeOptions)
+    }
+
     setEditingCell({ deviceId: device.id, field: column.field })
     setEditValue(normalizedValue)
-  }, [getFieldValue, locationOptions])
+  }, [getFieldValue, locationOptions, deviceTypeOptions])
 
   const handleCellBlur = useCallback(() => {
     if (!editingCell) return
@@ -196,33 +237,50 @@ export function EditableDeviceTable({
   // Render a Select dropdown for fields with predefined options
   const renderSelectField = useCallback((device: DeviceInfo, column: ColumnDefinition, options: FieldOption[]) => {
     return (
-      <Select
-        value={editValue}
-        onValueChange={(newValue) => {
-          setEditValue(newValue)
-          // Auto-save on selection change
-          const changes = modifiedDevices.get(device.id) || {}
-          onDeviceModified(device.id, {
-            ...changes,
-            [column.field]: newValue,
-          })
-          setEditingCell(null)
-          setEditValue('')
-        }}
-      >
-        <SelectTrigger className="h-8 text-sm w-full min-w-0">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="flex items-center h-12">
+        <Select
+          value={editValue}
+          onValueChange={(newValue) => {
+            setEditValue(newValue)
+            // Auto-save on selection change
+            const changes = modifiedDevices.get(device.id) || {}
+
+            // If changing device type, also update manufacturer
+            if (column.field === 'device_type') {
+              const manufacturer = deviceTypeToManufacturer.get(newValue)
+              console.log('[BulkEdit] Device type changed to:', newValue)
+              console.log('[BulkEdit] Manufacturer from mapping:', manufacturer)
+              console.log('[BulkEdit] deviceTypeToManufacturer size:', deviceTypeToManufacturer.size)
+              onDeviceModified(device.id, {
+                ...changes,
+                device_type: newValue,
+                manufacturer: manufacturer || changes.manufacturer || '',
+              })
+            } else {
+              onDeviceModified(device.id, {
+                ...changes,
+                [column.field]: newValue,
+              })
+            }
+
+            setEditingCell(null)
+            setEditValue('')
+          }}
+        >
+          <SelectTrigger className="h-8 text-sm w-full min-w-0">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
     )
-  }, [editValue, modifiedDevices, onDeviceModified])
+  }, [editValue, modifiedDevices, onDeviceModified, deviceTypeToManufacturer])
 
   const renderCell = useCallback((device: DeviceInfo, column: ColumnDefinition) => {
     const isEditing = editingCell?.deviceId === device.id && editingCell?.field === column.field
@@ -271,7 +329,7 @@ export function EditableDeviceTable({
         }
 
         return (
-          <>
+          <div className="flex items-center h-12">
             <Input
               ref={locationInputRef}
               placeholder="Search locations..."
@@ -330,7 +388,7 @@ export function EditableDeviceTable({
               </div>,
               document.body
             )}
-          </>
+          </div>
         )
       }
 
@@ -343,21 +401,23 @@ export function EditableDeviceTable({
 
       // Default text input for other fields
       return (
-        <Input
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onBlur={handleCellBlur}
-          onKeyDown={handleKeyDown}
-          autoFocus
-          className="h-8 text-sm w-full min-w-0"
-        />
+        <div className="flex items-center h-12">
+          <Input
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={handleCellBlur}
+            onKeyDown={handleKeyDown}
+            autoFocus
+            className="h-8 text-sm w-full min-w-0"
+          />
+        </div>
       )
     }
 
     // Render special cases
     if (column.field === 'tags' && Array.isArray(device.tags)) {
       return (
-        <div className="flex gap-1 flex-wrap">
+        <div className="flex items-center gap-1 flex-wrap h-12">
           {device.tags.map((tag) => (
             <Badge key={tag} variant="secondary" className="text-xs">
               {tag}
@@ -378,28 +438,73 @@ export function EditableDeviceTable({
       const colorClass = statusColors[value.toLowerCase()] || 'bg-gray-100 text-gray-800'
 
       return (
-        <Badge variant="secondary" className={`text-xs ${colorClass}`}>
-          {value}
-        </Badge>
+        <div className="flex items-center h-12">
+          <Badge variant="secondary" className={`text-xs ${colorClass}`}>
+            {value}
+          </Badge>
+        </div>
+      )
+    }
+
+    // Special rendering for name field with uppercase/lowercase icons
+    if (column.field === 'name') {
+      return (
+        <div className="flex items-center gap-1 h-12">
+          <span className="text-sm flex-1">
+            {value || <span className="text-gray-400 italic">Empty</span>}
+          </span>
+          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                const changes = modifiedDevices.get(device.id) || {}
+                onDeviceModified(device.id, {
+                  ...changes,
+                  name: value.toUpperCase(),
+                })
+              }}
+              className="p-0.5 hover:bg-gray-200 rounded"
+              title="Convert to UPPERCASE"
+            >
+              <ArrowUp className="h-3 w-3 text-gray-600" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                const changes = modifiedDevices.get(device.id) || {}
+                onDeviceModified(device.id, {
+                  ...changes,
+                  name: value.toLowerCase(),
+                })
+              }}
+              className="p-0.5 hover:bg-gray-200 rounded"
+              title="Convert to lowercase"
+            >
+              <ArrowDown className="h-3 w-3 text-gray-600" />
+            </button>
+          </div>
+        </div>
       )
     }
 
     return (
-      <span className="text-sm">
-        {value || <span className="text-gray-400 italic">Empty</span>}
-      </span>
+      <div className="flex items-center h-12">
+        <span className="text-sm">
+          {value || <span className="text-gray-400 italic">Empty</span>}
+        </span>
+      </div>
     )
-  }, [editingCell, editValue, getFieldValue, handleCellBlur, handleKeyDown, getOptionsForField, renderSelectField, locationSearchValue, showLocationDropdown, locationOptions, modifiedDevices, onDeviceModified])
+  }, [editingCell, editValue, handleCellBlur, handleKeyDown, getOptionsForField, renderSelectField, locationSearchValue, showLocationDropdown, locationOptions, modifiedDevices, onDeviceModified, dropdownPosition])
 
   const getCellClassName = useCallback((column: ColumnDefinition) => {
-    const baseClass = 'px-4 py-2'
+    const baseClass = 'px-4 py-0'
     const hoverClass = column.editable ? 'cursor-pointer hover:bg-gray-50' : ''
 
     return `${baseClass} ${hoverClass}`
   }, [])
 
   const getRowClassName = useCallback((device: DeviceInfo) => {
-    const baseClass = 'border-b transition-colors h-12'
+    const baseClass = 'border-b transition-colors h-12 group'
     const modifiedClass = isDeviceModified(device.id) ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50'
 
     return `${baseClass} ${modifiedClass}`

@@ -4,11 +4,18 @@ import { useState, useCallback, useMemo } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Edit } from 'lucide-react'
 import type { DeviceInfo, LogicalCondition } from '@/components/shared/device-selector'
+import { useApi } from '@/hooks/use-api'
+import { useToast } from '@/hooks/use-toast'
+import { convertModifiedDevicesToCSV, validateModifiedDevices } from './utils/csv-converter'
 
 // Tab Components
 import { DeviceSelectionTab } from './tabs/device-selection-tab'
 import { PropertiesTab } from './tabs/properties-tab'
 import { BulkEditTab } from './tabs/bulk-edit-tab'
+
+// Dialog Components
+import { PreviewChangesDialog } from './dialogs/preview-changes-dialog'
+import { ProgressDialog } from './dialogs/progress-dialog'
 
 // Types
 export interface InterfaceConfig {
@@ -17,8 +24,15 @@ export interface InterfaceConfig {
   status: string
 }
 
+export interface IPConfig {
+  addPrefixesAutomatically: boolean
+  defaultNetworkMask: string
+  namespace: string
+}
+
 export interface BulkEditProperties {
   interfaceConfig: InterfaceConfig
+  ipConfig: IPConfig
 }
 
 const EMPTY_DEVICES: DeviceInfo[] = []
@@ -32,11 +46,21 @@ const DEFAULT_INTERFACE_CONFIG: InterfaceConfig = {
   status: 'active',
 }
 
+const DEFAULT_IP_CONFIG: IPConfig = {
+  addPrefixesAutomatically: true,
+  defaultNetworkMask: '/24',
+  namespace: 'Global',
+}
+
 const DEFAULT_PROPERTIES: BulkEditProperties = {
   interfaceConfig: DEFAULT_INTERFACE_CONFIG,
+  ipConfig: DEFAULT_IP_CONFIG,
 }
 
 export default function BulkEditPage() {
+  const { apiCall } = useApi()
+  const { toast } = useToast()
+
   // Device selection state
   const [previewDevices, setPreviewDevices] = useState<DeviceInfo[]>(EMPTY_DEVICES)
   const [deviceConditions, setDeviceConditions] = useState<LogicalCondition[]>(EMPTY_CONDITIONS)
@@ -48,6 +72,15 @@ export default function BulkEditPage() {
 
   // Bulk edit state
   const [modifiedDevices, setModifiedDevices] = useState<Map<string, Partial<DeviceInfo>>>(EMPTY_MAP)
+
+  // Dialog state
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false)
+  const [showProgressDialog, setShowProgressDialog] = useState(false)
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null)
+  const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
+
+  // Reload state
+  const [isReloadingData, setIsReloadingData] = useState(false)
 
   const handleDevicesSelected = useCallback((devices: DeviceInfo[], conditions: LogicalCondition[]) => {
     setPreviewDevices(devices)
@@ -74,11 +107,213 @@ export default function BulkEditPage() {
     })
   }, [])
 
-  const handleSaveDevices = useCallback(() => {
-    // TODO: Implement save functionality
-    // eslint-disable-next-line no-console
-    console.log('Saving devices:', modifiedDevices)
-  }, [modifiedDevices])
+  const handleSaveDevices = useCallback(async () => {
+    try {
+      // Validate that we have modified devices
+      validateModifiedDevices(modifiedDevices)
+
+      // Convert modified devices to CSV format with interface config and namespace
+      const csvContent = convertModifiedDevicesToCSV(
+        modifiedDevices,
+        properties.interfaceConfig,
+        properties.ipConfig.namespace
+      )
+
+      // Show loading toast
+      toast({
+        title: 'Starting bulk update...',
+        description: `Updating ${modifiedDevices.size} device(s)`,
+      })
+
+      // Call the existing CSV update endpoint
+      const result = await apiCall('/api/celery/tasks/update-devices-from-csv', {
+        method: 'POST',
+        body: JSON.stringify({
+          csv_content: csvContent,
+          csv_options: {
+            delimiter: ',',
+            quoteChar: '"',
+          },
+          dry_run: false,
+        }),
+      }) as { job_id: string; task_id: string; message: string }
+
+      // Set job tracking info
+      setCurrentJobId(result.job_id)
+      setCurrentTaskId(result.task_id)
+
+      // Show progress dialog
+      setShowProgressDialog(true)
+
+      // Reset the modified devices state
+      setModifiedDevices(EMPTY_MAP)
+    } catch (error) {
+      // Show error toast
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save devices'
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      })
+      console.error('Failed to save devices:', error)
+    }
+  }, [modifiedDevices, properties.interfaceConfig, properties.ipConfig.namespace, apiCall, toast])
+
+  const handlePreviewChanges = useCallback(() => {
+    setShowPreviewDialog(true)
+  }, [])
+
+  const handleRunDryRun = useCallback(async () => {
+    // Validate and convert to CSV with interface config and namespace
+    validateModifiedDevices(modifiedDevices)
+    const csvContent = convertModifiedDevicesToCSV(
+      modifiedDevices,
+      properties.interfaceConfig,
+      properties.ipConfig.namespace
+    )
+
+    // Call API with dry_run = true
+    const result = await apiCall('/api/celery/tasks/update-devices-from-csv', {
+      method: 'POST',
+      body: JSON.stringify({
+        csv_content: csvContent,
+        csv_options: {
+          delimiter: ',',
+          quoteChar: '"',
+        },
+        dry_run: true,
+      }),
+    })
+
+    return result as {
+      success: boolean
+      devices_processed: number
+      successful_updates: number
+      failed_updates: number
+      skipped_updates: number
+      results: Array<{
+        device_id: string
+        device_name?: string
+        success: boolean
+        message: string
+        changes?: Record<string, unknown>
+      }>
+    }
+  }, [modifiedDevices, properties.interfaceConfig, properties.ipConfig.namespace, apiCall])
+
+  const handleJobComplete = useCallback(() => {
+    toast({
+      title: 'Bulk update completed!',
+      description: 'All devices have been processed.',
+    })
+  }, [toast])
+
+  const handleResetDevices = useCallback(() => {
+    setModifiedDevices(EMPTY_MAP)
+  }, [])
+
+  const handleReloadData = useCallback(async () => {
+    if (deviceConditions.length === 0) {
+      toast({
+        title: 'No device conditions',
+        description: 'Please select devices from the Devices tab first',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setIsReloadingData(true)
+    try {
+      // Build operations from the original device conditions
+      const andConditions: Array<{ field: string; operator: string; value: string }> = []
+      const orConditions: Array<{ field: string; operator: string; value: string }> = []
+      const notConditions: Array<{ field: string; operator: string; value: string }> = []
+
+      deviceConditions.forEach((condition, index) => {
+        const conditionData = {
+          field: condition.field,
+          operator: condition.operator,
+          value: condition.value
+        }
+
+        if (index === 0) {
+          andConditions.push(conditionData)
+        } else {
+          switch (condition.logic) {
+            case 'AND':
+              andConditions.push(conditionData)
+              break
+            case 'OR':
+              orConditions.push(conditionData)
+              break
+            case 'NOT':
+              notConditions.push(conditionData)
+              break
+          }
+        }
+      })
+
+      const operations = []
+
+      if (orConditions.length > 0) {
+        operations.push({
+          operation_type: 'OR',
+          conditions: [...andConditions, ...orConditions],
+          nested_operations: []
+        })
+      } else if (andConditions.length > 0) {
+        operations.push({
+          operation_type: 'AND',
+          conditions: andConditions,
+          nested_operations: []
+        })
+      }
+
+      notConditions.forEach(condition => {
+        operations.push({
+          operation_type: 'NOT',
+          conditions: [condition],
+          nested_operations: []
+        })
+      })
+
+      // Fetch fresh device data from Nautobot using the same endpoint as initial load
+      const response = await apiCall<{
+        devices: DeviceInfo[]
+        total_count: number
+        operations_executed: number
+      }>('ansible-inventory/preview', {
+        method: 'POST',
+        body: { operations }
+      })
+
+      // Update devices with fresh data
+      setPreviewDevices(response.devices)
+      setSelectedDevices(response.devices)
+      
+      // Update selected device IDs
+      const deviceIds = response.devices.map(d => d.id)
+      setSelectedDeviceIds(deviceIds)
+
+      // Clear modified devices since we have fresh data
+      setModifiedDevices(EMPTY_MAP)
+
+      toast({
+        title: 'Data reloaded',
+        description: `Successfully reloaded ${response.devices.length} device(s)`,
+      })
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to reload data'
+      toast({
+        title: 'Error reloading data',
+        description: errorMessage,
+        variant: 'destructive',
+      })
+      console.error('Failed to reload device data:', error)
+    } finally {
+      setIsReloadingData(false)
+    }
+  }, [deviceConditions, apiCall, toast])
 
   const stableState = useMemo(() => ({
     previewDevices,
@@ -140,9 +375,32 @@ export default function BulkEditPage() {
             modifiedDevices={stableState.modifiedDevices}
             onDeviceModified={handleDeviceModified}
             onSaveDevices={handleSaveDevices}
+            onResetDevices={handleResetDevices}
+            onPreviewChanges={handlePreviewChanges}
+            onReloadData={handleReloadData}
+            isReloadingData={isReloadingData}
           />
         </TabsContent>
       </Tabs>
+
+      {/* Preview Changes Dialog */}
+      <PreviewChangesDialog
+        open={showPreviewDialog}
+        onOpenChange={setShowPreviewDialog}
+        modifiedDevices={modifiedDevices}
+        onConfirmSave={handleSaveDevices}
+        onRunDryRun={handleRunDryRun}
+      />
+
+      {/* Progress Tracking Dialog */}
+      <ProgressDialog
+        key={currentJobId || 'no-job'}
+        open={showProgressDialog}
+        onOpenChange={setShowProgressDialog}
+        jobId={currentJobId}
+        taskId={currentTaskId}
+        onJobComplete={handleJobComplete}
+      />
     </div>
   )
 }

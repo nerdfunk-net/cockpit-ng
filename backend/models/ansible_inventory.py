@@ -42,6 +42,7 @@ class DeviceInfo(BaseModel):
     name: Optional[str] = Field(
         None, description="Device name (can be None for unnamed devices)"
     )
+    serial: Optional[str] = Field(None, description="Device serial number")
     location: Optional[str] = Field(None, description="Device location")
     role: Optional[str] = Field(None, description="Device role")
     tags: List[str] = Field(default_factory=list, description="Device tags")

@@ -42,8 +42,8 @@ export function ColumnSelector({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" disabled={isLoading}>
-          <Settings className="h-4 w-4 mr-2" />
+        <Button variant="ghost" size="sm" disabled={isLoading} className="text-white hover:bg-white/20 text-xs h-6">
+          <Settings className="h-3 w-3 mr-1" />
           Columns
         </Button>
       </DropdownMenuTrigger>

@@ -136,6 +136,9 @@ frontend/
 │   │   ├── use-session-manager.ts  # Session management hook
 │   │   └── use-toast.ts            # Toast notifications hook
 │   │
+│   ├── services/                    # Service layer for API integration
+│   │   └── nautobot-graphql.ts     # Nautobot GraphQL queries and types
+│   │
 │   └── lib/                         # Utility libraries
 │       ├── utils.ts                # General utilities
 │       ├── auth-store.ts           # Zustand auth store
@@ -649,6 +652,172 @@ try {
   // Return 500 to client
   return NextResponse.json({ error: 'Failed to fetch from backend' }, { status: 500 })
 }
+```
+
+## GraphQL Integration Pattern
+
+### Overview
+
+When integrating with Nautobot's GraphQL API, **ALWAYS use the centralized service layer** instead of inline GraphQL queries. This ensures consistency, type safety, and maintainability.
+
+### Service Layer Location
+
+**File**: `/frontend/src/services/nautobot-graphql.ts`
+
+This file contains:
+- All GraphQL query definitions
+- TypeScript type definitions for responses
+- Helper functions for executing queries
+
+### When to Use GraphQL Service Layer
+
+Use the GraphQL service layer when:
+- Fetching data from Nautobot's GraphQL API
+- You need related data in a single query (e.g., device types with manufacturer)
+- The REST API doesn't provide all needed fields
+- You want to avoid multiple REST API calls
+
+### Architecture
+
+**Flow**: Component → Service Layer → useApi Hook → Proxy → Backend → Nautobot GraphQL
+
+```
+Component:        fetchDeviceTypesWithManufacturer(apiCall)
+                           ↓
+Service Layer:    /services/nautobot-graphql.ts
+                           ↓
+useApi Hook:      apiCall('nautobot/graphql', { method: 'POST', body: ... })
+                           ↓
+Proxy:            /api/proxy/nautobot/graphql
+                           ↓
+Backend:          /nautobot/graphql endpoint
+                           ↓
+Nautobot:         GraphQL API
+```
+
+### Adding New GraphQL Queries
+
+**Step 1**: Add query definition to `/frontend/src/services/nautobot-graphql.ts`
+
+```typescript
+// Add query constant
+export const MY_NEW_QUERY = `
+  query {
+    my_data {
+      id
+      name
+      related_field {
+        id
+        name
+      }
+    }
+  }
+`
+
+// Add TypeScript interface
+export interface GraphQLMyData {
+  id: string
+  name: string
+  related_field: {
+    id: string
+    name: string
+  }
+}
+
+// Add helper function
+export async function fetchMyData(
+  apiCall: (path: string, options?: ApiOptions) => Promise<unknown>
+): Promise<GraphQLResponse<{ my_data: GraphQLMyData[] }>> {
+  return executeNautobotQuery(
+    apiCall as (path: string, options?: ApiOptions) => Promise<GraphQLResponse<{ my_data: GraphQLMyData[] }>>,
+    MY_NEW_QUERY
+  )
+}
+```
+
+**Step 2**: Use in component
+
+```typescript
+import { fetchMyData } from '@/services/nautobot-graphql'
+import { useApi } from '@/hooks/use-api'
+
+function MyComponent() {
+  const { apiCall } = useApi()
+
+  useEffect(() => {
+    const loadData = async () => {
+      const result = await fetchMyData(apiCall)
+      const data = result.data.my_data
+      // Use data...
+    }
+    loadData()
+  }, [apiCall])
+}
+```
+
+### Best Practices
+
+**DO**:
+- ✅ Add all GraphQL queries to `/frontend/src/services/nautobot-graphql.ts`
+- ✅ Create TypeScript interfaces for all query responses
+- ✅ Use helper functions (`fetchDeviceTypesWithManufacturer`, etc.)
+- ✅ Reuse existing queries when possible
+- ✅ Use the generic `/nautobot/graphql` endpoint
+
+**DON'T**:
+- ❌ Write inline GraphQL queries in components
+- ❌ Create dedicated backend endpoints for each GraphQL query (e.g., `/device-types/graphql`)
+- ❌ Use REST API when GraphQL provides better data structure
+- ❌ Duplicate query definitions across multiple files
+
+### Why Use This Pattern?
+
+1. **Centralization**: All GraphQL queries in one location
+2. **Type Safety**: Full TypeScript support with defined interfaces
+3. **Reusability**: Same query used across multiple components
+4. **Maintainability**: Update queries in one place
+5. **Documentation**: Self-documenting with clear function names
+6. **No Backend Changes**: Leverages existing `/nautobot/graphql` endpoint
+7. **GraphQL Philosophy**: Single endpoint for all GraphQL operations
+
+### Example: Device Types with Manufacturer
+
+```typescript
+// In component
+import { fetchDeviceTypesWithManufacturer } from '@/services/nautobot-graphql'
+
+const deviceTypesRaw = await fetchDeviceTypesWithManufacturer(apiCall)
+const deviceTypes = deviceTypesRaw.data.device_types
+
+deviceTypes.forEach(dt => {
+  console.log(`${dt.model} by ${dt.manufacturer.name}`)
+})
+```
+
+### Available Queries
+
+Current queries in the service layer:
+- `fetchDeviceTypesWithManufacturer()` - Device types with manufacturer info
+- `fetchLocationsWithHierarchy()` - Locations with parent relationships
+- `fetchDevicesDetailed()` - Comprehensive device data
+
+### Generic Query Execution
+
+For one-off or custom queries, use the generic executor:
+
+```typescript
+import { executeNautobotQuery } from '@/services/nautobot-graphql'
+
+const customQuery = `
+  query {
+    custom_data {
+      field1
+      field2
+    }
+  }
+`
+
+const result = await executeNautobotQuery(apiCall, customQuery)
 ```
 
 ## Database Management

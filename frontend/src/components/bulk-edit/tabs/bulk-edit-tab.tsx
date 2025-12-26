@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { InfoIcon, Save } from 'lucide-react'
+import { InfoIcon, Save, RotateCcw, Eye } from 'lucide-react'
 import type { DeviceInfo } from '@/components/shared/device-selector'
 import type { BulkEditProperties } from '../bulk-edit-page'
 import { EditableDeviceTable } from '../components/editable-device-table'
@@ -16,6 +15,10 @@ interface BulkEditTabProps {
   modifiedDevices: Map<string, Partial<DeviceInfo>>
   onDeviceModified: (deviceId: string, changes: Partial<DeviceInfo>) => void
   onSaveDevices: () => void
+  onResetDevices: () => void
+  onPreviewChanges?: () => void
+  onReloadData?: () => void
+  isReloadingData?: boolean
 }
 
 export interface ColumnDefinition {
@@ -30,6 +33,7 @@ export interface ColumnDefinition {
 const DEFAULT_COLUMNS: ColumnDefinition[] = [
   { id: 'name', label: 'Name', field: 'name', editable: true, width: '200px' },
   { id: 'status', label: 'Status', field: 'status', editable: true, width: '150px' },
+  { id: 'device_type', label: 'Device Type', field: 'device_type', editable: true, width: '200px' },
   { id: 'serial', label: 'Serial', field: 'serial', editable: true, width: '150px' },
   { id: 'primary_ip4', label: 'Primary IPv4', field: 'primary_ip4', editable: true, width: '150px' },
 ]
@@ -40,6 +44,10 @@ export function BulkEditTab({
   modifiedDevices,
   onDeviceModified,
   onSaveDevices,
+  onResetDevices,
+  onPreviewChanges,
+  onReloadData,
+  isReloadingData = false,
 }: BulkEditTabProps) {
   const [visibleColumns, setVisibleColumns] = useState<ColumnDefinition[]>(DEFAULT_COLUMNS)
   const [availableColumns, setAvailableColumns] = useState<ColumnDefinition[]>([])
@@ -57,9 +65,9 @@ export function BulkEditTab({
         { id: 'primary_ip4', label: 'Primary IPv4', field: 'primary_ip4', editable: true, width: '150px' },
         { id: 'location', label: 'Location', field: 'location', editable: true, width: '250px' },
         { id: 'role', label: 'Role', field: 'role', editable: true, width: '150px' },
-        { id: 'device_type', label: 'Device Type', field: 'device_type', editable: false, width: '150px' },
+        { id: 'device_type', label: 'Device Type', field: 'device_type', editable: true, width: '200px' },
         { id: 'manufacturer', label: 'Manufacturer', field: 'manufacturer', editable: false, width: '150px' },
-        { id: 'platform', label: 'Platform', field: 'platform', editable: false, width: '150px' },
+        { id: 'platform', label: 'Platform', field: 'platform', editable: true, width: '150px' },
         { id: 'tags', label: 'Tags', field: 'tags', editable: true, width: '200px' },
       ]
       setAvailableColumns(columns)
@@ -101,25 +109,39 @@ export function BulkEditTab({
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
+      <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 rounded-t-lg">
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Bulk Edit Devices</CardTitle>
-              <CardDescription>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium">Bulk Edit Devices</span>
+              <div className="text-xs text-blue-100">
                 Edit multiple devices at once. Modified rows are highlighted in red.
-              </CardDescription>
+              </div>
             </div>
-            <ColumnSelector
-              availableColumns={availableColumns}
-              visibleColumns={visibleColumns}
-              onAddColumn={handleAddColumn}
-              onRemoveColumn={handleRemoveColumn}
-              isLoading={isLoadingColumns}
-            />
+            <div className="flex items-center gap-2">
+              {onReloadData && (
+                <Button
+                  onClick={onReloadData}
+                  disabled={isReloadingData}
+                  variant="outline"
+                  size="sm"
+                  className="bg-white/10 hover:bg-white/20 border-white/30 text-white"
+                >
+                  <RotateCcw className={`h-4 w-4 mr-2 ${isReloadingData ? 'animate-spin' : ''}`} />
+                  {isReloadingData ? 'Reloading...' : 'Reload Data'}
+                </Button>
+              )}
+              <ColumnSelector
+                availableColumns={availableColumns}
+                visibleColumns={visibleColumns}
+                onAddColumn={handleAddColumn}
+                onRemoveColumn={handleRemoveColumn}
+                isLoading={isLoadingColumns}
+              />
+            </div>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        </div>
+        <div className="p-6 space-y-4">
           {/* Device count and modified count */}
           <div className="flex items-center justify-between text-sm text-gray-600">
             <div>
@@ -140,8 +162,28 @@ export function BulkEditTab({
             onDeviceModified={onDeviceModified}
           />
 
-          {/* Save Button */}
-          <div className="flex justify-end pt-4 border-t">
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              onClick={onResetDevices}
+              disabled={modifiedCount === 0}
+              variant="outline"
+              size="lg"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reset Form
+            </Button>
+            {onPreviewChanges && (
+              <Button
+                onClick={onPreviewChanges}
+                disabled={modifiedCount === 0}
+                variant="outline"
+                size="lg"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Preview Changes
+              </Button>
+            )}
             <Button
               onClick={onSaveDevices}
               disabled={modifiedCount === 0}
@@ -152,8 +194,8 @@ export function BulkEditTab({
               {modifiedCount > 0 && ` (${modifiedCount})`}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

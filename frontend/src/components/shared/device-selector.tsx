@@ -41,6 +41,7 @@ export interface LogicalCondition {
 export interface DeviceInfo {
   id: string
   name?: string | null // Name can be null/undefined for unnamed devices
+  serial?: string | null
   location?: string
   role?: string
   device_type?: { name: string } | string
