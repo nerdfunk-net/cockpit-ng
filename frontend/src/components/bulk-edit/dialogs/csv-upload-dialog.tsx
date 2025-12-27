@@ -384,8 +384,8 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
                   <div className="flex flex-wrap gap-2">
                     {parsedData.headers
                       .filter(h => h !== parsedData.identifierField)
-                      .map((header, index) => (
-                        <Badge key={`${header}-${index}`} variant="secondary" className="font-mono text-xs">
+                      .map((header) => (
+                        <Badge key={header} variant="secondary" className="font-mono text-xs">
                           {header}
                         </Badge>
                       ))}
@@ -401,18 +401,18 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
                     <table className="w-full">
                       <thead className="bg-gray-100">
                         <tr>
-                          {parsedData.headers.map((header, index) => (
-                            <th key={`header-${index}`} className="px-2 py-1 text-left font-medium border-r last:border-r-0">
+                          {parsedData.headers.map((header) => (
+                            <th key={header} className="px-2 py-1 text-left font-medium border-r last:border-r-0">
                               {header}
                             </th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {parsedData.rows.slice(0, 3).map((row, rowIndex) => (
-                          <tr key={`row-${rowIndex}`} className="border-t">
-                            {parsedData.headers.map((header, colIndex) => (
-                              <td key={`cell-${rowIndex}-${colIndex}`} className="px-2 py-1 border-r last:border-r-0">
+                        {parsedData.rows.slice(0, 3).map((row) => (
+                          <tr key={row[parsedData.identifierField] || JSON.stringify(row)} className="border-t">
+                            {parsedData.headers.map((header) => (
+                              <td key={`${row[parsedData.identifierField]}-${header}`} className="px-2 py-1 border-r last:border-r-0">
                                 {row[header] || '—'}
                               </td>
                             ))}
