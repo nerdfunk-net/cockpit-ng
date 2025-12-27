@@ -409,15 +409,18 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
                         </tr>
                       </thead>
                       <tbody>
-                        {parsedData.rows.slice(0, 3).map((row) => (
-                          <tr key={row[parsedData.identifierField] || JSON.stringify(row)} className="border-t">
-                            {parsedData.headers.map((header) => (
-                              <td key={`${row[parsedData.identifierField]}-${header}`} className="px-2 py-1 border-r last:border-r-0">
-                                {row[header] || '—'}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
+                        {parsedData.rows.slice(0, 3).map((row) => {
+                          const rowId = parsedData.identifierField ? row[parsedData.identifierField] : JSON.stringify(row)
+                          return (
+                            <tr key={rowId} className="border-t">
+                              {parsedData.headers.map((header) => (
+                                <td key={`${rowId}-${header}`} className="px-2 py-1 border-r last:border-r-0">
+                                  {row[header] || '—'}
+                                </td>
+                              ))}
+                            </tr>
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>

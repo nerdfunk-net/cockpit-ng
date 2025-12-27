@@ -12,10 +12,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, Trash2, Server, Network, AlertCircle, CheckCircle2, Info, Settings, FileSpreadsheet, Tags, FileText, Loader2, Upload, X } from 'lucide-react'
+import { Plus, Trash2, Server, Network, AlertCircle, CheckCircle2, Info, Settings, FileSpreadsheet, Tags, FileText, Loader2, X } from 'lucide-react'
 import { useCSVUpload } from './hooks/use-csv-upload'
 import { CSVUploadModal } from './components/csv-upload-modal'
-import { BulkUpdateModal } from './components/bulk-update-modal'
 import { ParsedDevice, DeviceImportResult } from './types'
 
 // Type definitions
@@ -238,9 +237,6 @@ export function AddDevicePage() {
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({})
   const [customFieldChoices, setCustomFieldChoices] = useState<Record<string, string[]>>({})
   const [isLoadingCustomFields, setIsLoadingCustomFields] = useState(false)
-
-  // Bulk Update modal state
-  const [showBulkUpdateModal, setShowBulkUpdateModal] = useState(false)
 
   // CSV import device handler
   const handleImportDevice = useCallback(async (device: ParsedDevice): Promise<DeviceImportResult> => {
@@ -990,14 +986,6 @@ export function AddDevicePage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowBulkUpdateModal(true)}
-            disabled={isLoading}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Bulk Update
-          </Button>
           <Button
             variant="outline"
             onClick={() => csvUpload.setShowModal(true)}
@@ -1836,12 +1824,6 @@ export function AddDevicePage() {
         onApplyMappings={csvUpload.applyMappings}
         onShowMappingConfig={csvUpload.setShowMappingConfig}
         onReset={csvUpload.reset}
-      />
-
-      {/* Bulk Update Modal */}
-      <BulkUpdateModal
-        open={showBulkUpdateModal}
-        onClose={() => setShowBulkUpdateModal(false)}
       />
 
       {/* Tags Modal */}
