@@ -101,7 +101,6 @@ export function ProgressDialog({
   }, [isPolling, fetchJobStatus])
 
   const handleClose = () => {
-    setIsPolling(false)
     onOpenChange(false)
   }
 

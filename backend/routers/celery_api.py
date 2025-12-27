@@ -10,7 +10,7 @@ from core.auth import require_permission
 from core.celery_error_handler import handle_celery_errors
 from celery_app import celery_app
 from pydantic import BaseModel
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 import logging
 import redis
 import os
@@ -854,6 +854,14 @@ class UpdateDevicesRequest(BaseModel):
     dry_run: bool = False
 
 
+class ImportDevicesRequest(BaseModel):
+    """Request model for importing devices from CSV."""
+
+    csv_content: str
+    csv_options: Optional[Dict[str, str]] = None
+    import_options: Optional[Dict[str, Any]] = None
+
+
 class PreviewExportRequest(BaseModel):
     """Request model for previewing export data."""
 
@@ -1214,7 +1222,7 @@ async def trigger_update_devices_from_csv(
     Returns:
         TaskWithJobResponse with task_id (for Celery) and job_id (for Jobs/Views tracking)
     """
-    from tasks.update_devices_task import update_devices_from_csv_task
+    from tasks.update_devices_task_refactored import update_devices_from_csv_task
 
     if not request.csv_content:
         raise HTTPException(
@@ -1256,6 +1264,90 @@ async def trigger_update_devices_from_csv(
         job_id=str(job_run["id"]),
         status="queued",
         message=f"Update devices task queued{' (dry run mode)' if request.dry_run else ''}: {task.id}",
+    )
+
+
+@router.post("/tasks/import-devices-from-csv", response_model=TaskWithJobResponse)
+@handle_celery_errors("import devices from CSV")
+async def trigger_import_devices_from_csv(
+    request: ImportDevicesRequest,
+    current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+):
+    """
+    Import new Nautobot devices from CSV data.
+
+    This endpoint triggers a background task that:
+    1. Parses the CSV content
+    2. For each device row, creates a new device in Nautobot
+    3. Optionally creates interfaces and assigns IP addresses
+    4. Tracks successes and failures
+    5. Returns summary of operations
+
+    The task is tracked in the job database and can be viewed in the Jobs/Views app.
+
+    Request Body:
+        csv_content: CSV file content as string
+        csv_options: Optional CSV parsing options:
+            - delimiter: Field delimiter (default: ",")
+            - quoteChar: Quote character (default: '"')
+        import_options: Optional import behavior options:
+            - skip_duplicates: If True, skip devices that already exist (default: False)
+            - create_interfaces: If True, create interfaces from CSV (default: True)
+
+    Returns:
+        TaskWithJobResponse with task_id (for Celery) and job_id (for Jobs/Views tracking)
+    """
+    from tasks.import_devices_task import import_devices_from_csv_task
+
+    if not request.csv_content:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="csv_content cannot be empty",
+        )
+
+    # Convert csv_options to proper format
+    csv_options = None
+    if request.csv_options:
+        csv_options = {
+            "delimiter": request.csv_options.get("delimiter", ","),
+            "quoteChar": request.csv_options.get("quoteChar", '"'),
+        }
+
+    # Convert import_options to proper format
+    import_options = None
+    if request.import_options:
+        import_options = {
+            "skip_duplicates": request.import_options.get("skip_duplicates", False),
+            "create_interfaces": request.import_options.get("create_interfaces", True),
+        }
+
+    # Trigger the task asynchronously
+    task = import_devices_from_csv_task.delay(
+        csv_content=request.csv_content,
+        csv_options=csv_options,
+        import_options=import_options,
+    )
+
+    # Create job run record for tracking in Jobs/View
+    import job_run_manager
+
+    skip_duplicates = import_options.get("skip_duplicates", False) if import_options else False
+    job_name = f"Import devices from CSV{' (skip duplicates)' if skip_duplicates else ''}"
+    job_run = job_run_manager.create_job_run(
+        job_name=job_name,
+        job_type="import_devices_from_csv",
+        triggered_by="manual",
+        executed_by=current_user.get("username"),
+    )
+
+    # Mark as started with Celery task ID
+    job_run_manager.mark_started(job_run["id"], task.id)
+
+    return TaskWithJobResponse(
+        task_id=task.id,
+        job_id=str(job_run["id"]),
+        status="queued",
+        message=f"Import devices task queued{' (skip duplicates mode)' if skip_duplicates else ''}: {task.id}",
     )
 
 
