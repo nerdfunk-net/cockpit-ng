@@ -501,26 +501,28 @@ class NautobotService:
             logger.error(f"Device onboarding failed: {e}")
             raise Exception(f"Failed to onboard device: {str(e)}")
 
-    def get_devices_paginated(self, limit: int = 100, offset: int = 0, fields: Optional[list] = None) -> list:
+    def get_devices_paginated(
+        self, limit: int = 100, offset: int = 0, fields: Optional[list] = None
+    ) -> list:
         """
         Get devices from Nautobot with pagination support.
-        
+
         Args:
             limit: Number of devices to return (max 1000)
             offset: Number of devices to skip
             fields: List of fields to include (e.g., ['name', 'primary_ip4'])
-            
+
         Returns:
             List of device dictionaries
         """
         try:
             # Build the endpoint URL with pagination and depth parameter
             endpoint = f"dcim/devices/?limit={limit}&offset={offset}&depth=1"
-            
+
             response = self._sync_rest_request(endpoint)
-            
-            devices = response.get('results', [])
-            
+
+            devices = response.get("results", [])
+
             # Filter fields if specified
             if fields:
                 filtered_devices = []
@@ -531,9 +533,9 @@ class NautobotService:
                             filtered_device[field] = device[field]
                     filtered_devices.append(filtered_device)
                 return filtered_devices
-            
+
             return devices
-            
+
         except Exception as e:
             logger.error(f"Error getting paginated devices: {str(e)}")
             return []

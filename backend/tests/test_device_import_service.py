@@ -5,7 +5,7 @@ Tests device import workflow including validation, creation, and interface handl
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from services.device_import_service import DeviceImportService
 from services.nautobot import NautobotService
 from services.device_common_service import DeviceCommonService
@@ -35,7 +35,9 @@ def mock_common_service():
     # Validation methods
     service.validate_required_fields = MagicMock()
     service._is_valid_uuid = MagicMock(return_value=False)
-    service.normalize_tags = MagicMock(side_effect=lambda x: x if isinstance(x, list) else [x])
+    service.normalize_tags = MagicMock(
+        side_effect=lambda x: x if isinstance(x, list) else [x]
+    )
     # Interface/IP helpers
     service.ensure_ip_address_exists = AsyncMock(return_value="ip-uuid-123")
     service.assign_ip_to_interface = AsyncMock()
@@ -61,7 +63,9 @@ class TestValidation:
     """Tests for validate_import_data method."""
 
     @pytest.mark.asyncio
-    async def test_validate_import_data_success(self, import_service, mock_common_service):
+    async def test_validate_import_data_success(
+        self, import_service, mock_common_service
+    ):
         """Test successful validation with all required fields."""
         device_data = {
             "name": "test-device",
@@ -86,7 +90,9 @@ class TestValidation:
         assert result["tags"] == ["production", "core"]
 
     @pytest.mark.asyncio
-    async def test_validate_import_data_missing_required(self, import_service, mock_common_service):
+    async def test_validate_import_data_missing_required(
+        self, import_service, mock_common_service
+    ):
         """Test validation fails with missing required field."""
         device_data = {
             "name": "test-device",
@@ -101,7 +107,9 @@ class TestValidation:
             await import_service.validate_import_data(device_data)
 
     @pytest.mark.asyncio
-    async def test_validate_import_data_with_uuids(self, import_service, mock_common_service):
+    async def test_validate_import_data_with_uuids(
+        self, import_service, mock_common_service
+    ):
         """Test validation with UUIDs instead of names."""
         mock_common_service._is_valid_uuid.return_value = True
 
@@ -125,7 +133,9 @@ class TestValidation:
         mock_common_service.resolve_location_id.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_validate_import_data_default_status(self, import_service, mock_common_service):
+    async def test_validate_import_data_default_status(
+        self, import_service, mock_common_service
+    ):
         """Test status defaults to 'active' if not provided."""
         device_data = {
             "name": "test-device",
@@ -138,7 +148,9 @@ class TestValidation:
         result = await import_service.validate_import_data(device_data)
 
         # Should resolve "active" status
-        mock_common_service.resolve_status_id.assert_called_with("active", "dcim.device")
+        mock_common_service.resolve_status_id.assert_called_with(
+            "active", "dcim.device"
+        )
         assert result["status"] == "status-uuid"
 
     @pytest.mark.asyncio
@@ -232,7 +244,9 @@ class TestDeviceCreation:
         assert was_created is False
 
         # Should call resolve to find existing device
-        mock_common_service.resolve_device_by_name.assert_called_once_with("test-device")
+        mock_common_service.resolve_device_by_name.assert_called_once_with(
+            "test-device"
+        )
 
     @pytest.mark.asyncio
     async def test_create_device_already_exists_no_skip(
@@ -490,7 +504,10 @@ class TestImportDeviceIntegration:
         mock_nautobot_service.rest_request.side_effect = [
             {"id": "device-uuid-123", "name": "test-device"},  # Device creation
             {"id": "interface-uuid-123", "name": "Loopback0"},  # Interface creation
-            {"id": "device-uuid-123", "primary_ip4": "ip-uuid-123"},  # Primary IP assignment
+            {
+                "id": "device-uuid-123",
+                "primary_ip4": "ip-uuid-123",
+            },  # Primary IP assignment
         ]
 
         result = await import_service.import_device(

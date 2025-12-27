@@ -5,7 +5,7 @@ Tests device update workflow including resolution, validation, and property upda
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from services.device_update_service import DeviceUpdateService
 from services.nautobot import NautobotService
 from services.device_common_service import DeviceCommonService
@@ -34,7 +34,9 @@ def mock_common_service():
     service.ensure_interface_with_ip = AsyncMock(return_value="ip-uuid-123")
     # Validation methods
     service._is_valid_uuid = MagicMock(return_value=False)
-    service.normalize_tags = MagicMock(side_effect=lambda x: x if isinstance(x, list) else [x])
+    service.normalize_tags = MagicMock(
+        side_effect=lambda x: x if isinstance(x, list) else [x]
+    )
     return service
 
 
@@ -59,17 +61,16 @@ class TestDeviceResolution:
         self, update_service, mock_nautobot_service, mock_common_service
     ):
         """Test device resolution when UUID is provided."""
-        device_identifier = {
-            "id": "device-uuid-123",
-            "name": "test-device"
-        }
+        device_identifier = {"id": "device-uuid-123", "name": "test-device"}
 
         mock_nautobot_service.rest_request.return_value = {
             "id": "device-uuid-123",
-            "name": "test-device"
+            "name": "test-device",
         }
 
-        device_id, device_name = await update_service._resolve_device_id(device_identifier)
+        device_id, device_name = await update_service._resolve_device_id(
+            device_identifier
+        )
 
         assert device_id == "device-uuid-123"
         assert device_name == "test-device"
@@ -79,16 +80,16 @@ class TestDeviceResolution:
         self, update_service, mock_nautobot_service, mock_common_service
     ):
         """Test device resolution by name only."""
-        device_identifier = {
-            "name": "test-device"
-        }
+        device_identifier = {"name": "test-device"}
 
         mock_nautobot_service.rest_request.return_value = {
             "id": "device-uuid-456",
-            "name": "test-device"
+            "name": "test-device",
         }
 
-        device_id, device_name = await update_service._resolve_device_id(device_identifier)
+        device_id, device_name = await update_service._resolve_device_id(
+            device_identifier
+        )
 
         assert device_id == "device-uuid-123"  # From mock
         assert device_name == "test-device"
@@ -101,16 +102,16 @@ class TestDeviceResolution:
         self, update_service, mock_nautobot_service, mock_common_service
     ):
         """Test device resolution by IP address."""
-        device_identifier = {
-            "ip_address": "10.0.0.1"
-        }
+        device_identifier = {"ip_address": "10.0.0.1"}
 
         mock_nautobot_service.rest_request.return_value = {
             "id": "device-uuid-789",
-            "name": "device-from-ip"
+            "name": "device-from-ip",
         }
 
-        device_id, device_name = await update_service._resolve_device_id(device_identifier)
+        device_id, device_name = await update_service._resolve_device_id(
+            device_identifier
+        )
 
         assert device_id == "device-uuid-123"  # From mock
         assert device_name == "device-from-ip"
@@ -126,15 +127,15 @@ class TestDeviceResolution:
             await update_service._resolve_device_id(device_identifier)
 
     @pytest.mark.asyncio
-    async def test_resolve_device_not_found(
-        self, update_service, mock_common_service
-    ):
+    async def test_resolve_device_not_found(self, update_service, mock_common_service):
         """Test when device cannot be resolved."""
         device_identifier = {"name": "nonexistent"}
 
         mock_common_service.resolve_device_id.return_value = None
 
-        device_id, device_name = await update_service._resolve_device_id(device_identifier)
+        device_id, device_name = await update_service._resolve_device_id(
+            device_identifier
+        )
 
         assert device_id is None
         assert device_name is None
@@ -156,12 +157,11 @@ class TestValidation:
         update_data = {
             "serial": "ABC123",
             "asset_tag": "TAG456",
-            "description": "Test device"
+            "description": "Test device",
         }
 
         validated, ip_namespace = await update_service.validate_update_data(
-            device_id="device-uuid-1",
-            update_data=update_data
+            device_id="device-uuid-1", update_data=update_data
         )
 
         assert validated["serial"] == "ABC123"
@@ -181,8 +181,7 @@ class TestValidation:
         }
 
         validated, ip_namespace = await update_service.validate_update_data(
-            device_id="device-uuid-1",
-            update_data=update_data
+            device_id="device-uuid-1", update_data=update_data
         )
 
         # Should resolve names to UUIDs
@@ -191,7 +190,9 @@ class TestValidation:
         assert validated["role"] == "role-uuid"
 
         # Verify resolution methods were called
-        mock_common_service.resolve_status_id.assert_called_with("active", "dcim.device")
+        mock_common_service.resolve_status_id.assert_called_with(
+            "active", "dcim.device"
+        )
         mock_common_service.resolve_platform_id.assert_called_with("ios")
         mock_common_service.resolve_role_id.assert_called_with("access-switch")
 
@@ -206,8 +207,7 @@ class TestValidation:
         }
 
         validated, ip_namespace = await update_service.validate_update_data(
-            device_id="device-uuid-1",
-            update_data=update_data
+            device_id="device-uuid-1", update_data=update_data
         )
 
         # Should have flattened fields
@@ -217,17 +217,14 @@ class TestValidation:
         assert "role.slug" not in validated
 
     @pytest.mark.asyncio
-    async def test_validate_update_data_tags(
-        self, update_service, mock_common_service
-    ):
+    async def test_validate_update_data_tags(self, update_service, mock_common_service):
         """Test tag normalization."""
         update_data = {
             "tags": "production,core,switch"  # Comma-separated string
         }
 
         validated, ip_namespace = await update_service.validate_update_data(
-            device_id="device-uuid-1",
-            update_data=update_data
+            device_id="device-uuid-1", update_data=update_data
         )
 
         # Should normalize to list
@@ -245,8 +242,7 @@ class TestValidation:
         }
 
         validated, ip_namespace = await update_service.validate_update_data(
-            device_id="device-uuid-1",
-            update_data=update_data
+            device_id="device-uuid-1", update_data=update_data
         )
 
         # Should only include non-empty values
@@ -259,14 +255,10 @@ class TestValidation:
         self, update_service, mock_common_service
     ):
         """Test IP namespace extraction."""
-        update_data = {
-            "primary_ip4": "10.0.0.1/32",
-            "ip_namespace": "Production"
-        }
+        update_data = {"primary_ip4": "10.0.0.1/32", "ip_namespace": "Production"}
 
         validated, ip_namespace = await update_service.validate_update_data(
-            device_id="device-uuid-1",
-            update_data=update_data
+            device_id="device-uuid-1", update_data=update_data
         )
 
         # primary_ip4 should be in validated data
@@ -288,8 +280,7 @@ class TestValidation:
         }
 
         validated, ip_namespace = await update_service.validate_update_data(
-            device_id="device-uuid-1",
-            update_data=update_data
+            device_id="device-uuid-1", update_data=update_data
         )
 
         # Should use UUIDs directly without resolution
@@ -328,8 +319,7 @@ class TestUpdateProperties:
         }
 
         updated_fields = await update_service._update_device_properties(
-            device_id="device-uuid-1",
-            validated_data=validated_data
+            device_id="device-uuid-1", validated_data=validated_data
         )
 
         assert "serial" in updated_fields
@@ -364,11 +354,11 @@ class TestUpdateProperties:
             "serial": "ABC123",
         }
 
-        updated_fields = await update_service._update_device_properties(
+        await update_service._update_device_properties(
             device_id="device-uuid-1",
             validated_data=validated_data,
             interface_config=interface_config,
-            ip_namespace="Global"
+            ip_namespace="Global",
         )
 
         # Should call ensure_interface_with_ip
@@ -378,7 +368,7 @@ class TestUpdateProperties:
             interface_name="Loopback0",
             interface_type="virtual",
             interface_status="active",
-            ip_namespace="Global"
+            ip_namespace="Global",
         )
 
         # Should update primary_ip4 with IP UUID
@@ -403,7 +393,7 @@ class TestUpdateProperties:
             device_id="device-uuid-1",
             validated_data=validated_data,
             interface_config=None,  # No config provided
-            ip_namespace=None  # No namespace provided
+            ip_namespace=None,  # No namespace provided
         )
 
         # Should use defaults: Loopback, virtual, active, Global
@@ -431,8 +421,7 @@ class TestUpdateProperties:
 
         with pytest.raises(ValueError, match="primary_ip4 mismatch"):
             await update_service._update_device_properties(
-                device_id="device-uuid-1",
-                validated_data=validated_data
+                device_id="device-uuid-1", validated_data=validated_data
             )
 
 
@@ -463,7 +452,7 @@ class TestVerification:
         result = await update_service._verify_updates(
             device_id="device-uuid-1",
             expected_updates=expected_updates,
-            actual_device=actual_device
+            actual_device=actual_device,
         )
 
         assert result is True
@@ -485,7 +474,7 @@ class TestVerification:
         result = await update_service._verify_updates(
             device_id="device-uuid-1",
             expected_updates=expected_updates,
-            actual_device=actual_device
+            actual_device=actual_device,
         )
 
         assert result is False
@@ -508,7 +497,7 @@ class TestVerification:
         result = await update_service._verify_updates(
             device_id="device-uuid-1",
             expected_updates=expected_updates,
-            actual_device=actual_device
+            actual_device=actual_device,
         )
 
         # Should pass because special fields are skipped
@@ -538,14 +527,29 @@ class TestUpdateDeviceIntegration:
 
         # Mock GET calls (before and after)
         mock_nautobot_service.rest_request.side_effect = [
-            {"id": "device-uuid-1", "name": "test-device", "serial": "OLD-SERIAL"},  # GET before
-            {"id": "device-uuid-1", "name": "test-device", "serial": "NEW-SERIAL", "status": {"id": "status-uuid"}, "platform": {"id": "platform-uuid"}},  # PATCH
-            {"id": "device-uuid-1", "name": "test-device", "serial": "NEW-SERIAL", "status": {"id": "status-uuid"}, "platform": {"id": "platform-uuid"}},  # GET after
+            {
+                "id": "device-uuid-1",
+                "name": "test-device",
+                "serial": "OLD-SERIAL",
+            },  # GET before
+            {
+                "id": "device-uuid-1",
+                "name": "test-device",
+                "serial": "NEW-SERIAL",
+                "status": {"id": "status-uuid"},
+                "platform": {"id": "platform-uuid"},
+            },  # PATCH
+            {
+                "id": "device-uuid-1",
+                "name": "test-device",
+                "serial": "NEW-SERIAL",
+                "status": {"id": "status-uuid"},
+                "platform": {"id": "platform-uuid"},
+            },  # GET after
         ]
 
         result = await update_service.update_device(
-            device_identifier=device_identifier,
-            update_data=update_data
+            device_identifier=device_identifier, update_data=update_data
         )
 
         assert result["success"] is True
@@ -557,9 +561,7 @@ class TestUpdateDeviceIntegration:
         assert len(result["warnings"]) == 0
 
     @pytest.mark.asyncio
-    async def test_update_device_not_found(
-        self, update_service, mock_common_service
-    ):
+    async def test_update_device_not_found(self, update_service, mock_common_service):
         """Test update when device not found."""
         device_identifier = {"name": "nonexistent"}
 
@@ -570,7 +572,7 @@ class TestUpdateDeviceIntegration:
         result = await update_service.update_device(
             device_identifier=device_identifier,
             update_data=update_data,
-            create_if_missing=False
+            create_if_missing=False,
         )
 
         assert result["success"] is False
@@ -590,12 +592,11 @@ class TestUpdateDeviceIntegration:
 
         mock_nautobot_service.rest_request.return_value = {
             "id": "device-uuid-1",
-            "name": "test-device"
+            "name": "test-device",
         }
 
         result = await update_service.update_device(
-            device_identifier=device_identifier,
-            update_data=update_data
+            device_identifier=device_identifier, update_data=update_data
         )
 
         assert result["success"] is True
@@ -623,14 +624,22 @@ class TestUpdateDeviceIntegration:
 
         mock_nautobot_service.rest_request.side_effect = [
             {"id": "device-uuid-1", "name": "test-device"},  # GET before
-            {"id": "device-uuid-1", "primary_ip4": {"id": "ip-uuid-123"}, "serial": "ABC123"},  # PATCH
-            {"id": "device-uuid-1", "primary_ip4": {"id": "ip-uuid-123"}, "serial": "ABC123"},  # GET after
+            {
+                "id": "device-uuid-1",
+                "primary_ip4": {"id": "ip-uuid-123"},
+                "serial": "ABC123",
+            },  # PATCH
+            {
+                "id": "device-uuid-1",
+                "primary_ip4": {"id": "ip-uuid-123"},
+                "serial": "ABC123",
+            },  # GET after
         ]
 
         result = await update_service.update_device(
             device_identifier=device_identifier,
             update_data=update_data,
-            interface_config=interface_config
+            interface_config=interface_config,
         )
 
         assert result["success"] is True
@@ -650,14 +659,20 @@ class TestUpdateDeviceIntegration:
         update_data = {"serial": "NEW-SERIAL"}
 
         mock_nautobot_service.rest_request.side_effect = [
-            {"id": "device-uuid-1", "name": "test-device", "serial": "OLD"},  # GET before
+            {
+                "id": "device-uuid-1",
+                "name": "test-device",
+                "serial": "OLD",
+            },  # GET before
             {"id": "device-uuid-1", "serial": "NEW-SERIAL"},  # PATCH returns correct
-            {"id": "device-uuid-1", "serial": "UNEXPECTED"},  # GET after returns different
+            {
+                "id": "device-uuid-1",
+                "serial": "UNEXPECTED",
+            },  # GET after returns different
         ]
 
         result = await update_service.update_device(
-            device_identifier=device_identifier,
-            update_data=update_data
+            device_identifier=device_identifier, update_data=update_data
         )
 
         assert result["success"] is True  # Still succeeds

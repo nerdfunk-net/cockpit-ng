@@ -232,11 +232,15 @@ def update_devices_from_csv_task(
                                 "error": result["message"],
                             }
                         )
-                        logger.error(f"Service failed to update device: {result['message']}")
+                        logger.error(
+                            f"Service failed to update device: {result['message']}"
+                        )
 
             except Exception as e:
                 error_msg = str(e)
-                logger.error(f"Failed to update device {identifier}: {error_msg}", exc_info=True)
+                logger.error(
+                    f"Failed to update device {identifier}: {error_msg}", exc_info=True
+                )
                 failures.append(
                     {
                         "device_identifier": {"name": identifier},
@@ -350,11 +354,18 @@ def _prepare_row_data(
     excluded_fields = {"id", "name", "ip_address"}
 
     # Interface configuration fields
-    interface_fields = {"interface_name", "interface_type", "interface_status", "ip_namespace"}
+    interface_fields = {
+        "interface_name",
+        "interface_type",
+        "interface_status",
+        "ip_namespace",
+    }
 
     # Extract interface configuration if present
     interface_config = None
-    if any(f in headers for f in ["interface_name", "interface_type", "interface_status"]):
+    if any(
+        f in headers for f in ["interface_name", "interface_type", "interface_status"]
+    ):
         interface_config = {
             "name": row.get("interface_name", "").strip() or "Loopback",
             "type": row.get("interface_type", "").strip() or "virtual",

@@ -235,11 +235,15 @@ def update_devices_task(
                                 "error": result["message"],
                             }
                         )
-                        logger.error(f"Service failed to update device: {result['message']}")
+                        logger.error(
+                            f"Service failed to update device: {result['message']}"
+                        )
 
             except Exception as e:
                 error_msg = str(e)
-                logger.error(f"Failed to update device {identifier}: {error_msg}", exc_info=True)
+                logger.error(
+                    f"Failed to update device {identifier}: {error_msg}", exc_info=True
+                )
                 failures.append(
                     {
                         "device_identifier": {"name": identifier},
@@ -267,7 +271,7 @@ def update_devices_task(
             },
         }
 
-        logger.info(f"Update complete:")
+        logger.info("Update complete:")
         logger.info(f"  - Total: {total_devices}")
         logger.info(f"  - Success: {len(successes)}")
         logger.info(f"  - Failed: {len(failures)}")
@@ -331,7 +335,7 @@ def update_devices_task(
 
 
 def _prepare_device_data(
-    device_data: Dict[str, Any]
+    device_data: Dict[str, Any],
 ) -> tuple[Dict[str, Any], Dict[str, Any], Optional[Dict[str, str]]]:
     """
     Prepare device data for DeviceUpdateService.

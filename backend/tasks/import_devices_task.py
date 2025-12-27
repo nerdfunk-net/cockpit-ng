@@ -173,7 +173,9 @@ def import_devices_from_csv_task(
                 logger.info(f"Importing device {device_name}")
                 logger.debug(f"Device data: {device_data}")
                 if interface_config:
-                    logger.debug(f"Interface config: {len(interface_config)} interface(s)")
+                    logger.debug(
+                        f"Interface config: {len(interface_config)} interface(s)"
+                    )
 
                 result = asyncio.run(
                     import_service.import_device(
@@ -191,7 +193,9 @@ def import_devices_from_csv_task(
                                 "device_name": result["device_name"],
                                 "created": True,
                                 "warnings": result["warnings"],
-                                "interfaces_created": len(result["details"]["interfaces"]),
+                                "interfaces_created": len(
+                                    result["details"]["interfaces"]
+                                ),
                             }
                         )
                         logger.info(
@@ -207,7 +211,9 @@ def import_devices_from_csv_task(
                                 "reason": "Device already exists",
                             }
                         )
-                        logger.info(f"Device {result['device_name']} already exists, skipped")
+                        logger.info(
+                            f"Device {result['device_name']} already exists, skipped"
+                        )
                 else:
                     # Service returned failure
                     failures.append(
@@ -216,11 +222,15 @@ def import_devices_from_csv_task(
                             "error": result["message"],
                         }
                     )
-                    logger.error(f"Service failed to import device: {result['message']}")
+                    logger.error(
+                        f"Service failed to import device: {result['message']}"
+                    )
 
             except Exception as e:
                 error_msg = str(e)
-                logger.error(f"Failed to import device {device_name}: {error_msg}", exc_info=True)
+                logger.error(
+                    f"Failed to import device {device_name}: {error_msg}", exc_info=True
+                )
                 failures.append(
                     {
                         "device_name": device_name,
@@ -322,9 +332,18 @@ def _prepare_device_data(
     """
     # Device-level fields
     device_fields = {
-        "name", "device_type", "role", "location", "status",
-        "platform", "serial", "asset_tag", "software_version",
-        "description", "tags", "manufacturer"
+        "name",
+        "device_type",
+        "role",
+        "location",
+        "status",
+        "platform",
+        "serial",
+        "asset_tag",
+        "software_version",
+        "description",
+        "tags",
+        "manufacturer",
     }
 
     # Custom fields (cf_*)
@@ -332,10 +351,16 @@ def _prepare_device_data(
 
     # Interface fields
     interface_fields = {
-        "interface_name", "interface_type", "interface_status",
-        "interface_ip_address", "interface_description", "interface_enabled",
-        "interface_mgmt_only", "interface_mac_address", "interface_mtu",
-        "ip_namespace"
+        "interface_name",
+        "interface_type",
+        "interface_status",
+        "interface_ip_address",
+        "interface_description",
+        "interface_enabled",
+        "interface_mgmt_only",
+        "interface_mac_address",
+        "interface_mtu",
+        "ip_namespace",
     }
 
     # Build device data
@@ -356,7 +381,7 @@ def _prepare_device_data(
             if "custom_fields" not in device_data:
                 device_data["custom_fields"] = {}
             # Remove cf_ prefix
-            cf_name = field[len(custom_field_prefix):]
+            cf_name = field[len(custom_field_prefix) :]
             device_data["custom_fields"][cf_name] = value
         # Handle device fields
         elif field in device_fields:
@@ -382,17 +407,22 @@ def _prepare_device_data(
                     "ip_address": interface_ip,
                     "namespace": row.get("ip_namespace", "").strip() or "Global",
                     "is_primary_ipv4": True,  # First interface is primary
-                    "enabled": row.get("interface_enabled", "").strip().lower() not in ["false", "0", "no"],
-                    "mgmt_only": row.get("interface_mgmt_only", "").strip().lower() in ["true", "1", "yes"],
+                    "enabled": row.get("interface_enabled", "").strip().lower()
+                    not in ["false", "0", "no"],
+                    "mgmt_only": row.get("interface_mgmt_only", "").strip().lower()
+                    in ["true", "1", "yes"],
                     "description": row.get("interface_description", "").strip(),
                     "mac_address": row.get("interface_mac_address", "").strip(),
-                    "mtu": int(row.get("interface_mtu")) if row.get("interface_mtu", "").strip().isdigit() else None,
+                    "mtu": int(row.get("interface_mtu"))
+                    if row.get("interface_mtu", "").strip().isdigit()
+                    else None,
                 }
             ]
 
             # Remove None values and empty strings
             interface_config[0] = {
-                k: v for k, v in interface_config[0].items()
+                k: v
+                for k, v in interface_config[0].items()
                 if v is not None and v != ""
             }
 

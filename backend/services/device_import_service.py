@@ -127,14 +127,19 @@ class DeviceImportService:
             details["device"] = device_response
 
             if not was_created:
-                logger.info(f"Device '{validated_data['name']}' already exists, skipped creation")
+                logger.info(
+                    f"Device '{validated_data['name']}' already exists, skipped creation"
+                )
                 warnings.append("Device already exists, skipped creation")
 
             # Step 3: Create interfaces (if provided)
             primary_ipv4_id = None
             if interface_config:
                 logger.info(f"Step 3: Creating {len(interface_config)} interface(s)")
-                created_interfaces, primary_ipv4_id = await self._create_device_interfaces(
+                (
+                    created_interfaces,
+                    primary_ipv4_id,
+                ) = await self._create_device_interfaces(
                     device_id, interface_config, validated_data["name"]
                 )
                 details["interfaces"] = created_interfaces
@@ -149,14 +154,21 @@ class DeviceImportService:
             # Step 4: Assign primary IP (if we have one)
             if primary_ipv4_id:
                 logger.info("Step 4: Assigning primary IPv4 to device")
-                await self._assign_primary_ip(device_id, primary_ipv4_id)
-                details["primary_ip"] = primary_ipv4_id
+                success = await self.common.assign_primary_ip_to_device(
+                    device_id, primary_ipv4_id
+                )
+                if success:
+                    details["primary_ip"] = primary_ipv4_id
+                else:
+                    warnings.append("Failed to assign primary IPv4 to device")
             else:
                 logger.info("Step 4: No primary IPv4 to assign")
 
             # Success!
             success_message = f"Device '{validated_data['name']}' "
-            success_message += "imported successfully" if was_created else "already exists"
+            success_message += (
+                "imported successfully" if was_created else "already exists"
+            )
 
             return {
                 "success": True,
@@ -232,8 +244,8 @@ class DeviceImportService:
             )
             if not device_type_id:
                 raise ValueError(
-                    f"Device type '{device_type}' not found" +
-                    (f" for manufacturer '{manufacturer}'" if manufacturer else "")
+                    f"Device type '{device_type}' not found"
+                    + (f" for manufacturer '{manufacturer}'" if manufacturer else "")
                 )
             validated["device_type"] = device_type_id
 
@@ -332,7 +344,9 @@ class DeviceImportService:
                 raise Exception("No device ID returned from Nautobot")
 
             device_id = device_response["id"]
-            logger.info(f"Device '{device_name}' created successfully with ID: {device_id}")
+            logger.info(
+                f"Device '{device_name}' created successfully with ID: {device_id}"
+            )
 
             return device_id, device_response, True
 
@@ -386,14 +400,20 @@ class DeviceImportService:
             - created_interfaces: List of interface result dicts
             - primary_ipv4_id: UUID of primary IPv4 address (if any)
         """
-        logger.info(f"Creating {len(interface_config)} interface(s) for device '{device_name}'")
+        logger.info(
+            f"Creating {len(interface_config)} interface(s) for device '{device_name}'"
+        )
 
         created_interfaces = []
         primary_ipv4_id = None
 
         # Separate LAG interfaces (must be created first for dependencies)
-        lag_interfaces = [iface for iface in interface_config if iface.get("type") == "lag"]
-        other_interfaces = [iface for iface in interface_config if iface.get("type") != "lag"]
+        lag_interfaces = [
+            iface for iface in interface_config if iface.get("type") == "lag"
+        ]
+        other_interfaces = [
+            iface for iface in interface_config if iface.get("type") != "lag"
+        ]
 
         # Map frontend interface IDs to Nautobot interface IDs (for LAG dependencies)
         interface_id_map = {}
@@ -409,11 +429,13 @@ class DeviceImportService:
                 interface_name = iface_data.get("name")
                 if not interface_name:
                     logger.warning("Interface config missing 'name', skipping")
-                    created_interfaces.append({
-                        "name": None,
-                        "success": False,
-                        "error": "Missing interface name",
-                    })
+                    created_interfaces.append(
+                        {
+                            "name": None,
+                            "success": False,
+                            "error": "Missing interface name",
+                        }
+                    )
                     continue
 
                 logger.info(f"Creating interface '{interface_name}'")
@@ -430,8 +452,14 @@ class DeviceImportService:
 
                 # Add optional properties
                 optional_fields = [
-                    "enabled", "mgmt_only", "description", "mac_address",
-                    "mtu", "mode", "parent_interface", "bridge",
+                    "enabled",
+                    "mgmt_only",
+                    "description",
+                    "mac_address",
+                    "mtu",
+                    "mode",
+                    "parent_interface",
+                    "bridge",
                 ]
                 for field in optional_fields:
                     if field in iface_data and iface_data[field] is not None:
@@ -442,9 +470,13 @@ class DeviceImportService:
                     lag_nautobot_id = interface_id_map.get(iface_data["lag"])
                     if lag_nautobot_id:
                         interface_payload["lag"] = lag_nautobot_id
-                        logger.debug(f"Mapped LAG {iface_data['lag']} → {lag_nautobot_id}")
+                        logger.debug(
+                            f"Mapped LAG {iface_data['lag']} → {lag_nautobot_id}"
+                        )
                     else:
-                        logger.warning(f"LAG interface {iface_data['lag']} not found in map")
+                        logger.warning(
+                            f"LAG interface {iface_data['lag']} not found in map"
+                        )
 
                 # Handle VLAN fields (convert comma-separated strings to lists)
                 if "tagged_vlans" in iface_data and iface_data["tagged_vlans"]:
@@ -461,7 +493,9 @@ class DeviceImportService:
 
                 # Handle tags
                 if "tags" in iface_data and iface_data["tags"]:
-                    interface_payload["tags"] = self.common.normalize_tags(iface_data["tags"])
+                    interface_payload["tags"] = self.common.normalize_tags(
+                        iface_data["tags"]
+                    )
 
                 # Create interface
                 interface_response = await self.nautobot.rest_request(
@@ -474,12 +508,16 @@ class DeviceImportService:
                     raise Exception("No interface ID returned from Nautobot")
 
                 interface_id = interface_response["id"]
-                logger.info(f"Created interface '{interface_name}' with ID: {interface_id}")
+                logger.info(
+                    f"Created interface '{interface_name}' with ID: {interface_id}"
+                )
 
                 # Store mapping for LAG references
                 if "id" in iface_data:
                     interface_id_map[iface_data["id"]] = interface_id
-                    logger.debug(f"Mapped frontend ID {iface_data['id']} → {interface_id}")
+                    logger.debug(
+                        f"Mapped frontend ID {iface_data['id']} → {interface_id}"
+                    )
 
                 interface_result = {
                     "name": interface_name,
@@ -494,7 +532,9 @@ class DeviceImportService:
                     namespace = iface_data.get("namespace", "Global")
 
                     try:
-                        logger.info(f"Assigning IP {ip_address} to interface '{interface_name}'")
+                        logger.info(
+                            f"Assigning IP {ip_address} to interface '{interface_name}'"
+                        )
 
                         # Resolve namespace
                         namespace_id = await self.common.resolve_namespace_id(namespace)
@@ -515,17 +555,23 @@ class DeviceImportService:
 
                         interface_result["ip_assigned"] = True
                         interface_result["ip_id"] = ip_id
-                        logger.info(f"Successfully assigned IP {ip_address} to interface '{interface_name}'")
+                        logger.info(
+                            f"Successfully assigned IP {ip_address} to interface '{interface_name}'"
+                        )
 
                         # Track primary IPv4
                         is_ipv4 = ":" not in ip_address  # Simple IPv4 check
                         if is_ipv4:
                             if iface_data.get("is_primary_ipv4"):
                                 primary_ipv4_id = ip_id
-                                logger.info(f"Interface '{interface_name}' marked as primary IPv4 (explicit)")
+                                logger.info(
+                                    f"Interface '{interface_name}' marked as primary IPv4 (explicit)"
+                                )
                             elif primary_ipv4_id is None:
                                 primary_ipv4_id = ip_id
-                                logger.info(f"Interface '{interface_name}' set as primary IPv4 (first IPv4 found)")
+                                logger.info(
+                                    f"Interface '{interface_name}' set as primary IPv4 (first IPv4 found)"
+                                )
 
                     except Exception as ip_error:
                         error_msg = f"Failed to assign IP to interface: {str(ip_error)}"
@@ -537,11 +583,13 @@ class DeviceImportService:
             except Exception as e:
                 error_msg = f"Failed to create interface '{iface_data.get('name', 'unknown')}': {str(e)}"
                 logger.error(error_msg)
-                created_interfaces.append({
-                    "name": iface_data.get("name", "unknown"),
-                    "success": False,
-                    "error": error_msg,
-                })
+                created_interfaces.append(
+                    {
+                        "name": iface_data.get("name", "unknown"),
+                        "success": False,
+                        "error": error_msg,
+                    }
+                )
 
         logger.info(
             f"Interface creation complete: {sum(1 for i in created_interfaces if i.get('success'))} succeeded, "
@@ -549,31 +597,3 @@ class DeviceImportService:
         )
 
         return created_interfaces, primary_ipv4_id
-
-    async def _assign_primary_ip(self, device_id: str, ip_address_id: str) -> bool:
-        """
-        Assign primary IPv4 address to a device.
-
-        Args:
-            device_id: Device UUID
-            ip_address_id: IP address UUID to set as primary
-
-        Returns:
-            True if successful, False otherwise
-        """
-        try:
-            logger.info(f"Assigning primary IPv4 {ip_address_id} to device {device_id}")
-
-            endpoint = f"dcim/devices/{device_id}/"
-            await self.nautobot.rest_request(
-                endpoint=endpoint,
-                method="PATCH",
-                data={"primary_ip4": ip_address_id},
-            )
-
-            logger.info(f"Successfully assigned primary IPv4 to device {device_id}")
-            return True
-
-        except Exception as e:
-            logger.error(f"Failed to assign primary IPv4 to device {device_id}: {str(e)}")
-            return False

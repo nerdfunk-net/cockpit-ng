@@ -5,7 +5,7 @@ Tests all shared utility methods used by import and update services.
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from services.device_common_service import DeviceCommonService
 from services.nautobot import NautobotService
 
@@ -39,11 +39,7 @@ class TestDeviceResolution:
     ):
         """Test successful device resolution by name."""
         mock_nautobot_service.graphql_query.return_value = {
-            "data": {
-                "devices": [
-                    {"id": "device-uuid-123", "name": "test-device"}
-                ]
-            }
+            "data": {"devices": [{"id": "device-uuid-123", "name": "test-device"}]}
         }
 
         result = await common_service.resolve_device_by_name("test-device")
@@ -56,9 +52,7 @@ class TestDeviceResolution:
         self, common_service, mock_nautobot_service
     ):
         """Test device not found by name."""
-        mock_nautobot_service.graphql_query.return_value = {
-            "data": {"devices": []}
-        }
+        mock_nautobot_service.graphql_query.return_value = {"data": {"devices": []}}
 
         result = await common_service.resolve_device_by_name("nonexistent")
 
@@ -90,8 +84,8 @@ class TestDeviceResolution:
                         "address": "10.0.0.1/24",
                         "primary_ip4_for": {
                             "id": "device-uuid-456",
-                            "name": "test-device"
-                        }
+                            "name": "test-device",
+                        },
                     }
                 ]
             }
@@ -112,7 +106,7 @@ class TestDeviceResolution:
                     {
                         "id": "ip-uuid-123",
                         "address": "10.0.0.1/24",
-                        "primary_ip4_for": None
+                        "primary_ip4_for": None,
                     }
                 ]
             }
@@ -141,16 +135,11 @@ class TestDeviceResolution:
     ):
         """Test fallback to name resolution."""
         mock_nautobot_service.graphql_query.return_value = {
-            "data": {
-                "devices": [
-                    {"id": "device-uuid-789", "name": "test-device"}
-                ]
-            }
+            "data": {"devices": [{"id": "device-uuid-789", "name": "test-device"}]}
         }
 
         result = await common_service.resolve_device_id(
-            device_id="invalid-uuid",
-            device_name="test-device"
+            device_id="invalid-uuid", device_name="test-device"
         )
 
         assert result == "device-uuid-789"
@@ -173,8 +162,8 @@ class TestResourceResolution:
             "count": 2,
             "results": [
                 {"id": "status-uuid-1", "name": "Active"},
-                {"id": "status-uuid-2", "name": "Planned"}
-            ]
+                {"id": "status-uuid-2", "name": "Planned"},
+            ],
         }
 
         result = await common_service.resolve_status_id("active", "dcim.device")
@@ -186,10 +175,7 @@ class TestResourceResolution:
         self, common_service, mock_nautobot_service
     ):
         """Test status not found raises ValueError."""
-        mock_nautobot_service.rest_request.return_value = {
-            "count": 0,
-            "results": []
-        }
+        mock_nautobot_service.rest_request.return_value = {"count": 0, "results": []}
 
         with pytest.raises(ValueError, match="Status 'nonexistent' not found"):
             await common_service.resolve_status_id("nonexistent", "dcim.device")
@@ -200,11 +186,7 @@ class TestResourceResolution:
     ):
         """Test successful namespace resolution."""
         mock_nautobot_service.graphql_query.return_value = {
-            "data": {
-                "namespaces": [
-                    {"id": "namespace-uuid-1", "name": "Global"}
-                ]
-            }
+            "data": {"namespaces": [{"id": "namespace-uuid-1", "name": "Global"}]}
         }
 
         result = await common_service.resolve_namespace_id("Global")
@@ -216,9 +198,7 @@ class TestResourceResolution:
         self, common_service, mock_nautobot_service
     ):
         """Test namespace not found raises ValueError."""
-        mock_nautobot_service.graphql_query.return_value = {
-            "data": {"namespaces": []}
-        }
+        mock_nautobot_service.graphql_query.return_value = {"data": {"namespaces": []}}
 
         with pytest.raises(ValueError, match="Namespace 'NonExistent' not found"):
             await common_service.resolve_namespace_id("NonExistent")
@@ -229,11 +209,7 @@ class TestResourceResolution:
     ):
         """Test successful platform resolution."""
         mock_nautobot_service.graphql_query.return_value = {
-            "data": {
-                "platforms": [
-                    {"id": "platform-uuid-1", "name": "ios"}
-                ]
-            }
+            "data": {"platforms": [{"id": "platform-uuid-1", "name": "ios"}]}
         }
 
         result = await common_service.resolve_platform_id("ios")
@@ -251,15 +227,13 @@ class TestResourceResolution:
                     {
                         "id": "device-type-uuid-1",
                         "model": "Catalyst 9300",
-                        "manufacturer": {"name": "Cisco"}
+                        "manufacturer": {"name": "Cisco"},
                     }
                 ]
             }
         }
 
-        result = await common_service.resolve_device_type_id(
-            "Catalyst 9300", "Cisco"
-        )
+        result = await common_service.resolve_device_type_id("Catalyst 9300", "Cisco")
 
         assert result == "device-type-uuid-1"
 
@@ -274,11 +248,7 @@ class TestValidation:
 
     def test_validate_required_fields_success(self, common_service):
         """Test validation passes with all required fields."""
-        data = {
-            "name": "test-device",
-            "location": "site1",
-            "role": "access"
-        }
+        data = {"name": "test-device", "location": "site1", "role": "access"}
         required = ["name", "location", "role"]
 
         # Should not raise
@@ -286,9 +256,7 @@ class TestValidation:
 
     def test_validate_required_fields_missing(self, common_service):
         """Test validation fails with missing fields."""
-        data = {
-            "name": "test-device"
-        }
+        data = {"name": "test-device"}
         required = ["name", "location", "role"]
 
         with pytest.raises(ValueError, match="Missing required fields"):
@@ -330,29 +298,15 @@ class TestDataProcessing:
 
     def test_flatten_nested_fields(self, common_service):
         """Test flattening nested field notation."""
-        data = {
-            "name": "test-device",
-            "platform.name": "ios",
-            "role.slug": "access"
-        }
+        data = {"name": "test-device", "platform.name": "ios", "role.slug": "access"}
 
         result = common_service.flatten_nested_fields(data)
 
-        assert result == {
-            "name": "test-device",
-            "platform": "ios",
-            "role": "access"
-        }
+        assert result == {"name": "test-device", "platform": "ios", "role": "access"}
 
     def test_extract_nested_value(self, common_service):
         """Test extracting values from nested dictionaries."""
-        data = {
-            "device": {
-                "platform": {
-                    "name": "ios"
-                }
-            }
-        }
+        data = {"device": {"platform": {"name": "ios"}}}
 
         result = common_service.extract_nested_value(data, "device.platform.name")
 
@@ -406,12 +360,12 @@ class TestDataProcessing:
             "tags": "tag1,tag2",
             "interface_name": "Loopback0",
             "interface_type": "virtual",
-            "ip_namespace": "Global"
+            "ip_namespace": "Global",
         }
         headers = list(row.keys())
 
-        update_data, interface_config, ip_namespace = common_service.prepare_update_data(
-            row, headers
+        update_data, interface_config, ip_namespace = (
+            common_service.prepare_update_data(row, headers)
         )
 
         # Should exclude id and name, include other fields
@@ -425,7 +379,7 @@ class TestDataProcessing:
         assert interface_config == {
             "name": "Loopback0",
             "type": "virtual",
-            "status": "active"  # Default
+            "status": "active",  # Default
         }
 
         # IP namespace should be extracted
@@ -447,14 +401,11 @@ class TestInterfaceAndIPHelpers:
         """Test when IP address already exists."""
         mock_nautobot_service.rest_request.return_value = {
             "count": 1,
-            "results": [
-                {"id": "ip-uuid-123", "address": "10.0.0.1/24"}
-            ]
+            "results": [{"id": "ip-uuid-123", "address": "10.0.0.1/24"}],
         }
 
         result = await common_service.ensure_ip_address_exists(
-            ip_address="10.0.0.1/24",
-            namespace_id="namespace-uuid-1"
+            ip_address="10.0.0.1/24", namespace_id="namespace-uuid-1"
         )
 
         assert result == "ip-uuid-123"
@@ -471,13 +422,15 @@ class TestInterfaceAndIPHelpers:
         # Third call: POST creates IP
         mock_nautobot_service.rest_request.side_effect = [
             {"count": 0, "results": []},  # IP doesn't exist
-            {"count": 1, "results": [{"id": "status-uuid-1", "name": "Active"}]},  # Status lookup
-            {"id": "ip-uuid-new", "address": "10.0.0.2/24"}  # IP creation
+            {
+                "count": 1,
+                "results": [{"id": "status-uuid-1", "name": "Active"}],
+            },  # Status lookup
+            {"id": "ip-uuid-new", "address": "10.0.0.2/24"},  # IP creation
         ]
 
         result = await common_service.ensure_ip_address_exists(
-            ip_address="10.0.0.2/24",
-            namespace_id="namespace-uuid-1"
+            ip_address="10.0.0.2/24", namespace_id="namespace-uuid-1"
         )
 
         assert result == "ip-uuid-new"
@@ -490,14 +443,11 @@ class TestInterfaceAndIPHelpers:
         """Test when interface already exists."""
         mock_nautobot_service.rest_request.return_value = {
             "count": 1,
-            "results": [
-                {"id": "interface-uuid-123", "name": "Loopback0"}
-            ]
+            "results": [{"id": "interface-uuid-123", "name": "Loopback0"}],
         }
 
         result = await common_service.ensure_interface_exists(
-            device_id="device-uuid-1",
-            interface_name="Loopback0"
+            device_id="device-uuid-1", interface_name="Loopback0"
         )
 
         assert result == "interface-uuid-123"
@@ -511,13 +461,15 @@ class TestInterfaceAndIPHelpers:
         # Second call: create assignment
         mock_nautobot_service.rest_request.side_effect = [
             {"count": 0, "results": []},  # Assignment doesn't exist
-            {"id": "assignment-uuid-1", "ip_address": "ip-uuid-1", "interface": "interface-uuid-1"}  # Created
+            {
+                "id": "assignment-uuid-1",
+                "ip_address": "ip-uuid-1",
+                "interface": "interface-uuid-1",
+            },  # Created
         ]
 
         result = await common_service.assign_ip_to_interface(
-            ip_id="ip-uuid-1",
-            interface_id="interface-uuid-1",
-            is_primary=True
+            ip_id="ip-uuid-1", interface_id="interface-uuid-1", is_primary=True
         )
 
         assert result["id"] == "assignment-uuid-1"
@@ -531,13 +483,16 @@ class TestInterfaceAndIPHelpers:
         mock_nautobot_service.rest_request.return_value = {
             "count": 1,
             "results": [
-                {"id": "assignment-uuid-1", "ip_address": "ip-uuid-1", "interface": "interface-uuid-1"}
-            ]
+                {
+                    "id": "assignment-uuid-1",
+                    "ip_address": "ip-uuid-1",
+                    "interface": "interface-uuid-1",
+                }
+            ],
         }
 
         result = await common_service.assign_ip_to_interface(
-            ip_id="ip-uuid-1",
-            interface_id="interface-uuid-1"
+            ip_id="ip-uuid-1", interface_id="interface-uuid-1"
         )
 
         assert result["id"] == "assignment-uuid-1"

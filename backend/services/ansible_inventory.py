@@ -872,7 +872,9 @@ class AnsibleInventoryService:
         result = await nautobot_service.graphql_query(query, variables)
 
         devices = self._parse_device_data(result.get("data", {}).get("devices", []))
-        logger.info(f"Found {len(devices)} devices with has_primary_ip={has_primary_bool}")
+        logger.info(
+            f"Found {len(devices)} devices with has_primary_ip={has_primary_bool}"
+        )
 
         return devices
 
