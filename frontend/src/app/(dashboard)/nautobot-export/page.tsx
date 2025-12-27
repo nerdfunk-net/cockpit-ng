@@ -7,9 +7,9 @@ import type { DeviceInfo, LogicalCondition } from '@/components/shared/device-se
 import { useApi } from '@/hooks/use-api'
 
 // Tab Components
-import { DeviceSelectionTab } from '@/components/nautobot-export/tabs/device-selection-tab'
-import { PropertiesTab } from '@/components/nautobot-export/tabs/properties-tab'
-import { ExportTab } from '@/components/nautobot-export/tabs/export-tab'
+import { DeviceSelectionTab } from '@/components/features/nautobot/export/tabs/device-selection-tab'
+import { PropertiesTab } from '@/components/features/nautobot/export/tabs/properties-tab'
+import { ExportTab } from '@/components/features/nautobot/export/tabs/export-tab'
 
 export default function NautobotExportPage() {
   const { apiCall } = useApi()

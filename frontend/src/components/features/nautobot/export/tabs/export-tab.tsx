@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Download, FileText, AlertCircle, Eye } from 'lucide-react'
 import type { DeviceInfo } from '@/components/shared/device-selector'
-import { PreviewExportDialog } from '@/components/nautobot-export/dialogs'
+import { PreviewExportDialog } from '@/components/features/nautobot/export/dialogs'
 
 interface ExportTabProps {
   selectedDevices: DeviceInfo[]
