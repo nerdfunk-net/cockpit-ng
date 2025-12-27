@@ -108,6 +108,16 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
     })
   }
 
+  const handleCreateOnIpChangeChange = (checked: boolean) => {
+    onPropertiesChange({
+      ...properties,
+      interfaceConfig: {
+        ...properties.interfaceConfig,
+        createOnIpChange: checked,
+      },
+    })
+  }
+
   const handleAddPrefixesChange = (checked: boolean) => {
     onPropertiesChange({
       ...properties,
@@ -212,6 +222,24 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
                 </Select>
               </div>
             </div>
+
+            {/* Add new Interface when IP changes */}
+            <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1 flex-1">
+                  <Label htmlFor="create-on-ip-change" className="text-sm font-medium text-gray-900">Add new Interface when IP changes</Label>
+                  <p className="text-sm text-gray-700">
+                    Automatically create a new interface when the primary IP address is updated
+                  </p>
+                </div>
+                <Switch
+                  id="create-on-ip-change"
+                  checked={properties.interfaceConfig.createOnIpChange}
+                  onCheckedChange={handleCreateOnIpChangeChange}
+                  className="ml-4 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
+                />
+              </div>
+            </div>
           </div>
 
           {/* IP Configuration Section */}
@@ -225,11 +253,11 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Add IP Prefixes Automatically */}
-              <div className="space-y-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1 flex-1">
-                    <Label htmlFor="add-prefixes" className="text-sm font-medium text-gray-700">Add IP Prefixes Automatically</Label>
-                    <p className="text-sm text-gray-600">
+                    <Label htmlFor="add-prefixes" className="text-sm font-medium text-gray-900">Add IP Prefixes Automatically</Label>
+                    <p className="text-sm text-gray-700">
                       Automatically add IP prefixes when creating interfaces
                     </p>
                   </div>
@@ -237,7 +265,7 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
                     id="add-prefixes"
                     checked={properties.ipConfig.addPrefixesAutomatically}
                     onCheckedChange={handleAddPrefixesChange}
-                    className="ml-4"
+                    className="ml-4 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
                   />
                 </div>
               </div>

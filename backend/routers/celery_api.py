@@ -862,6 +862,13 @@ class ImportDevicesRequest(BaseModel):
     import_options: Optional[Dict[str, Any]] = None
 
 
+class UpdateDevicesJSONRequest(BaseModel):
+    """Request model for updating devices from JSON list."""
+
+    devices: List[Dict[str, Any]]
+    dry_run: bool = False
+
+
 class PreviewExportRequest(BaseModel):
     """Request model for previewing export data."""
 
@@ -1264,6 +1271,90 @@ async def trigger_update_devices_from_csv(
         job_id=str(job_run["id"]),
         status="queued",
         message=f"Update devices task queued{' (dry run mode)' if request.dry_run else ''}: {task.id}",
+    )
+
+
+@router.post("/tasks/update-devices", response_model=TaskWithJobResponse)
+@handle_celery_errors("update devices")
+async def trigger_update_devices(
+    request: UpdateDevicesJSONRequest,
+    current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+):
+    """
+    Update Nautobot devices from JSON list.
+
+    This endpoint triggers a background task that:
+    1. Receives a list of device update objects
+    2. For each device, updates the device in Nautobot
+    3. Tracks successes and failures
+    4. Returns summary of operations
+
+    The task is tracked in the job database and can be viewed in the Jobs/Views app.
+
+    Request Body:
+        devices: List of device update objects. Each object should contain:
+            - Device identifier (one or more of):
+                - id: Device UUID
+                - name: Device name
+                - ip_address: Device IP address
+            - Update data (any device fields to update)
+            - Optional interface configuration (for primary_ip4)
+
+        dry_run: If True, validate without making changes (default: False)
+
+    Example request:
+        {
+            "devices": [
+                {
+                    "id": "device-uuid",
+                    "name": "switch-01",
+                    "primary_ip4": "10.0.0.1/24",
+                    "mgmt_interface_name": "eth0",
+                    "mgmt_interface_type": "1000base-t",
+                    "mgmt_interface_status": "active",
+                    "namespace": "namespace-uuid",
+                    "role": "role-uuid"
+                }
+            ],
+            "dry_run": false
+        }
+
+    Returns:
+        TaskWithJobResponse with task_id (for Celery) and job_id (for Jobs/Views tracking)
+    """
+    from tasks.update_devices_task import update_devices_task
+
+    if not request.devices:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="devices list cannot be empty",
+        )
+
+    # Trigger the task asynchronously
+    task = update_devices_task.delay(
+        devices=request.devices,
+        dry_run=request.dry_run,
+    )
+
+    # Create job run record for tracking in Jobs/View
+    import job_run_manager
+
+    job_name = f"Update devices{' (DRY RUN)' if request.dry_run else ''}"
+    job_run = job_run_manager.create_job_run(
+        job_name=job_name,
+        job_type="update_devices",
+        triggered_by="manual",
+        executed_by=current_user.get("username"),
+    )
+
+    # Mark as started with Celery task ID
+    job_run_manager.mark_started(job_run["id"], task.id)
+
+    return TaskWithJobResponse(
+        task_id=task.id,
+        job_id=str(job_run["id"]),
+        status="queued",
+        message=f"Update devices task queued ({len(request.devices)} device(s)){' (dry run mode)' if request.dry_run else ''}: {task.id}",
     )
 
 

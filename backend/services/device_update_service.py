@@ -131,11 +131,39 @@ class DeviceUpdateService:
                         f"Device not found with identifier: {device_identifier}"
                     )
 
-            # Get device state before update
+            # Get device state before update (with depth=1 to get full primary_ip4 object)
             details["before"] = await self.nautobot.rest_request(
-                endpoint=f"dcim/devices/{device_id}/",
+                endpoint=f"dcim/devices/{device_id}/?depth=1",
                 method="GET",
             )
+
+            # Extract current primary_ip4 for updating existing interface
+            current_primary_ip4 = None
+            primary_ip4_field = details["before"].get("primary_ip4")
+            logger.debug(f"Device primary_ip4 field: {primary_ip4_field}")
+            logger.debug(f"Type: {type(primary_ip4_field)}")
+
+            if primary_ip4_field:
+                if isinstance(primary_ip4_field, dict):
+                    current_primary_ip4 = primary_ip4_field.get("address")
+                    logger.info(f"Current primary_ip4 (from dict): {current_primary_ip4}")
+                elif isinstance(primary_ip4_field, str):
+                    # Sometimes it's just a UUID string
+                    logger.info(f"Primary IP field is a UUID: {primary_ip4_field}")
+                    # Need to fetch the IP address details
+                    try:
+                        ip_details = await self.nautobot.rest_request(
+                            endpoint=f"ipam/ip-addresses/{primary_ip4_field}/",
+                            method="GET",
+                        )
+                        current_primary_ip4 = ip_details.get("address")
+                        logger.info(f"Current primary_ip4 (from UUID lookup): {current_primary_ip4}")
+                    except Exception as e:
+                        logger.warning(f"Could not fetch IP details: {e}")
+                else:
+                    logger.warning(f"Unexpected primary_ip4 type: {type(primary_ip4_field)}")
+            else:
+                logger.info("Device has no primary_ip4 set")
 
             # Step 2: Validate and resolve update data
             logger.info("Step 2: Validating and resolving update data")
@@ -158,7 +186,12 @@ class DeviceUpdateService:
             # Step 3: Update device properties
             logger.info(f"Step 3: Updating device {device_name}")
             updated_fields = await self._update_device_properties(
-                device_id, validated_data, interface_config, ip_namespace
+                device_id=device_id,
+                validated_data=validated_data,
+                interface_config=interface_config,
+                ip_namespace=ip_namespace,
+                device_name=device_name,
+                current_primary_ip4=current_primary_ip4,
             )
 
             # Get device state after update
@@ -362,8 +395,15 @@ class DeviceUpdateService:
                 # Store for later use with primary_ip4
                 ip_namespace = value
 
+            elif field == "custom_fields":
+                # Ensure custom_fields is a simple dict (Nautobot expects {"field_name": "value"})
+                if isinstance(value, dict):
+                    validated[field] = value
+                else:
+                    logger.warning(f"Invalid custom_fields format: {type(value)}, expected dict")
+
             else:
-                # Copy other fields as-is (including primary_ip4, custom_fields, etc.)
+                # Copy other fields as-is (including primary_ip4, etc.)
                 validated[field] = value
 
         logger.info(f"Validation complete, {len(validated)} fields to update")
@@ -377,19 +417,23 @@ class DeviceUpdateService:
         validated_data: Dict[str, Any],
         interface_config: Optional[Dict[str, str]] = None,
         ip_namespace: Optional[str] = None,
+        device_name: Optional[str] = None,
+        current_primary_ip4: Optional[str] = None,
     ) -> List[str]:
         """
         Update device properties via PATCH request.
 
         Special handling for primary_ip4:
-        - Ensures interface exists before assigning
-        - Creates interface if needed using interface_config
+        - If createOnIpChange=true: Creates new interface with new IP
+        - If createOnIpChange=false: Updates existing interface's IP address
 
         Args:
             device_id: Device UUID
             validated_data: Validated update data with UUIDs
             interface_config: Optional interface config for primary_ip4
             ip_namespace: Optional IP namespace for primary_ip4
+            device_name: Device name (required for updating existing interface)
+            current_primary_ip4: Current primary IP address (for finding interface to update)
 
         Returns:
             List of updated field names
@@ -412,20 +456,37 @@ class DeviceUpdateService:
                     "name": "Loopback",
                     "type": "virtual",
                     "status": "active",
+                    "mgmt_interface_create_on_ip_change": False,
                 }
 
             # Use namespace if provided, otherwise default to "Global"
             namespace = ip_namespace or "Global"
 
-            # Ensure interface with IP exists (creates if needed)
-            ip_id = await self.common.ensure_interface_with_ip(
-                device_id=device_id,
-                ip_address=primary_ip4,
-                interface_name=interface_config.get("name", "Loopback"),
-                interface_type=interface_config.get("type", "virtual"),
-                interface_status=interface_config.get("status", "active"),
-                ip_namespace=namespace,
-            )
+            # Check if we should create a new interface or update existing
+            create_new = interface_config.get("mgmt_interface_create_on_ip_change", False)
+            logger.info(f"Create new interface on IP change: {create_new}")
+
+            if create_new:
+                # BEHAVIOR 1: Create new interface with new IP (existing behavior)
+                logger.info("Creating new interface with new IP address")
+                ip_id = await self.common.ensure_interface_with_ip(
+                    device_id=device_id,
+                    ip_address=primary_ip4,
+                    interface_name=interface_config.get("name", "Loopback"),
+                    interface_type=interface_config.get("type", "virtual"),
+                    interface_status=interface_config.get("status", "active"),
+                    ip_namespace=namespace,
+                )
+            else:
+                # BEHAVIOR 2: Update existing interface's IP address
+                logger.info("Updating existing interface's IP address")
+                ip_id = await self._update_existing_interface_ip(
+                    device_id=device_id,
+                    device_name=device_name,
+                    old_ip=current_primary_ip4,
+                    new_ip=primary_ip4,
+                    namespace=namespace,
+                )
 
             # Update the payload to use the IP UUID instead of the address string
             update_payload["primary_ip4"] = ip_id
@@ -458,6 +519,104 @@ class DeviceUpdateService:
 
         logger.info(f"Successfully updated device {device_id}")
         return updated_fields
+
+    async def _update_existing_interface_ip(
+        self,
+        device_id: str,
+        device_name: str,
+        old_ip: Optional[str],
+        new_ip: str,
+        namespace: str,
+    ) -> str:
+        """
+        Update an existing interface's IP address (instead of creating a new interface).
+
+        This method:
+        1. Finds the interface that currently has the old IP address
+        2. Updates that interface to use the new IP address
+        3. Reassigns the device's primary_ip4 (Nautobot removes it when IP changes)
+
+        Args:
+            device_id: Device UUID
+            device_name: Device name (for GraphQL lookup)
+            old_ip: Current primary IP address (to find the interface)
+            new_ip: New IP address to assign
+            namespace: IP namespace
+
+        Returns:
+            UUID of the new IP address
+
+        Raises:
+            ValueError: If interface cannot be found or updated
+        """
+        logger.info(
+            f"Updating existing interface IP from {old_ip} to {new_ip} on device {device_name}"
+        )
+
+        # Step 1: Find the interface that currently has the old IP
+        if old_ip:
+            interface_info = await self.common.find_interface_with_ip(
+                device_name=device_name, ip_address=old_ip
+            )
+
+            if interface_info:
+                interface_id, interface_name = interface_info
+                logger.info(
+                    f"Found interface '{interface_name}' (ID: {interface_id}) with current IP {old_ip}"
+                )
+            else:
+                logger.warning(
+                    f"Could not find interface with IP {old_ip}, will create new interface"
+                )
+                # Fallback: create new interface if we can't find the old one
+                return await self.common.ensure_interface_with_ip(
+                    device_id=device_id,
+                    ip_address=new_ip,
+                    interface_name="Loopback",
+                    interface_type="virtual",
+                    interface_status="active",
+                    ip_namespace=namespace,
+                )
+        else:
+            logger.warning(
+                "No current primary_ip4 found, will create new interface with new IP"
+            )
+            # Fallback: create new interface if device has no current IP
+            return await self.common.ensure_interface_with_ip(
+                device_id=device_id,
+                ip_address=new_ip,
+                interface_name="Loopback",
+                interface_type="virtual",
+                interface_status="active",
+                ip_namespace=namespace,
+            )
+
+        # Step 2: Resolve namespace name to UUID
+        logger.info(f"Resolving namespace '{namespace}'")
+        namespace_id = await self.common.resolve_namespace_id(namespace)
+        logger.info(f"Resolved namespace '{namespace}' to UUID {namespace_id}")
+
+        # Step 3: Create or get the new IP address in Nautobot
+        logger.info(f"Ensuring IP address {new_ip} exists in namespace {namespace}")
+        new_ip_id = await self.common.ensure_ip_address_exists(
+            ip_address=new_ip, namespace_id=namespace_id
+        )
+
+        # Step 4: Assign the new IP to the existing interface
+        logger.info(f"Assigning IP {new_ip} (ID: {new_ip_id}) to interface {interface_name}")
+        await self.common.assign_ip_to_interface(
+            ip_id=new_ip_id, interface_id=interface_id
+        )
+
+        logger.info(
+            f"✓ Successfully updated interface {interface_name} with new IP {new_ip}"
+        )
+        logger.info(
+            f"Note: Old IP {old_ip} will remain on the interface. "
+            f"Nautobot allows multiple IPs per interface."
+        )
+
+        return new_ip_id
 
     async def _update_device_interfaces(
         self,
@@ -510,11 +669,29 @@ class DeviceUpdateService:
         mismatches = []
 
         for field, expected_value in expected_updates.items():
-            # Skip special fields that don't directly map
-            if field in ["tags", "custom_fields"]:
+            actual_value = actual_device.get(field)
+
+            # Handle custom_fields specially
+            if field == "custom_fields":
+                # Compare each custom field individually
+                if isinstance(expected_value, dict) and isinstance(actual_value, dict):
+                    for cf_name, cf_expected in expected_value.items():
+                        cf_actual = actual_value.get(cf_name)
+                        if cf_actual != cf_expected:
+                            mismatches.append({
+                                "field": f"custom_fields.{cf_name}",
+                                "expected": cf_expected,
+                                "actual": cf_actual,
+                            })
+                            logger.warning(
+                                f"Custom field '{cf_name}' mismatch: expected '{cf_expected}', "
+                                f"got '{cf_actual}'"
+                            )
                 continue
 
-            actual_value = actual_device.get(field)
+            # Skip tags (different structure)
+            if field == "tags":
+                continue
 
             # Handle nested objects (e.g., primary_ip4 is an object with 'id')
             if isinstance(actual_value, dict) and "id" in actual_value:

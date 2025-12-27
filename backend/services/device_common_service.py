@@ -53,14 +53,14 @@ class DeviceCommonService:
             logger.info(f"Looking up device by name: {device_name}")
 
             query = """
-            query GetDeviceByName($name: String!) {
+            query GetDeviceByName($name: [String]) {
               devices(name: $name) {
                 id
                 name
               }
             }
             """
-            variables = {"name": device_name}
+            variables = {"name": [device_name]}
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
@@ -198,6 +198,77 @@ class DeviceCommonService:
         logger.error("Could not resolve device ID from any identifier")
         return None
 
+    async def find_interface_with_ip(
+        self, device_name: str, ip_address: str
+    ) -> Optional[Tuple[str, str]]:
+        """
+        Find the interface that currently has a specific IP address on a device.
+
+        Args:
+            device_name: Name of the device
+            ip_address: IP address to search for (in CIDR notation, e.g., "10.0.0.1/24")
+
+        Returns:
+            Tuple of (interface_id, interface_name) if found, None otherwise
+        """
+        try:
+            logger.info(
+                f"Finding interface with IP {ip_address} on device {device_name}"
+            )
+
+            query = """
+            query ($filter_device: [String], $filter_address: [String]) {
+              devices(name: $filter_device) {
+                id
+                name
+                interfaces(ip_addresses: $filter_address) {
+                  id
+                  name
+                }
+              }
+            }
+            """
+            variables = {
+                "filter_device": [device_name],
+                "filter_address": [ip_address],
+            }
+
+            result = await self.nautobot.graphql_query(query, variables)
+
+            if "errors" in result:
+                logger.error(
+                    f"GraphQL error finding interface with IP: {result['errors']}"
+                )
+                return None
+
+            devices = result.get("data", {}).get("devices", [])
+            if not devices or len(devices) == 0:
+                logger.warning(f"Device '{device_name}' not found")
+                return None
+
+            device = devices[0]
+            interfaces = device.get("interfaces", [])
+
+            if not interfaces or len(interfaces) == 0:
+                logger.info(
+                    f"No interface found with IP {ip_address} on device {device_name}"
+                )
+                return None
+
+            # Return the first interface with this IP
+            interface = interfaces[0]
+            interface_id = interface.get("id")
+            interface_name = interface.get("name")
+
+            logger.info(
+                f"Found interface '{interface_name}' (ID: {interface_id}) with IP {ip_address}"
+            )
+            return (interface_id, interface_name)
+
+        except Exception as e:
+            logger.error(f"Error finding interface with IP: {e}", exc_info=True)
+            return None
+
     # ========================================================================
     # RESOURCE RESOLUTION METHODS
     # ========================================================================
@@ -328,14 +399,14 @@ class DeviceCommonService:
             logger.info(f"Resolving role '{role_name}'")
 
             query = """
-            query GetRole($name: String!) {
+            query GetRole($name: [String]) {
               roles(name: $name) {
                 id
                 name
               }
             }
             """
-            variables = {"name": role_name}
+            variables = {"name": [role_name]}
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
@@ -369,14 +440,14 @@ class DeviceCommonService:
             logger.info(f"Resolving location '{location_name}'")
 
             query = """
-            query GetLocation($name: String!) {
+            query GetLocation($name: [String]) {
               locations(name: $name) {
                 id
                 name
               }
             }
             """
-            variables = {"name": location_name}
+            variables = {"name": [location_name]}
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
@@ -416,7 +487,7 @@ class DeviceCommonService:
             # Build query with optional manufacturer filter
             if manufacturer:
                 query = """
-                query GetDeviceType($model: String!, $manufacturer: String!) {
+                query GetDeviceType($model: [String], $manufacturer: [String]) {
                   device_types(model: $model, manufacturer: $manufacturer) {
                     id
                     model
@@ -426,10 +497,10 @@ class DeviceCommonService:
                   }
                 }
                 """
-                variables = {"model": model, "manufacturer": manufacturer}
+                variables = {"model": [model], "manufacturer": [manufacturer]}
             else:
                 query = """
-                query GetDeviceType($model: String!) {
+                query GetDeviceType($model: [String]) {
                   device_types(model: $model) {
                     id
                     model
@@ -439,7 +510,7 @@ class DeviceCommonService:
                   }
                 }
                 """
-                variables = {"model": model}
+                variables = {"model": [model]}
 
             result = await self.nautobot.graphql_query(query, variables)
 

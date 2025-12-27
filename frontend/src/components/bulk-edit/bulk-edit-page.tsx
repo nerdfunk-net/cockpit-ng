@@ -6,7 +6,7 @@ import { Edit } from 'lucide-react'
 import type { DeviceInfo, LogicalCondition } from '@/components/shared/device-selector'
 import { useApi } from '@/hooks/use-api'
 import { useToast } from '@/hooks/use-toast'
-import { convertModifiedDevicesToCSV, validateModifiedDevices } from './utils/csv-converter'
+import { convertModifiedDevicesToJSON, validateModifiedDevices } from './utils/json-converter'
 
 // Tab Components
 import { DeviceSelectionTab } from './tabs/device-selection-tab'
@@ -16,12 +16,14 @@ import { BulkEditTab } from './tabs/bulk-edit-tab'
 // Dialog Components
 import { PreviewChangesDialog } from './dialogs/preview-changes-dialog'
 import { ProgressDialog } from './dialogs/progress-dialog'
+import { BulkUpdateModal } from './dialogs/csv-upload-dialog'
 
 // Types
 export interface InterfaceConfig {
   name: string
   type: string
   status: string
+  createOnIpChange: boolean
 }
 
 export interface IPConfig {
@@ -44,6 +46,7 @@ const DEFAULT_INTERFACE_CONFIG: InterfaceConfig = {
   name: '',
   type: '1000base-t',
   status: 'active',
+  createOnIpChange: false,
 }
 
 const DEFAULT_IP_CONFIG: IPConfig = {
@@ -76,6 +79,7 @@ export default function BulkEditPage() {
   // Dialog state
   const [showPreviewDialog, setShowPreviewDialog] = useState(false)
   const [showProgressDialog, setShowProgressDialog] = useState(false)
+  const [showCSVUploadDialog, setShowCSVUploadDialog] = useState(false)
   const [currentJobId, setCurrentJobId] = useState<string | null>(null)
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
 
@@ -112,8 +116,8 @@ export default function BulkEditPage() {
       // Validate that we have modified devices
       validateModifiedDevices(modifiedDevices)
 
-      // Convert modified devices to CSV format with interface config and namespace
-      const csvContent = convertModifiedDevicesToCSV(
+      // Convert modified devices to JSON array with interface config and namespace
+      const devicesJson = convertModifiedDevicesToJSON(
         modifiedDevices,
         properties.interfaceConfig,
         properties.ipConfig.namespace
@@ -125,15 +129,11 @@ export default function BulkEditPage() {
         description: `Updating ${modifiedDevices.size} device(s)`,
       })
 
-      // Call the existing CSV update endpoint
-      const result = await apiCall('/api/celery/tasks/update-devices-from-csv', {
+      // Call the new JSON update endpoint
+      const result = await apiCall('/api/celery/tasks/update-devices', {
         method: 'POST',
         body: JSON.stringify({
-          csv_content: csvContent,
-          csv_options: {
-            delimiter: ',',
-            quoteChar: '"',
-          },
+          devices: devicesJson,
           dry_run: false,
         }),
       }) as { job_id: string; task_id: string; message: string }
@@ -164,23 +164,19 @@ export default function BulkEditPage() {
   }, [])
 
   const handleRunDryRun = useCallback(async () => {
-    // Validate and convert to CSV with interface config and namespace
+    // Validate and convert to JSON with interface config and namespace
     validateModifiedDevices(modifiedDevices)
-    const csvContent = convertModifiedDevicesToCSV(
+    const devicesJson = convertModifiedDevicesToJSON(
       modifiedDevices,
       properties.interfaceConfig,
       properties.ipConfig.namespace
     )
 
     // Call API with dry_run = true
-    const result = await apiCall('/api/celery/tasks/update-devices-from-csv', {
+    const result = await apiCall('/api/celery/tasks/update-devices', {
       method: 'POST',
       body: JSON.stringify({
-        csv_content: csvContent,
-        csv_options: {
-          delimiter: ',',
-          quoteChar: '"',
-        },
+        devices: devicesJson,
         dry_run: true,
       }),
     })
@@ -356,6 +352,7 @@ export default function BulkEditPage() {
             selectedDevices={stableState.selectedDevices}
             onDevicesSelected={handleDevicesSelected}
             onSelectionChange={handleSelectionChange}
+            onOpenCSVUpload={() => setShowCSVUploadDialog(true)}
           />
         </TabsContent>
 
@@ -400,6 +397,12 @@ export default function BulkEditPage() {
         jobId={currentJobId}
         taskId={currentTaskId}
         onJobComplete={handleJobComplete}
+      />
+
+      {/* CSV Upload Dialog */}
+      <BulkUpdateModal
+        open={showCSVUploadDialog}
+        onClose={() => setShowCSVUploadDialog(false)}
       />
     </div>
   )
