@@ -29,7 +29,7 @@ import { History, RefreshCw, XCircle, ChevronLeft, ChevronRight, Trash2, Eye, Ch
 import { useAuthStore } from "@/lib/auth-store"
 import { useToast } from "@/hooks/use-toast"
 import { JobResultDialog } from "../job-result-dialog"
-import { JobRun, PaginatedResponse } from "./types/job-results"
+import { JobRun, PaginatedResponse } from "../types/job-results"
 
 const EMPTY_ARRAY: JobRun[] = []
 
