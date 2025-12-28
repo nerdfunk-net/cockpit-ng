@@ -1,17 +1,56 @@
 """
-Pytest configuration and shared fixtures for backup tests.
+Pytest configuration and shared fixtures for Cockpit-NG tests.
+
+This module provides centralized test fixtures for:
+- Mock services (Nautobot, CheckMK, Netmiko, Git)
+- Sample test data
+- Database fixtures
+- Authentication fixtures
 """
 
 import pytest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock, MagicMock, AsyncMock
 from typing import Dict, Any
 from git import Repo
+
+# Import centralized fixtures
+from tests.fixtures import (
+    NAUTOBOT_DEVICE_STANDARD,
+    NAUTOBOT_DEVICES_LIST,
+    CHECKMK_HOST_STANDARD,
+    CHECKMK_HOSTS_LIST,
+    create_device_response,
+    create_host_response,
+)
+
+
+# =============================================================================
+# Pytest Markers
+# =============================================================================
+
+def pytest_configure(config):
+    """Register custom pytest markers."""
+    config.addinivalue_line("markers", "unit: Unit tests (fast, no external dependencies)")
+    config.addinivalue_line("markers", "integration: Integration tests (mocked externals)")
+    config.addinivalue_line("markers", "e2e: End-to-end tests (real systems, manual only)")
+    config.addinivalue_line("markers", "nautobot: Tests involving Nautobot integration")
+    config.addinivalue_line("markers", "checkmk: Tests involving CheckMK integration")
+    config.addinivalue_line("markers", "slow: Tests that take >5 seconds")
 
 
 @pytest.fixture
 def mock_nautobot_service():
-    """Mock NautobotService for testing."""
-    service = Mock()
+    """
+    Mock NautobotService for testing.
+
+    Provides mock methods for GraphQL queries and REST API requests.
+    Use AsyncMock for async methods.
+    """
+    service = MagicMock()
+    # For async methods
+    service.graphql_query = AsyncMock()
+    service.rest_request = AsyncMock()
+    # For sync methods (legacy)
     service.execute_graphql_query = Mock()
     service._sync_rest_request = Mock()
     return service
@@ -160,3 +199,184 @@ interface GigabitEthernet0/1
 end
 """,
     }
+
+
+# =============================================================================
+# Enhanced Mock Services
+# =============================================================================
+
+@pytest.fixture
+def mock_checkmk_client():
+    """
+    Mock CheckMK API client for testing.
+
+    Provides mock methods for all CheckMK operations.
+    """
+    client = MagicMock()
+    client.get_all_hosts = Mock(return_value=CHECKMK_HOSTS_LIST.copy())
+    client.get_host = Mock(return_value=CHECKMK_HOST_STANDARD.copy())
+    client.add_host = Mock(return_value={"result": "success"})
+    client.edit_host = Mock(return_value={"result": "success"})
+    client.delete_host = Mock(return_value={"result": "success"})
+    client.discover_services = Mock(return_value={"result": "success"})
+    client.activate_changes = Mock(return_value={"result": "success"})
+    client.get_folders = Mock(return_value=[])
+    client.create_folder = Mock(return_value={"result": "success"})
+    return client
+
+
+@pytest.fixture
+def mock_device_creation_service():
+    """Mock DeviceCreationService for testing."""
+    service = MagicMock()
+    service.create_device_with_interfaces = AsyncMock()
+    service.create_device = AsyncMock()
+    service.create_interface = AsyncMock()
+    service.assign_ip_to_interface = AsyncMock()
+    return service
+
+
+@pytest.fixture
+def mock_nb2cmk_service():
+    """Mock NautobotToCheckMKService for testing."""
+    service = MagicMock()
+    service.get_devices_for_sync = AsyncMock()
+    service.compare_devices = AsyncMock()
+    service.sync_devices = AsyncMock()
+    service.sync_single_device = AsyncMock()
+    return service
+
+
+@pytest.fixture
+def mock_ansible_inventory_service():
+    """Mock AnsibleInventoryService for testing."""
+    service = MagicMock()
+    service.generate_inventory = AsyncMock()
+    service.save_inventory = AsyncMock()
+    service.get_inventory = Mock()
+    return service
+
+
+# =============================================================================
+# Database Fixtures
+# =============================================================================
+
+@pytest.fixture
+def db_session():
+    """
+    Create in-memory SQLite session for testing.
+
+    Use this for repository layer tests that need database operations.
+    """
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from core.models import Base
+
+    # Create in-memory SQLite database
+    engine = create_engine("sqlite:///:memory:", echo=False)
+    Base.metadata.create_all(engine)
+
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    yield session
+
+    session.close()
+    engine.dispose()
+
+
+# =============================================================================
+# Authentication Fixtures
+# =============================================================================
+
+@pytest.fixture
+def mock_user():
+    """Mock authenticated user for testing."""
+    return {
+        "user_id": 1,
+        "username": "testuser",
+        "permissions": 15,  # All permissions bitmask
+        "role": "admin"
+    }
+
+
+@pytest.fixture
+def mock_auth_token():
+    """Mock JWT authentication token."""
+    return "mock-jwt-token-123456"
+
+
+# =============================================================================
+# FastAPI Test Client Fixture
+# =============================================================================
+
+@pytest.fixture
+def api_client():
+    """
+    FastAPI TestClient for API integration tests.
+
+    Use this to test API endpoints with mocked dependencies.
+    """
+    from fastapi.testclient import TestClient
+    # Import will be done in actual test files to avoid circular imports
+    # from main import app
+    # return TestClient(app)
+    pass
+
+
+# =============================================================================
+# Nautobot Data Fixtures
+# =============================================================================
+
+@pytest.fixture
+def nautobot_device():
+    """Standard Nautobot device data."""
+    return NAUTOBOT_DEVICE_STANDARD.copy()
+
+
+@pytest.fixture
+def nautobot_devices_list():
+    """List of Nautobot devices."""
+    return NAUTOBOT_DEVICES_LIST.copy()
+
+
+@pytest.fixture
+def nautobot_device_factory():
+    """
+    Factory fixture for creating custom Nautobot device data.
+
+    Usage:
+        device = nautobot_device_factory(name="custom-switch", ip="10.0.0.5")
+    """
+    def _create_device(**kwargs):
+        return create_device_response(**kwargs)
+    return _create_device
+
+
+# =============================================================================
+# CheckMK Data Fixtures
+# =============================================================================
+
+@pytest.fixture
+def checkmk_host():
+    """Standard CheckMK host data."""
+    return CHECKMK_HOST_STANDARD.copy()
+
+
+@pytest.fixture
+def checkmk_hosts_list():
+    """List of CheckMK hosts."""
+    return CHECKMK_HOSTS_LIST.copy()
+
+
+@pytest.fixture
+def checkmk_host_factory():
+    """
+    Factory fixture for creating custom CheckMK host data.
+
+    Usage:
+        host = checkmk_host_factory(hostname="custom-device", ip="10.0.0.5")
+    """
+    def _create_host(**kwargs):
+        return create_host_response(**kwargs)
+    return _create_host

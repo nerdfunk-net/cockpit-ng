@@ -290,8 +290,25 @@ pip list | grep pytest-cov
 pytest --cov=services --cov-report=term-missing
 ```
 
+## Implemented Test Suites
+
+### Unit Tests
+- ✅ **Device Creation** (`tests/unit/services/test_device_creation_service.py`) - 15+ tests
+- ✅ **Ansible Inventory** (`tests/unit/services/test_ansible_inventory_service.py`) - 20+ tests
+- ✅ **Job Template Repository** (`tests/unit/repositories/test_job_template_repository.py`) - 12+ tests
+- ✅ **Credentials Repository** (`tests/unit/repositories/test_credentials_repository.py`) - 10+ tests
+- ✅ **Device Config Service** (`tests/services/test_device_config_service.py`) - 18 tests (existing)
+- ✅ **Device Backup Service** (`tests/services/test_device_backup_service.py`) - 12 tests (existing)
+
+### Integration Tests
+- ✅ **NB2CMK Sync Workflow** (`tests/integration/workflows/test_nb2cmk_sync_workflow.py`) - 15+ tests
+- ✅ **Device Offboarding** (`tests/integration/workflows/test_device_offboarding_workflow.py`) - 15+ tests
+- ✅ **Bulk Edit Workflow** (`tests/integration/workflows/test_bulk_edit_workflow.py`) - 20+ tests
+- ✅ **Backup Tasks** (`tests/tasks/test_backup_tasks.py`) - 9 tests (existing)
+
 ## Future Enhancements
 
+- [ ] Add Router/API endpoint tests
 - [ ] Add performance benchmarking tests
 - [ ] Add load testing for parallel backup execution
 - [ ] Add property-based tests with Hypothesis
