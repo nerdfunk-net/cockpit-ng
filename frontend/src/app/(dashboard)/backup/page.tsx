@@ -1,4 +1,4 @@
-import BackupPage from '@/components/backup/backup-page'
+import BackupPage from '@/components/features/network/configs/backup/backup-page'
 
 export default function Backup() {
   return <BackupPage />
