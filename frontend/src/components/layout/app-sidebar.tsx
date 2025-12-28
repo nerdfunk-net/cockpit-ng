@@ -39,6 +39,7 @@ import {
   Settings,
   BarChart3,
   Edit,
+  HelpCircle,
 } from 'lucide-react'
 
 interface NavItem {
@@ -303,6 +304,14 @@ export function AppSidebar({ className }: AppSidebarProps) {
                     {user.username}
                   </span>
                 </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => router.push('/help')}
+                  className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
