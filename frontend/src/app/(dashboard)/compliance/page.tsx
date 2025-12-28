@@ -1,4 +1,4 @@
-import CompliancePage from '@/components/compliance/compliance-page'
+import CompliancePage from '@/components/features/network/compliance/compliance-page'
 
 export default function ComplianceRoute() {
   return <CompliancePage />
