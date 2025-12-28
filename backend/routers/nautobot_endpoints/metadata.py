@@ -1065,45 +1065,6 @@ async def delete_device(
         )
 
 
-@router.delete("/ip-address/{ip_id}", summary="🔶 REST: Delete IP Address")
-async def delete_ip_address(
-    ip_id: str,
-    current_user: dict = Depends(require_permission("nautobot.devices", "delete")),
-):
-    """Delete an IP address from Nautobot."""
-    try:
-        # Use REST API to delete the IP address
-        await nautobot_service.rest_request(
-            f"ipam/ip-addresses/{ip_id}/", method="DELETE"
-        )
-
-        # Clear related caches
-        cache_keys_to_clear = [
-            f"nautobot:ip_address:{ip_id}",
-            "nautobot:devices:list:all",  # Device list might contain IP address info
-        ]
-        for key in cache_keys_to_clear:
-            cache_service.delete(key)
-
-        return {
-            "success": True,
-            "message": f"IP address {ip_id} deleted successfully",
-            "ip_id": ip_id,
-        }
-
-    except Exception as e:
-        logger.error(f"Error deleting IP address {ip_id}: {str(e)}")
-        if "404" in str(e) or "Not Found" in str(e):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"IP address {ip_id} not found",
-            )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete IP address: {str(e)}",
-        )
-
-
 @router.post("/offboard/{device_id}", summary="🟠 Mixed API: Offboard Device")
 async def offboard_device(
     device_id: str,

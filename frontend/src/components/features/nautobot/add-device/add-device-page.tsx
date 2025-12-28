@@ -920,13 +920,9 @@ export function AddDevicePage() {
         }, 3000)
       }
 
-      // Clear only software version, tags, and custom fields after successful submission
-      // Preserve all other fields (device name, serial, interfaces, etc.) for adding similar devices
-      if (result.success && !hasErrors && !hasWarnings) {
-        setSelectedSoftwareVersion('')
-        setSelectedTags([])
-        setCustomFieldValues({})
-      }
+      // Keep all form fields (including tags and custom fields) after successful submission
+      // This allows adding similar devices without re-entering common data
+      // Users can use the "Clear Form" button to reset everything if needed
 
     } catch (error) {
       console.error('Error adding device:', error)
