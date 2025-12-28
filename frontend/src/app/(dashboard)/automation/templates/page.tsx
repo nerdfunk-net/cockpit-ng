@@ -16,10 +16,10 @@ import { useAuthStore } from '@/lib/auth-store'
 import { FileCode, Plus, Edit, Trash2, Eye, Search, RefreshCw, User, Calendar, Globe, Lock, Terminal, Key, ChevronDown, ChevronUp, HelpCircle, BookOpen, Copy, Check } from 'lucide-react'
 
 // Import Netmiko components and hooks for template editing
-import { useVariableManager } from '@/components/netmiko/hooks/use-variable-manager'
-import { VariableManagerPanel } from '@/components/netmiko/components/variable-manager-panel'
-import { TemplateRenderResultDialog, type TemplateRenderResult } from '@/components/netmiko/dialogs/template-render-result-dialog'
-import { NautobotDataDialog } from '@/components/netmiko/dialogs/nautobot-data-dialog'
+import { useVariableManager } from '@/components/features/network/automation/netmiko/hooks/use-variable-manager'
+import { VariableManagerPanel } from '@/components/features/network/automation/netmiko/components/variable-manager-panel'
+import { TemplateRenderResultDialog, type TemplateRenderResult } from '@/components/features/network/automation/netmiko/dialogs/template-render-result-dialog'
+import { NautobotDataDialog } from '@/components/features/network/automation/netmiko/dialogs/nautobot-data-dialog'
 
 interface Template {
   id: number
