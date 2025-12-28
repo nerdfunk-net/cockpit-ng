@@ -20,9 +20,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useAuthStore } from '@/lib/auth-store'
 
-import { HostDetailsModal } from './modals/host-details-modal'
-import { InventoryModal } from './modals/inventory-modal'
-import { SyncToNautobotModal } from './modals/sync-to-nautobot-modal'
+import { HostDetailsModal } from '../modals/host-details-modal'
+import { InventoryModal } from '../modals/inventory-modal'
+import { SyncToNautobotModal } from '../modals/sync-to-nautobot-modal'
 
 import { useHostsData } from '@/hooks/checkmk/use-hosts-data'
 import { useHostsFilter } from '@/hooks/checkmk/use-hosts-filter'
