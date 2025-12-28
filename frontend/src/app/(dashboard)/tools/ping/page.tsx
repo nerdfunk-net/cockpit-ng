@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Plus, Minus, Wifi, AlertCircle, Loader2, ChevronDown, ChevronRight } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useToast } from '@/hooks/use-toast'
-import PingResultsModal from '@/components/tools/ping-results-modal'
+import PingResultsModal from '@/components/features/network/tools/ping/ping-results-modal'
 
 interface CidrInput {
   id: number
