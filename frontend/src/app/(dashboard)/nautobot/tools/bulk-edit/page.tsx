@@ -1,4 +1,4 @@
-import BulkEditPage from '@/components/bulk-edit/bulk-edit-page'
+import BulkEditPage from '@/components/features/nautobot/tools/bulk-edit/bulk-edit-page'
 
 export default function Page() {
   return <BulkEditPage />

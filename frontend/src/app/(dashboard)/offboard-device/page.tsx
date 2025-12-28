@@ -1,4 +1,4 @@
-import { OffboardDevicePage } from '@/components/offboard-device/offboard-device-page'
+import { OffboardDevicePage } from '@/components/features/nautobot/offboard/offboard-device-page'
 
 export default function OffboardDevice() {
   return <OffboardDevicePage />

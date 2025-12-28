@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
-import DashboardJobStats from '@/components/dashboard-job-stats'
-import DashboardDeviceBackupStatus from '@/components/dashboard-device-backup-status'
-import DashboardCheckmkSyncStatus from '@/components/dashboard-checkmk-sync-status'
+import DashboardJobStats from '@/components/layout/dashboard-job-stats'
+import DashboardDeviceBackupStatus from '@/components/layout/dashboard-device-backup-status'
+import DashboardCheckmkSyncStatus from '@/components/layout/dashboard-checkmk-sync-status'
 import {
   Server,
   MapPin,

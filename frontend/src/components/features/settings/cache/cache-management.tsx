@@ -1,12 +1,12 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
-import { Button } from '../ui/button'
-import { Input } from '../ui/input'
-import { Label } from '../ui/label'
-import { Switch } from '../ui/switch'
-import { Separator } from '../ui/separator'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Separator } from '@/components/ui/separator'
 import { 
   Settings, 
   Zap, 
@@ -22,7 +22,7 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react'
-import { useApi } from '../../hooks/use-api'
+import { useApi } from '@/hooks/use-api'
 
 interface CacheSettings {
   enabled: boolean

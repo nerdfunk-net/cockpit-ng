@@ -18,14 +18,14 @@ import {
 } from "lucide-react"
 import { useAuthStore } from "@/lib/auth-store"
 import { useToast } from "@/hooks/use-toast"
-import { JobTemplateCommonFields } from "./shared/JobTemplateCommonFields"
-import { JobTemplateConfigRepoSection } from "./shared/JobTemplateConfigRepoSection"
-import { JobTemplateInventorySection } from "./shared/JobTemplateInventorySection"
-import { BackupJobTemplate } from "./job-template-types/BackupJobTemplate"
-import { RunCommandsJobTemplate } from "./job-template-types/RunCommandsJobTemplate"
-import { SyncDevicesJobTemplate } from "./job-template-types/SyncDevicesJobTemplate"
-import { CompareDevicesJobTemplate } from "./job-template-types/CompareDevicesJobTemplate"
-import { ScanPrefixesJobTemplate } from "./job-template-types/ScanPrefixesJobTemplate"
+import { JobTemplateCommonFields } from "../shared/JobTemplateCommonFields"
+import { JobTemplateConfigRepoSection } from "../shared/JobTemplateConfigRepoSection"
+import { JobTemplateInventorySection } from "../shared/JobTemplateInventorySection"
+import { BackupJobTemplate } from "../job-template-types/BackupJobTemplate"
+import { RunCommandsJobTemplate } from "../job-template-types/RunCommandsJobTemplate"
+import { SyncDevicesJobTemplate } from "../job-template-types/SyncDevicesJobTemplate"
+import { CompareDevicesJobTemplate } from "../job-template-types/CompareDevicesJobTemplate"
+import { ScanPrefixesJobTemplate } from "../job-template-types/ScanPrefixesJobTemplate"
 
 interface JobTemplate {
   id: number

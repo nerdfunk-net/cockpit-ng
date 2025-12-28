@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { SyncDevicesPage } from '@/components/sync-devices/sync-devices-page'
+import { SyncDevicesPage } from '@/components/features/nautobot/sync-devices/sync-devices-page'
 
 function SyncDevicesContent() {
   return <SyncDevicesPage />

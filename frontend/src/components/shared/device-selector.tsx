@@ -29,7 +29,7 @@ import {
   Settings
 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
-import { ManageInventoryDialog } from '@/components/ansible-inventory/dialogs/manage-inventory-dialog'
+import { ManageInventoryDialog } from '@/components/features/network/automation/ansible-inventory/dialogs/manage-inventory-dialog'
 
 export interface LogicalCondition {
   field: string

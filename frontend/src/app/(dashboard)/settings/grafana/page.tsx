@@ -1,4 +1,4 @@
-import GrafanaSettingsForm from '@/components/settings/grafana-settings'
+import GrafanaSettingsForm from '@/components/features/settings/connections/grafana/grafana-settings'
 
 export default function GrafanaSettingsPage() {
   return <GrafanaSettingsForm />

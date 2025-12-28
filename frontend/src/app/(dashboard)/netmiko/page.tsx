@@ -1,4 +1,4 @@
-import NetmikoPage from '@/components/netmiko/netmiko-page'
+import NetmikoPage from '@/components/features/network/automation/netmiko/netmiko-page'
 
 export default function NetmikoRoute() {
   return <NetmikoPage />
