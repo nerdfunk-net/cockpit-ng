@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import GitManagement from '@/components/settings/git-management'
+import GitManagement from '@/components/features/settings/git/git-management'
 
 export const metadata: Metadata = {
   title: 'Git Management - Cockpit',
