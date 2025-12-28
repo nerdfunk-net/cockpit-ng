@@ -26,7 +26,7 @@ Cockpit-NG is a modern network management dashboard designed for network enginee
 - **Authentication**: JWT tokens with passlib for password hashing
 - **Validation**: Pydantic models
 - **CORS**: Configured for frontend communication
-- **Task Scheduling**: APScheduler for background jobs
+- **Task Scheduling**: Celery with Beat scheduler for background jobs and periodic tasks
 - **Network Automation**: 
   - Netmiko for device connections
   - Ansible for configuration management
@@ -47,9 +47,82 @@ Cockpit-NG is a modern network management dashboard designed for network enginee
 - All backend endpoints require authentication (JWT tokens)
 
 ### Database Structure
-Two separate SQLite databases:
-- `data/settings/users.db` - User accounts and authentication
-- `data/settings/rbac.db` - Roles, permissions, and access control
+
+**Database Type**: PostgreSQL (replaced SQLite in production)
+
+The application uses a single PostgreSQL database with comprehensive table organization. On first startup, the database schema is automatically created through SQLAlchemy models defined in `/backend/core/models.py`.
+
+**Database Configuration** (from environment variables):
+- `DATABASE_HOST` - PostgreSQL server hostname
+- `DATABASE_PORT` - PostgreSQL server port (default: 5432)
+- `DATABASE_NAME` - Database name
+- `DATABASE_USERNAME` - Database username
+- `DATABASE_PASSWORD` - Database password
+- Connection pooling with 5 persistent connections + 10 overflow
+
+**Schema Organization** (40+ tables across domains):
+
+**User Management & RBAC:**
+- `users` - User accounts with authentication and permissions
+- `user_profiles` - Extended user profile information
+- `roles` - Role definitions (admin, operator, viewer, etc.)
+- `permissions` - Permission definitions (resource:action pairs)
+- `role_permissions` - Many-to-many mapping of roles to permissions
+- `user_roles` - Many-to-many mapping of users to roles
+- `user_permissions` - Direct user permission assignments
+
+**Settings & Configuration:**
+- `settings` - General key-value settings storage
+- `nautobot_settings` - Nautobot connection configuration
+- `checkmk_settings` - CheckMK integration settings
+- `grafana_settings` - Grafana deployment configuration
+- `git_settings` - Git repository settings for configs
+- `cache_settings` - Cache configuration and intervals
+- `celery_settings` - Celery worker and task queue settings
+- `nautobot_defaults` - Default values for Nautobot device creation
+- `device_offboarding_settings` - Device offboarding workflow settings
+- `settings_metadata` - Settings versioning and metadata
+
+**Credentials & Security:**
+- `credentials` - Encrypted credentials (SSH, TACACS, tokens, SSH keys)
+- `login_credentials` - Encrypted login credentials
+- `snmp_mapping` - SNMP v1/v2c/v3 credential mappings
+
+**Git & Version Control:**
+- `git_repositories` - Git repository configurations for configs, templates, inventory
+- `templates` - Configuration templates (Jinja2, TextFSM, etc.)
+- `template_versions` - Template version history
+
+**Job Management (Celery):**
+- `jobs` - Legacy job tracking
+- `job_templates` - Reusable job configurations (backup, sync, commands, compliance)
+- `job_schedules` - Scheduled job definitions with cron/interval
+- `job_runs` - Individual job execution records with Celery task tracking
+
+**Compliance:**
+- `compliance_rules` - Compliance rule definitions
+- `compliance_checks` - Compliance check results per device
+- `regex_patterns` - Regex patterns for compliance validation
+
+**Nautobot to CheckMK Sync:**
+- `nb2cmk_sync` - Sync operation tracking
+- `nb2cmk_jobs` - Background sync job tracking
+- `nb2cmk_job_results` - Per-device comparison results with diff tracking
+
+**Inventory Management:**
+- `inventories` - Stored Ansible inventory configurations with dynamic filtering
+
+**Database Features:**
+- **Auto-initialization**: Schema created automatically on first run via `init_db()`
+- **Automatic migrations**: Column additions handled via migration functions in `core/database.py`
+- **Schema manager**: `/core/schema_manager.py` compares models to actual schema and applies changes
+- **Connection pooling**: 5 persistent connections with 10 overflow connections
+- **Health checks**: `pool_pre_ping=True` verifies connections before use
+- **Connection recycling**: Connections recycled after 1 hour to prevent stale connections
+- **Indexes**: Comprehensive indexing on frequently queried columns
+- **Foreign keys**: CASCADE deletes for referential integrity
+- **Timestamps**: Automatic `created_at` and `updated_at` timestamps on all tables
+- **Relationships**: SQLAlchemy relationships with proper cascade behavior
 
 ## File Structure
 
@@ -59,67 +132,171 @@ Two separate SQLite databases:
 frontend/
 ├── src/
 │   ├── app/                          # Next.js App Router pages
-│   │   ├── layout.tsx               # Root layout with providers
-│   │   ├── page.tsx                 # Home/dashboard page
-│   │   ├── globals.css              # Global styles
-│   │   ├── api/                     # Next.js API routes (proxy to backend)
+│   │   ├── (dashboard)/             # Route group for dashboard pages
+│   │   │   ├── add-certificate/    # SSL certificate management
+│   │   │   ├── ansible-inventory/  # Ansible inventory page
+│   │   │   ├── automation/
+│   │   │   │   └── templates/      # Automation templates
+│   │   │   ├── backup/             # Configuration backup
+│   │   │   ├── checkmk/
+│   │   │   │   ├── hosts-inventory/  # CheckMK host inventory
+│   │   │   │   ├── live-update/      # Live update display
+│   │   │   │   └── sync-devices/     # Device sync page
+│   │   │   ├── compare/            # Configuration comparison
+│   │   │   ├── compliance/         # Compliance management
+│   │   │   ├── configs/            # Configuration viewing
+│   │   │   ├── jobs/               # Job management
+│   │   │   │   ├── scheduler/      # Job scheduler
+│   │   │   │   ├── templates/      # Job templates
+│   │   │   │   └── view/           # Job viewing
+│   │   │   ├── nautobot/           # Nautobot integration
+│   │   │   ├── nautobot-add-device/ # Device addition
+│   │   │   ├── nautobot-export/    # Export functionality
+│   │   │   ├── netmiko/            # Netmiko interface
+│   │   │   ├── offboard-device/    # Device offboarding
+│   │   │   ├── oidc-test/          # OIDC testing
+│   │   │   ├── onboard-device/     # Device onboarding
+│   │   │   ├── profile/            # User profile
+│   │   │   ├── settings/           # Settings section
+│   │   │   │   ├── cache/          # Cache management
+│   │   │   │   ├── celery/         # Celery task queue settings
+│   │   │   │   ├── checkmk/        # CheckMK settings
+│   │   │   │   ├── common/         # Common settings
+│   │   │   │   ├── compliance/     # Compliance settings
+│   │   │   │   ├── credentials/    # Credentials management
+│   │   │   │   ├── git/            # Git repository settings
+│   │   │   │   ├── grafana/        # Grafana connections
+│   │   │   │   ├── nautobot/       # Nautobot connection settings
+│   │   │   │   ├── permissions/    # User & role management
+│   │   │   │   └── templates/      # Template management
+│   │   │   ├── sync-devices/       # Nautobot sync
+│   │   │   └── tools/
+│   │   │       ├── database-migration/ # Database migration tools
+│   │   │       └── ping/           # Network ping utility
+│   │   ├── api/                    # Next.js API routes
+│   │   │   ├── auth/               # Authentication endpoints
+│   │   │   │   ├── login/          # Login endpoint
+│   │   │   │   ├── logout/         # Logout endpoint
+│   │   │   │   └── refresh/        # Token refresh endpoint
+│   │   │   ├── health/             # Health check endpoint
 │   │   │   └── proxy/              # Backend proxy endpoints
-│   │   ├── auth/                    # Auth-related pages
-│   │   ├── login/                   # Login page and callbacks
+│   │   │       └── [...path]/      # Catch-all proxy route
+│   │   ├── login/                  # Login page and callbacks
 │   │   │   ├── page.tsx            # Main login page
+│   │   │   ├── approval-pending/   # Pending approval page
 │   │   │   ├── callback/           # OAuth callbacks
-│   │   │   └── approval-pending/   # Pending approval page
-│   │   ├── profile/                 # User profile page
-│   │   │   └── page.tsx
-│   │   └── settings/                # Settings section
-│   │       ├── layout.tsx          # Settings layout
-│   │       ├── page.tsx            # Settings home
-│   │       └── permissions/        # User & role management
+│   │   │   └── oidc-test-callback/ # OIDC test callback
+│   │   ├── layout.tsx              # Root layout with providers
+│   │   ├── page.tsx                # Home/dashboard page
+│   │   └── globals.css             # Global styles
 │   │
-│   ├── components/                  # React components
-│   │   ├── app-sidebar.tsx         # Main application sidebar
-│   │   ├── dashboard-layout.tsx    # Dashboard wrapper component
-│   │   ├── dashboard-overview.tsx  # Dashboard home page
-│   │   ├── session-status.tsx      # Session status indicator
-│   │   ├── sidebar-context.tsx     # Sidebar state management
-│   │   ├── auth/                   # Authentication components
-│   │   │   └── auth-hydration.tsx  # Auth state hydration
-│   │   ├── profile/                # Profile components
-│   │   │   └── profile-page.tsx
-│   │   ├── settings/               # Settings components
-│   │   │   ├── user-management.tsx
-│   │   │   ├── permissions-management.tsx
-│   │   │   ├── credentials-management.tsx
-│   │   │   ├── git-management.tsx
-│   │   │   ├── template-management.tsx
-│   │   │   ├── checkmk-settings.tsx
-│   │   │   ├── cache-management.tsx
-│   │   │   └── permissions/        # Permission-related components
-│   │   ├── netmiko/                # Network device command execution
-│   │   │   ├── netmiko-page.tsx    # Main Netmiko interface
-│   │   │   ├── hooks/              # Custom hooks for Netmiko
-│   │   │   ├── components/         # Netmiko-specific components
-│   │   │   ├── tabs/               # Tab components
-│   │   │   ├── dialogs/            # Dialog components
-│   │   │   └── utils/              # Utility functions
-│   │   ├── ansible-inventory/      # Ansible inventory management
-│   │   ├── backup/                 # Configuration backup
-│   │   ├── checkmk/                # CheckMK integration UI
-│   │   │   └── live-update-page.tsx
-│   │   ├── compare/                # Configuration comparison
-│   │   │   ├── file-compare.tsx
-│   │   │   ├── git-compare.tsx
-│   │   │   └── file-history-compare.tsx
-│   │   ├── configs/                # Configuration management
-│   │   │   └── configs-view-page.tsx
-│   │   ├── onboard-device/         # Device onboarding
-│   │   ├── offboard-device/        # Device offboarding
-│   │   ├── scan-and-add/           # Network scanning
-│   │   ├── sync-devices/           # Nautobot sync
-│   │   ├── debug/                  # Debug utilities
-│   │   ├── shared/                 # Shared/reusable components
-│   │   │   └── device-selector.tsx
-│   │   └── ui/                     # Shadcn UI primitives
+│   ├── components/                 # React components (feature-based architecture)
+│   │   ├── layout/                 # Layout components
+│   │   │   ├── app-sidebar.tsx    # Main application sidebar
+│   │   │   ├── dashboard-layout.tsx # Dashboard wrapper component
+│   │   │   ├── dashboard-overview.tsx # Dashboard home page
+│   │   │   ├── dashboard-job-stats.tsx # Job statistics widget
+│   │   │   ├── dashboard-checkmk-sync-status.tsx # CheckMK sync status
+│   │   │   ├── dashboard-device-backup-status.tsx # Backup status
+│   │   │   ├── session-status.tsx  # Session status indicator
+│   │   │   └── sidebar-context.tsx # Sidebar state management
+│   │   │
+│   │   ├── features/               # Feature-based component organization
+│   │   │   ├── checkmk/           # CheckMK integration features
+│   │   │   │   ├── hosts-inventory/ # Host inventory management
+│   │   │   │   ├── live-update/    # Live update display
+│   │   │   │   ├── modals/         # Modal dialogs
+│   │   │   │   ├── renderers/      # Data rendering components
+│   │   │   │   └── sync-devices/   # Device synchronization
+│   │   │   │
+│   │   │   ├── jobs/              # Job scheduling and management
+│   │   │   │   ├── job-template-types/ # Template type management
+│   │   │   │   ├── results/        # Job results display
+│   │   │   │   ├── scheduler/      # Job scheduling interface
+│   │   │   │   ├── shared/         # Shared job utilities
+│   │   │   │   ├── templates/      # Job templates
+│   │   │   │   ├── types/          # Type definitions
+│   │   │   │   └── view/           # Job viewing interface
+│   │   │   │
+│   │   │   ├── nautobot/          # Nautobot integration features
+│   │   │   │   ├── add-device/    # Device addition
+│   │   │   │   │   ├── components/ # Add device components
+│   │   │   │   │   └── hooks/      # Add device hooks
+│   │   │   │   ├── export/        # Export functionality
+│   │   │   │   │   ├── dialogs/    # Export dialogs
+│   │   │   │   │   └── tabs/       # Export tabs
+│   │   │   │   ├── offboard/      # Device offboarding
+│   │   │   │   ├── onboard/       # Device onboarding
+│   │   │   │   │   ├── components/ # Onboard components
+│   │   │   │   │   ├── hooks/      # Onboard hooks
+│   │   │   │   │   └── utils/      # Onboard utilities
+│   │   │   │   ├── sync-devices/  # Device sync
+│   │   │   │   └── tools/         # Nautobot tools
+│   │   │   │       ├── bulk-edit/ # Bulk editing tool
+│   │   │   │       │   ├── components/
+│   │   │   │       │   ├── dialogs/
+│   │   │   │       │   ├── tabs/
+│   │   │   │       │   └── utils/
+│   │   │   │       └── check-ip/  # IP checking tool
+│   │   │   │
+│   │   │   ├── network/           # Network-related features
+│   │   │   │   ├── automation/    # Network automation
+│   │   │   │   │   ├── ansible-inventory/ # Ansible inventory
+│   │   │   │   │   │   ├── components/
+│   │   │   │   │   │   ├── dialogs/
+│   │   │   │   │   │   ├── hooks/
+│   │   │   │   │   │   ├── tabs/
+│   │   │   │   │   │   ├── types/
+│   │   │   │   │   │   └── utils/
+│   │   │   │   │   ├── netmiko/   # Netmiko interface
+│   │   │   │   │   │   ├── components/
+│   │   │   │   │   │   ├── dialogs/
+│   │   │   │   │   │   ├── hooks/
+│   │   │   │   │   │   ├── tabs/
+│   │   │   │   │   │   ├── types/
+│   │   │   │   │   │   ├── ui/
+│   │   │   │   │   │   └── utils/
+│   │   │   │   │   └── templates/ # Template management
+│   │   │   │   ├── compliance/    # Network compliance
+│   │   │   │   │   ├── hooks/
+│   │   │   │   │   └── tabs/
+│   │   │   │   ├── configs/       # Configuration management
+│   │   │   │   │   ├── backup/    # Configuration backup
+│   │   │   │   │   ├── compare/   # Configuration comparison
+│   │   │   │   │   │   └── shared/ # Shared comparison utilities
+│   │   │   │   │   └── view/      # Configuration viewing
+│   │   │   │   └── tools/         # Network tools
+│   │   │   │       └── ping/      # Network ping utility
+│   │   │   │
+│   │   │   ├── profile/           # User profile feature
+│   │   │   │   └── profile-page.tsx
+│   │   │   │
+│   │   │   └── settings/          # Application settings features
+│   │   │       ├── cache/         # Cache management
+│   │   │       ├── celery/        # Celery task queue settings
+│   │   │       ├── common/        # Common settings
+│   │   │       ├── compliance/    # Compliance settings
+│   │   │       ├── connections/   # Connection management
+│   │   │       │   ├── checkmk/   # CheckMK connections
+│   │   │       │   ├── grafana/   # Grafana connections
+│   │   │       │   └── nautobot/  # Nautobot connections
+│   │   │       ├── credentials/   # Credentials management
+│   │   │       ├── git/           # Git repository settings
+│   │   │       ├── permissions/   # Permissions management
+│   │   │       │   └── permissions/ # Sub-permissions management
+│   │   │       └── templates/     # Template management
+│   │   │
+│   │   ├── auth/                  # Authentication components
+│   │   │   └── auth-hydration.tsx # Auth state hydration
+│   │   │
+│   │   ├── shared/                # Shared/reusable components
+│   │   │   ├── device-selector.tsx # Multi-purpose device selection
+│   │   │   ├── custom-fields-modal.tsx # Custom field management
+│   │   │   ├── tags-modal.tsx     # Tag management
+│   │   │   ├── searchable-dropdown.tsx # Reusable dropdown
+│   │   │   └── device-selection-tab.tsx # Device selection tab
+│   │   │
+│   │   └── ui/                    # Shadcn UI primitives
 │   │       ├── button.tsx
 │   │       ├── card.tsx
 │   │       ├── dialog.tsx
@@ -127,40 +304,48 @@ frontend/
 │   │       ├── label.tsx
 │   │       └── ... (other UI components)
 │   │
-│   ├── contexts/                    # React contexts
-│   │   └── debug-context.tsx       # Debug mode context
+│   ├── hooks/                     # Custom React hooks
+│   │   ├── use-api.ts            # API calling hook
+│   │   ├── use-mobile.ts         # Mobile detection hook
+│   │   ├── use-session-manager.ts # Session management hook
+│   │   ├── use-toast.ts          # Toast notifications hook
+│   │   ├── checkmk/              # CheckMK-specific hooks
+│   │   └── git/                  # Git-specific hooks
 │   │
-│   ├── hooks/                       # Custom React hooks
-│   │   ├── use-api.ts              # API calling hook
-│   │   ├── use-mobile.ts           # Mobile detection hook
-│   │   ├── use-session-manager.ts  # Session management hook
-│   │   └── use-toast.ts            # Toast notifications hook
+│   ├── services/                  # Service layer for API integration
+│   │   └── nautobot-graphql.ts   # Nautobot GraphQL queries and types
 │   │
-│   ├── services/                    # Service layer for API integration
-│   │   └── nautobot-graphql.ts     # Nautobot GraphQL queries and types
+│   ├── types/                     # TypeScript type definitions
+│   │   ├── checkmk/
+│   │   │   └── types.ts          # CheckMK-specific types
+│   │   └── git.ts                # Git-related types
 │   │
-│   └── lib/                         # Utility libraries
-│       ├── utils.ts                # General utilities
-│       ├── auth-store.ts           # Zustand auth store
-│       ├── auth-debug.ts           # Auth debugging utilities
-│       ├── security.ts             # Security utilities
-│       ├── local-fonts.ts          # Local font configuration
-│       ├── air-gap-config.ts       # Air-gapped environment config
-│       └── debug.ts                # Debug utilities
+│   ├── utils/                     # Utility functions
+│   │   └── csv-parser.ts         # CSV parsing utility
+│   │
+│   └── lib/                       # Utility libraries
+│       ├── utils.ts              # General utilities
+│       ├── auth-store.ts         # Zustand auth store
+│       ├── security.ts           # Security utilities
+│       ├── local-fonts.ts        # Local font configuration
+│       ├── air-gap-config.ts     # Air-gapped environment config
+│       ├── compare-utils.ts      # Comparison utilities
+│       └── checkmk/
+│           └── property-mapping-utils.ts # CheckMK property mapping
 │
-├── public/                          # Static assets
-│   ├── avatars/                    # User avatar images
-│   ├── fonts/                      # Local font files
+├── public/                        # Static assets
+│   ├── avatars/                  # User avatar images
+│   ├── fonts/                    # Local font files
 │   │   ├── geist.css
 │   │   └── geist-mono.css
-│   └── airgap-fallback.css         # Fallback styles for air-gapped mode
+│   └── airgap-fallback.css       # Fallback styles for air-gapped mode
 │
-├── components.json                  # Shadcn UI configuration
-├── next.config.ts                   # Next.js configuration
-├── tailwind.config.ts              # Tailwind CSS configuration
-├── tsconfig.json                    # TypeScript configuration
-├── package.json                     # Dependencies and scripts
-└── postcss.config.mjs              # PostCSS configuration
+├── components.json                # Shadcn UI configuration
+├── next.config.ts                 # Next.js configuration
+├── tailwind.config.ts            # Tailwind CSS configuration
+├── tsconfig.json                  # TypeScript configuration
+├── package.json                   # Dependencies and scripts
+└── postcss.config.mjs            # PostCSS configuration
 ```
 
 ### Backend (`/backend`)
@@ -169,30 +354,61 @@ frontend/
 backend/
 ├── main.py                          # FastAPI application entry point
 ├── config.py                        # Configuration settings
-├── start.py                         # Production startup script
-├── start_isolated.py               # Development startup script
 ├── health.py                        # Health check endpoints
 ├── requirements.txt                 # Python dependencies
+├── pyproject.toml                   # Project configuration
+│
+├── start.py                         # Production startup script
+├── start_isolated.py               # Development startup script
+├── start_celery.py                 # Celery worker startup
+├── start_beat.py                   # Celery Beat scheduler startup
+├── celery_app.py                   # Main Celery app instance
+├── celery_worker.py                # Celery worker configuration
+├── celery_beat.py                  # Celery Beat configuration
+├── beat_schedule.py                # Beat schedule configuration
 │
 ├── core/                            # Core utilities and configuration
 │   ├── __init__.py
 │   ├── auth.py                     # JWT authentication utilities
-│   └── config.py                   # Core configuration
+│   ├── config.py                   # Core configuration
+│   ├── database.py                 # Database utilities (ORM helper)
+│   ├── models.py                   # Core SQLAlchemy models
+│   ├── schema_manager.py           # Database schema management
+│   ├── error_handlers.py           # Global error handling
+│   └── celery_error_handler.py     # Celery-specific error handling
 │
 ├── models/                          # Pydantic models (request/response)
 │   ├── __init__.py
 │   ├── auth.py                     # Authentication models
-│   ├── user_management.py          # User management models
-│   └── rbac.py                     # RBAC models
+│   ├── rbac.py                     # RBAC models
+│   ├── backup_models.py            # Backup operation models
+│   ├── credentials.py              # Credentials models
+│   ├── files.py                    # File operation models
+│   ├── git.py                      # Git operation models
+│   ├── git_repositories.py         # Git repository models
+│   ├── job_models.py               # Job execution models
+│   ├── job_templates.py            # Job template models
+│   ├── nautobot.py                 # Nautobot API models
+│   ├── nb2cmk.py                   # Nautobot to CheckMK models
+│   ├── checkmk.py                  # CheckMK models
+│   ├── templates.py                # Template models
+│   ├── ansible_inventory.py        # Ansible inventory models
+│   └── settings.py                 # Settings models
 │
 ├── routers/                         # API route handlers
 │   ├── __init__.py
 │   ├── auth.py                     # /auth/* endpoints (login, logout, etc.)
 │   ├── profile.py                  # /profile/* endpoints
-│   ├── user_management.py          # /users/* endpoints (CRUD)
 │   ├── rbac.py                     # /rbac/* endpoints (roles, permissions)
 │   ├── oidc.py                     # /oidc/* endpoints (OpenID Connect)
 │   ├── nautobot.py                 # /nautobot/* endpoints (Nautobot API proxy)
+│   ├── nautobot_endpoints/         # Specialized Nautobot endpoints
+│   │   ├── devices.py              # Device-specific endpoints
+│   │   ├── dcim_interfaces.py      # DCIM interface endpoints
+│   │   ├── ipam_addresses.py       # IP address endpoints
+│   │   ├── ipam_ip_address_to_interface.py  # IP-to-interface mapping
+│   │   ├── ipam_prefixes.py        # IP prefix endpoints
+│   │   └── metadata.py             # Metadata endpoints
 │   ├── checkmk.py                  # /checkmk/* endpoints (CheckMK integration)
 │   ├── nb2cmk.py                   # /nb2cmk/* endpoints (Nautobot to CheckMK sync)
 │   ├── netmiko.py                  # /netmiko/* endpoints (device connections)
@@ -200,16 +416,23 @@ backend/
 │   ├── templates.py                # /templates/* endpoints (Jinja2 templates)
 │   ├── credentials.py              # /credentials/* endpoints (encrypted credentials)
 │   ├── git_repositories.py         # /git-repositories/* endpoints
-│   ├── git_operations.py           # /git/* endpoints (Git operations)
-│   ├── git_files.py                # /git-files/* endpoints
-│   ├── git_compare.py              # /git-compare/* endpoints
+│   ├── git.py                      # /git/* endpoints (consolidated Git operations)
+│   ├── git_version_control.py      # Git version control operations
+│   ├── git_debug.py                # Git debugging utilities
 │   ├── file_compare.py             # /file-compare/* endpoints
-│   ├── jobs.py                     # /jobs/* endpoints (background jobs)
+│   ├── job_schedules.py            # /job-schedules/* endpoints
+│   ├── job_templates.py            # /job-templates/* endpoints
+│   ├── job_runs.py                 # /job-runs/* endpoints
+│   ├── compliance.py               # /compliance/* endpoints
+│   ├── compliance_check.py         # /compliance-check/* endpoints
+│   ├── certificates.py             # /certificates/* endpoints
+│   ├── inventory.py                # /inventory/* endpoints
+│   ├── tools.py                    # /tools/* endpoints (utilities)
+│   ├── celery_api.py               # /celery/* endpoints (task API)
 │   ├── cache.py                    # /cache/* endpoints (cache management)
 │   ├── config.py                   # /config/* endpoints (YAML config files)
 │   ├── settings.py                 # /settings/* endpoints (app settings)
-│   ├── scan_and_add.py             # /scan-and-add/* endpoints (network scanning)
-│   └── offboarding.py              # /offboarding/* endpoints (device offboarding)
+│   └── scan_and_add.py             # /scan-and-add/* endpoints (network scanning)
 │
 ├── services/                        # Business logic layer
 │   ├── __init__.py
@@ -226,14 +449,77 @@ backend/
 │   ├── netmiko_service.py          # Netmiko device connections
 │   ├── ansible_inventory.py        # Ansible inventory generation
 │   ├── render_service.py           # Jinja2 template rendering
-│   ├── git_utils.py                # Git operations utilities
-│   ├── git_shared_utils.py         # Shared Git utilities
 │   ├── cache_service.py            # Caching service
-│   ├── apscheduler_job_service.py  # Background job scheduling
-│   ├── job_database_service.py     # Job persistence service
 │   ├── network_scan_service.py     # Network scanning service
 │   ├── scan_service.py             # Device scanning service
-│   └── offboarding_service.py      # Device offboarding workflows
+│   ├── compliance_check_service.py # Compliance checking logic
+│   ├── device_backup_service.py    # Device backup operations
+│   ├── device_common_service.py    # Common device operations
+│   ├── device_config_service.py    # Device configuration handling
+│   ├── device_creation_service.py  # Device creation/onboarding
+│   ├── device_import_service.py    # Device import operations
+│   ├── device_query_service.py     # Device querying/search
+│   ├── device_update_service.py    # Device update operations
+│   ├── git_service.py              # Main Git service
+│   ├── git_auth_service.py         # Git authentication handling
+│   ├── git_cache_service.py        # Git caching layer
+│   ├── git_config_service.py       # Git configuration management
+│   ├── git_connection_service.py   # Git connection pooling/management
+│   ├── git_diff_service.py         # Git diff/comparison operations
+│   ├── git_env.py                  # Git environment setup
+│   ├── git_paths.py                # Git path utilities
+│   └── git_shared_utils.py         # Shared Git utilities
+│
+├── repositories/                    # Data access layer (Repository pattern)
+│   ├── __init__.py
+│   ├── base.py                     # Base repository class
+│   ├── user_repository.py          # User data access
+│   ├── rbac_repository.py          # RBAC data access
+│   ├── profile_repository.py       # Profile data access
+│   ├── job_template_repository.py  # Job template data access
+│   ├── job_schedule_repository.py  # Job schedule data access
+│   ├── job_run_repository.py       # Job run data access
+│   ├── credentials_repository.py   # Credentials data access
+│   ├── git_repository_repository.py # Git repository data access
+│   ├── template_repository.py      # Template data access
+│   ├── settings_repository.py      # Settings data access
+│   ├── compliance_repository.py    # Compliance data access
+│   ├── inventory_repository.py     # Inventory data access
+│   └── nb2cmk_repository.py        # NB2CMK data access
+│
+├── tasks/                           # Celery/Background task definitions
+│   ├── __init__.py
+│   ├── execution/                  # Task execution layer
+│   ├── scheduling/                 # Scheduling logic
+│   └── utils/                      # Task utilities
+│
+├── utils/                           # Utility functions
+│   ├── cmk_folder_utils.py         # CheckMK folder utilities
+│   ├── cmk_site_utils.py           # CheckMK site utilities
+│   ├── nautobot_helpers.py         # Nautobot helper functions
+│   ├── netmiko_platform_mapper.py  # Netmiko platform mapping
+│   ├── path_template.py            # Path template utilities
+│   └── task_progress.py            # Task progress tracking
+│
+├── migrations/                      # Database migration scripts
+│   ├── migration_001_*.py
+│   ├── migration_002_*.py
+│   └── ... (17+ migration files)
+│
+├── tests/                           # Testing infrastructure
+│   ├── __init__.py
+│   ├── conftest.py                 # Pytest configuration
+│   └── ... (unit tests)
+│
+├── archive/                         # Archived/legacy code
+│   ├── legacy_tasks/               # Old task implementations
+│   ├── migration_scripts/          # Old migration scripts
+│   └── job_tasks_backup/           # Legacy job task backups
+│
+├── docs/                            # Documentation
+│
+├── data/                            # Data directories
+│   └── exports/                    # Data export directory
 │
 ├── user_db_manager.py              # User database operations (SQLAlchemy)
 ├── rbac_manager.py                 # RBAC database operations
@@ -242,8 +528,14 @@ backend/
 ├── template_manager.py             # Template storage and management
 ├── git_repositories_manager.py     # Git repository configuration
 ├── settings_manager.py             # Application settings manager
+├── compliance_manager.py           # Compliance data/database manager
+├── inventory_manager.py            # Inventory data manager
+├── job_template_manager.py         # Job template storage manager
+├── jobs_manager.py                 # Job data manager
+├── job_run_manager.py              # Job execution records manager
 ├── connection_tester.py            # Network connection testing
 ├── seed_rbac.py                    # RBAC initialization
+├── set_admin_password.py           # Admin password reset utility
 └── checkmk/                        # CheckMK client library
     ├── __init__.py
     └── client.py                   # CheckMK API client
@@ -301,11 +593,61 @@ doc/
 - This enables SSR, security, and environment flexibility
 
 ### Component Structure
-- Server Components by default (Next.js 15)
-- Client Components marked with `'use client'` (minimal usage)
-- Shared UI components in `/components/ui` (Shadcn)
-- Feature components in feature-specific directories
-- Layout components for page structure
+The frontend uses a **feature-based architecture** for better scalability and maintainability:
+
+**Organizational Principles:**
+- **Feature-based organization**: Components grouped by business domain under `/components/features/`
+- **Self-contained features**: Each feature has its own components, hooks, dialogs, tabs, types, and utilities
+- **Layout separation**: Layout components in dedicated `/components/layout/` directory
+- **Shared utilities**: Reusable components in `/components/shared/`
+- **UI primitives**: Shadcn UI components in `/components/ui/`
+
+**Feature Domains:**
+- `/features/jobs/` - Job scheduling and management system
+- `/features/checkmk/` - CheckMK integration and monitoring
+- `/features/nautobot/` - Nautobot device management and tools
+- `/features/network/` - Network automation (Netmiko, Ansible, configs, compliance)
+- `/features/settings/` - Application settings with sub-features (cache, celery, connections, credentials, git, permissions, templates)
+- `/features/profile/` - User profile management
+
+**Component Types:**
+- **Server Components by default** (Next.js 15)
+- **Client Components** marked with `'use client'` (minimal usage, only when needed for interactivity)
+- **Route Groups**: Dashboard pages organized under `(dashboard)/` route group for shared layouts
+
+### Backend Architecture Patterns
+
+The backend follows a **layered architecture** with clear separation of concerns:
+
+**Repository Pattern:**
+- Data access layer abstracted through repository classes in `/repositories/`
+- Base repository provides common CRUD operations
+- Feature-specific repositories extend base functionality
+- Separates database operations from business logic
+
+**Service Layer:**
+- Business logic encapsulated in service classes in `/services/`
+- Services orchestrate operations across multiple repositories
+- Specialized services for domains: device operations, Git operations, compliance, etc.
+- Device services organized by lifecycle: creation, backup, config, update, query
+
+**Router Layer:**
+- Thin HTTP layer in `/routers/` handles request/response
+- Delegates to services for business logic
+- Authentication and authorization at endpoint level
+- Specialized Nautobot endpoints under `/routers/nautobot_endpoints/`
+
+**Task Management (Celery):**
+- Background jobs managed by Celery with Beat scheduler
+- Task definitions in `/tasks/` with execution and scheduling layers
+- Periodic tasks configured in `beat_schedule.py`
+- Replaces older APScheduler implementation
+
+**Database Management:**
+- Multiple SQLite databases for domain separation
+- Migration scripts in `/migrations/` for schema changes
+- Schema management through `/core/schema_manager.py`
+- Repository pattern for data access
 
 ### State Management
 - Server-side: React Server Components (no state)

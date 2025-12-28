@@ -362,14 +362,14 @@ class DeviceCommonService:
             logger.info(f"Resolving platform '{platform_name}'")
 
             query = """
-            query GetPlatform($name: String!) {
+            query GetPlatform($name: [String]) {
               platforms(name: $name) {
                 id
                 name
               }
             }
             """
-            variables = {"name": platform_name}
+            variables = {"name": [platform_name]}
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
