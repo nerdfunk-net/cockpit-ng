@@ -1,8 +1,3 @@
----
-description: Cockpit-NG tech stack and file structure guide
-applyTo: "**/*"
----
-
 # Cockpit-NG - Tech Stack and File Structure
 
 ## Overview
@@ -26,12 +21,12 @@ Cockpit-NG is a modern network management dashboard designed for network enginee
 ### Backend
 - **Framework**: FastAPI (Python)
 - **Language**: Python 3.9+
-- **Database**: SQLite (dual databases - users.db and rbac.db)
+- **Database**: PostgreSQL (single database with 40+ tables)
 - **ORM**: SQLAlchemy
 - **Authentication**: JWT tokens with passlib for password hashing
 - **Validation**: Pydantic models
 - **CORS**: Configured for frontend communication
-- **Task Scheduling**: APScheduler for background jobs
+- **Task Scheduling**: Celery with Beat scheduler for background jobs and periodic tasks
 - **Network Automation**: 
   - Netmiko for device connections
   - Ansible for configuration management
@@ -128,6 +123,103 @@ The application uses a single PostgreSQL database with comprehensive table organ
 - **Foreign keys**: CASCADE deletes for referential integrity
 - **Timestamps**: Automatic `created_at` and `updated_at` timestamps on all tables
 - **Relationships**: SQLAlchemy relationships with proper cascade behavior
+
+### IMPORTANT: Architectural Standards for New Features
+
+**CRITICAL REQUIREMENT**: All new features MUST follow the established architectural patterns documented in this file. Deviation from these patterns is NOT permitted without explicit architectural review.
+
+**When implementing new features, you MUST:**
+
+1. **Follow the File Structure**:
+   - ✅ **Frontend**: Place components under `/components/features/{domain}/` with proper subdirectories (components, hooks, dialogs, tabs, utils, types)
+   - ✅ **Backend**: Follow the layered architecture - models in `/models/`, routers in `/routers/`, services in `/services/`, repositories in `/repositories/`
+   - ❌ **DO NOT** create flat structures or place files outside the established organization
+   - ❌ **DO NOT** mix concerns (e.g., business logic in routers, database operations in services)
+
+2. **Use PostgreSQL Database**:
+   - ✅ **REQUIRED**: Define new tables as SQLAlchemy models in `/backend/core/models.py`
+   - ✅ **REQUIRED**: Use the existing PostgreSQL connection and session management from `/backend/core/database.py`
+   - ✅ **REQUIRED**: Add proper indexes, foreign keys, and timestamps to all new tables
+   - ✅ **REQUIRED**: Create a repository class in `/backend/repositories/` for data access
+   - ❌ **NEVER** use SQLite or create new database connections
+   - ❌ **NEVER** write raw SQL queries - always use SQLAlchemy ORM
+   - ❌ **NEVER** bypass the repository pattern for database access
+
+3. **Follow Backend Patterns**:
+   - ✅ **Repository Pattern**: All database operations through repository classes
+   - ✅ **Service Layer**: Business logic in service classes that orchestrate repositories
+   - ✅ **Router Layer**: Thin HTTP layer that delegates to services
+   - ✅ **Dependency Injection**: Use FastAPI dependencies for authentication and permissions
+   - ✅ **Error Handling**: Use standardized error handlers from `/backend/core/error_handlers.py`
+
+4. **Follow Frontend Patterns**:
+   - ✅ **Feature-Based**: Group related functionality under `/components/features/{domain}/`
+   - ✅ **Self-Contained**: Each feature has its own components, hooks, dialogs, tabs, types, utils
+   - ✅ **Server Components**: Use server components by default, client components only when needed
+   - ✅ **Route Groups**: Place pages under `(dashboard)/` route group
+   - ✅ **Type Safety**: Define TypeScript types in feature-specific `/types/` directories
+
+5. **Follow Naming Conventions**:
+   - ✅ **Database**: Snake_case for tables and columns (e.g., `job_templates`, `created_at`)
+   - ✅ **Backend**: Snake_case for files and functions (e.g., `user_repository.py`, `create_user()`)
+   - ✅ **Frontend**: kebab-case for directories, PascalCase for components (e.g., `bulk-edit/`, `BulkEditDialog.tsx`)
+   - ✅ **Models**: PascalCase for Pydantic and SQLAlchemy models (e.g., `JobTemplate`, `UserProfile`)
+
+**Examples of Correct Implementation**:
+
+```
+New Feature: Device Monitoring
+
+✅ CORRECT Structure:
+frontend/src/components/features/monitoring/
+  ├── components/
+  │   ├── MonitoringDashboard.tsx
+  │   └── DeviceStatusCard.tsx
+  ├── hooks/
+  │   └── use-monitoring-data.ts
+  ├── dialogs/
+  │   └── ConfigureMonitoringDialog.tsx
+  └── types/
+      └── monitoring-types.ts
+
+backend/core/models.py:
+  class MonitoringCheck(Base):
+      __tablename__ = "monitoring_checks"
+      ...
+
+backend/repositories/monitoring_repository.py:
+  class MonitoringRepository(BaseRepository):
+      ...
+
+backend/services/monitoring_service.py:
+  class MonitoringService:
+      def __init__(self, monitoring_repo: MonitoringRepository):
+          ...
+
+backend/routers/monitoring.py:
+  @router.get("/checks")
+  async def get_checks(
+      service: MonitoringService = Depends(get_monitoring_service)
+  ):
+      return await service.get_checks()
+```
+
+```
+❌ INCORRECT Practices:
+- Creating SQLite databases for new features
+- Placing components at /components/ root without feature grouping
+- Writing SQL queries instead of using SQLAlchemy ORM
+- Bypassing the repository pattern
+- Putting business logic in routers
+- Creating separate backend endpoints for GraphQL queries
+- Mixing server and client components unnecessarily
+```
+
+**Enforcement**:
+- Code reviews will reject changes that don't follow these patterns
+- Database schema changes require SQLAlchemy models
+- New features require architectural approval if deviating from these patterns
+- Consult this document before starting any new feature implementation
 
 ## File Structure
 
@@ -598,11 +690,61 @@ doc/
 - This enables SSR, security, and environment flexibility
 
 ### Component Structure
-- Server Components by default (Next.js 15)
-- Client Components marked with `'use client'` (minimal usage)
-- Shared UI components in `/components/ui` (Shadcn)
-- Feature components in feature-specific directories
-- Layout components for page structure
+The frontend uses a **feature-based architecture** for better scalability and maintainability:
+
+**Organizational Principles:**
+- **Feature-based organization**: Components grouped by business domain under `/components/features/`
+- **Self-contained features**: Each feature has its own components, hooks, dialogs, tabs, types, and utilities
+- **Layout separation**: Layout components in dedicated `/components/layout/` directory
+- **Shared utilities**: Reusable components in `/components/shared/`
+- **UI primitives**: Shadcn UI components in `/components/ui/`
+
+**Feature Domains:**
+- `/features/jobs/` - Job scheduling and management system
+- `/features/checkmk/` - CheckMK integration and monitoring
+- `/features/nautobot/` - Nautobot device management and tools
+- `/features/network/` - Network automation (Netmiko, Ansible, configs, compliance)
+- `/features/settings/` - Application settings with sub-features (cache, celery, connections, credentials, git, permissions, templates)
+- `/features/profile/` - User profile management
+
+**Component Types:**
+- **Server Components by default** (Next.js 15)
+- **Client Components** marked with `'use client'` (minimal usage, only when needed for interactivity)
+- **Route Groups**: Dashboard pages organized under `(dashboard)/` route group for shared layouts
+
+### Backend Architecture Patterns
+
+The backend follows a **layered architecture** with clear separation of concerns:
+
+**Repository Pattern:**
+- Data access layer abstracted through repository classes in `/repositories/`
+- Base repository provides common CRUD operations
+- Feature-specific repositories extend base functionality
+- Separates database operations from business logic
+
+**Service Layer:**
+- Business logic encapsulated in service classes in `/services/`
+- Services orchestrate operations across multiple repositories
+- Specialized services for domains: device operations, Git operations, compliance, etc.
+- Device services organized by lifecycle: creation, backup, config, update, query
+
+**Router Layer:**
+- Thin HTTP layer in `/routers/` handles request/response
+- Delegates to services for business logic
+- Authentication and authorization at endpoint level
+- Specialized Nautobot endpoints under `/routers/nautobot_endpoints/`
+
+**Task Management (Celery):**
+- Background jobs managed by Celery with Beat scheduler
+- Task definitions in `/tasks/` with execution and scheduling layers
+- Periodic tasks configured in `beat_schedule.py`
+- Replaces older APScheduler implementation
+
+**Database Management:**
+- Single PostgreSQL database with comprehensive schema
+- Migration scripts in `/migrations/` for schema changes
+- Schema management through `/core/schema_manager.py`
+- Repository pattern for data access
 
 ### State Management
 - Server-side: React Server Components (no state)
@@ -616,6 +758,493 @@ doc/
 - Shadcn UI component variants
 - CSS variables for theming (globals.css)
 - Local fonts (no external CDN)
+
+## UI/UX Implementation Guidelines
+
+### UI Component Strategy
+
+**CRITICAL**: All UI components MUST use Shadcn UI as the foundation. Do NOT create custom components from scratch when Shadcn provides an equivalent.
+
+**Component Hierarchy:**
+1. **Shadcn UI Primitives** (`/components/ui/`) - Foundation layer
+2. **Shared Components** (`/components/shared/`) - Reusable business components
+3. **Feature Components** (`/components/features/{domain}/components/`) - Feature-specific components
+4. **Layout Components** (`/components/layout/`) - Page layout and structure
+
+### Adding New UI Components
+
+**Step 1: Check if Shadcn provides the component**
+
+Before creating any UI component, check the [Shadcn UI documentation](https://ui.shadcn.com/docs/components):
+
+```bash
+# Install a Shadcn component
+cd frontend
+npx shadcn@latest add button
+npx shadcn@latest add dialog
+npx shadcn@latest add table
+npx shadcn@latest add form
+npx shadcn@latest add select
+# etc.
+```
+
+**Available Shadcn Components** (use these instead of building custom):
+- Buttons, Inputs, Textareas, Select, Checkbox, Radio, Switch
+- Dialog, Alert Dialog, Sheet, Popover, Tooltip, Dropdown Menu
+- Table, Data Table, Card, Tabs, Accordion
+- Form, Label, Badge, Avatar, Separator
+- Command, Context Menu, Navigation Menu, Menubar
+- Alert, Toast, Progress, Skeleton, Scroll Area
+- Calendar, Date Picker, Slider, Toggle, Toggle Group
+
+**Step 2: If not available in Shadcn, create custom component**
+
+Only create custom components when Shadcn doesn't provide an equivalent:
+
+```typescript
+// ✅ CORRECT: Using Shadcn as base
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+
+export function CustomFeatureDialog() {
+  return (
+    <Dialog>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Custom Feature</DialogTitle>
+        </DialogHeader>
+        {/* Your custom content using Shadcn primitives */}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ❌ WRONG: Building dialog from scratch
+export function CustomDialog() {
+  return (
+    <div className="fixed inset-0 bg-black/50">
+      {/* Don't do this! Use Shadcn Dialog */}
+    </div>
+  )
+}
+```
+
+### Tailwind CSS Conventions
+
+**Layout & Spacing:**
+```typescript
+// Use consistent spacing scale
+className="p-4"      // padding: 1rem
+className="px-6"     // padding-left/right: 1.5rem
+className="gap-4"    // gap: 1rem
+className="space-y-4" // vertical spacing between children
+
+// Responsive design (mobile-first)
+className="w-full md:w-1/2 lg:w-1/3"
+className="flex flex-col md:flex-row"
+```
+
+**Colors:**
+```typescript
+// Use semantic color tokens from globals.css
+className="bg-background text-foreground"
+className="bg-card text-card-foreground"
+className="bg-primary text-primary-foreground"
+className="bg-secondary text-secondary-foreground"
+className="bg-muted text-muted-foreground"
+className="bg-destructive text-destructive-foreground"
+className="border border-border"
+
+// ❌ WRONG: Don't use arbitrary colors
+className="bg-blue-500 text-white" // Don't do this!
+```
+
+**Typography:**
+```typescript
+// Use consistent text sizes
+className="text-sm"     // 14px
+className="text-base"   // 16px
+className="text-lg"     // 18px
+className="text-xl"     // 20px
+className="text-2xl"    // 24px
+
+// Font weights
+className="font-medium" // 500
+className="font-semibold" // 600
+className="font-bold"   // 700
+```
+
+### Form Implementation
+
+**Always use Shadcn Form components with react-hook-form:**
+
+```typescript
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+
+const formSchema = z.object({
+  username: z.string().min(2).max(50),
+  email: z.string().email(),
+})
+
+export function UserForm() {
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+    },
+  })
+
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    // Handle form submission
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <FormField
+          control={form.control}
+          name="username"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Username</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter username" {...field} />
+              </FormControl>
+              <FormDescription>Your unique username</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit">Submit</Button>
+      </form>
+    </Form>
+  )
+}
+```
+
+### Dialog/Modal Implementation
+
+**Pattern for all dialogs:**
+
+```typescript
+import { useState } from "react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+
+export function FeatureDialog() {
+  const [open, setOpen] = useState(false)
+
+  const handleSubmit = async () => {
+    // Handle submission
+    setOpen(false) // Close dialog on success
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>Open Dialog</Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Dialog Title</DialogTitle>
+          <DialogDescription>
+            Brief description of what this dialog does
+          </DialogDescription>
+        </DialogHeader>
+        {/* Dialog content */}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit}>Submit</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+```
+
+### Table Implementation
+
+**For data tables, use Shadcn Data Table with TanStack Table:**
+
+```typescript
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+
+export function DataTable({ data }: { data: any[] }) {
+  return (
+    <Table>
+      <TableCaption>A list of items</TableCaption>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {data.map((item) => (
+          <TableRow key={item.id}>
+            <TableCell>{item.name}</TableCell>
+            <TableCell>{item.status}</TableCell>
+            <TableCell>
+              <Button size="sm" variant="ghost">Edit</Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  )
+}
+```
+
+### Loading States
+
+**Use Shadcn Skeleton for loading:**
+
+```typescript
+import { Skeleton } from "@/components/ui/skeleton"
+
+export function LoadingState() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+    </div>
+  )
+}
+
+// In your component
+export function DataComponent() {
+  const { data, loading } = useData()
+
+  if (loading) return <LoadingState />
+
+  return <div>{/* Render data */}</div>
+}
+```
+
+### Toast Notifications
+
+**Use Shadcn Toast for all notifications:**
+
+```typescript
+import { useToast } from "@/hooks/use-toast"
+import { Button } from "@/components/ui/button"
+
+export function Component() {
+  const { toast } = useToast()
+
+  const handleAction = async () => {
+    try {
+      // Perform action
+      toast({
+        title: "Success",
+        description: "Action completed successfully",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      })
+    }
+  }
+
+  return <Button onClick={handleAction}>Do Action</Button>
+}
+```
+
+### Icons
+
+**Use Lucide React for all icons:**
+
+```typescript
+import {
+  Check,
+  X,
+  Loader2,
+  AlertCircle,
+  Settings,
+  User,
+  ChevronDown
+} from "lucide-react"
+
+// Icon sizes
+<Check className="h-4 w-4" />    // Small
+<Check className="h-5 w-5" />    // Medium (default)
+<Check className="h-6 w-6" />    // Large
+
+// Loading spinner
+<Loader2 className="h-4 w-4 animate-spin" />
+
+// With buttons
+<Button>
+  <Settings className="mr-2 h-4 w-4" />
+  Settings
+</Button>
+```
+
+### Responsive Design
+
+**Mobile-first approach:**
+
+```typescript
+// Stack vertically on mobile, horizontal on desktop
+<div className="flex flex-col md:flex-row gap-4">
+  <div>Content 1</div>
+  <div>Content 2</div>
+</div>
+
+// Hide on mobile, show on desktop
+<div className="hidden md:block">Desktop only</div>
+
+// Show on mobile, hide on desktop
+<div className="block md:hidden">Mobile only</div>
+
+// Responsive grid
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  {/* Grid items */}
+</div>
+```
+
+### Dark Mode Support
+
+All Shadcn components automatically support dark mode via CSS variables. No additional work needed.
+
+### Accessibility Requirements
+
+**All interactive elements MUST be accessible:**
+
+```typescript
+// ✅ CORRECT: Proper labels and ARIA
+<Button aria-label="Close dialog">
+  <X className="h-4 w-4" />
+</Button>
+
+// ✅ CORRECT: Form labels
+<FormLabel htmlFor="email">Email</FormLabel>
+<Input id="email" type="email" />
+
+// ✅ CORRECT: Dialog descriptions
+<DialogDescription>
+  This action cannot be undone
+</DialogDescription>
+
+// ❌ WRONG: No label for icon button
+<button><X /></button>
+```
+
+### Component Organization Pattern
+
+**Feature component structure:**
+
+```
+/components/features/monitoring/
+  ├── components/
+  │   ├── MonitoringDashboard.tsx    # Main component
+  │   ├── MonitoringCard.tsx         # Sub-component
+  │   └── MonitoringChart.tsx        # Sub-component
+  ├── dialogs/
+  │   ├── CreateMonitorDialog.tsx    # Dialog components
+  │   └── EditMonitorDialog.tsx
+  ├── tabs/
+  │   ├── OverviewTab.tsx            # Tab components
+  │   └── HistoryTab.tsx
+  └── hooks/
+      └── use-monitoring-data.ts     # Custom hooks
+```
+
+### Common Patterns
+
+**Button variants:**
+```typescript
+<Button variant="default">Primary Action</Button>
+<Button variant="secondary">Secondary Action</Button>
+<Button variant="destructive">Delete</Button>
+<Button variant="outline">Outline</Button>
+<Button variant="ghost">Subtle</Button>
+<Button variant="link">Link Style</Button>
+
+// Sizes
+<Button size="sm">Small</Button>
+<Button size="default">Default</Button>
+<Button size="lg">Large</Button>
+<Button size="icon"><Settings /></Button>
+```
+
+**Card layout:**
+```typescript
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+
+<Card>
+  <CardHeader>
+    <CardTitle>Card Title</CardTitle>
+    <CardDescription>Card description</CardDescription>
+  </CardHeader>
+  <CardContent>
+    {/* Main content */}
+  </CardContent>
+  <CardFooter>
+    {/* Footer actions */}
+  </CardFooter>
+</Card>
+```
+
+### DO's and DON'Ts
+
+**DO:**
+- ✅ Use Shadcn UI components for all UI primitives
+- ✅ Use Tailwind CSS utility classes for styling
+- ✅ Use semantic color tokens (bg-background, text-foreground, etc.)
+- ✅ Implement proper loading states with Skeleton
+- ✅ Use Toast for all notifications
+- ✅ Use Lucide React for all icons
+- ✅ Follow mobile-first responsive design
+- ✅ Ensure proper accessibility (labels, ARIA attributes)
+- ✅ Use react-hook-form with zod for form validation
+
+**DON'T:**
+- ❌ Build UI components from scratch when Shadcn provides them
+- ❌ Use arbitrary color values (bg-blue-500, etc.)
+- ❌ Use inline styles
+- ❌ Mix UI libraries (don't add Material-UI, Ant Design, etc.)
+- ❌ Use alert() or confirm() - use Dialog/AlertDialog
+- ❌ Create custom modal/dialog implementations
+- ❌ Ignore responsive design
+- ❌ Skip accessibility attributes
+- ❌ Use different icon libraries
 
 ## Development Workflow
 
@@ -951,6 +1580,172 @@ try {
 }
 ```
 
+## GraphQL Integration Pattern
+
+### Overview
+
+When integrating with Nautobot's GraphQL API, **ALWAYS use the centralized service layer** instead of inline GraphQL queries. This ensures consistency, type safety, and maintainability.
+
+### Service Layer Location
+
+**File**: `/frontend/src/services/nautobot-graphql.ts`
+
+This file contains:
+- All GraphQL query definitions
+- TypeScript type definitions for responses
+- Helper functions for executing queries
+
+### When to Use GraphQL Service Layer
+
+Use the GraphQL service layer when:
+- Fetching data from Nautobot's GraphQL API
+- You need related data in a single query (e.g., device types with manufacturer)
+- The REST API doesn't provide all needed fields
+- You want to avoid multiple REST API calls
+
+### Architecture
+
+**Flow**: Component → Service Layer → useApi Hook → Proxy → Backend → Nautobot GraphQL
+
+```
+Component:        fetchDeviceTypesWithManufacturer(apiCall)
+                           ↓
+Service Layer:    /services/nautobot-graphql.ts
+                           ↓
+useApi Hook:      apiCall('nautobot/graphql', { method: 'POST', body: ... })
+                           ↓
+Proxy:            /api/proxy/nautobot/graphql
+                           ↓
+Backend:          /nautobot/graphql endpoint
+                           ↓
+Nautobot:         GraphQL API
+```
+
+### Adding New GraphQL Queries
+
+**Step 1**: Add query definition to `/frontend/src/services/nautobot-graphql.ts`
+
+```typescript
+// Add query constant
+export const MY_NEW_QUERY = `
+  query {
+    my_data {
+      id
+      name
+      related_field {
+        id
+        name
+      }
+    }
+  }
+`
+
+// Add TypeScript interface
+export interface GraphQLMyData {
+  id: string
+  name: string
+  related_field: {
+    id: string
+    name: string
+  }
+}
+
+// Add helper function
+export async function fetchMyData(
+  apiCall: (path: string, options?: ApiOptions) => Promise<unknown>
+): Promise<GraphQLResponse<{ my_data: GraphQLMyData[] }>> {
+  return executeNautobotQuery(
+    apiCall as (path: string, options?: ApiOptions) => Promise<GraphQLResponse<{ my_data: GraphQLMyData[] }>>,
+    MY_NEW_QUERY
+  )
+}
+```
+
+**Step 2**: Use in component
+
+```typescript
+import { fetchMyData } from '@/services/nautobot-graphql'
+import { useApi } from '@/hooks/use-api'
+
+function MyComponent() {
+  const { apiCall } = useApi()
+
+  useEffect(() => {
+    const loadData = async () => {
+      const result = await fetchMyData(apiCall)
+      const data = result.data.my_data
+      // Use data...
+    }
+    loadData()
+  }, [apiCall])
+}
+```
+
+### Best Practices
+
+**DO**:
+- ✅ Add all GraphQL queries to `/frontend/src/services/nautobot-graphql.ts`
+- ✅ Create TypeScript interfaces for all query responses
+- ✅ Use helper functions (`fetchDeviceTypesWithManufacturer`, etc.)
+- ✅ Reuse existing queries when possible
+- ✅ Use the generic `/nautobot/graphql` endpoint
+
+**DON'T**:
+- ❌ Write inline GraphQL queries in components
+- ❌ Create dedicated backend endpoints for each GraphQL query (e.g., `/device-types/graphql`)
+- ❌ Use REST API when GraphQL provides better data structure
+- ❌ Duplicate query definitions across multiple files
+
+### Why Use This Pattern?
+
+1. **Centralization**: All GraphQL queries in one location
+2. **Type Safety**: Full TypeScript support with defined interfaces
+3. **Reusability**: Same query used across multiple components
+4. **Maintainability**: Update queries in one place
+5. **Documentation**: Self-documenting with clear function names
+6. **No Backend Changes**: Leverages existing `/nautobot/graphql` endpoint
+7. **GraphQL Philosophy**: Single endpoint for all GraphQL operations
+
+### Example: Device Types with Manufacturer
+
+```typescript
+// In component
+import { fetchDeviceTypesWithManufacturer } from '@/services/nautobot-graphql'
+
+const deviceTypesRaw = await fetchDeviceTypesWithManufacturer(apiCall)
+const deviceTypes = deviceTypesRaw.data.device_types
+
+deviceTypes.forEach(dt => {
+  console.log(`${dt.model} by ${dt.manufacturer.name}`)
+})
+```
+
+### Available Queries
+
+Current queries in the service layer:
+- `fetchDeviceTypesWithManufacturer()` - Device types with manufacturer info
+- `fetchLocationsWithHierarchy()` - Locations with parent relationships
+- `fetchDevicesDetailed()` - Comprehensive device data
+
+### Generic Query Execution
+
+For one-off or custom queries, use the generic executor:
+
+```typescript
+import { executeNautobotQuery } from '@/services/nautobot-graphql'
+
+const customQuery = `
+  query {
+    custom_data {
+      field1
+      field2
+    }
+  }
+`
+
+const result = await executeNautobotQuery(apiCall, customQuery)
+```
+
 ## Database Management
 
 ### Database Initialization
@@ -1280,30 +2075,230 @@ When adding new features:
 
 ### 1. New Backend Endpoint
 
-**Steps**:
-1. Create Pydantic models in `/backend/models/{feature}.py`
-2. Add router in `/backend/routers/{feature}.py`
-3. Add business logic in `/backend/services/{feature}.py` (optional)
-4. Register router in `/backend/main.py`:
-   ```python
-   from routers.{feature} import router as feature_router
-   app.include_router(feature_router)
-   ```
-5. Add permission checks using `require_permission()` decorator
-6. No proxy changes needed - automatic via `[...path]` route
+**CRITICAL**: Follow the layered architecture pattern: Model → Repository → Service → Router
 
-**Example**:
+**Complete Implementation Steps**:
+
+**Step 1: Define SQLAlchemy Model in `/backend/core/models.py`**
 ```python
-# backend/routers/devices.py
-from fastapi import APIRouter, Depends
+class Device(Base):
+    __tablename__ = "devices"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False, unique=True, index=True)
+    ip_address = Column(String(45))
+    device_type = Column(String(100))
+    status = Column(String(50), nullable=False, default="active")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        Index("idx_devices_status", "status"),
+    )
+```
+
+**Step 2: Create Pydantic Models in `/backend/models/devices.py`**
+```python
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+
+class DeviceCreate(BaseModel):
+    name: str
+    ip_address: Optional[str] = None
+    device_type: Optional[str] = None
+    status: str = "active"
+
+class DeviceUpdate(BaseModel):
+    name: Optional[str] = None
+    ip_address: Optional[str] = None
+    device_type: Optional[str] = None
+    status: Optional[str] = None
+
+class DeviceResponse(BaseModel):
+    id: int
+    name: str
+    ip_address: Optional[str]
+    device_type: Optional[str]
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+```
+
+**Step 3: Create Repository in `/backend/repositories/device_repository.py`**
+```python
+from typing import List, Optional
+from sqlalchemy.orm import Session
+from core.models import Device
+from repositories.base import BaseRepository
+
+class DeviceRepository(BaseRepository[Device]):
+    def __init__(self, db: Session):
+        super().__init__(Device, db)
+
+    def get_by_name(self, name: str) -> Optional[Device]:
+        return self.db.query(Device).filter(Device.name == name).first()
+
+    def get_by_status(self, status: str) -> List[Device]:
+        return self.db.query(Device).filter(Device.status == status).all()
+
+    def search(self, query: str) -> List[Device]:
+        return self.db.query(Device).filter(
+            Device.name.ilike(f"%{query}%")
+        ).all()
+```
+
+**Step 4: Create Service in `/backend/services/device_service.py`**
+```python
+from typing import List
+from sqlalchemy.orm import Session
+from repositories.device_repository import DeviceRepository
+from models.devices import DeviceCreate, DeviceUpdate
+from core.models import Device
+
+class DeviceService:
+    def __init__(self, db: Session):
+        self.device_repo = DeviceRepository(db)
+
+    def create_device(self, device_data: DeviceCreate) -> Device:
+        # Check if device already exists
+        existing = self.device_repo.get_by_name(device_data.name)
+        if existing:
+            raise ValueError(f"Device with name {device_data.name} already exists")
+
+        # Create device
+        device = Device(**device_data.dict())
+        return self.device_repo.create(device)
+
+    def get_device(self, device_id: int) -> Device:
+        device = self.device_repo.get_by_id(device_id)
+        if not device:
+            raise ValueError(f"Device {device_id} not found")
+        return device
+
+    def update_device(self, device_id: int, device_data: DeviceUpdate) -> Device:
+        device = self.get_device(device_id)
+
+        # Update only provided fields
+        update_data = device_data.dict(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(device, field, value)
+
+        return self.device_repo.update(device)
+
+    def delete_device(self, device_id: int) -> None:
+        device = self.get_device(device_id)
+        self.device_repo.delete(device)
+
+    def list_devices(self, status: Optional[str] = None) -> List[Device]:
+        if status:
+            return self.device_repo.get_by_status(status)
+        return self.device_repo.get_all()
+```
+
+**Step 5: Create Router in `/backend/routers/devices.py`**
+```python
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from typing import List
+from core.database import get_db
 from core.auth import require_permission
+from services.device_service import DeviceService
+from models.devices import DeviceCreate, DeviceUpdate, DeviceResponse
 
 router = APIRouter(prefix="/devices", tags=["devices"])
 
-@router.get("")
-async def list_devices(user: dict = Depends(require_permission("devices", "read"))):
-    return {"devices": []}
+def get_device_service(db: Session = Depends(get_db)) -> DeviceService:
+    return DeviceService(db)
+
+@router.post(
+    "",
+    response_model=DeviceResponse,
+    status_code=status.HTTP_201_CREATED
+)
+async def create_device(
+    device: DeviceCreate,
+    service: DeviceService = Depends(get_device_service),
+    user: dict = Depends(require_permission("devices", "write"))
+):
+    """Create a new device"""
+    try:
+        return service.create_device(device)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("", response_model=List[DeviceResponse])
+async def list_devices(
+    status: Optional[str] = None,
+    service: DeviceService = Depends(get_device_service),
+    user: dict = Depends(require_permission("devices", "read"))
+):
+    """List all devices, optionally filtered by status"""
+    return service.list_devices(status=status)
+
+@router.get("/{device_id}", response_model=DeviceResponse)
+async def get_device(
+    device_id: int,
+    service: DeviceService = Depends(get_device_service),
+    user: dict = Depends(require_permission("devices", "read"))
+):
+    """Get a specific device by ID"""
+    try:
+        return service.get_device(device_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@router.put("/{device_id}", response_model=DeviceResponse)
+async def update_device(
+    device_id: int,
+    device: DeviceUpdate,
+    service: DeviceService = Depends(get_device_service),
+    user: dict = Depends(require_permission("devices", "write"))
+):
+    """Update a device"""
+    try:
+        return service.update_device(device_id, device)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@router.delete("/{device_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_device(
+    device_id: int,
+    service: DeviceService = Depends(get_device_service),
+    user: dict = Depends(require_permission("devices", "delete"))
+):
+    """Delete a device"""
+    try:
+        service.delete_device(device_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 ```
+
+**Step 6: Register Router in `/backend/main.py`**
+```python
+from routers.devices import router as devices_router
+
+app.include_router(devices_router)
+```
+
+**Step 7: Run Database Migration**
+```bash
+# The schema will be auto-created on next startup via init_db()
+# Or manually trigger migration via schema_manager
+```
+
+**Key Points:**
+- ✅ **SQLAlchemy Model**: Defines database table structure with indexes
+- ✅ **Pydantic Models**: Separate models for Create, Update, Response
+- ✅ **Repository**: Handles all database operations with type safety
+- ✅ **Service**: Contains business logic, uses repository for data access
+- ✅ **Router**: Thin HTTP layer, delegates to service, uses dependency injection
+- ✅ **Permissions**: Each endpoint protected with appropriate permissions
+- ✅ **Error Handling**: Proper HTTP status codes and error messages
+- ✅ **Type Safety**: Full type hints throughout the stack
 
 ### 2. New Frontend Page
 
