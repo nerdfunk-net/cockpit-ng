@@ -263,7 +263,7 @@ def _get_target_devices(
 
         try:
             from inventory_manager import inventory_manager
-            from services.ansible_inventory import ansible_inventory_service
+            from services.network.automation.ansible_inventory import ansible_inventory_service
 
             # Load inventory from database by name
             # Note: We need to get the username from the template context
@@ -454,7 +454,7 @@ def _execute_cache_devices(
         )
 
         from services.nautobot import nautobot_service
-        from services.cache_service import cache_service
+        from services.settings.cache import cache_service
         import asyncio
 
         loop = asyncio.new_event_loop()
@@ -547,7 +547,7 @@ def _execute_sync_devices(
             meta={"current": 0, "total": 100, "status": "Initializing CheckMK sync..."},
         )
 
-        from services.nb2cmk_base_service import nb2cmk_service
+        from services.checkmk.sync.base import nb2cmk_service
 
         # If no target devices provided, fetch all from Nautobot
         device_ids = target_devices
@@ -914,8 +914,8 @@ def _execute_run_commands(
     """
     import asyncio
     from services.nautobot import NautobotService
-    from services.netmiko_service import NetmikoService
-    from services.render_service import RenderService
+    from services.network.automation.netmiko import NetmikoService
+    from services.network.automation.render import RenderService
     import credentials_manager
     from template_manager import template_manager
 
@@ -1390,8 +1390,8 @@ def _execute_compare_devices(
             },
         )
 
-        from services.nb2cmk_base_service import nb2cmk_service
-        from services.nb2cmk_database_service import (
+        from services.checkmk.sync.base import nb2cmk_service
+        from services.checkmk.sync.database import (
             nb2cmk_db_service,
             JobStatus as NB2CMKJobStatus,
         )
@@ -1669,7 +1669,7 @@ def cache_devices_task(self, job_schedule_id: Optional[int] = None) -> dict:
 
         # Import here to avoid circular imports
         from services.nautobot import nautobot_service
-        from services.cache_service import cache_service
+        from services.settings.cache import cache_service
         import asyncio
 
         # Create event loop for async operations
@@ -1777,7 +1777,7 @@ def sync_checkmk_task(self, job_schedule_id: Optional[int] = None) -> dict:
         )
 
         # Import here to avoid circular imports
-        from services.nb2cmk_background_service import background_service
+        from services.checkmk.sync.background import nb2cmk_background_service as background_service
         import asyncio
 
         # Create event loop for async operations

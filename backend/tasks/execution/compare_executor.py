@@ -46,8 +46,8 @@ def execute_compare_devices(
             },
         )
 
-        from services.nb2cmk_base_service import nb2cmk_service
-        from services.nb2cmk_database_service import (
+        from services.checkmk.sync.base import nb2cmk_service
+        from services.checkmk.sync.database import (
             nb2cmk_db_service,
             JobStatus as NB2CMKJobStatus,
         )

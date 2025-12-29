@@ -40,8 +40,8 @@ def execute_run_commands(
         dict: Command execution results with detailed per-device output
     """
     from services.nautobot import NautobotService
-    from services.netmiko_service import NetmikoService
-    from services.render_service import RenderService
+    from services.network.automation.netmiko import NetmikoService
+    from services.network.automation.render import RenderService
     import credentials_manager
     from template_manager import template_manager
 

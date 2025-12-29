@@ -74,7 +74,7 @@ def execute_backup(
         from services.settings.git.service import git_service
         from services.settings.git.auth import git_auth_service
         from services.nautobot import NautobotService
-        from services.netmiko_service import NetmikoService
+        from services.network.automation.netmiko import NetmikoService
         import credentials_manager
         import jobs_manager
         import job_template_manager

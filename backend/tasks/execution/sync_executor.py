@@ -45,7 +45,7 @@ def execute_sync_devices(
             meta={"current": 0, "total": 100, "status": "Initializing CheckMK sync..."},
         )
 
-        from services.nb2cmk_base_service import nb2cmk_service
+        from services.checkmk.sync.base import nb2cmk_service
 
         # If no target devices provided, fetch all from Nautobot
         device_ids = target_devices

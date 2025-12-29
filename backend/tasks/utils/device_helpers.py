@@ -40,7 +40,7 @@ def get_target_devices(
 
         try:
             from inventory_manager import inventory_manager
-            from services.ansible_inventory import ansible_inventory_service
+            from services.network.automation.ansible_inventory import ansible_inventory_service
 
             # Load inventory from database by name
             # Note: We need to get the username from the template context

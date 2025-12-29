@@ -43,7 +43,7 @@ def execute_cache_devices(
         )
 
         from services.nautobot import nautobot_service
-        from services.cache_service import cache_service
+        from services.settings.cache import cache_service
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
