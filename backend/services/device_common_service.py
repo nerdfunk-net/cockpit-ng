@@ -843,6 +843,114 @@ class DeviceCommonService:
         logger.info(f"Created IP address: {ip_id}")
         return ip_id
 
+    async def ensure_prefix_exists(
+        self,
+        prefix: str,
+        namespace: str = "Global",
+        status: str = "active",
+        prefix_type: str = "network",
+        location: Optional[str] = None,
+        description: Optional[str] = None,
+        **kwargs,
+    ) -> str:
+        """
+        Ensure IP prefix exists in Nautobot.
+
+        If prefix already exists in the namespace, returns its UUID.
+        If not, creates it and returns the new UUID.
+
+        Args:
+            prefix: IP prefix in CIDR format (e.g., "192.168.1.0/24")
+            namespace: Namespace name (default: "Global")
+            status: Status name for the prefix (default: "active")
+            prefix_type: Type of prefix - "network" or "container" (default: "network")
+            location: Location name or UUID (optional)
+            description: Description for the prefix (optional)
+            **kwargs: Additional fields for prefix creation (role, parent, tenant, vlan, rir, tags, custom_fields)
+
+        Returns:
+            Prefix UUID
+
+        Raises:
+            Exception: If creation fails and prefix doesn't exist
+        """
+        logger.info(f"Ensuring prefix exists: {prefix} in namespace {namespace}")
+
+        # Resolve namespace to UUID
+        namespace_id = await self.resolve_namespace_id(namespace)
+
+        # Check if prefix already exists in this namespace
+        prefix_search_endpoint = f"ipam/prefixes/?prefix={prefix}&namespace={namespace_id}&format=json"
+        prefix_result = await self.nautobot.rest_request(
+            endpoint=prefix_search_endpoint, method="GET"
+        )
+
+        if prefix_result and prefix_result.get("count", 0) > 0:
+            existing_prefix = prefix_result["results"][0]
+            logger.info(
+                f"Prefix already exists: {existing_prefix['id']}"
+            )
+            return existing_prefix["id"]
+
+        # Prefix doesn't exist, create it
+        logger.info(f"Creating new prefix: {prefix}")
+
+        # Resolve status to UUID
+        status_id = await self.resolve_status_id(status, content_type="ipam.prefix")
+
+        # Build payload
+        prefix_data = {
+            "prefix": prefix,
+            "namespace": {"id": namespace_id},
+            "status": {"id": status_id},
+            "type": prefix_type,
+        }
+
+        # Add optional description
+        if description:
+            prefix_data["description"] = description
+
+        # Resolve location if provided
+        if location:
+            if self._is_valid_uuid(location):
+                prefix_data["location"] = {"id": location}
+            else:
+                location_id = await self.resolve_location_id(location)
+                if location_id:
+                    prefix_data["location"] = {"id": location_id}
+                else:
+                    logger.warning(f"Location '{location}' not found, prefix will be created without location")
+
+        # Add optional fields from kwargs
+        optional_uuid_fields = ["role", "parent", "tenant", "vlan", "rir"]
+        for field in optional_uuid_fields:
+            if field in kwargs and kwargs[field]:
+                value = kwargs[field]
+                if self._is_valid_uuid(value):
+                    prefix_data[field] = {"id": value}
+                else:
+                    logger.warning(f"Field '{field}' should be a UUID, got: {value}")
+
+        # Add tags if provided
+        if "tags" in kwargs and kwargs["tags"]:
+            prefix_data["tags"] = self.normalize_tags(kwargs["tags"])
+
+        # Add custom_fields if provided
+        if "custom_fields" in kwargs and kwargs["custom_fields"]:
+            prefix_data["custom_fields"] = kwargs["custom_fields"]
+
+        # Create the prefix
+        result = await self.nautobot.rest_request(
+            endpoint="ipam/prefixes/", method="POST", data=prefix_data
+        )
+
+        if not result or "id" not in result:
+            raise Exception(f"Failed to create prefix {prefix}: No ID returned")
+
+        prefix_id = result["id"]
+        logger.info(f"Created new prefix: {prefix} with ID: {prefix_id}")
+        return prefix_id
+
     async def ensure_interface_exists(
         self,
         device_id: str,
