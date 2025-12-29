@@ -597,6 +597,57 @@ python -m pytest tests/test_my_new_service.py -v
 - **Test Reliability**: 100% pass rate, no flaky tests
 - **Maintainability**: Clear test names, good documentation
 
+## Integration Testing with Real Nautobot
+
+**NEW:** The test suite now supports integration tests with a real Nautobot instance!
+
+### Quick Setup
+
+```bash
+# 1. Configure test environment
+cp ../.env.test.example ../.env.test
+nano ../.env.test  # Add your test Nautobot URL and token
+
+# 2. Run integration tests
+pytest -m "integration and nautobot" -v
+```
+
+### Test Types
+
+| Type | File | Mocking | External Deps |
+|------|------|---------|---------------|
+| Unit | `unit/` | All mocked | None |
+| Integration (Mocked) | `integration/workflows/` | External APIs mocked | None |
+| Integration (Real) | `integration/test_ansible_inventory_baseline.py` | None | Real Nautobot |
+
+### Integration Test Features
+
+- **Real API Calls**: Tests make actual GraphQL/REST calls to test Nautobot
+- **Complex Logic Validation**: Verifies AND/OR operations work correctly with real data
+- **Edge Case Testing**: Tests real-world scenarios and edge cases
+- **Auto-Skip**: Tests skip automatically if `.env.test` not configured
+
+### Running Integration Tests
+
+```bash
+# All integration tests (mocked + real)
+pytest -m integration
+
+# Only real Nautobot integration tests
+pytest -m "integration and nautobot"
+
+# Skip integration tests (unit only)
+pytest -m "not integration"
+```
+
+### Documentation
+
+- **Detailed Guide**: [INTEGRATION_TESTING.md](INTEGRATION_TESTING.md)
+- **Test Environment**: `../.env.test` (create from `../.env.test.example`)
+- **Test Requirements**: Test Nautobot instance with sample data
+
+---
+
 ## Future Enhancements
 
 Potential areas for expansion:
@@ -605,9 +656,11 @@ Potential areas for expansion:
 3. Performance testing for bulk operations
 4. Contract testing for external API integrations
 5. Mutation testing to verify test quality
+6. ✅ **COMPLETED**: Integration tests with real Nautobot instance
 
 ---
 
-**Last Updated**: 2025-01-XX
-**Test Suite Version**: 1.1
-**Total Tests**: 93 passing (12 new GraphQL query validation tests)
+**Last Updated**: 2025-12-29
+**Test Suite Version**: 1.2
+**Total Tests**: 93 passing unit tests + comprehensive integration test suite
+**New**: Real Nautobot integration tests for ansible-inventory service

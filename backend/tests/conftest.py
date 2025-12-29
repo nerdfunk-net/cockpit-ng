@@ -380,3 +380,112 @@ def checkmk_host_factory():
     def _create_host(**kwargs):
         return create_host_response(**kwargs)
     return _create_host
+
+
+# =============================================================================
+# Real Integration Test Fixtures
+# =============================================================================
+
+@pytest.fixture(scope="session")
+def test_nautobot_configured():
+    """
+    Check if test Nautobot instance is configured.
+
+    Returns True if .env.test has valid Nautobot configuration.
+    Use with pytest.mark.skipif to skip tests when Nautobot is not configured.
+    """
+    import os
+    from dotenv import load_dotenv
+
+    # Load test environment
+    test_env_path = os.path.join(os.path.dirname(__file__), "..", ".env.test")
+    if os.path.exists(test_env_path):
+        load_dotenv(test_env_path, override=True)
+
+    nautobot_url = os.getenv("NAUTOBOT_HOST")
+    nautobot_token = os.getenv("NAUTOBOT_TOKEN")
+
+    # Check if configuration is present and not placeholder
+    is_configured = (
+        nautobot_url
+        and nautobot_token
+        and nautobot_token != "your-test-nautobot-token-here"
+    )
+
+    return is_configured
+
+
+@pytest.fixture(scope="module")
+def real_nautobot_service(test_nautobot_configured):
+    """
+    Real NautobotService for integration tests.
+
+    This fixture provides a REAL connection to a test Nautobot instance.
+    Configuration is loaded from .env.test file.
+
+    Usage:
+        @pytest.mark.integration
+        @pytest.mark.nautobot
+        async def test_my_integration(real_nautobot_service):
+            # Make real API calls to Nautobot
+            result = await real_nautobot_service.graphql_query(query)
+
+    Skipping:
+        Tests using this fixture will be automatically skipped if .env.test
+        is not configured with valid Nautobot credentials.
+    """
+    import os
+    from dotenv import load_dotenv
+
+    # Skip if not configured
+    if not test_nautobot_configured:
+        pytest.skip("Test Nautobot instance not configured. Set up .env.test file.")
+
+    # Load test environment
+    test_env_path = os.path.join(os.path.dirname(__file__), "..", ".env.test")
+    load_dotenv(test_env_path, override=True)
+
+    from services.nautobot import NautobotService
+
+    service = NautobotService()
+
+    # Override config to use test environment
+    service.config = {
+        "url": os.getenv("NAUTOBOT_HOST"),
+        "token": os.getenv("NAUTOBOT_TOKEN"),
+        "timeout": int(os.getenv("NAUTOBOT_TIMEOUT", "30")),
+        "verify_ssl": True,
+        "_source": "test_environment"
+    }
+
+    # Validate configuration
+    assert service.config["url"], "NAUTOBOT_HOST must be set in .env.test"
+    assert service.config["token"], "NAUTOBOT_TOKEN must be set in .env.test"
+    assert service.config["token"] != "your-test-nautobot-token-here", \
+        "Update NAUTOBOT_TOKEN in .env.test with real token"
+
+    return service
+
+
+@pytest.fixture(scope="module")
+def real_ansible_inventory_service(real_nautobot_service):
+    """
+    Real AnsibleInventoryService configured with real Nautobot connection.
+
+    This fixture provides the ansible inventory service that will make
+    real API calls to the test Nautobot instance.
+
+    Usage:
+        @pytest.mark.integration
+        @pytest.mark.nautobot
+        async def test_inventory_generation(real_ansible_inventory_service):
+            devices, count = await real_ansible_inventory_service.preview_inventory(ops)
+    """
+    from services.ansible_inventory import AnsibleInventoryService
+    from unittest.mock import patch
+
+    # Patch the global nautobot_service instance that ansible_inventory imports
+    # The ansible_inventory service does: from services.nautobot import nautobot_service
+    with patch('services.nautobot.nautobot_service', real_nautobot_service):
+        service = AnsibleInventoryService()
+        yield service
