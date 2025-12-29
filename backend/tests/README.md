@@ -619,6 +619,7 @@ pytest -m "integration and nautobot" -v
 | Unit | `unit/` | All mocked | None |
 | Integration (Mocked) | `integration/workflows/` | External APIs mocked | None |
 | Integration (Real) | `integration/test_ansible_inventory_baseline.py` | None | Real Nautobot |
+| Integration (Real) | `integration/test_device_operations_real_nautobot.py` | None | Real Nautobot |
 
 ### Integration Test Features
 
@@ -642,9 +643,15 @@ pytest -m "not integration"
 
 ### Documentation
 
-- **Detailed Guide**: [INTEGRATION_TESTING.md](INTEGRATION_TESTING.md)
-- **Test Environment**: `../.env.test` (create from `../.env.test.example`)
-- **Test Requirements**: Test Nautobot instance with sample data
+**General Integration Testing**:
+- [INTEGRATION_TESTING.md](INTEGRATION_TESTING.md) - Comprehensive setup guide
+- [RUN_INTEGRATION_TESTS.md](RUN_INTEGRATION_TESTS.md) - Quick run guide
+- `../.env.test` - Test environment (create from `../.env.test.example`)
+
+**Specific Test Suites**:
+- [BASELINE_TEST_DATA.md](BASELINE_TEST_DATA.md) - Ansible inventory baseline test data
+- [DEVICE_OPERATIONS_TESTS.md](DEVICE_OPERATIONS_TESTS.md) - Add Device and Bulk Edit tests
+- [FINAL_SUMMARY.md](FINAL_SUMMARY.md) - Complete integration test summary
 
 ---
 
@@ -661,6 +668,8 @@ Potential areas for expansion:
 ---
 
 **Last Updated**: 2025-12-29
-**Test Suite Version**: 1.2
-**Total Tests**: 93 passing unit tests + comprehensive integration test suite
-**New**: Real Nautobot integration tests for ansible-inventory service
+**Test Suite Version**: 1.3
+**Total Tests**: 93 passing unit tests + 32 integration tests (26 ansible-inventory + 6 device operations)
+**Integration Test Suites**:
+- Ansible Inventory (26 tests) - Baseline data validation with logical operations
+- Device Operations (6 tests) - Add Device and Bulk Edit workflows
