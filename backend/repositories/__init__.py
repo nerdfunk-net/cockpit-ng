@@ -7,16 +7,16 @@ and easier testing.
 """
 
 from .base import BaseRepository
-from .user_repository import UserRepository
-from .rbac_repository import RBACRepository
-from .credentials_repository import CredentialsRepository
-from .profile_repository import ProfileRepository
-from .template_repository import TemplateRepository
-from .git_repository_repository import GitRepositoryRepository
-from .job_schedule_repository import JobScheduleRepository
-from .job_template_repository import JobTemplateRepository
-from .job_run_repository import JobRunRepository, job_run_repository
-from .compliance_repository import (
+from .auth.user_repository import UserRepository
+from .auth.rbac_repository import RBACRepository
+from .auth.profile_repository import ProfileRepository
+from .settings.credentials_repository import CredentialsRepository
+from .settings.template_repository import TemplateRepository
+from .settings.git_repository_repository import GitRepositoryRepository
+from .jobs.job_schedule_repository import JobScheduleRepository
+from .jobs.job_template_repository import JobTemplateRepository
+from .jobs.job_run_repository import JobRunRepository, job_run_repository
+from .compliance.compliance_repository import (
     RegexPatternRepository,
     LoginCredentialRepository,
     SNMPMappingRepository,

@@ -12,7 +12,7 @@ import logging
 import asyncio
 from typing import Dict, Any
 from celery_app import celery_app
-from services.device_query_service import device_query_service
+from services.nautobot.devices.query import device_query_service
 from settings_manager import settings_manager
 import job_run_manager
 

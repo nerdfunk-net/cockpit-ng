@@ -6,7 +6,7 @@ Handles business logic for job templates using PostgreSQL and repository pattern
 import logging
 from typing import Optional, List, Dict, Any
 
-from repositories.job_template_repository import JobTemplateRepository
+from repositories.jobs.job_template_repository import JobTemplateRepository
 
 logger = logging.getLogger(__name__)
 

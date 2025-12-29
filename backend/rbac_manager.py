@@ -18,7 +18,7 @@ instead of direct SQLite3 connections. The API remains the same for backward com
 from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional, Tuple
-from repositories.rbac_repository import RBACRepository
+from repositories.auth.rbac_repository import RBACRepository
 from core.models import Role, Permission
 import user_db_manager as user_db
 

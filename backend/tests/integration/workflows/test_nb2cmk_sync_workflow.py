@@ -10,7 +10,7 @@ Tests the complete sync workflow including:
 
 import pytest
 from unittest.mock import AsyncMock, Mock, patch, MagicMock
-from services.nb2cmk_base_service import NautobotToCheckMKService
+from services.checkmk.sync.base import NautobotToCheckMKService
 from tests.fixtures import (
     NAUTOBOT_DEVICES_LIST,
     CHECKMK_HOSTS_LIST,
@@ -203,7 +203,7 @@ class TestSyncOperations:
         """Test adding new devices to CheckMK during sync."""
         # Arrange
         with patch('services.nautobot.nautobot_service', mock_nautobot_service):
-            with patch('routers.checkmk._get_checkmk_client', return_value=mock_checkmk_client):
+            with patch('services.checkmk.checkmk_service', mock_checkmk_client):
                 # Nautobot has devices
                 nautobot_data = create_devices_list(count=2)
                 mock_nautobot_service.graphql_query = AsyncMock(return_value=nautobot_data)

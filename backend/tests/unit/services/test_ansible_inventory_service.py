@@ -12,7 +12,7 @@ Tests inventory generation including:
 
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
-from services.ansible_inventory import AnsibleInventoryService
+from services.network.automation.ansible_inventory import AnsibleInventoryService
 from models.ansible_inventory import LogicalOperation, LogicalCondition
 from tests.fixtures import create_devices_list
 

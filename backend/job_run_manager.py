@@ -8,7 +8,7 @@ import logging
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-from repositories.job_run_repository import job_run_repository as repo
+from repositories.jobs.job_run_repository import job_run_repository as repo
 import jobs_manager
 import job_template_manager
 

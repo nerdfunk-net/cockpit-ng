@@ -17,7 +17,7 @@ from models.backup_models import (
     GitCommitStatus,
     TimestampUpdateStatus,
 )
-from services.device_backup_service import DeviceBackupService
+from services.nautobot.configs.backup import DeviceBackupService
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ def finalize_backup_task(
     Returns:
         dict: Final backup status
     """
-    from services.git_service import git_service
+    from services.settings.git.service import git_service
     import job_run_manager
 
     logger.info("=" * 80)
@@ -279,8 +279,8 @@ def backup_devices_task(
         )
 
         # Import services
-        from services.git_service import git_service
-        from services.git_auth_service import git_auth_service
+        from services.settings.git.service import git_service
+        from services.settings.git.auth import git_auth_service
 
         # Step 1: Validate inputs (delegated to service)
         backup_service = DeviceBackupService()

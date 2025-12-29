@@ -9,7 +9,7 @@ import logging
 import json
 from typing import Dict, Any, Optional, List
 import hashlib
-from repositories.template_repository import (
+from repositories.settings.template_repository import (
     TemplateRepository,
     TemplateVersionRepository,
 )

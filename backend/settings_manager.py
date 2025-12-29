@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, asdict, field
 import json
 import yaml
-from repositories.settings_repository import (
+from repositories.settings.settings_repository import (
     NautobotSettingRepository,
     GitSettingRepository,
     CheckMKSettingRepository,
@@ -240,7 +240,7 @@ class SettingsManager:
     def get_grafana_settings(self) -> Optional[Dict[str, Any]]:
         """Get current Grafana settings"""
         try:
-            from repositories.settings_repository import GrafanaSettingRepository
+            from repositories.settings.settings_repository import GrafanaSettingRepository
 
             repo = GrafanaSettingRepository()
             settings = repo.get_settings()
@@ -528,7 +528,7 @@ class SettingsManager:
     def update_grafana_settings(self, settings: Dict[str, Any]) -> bool:
         """Update Grafana settings"""
         try:
-            from repositories.settings_repository import GrafanaSettingRepository
+            from repositories.settings.settings_repository import GrafanaSettingRepository
 
             repo = GrafanaSettingRepository()
             existing = repo.get_settings()

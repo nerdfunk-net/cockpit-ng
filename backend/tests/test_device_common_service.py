@@ -6,7 +6,7 @@ Tests all shared utility methods used by import and update services.
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from services.device_common_service import DeviceCommonService
+from services.nautobot.devices.common import DeviceCommonService
 from services.nautobot import NautobotService
 
 

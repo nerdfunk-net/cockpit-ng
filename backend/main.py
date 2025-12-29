@@ -12,34 +12,50 @@ from fastapi import FastAPI
 import asyncio
 
 # Import routers
-from routers.auth import router as auth_router
-from routers.oidc import router as oidc_router
-from routers.nautobot import router as nautobot_router
-from routers.checkmk import router as checkmk_router
-from routers.nb2cmk import router as nb2cmk_router
-from routers.git import router as git_router
-from routers.file_compare import router as file_compare_router
-from routers.config import router as config_router
-from routers.settings import router as settings_router
-from routers.templates import router as templates_router
-from routers.credentials import router as credentials_router
-from routers.ansible_inventory import router as ansible_inventory_router
-from routers.inventory import router as inventory_router
-from routers.scan_and_add import router as scan_and_add_router
-from routers.cache import router as cache_router
-from routers.profile import router as profile_router
-from routers.celery_api import router as celery_router
+# Auth routers now use feature-based structure (Phase 3.5 migration)
+from routers.auth import auth_router, oidc_router, profile_router
+
+# CheckMK routers now use feature-based structure (Phase 3.6 migration)
+from routers.checkmk import checkmk_router, nb2cmk_router
+
+# Nautobot routers now use feature-based structure (Phase 3.8 migration)
+from routers.nautobot import (
+    nautobot_router,
+    scan_and_add_router,
+)
+# Settings routers now use feature-based structure (Phase 3.1-3.3 migration)
+from routers.settings import (
+    git_router,
+    common_router as settings_router,
+    cache_router,
+    credentials_router,
+    templates_router,
+    rbac_router,
+    compliance_router,
+    config_router,
+)
+# Network routers now use feature-based structure (Phase 3.4 migration - partial)
+from routers.network import (
+    file_compare_router,
+    ansible_inventory_router,
+    netmiko_router,
+)
+# Tools router kept in old location (depends on nautobot_service, now fixed)
+from routers.tools import router as tools_router
+# Compliance check router disabled - requires pysnmp dependency
+# from routers.compliance_check import router as compliance_check_router
+# Inventory routers now use feature-based structure (Phase 3.7 migration)
+from routers.inventory import inventory_router, certificates_router
 
 # git_repositories_router is included via git_router - no need to import separately
-from routers.job_schedules import router as job_schedules_router
-from routers.job_templates import router as job_templates_router
-from routers.job_runs import router as job_runs_router
-from routers.netmiko import router as netmiko_router
-from routers.rbac import router as rbac_router
-from routers.compliance import router as compliance_router
-from routers.compliance_check import router as compliance_check_router
-from routers.certificates import router as certificates_router
-from routers.tools import router as tools_router
+# Job routers now use feature-based structure (Phase 3.2 migration)
+from routers.jobs import (
+    templates_router as job_templates_router,
+    schedules_router as job_schedules_router,
+    runs_router as job_runs_router,
+    celery_router,
+)
+# certificates_router now imported from inventory package above
 from health import router as health_router
 
 # Import auth dependency
@@ -83,7 +99,7 @@ app.include_router(job_runs_router)
 app.include_router(netmiko_router)
 app.include_router(rbac_router)
 app.include_router(compliance_router)
-app.include_router(compliance_check_router)
+# app.include_router(compliance_check_router)  # Disabled - requires pysnmp
 app.include_router(certificates_router)
 app.include_router(tools_router)
 app.include_router(health_router)

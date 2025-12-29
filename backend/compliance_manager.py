@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 from cryptography.fernet import Fernet, InvalidToken
 from config import settings as config_settings
 
-from repositories.compliance_repository import (
+from repositories.compliance.compliance_repository import (
     RegexPatternRepository,
     LoginCredentialRepository,
     SNMPMappingRepository,

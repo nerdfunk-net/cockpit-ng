@@ -10,7 +10,7 @@ instead of direct SQLite3 connections. The API remains the same for backward com
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 from core.auth import get_password_hash, verify_password
-from repositories.user_repository import UserRepository
+from repositories.auth.user_repository import UserRepository
 from core.models import User
 
 # Permission bit flags

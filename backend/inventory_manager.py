@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 import json
 from typing import Dict, Any, Optional, List
-from repositories.inventory_repository import InventoryRepository
+from repositories.inventory.inventory_repository import InventoryRepository
 from core.models import Inventory
 
 logger = logging.getLogger(__name__)

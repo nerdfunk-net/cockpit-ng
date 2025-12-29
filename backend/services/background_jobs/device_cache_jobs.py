@@ -30,7 +30,7 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
 
         # Import here to avoid circular dependencies
         from services.nautobot import nautobot_service
-        from services.cache_service import cache_service
+        from services.settings.cache import cache_service
         from services.background_jobs.base import (
             format_progress_message,
             extract_device_essentials,
@@ -227,7 +227,7 @@ def cache_single_device_task(self, device_id: str) -> Dict[str, Any]:
         logger.info(f"Starting cache_single_device task for device {device_id}")
 
         from services.nautobot import nautobot_service
-        from services.cache_service import cache_service
+        from services.settings.cache import cache_service
         from services.background_jobs.base import safe_graphql_query
 
         self.update_state(

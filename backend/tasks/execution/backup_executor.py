@@ -70,9 +70,9 @@ def execute_backup(
         )
 
         # Import services
-        from services.git_shared_utils import git_repo_manager
-        from services.git_service import git_service
-        from services.git_auth_service import git_auth_service
+        from services.settings.git.shared_utils import git_repo_manager
+        from services.settings.git.service import git_service
+        from services.settings.git.auth import git_auth_service
         from services.nautobot import NautobotService
         from services.netmiko_service import NetmikoService
         import credentials_manager

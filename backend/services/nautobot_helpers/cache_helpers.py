@@ -3,7 +3,7 @@ Cache helper functions for Nautobot data.
 """
 
 from typing import Optional
-from services.cache_service import cache_service
+from services.settings.cache import cache_service
 
 # Cache configuration
 DEVICE_CACHE_TTL = 30 * 60  # 30 minutes in seconds

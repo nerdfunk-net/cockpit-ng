@@ -17,8 +17,8 @@ import pytest
 import logging
 from typing import Dict, Any, Optional
 from services.nautobot import NautobotService
-from services.device_creation_service import DeviceCreationService
-from services.device_update_service import DeviceUpdateService
+from services.nautobot.devices.creation import DeviceCreationService
+from services.nautobot.devices.update import DeviceUpdateService
 from models.nautobot import AddDeviceRequest, InterfaceData
 
 logger = logging.getLogger(__name__)

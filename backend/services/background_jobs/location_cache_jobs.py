@@ -29,7 +29,7 @@ def cache_all_locations_task(self) -> Dict[str, Any]:
 
         # Import here to avoid circular dependencies
         from services.nautobot import nautobot_service
-        from services.cache_service import cache_service
+        from services.settings.cache import cache_service
         from services.background_jobs.base import safe_graphql_query
 
         # Update task state

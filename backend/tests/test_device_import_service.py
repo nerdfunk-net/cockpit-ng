@@ -6,9 +6,9 @@ Tests device import workflow including validation, creation, and interface handl
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from services.device_import_service import DeviceImportService
+from services.nautobot.devices.import_service import DeviceImportService
 from services.nautobot import NautobotService
-from services.device_common_service import DeviceCommonService
+from services.nautobot.devices.common import DeviceCommonService
 
 
 @pytest.fixture

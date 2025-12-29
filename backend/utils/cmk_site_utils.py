@@ -7,7 +7,7 @@ import ipaddress
 import logging
 from typing import Dict, Any, Optional
 
-from services.cmk_config_service import config_service
+from services.checkmk.config import config_service
 from utils.cmk_folder_utils import parse_folder_value
 
 logger = logging.getLogger(__name__)

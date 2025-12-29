@@ -8,7 +8,7 @@ import logging
 from typing import Dict, Any
 from celery import shared_task
 
-from services.nb2cmk_database_service import (
+from services.checkmk.sync.database import (
     nb2cmk_db_service,
     JobStatus as NB2CMKJobStatus,
 )
@@ -37,7 +37,7 @@ def add_device_to_checkmk_task(self, device_id: str) -> Dict[str, Any]:
         logger.info(f"Starting add_device_to_checkmk task for device: {device_id}")
 
         # Import here to avoid circular dependencies
-        from services.nb2cmk_base_service import nb2cmk_service
+        from services.checkmk.sync.base import nb2cmk_service
 
         # Update task state
         self.update_state(
@@ -122,7 +122,7 @@ def update_device_in_checkmk_task(self, device_id: str) -> Dict[str, Any]:
         logger.info(f"Starting update_device_in_checkmk task for device: {device_id}")
 
         # Import here to avoid circular dependencies
-        from services.nb2cmk_base_service import nb2cmk_service
+        from services.checkmk.sync.base import nb2cmk_service
 
         # Update task state
         self.update_state(
@@ -212,7 +212,7 @@ def sync_devices_to_checkmk_task(
         )
 
         # Import here to avoid circular dependencies
-        from services.nb2cmk_base_service import nb2cmk_service
+        from services.checkmk.sync.base import nb2cmk_service
         import job_run_manager
 
         total_devices = len(device_ids)

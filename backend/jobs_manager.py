@@ -10,7 +10,7 @@ import json
 
 from croniter import croniter
 
-from repositories.job_schedule_repository import JobScheduleRepository
+from repositories.jobs.job_schedule_repository import JobScheduleRepository
 from job_template_manager import get_job_template
 
 logger = logging.getLogger(__name__)

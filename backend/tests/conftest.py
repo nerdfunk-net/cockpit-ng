@@ -481,7 +481,7 @@ def real_ansible_inventory_service(real_nautobot_service):
         async def test_inventory_generation(real_ansible_inventory_service):
             devices, count = await real_ansible_inventory_service.preview_inventory(ops)
     """
-    from services.ansible_inventory import AnsibleInventoryService
+    from services.network.automation.ansible_inventory import AnsibleInventoryService
     from unittest.mock import patch
 
     # Patch the global nautobot_service instance that ansible_inventory imports

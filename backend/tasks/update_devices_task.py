@@ -17,7 +17,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 
 from services.nautobot import NautobotService
-from services.device_update_service import DeviceUpdateService
+from services.nautobot.devices.update import DeviceUpdateService
 
 logger = logging.getLogger(__name__)
 
