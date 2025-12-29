@@ -939,7 +939,7 @@ export function AddDevicePage() {
     } finally {
       setIsLoading(false)
     }
-  }, [validateForm, deviceName, selectedRole, selectedStatus, selectedLocation, selectedDeviceType, selectedPlatform, serialNumber, interfaces, selectedSoftwareVersion, softwareVersions, selectedTags, customFieldValues])
+  }, [validateForm, deviceName, selectedRole, selectedStatus, selectedLocation, selectedDeviceType, selectedPlatform, serialNumber, interfaces, selectedSoftwareVersion, softwareVersions, selectedTags, customFieldValues, addPrefix, defaultPrefixLength])
 
   const handleClearForm = useCallback(() => {
     setDeviceName('')
@@ -1301,7 +1301,7 @@ export function AddDevicePage() {
                 </Label>
               </div>
               <p className="text-xs text-muted-foreground ml-6">
-                Automatically create parent prefixes for IP addresses if they don't exist
+                Automatically create parent prefixes for IP addresses if they don&apos;t exist
               </p>
             </div>
 
