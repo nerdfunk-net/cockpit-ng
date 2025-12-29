@@ -492,97 +492,200 @@ backend/
 │   ├── ansible_inventory.py        # Ansible inventory models
 │   └── settings.py                 # Settings models
 │
-├── routers/                         # API route handlers
+├── routers/                         # API route handlers (feature-based organization)
 │   ├── __init__.py
-│   ├── auth.py                     # /auth/* endpoints (login, logout, etc.)
-│   ├── profile.py                  # /profile/* endpoints
-│   ├── rbac.py                     # /rbac/* endpoints (roles, permissions)
-│   ├── oidc.py                     # /oidc/* endpoints (OpenID Connect)
-│   ├── nautobot.py                 # /nautobot/* endpoints (Nautobot API proxy)
-│   ├── nautobot_endpoints/         # Specialized Nautobot endpoints
-│   │   ├── devices.py              # Device-specific endpoints
-│   │   ├── dcim_interfaces.py      # DCIM interface endpoints
-│   │   ├── ipam_addresses.py       # IP address endpoints
-│   │   ├── ipam_ip_address_to_interface.py  # IP-to-interface mapping
-│   │   ├── ipam_prefixes.py        # IP prefix endpoints
-│   │   └── metadata.py             # Metadata endpoints
-│   ├── checkmk.py                  # /checkmk/* endpoints (CheckMK integration)
-│   ├── nb2cmk.py                   # /nb2cmk/* endpoints (Nautobot to CheckMK sync)
-│   ├── netmiko.py                  # /netmiko/* endpoints (device connections)
-│   ├── ansible_inventory.py        # /ansible-inventory/* endpoints
-│   ├── templates.py                # /templates/* endpoints (Jinja2 templates)
-│   ├── credentials.py              # /credentials/* endpoints (encrypted credentials)
-│   ├── git_repositories.py         # /git-repositories/* endpoints
-│   ├── git.py                      # /git/* endpoints (consolidated Git operations)
-│   ├── git_version_control.py      # Git version control operations
-│   ├── git_debug.py                # Git debugging utilities
-│   ├── file_compare.py             # /file-compare/* endpoints
-│   ├── job_schedules.py            # /job-schedules/* endpoints
-│   ├── job_templates.py            # /job-templates/* endpoints
-│   ├── job_runs.py                 # /job-runs/* endpoints
-│   ├── compliance.py               # /compliance/* endpoints
-│   ├── compliance_check.py         # /compliance-check/* endpoints
-│   ├── certificates.py             # /certificates/* endpoints
-│   ├── inventory.py                # /inventory/* endpoints
-│   ├── tools.py                    # /tools/* endpoints (utilities)
-│   ├── celery_api.py               # /celery/* endpoints (task API)
-│   ├── cache.py                    # /cache/* endpoints (cache management)
-│   ├── config.py                   # /config/* endpoints (YAML config files)
-│   ├── settings.py                 # /settings/* endpoints (app settings)
-│   └── scan_and_add.py             # /scan-and-add/* endpoints (network scanning)
+│   │
+│   ├── auth/                       # Authentication & authorization domain
+│   │   ├── __init__.py
+│   │   ├── auth.py                 # /auth/* endpoints (login, logout, refresh)
+│   │   ├── oidc.py                 # /oidc/* endpoints (OpenID Connect SSO)
+│   │   └── profile.py              # /profile/* endpoints (user profile)
+│   │
+│   ├── nautobot/                   # Nautobot integration domain
+│   │   ├── __init__.py
+│   │   ├── main.py                 # Main Nautobot proxy endpoints
+│   │   ├── devices.py              # Device CRUD endpoints
+│   │   ├── interfaces.py           # DCIM interface endpoints
+│   │   ├── ip_addresses.py         # IP address management
+│   │   ├── prefixes.py             # IP prefix management
+│   │   ├── ip_interface_mapping.py # IP-to-interface mapping
+│   │   ├── metadata.py             # Metadata endpoints
+│   │   ├── export.py               # Export functionality
+│   │   ├── sync.py                 # Device synchronization
+│   │   └── tools/                  # Nautobot tools
+│   │       ├── __init__.py
+│   │       ├── scan_and_add.py     # Network scanning and device addition
+│   │       └── bulk_edit.py        # Bulk device editing
+│   │
+│   ├── checkmk/                    # CheckMK monitoring domain
+│   │   ├── __init__.py
+│   │   ├── main.py                 # CheckMK host management
+│   │   ├── sync.py                 # Nautobot→CheckMK sync
+│   │   └── inventory.py            # Hosts inventory endpoints
+│   │
+│   ├── network/                    # Network automation domain
+│   │   ├── __init__.py
+│   │   ├── configs/                # Configuration management
+│   │   │   ├── __init__.py
+│   │   │   ├── backup.py           # Configuration backup
+│   │   │   ├── compare.py          # Configuration comparison
+│   │   │   └── view.py             # Configuration viewing
+│   │   ├── automation/             # Automation tools
+│   │   │   ├── __init__.py
+│   │   │   ├── ansible_inventory.py # Ansible inventory generation
+│   │   │   ├── netmiko.py          # Netmiko device connections
+│   │   │   └── templates.py        # Configuration templates
+│   │   ├── compliance/             # Compliance checking
+│   │   │   ├── __init__.py
+│   │   │   ├── rules.py            # Compliance rules management
+│   │   │   └── checks.py           # Compliance check execution
+│   │   └── tools/                  # Network utilities
+│   │       ├── __init__.py
+│   │       └── ping.py             # Network ping utility
+│   │
+│   ├── jobs/                       # Job scheduling & management domain
+│   │   ├── __init__.py
+│   │   ├── templates.py            # Job template management
+│   │   ├── schedules.py            # Job scheduling
+│   │   ├── runs.py                 # Job execution history
+│   │   └── celery_api.py           # Celery task queue API
+│   │
+│   ├── settings/                   # Application settings domain
+│   │   ├── __init__.py
+│   │   ├── common.py               # General application settings
+│   │   ├── cache.py                # Cache configuration
+│   │   ├── celery.py               # Celery configuration (future)
+│   │   ├── credentials.py          # Credentials management
+│   │   ├── templates.py            # Template management
+│   │   ├── rbac.py                 # Role-based access control
+│   │   ├── compliance/             # Compliance settings
+│   │   │   ├── __init__.py
+│   │   │   ├── rules.py            # Compliance rule configuration
+│   │   │   └── checks.py           # Compliance check settings
+│   │   ├── connections/            # External system connections
+│   │   │   ├── __init__.py
+│   │   │   └── config.py           # YAML config file management
+│   │   └── git/                    # Git repository management
+│   │       ├── __init__.py
+│   │       ├── main.py             # Main Git operations
+│   │       ├── repositories.py     # Repository CRUD
+│   │       ├── operations.py       # Git operations (commit, push, pull)
+│   │       ├── compare.py          # Git diff/comparison
+│   │       ├── files.py            # File operations in Git
+│   │       ├── version_control.py  # Version control operations
+│   │       └── debug.py            # Git debugging utilities
+│   │
+│   └── inventory/                  # Inventory management domain
+│       ├── __init__.py
+│       ├── main.py                 # Inventory CRUD operations
+│       └── certificates.py         # SSL certificate management
 │
-├── services/                        # Business logic layer
+├── services/                        # Business logic layer (feature-based organization)
 │   ├── __init__.py
-│   ├── user_management.py          # User management service
-│   ├── oidc_service.py             # OIDC service
-│   ├── nautobot.py                 # Nautobot API client service
-│   ├── checkmk.py                  # CheckMK API service
-│   ├── cmk_config_service.py       # CheckMK configuration service
-│   ├── cmk_device_normalization_service.py  # Device normalization
-│   ├── cmk_folder_service.py       # CheckMK folder management
-│   ├── nb2cmk_base_service.py      # Nautobot to CheckMK base service
-│   ├── nb2cmk_background_service.py # Background sync service
-│   ├── nb2cmk_database_service.py  # Sync database operations
-│   ├── netmiko_service.py          # Netmiko device connections
-│   ├── ansible_inventory.py        # Ansible inventory generation
-│   ├── render_service.py           # Jinja2 template rendering
-│   ├── cache_service.py            # Caching service
-│   ├── network_scan_service.py     # Network scanning service
-│   ├── scan_service.py             # Device scanning service
-│   ├── compliance_check_service.py # Compliance checking logic
-│   ├── device_backup_service.py    # Device backup operations
-│   ├── device_common_service.py    # Common device operations
-│   ├── device_config_service.py    # Device configuration handling
-│   ├── device_creation_service.py  # Device creation/onboarding
-│   ├── device_import_service.py    # Device import operations
-│   ├── device_query_service.py     # Device querying/search
-│   ├── device_update_service.py    # Device update operations
-│   ├── git_service.py              # Main Git service
-│   ├── git_auth_service.py         # Git authentication handling
-│   ├── git_cache_service.py        # Git caching layer
-│   ├── git_config_service.py       # Git configuration management
-│   ├── git_connection_service.py   # Git connection pooling/management
-│   ├── git_diff_service.py         # Git diff/comparison operations
-│   ├── git_env.py                  # Git environment setup
-│   ├── git_paths.py                # Git path utilities
-│   └── git_shared_utils.py         # Shared Git utilities
+│   │
+│   ├── auth/                       # Authentication services
+│   │   ├── __init__.py
+│   │   ├── user_management.py      # User management service
+│   │   └── oidc.py                 # OIDC/SSO service
+│   │
+│   ├── nautobot/                   # Nautobot integration services
+│   │   ├── __init__.py
+│   │   ├── client.py               # Nautobot API client
+│   │   ├── devices/                # Device operation services
+│   │   │   ├── __init__.py
+│   │   │   ├── creation.py         # Device creation/onboarding
+│   │   │   ├── update.py           # Device update operations
+│   │   │   ├── query.py            # Device querying/search
+│   │   │   ├── import_service.py   # Device import operations (renamed to avoid keyword)
+│   │   │   └── common.py           # Common device operations
+│   │   ├── configs/                # Configuration services
+│   │   │   ├── __init__.py
+│   │   │   ├── backup.py           # Device backup operations
+│   │   │   └── config.py           # Device configuration handling
+│   │   ├── offboarding.py          # Device offboarding service
+│   │   └── helpers/                # Nautobot helper utilities
+│   │       └── (helper modules)
+│   │
+│   ├── checkmk/                    # CheckMK integration services
+│   │   ├── __init__.py
+│   │   ├── client.py               # CheckMK API client
+│   │   ├── config.py               # CheckMK configuration service
+│   │   ├── normalization.py        # Device normalization
+│   │   ├── folder.py               # CheckMK folder management
+│   │   └── sync/                   # Nautobot→CheckMK sync services
+│   │       ├── __init__.py
+│   │       ├── base.py             # Base sync service
+│   │       ├── background.py       # Background sync operations
+│   │       └── database.py         # Sync database operations
+│   │
+│   ├── network/                    # Network automation services
+│   │   ├── __init__.py
+│   │   ├── automation/             # Automation tool services
+│   │   │   ├── __init__.py
+│   │   │   ├── ansible_inventory.py # Ansible inventory generation
+│   │   │   ├── netmiko.py          # Netmiko device connections
+│   │   │   └── render.py           # Jinja2 template rendering
+│   │   ├── compliance/             # Compliance services
+│   │   │   ├── __init__.py
+│   │   │   └── check.py            # Compliance checking logic
+│   │   └── scanning/               # Network scanning services
+│   │       ├── __init__.py
+│   │       ├── network_scan.py     # Network scanning service
+│   │       └── scan.py             # Device scanning service
+│   │
+│   ├── settings/                   # Application settings services
+│   │   ├── __init__.py
+│   │   ├── cache.py                # Caching service
+│   │   └── git/                    # Git repository services
+│   │       ├── __init__.py
+│   │       ├── service.py          # Main Git service
+│   │       ├── auth.py             # Git authentication handling
+│   │       ├── cache.py            # Git caching layer
+│   │       ├── config.py           # Git configuration management
+│   │       ├── connection.py       # Git connection pooling/management
+│   │       ├── diff.py             # Git diff/comparison operations
+│   │       ├── operations.py       # Git operations service
+│   │       ├── env.py              # Git environment setup
+│   │       ├── paths.py            # Git path utilities
+│   │       └── shared_utils.py     # Shared Git utilities
+│   │
+│   └── background_jobs/            # Background job services
+│       └── (Celery task services)
 │
-├── repositories/                    # Data access layer (Repository pattern)
+├── repositories/                    # Data access layer (Repository pattern, feature-based)
 │   ├── __init__.py
-│   ├── base.py                     # Base repository class
-│   ├── user_repository.py          # User data access
-│   ├── rbac_repository.py          # RBAC data access
-│   ├── profile_repository.py       # Profile data access
-│   ├── job_template_repository.py  # Job template data access
-│   ├── job_schedule_repository.py  # Job schedule data access
-│   ├── job_run_repository.py       # Job run data access
-│   ├── credentials_repository.py   # Credentials data access
-│   ├── git_repository_repository.py # Git repository data access
-│   ├── template_repository.py      # Template data access
-│   ├── settings_repository.py      # Settings data access
-│   ├── compliance_repository.py    # Compliance data access
-│   ├── inventory_repository.py     # Inventory data access
-│   └── nb2cmk_repository.py        # NB2CMK data access
+│   ├── base.py                     # Base repository class (shared)
+│   │
+│   ├── auth/                       # Authentication data access
+│   │   ├── __init__.py
+│   │   ├── user_repository.py      # User data access
+│   │   ├── rbac_repository.py      # RBAC data access
+│   │   └── profile_repository.py   # Profile data access
+│   │
+│   ├── jobs/                       # Job data access
+│   │   ├── __init__.py
+│   │   ├── job_template_repository.py # Job template data access
+│   │   ├── job_schedule_repository.py # Job schedule data access
+│   │   └── job_run_repository.py   # Job run data access
+│   │
+│   ├── settings/                   # Settings data access
+│   │   ├── __init__.py
+│   │   ├── settings_repository.py  # Settings data access
+│   │   ├── credentials_repository.py # Credentials data access
+│   │   ├── git_repository_repository.py # Git repository data access
+│   │   └── template_repository.py  # Template data access
+│   │
+│   ├── compliance/                 # Compliance data access
+│   │   ├── __init__.py
+│   │   └── compliance_repository.py # Compliance data access
+│   │
+│   ├── inventory/                  # Inventory data access
+│   │   ├── __init__.py
+│   │   └── inventory_repository.py # Inventory data access
+│   │
+│   └── checkmk/                    # CheckMK data access
+│       ├── __init__.py
+│       └── nb2cmk_repository.py    # NB2CMK sync data access
 │
 ├── tasks/                           # Celery/Background task definitions
 │   ├── __init__.py
@@ -714,25 +817,39 @@ The frontend uses a **feature-based architecture** for better scalability and ma
 
 ### Backend Architecture Patterns
 
-The backend follows a **layered architecture** with clear separation of concerns:
+The backend follows a **layered architecture** with **feature-based organization** and clear separation of concerns:
+
+**Feature-Based Organization:**
+- Backend structure mirrors frontend feature organization
+- Files grouped by domain: auth, nautobot, checkmk, network, jobs, settings, inventory
+- Aligns with sidebar navigation for consistency
+- Improves discoverability and maintainability
+- **Status**: Migration in progress (see `/backend/docs/BACKEND_RESTRUCTURE_PLAN.md`)
 
 **Repository Pattern:**
 - Data access layer abstracted through repository classes in `/repositories/`
 - Base repository provides common CRUD operations
-- Feature-specific repositories extend base functionality
+- Feature-specific repositories organized by domain (auth, jobs, settings, etc.)
 - Separates database operations from business logic
+- Each feature domain has its own repository subdirectory
 
 **Service Layer:**
 - Business logic encapsulated in service classes in `/services/`
 - Services orchestrate operations across multiple repositories
-- Specialized services for domains: device operations, Git operations, compliance, etc.
-- Device services organized by lifecycle: creation, backup, config, update, query
+- Organized by feature domains matching routers and frontend
+- Specialized services for domains:
+  - **Auth**: User management, OIDC/SSO
+  - **Nautobot**: Device operations (creation, update, query), configs (backup, config)
+  - **CheckMK**: Client, normalization, folder management, sync operations
+  - **Network**: Automation (Ansible, Netmiko, templates), compliance, scanning
+  - **Settings**: Cache, Git operations (10+ services)
 
 **Router Layer:**
 - Thin HTTP layer in `/routers/` handles request/response
+- Organized by feature domains with subdirectories
 - Delegates to services for business logic
 - Authentication and authorization at endpoint level
-- Specialized Nautobot endpoints under `/routers/nautobot_endpoints/`
+- Feature domains: auth, nautobot, checkmk, network, jobs, settings, inventory
 
 **Task Management (Celery):**
 - Background jobs managed by Celery with Beat scheduler

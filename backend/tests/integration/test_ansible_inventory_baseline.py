@@ -30,6 +30,7 @@ from models.ansible_inventory import LogicalOperation, LogicalCondition
 # Integration Tests - Basic Filtering with Baseline Data
 # =============================================================================
 
+
 @pytest.mark.integration
 @pytest.mark.nautobot
 class TestBaselineBasicFiltering:
@@ -47,23 +48,27 @@ class TestBaselineBasicFiltering:
                 operation_type="AND",
                 conditions=[
                     LogicalCondition(
-                        field="location",
-                        operator="equals",
-                        value="City A"
+                        field="location", operator="equals", value="City A"
                     )
-                ]
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
         # Should find devices in City A
-        assert len(devices) == 58, f"Expected 58 devices in City A, found {len(devices)}"
+        assert len(devices) == 58, (
+            f"Expected 58 devices in City A, found {len(devices)}"
+        )
 
         # All devices should be in City A
         for device in devices:
             # DeviceInfo.location is a string, not an object
-            assert device.location == "City A", f"Device {device.name} should be in City A, found {device.location}"
+            assert device.location == "City A", (
+                f"Device {device.name} should be in City A, found {device.location}"
+            )
 
     @pytest.mark.asyncio
     async def test_filter_by_location_city_b(self, real_ansible_inventory_service):
@@ -77,18 +82,20 @@ class TestBaselineBasicFiltering:
                 operation_type="AND",
                 conditions=[
                     LogicalCondition(
-                        field="location",
-                        operator="equals",
-                        value="City B"
+                        field="location", operator="equals", value="City B"
                     )
-                ]
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
         # Should find devices in City B
-        assert len(devices) == 62, f"Expected 62 devices in City B, found {len(devices)}"
+        assert len(devices) == 62, (
+            f"Expected 62 devices in City B, found {len(devices)}"
+        )
 
     @pytest.mark.asyncio
     async def test_filter_by_role_network(self, real_ansible_inventory_service):
@@ -104,15 +111,19 @@ class TestBaselineBasicFiltering:
                     LogicalCondition(
                         field="role",
                         operator="equals",
-                        value="Network"  # Note: capital N
+                        value="Network",  # Note: capital N
                     )
-                ]
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
-        assert len(devices) == 100, f"Expected 100 network devices, found {len(devices)}"
+        assert len(devices) == 100, (
+            f"Expected 100 network devices, found {len(devices)}"
+        )
 
         # All should have Network role
         for device in devices:
@@ -132,13 +143,15 @@ class TestBaselineBasicFiltering:
                     LogicalCondition(
                         field="role",
                         operator="equals",
-                        value="server"  # lowercase s
+                        value="server",  # lowercase s
                     )
-                ]
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
         assert len(devices) == 20, f"Expected 20 server devices, found {len(devices)}"
 
@@ -156,15 +169,19 @@ class TestBaselineBasicFiltering:
                     LogicalCondition(
                         field="platform",
                         operator="equals",
-                        value="Cisco IOS"  # Note: with space
+                        value="Cisco IOS",  # Note: with space
                     )
-                ]
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
-        assert len(devices) == 100, f"Expected 100 Cisco IOS devices, found {len(devices)}"
+        assert len(devices) == 100, (
+            f"Expected 100 Cisco IOS devices, found {len(devices)}"
+        )
 
     @pytest.mark.asyncio
     async def test_filter_by_tag_production(self, real_ansible_inventory_service):
@@ -177,18 +194,18 @@ class TestBaselineBasicFiltering:
             LogicalOperation(
                 operation_type="AND",
                 conditions=[
-                    LogicalCondition(
-                        field="tag",
-                        operator="equals",
-                        value="Production"
-                    )
-                ]
+                    LogicalCondition(field="tag", operator="equals", value="Production")
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
-        assert len(devices) == 89, f"Expected 89 Production devices, found {len(devices)}"
+        assert len(devices) == 89, (
+            f"Expected 89 Production devices, found {len(devices)}"
+        )
 
     @pytest.mark.asyncio
     async def test_filter_by_tag_staging(self, real_ansible_inventory_service):
@@ -201,16 +218,14 @@ class TestBaselineBasicFiltering:
             LogicalOperation(
                 operation_type="AND",
                 conditions=[
-                    LogicalCondition(
-                        field="tag",
-                        operator="equals",
-                        value="Staging"
-                    )
-                ]
+                    LogicalCondition(field="tag", operator="equals", value="Staging")
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
         assert len(devices) == 31, f"Expected 31 Staging devices, found {len(devices)}"
 
@@ -218,6 +233,7 @@ class TestBaselineBasicFiltering:
 # =============================================================================
 # Integration Tests - Logical AND Operations
 # =============================================================================
+
 
 @pytest.mark.integration
 @pytest.mark.nautobot
@@ -235,13 +251,17 @@ class TestBaselineLogicalAND:
             LogicalOperation(
                 operation_type="AND",
                 conditions=[
-                    LogicalCondition(field="location", operator="equals", value="City A"),
+                    LogicalCondition(
+                        field="location", operator="equals", value="City A"
+                    ),
                     LogicalCondition(field="role", operator="equals", value="Network"),
-                ]
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
         assert len(devices) == 49, f"Expected 49 devices, found {len(devices)}"
         assert count == 2, "Should have queried 2 conditions"
@@ -265,13 +285,17 @@ class TestBaselineLogicalAND:
             LogicalOperation(
                 operation_type="AND",
                 conditions=[
-                    LogicalCondition(field="location", operator="equals", value="City A"),
+                    LogicalCondition(
+                        field="location", operator="equals", value="City A"
+                    ),
                     LogicalCondition(field="role", operator="equals", value="server"),
-                ]
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
         assert len(devices) == 9, f"Expected 9 devices, found {len(devices)}"
 
@@ -286,13 +310,19 @@ class TestBaselineLogicalAND:
             LogicalOperation(
                 operation_type="AND",
                 conditions=[
-                    LogicalCondition(field="location", operator="equals", value="City B"),
-                    LogicalCondition(field="tag", operator="equals", value="Production"),
-                ]
+                    LogicalCondition(
+                        field="location", operator="equals", value="City B"
+                    ),
+                    LogicalCondition(
+                        field="tag", operator="equals", value="Production"
+                    ),
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
         assert len(devices) == 31, f"Expected 31 devices, found {len(devices)}"
 
@@ -307,13 +337,17 @@ class TestBaselineLogicalAND:
             LogicalOperation(
                 operation_type="AND",
                 conditions=[
-                    LogicalCondition(field="location", operator="equals", value="City B"),
+                    LogicalCondition(
+                        field="location", operator="equals", value="City B"
+                    ),
                     LogicalCondition(field="tag", operator="equals", value="Staging"),
-                ]
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
         assert len(devices) == 31, f"Expected 31 devices, found {len(devices)}"
 
@@ -329,12 +363,16 @@ class TestBaselineLogicalAND:
                 operation_type="AND",
                 conditions=[
                     LogicalCondition(field="role", operator="equals", value="Network"),
-                    LogicalCondition(field="tag", operator="equals", value="Production"),
-                ]
+                    LogicalCondition(
+                        field="tag", operator="equals", value="Production"
+                    ),
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
         assert len(devices) == 79, f"Expected 79 devices, found {len(devices)}"
 
@@ -351,11 +389,13 @@ class TestBaselineLogicalAND:
                 conditions=[
                     LogicalCondition(field="role", operator="equals", value="Network"),
                     LogicalCondition(field="tag", operator="equals", value="Staging"),
-                ]
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
         assert len(devices) == 21, f"Expected 21 devices, found {len(devices)}"
 
@@ -363,6 +403,7 @@ class TestBaselineLogicalAND:
 # =============================================================================
 # Integration Tests - Logical OR Operations
 # =============================================================================
+
 
 @pytest.mark.integration
 @pytest.mark.nautobot
@@ -380,15 +421,23 @@ class TestBaselineLogicalOR:
             LogicalOperation(
                 operation_type="OR",
                 conditions=[
-                    LogicalCondition(field="location", operator="equals", value="City A"),
-                    LogicalCondition(field="location", operator="equals", value="City B"),
-                ]
+                    LogicalCondition(
+                        field="location", operator="equals", value="City A"
+                    ),
+                    LogicalCondition(
+                        field="location", operator="equals", value="City B"
+                    ),
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
-        assert len(devices) >= 120, f"Expected at least 120 devices, found {len(devices)}"
+        assert len(devices) >= 120, (
+            f"Expected at least 120 devices, found {len(devices)}"
+        )
         assert count == 2, "Should have queried 2 conditions"
 
     @pytest.mark.asyncio
@@ -402,15 +451,21 @@ class TestBaselineLogicalOR:
             LogicalOperation(
                 operation_type="OR",
                 conditions=[
-                    LogicalCondition(field="tag", operator="equals", value="Production"),
+                    LogicalCondition(
+                        field="tag", operator="equals", value="Production"
+                    ),
                     LogicalCondition(field="tag", operator="equals", value="Staging"),
-                ]
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
-        assert len(devices) >= 120, f"Expected at least 120 devices, found {len(devices)}"
+        assert len(devices) >= 120, (
+            f"Expected at least 120 devices, found {len(devices)}"
+        )
 
     @pytest.mark.asyncio
     async def test_or_network_server(self, real_ansible_inventory_service):
@@ -425,18 +480,23 @@ class TestBaselineLogicalOR:
                 conditions=[
                     LogicalCondition(field="role", operator="equals", value="Network"),
                     LogicalCondition(field="role", operator="equals", value="server"),
-                ]
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
-        assert len(devices) >= 120, f"Expected at least 120 devices, found {len(devices)}"
+        assert len(devices) >= 120, (
+            f"Expected at least 120 devices, found {len(devices)}"
+        )
 
 
 # =============================================================================
 # Integration Tests - String Operators
 # =============================================================================
+
 
 @pytest.mark.integration
 @pytest.mark.nautobot
@@ -455,11 +515,13 @@ class TestBaselineStringOperators:
                 operation_type="AND",
                 conditions=[
                     LogicalCondition(field="name", operator="contains", value="lab")
-                ]
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
         assert len(devices) == 100, f"Expected 100 lab devices, found {len(devices)}"
 
@@ -479,11 +541,13 @@ class TestBaselineStringOperators:
                 operation_type="AND",
                 conditions=[
                     LogicalCondition(field="name", operator="contains", value="server")
-                ]
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
         assert len(devices) == 20, f"Expected 20 server devices, found {len(devices)}"
 
@@ -499,11 +563,13 @@ class TestBaselineStringOperators:
                 operation_type="AND",
                 conditions=[
                     LogicalCondition(field="name", operator="equals", value="lab-01")
-                ]
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
         assert len(devices) == 1, f"Expected 1 device, found {len(devices)}"
         if devices:
@@ -513,6 +579,7 @@ class TestBaselineStringOperators:
 # =============================================================================
 # Integration Tests - Complex Scenarios
 # =============================================================================
+
 
 @pytest.mark.integration
 @pytest.mark.nautobot
@@ -530,14 +597,20 @@ class TestBaselineComplexScenarios:
             LogicalOperation(
                 operation_type="AND",
                 conditions=[
-                    LogicalCondition(field="location", operator="equals", value="City A"),
+                    LogicalCondition(
+                        field="location", operator="equals", value="City A"
+                    ),
                     LogicalCondition(field="role", operator="equals", value="Network"),
-                    LogicalCondition(field="tag", operator="equals", value="Production"),
-                ]
+                    LogicalCondition(
+                        field="tag", operator="equals", value="Production"
+                    ),
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
         assert len(devices) == 49, f"Expected 49 devices, found {len(devices)}"
         assert count == 3, "Should have queried 3 conditions"
@@ -551,17 +624,21 @@ class TestBaselineComplexScenarios:
         Each operation block is executed separately and results are combined.
         """
         operations = [
-            # First operation: City A AND Network  
+            # First operation: City A AND Network
             LogicalOperation(
                 operation_type="AND",
                 conditions=[
-                    LogicalCondition(field="location", operator="equals", value="City A"),
+                    LogicalCondition(
+                        field="location", operator="equals", value="City A"
+                    ),
                     LogicalCondition(field="role", operator="equals", value="Network"),
-                ]
+                ],
             ),
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
         # First operation should return City A network devices
         assert len(devices) == 49, f"Expected 49 devices, found {len(devices)}"
@@ -571,6 +648,7 @@ class TestBaselineComplexScenarios:
 # =============================================================================
 # Integration Tests - Special Filters
 # =============================================================================
+
 
 @pytest.mark.integration
 @pytest.mark.nautobot
@@ -588,14 +666,20 @@ class TestBaselineSpecialFilters:
             LogicalOperation(
                 operation_type="AND",
                 conditions=[
-                    LogicalCondition(field="has_primary", operator="equals", value="true")
-                ]
+                    LogicalCondition(
+                        field="has_primary", operator="equals", value="true"
+                    )
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
-        assert len(devices) == 120, f"Expected 120 devices with IPs, found {len(devices)}"
+        assert len(devices) == 120, (
+            f"Expected 120 devices with IPs, found {len(devices)}"
+        )
 
     @pytest.mark.asyncio
     async def test_has_primary_ip_false(self, real_ansible_inventory_service):
@@ -608,19 +692,26 @@ class TestBaselineSpecialFilters:
             LogicalOperation(
                 operation_type="AND",
                 conditions=[
-                    LogicalCondition(field="has_primary", operator="equals", value="false")
-                ]
+                    LogicalCondition(
+                        field="has_primary", operator="equals", value="false"
+                    )
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
-        assert len(devices) == 0, f"Expected 0 devices without IPs, found {len(devices)}"
+        assert len(devices) == 0, (
+            f"Expected 0 devices without IPs, found {len(devices)}"
+        )
 
 
 # =============================================================================
 # Integration Tests - Edge Cases
 # =============================================================================
+
 
 @pytest.mark.integration
 @pytest.mark.nautobot
@@ -634,12 +725,16 @@ class TestBaselineEdgeCases:
             LogicalOperation(
                 operation_type="AND",
                 conditions=[
-                    LogicalCondition(field="location", operator="equals", value="City Z")
-                ]
+                    LogicalCondition(
+                        field="location", operator="equals", value="City Z"
+                    )
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
         assert len(devices) == 0, "Should find no devices in non-existent location"
 
@@ -654,22 +749,32 @@ class TestBaselineEdgeCases:
             LogicalOperation(
                 operation_type="AND",
                 conditions=[
-                    LogicalCondition(field="location", operator="equals", value="City A"),
-                    LogicalCondition(field="location", operator="equals", value="City B"),
-                ]
+                    LogicalCondition(
+                        field="location", operator="equals", value="City A"
+                    ),
+                    LogicalCondition(
+                        field="location", operator="equals", value="City B"
+                    ),
+                ],
             )
         ]
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
-        assert len(devices) == 0, "Should find no devices matching contradictory conditions"
+        assert len(devices) == 0, (
+            "Should find no devices matching contradictory conditions"
+        )
 
     @pytest.mark.asyncio
     async def test_empty_operations_list(self, real_ansible_inventory_service):
         """Test with empty operations list."""
         operations = []
 
-        devices, count = await real_ansible_inventory_service.preview_inventory(operations)
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
 
         assert devices == []
         assert count == 0

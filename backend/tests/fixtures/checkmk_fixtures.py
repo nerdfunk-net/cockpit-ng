@@ -20,8 +20,8 @@ CHECKMK_HOST_STANDARD: Dict[str, Any] = {
         "tag_agent": "no-agent",
         "tag_criticality": "prod",
         "tag_networking": "lan",
-        "alias": "Test Switch 01"
-    }
+        "alias": "Test Switch 01",
+    },
 }
 
 CHECKMK_HOST_WITH_LABELS: Dict[str, Any] = {
@@ -35,35 +35,26 @@ CHECKMK_HOST_WITH_LABELS: Dict[str, Any] = {
         "labels": {
             "environment": "production",
             "location": "dc1",
-            "managed_by": "nautobot"
+            "managed_by": "nautobot",
         },
-        "alias": "Production Switch 01"
-    }
+        "alias": "Production Switch 01",
+    },
 }
 
 # Host list response
 CHECKMK_HOSTS_LIST: Dict[str, Dict[str, Any]] = {
     "test-switch-01": {
         "folder": "/dc1/access",
-        "attributes": {
-            "ipaddress": "10.0.0.1",
-            "site": "main"
-        }
+        "attributes": {"ipaddress": "10.0.0.1", "site": "main"},
     },
     "test-switch-02": {
         "folder": "/dc1/access",
-        "attributes": {
-            "ipaddress": "10.0.0.2",
-            "site": "main"
-        }
+        "attributes": {"ipaddress": "10.0.0.2", "site": "main"},
     },
     "test-router-01": {
         "folder": "/dc1/core",
-        "attributes": {
-            "ipaddress": "10.0.1.1",
-            "site": "main"
-        }
-    }
+        "attributes": {"ipaddress": "10.0.1.1", "site": "main"},
+    },
 }
 
 # =============================================================================
@@ -73,31 +64,14 @@ CHECKMK_HOSTS_LIST: Dict[str, Dict[str, Any]] = {
 CHECKMK_FOLDER_STANDARD: Dict[str, Any] = {
     "title": "DC1 Access Switches",
     "path": "/dc1/access",
-    "attributes": {
-        "tag_criticality": "prod"
-    },
-    "parent": "/dc1"
+    "attributes": {"tag_criticality": "prod"},
+    "parent": "/dc1",
 }
 
 CHECKMK_FOLDERS_LIST: List[Dict[str, Any]] = [
-    {
-        "title": "DC1",
-        "path": "/dc1",
-        "attributes": {},
-        "parent": "/"
-    },
-    {
-        "title": "Access",
-        "path": "/dc1/access",
-        "attributes": {},
-        "parent": "/dc1"
-    },
-    {
-        "title": "Core",
-        "path": "/dc1/core",
-        "attributes": {},
-        "parent": "/dc1"
-    }
+    {"title": "DC1", "path": "/dc1", "attributes": {}, "parent": "/"},
+    {"title": "Access", "path": "/dc1/access", "attributes": {}, "parent": "/dc1"},
+    {"title": "Core", "path": "/dc1/core", "attributes": {}, "parent": "/dc1"},
 ]
 
 # =============================================================================
@@ -107,36 +81,25 @@ CHECKMK_FOLDERS_LIST: List[Dict[str, Any]] = [
 CHECKMK_ADD_HOST_SUCCESS: Dict[str, Any] = {
     "result": "success",
     "result_code": 0,
-    "extensions": {
-        "hostname": "new-switch-01",
-        "folder": "/dc1/access"
-    }
+    "extensions": {"hostname": "new-switch-01", "folder": "/dc1/access"},
 }
 
 CHECKMK_EDIT_HOST_SUCCESS: Dict[str, Any] = {
     "result": "success",
     "result_code": 0,
-    "extensions": {
-        "hostname": "test-switch-01",
-        "changes": ["ipaddress", "alias"]
-    }
+    "extensions": {"hostname": "test-switch-01", "changes": ["ipaddress", "alias"]},
 }
 
 CHECKMK_DELETE_HOST_SUCCESS: Dict[str, Any] = {
     "result": "success",
     "result_code": 0,
-    "extensions": {
-        "hostname": "test-switch-01"
-    }
+    "extensions": {"hostname": "test-switch-01"},
 }
 
 CHECKMK_ACTIVATE_CHANGES_SUCCESS: Dict[str, Any] = {
     "result": "success",
     "result_code": 0,
-    "extensions": {
-        "sites": ["main"],
-        "activation_id": "activation-uuid-123"
-    }
+    "extensions": {"sites": ["main"], "activation_id": "activation-uuid-123"},
 }
 
 CHECKMK_DISCOVER_SERVICES_SUCCESS: Dict[str, Any] = {
@@ -146,8 +109,8 @@ CHECKMK_DISCOVER_SERVICES_SUCCESS: Dict[str, Any] = {
         "hostname": "test-switch-01",
         "services_found": 5,
         "services_added": 3,
-        "services_removed": 0
-    }
+        "services_removed": 0,
+    },
 }
 
 # =============================================================================
@@ -156,27 +119,27 @@ CHECKMK_DISCOVER_SERVICES_SUCCESS: Dict[str, Any] = {
 
 CHECKMK_ERROR_HOST_EXISTS: Dict[str, Any] = {
     "result": "Host test-switch-01 already exists in folder /dc1",
-    "result_code": 1
+    "result_code": 1,
 }
 
 CHECKMK_ERROR_HOST_NOT_FOUND: Dict[str, Any] = {
     "result": "Host test-switch-01 not found",
-    "result_code": 1
+    "result_code": 1,
 }
 
 CHECKMK_ERROR_FOLDER_NOT_FOUND: Dict[str, Any] = {
     "result": "Folder /invalid/path not found",
-    "result_code": 1
+    "result_code": 1,
 }
 
 CHECKMK_ERROR_INVALID_IP: Dict[str, Any] = {
     "result": "Invalid IP address: not-an-ip",
-    "result_code": 1
+    "result_code": 1,
 }
 
 CHECKMK_ERROR_AUTHENTICATION: Dict[str, Any] = {
     "result": "Authentication failed",
-    "result_code": 401
+    "result_code": 401,
 }
 
 # =============================================================================
@@ -190,20 +153,20 @@ CHECKMK_SERVICES_DISCOVERED: Dict[str, Any] = {
                 "check_type": "if64",
                 "item": "GigabitEthernet1/0/1",
                 "parameters": {},
-                "service_labels": {}
+                "service_labels": {},
             },
             {
                 "check_type": "if64",
                 "item": "GigabitEthernet1/0/2",
                 "parameters": {},
-                "service_labels": {}
+                "service_labels": {},
             },
             {
                 "check_type": "cpu_util",
                 "item": None,
                 "parameters": {},
-                "service_labels": {}
-            }
+                "service_labels": {},
+            },
         ]
     }
 }
@@ -215,23 +178,12 @@ CHECKMK_SERVICES_DISCOVERED: Dict[str, Any] = {
 CHECKMK_SITE_INFO: Dict[str, Any] = {
     "site_id": "main",
     "site_name": "Main Site",
-    "site_config": {
-        "status_host": {
-            "status_host_set": "enabled",
-            "site": "main"
-        }
-    }
+    "site_config": {"status_host": {"status_host_set": "enabled", "site": "main"}},
 }
 
 CHECKMK_SITES_LIST: Dict[str, Dict[str, Any]] = {
-    "main": {
-        "site_id": "main",
-        "alias": "Main Site"
-    },
-    "remote": {
-        "site_id": "remote",
-        "alias": "Remote Site"
-    }
+    "main": {"site_id": "main", "alias": "Main Site"},
+    "remote": {"site_id": "remote", "alias": "Remote Site"},
 }
 
 # =============================================================================
@@ -243,9 +195,7 @@ CHECKMK_RULE_STANDARD: Dict[str, Any] = {
     "folder": "/dc1",
     "rule_id": "rule-uuid-123",
     "value": "network-devices",
-    "conditions": {
-        "host_tags": ["tag_agent:no-agent"]
-    }
+    "conditions": {"host_tags": ["tag_agent:no-agent"]},
 }
 
 # =============================================================================
@@ -254,24 +204,20 @@ CHECKMK_RULE_STANDARD: Dict[str, Any] = {
 
 CHECKMK_SYNC_STATUS_CLEAN: Dict[str, Any] = {
     "changes_pending": False,
-    "number_of_pending_changes": 0
+    "number_of_pending_changes": 0,
 }
 
 CHECKMK_SYNC_STATUS_PENDING: Dict[str, Any] = {
     "changes_pending": True,
     "number_of_pending_changes": 5,
     "pending_changes": [
-        {
-            "id": "change-1",
-            "action": "add-host",
-            "text": "Added host test-switch-01"
-        },
+        {"id": "change-1", "action": "add-host", "text": "Added host test-switch-01"},
         {
             "id": "change-2",
             "action": "edit-host",
-            "text": "Modified host test-switch-02"
-        }
-    ]
+            "text": "Modified host test-switch-02",
+        },
+    ],
 }
 
 # =============================================================================
@@ -288,12 +234,7 @@ CHECKMK_LIVE_UPDATE_STATUS: Dict[str, Any] = {
     "updated": 30,
     "removed": 2,
     "failed": 3,
-    "errors": [
-        {
-            "hostname": "failed-device-01",
-            "error": "Connection timeout"
-        }
-    ]
+    "errors": [{"hostname": "failed-device-01", "error": "Connection timeout"}],
 }
 
 CHECKMK_LIVE_UPDATE_COMPLETED: Dict[str, Any] = {
@@ -307,18 +248,19 @@ CHECKMK_LIVE_UPDATE_COMPLETED: Dict[str, Any] = {
     "removed": 5,
     "failed": 0,
     "errors": [],
-    "duration_seconds": 120
+    "duration_seconds": 120,
 }
 
 # =============================================================================
 # Helper Functions
 # =============================================================================
 
+
 def create_host_response(
     hostname: str = "test-device",
     ip_address: str = "10.0.0.1",
     folder: str = "/dc1",
-    site: str = "main"
+    site: str = "main",
 ) -> Dict[str, Any]:
     """
     Factory function to create custom CheckMK host response.
@@ -335,15 +277,13 @@ def create_host_response(
     return {
         "hostname": hostname,
         "folder": folder,
-        "attributes": {
-            "ipaddress": ip_address,
-            "site": site,
-            "tag_agent": "no-agent"
-        }
+        "attributes": {"ipaddress": ip_address, "site": site, "tag_agent": "no-agent"},
     }
 
 
-def create_hosts_list(count: int = 3, folder: str = "/dc1") -> Dict[str, Dict[str, Any]]:
+def create_hosts_list(
+    count: int = 3, folder: str = "/dc1"
+) -> Dict[str, Dict[str, Any]]:
     """
     Create a list of CheckMK hosts for testing.
 
@@ -359,10 +299,7 @@ def create_hosts_list(count: int = 3, folder: str = "/dc1") -> Dict[str, Dict[st
         hostname = f"switch-{i:02d}"
         hosts[hostname] = {
             "folder": folder,
-            "attributes": {
-                "ipaddress": f"10.0.0.{i}",
-                "site": "main"
-            }
+            "attributes": {"ipaddress": f"10.0.0.{i}", "site": "main"},
         }
     return hosts
 
@@ -378,10 +315,7 @@ def create_api_error(message: str, code: int = 1) -> Dict[str, Any]:
     Returns:
         Error response dictionary
     """
-    return {
-        "result": message,
-        "result_code": code
-    }
+    return {"result": message, "result_code": code}
 
 
 def create_sync_comparison(
@@ -389,7 +323,7 @@ def create_sync_comparison(
     checkmk_count: int = 95,
     in_both: int = 90,
     only_nautobot: int = 10,
-    only_checkmk: int = 5
+    only_checkmk: int = 5,
 ) -> Dict[str, Any]:
     """
     Create a sync comparison result for testing.
@@ -410,5 +344,5 @@ def create_sync_comparison(
         "in_both": in_both,
         "only_in_nautobot": only_nautobot,
         "only_in_checkmk": only_checkmk,
-        "differences": []
+        "differences": [],
     }

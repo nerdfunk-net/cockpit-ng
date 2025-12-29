@@ -9,14 +9,12 @@ Tests the complete sync workflow including:
 """
 
 import pytest
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
+from unittest.mock import AsyncMock, Mock, patch
 from services.checkmk.sync.base import NautobotToCheckMKService
 from tests.fixtures import (
     NAUTOBOT_DEVICES_LIST,
-    CHECKMK_HOSTS_LIST,
     CHECKMK_ADD_HOST_SUCCESS,
     CHECKMK_EDIT_HOST_SUCCESS,
-    CHECKMK_ERROR_HOST_EXISTS,
     create_devices_list,
     create_hosts_list,
 )
@@ -25,6 +23,7 @@ from tests.fixtures import (
 # ==============================================================================
 # Test Class: Device Fetching
 # ==============================================================================
+
 
 @pytest.mark.integration
 @pytest.mark.nautobot
@@ -41,7 +40,7 @@ class TestFetchDevicesFromNautobot:
     async def test_get_all_devices_success(self, mock_nautobot_service):
         """Test successfully fetching all devices from Nautobot."""
         # Arrange
-        with patch('services.nautobot.nautobot_service', mock_nautobot_service):
+        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
             mock_nautobot_service.graphql_query = AsyncMock(
                 return_value=NAUTOBOT_DEVICES_LIST.copy()
             )
@@ -61,13 +60,14 @@ class TestFetchDevicesFromNautobot:
     async def test_get_devices_handles_graphql_errors(self, mock_nautobot_service):
         """Test handling GraphQL errors during device fetch."""
         # Arrange
-        with patch('services.nautobot.nautobot_service', mock_nautobot_service):
+        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
             mock_nautobot_service.graphql_query = AsyncMock(
                 return_value={"errors": [{"message": "GraphQL syntax error"}]}
             )
 
             # Act & Assert
             from fastapi import HTTPException
+
             with pytest.raises(HTTPException) as exc_info:
                 await self.service.get_devices_for_sync()
 
@@ -78,7 +78,7 @@ class TestFetchDevicesFromNautobot:
     async def test_get_devices_with_empty_result(self, mock_nautobot_service):
         """Test fetching devices when Nautobot has no devices."""
         # Arrange
-        with patch('services.nautobot.nautobot_service', mock_nautobot_service):
+        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
             mock_nautobot_service.graphql_query = AsyncMock(
                 return_value={"data": {"devices": []}}
             )
@@ -96,6 +96,7 @@ class TestFetchDevicesFromNautobot:
 # Test Class: Device Comparison
 # ==============================================================================
 
+
 @pytest.mark.integration
 @pytest.mark.nautobot
 @pytest.mark.checkmk
@@ -109,13 +110,11 @@ class TestDeviceComparison:
 
     @pytest.mark.asyncio
     async def test_compare_identifies_new_devices(
-        self,
-        mock_nautobot_service,
-        mock_checkmk_client
+        self, mock_nautobot_service, mock_checkmk_client
     ):
         """Test identifying devices in Nautobot but not in CheckMK."""
         # Arrange
-        with patch('services.nautobot.nautobot_service', mock_nautobot_service):
+        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
             # Nautobot has 2 devices
             nautobot_data = {
                 "data": {
@@ -125,15 +124,15 @@ class TestDeviceComparison:
                             "name": "switch01",
                             "role": {"name": "access"},
                             "status": {"name": "Active"},
-                            "location": {"name": "DC1"}
+                            "location": {"name": "DC1"},
                         },
                         {
                             "id": "dev2",
                             "name": "switch02",
                             "role": {"name": "access"},
                             "status": {"name": "Active"},
-                            "location": {"name": "DC1"}
-                        }
+                            "location": {"name": "DC1"},
+                        },
                     ]
                 }
             }
@@ -155,13 +154,11 @@ class TestDeviceComparison:
 
     @pytest.mark.asyncio
     async def test_compare_identifies_orphaned_devices(
-        self,
-        mock_nautobot_service,
-        mock_checkmk_client
+        self, mock_nautobot_service, mock_checkmk_client
     ):
         """Test identifying devices in CheckMK but not in Nautobot."""
         # Arrange
-        with patch('services.nautobot.nautobot_service', mock_nautobot_service):
+        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
             # Nautobot has no devices
             mock_nautobot_service.graphql_query = AsyncMock(
                 return_value={"data": {"devices": []}}
@@ -183,6 +180,7 @@ class TestDeviceComparison:
 # Test Class: Sync Operations
 # ==============================================================================
 
+
 @pytest.mark.integration
 @pytest.mark.nautobot
 @pytest.mark.checkmk
@@ -196,17 +194,17 @@ class TestSyncOperations:
 
     @pytest.mark.asyncio
     async def test_sync_adds_new_device_to_checkmk(
-        self,
-        mock_nautobot_service,
-        mock_checkmk_client
+        self, mock_nautobot_service, mock_checkmk_client
     ):
         """Test adding new devices to CheckMK during sync."""
         # Arrange
-        with patch('services.nautobot.nautobot_service', mock_nautobot_service):
-            with patch('services.checkmk.checkmk_service', mock_checkmk_client):
+        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+            with patch("services.checkmk.checkmk_service", mock_checkmk_client):
                 # Nautobot has devices
                 nautobot_data = create_devices_list(count=2)
-                mock_nautobot_service.graphql_query = AsyncMock(return_value=nautobot_data)
+                mock_nautobot_service.graphql_query = AsyncMock(
+                    return_value=nautobot_data
+                )
 
                 # CheckMK is empty
                 mock_checkmk_client.get_all_hosts = Mock(return_value={})
@@ -223,23 +221,23 @@ class TestSyncOperations:
 
     @pytest.mark.asyncio
     async def test_sync_updates_existing_device(
-        self,
-        mock_nautobot_service,
-        mock_checkmk_client
+        self, mock_nautobot_service, mock_checkmk_client
     ):
         """Test updating existing devices in CheckMK."""
         # Arrange
-        with patch('services.nautobot.nautobot_service', mock_nautobot_service):
+        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
             # Device exists in both with different data
             nautobot_data = {
                 "data": {
-                    "devices": [{
-                        "id": "dev1",
-                        "name": "switch01",
-                        "role": {"name": "access"},
-                        "status": {"name": "Active"},
-                        "location": {"name": "DC1"}
-                    }]
+                    "devices": [
+                        {
+                            "id": "dev1",
+                            "name": "switch01",
+                            "role": {"name": "access"},
+                            "status": {"name": "Active"},
+                            "location": {"name": "DC1"},
+                        }
+                    ]
                 }
             }
             mock_nautobot_service.graphql_query = AsyncMock(return_value=nautobot_data)
@@ -248,7 +246,7 @@ class TestSyncOperations:
             existing_hosts = {
                 "switch01": {
                     "folder": "/dc1",
-                    "attributes": {"ipaddress": "10.0.0.1"}  # Old IP
+                    "attributes": {"ipaddress": "10.0.0.1"},  # Old IP
                 }
             }
             mock_checkmk_client.get_all_hosts = Mock(return_value=existing_hosts)
@@ -268,6 +266,7 @@ class TestSyncOperations:
 # Test Class: Error Handling
 # ==============================================================================
 
+
 @pytest.mark.integration
 @pytest.mark.nautobot
 @pytest.mark.checkmk
@@ -281,13 +280,11 @@ class TestSyncErrorHandling:
 
     @pytest.mark.asyncio
     async def test_handles_checkmk_host_exists_error(
-        self,
-        mock_nautobot_service,
-        mock_checkmk_client
+        self, mock_nautobot_service, mock_checkmk_client
     ):
         """Test handling when CheckMK reports host already exists."""
         # Arrange
-        with patch('services.nautobot.nautobot_service', mock_nautobot_service):
+        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
             nautobot_data = create_devices_list(count=1)
             mock_nautobot_service.graphql_query = AsyncMock(return_value=nautobot_data)
 
@@ -305,13 +302,11 @@ class TestSyncErrorHandling:
 
     @pytest.mark.asyncio
     async def test_handles_partial_sync_failures(
-        self,
-        mock_nautobot_service,
-        mock_checkmk_client
+        self, mock_nautobot_service, mock_checkmk_client
     ):
         """Test handling when some devices fail to sync."""
         # Arrange
-        with patch('services.nautobot.nautobot_service', mock_nautobot_service):
+        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
             # Multiple devices
             nautobot_data = create_devices_list(count=3)
             mock_nautobot_service.graphql_query = AsyncMock(return_value=nautobot_data)
@@ -319,11 +314,13 @@ class TestSyncErrorHandling:
             mock_checkmk_client.get_all_hosts = Mock(return_value={})
 
             # First succeeds, second fails, third succeeds
-            mock_checkmk_client.add_host = Mock(side_effect=[
-                CHECKMK_ADD_HOST_SUCCESS.copy(),
-                Exception("CheckMK API error"),
-                CHECKMK_ADD_HOST_SUCCESS.copy(),
-            ])
+            mock_checkmk_client.add_host = Mock(
+                side_effect=[
+                    CHECKMK_ADD_HOST_SUCCESS.copy(),
+                    Exception("CheckMK API error"),
+                    CHECKMK_ADD_HOST_SUCCESS.copy(),
+                ]
+            )
 
             # Act
             result = await self.service.get_devices_for_sync()
@@ -336,6 +333,7 @@ class TestSyncErrorHandling:
 # ==============================================================================
 # Test Class: Live Update Progress Tracking
 # ==============================================================================
+
 
 @pytest.mark.integration
 @pytest.mark.nautobot
@@ -350,13 +348,11 @@ class TestLiveUpdateTracking:
 
     @pytest.mark.asyncio
     async def test_tracks_sync_progress(
-        self,
-        mock_nautobot_service,
-        mock_checkmk_client
+        self, mock_nautobot_service, mock_checkmk_client
     ):
         """Test that sync progress is tracked."""
         # Arrange
-        with patch('services.nautobot.nautobot_service', mock_nautobot_service):
+        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
             nautobot_data = create_devices_list(count=5)
             mock_nautobot_service.graphql_query = AsyncMock(return_value=nautobot_data)
 
@@ -382,6 +378,7 @@ class TestLiveUpdateTracking:
 # Test Class: Data Transformation
 # ==============================================================================
 
+
 @pytest.mark.integration
 @pytest.mark.unit
 class TestDataTransformation:
@@ -393,22 +390,21 @@ class TestDataTransformation:
         self.service = NautobotToCheckMKService()
 
     @pytest.mark.asyncio
-    async def test_transforms_nautobot_to_checkmk_format(
-        self,
-        mock_nautobot_service
-    ):
+    async def test_transforms_nautobot_to_checkmk_format(self, mock_nautobot_service):
         """Test transforming Nautobot device data to CheckMK format."""
         # Arrange
-        with patch('services.nautobot.nautobot_service', mock_nautobot_service):
+        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
             nautobot_data = {
                 "data": {
-                    "devices": [{
-                        "id": "device-uuid-123",
-                        "name": "test-switch-01",
-                        "role": {"name": "Access Switch"},
-                        "status": {"name": "Active"},
-                        "location": {"name": "DC1"}
-                    }]
+                    "devices": [
+                        {
+                            "id": "device-uuid-123",
+                            "name": "test-switch-01",
+                            "role": {"name": "Access Switch"},
+                            "status": {"name": "Active"},
+                            "location": {"name": "DC1"},
+                        }
+                    ]
                 }
             }
             mock_nautobot_service.graphql_query = AsyncMock(return_value=nautobot_data)
@@ -426,23 +422,22 @@ class TestDataTransformation:
             assert device["location"] == "DC1"
 
     @pytest.mark.asyncio
-    async def test_handles_missing_optional_fields(
-        self,
-        mock_nautobot_service
-    ):
+    async def test_handles_missing_optional_fields(self, mock_nautobot_service):
         """Test handling devices with missing optional fields."""
         # Arrange
-        with patch('services.nautobot.nautobot_service', mock_nautobot_service):
+        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
             # Device with minimal data (missing role, location)
             nautobot_data = {
                 "data": {
-                    "devices": [{
-                        "id": "dev-uuid",
-                        "name": "minimal-device",
-                        "role": None,
-                        "status": {"name": "Active"},
-                        "location": None
-                    }]
+                    "devices": [
+                        {
+                            "id": "dev-uuid",
+                            "name": "minimal-device",
+                            "role": None,
+                            "status": {"name": "Active"},
+                            "location": None,
+                        }
+                    ]
                 }
             }
             mock_nautobot_service.graphql_query = AsyncMock(return_value=nautobot_data)
@@ -461,6 +456,7 @@ class TestDataTransformation:
 # Test Class: Integration Scenarios
 # ==============================================================================
 
+
 @pytest.mark.integration
 @pytest.mark.slow
 class TestCompleteSyncScenarios:
@@ -473,13 +469,11 @@ class TestCompleteSyncScenarios:
 
     @pytest.mark.asyncio
     async def test_complete_sync_workflow(
-        self,
-        mock_nautobot_service,
-        mock_checkmk_client
+        self, mock_nautobot_service, mock_checkmk_client
     ):
         """Test complete sync workflow from fetch to update."""
         # Arrange
-        with patch('services.nautobot.nautobot_service', mock_nautobot_service):
+        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
             # Scenario: 3 devices in Nautobot, 1 in CheckMK, need to add 2
             nautobot_data = create_devices_list(count=3)
             mock_nautobot_service.graphql_query = AsyncMock(return_value=nautobot_data)

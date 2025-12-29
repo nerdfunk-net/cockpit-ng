@@ -234,13 +234,9 @@ class DeviceCreationService:
                 try:
                     ip_network = ipaddress.ip_network(ip_with_cidr, strict=False)
                     prefix_str = str(ip_network)
-                    logger.info(
-                        f"Calculated prefix for {ip_with_cidr}: {prefix_str}"
-                    )
+                    logger.info(f"Calculated prefix for {ip_with_cidr}: {prefix_str}")
                 except ValueError as e:
-                    logger.error(
-                        f"Invalid IP address format for {ip_with_cidr}: {e}"
-                    )
+                    logger.error(f"Invalid IP address format for {ip_with_cidr}: {e}")
                     continue
 
                 # Create unique key for prefix+namespace to avoid duplicates
@@ -264,9 +260,7 @@ class DeviceCreationService:
                     prefix_type="network",
                     description=f"Auto-created for device {request.name}",
                 )
-                logger.info(
-                    f"Prefix {prefix_str} exists with ID: {prefix_id}"
-                )
+                logger.info(f"Prefix {prefix_str} exists with ID: {prefix_id}")
                 prefixes_created.add(prefix_key)
 
             except Exception as e:

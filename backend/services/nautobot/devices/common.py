@@ -884,16 +884,16 @@ class DeviceCommonService:
             namespace_id = await self.resolve_namespace_id(namespace)
 
         # Check if prefix already exists in this namespace
-        prefix_search_endpoint = f"ipam/prefixes/?prefix={prefix}&namespace={namespace_id}&format=json"
+        prefix_search_endpoint = (
+            f"ipam/prefixes/?prefix={prefix}&namespace={namespace_id}&format=json"
+        )
         prefix_result = await self.nautobot.rest_request(
             endpoint=prefix_search_endpoint, method="GET"
         )
 
         if prefix_result and prefix_result.get("count", 0) > 0:
             existing_prefix = prefix_result["results"][0]
-            logger.info(
-                f"Prefix already exists: {existing_prefix['id']}"
-            )
+            logger.info(f"Prefix already exists: {existing_prefix['id']}")
             return existing_prefix["id"]
 
         # Prefix doesn't exist, create it
@@ -923,7 +923,9 @@ class DeviceCommonService:
                 if location_id:
                     prefix_data["location"] = location_id
                 else:
-                    logger.warning(f"Location '{location}' not found, prefix will be created without location")
+                    logger.warning(
+                        f"Location '{location}' not found, prefix will be created without location"
+                    )
 
         # Add optional fields from kwargs
         optional_uuid_fields = ["role", "parent", "tenant", "vlan", "rir"]

@@ -28,11 +28,18 @@ from tests.fixtures import (
 # Pytest Markers
 # =============================================================================
 
+
 def pytest_configure(config):
     """Register custom pytest markers."""
-    config.addinivalue_line("markers", "unit: Unit tests (fast, no external dependencies)")
-    config.addinivalue_line("markers", "integration: Integration tests (mocked externals)")
-    config.addinivalue_line("markers", "e2e: End-to-end tests (real systems, manual only)")
+    config.addinivalue_line(
+        "markers", "unit: Unit tests (fast, no external dependencies)"
+    )
+    config.addinivalue_line(
+        "markers", "integration: Integration tests (mocked externals)"
+    )
+    config.addinivalue_line(
+        "markers", "e2e: End-to-end tests (real systems, manual only)"
+    )
     config.addinivalue_line("markers", "nautobot: Tests involving Nautobot integration")
     config.addinivalue_line("markers", "checkmk: Tests involving CheckMK integration")
     config.addinivalue_line("markers", "slow: Tests that take >5 seconds")
@@ -205,6 +212,7 @@ end
 # Enhanced Mock Services
 # =============================================================================
 
+
 @pytest.fixture
 def mock_checkmk_client():
     """
@@ -261,6 +269,7 @@ def mock_ansible_inventory_service():
 # Database Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def db_session():
     """
@@ -289,6 +298,7 @@ def db_session():
 # Authentication Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def mock_user():
     """Mock authenticated user for testing."""
@@ -296,7 +306,7 @@ def mock_user():
         "user_id": 1,
         "username": "testuser",
         "permissions": 15,  # All permissions bitmask
-        "role": "admin"
+        "role": "admin",
     }
 
 
@@ -310,6 +320,7 @@ def mock_auth_token():
 # FastAPI Test Client Fixture
 # =============================================================================
 
+
 @pytest.fixture
 def api_client():
     """
@@ -317,7 +328,6 @@ def api_client():
 
     Use this to test API endpoints with mocked dependencies.
     """
-    from fastapi.testclient import TestClient
     # Import will be done in actual test files to avoid circular imports
     # from main import app
     # return TestClient(app)
@@ -327,6 +337,7 @@ def api_client():
 # =============================================================================
 # Nautobot Data Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def nautobot_device():
@@ -348,14 +359,17 @@ def nautobot_device_factory():
     Usage:
         device = nautobot_device_factory(name="custom-switch", ip="10.0.0.5")
     """
+
     def _create_device(**kwargs):
         return create_device_response(**kwargs)
+
     return _create_device
 
 
 # =============================================================================
 # CheckMK Data Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def checkmk_host():
@@ -377,14 +391,17 @@ def checkmk_host_factory():
     Usage:
         host = checkmk_host_factory(hostname="custom-device", ip="10.0.0.5")
     """
+
     def _create_host(**kwargs):
         return create_host_response(**kwargs)
+
     return _create_host
 
 
 # =============================================================================
 # Real Integration Test Fixtures
 # =============================================================================
+
 
 @pytest.fixture(scope="session")
 def test_nautobot_configured():
@@ -455,14 +472,15 @@ def real_nautobot_service(test_nautobot_configured):
         "token": os.getenv("NAUTOBOT_TOKEN"),
         "timeout": int(os.getenv("NAUTOBOT_TIMEOUT", "30")),
         "verify_ssl": True,
-        "_source": "test_environment"
+        "_source": "test_environment",
     }
 
     # Validate configuration
     assert service.config["url"], "NAUTOBOT_HOST must be set in .env.test"
     assert service.config["token"], "NAUTOBOT_TOKEN must be set in .env.test"
-    assert service.config["token"] != "your-test-nautobot-token-here", \
+    assert service.config["token"] != "your-test-nautobot-token-here", (
         "Update NAUTOBOT_TOKEN in .env.test with real token"
+    )
 
     return service
 
@@ -486,6 +504,6 @@ def real_ansible_inventory_service(real_nautobot_service):
 
     # Patch the global nautobot_service instance that ansible_inventory imports
     # The ansible_inventory service does: from services.nautobot import nautobot_service
-    with patch('services.nautobot.nautobot_service', real_nautobot_service):
+    with patch("services.nautobot.nautobot_service", real_nautobot_service):
         service = AnsibleInventoryService()
         yield service

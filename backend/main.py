@@ -23,6 +23,7 @@ from routers.nautobot import (
     nautobot_router,
     scan_and_add_router,
 )
+
 # Settings routers now use feature-based structure (Phase 3.1-3.3 migration)
 from routers.settings import (
     git_router,
@@ -34,14 +35,17 @@ from routers.settings import (
     compliance_router,
     config_router,
 )
+
 # Network routers now use feature-based structure (Phase 3.4 migration - partial)
 from routers.network import (
     file_compare_router,
     ansible_inventory_router,
     netmiko_router,
 )
+
 # Tools router kept in old location (depends on nautobot_service, now fixed)
 from routers.tools import router as tools_router
+
 # Compliance check router disabled - requires pysnmp dependency
 # from routers.compliance_check import router as compliance_check_router
 # Inventory routers now use feature-based structure (Phase 3.7 migration)
@@ -55,6 +59,7 @@ from routers.jobs import (
     runs_router as job_runs_router,
     celery_router,
 )
+
 # certificates_router now imported from inventory package above
 from health import router as health_router
 

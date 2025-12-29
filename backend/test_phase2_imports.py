@@ -12,6 +12,7 @@ from pathlib import Path
 backend_path = Path(__file__).parent
 sys.path.insert(0, str(backend_path))
 
+
 def test_router_imports():
     """Test that all new router packages can be imported."""
     print("Testing router imports...")
@@ -45,6 +46,7 @@ def test_router_imports():
 
     return len(failed) == 0, failed
 
+
 def test_service_imports():
     """Test that all new service packages can be imported."""
     print("\nTesting service imports...")
@@ -76,6 +78,7 @@ def test_service_imports():
 
     return len(failed) == 0, failed
 
+
 def test_repository_imports():
     """Test that all new repository packages can be imported."""
     print("\nTesting repository imports...")
@@ -99,6 +102,7 @@ def test_repository_imports():
             failed.append(module_name)
 
     return len(failed) == 0, failed
+
 
 def main():
     """Run all import tests."""
@@ -129,6 +133,7 @@ def main():
         if repo_failed:
             print(f"  Repositories: {', '.join(repo_failed)}")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

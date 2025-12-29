@@ -97,7 +97,7 @@ async def create_tests_baseline() -> Dict[str, Any]:
         if not result.get("success"):
             raise HTTPException(
                 status_code=500,
-                detail=result.get("message", "Failed to create test baseline")
+                detail=result.get("message", "Failed to create test baseline"),
             )
 
         return result
@@ -105,18 +105,13 @@ async def create_tests_baseline() -> Dict[str, Any]:
     except FileNotFoundError as e:
         logger.error(f"Baseline directory not found: {e}")
         raise HTTPException(
-            status_code=404,
-            detail=f"Baseline directory not found: {str(e)}"
+            status_code=404, detail=f"Baseline directory not found: {str(e)}"
         )
     except ValueError as e:
         logger.error(f"Invalid baseline data: {e}")
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid baseline data: {str(e)}"
-        )
+        raise HTTPException(status_code=400, detail=f"Invalid baseline data: {str(e)}")
     except Exception as e:
         logger.error(f"Error creating test baseline: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to create test baseline: {str(e)}"
+            status_code=500, detail=f"Failed to create test baseline: {str(e)}"
         )

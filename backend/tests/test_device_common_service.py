@@ -271,7 +271,9 @@ class TestValidation:
         assert common_service.validate_ip_address("192.168.1.1") is True
         assert common_service.validate_ip_address("10.0.0.1/24") is True
         # Current implementation doesn't validate octet ranges, just pattern
-        assert common_service.validate_ip_address("256.1.1.1") is True  # Passes regex pattern
+        assert (
+            common_service.validate_ip_address("256.1.1.1") is True
+        )  # Passes regex pattern
 
     def test_validate_ip_address_ipv6(self, common_service):
         """Test IPv6 address validation."""
