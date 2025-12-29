@@ -876,8 +876,12 @@ class DeviceCommonService:
         """
         logger.info(f"Ensuring prefix exists: {prefix} in namespace {namespace}")
 
-        # Resolve namespace to UUID
-        namespace_id = await self.resolve_namespace_id(namespace)
+        # Resolve namespace to UUID (or use directly if already UUID)
+        if self._is_valid_uuid(namespace):
+            logger.debug(f"Namespace is already a UUID: {namespace}")
+            namespace_id = namespace
+        else:
+            namespace_id = await self.resolve_namespace_id(namespace)
 
         # Check if prefix already exists in this namespace
         prefix_search_endpoint = f"ipam/prefixes/?prefix={prefix}&namespace={namespace_id}&format=json"
@@ -898,11 +902,11 @@ class DeviceCommonService:
         # Resolve status to UUID
         status_id = await self.resolve_status_id(status, content_type="ipam.prefix")
 
-        # Build payload
+        # Build payload - Nautobot REST API expects UUID strings, not nested objects
         prefix_data = {
             "prefix": prefix,
-            "namespace": {"id": namespace_id},
-            "status": {"id": status_id},
+            "namespace": namespace_id,
+            "status": status_id,
             "type": prefix_type,
         }
 
@@ -913,11 +917,11 @@ class DeviceCommonService:
         # Resolve location if provided
         if location:
             if self._is_valid_uuid(location):
-                prefix_data["location"] = {"id": location}
+                prefix_data["location"] = location
             else:
                 location_id = await self.resolve_location_id(location)
                 if location_id:
-                    prefix_data["location"] = {"id": location_id}
+                    prefix_data["location"] = location_id
                 else:
                     logger.warning(f"Location '{location}' not found, prefix will be created without location")
 
@@ -927,7 +931,7 @@ class DeviceCommonService:
             if field in kwargs and kwargs[field]:
                 value = kwargs[field]
                 if self._is_valid_uuid(value):
-                    prefix_data[field] = {"id": value}
+                    prefix_data[field] = value
                 else:
                     logger.warning(f"Field '{field}' should be a UUID, got: {value}")
 

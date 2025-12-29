@@ -170,6 +170,10 @@ export function AddDevicePage() {
   const [selectedPlatform, setSelectedPlatform] = useState('')
   const [selectedSoftwareVersion, setSelectedSoftwareVersion] = useState('')
 
+  // Prefix configuration
+  const [addPrefix, setAddPrefix] = useState(true)
+  const [defaultPrefixLength, setDefaultPrefixLength] = useState('/24')
+
   // Interface management
   const [interfaces, setInterfaces] = useState<InterfaceData[]>([
     { id: '1', name: '', type: '', status: '', ip_address: '' }
@@ -818,7 +822,9 @@ export function AddDevicePage() {
         software_version: selectedSoftwareVersion || undefined,
         tags: selectedTags.length > 0 ? selectedTags : undefined,
         custom_fields: Object.keys(filteredCustomFields).length > 0 ? filteredCustomFields : undefined,
-        interfaces: transformedInterfaces
+        interfaces: transformedInterfaces,
+        add_prefix: addPrefix,
+        default_prefix_length: defaultPrefixLength
       }
 
       const response = await fetch('/api/proxy/nautobot/add-device', {
@@ -946,6 +952,7 @@ export function AddDevicePage() {
     setSelectedSoftwareVersion('')
     setSelectedTags([])
     setCustomFieldValues({})
+    // Note: addPrefix and defaultPrefixLength are NOT reset
     setInterfaces([{
       id: '1',
       name: '',
@@ -1262,6 +1269,58 @@ export function AddDevicePage() {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Prefix Configuration Card */}
+      <div className="rounded-xl border shadow-sm">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 rounded-t-xl">
+          <div className="flex items-center space-x-2">
+            <Network className="h-4 w-4" />
+            <div>
+              <h3 className="text-sm font-semibold">Prefix Configuration</h3>
+              <p className="text-blue-100 text-xs">Configure automatic prefix creation for IP addresses without existing parent prefixes.</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-4 bg-white">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Add Prefix Checkbox */}
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="add-prefix"
+                  checked={addPrefix}
+                  onCheckedChange={(checked) => setAddPrefix(checked as boolean)}
+                  disabled={isLoading}
+                />
+                <Label htmlFor="add-prefix" className="text-sm font-medium cursor-pointer">
+                  Add Prefix
+                </Label>
+              </div>
+              <p className="text-xs text-muted-foreground ml-6">
+                Automatically create parent prefixes for IP addresses if they don't exist
+              </p>
+            </div>
+
+            {/* Default Prefix Length */}
+            <div className="space-y-1">
+              <Label htmlFor="default-prefix-length" className="text-xs font-medium">
+                Default Prefix Length
+              </Label>
+              <Input
+                id="default-prefix-length"
+                placeholder="e.g., /24, /16, /8"
+                value={defaultPrefixLength}
+                onChange={(e) => setDefaultPrefixLength(e.target.value)}
+                disabled={isLoading || !addPrefix}
+                className={!addPrefix ? 'opacity-50' : ''}
+              />
+              <p className="text-xs text-muted-foreground">
+                CIDR netmask for new prefixes (range: /0 to /32)
+              </p>
             </div>
           </div>
         </div>

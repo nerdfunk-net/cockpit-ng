@@ -5,15 +5,21 @@ Handles the orchestrated workflow for creating devices with interfaces.
 """
 
 import logging
+import ipaddress
 from typing import Optional
 from models.nautobot import AddDeviceRequest
 from services.nautobot import nautobot_service
+from services.device_common_service import DeviceCommonService
 
 logger = logging.getLogger(__name__)
 
 
 class DeviceCreationService:
     """Service for creating devices in Nautobot with a multi-step workflow."""
+
+    def __init__(self):
+        """Initialize the service."""
+        self.common_service = DeviceCommonService(nautobot_service)
 
     async def create_device_with_interfaces(self, request: AddDeviceRequest) -> dict:
         """
@@ -58,6 +64,10 @@ class DeviceCreationService:
         device_id, device_response = await self._step1_create_device(
             request, workflow_status
         )
+
+        # Step 1.5: Create prefixes if needed
+        if request.add_prefix:
+            await self._step1_5_create_prefixes(request, workflow_status)
 
         # Step 2: Create IP addresses
         ip_address_map = await self._step2_create_ip_addresses(request, workflow_status)
@@ -180,6 +190,95 @@ class DeviceCreationService:
         logger.info(f"Device created with ID: {device_id}")
 
         return device_id, device_response
+
+    async def _step1_5_create_prefixes(
+        self, request: AddDeviceRequest, workflow_status: dict
+    ) -> None:
+        """
+        Step 1.5: Create parent prefixes for IP addresses if they don't exist.
+
+        For each interface with an IP address:
+        - If IP has CIDR notation (e.g., 192.168.100.100/24), calculate network prefix
+        - If IP has no CIDR notation, append default_prefix_length and calculate
+        - Create prefix using ensure_prefix_exists from common service
+        """
+        logger.info("Step 1.5: Creating parent prefixes for IP addresses")
+
+        interfaces_with_ips = [
+            iface for iface in request.interfaces if iface.ip_address
+        ]
+
+        if not interfaces_with_ips:
+            logger.info("No IP addresses to create prefixes for")
+            return
+
+        prefixes_created = set()  # Track created prefixes to avoid duplicates
+
+        for interface in interfaces_with_ips:
+            try:
+                ip_str = interface.ip_address.strip()
+                namespace = interface.namespace or "Global"
+
+                # Determine if IP has CIDR notation
+                if "/" in ip_str:
+                    # IP has CIDR notation (e.g., "192.168.100.100/24")
+                    ip_with_cidr = ip_str
+                else:
+                    # IP has no CIDR notation, append default prefix length
+                    ip_with_cidr = f"{ip_str}{request.default_prefix_length}"
+                    logger.info(
+                        f"Appending default prefix length {request.default_prefix_length} to {ip_str}"
+                    )
+
+                # Parse IP address and calculate network prefix
+                try:
+                    ip_network = ipaddress.ip_network(ip_with_cidr, strict=False)
+                    prefix_str = str(ip_network)
+                    logger.info(
+                        f"Calculated prefix for {ip_with_cidr}: {prefix_str}"
+                    )
+                except ValueError as e:
+                    logger.error(
+                        f"Invalid IP address format for {ip_with_cidr}: {e}"
+                    )
+                    continue
+
+                # Create unique key for prefix+namespace to avoid duplicates
+                prefix_key = f"{prefix_str}|{namespace}"
+                if prefix_key in prefixes_created:
+                    logger.info(
+                        f"Prefix {prefix_str} in namespace {namespace} already processed, skipping"
+                    )
+                    continue
+
+                # Create prefix using common service
+                # Note: We don't set location for auto-created prefixes because
+                # Nautobot has restrictions on which location types can be used with prefixes
+                logger.info(
+                    f"Ensuring prefix exists: {prefix_str} in namespace {namespace}"
+                )
+                prefix_id = await self.common_service.ensure_prefix_exists(
+                    prefix=prefix_str,
+                    namespace=namespace,
+                    status="active",
+                    prefix_type="network",
+                    description=f"Auto-created for device {request.name}",
+                )
+                logger.info(
+                    f"Prefix {prefix_str} exists with ID: {prefix_id}"
+                )
+                prefixes_created.add(prefix_key)
+
+            except Exception as e:
+                logger.error(
+                    f"Error creating prefix for interface {interface.name} with IP {interface.ip_address}: {e}"
+                )
+                # Continue with other interfaces - prefix creation failures shouldn't stop device creation
+                continue
+
+        logger.info(
+            f"Completed prefix creation step. Created/verified {len(prefixes_created)} unique prefix(es)"
+        )
 
     async def _step2_create_ip_addresses(
         self, request: AddDeviceRequest, workflow_status: dict

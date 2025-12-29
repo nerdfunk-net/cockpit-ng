@@ -359,6 +359,202 @@ class TestAddDevice:
 
         logger.info("✓ Device added successfully with interface and IP")
 
+    @pytest.mark.asyncio
+    async def test_add_device_with_auto_prefix_creation(
+        self,
+        real_nautobot_service,
+        device_creation_service,
+        test_device_ids
+    ):
+        """
+        Test adding a new device with automatic prefix creation enabled.
+
+        This tests the add_prefix feature which:
+        1. Creates the device
+        2. Automatically creates parent prefix if it doesn't exist
+        3. Creates IP addresses
+        4. Creates interfaces and assigns IPs
+        5. Sets primary IPv4
+
+        Uses a non-existent prefix (10.99.99.0/24) to ensure it gets created.
+        """
+        # Get required IDs from baseline data
+        ids = await get_required_ids(real_nautobot_service)
+
+        # Create device request with IP in non-existent prefix
+        # Using 10.99.99.0/24 which should not exist in baseline
+        request = AddDeviceRequest(
+            name="test-device-auto-prefix",
+            role=ids["role_id"],
+            status=ids["status_id"],
+            location=ids["location_id"],
+            device_type=ids["device_type_id"],
+            platform=ids["platform_id"],
+            serial="TEST-AUTO-PREFIX-001",
+            add_prefix=True,  # Enable automatic prefix creation
+            default_prefix_length="/24",
+            interfaces=[
+                InterfaceData(
+                    name="GigabitEthernet0/0",
+                    type="1000base-t",
+                    status=ids["status_id"],
+                    ip_address="10.99.99.10/24",  # IP in non-existent prefix
+                    namespace=ids["namespace_id"],
+                    is_primary_ipv4=True,
+                ),
+            ]
+        )
+
+        # Create the device
+        result = await device_creation_service.create_device_with_interfaces(request)
+
+        # Track for cleanup
+        if result.get("device_id"):
+            test_device_ids.append(result["device_id"])
+
+        # Verify success
+        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+        assert result["device_id"] is not None
+
+        # Verify prefix was created in Nautobot
+        prefix_query = """
+        query {
+          prefixes(prefix: "10.99.99.0/24") {
+            id
+            prefix
+            description
+            namespace {
+              name
+            }
+          }
+        }
+        """
+        prefix_result = await real_nautobot_service.graphql_query(prefix_query)
+        prefixes = prefix_result["data"]["prefixes"]
+
+        assert len(prefixes) == 1, "Prefix should have been auto-created"
+        prefix = prefixes[0]
+        assert prefix["prefix"] == "10.99.99.0/24"
+        assert "Auto-created" in prefix["description"]
+        assert prefix["namespace"]["name"] == "Global"
+
+        # Verify device was created with the IP
+        device_query = f"""
+        query {{
+          device(id: "{result['device_id']}") {{
+            id
+            name
+            primary_ip4 {{
+              address
+            }}
+          }}
+        }}
+        """
+        device_result = await real_nautobot_service.graphql_query(device_query)
+        device = device_result["data"]["device"]
+
+        assert device["name"] == "test-device-auto-prefix"
+        assert device["primary_ip4"]["address"] == "10.99.99.10/24"
+
+        logger.info("✓ Device added successfully with automatic prefix creation")
+
+        # Cleanup: Delete the auto-created prefix
+        try:
+            prefix_id = prefixes[0]["id"]
+            await real_nautobot_service.rest_request(
+                endpoint=f"ipam/prefixes/{prefix_id}/",
+                method="DELETE"
+            )
+            logger.info("✓ Cleaned up auto-created prefix")
+        except Exception as e:
+            logger.warning(f"Failed to cleanup prefix: {e}")
+
+    @pytest.mark.asyncio
+    async def test_add_device_without_prefix_creation_fails(
+        self,
+        real_nautobot_service,
+        device_creation_service,
+        test_device_ids
+    ):
+        """
+        Test that adding a device without automatic prefix creation fails
+        when the parent prefix doesn't exist.
+
+        This tests that add_prefix=False prevents automatic prefix creation,
+        and the IP address creation fails due to missing parent prefix.
+
+        Uses a non-existent prefix (10.98.98.0/24) to ensure failure.
+        """
+        # Get required IDs from baseline data
+        ids = await get_required_ids(real_nautobot_service)
+
+        # Verify prefix doesn't exist
+        prefix_query = """
+        query {
+          prefixes(prefix: "10.98.98.0/24") {
+            id
+          }
+        }
+        """
+        prefix_result = await real_nautobot_service.graphql_query(prefix_query)
+        prefixes = prefix_result["data"]["prefixes"]
+        assert len(prefixes) == 0, "Test requires non-existent prefix"
+
+        # Create device request with IP in non-existent prefix
+        request = AddDeviceRequest(
+            name="test-device-no-prefix",
+            role=ids["role_id"],
+            status=ids["status_id"],
+            location=ids["location_id"],
+            device_type=ids["device_type_id"],
+            platform=ids["platform_id"],
+            serial="TEST-NO-PREFIX-001",
+            add_prefix=False,  # Disable automatic prefix creation
+            default_prefix_length="/24",
+            interfaces=[
+                InterfaceData(
+                    name="GigabitEthernet0/0",
+                    type="1000base-t",
+                    status=ids["status_id"],
+                    ip_address="10.98.98.10/24",  # IP in non-existent prefix
+                    namespace=ids["namespace_id"],
+                    is_primary_ipv4=True,
+                ),
+            ]
+        )
+
+        # Create the device - should fail at IP creation step
+        result = await device_creation_service.create_device_with_interfaces(request)
+
+        # Track device for cleanup (it may be created even if IP fails)
+        if result.get("device_id"):
+            test_device_ids.append(result["device_id"])
+
+        # Verify the workflow status
+        workflow_status = result["workflow_status"]
+
+        # Device should be created successfully
+        assert workflow_status["step1_device"]["status"] == "success"
+
+        # IP address creation should fail
+        assert workflow_status["step2_ip_addresses"]["status"] in ["failed", "partial"], \
+            "IP creation should fail without parent prefix"
+
+        # Check that error mentions missing prefix
+        if workflow_status["step2_ip_addresses"]["errors"]:
+            error_messages = [err["error"] for err in workflow_status["step2_ip_addresses"]["errors"]]
+            error_str = " ".join(error_messages).lower()
+            # Nautobot typically returns error about missing parent prefix
+            assert any(keyword in error_str for keyword in ["prefix", "parent", "network"]), \
+                "Error should mention missing prefix"
+
+        # Verify prefix was NOT created
+        prefix_result = await real_nautobot_service.graphql_query(prefix_query)
+        prefixes = prefix_result["data"]["prefixes"]
+        assert len(prefixes) == 0, "Prefix should not have been created when add_prefix=False"
+
+        logger.info("✓ Device creation correctly failed without prefix when add_prefix=False")
+
 
 # =============================================================================
 # Integration Tests - Bulk Edit (Update Devices)
