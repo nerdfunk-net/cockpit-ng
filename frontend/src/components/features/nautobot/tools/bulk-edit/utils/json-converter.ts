@@ -70,6 +70,8 @@ function extractFieldId(field: unknown): string | string[] | null {
  * @param modifiedDevices - Map of device IDs to their modified fields
  * @param interfaceConfig - Interface configuration for primary IP (optional)
  * @param namespace - IP namespace for IP address creation (optional)
+ * @param addPrefixesAutomatically - Whether to automatically create missing IP prefixes (optional)
+ * @param useAssignedIpIfExists - Whether to use existing IP if it exists with different netmask (optional)
  * @returns Array of device update objects
  *
  * Example output:
@@ -85,7 +87,9 @@ function extractFieldId(field: unknown): string | string[] | null {
  *     "mgmt_interface_type": "virtual",
  *     "mgmt_interface_status": "active",
  *     "mgmt_interface_create_on_ip_change": false,
- *     "namespace": "namespace-uuid"
+ *     "namespace": "namespace-uuid",
+ *     "add_prefixes_automatically": true,
+ *     "use_assigned_ip_if_exists": false
  *   }
  * ]
  * ```
@@ -93,7 +97,9 @@ function extractFieldId(field: unknown): string | string[] | null {
 export function convertModifiedDevicesToJSON(
   modifiedDevices: Map<string, Partial<DeviceInfo>>,
   interfaceConfig?: { name: string; type: string; status: string; createOnIpChange: boolean },
-  namespace?: string
+  namespace?: string,
+  addPrefixesAutomatically?: boolean,
+  useAssignedIpIfExists?: boolean
 ): Array<Record<string, unknown>> {
   if (modifiedDevices.size === 0) {
     throw new Error('No modified devices to save')
@@ -128,6 +134,16 @@ export function convertModifiedDevicesToJSON(
     // If primary_ip4 is being changed and we have a namespace, add namespace field
     if ('primary_ip4' in changes && namespace) {
       device.namespace = namespace
+    }
+
+    // If primary_ip4 is being changed and addPrefixesAutomatically is set, add it
+    if ('primary_ip4' in changes && addPrefixesAutomatically !== undefined) {
+      device.add_prefixes_automatically = addPrefixesAutomatically
+    }
+
+    // If primary_ip4 is being changed and useAssignedIpIfExists is set, add it
+    if ('primary_ip4' in changes && useAssignedIpIfExists !== undefined) {
+      device.use_assigned_ip_if_exists = useAssignedIpIfExists
     }
 
     devices.push(device)

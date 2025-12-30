@@ -356,6 +356,8 @@ def _prepare_device_data(
         "mgmt_interface_status",
         "mgmt_interface_create_on_ip_change",
         "namespace",
+        "add_prefixes_automatically",
+        "use_assigned_ip_if_exists",
     ]
 
     # Build device identifier

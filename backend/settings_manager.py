@@ -853,11 +853,12 @@ class SettingsManager:
     # OIDC Provider Management
     def get_oidc_providers_config_path(self) -> str:
         """Get path to OIDC providers YAML configuration file"""
+        from pathlib import Path
 
-        # Look for config in project root/config directory
-        project_root = os.path.dirname(os.path.dirname(__file__))
-        config_path = os.path.join(project_root, "config", "oidc_providers.yaml")
-        return config_path
+        # Use Path-based navigation like CheckMK config service
+        # Navigate from backend/settings_manager.py -> backend/ -> project_root/ -> config/
+        config_path = Path(__file__).parent.parent / "config" / "oidc_providers.yaml"
+        return str(config_path)
 
     def load_oidc_providers(self) -> Dict[str, Any]:
         """Load OIDC providers configuration from YAML file"""

@@ -785,25 +785,37 @@ class DeviceCommonService:
     # ========================================================================
 
     async def ensure_ip_address_exists(
-        self, ip_address: str, namespace_id: str, status_name: str = "active", **kwargs
+        self,
+        ip_address: str,
+        namespace_id: str,
+        status_name: str = "active",
+        add_prefixes_automatically: bool = False,
+        use_assigned_ip_if_exists: bool = False,
+        **kwargs,
     ) -> str:
         """
         Ensure IP address exists in Nautobot.
 
         If IP already exists, returns its UUID.
         If not, creates it and returns the new UUID.
+        If creation fails due to missing prefix and add_prefixes_automatically is True,
+        creates the prefix and retries IP creation.
+        If creation fails due to duplicate IP with different netmask and use_assigned_ip_if_exists is True,
+        finds and returns the existing IP UUID.
 
         Args:
             ip_address: IP address in CIDR format (e.g., "192.168.1.1/24")
             namespace_id: UUID of the namespace
             status_name: Status name for the IP (default: "active")
+            add_prefixes_automatically: Auto-create missing prefix if IP creation fails (default: False)
+            use_assigned_ip_if_exists: Use existing IP if it exists with different netmask (default: False)
             **kwargs: Additional fields for IP creation
 
         Returns:
             IP address UUID
 
         Raises:
-            Exception: If creation fails and IP doesn't exist
+            Exception: If creation fails and IP doesn't exist (or auto-features are disabled)
         """
         logger.info(f"Ensuring IP address exists: {ip_address}")
 
@@ -833,15 +845,118 @@ class DeviceCommonService:
             **kwargs,  # Additional fields from caller
         }
 
-        ip_create_result = await self.nautobot.rest_request(
-            endpoint="ipam/ip-addresses/?format=json",
-            method="POST",
-            data=ip_create_data,
-        )
+        try:
+            ip_create_result = await self.nautobot.rest_request(
+                endpoint="ipam/ip-addresses/?format=json",
+                method="POST",
+                data=ip_create_data,
+            )
 
-        ip_id = ip_create_result["id"]
-        logger.info(f"Created IP address: {ip_id}")
-        return ip_id
+            ip_id = ip_create_result["id"]
+            logger.info(f"Created IP address: {ip_id}")
+            return ip_id
+
+        except Exception as e:
+            error_message = str(e)
+
+            # Check if error is due to duplicate IP with different netmask
+            if "IP address with this Parent and Host already exists" in error_message and use_assigned_ip_if_exists:
+                logger.warning(
+                    f"IP creation failed: IP {ip_address} already exists with different netmask. "
+                    f"Attempting to find existing IP..."
+                )
+
+                # Extract the host IP without netmask (e.g., "192.168.1.1/24" -> "192.168.1.1")
+                import ipaddress
+                try:
+                    ip_obj = ipaddress.ip_interface(ip_address)
+                    host_ip = str(ip_obj.ip)
+
+                    logger.info(f"Searching for existing IP with host address: {host_ip}")
+
+                    # Search for IP by host address (without netmask) in the namespace
+                    # Nautobot's address filter accepts IP without netmask and returns all IPs with that host
+                    ip_search_endpoint = f"ipam/ip-addresses/?address={host_ip}&namespace={namespace_id}&format=json"
+                    existing_ip_result = await self.nautobot.rest_request(
+                        endpoint=ip_search_endpoint, method="GET"
+                    )
+
+                    if existing_ip_result and existing_ip_result.get("count", 0) > 0:
+                        # Found at least one IP with this host address
+                        existing_ip = existing_ip_result["results"][0]
+                        logger.info(
+                            f"Found existing IP: {existing_ip['address']} with UUID {existing_ip['id']}"
+                        )
+
+                        # If multiple IPs found with same host, log a warning
+                        if existing_ip_result.get("count", 0) > 1:
+                            logger.warning(
+                                f"Multiple IPs found with host {host_ip} ({existing_ip_result['count']} total), using first: {existing_ip['address']}"
+                            )
+
+                        return existing_ip["id"]
+                    else:
+                        logger.error(f"Could not find existing IP for host {host_ip}")
+                        raise Exception(
+                            f"IP {host_ip} reported as duplicate but not found in namespace"
+                        )
+
+                except Exception as lookup_error:
+                    logger.error(
+                        f"Failed to find existing IP for {ip_address}: {lookup_error}"
+                    )
+                    raise Exception(
+                        f"Failed to create IP {ip_address} and could not find existing IP: {lookup_error}"
+                    ) from lookup_error
+
+            # Check if error is due to missing prefix
+            elif "No suitable parent Prefix" in error_message and add_prefixes_automatically:
+                logger.warning(
+                    f"IP creation failed due to missing prefix. "
+                    f"Attempting to create prefix automatically..."
+                )
+
+                # Extract the network prefix from the IP address (e.g., "192.168.1.1/24" -> "192.168.1.0/24")
+                import ipaddress
+                try:
+                    ip_obj = ipaddress.ip_interface(ip_address)
+                    network_prefix = str(ip_obj.network)
+
+                    logger.info(f"Creating missing prefix: {network_prefix}")
+
+                    # Create the prefix using ensure_prefix_exists
+                    # Use the namespace_id directly since we already have it as UUID
+                    await self.ensure_prefix_exists(
+                        prefix=network_prefix,
+                        namespace=namespace_id,  # Pass UUID directly
+                        status="active",
+                        prefix_type="network",
+                        description=f"Auto-created for IP {ip_address}",
+                    )
+
+                    logger.info(f"Successfully created prefix {network_prefix}, retrying IP creation...")
+
+                    # Retry IP creation
+                    ip_create_result = await self.nautobot.rest_request(
+                        endpoint="ipam/ip-addresses/?format=json",
+                        method="POST",
+                        data=ip_create_data,
+                    )
+
+                    ip_id = ip_create_result["id"]
+                    logger.info(f"Created IP address after prefix creation: {ip_id}")
+                    return ip_id
+
+                except Exception as prefix_error:
+                    logger.error(
+                        f"Failed to auto-create prefix for {ip_address}: {prefix_error}"
+                    )
+                    raise Exception(
+                        f"Failed to create IP {ip_address} and could not auto-create prefix: {prefix_error}"
+                    ) from prefix_error
+            else:
+                # Re-raise the original error if not a handled error type or auto-features are disabled
+                raise
 
     async def ensure_prefix_exists(
         self,
@@ -1079,6 +1194,8 @@ class DeviceCommonService:
         interface_type: str = "virtual",
         interface_status: str = "active",
         ip_namespace: str = "Global",
+        add_prefixes_automatically: bool = False,
+        use_assigned_ip_if_exists: bool = False,
     ) -> str:
         """
         Ensure an interface exists with the specified IP address.
@@ -1095,6 +1212,8 @@ class DeviceCommonService:
             interface_type: Interface type (default: "virtual")
             interface_status: Interface status (default: "active")
             ip_namespace: IP namespace name (default: "Global")
+            add_prefixes_automatically: Automatically create missing prefix (default: False)
+            use_assigned_ip_if_exists: Use existing IP if it exists with different netmask (default: False)
 
         Returns:
             IP address UUID
@@ -1104,9 +1223,13 @@ class DeviceCommonService:
         # Resolve namespace
         namespace_id = await self.resolve_namespace_id(ip_namespace)
 
-        # Ensure IP exists
+        # Ensure IP exists (with automatic prefix creation if enabled)
         ip_id = await self.ensure_ip_address_exists(
-            ip_address=ip_address, namespace_id=namespace_id, status_name="active"
+            ip_address=ip_address,
+            namespace_id=namespace_id,
+            status_name="active",
+            add_prefixes_automatically=add_prefixes_automatically,
+            use_assigned_ip_if_exists=use_assigned_ip_if_exists,
         )
 
         # Ensure interface exists
@@ -1134,6 +1257,8 @@ class DeviceCommonService:
         old_ip: Optional[str],
         new_ip: str,
         namespace: str,
+        add_prefixes_automatically: bool = False,
+        use_assigned_ip_if_exists: bool = False,
     ) -> str:
         """
         Update an existing interface's IP address (instead of creating a new interface).
@@ -1151,6 +1276,8 @@ class DeviceCommonService:
             old_ip: Current IP address (to find the interface to update)
             new_ip: New IP address to assign
             namespace: IP namespace name (will be resolved to UUID)
+            add_prefixes_automatically: Automatically create missing prefix (default: False)
+            use_assigned_ip_if_exists: Use existing IP if it exists with different netmask (default: False)
 
         Returns:
             UUID of the new IP address
@@ -1186,6 +1313,8 @@ class DeviceCommonService:
                     interface_type="virtual",
                     interface_status="active",
                     ip_namespace=namespace,
+                    add_prefixes_automatically=add_prefixes_automatically,
+                    use_assigned_ip_if_exists=use_assigned_ip_if_exists,
                 )
         else:
             logger.warning("No old IP provided, creating new interface with new IP")
@@ -1197,16 +1326,21 @@ class DeviceCommonService:
                 interface_type="virtual",
                 interface_status="active",
                 ip_namespace=namespace,
+                add_prefixes_automatically=add_prefixes_automatically,
+                use_assigned_ip_if_exists=use_assigned_ip_if_exists,
             )
 
         # Step 2: Resolve namespace name to UUID
         logger.info(f"Resolving namespace '{namespace}'")
         namespace_id = await self.resolve_namespace_id(namespace)
 
-        # Step 3: Create or get the new IP address in Nautobot
+        # Step 3: Create or get the new IP address in Nautobot (with automatic prefix creation if enabled)
         logger.info(f"Ensuring IP address {new_ip} exists in namespace {namespace}")
         new_ip_id = await self.ensure_ip_address_exists(
-            ip_address=new_ip, namespace_id=namespace_id
+            ip_address=new_ip,
+            namespace_id=namespace_id,
+            add_prefixes_automatically=add_prefixes_automatically,
+            use_assigned_ip_if_exists=use_assigned_ip_if_exists,
         )
 
         # Step 4: Assign the new IP to the existing interface

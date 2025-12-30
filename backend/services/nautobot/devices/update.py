@@ -454,6 +454,18 @@ class DeviceUpdateService:
             )
             logger.info(f"Create new interface on IP change: {create_new}")
 
+            # Get add_prefixes_automatically flag (default to False for backward compatibility)
+            add_prefixes_automatically = interface_config.get(
+                "add_prefixes_automatically", False
+            )
+            logger.info(f"Add prefixes automatically: {add_prefixes_automatically}")
+
+            # Get use_assigned_ip_if_exists flag (default to False for backward compatibility)
+            use_assigned_ip_if_exists = interface_config.get(
+                "use_assigned_ip_if_exists", False
+            )
+            logger.info(f"Use assigned IP if exists: {use_assigned_ip_if_exists}")
+
             if create_new:
                 # BEHAVIOR 1: Create new interface with new IP (existing behavior)
                 logger.info("Creating new interface with new IP address")
@@ -464,6 +476,8 @@ class DeviceUpdateService:
                     interface_type=interface_config.get("type", "virtual"),
                     interface_status=interface_config.get("status", "active"),
                     ip_namespace=namespace,
+                    add_prefixes_automatically=add_prefixes_automatically,
+                    use_assigned_ip_if_exists=use_assigned_ip_if_exists,
                 )
             else:
                 # BEHAVIOR 2: Update existing interface's IP address
@@ -474,6 +488,8 @@ class DeviceUpdateService:
                     old_ip=current_primary_ip4,
                     new_ip=primary_ip4,
                     namespace=namespace,
+                    add_prefixes_automatically=add_prefixes_automatically,
+                    use_assigned_ip_if_exists=use_assigned_ip_if_exists,
                 )
 
             # Update the payload to use the IP UUID instead of the address string

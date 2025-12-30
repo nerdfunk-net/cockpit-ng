@@ -229,8 +229,8 @@ async def startup_services():
         logger.debug("Startup cache: hook invoked")
         # Local imports to avoid circular dependencies at import time
         from settings_manager import settings_manager
-        from services.git_shared_utils import get_git_repo_by_id
-        from services.cache_service import cache_service
+        from services.settings.git.shared_utils import get_git_repo_by_id
+        from services.settings.cache import cache_service
 
         cache_cfg = settings_manager.get_cache_settings()
         logger.debug(f"Startup cache: settings loaded: {cache_cfg}")

@@ -128,6 +128,16 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
     })
   }
 
+  const handleUseAssignedIpChange = (checked: boolean) => {
+    onPropertiesChange({
+      ...properties,
+      ipConfig: {
+        ...properties.ipConfig,
+        useAssignedIpIfExists: checked,
+      },
+    })
+  }
+
   const handleNetworkMaskChange = (value: string) => {
     onPropertiesChange({
       ...properties,
@@ -265,6 +275,26 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
                     id="add-prefixes"
                     checked={properties.ipConfig.addPrefixesAutomatically}
                     onCheckedChange={handleAddPrefixesChange}
+                    className="ml-4 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
+                  />
+                </div>
+              </div>
+
+              {/* Use Assigned IP if Exists */}
+              <div className="rounded-lg border border-gray-200 p-4 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="use-assigned-ip" className="text-sm font-medium text-gray-900">
+                      Use Assigned IP Address if IP exists and it not assigned
+                    </Label>
+                    <p className="text-sm text-gray-700">
+                      Use existing IP address if it exists with different netmask
+                    </p>
+                  </div>
+                  <Switch
+                    id="use-assigned-ip"
+                    checked={properties.ipConfig.useAssignedIpIfExists}
+                    onCheckedChange={handleUseAssignedIpChange}
                     className="ml-4 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
                   />
                 </div>

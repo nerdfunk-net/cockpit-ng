@@ -28,6 +28,7 @@ export interface InterfaceConfig {
 
 export interface IPConfig {
   addPrefixesAutomatically: boolean
+  useAssignedIpIfExists: boolean
   defaultNetworkMask: string
   namespace: string
 }
@@ -51,6 +52,7 @@ const DEFAULT_INTERFACE_CONFIG: InterfaceConfig = {
 
 const DEFAULT_IP_CONFIG: IPConfig = {
   addPrefixesAutomatically: true,
+  useAssignedIpIfExists: false,
   defaultNetworkMask: '/24',
   namespace: 'Global',
 }
@@ -120,7 +122,9 @@ export default function BulkEditPage() {
       const devicesJson = convertModifiedDevicesToJSON(
         modifiedDevices,
         properties.interfaceConfig,
-        properties.ipConfig.namespace
+        properties.ipConfig.namespace,
+        properties.ipConfig.addPrefixesAutomatically,
+        properties.ipConfig.useAssignedIpIfExists
       )
 
       // Show loading toast
@@ -157,7 +161,7 @@ export default function BulkEditPage() {
       })
       console.error('Failed to save devices:', error)
     }
-  }, [modifiedDevices, properties.interfaceConfig, properties.ipConfig.namespace, apiCall, toast])
+  }, [modifiedDevices, properties.interfaceConfig, properties.ipConfig.namespace, properties.ipConfig.addPrefixesAutomatically, properties.ipConfig.useAssignedIpIfExists, apiCall, toast])
 
   const handlePreviewChanges = useCallback(() => {
     setShowPreviewDialog(true)
@@ -169,7 +173,9 @@ export default function BulkEditPage() {
     const devicesJson = convertModifiedDevicesToJSON(
       modifiedDevices,
       properties.interfaceConfig,
-      properties.ipConfig.namespace
+      properties.ipConfig.namespace,
+      properties.ipConfig.addPrefixesAutomatically,
+      properties.ipConfig.useAssignedIpIfExists
     )
 
     // Call API with dry_run = true
@@ -195,7 +201,7 @@ export default function BulkEditPage() {
         changes?: Record<string, unknown>
       }>
     }
-  }, [modifiedDevices, properties.interfaceConfig, properties.ipConfig.namespace, apiCall])
+  }, [modifiedDevices, properties.interfaceConfig, properties.ipConfig.namespace, properties.ipConfig.addPrefixesAutomatically, properties.ipConfig.useAssignedIpIfExists, apiCall])
 
   const handleJobComplete = useCallback(() => {
     toast({
