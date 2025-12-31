@@ -740,6 +740,40 @@ export function DeviceSelector({
     })
   }
 
+  // NEW: Helper to find path to a specific group
+  const findGroupPath = (groupId: string, items: (ConditionItem | ConditionGroup)[] = conditionTree.items, currentPath: string[] = []): string[] | null => {
+    for (const item of items) {
+      if ('type' in item && item.type === 'group') {
+        if (item.id === groupId) {
+          return [...currentPath, groupId]
+        }
+        const found = findGroupPath(groupId, item.items, [...currentPath, item.id])
+        if (found) return found
+      }
+    }
+    return null
+  }
+
+  // NEW: Set target group for adding conditions
+  const setTargetGroup = (groupId: string | null) => {
+    if (groupId === null) {
+      setCurrentGroupPath([])
+    } else {
+      const path = findGroupPath(groupId)
+      if (path) {
+        setCurrentGroupPath(path)
+      }
+    }
+  }
+
+  // NEW: Get current target display name
+  const getCurrentTargetName = () => {
+    if (currentGroupPath.length === 0) {
+      return 'Root'
+    }
+    return `Group ${currentGroupPath.length}`
+  }
+
   // LEGACY: Keep for backward compatibility
   const addCondition = () => {
     if (!currentField || !currentValue) {
@@ -1070,8 +1104,17 @@ export function DeviceSelector({
     if ('type' in item && item.type === 'group') {
       // This is a group
       const group = item as ConditionGroup
+      const isActiveTarget = currentGroupPath.length > 0 && currentGroupPath[currentGroupPath.length - 1] === group.id
       return (
-        <div className="border-l-4 border-purple-300 pl-4 py-2 bg-purple-50/50 rounded-r">
+        <div
+          className={`border-l-4 pl-4 py-2 rounded-r cursor-pointer transition-colors ${
+            isActiveTarget
+              ? 'border-blue-500 bg-blue-50/70'
+              : 'border-purple-300 bg-purple-50/50 hover:bg-purple-100/50'
+          }`}
+          onClick={() => setTargetGroup(group.id)}
+          title="Click to add conditions to this group"
+        >
           {/* Group header with logic operators */}
           <div className="flex items-center gap-2 mb-2">
             {!isFirst && (
@@ -1079,14 +1122,22 @@ export function DeviceSelector({
                 {group.logic}
               </Badge>
             )}
-            <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300">
+            <Badge variant="outline" className={isActiveTarget ? "bg-blue-100 text-blue-800 border-blue-300" : "bg-purple-100 text-purple-800 border-purple-300"}>
               GROUP ({group.internalLogic})
             </Badge>
+            {isActiveTarget && (
+              <Badge className="bg-blue-500 text-white text-xs">
+                Active Target
+              </Badge>
+            )}
             <Button
               size="sm"
               variant="ghost"
               className="h-5 text-xs px-2"
-              onClick={() => updateGroupLogic(group.id, group.internalLogic === 'AND' ? 'OR' : 'AND')}
+              onClick={(e) => {
+                e.stopPropagation()
+                updateGroupLogic(group.id, group.internalLogic === 'AND' ? 'OR' : 'AND')
+              }}
               title="Toggle group logic"
             >
               Toggle
@@ -1094,7 +1145,10 @@ export function DeviceSelector({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => removeItemFromTree(group.id)}
+              onClick={(e) => {
+                e.stopPropagation()
+                removeItemFromTree(group.id)
+              }}
               className="h-5 w-5 p-0 hover:bg-red-100 ml-auto"
               title="Delete group"
             >
@@ -1153,6 +1207,27 @@ export function DeviceSelector({
           </div>
         </div>
         <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+          {/* Target Location Indicator */}
+          <div className="mb-4 flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-sm font-medium text-blue-900">Adding conditions to:</span>
+              <Badge variant="outline" className="bg-white">
+                {getCurrentTargetName()}
+              </Badge>
+            </div>
+            {currentGroupPath.length > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setTargetGroup(null)}
+                className="h-7 text-xs text-blue-700 hover:text-blue-900 hover:bg-blue-100"
+              >
+                <ChevronLeft className="h-3 w-3 mr-1" />
+                Back to Root
+              </Button>
+            )}
+          </div>
+
           <div className={`grid grid-cols-1 gap-4 ${currentField === 'custom_fields' || selectedCustomField ? 'md:grid-cols-[1fr_1fr_1fr_2fr_1fr_auto]' : 'md:grid-cols-[1fr_1fr_2fr_1fr_auto]'}`}>
             {/* Field Selection */}
             <div className="space-y-2">
