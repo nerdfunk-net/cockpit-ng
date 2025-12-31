@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Download } from 'lucide-react'
-import type { DeviceInfo, LogicalCondition } from '@/components/shared/device-selector'
+import type { DeviceInfo } from '@/components/shared/device-selector'
 import { useApi } from '@/hooks/use-api'
 
 // Tab Components
@@ -14,8 +14,6 @@ import { ExportTab } from '@/components/features/nautobot/export/tabs/export-tab
 export default function NautobotExportPage() {
   const { apiCall } = useApi()
   // Device selection state
-  const [previewDevices, setPreviewDevices] = useState<DeviceInfo[]>([])
-  const [deviceConditions, setDeviceConditions] = useState<LogicalCondition[]>([])
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([])
   const [selectedDevices, setSelectedDevices] = useState<DeviceInfo[]>([])
 
@@ -74,9 +72,7 @@ export default function NautobotExportPage() {
   }, [apiCall])
 
   const handleDevicesSelected = useMemo(
-    () => (devices: DeviceInfo[], conditions: LogicalCondition[]) => {
-      setPreviewDevices(devices)
-      setDeviceConditions(conditions)
+    () => (devices: DeviceInfo[]) => {
       const deviceIds = devices.map(d => d.id)
       setSelectedDeviceIds(deviceIds)
       setSelectedDevices(devices)

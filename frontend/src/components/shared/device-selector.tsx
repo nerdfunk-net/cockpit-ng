@@ -1,11 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-
-// Define default arrays outside component to prevent re-creating on every render
-const EMPTY_CONDITIONS: LogicalCondition[] = []
-const EMPTY_DEVICES: DeviceInfo[] = []
-const EMPTY_DEVICE_IDS: string[] = []
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -104,6 +99,39 @@ interface DeviceSelectorProps {
   selectedDeviceIds?: string[]
   onSelectionChange?: (selectedIds: string[], selectedDevices: DeviceInfo[]) => void
 }
+
+// Type for backend response conditions that can be either format
+interface BackendConditionsResponse {
+  id: number
+  name: string
+  description?: string
+  conditions: Array<LogicalCondition | { version: number; tree: ConditionTree }>
+  scope: string
+  created_by: string
+  created_at?: string
+  updated_at?: string
+}
+
+// Backend operation types
+interface BackendCondition {
+  field: string
+  operator: string
+  value: string
+}
+
+interface BackendOperation {
+  operation_type: string
+  conditions: BackendCondition[]
+  nested_operations: BackendOperation[]
+  _parentLogic?: string
+}
+
+// Define default arrays outside component to prevent re-creating on every render
+const EMPTY_CONDITIONS: LogicalCondition[] = []
+const EMPTY_DEVICES: DeviceInfo[] = []
+const EMPTY_DEVICE_IDS: string[] = []
+const EMPTY_CONDITION_ARRAY: (ConditionItem | ConditionGroup)[] = []
+const EMPTY_PATH_ARRAY: string[] = []
 
 // Helper function to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -373,16 +401,7 @@ export function DeviceSelector({
 
   const handleLoadInventory = async (inventoryName: string) => {
     try {
-      const response = await apiCall<{
-        id: number
-        name: string
-        description?: string
-        conditions: any[] // Can be either legacy flat conditions or new tree structure
-        scope: string
-        created_by: string
-        created_at?: string
-        updated_at?: string
-      }>(`inventory/by-name/${encodeURIComponent(inventoryName)}`)
+      const response = await apiCall<BackendConditionsResponse>(`inventory/by-name/${encodeURIComponent(inventoryName)}`)
 
       // Check if this is a new tree structure (version 2) or legacy flat format
       if (response.conditions && response.conditions.length > 0) {
@@ -390,11 +409,9 @@ export function DeviceSelector({
 
         if (firstItem && typeof firstItem === 'object' && 'version' in firstItem && firstItem.version === 2) {
           // New tree structure format
-          console.log('Loading tree structure (version 2)')
           setConditionTree(firstItem.tree)
         } else {
           // Legacy flat conditions format
-          console.log('Loading legacy flat conditions (version 1)')
           const loadedTree = flatConditionsToTree(response.conditions as LogicalCondition[])
           setConditionTree(loadedTree)
         }
@@ -769,8 +786,10 @@ export function DeviceSelector({
   }
 
   // NEW: Helper to find path to a specific group
-  const findGroupPath = (groupId: string, items: (ConditionItem | ConditionGroup)[] = conditionTree.items, currentPath: string[] = []): string[] | null => {
-    for (const item of items) {
+  const findGroupPath = (groupId: string, items: (ConditionItem | ConditionGroup)[] = EMPTY_CONDITION_ARRAY, currentPath: string[] = EMPTY_PATH_ARRAY): string[] | null => {
+    // Use actual items if not using defaults
+    const actualItems = items === EMPTY_CONDITION_ARRAY ? conditionTree.items : items
+    for (const item of actualItems) {
       if ('type' in item && item.type === 'group') {
         if (item.id === groupId) {
           return [...currentPath, groupId]
@@ -859,18 +878,18 @@ export function DeviceSelector({
   // LEGACY functions removed - now using tree-based structure exclusively
 
   // NEW: Build operations from tree structure
-  const buildOperationsFromTree = (tree: ConditionTree | ConditionGroup): any[] => {
+  const buildOperationsFromTree = (tree: ConditionTree | ConditionGroup): BackendOperation[] => {
     const items = tree.items
 
     if (items.length === 0) return []
 
     // Helper to convert a single item (condition or group) to backend format
-    const convertItem = (item: ConditionItem | ConditionGroup) => {
+    const convertItem = (item: ConditionItem | ConditionGroup): BackendOperation => {
       if ('type' in item && item.type === 'group') {
         // This is a group - recursively convert it
         const group = item as ConditionGroup
-        const groupConditions: any[] = []
-        const nestedOps: any[] = []
+        const groupConditions: BackendCondition[] = []
+        const nestedOps: BackendOperation[] = []
 
         group.items.forEach(subItem => {
           if ('type' in subItem && subItem.type === 'group') {
@@ -913,8 +932,8 @@ export function DeviceSelector({
     const internalLogic = 'internalLogic' in tree ? tree.internalLogic : 'AND'
 
     // Separate items by their parent logic (AND, OR, NOT)
-    const regularItems: any[] = []
-    const notItems: any[] = []
+    const regularItems: BackendOperation[] = []
+    const notItems: BackendOperation[] = []
 
     items.forEach(item => {
       const converted = convertItem(item)
@@ -928,16 +947,19 @@ export function DeviceSelector({
       }
     })
 
-    const operations: any[] = []
+    const operations: BackendOperation[] = []
 
     // Add main operation with all regular items
     if (regularItems.length > 0) {
       if (regularItems.length === 1) {
-        operations.push(regularItems[0])
+        const firstItem = regularItems[0]
+        if (firstItem) {
+          operations.push(firstItem)
+        }
       } else {
         // Separate root-level conditions from groups
-        const rootConditions: any[] = []
-        const nestedOps: any[] = []
+        const rootConditions: BackendCondition[] = []
+        const nestedOps: BackendOperation[] = []
 
         regularItems.forEach(item => {
           // Check if this item represents a group or a single condition
@@ -975,8 +997,6 @@ export function DeviceSelector({
     try {
       // Use NEW tree-based builder
       const operations = buildOperationsFromTree(conditionTree)
-
-      console.log('Generated operations from tree:', JSON.stringify(operations, null, 2))
 
       const response = await apiCall<{
         devices: DeviceInfo[]

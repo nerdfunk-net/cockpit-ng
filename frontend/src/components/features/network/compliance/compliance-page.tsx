@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CheckCircle } from 'lucide-react'
-import type { DeviceInfo, LogicalCondition } from '@/components/shared/device-selector'
+import type { DeviceInfo } from '@/components/shared/device-selector'
 
 // Tab Components
 import { DeviceSelectionTab } from './tabs/device-selection-tab'
@@ -15,17 +15,13 @@ import { useComplianceSettings } from './hooks/use-compliance-settings'
 
 export default function CompliancePage() {
   // Device selection state
-  const [previewDevices, setPreviewDevices] = useState<DeviceInfo[]>([])
-  const [deviceConditions, setDeviceConditions] = useState<LogicalCondition[]>([])
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([])
   const [selectedDevices, setSelectedDevices] = useState<DeviceInfo[]>([])
 
   // Compliance settings hook
   const complianceSettings = useComplianceSettings()
 
-  const handleDevicesSelected = (devices: DeviceInfo[], conditions: LogicalCondition[]) => {
-    setPreviewDevices(devices)
-    setDeviceConditions(conditions)
+  const handleDevicesSelected = (devices: DeviceInfo[]) => {
     const deviceIds = devices.map(d => d.id)
     setSelectedDeviceIds(deviceIds)
     setSelectedDevices(devices)

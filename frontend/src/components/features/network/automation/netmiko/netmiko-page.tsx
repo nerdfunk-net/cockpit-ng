@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Terminal } from 'lucide-react'
-import type { DeviceInfo, LogicalCondition } from '@/components/shared/device-selector'
+import type { DeviceInfo } from '@/components/shared/device-selector'
 
 // Hooks
 import { useCredentialManager } from './hooks/use-credential-manager'
@@ -29,8 +29,6 @@ import type { ErrorDetails } from './types'
 
 export default function NetmikoPage() {
   // Device selection state
-  const [previewDevices, setPreviewDevices] = useState<DeviceInfo[]>([])
-  const [deviceConditions, setDeviceConditions] = useState<LogicalCondition[]>([])
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([])
   const [selectedDevices, setSelectedDevices] = useState<DeviceInfo[]>([])
 
@@ -54,9 +52,7 @@ export default function NetmikoPage() {
   const variableManager = useVariableManager()
   const executionManager = useNetmikoExecution()
 
-  const handleDevicesSelected = (devices: DeviceInfo[], conditions: LogicalCondition[]) => {
-    setPreviewDevices(devices)
-    setDeviceConditions(conditions)
+  const handleDevicesSelected = (devices: DeviceInfo[]) => {
     const deviceIds = devices.map(d => d.id)
     setSelectedDeviceIds(deviceIds)
     setSelectedDevices(devices)

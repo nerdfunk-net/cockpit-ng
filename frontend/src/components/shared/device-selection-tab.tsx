@@ -38,7 +38,6 @@ interface DeviceSelectionTabProps {
 }
 
 const EMPTY_DEVICES: DeviceInfo[] = []
-const EMPTY_CONDITIONS: LogicalCondition[] = []
 const EMPTY_DEVICE_IDS: string[] = []
 
 export function DeviceSelectionTab({

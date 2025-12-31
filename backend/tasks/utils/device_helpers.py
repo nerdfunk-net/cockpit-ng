@@ -1,6 +1,9 @@
 """
 Helper functions for device targeting and filtering.
 Moved from job_tasks.py to improve code organization.
+
+This module uses the shared inventory_converter utility for
+evaluating tree-based logical expressions (version 2).
 """
 
 import logging
@@ -15,6 +18,9 @@ def get_target_devices(
 ) -> Optional[List]:
     """
     Get target devices based on template's inventory source.
+
+    Uses the shared inventory converter to evaluate tree-based
+    logical expressions from saved inventories.
 
     Args:
         template: Job template configuration
@@ -63,7 +69,8 @@ def get_target_devices(
             asyncio.set_event_loop(loop)
 
             try:
-                # Convert SavedInventoryConditions to LogicalOperations
+                # Convert tree structure to LogicalOperations (version 2)
+                # Uses shared inventory_converter utility
                 operations = convert_conditions_to_operations(inventory["conditions"])
 
                 if not operations:
