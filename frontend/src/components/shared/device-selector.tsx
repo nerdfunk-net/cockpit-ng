@@ -31,11 +31,34 @@ import {
 import { useApi } from '@/hooks/use-api'
 import { ManageInventoryDialog } from '@/components/features/network/automation/ansible-inventory/dialogs/manage-inventory-dialog'
 
+// Legacy flat condition structure (kept for backward compatibility)
 export interface LogicalCondition {
   field: string
   operator: string
   value: string
   logic: string
+}
+
+// New tree-based structure for grouped logical expressions
+export interface ConditionItem {
+  id: string  // Unique identifier for React keys
+  field: string
+  operator: string
+  value: string
+}
+
+export interface ConditionGroup {
+  id: string  // Unique identifier for React keys
+  type: 'group'
+  logic: 'AND' | 'OR' | 'NOT'  // Logic operator BEFORE this group
+  internalLogic: 'AND' | 'OR'  // Logic operator WITHIN this group
+  items: (ConditionItem | ConditionGroup)[]
+}
+
+export interface ConditionTree {
+  type: 'root'
+  internalLogic: 'AND' | 'OR'  // Root level logic
+  items: (ConditionItem | ConditionGroup)[]
 }
 
 export interface DeviceInfo {
@@ -81,6 +104,18 @@ interface DeviceSelectorProps {
   onSelectionChange?: (selectedIds: string[], selectedDevices: DeviceInfo[]) => void
 }
 
+// Helper function to generate unique IDs
+const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+// Initial empty tree
+const createEmptyTree = (): ConditionTree => ({
+  type: 'root',
+  internalLogic: 'AND',
+  items: []
+})
+
+const EMPTY_TREE = createEmptyTree()
+
 export function DeviceSelector({
   onDevicesSelected,
   showActions = true,
@@ -93,12 +128,20 @@ export function DeviceSelector({
 }: DeviceSelectorProps) {
   const { apiCall } = useApi()
 
-  // Condition building state
+  // NEW: Tree-based condition state (primary)
+  const [conditionTree, setConditionTree] = useState<ConditionTree>(EMPTY_TREE)
+
+  // LEGACY: Keep for backward compatibility with saved inventories
   const [conditions, setConditions] = useState<LogicalCondition[]>(initialConditions)
+
+  // Current input state for adding new conditions
   const [currentField, setCurrentField] = useState('')
   const [currentOperator, setCurrentOperator] = useState('equals')
   const [currentValue, setCurrentValue] = useState('')
   const [currentLogic, setCurrentLogic] = useState('AND')
+
+  // Track current editing context (which group we're adding to)
+  const [currentGroupPath, setCurrentGroupPath] = useState<string[]>([]) // Array of group IDs representing path
 
   // Field options and values
   const [fieldOptions, setFieldOptions] = useState<FieldOption[]>([])
@@ -530,6 +573,174 @@ export function DeviceSelector({
     }
   }
 
+  // NEW: Helper to add condition to tree
+  const addConditionToTree = () => {
+    if (!currentField || !currentValue) {
+      alert('Please select a field and enter a value.')
+      return
+    }
+
+    const newCondition: ConditionItem = {
+      id: generateId(),
+      field: currentField,
+      operator: currentOperator,
+      value: currentValue
+    }
+
+    setConditionTree(prevTree => {
+      const newTree = { ...prevTree }
+
+      if (currentGroupPath.length === 0) {
+        // Adding to root level
+        newTree.items = [...newTree.items, newCondition]
+      } else {
+        // Adding to a specific group
+        const findAndAddToGroup = (items: (ConditionItem | ConditionGroup)[], pathIndex: number): (ConditionItem | ConditionGroup)[] => {
+          return items.map(item => {
+            if ('type' in item && item.type === 'group' && item.id === currentGroupPath[pathIndex]) {
+              if (pathIndex === currentGroupPath.length - 1) {
+                // Found target group
+                return {
+                  ...item,
+                  items: [...item.items, newCondition]
+                }
+              } else {
+                // Keep searching deeper
+                return {
+                  ...item,
+                  items: findAndAddToGroup(item.items, pathIndex + 1)
+                }
+              }
+            }
+            return item
+          })
+        }
+
+        newTree.items = findAndAddToGroup(newTree.items, 0)
+      }
+
+      return newTree
+    })
+
+    // Reset input fields
+    setCurrentField('')
+    setCurrentOperator('equals')
+    setCurrentValue('')
+    setCurrentLogic('AND')
+    setLocationSearchValue('')
+    setSelectedLocationValue('')
+    setFieldValues([])
+  }
+
+  // NEW: Add a new group to the tree
+  const addGroup = () => {
+    const newGroup: ConditionGroup = {
+      id: generateId(),
+      type: 'group',
+      logic: currentLogic as 'AND' | 'OR' | 'NOT',
+      internalLogic: 'AND',  // Default to AND within group
+      items: []
+    }
+
+    setConditionTree(prevTree => {
+      const newTree = { ...prevTree }
+
+      if (currentGroupPath.length === 0) {
+        // Adding to root level
+        newTree.items = [...newTree.items, newGroup]
+      } else {
+        // Adding to a specific group (nested)
+        const findAndAddToGroup = (items: (ConditionItem | ConditionGroup)[], pathIndex: number): (ConditionItem | ConditionGroup)[] => {
+          return items.map(item => {
+            if ('type' in item && item.type === 'group' && item.id === currentGroupPath[pathIndex]) {
+              if (pathIndex === currentGroupPath.length - 1) {
+                // Found target group
+                return {
+                  ...item,
+                  items: [...item.items, newGroup]
+                }
+              } else {
+                // Keep searching deeper
+                return {
+                  ...item,
+                  items: findAndAddToGroup(item.items, pathIndex + 1)
+                }
+              }
+            }
+            return item
+          })
+        }
+
+        newTree.items = findAndAddToGroup(newTree.items, 0)
+      }
+
+      return newTree
+    })
+  }
+
+  // NEW: Remove item from tree by ID
+  const removeItemFromTree = (itemId: string) => {
+    setConditionTree(prevTree => {
+      const removeFromItems = (items: (ConditionItem | ConditionGroup)[]): (ConditionItem | ConditionGroup)[] => {
+        return items.filter(item => {
+          if (item.id === itemId) return false
+          if ('type' in item && item.type === 'group') {
+            // Recursively remove from group items
+            const group = item as ConditionGroup
+            return true // Keep the group, but clean its items
+          }
+          return true
+        }).map(item => {
+          if ('type' in item && item.type === 'group') {
+            return {
+              ...item,
+              items: removeFromItems(item.items)
+            }
+          }
+          return item
+        })
+      }
+
+      return {
+        ...prevTree,
+        items: removeFromItems(prevTree.items)
+      }
+    })
+
+    if (conditionTree.items.length === 0) {
+      setShowPreviewResults(false)
+    }
+  }
+
+  // NEW: Update group's internal logic
+  const updateGroupLogic = (groupId: string, newLogic: 'AND' | 'OR') => {
+    setConditionTree(prevTree => {
+      const updateLogic = (items: (ConditionItem | ConditionGroup)[]): (ConditionItem | ConditionGroup)[] => {
+        return items.map(item => {
+          if ('type' in item && item.type === 'group') {
+            if (item.id === groupId) {
+              return {
+                ...item,
+                internalLogic: newLogic
+              }
+            }
+            return {
+              ...item,
+              items: updateLogic(item.items)
+            }
+          }
+          return item
+        })
+      }
+
+      return {
+        ...prevTree,
+        items: updateLogic(prevTree.items)
+      }
+    })
+  }
+
+  // LEGACY: Keep for backward compatibility
   const addCondition = () => {
     if (!currentField || !currentValue) {
       alert('Please select a field and enter a value.')
@@ -648,15 +859,120 @@ export function DeviceSelector({
     return operations
   }
 
+  // NEW: Build operations from tree structure
+  const buildOperationsFromTree = (tree: ConditionTree | ConditionGroup): any[] => {
+    const items = tree.items
+
+    if (items.length === 0) return []
+
+    // Helper to convert a single item (condition or group) to backend format
+    const convertItem = (item: ConditionItem | ConditionGroup) => {
+      if ('type' in item && item.type === 'group') {
+        // This is a group - recursively convert it
+        const group = item as ConditionGroup
+        const groupConditions: any[] = []
+        const nestedOps: any[] = []
+
+        group.items.forEach(subItem => {
+          if ('type' in subItem && subItem.type === 'group') {
+            // Nested group
+            const subGroupOps = buildOperationsFromTree(subItem as ConditionGroup)
+            nestedOps.push(...subGroupOps)
+          } else {
+            // Regular condition
+            const cond = subItem as ConditionItem
+            groupConditions.push({
+              field: cond.field,
+              operator: cond.operator,
+              value: cond.value
+            })
+          }
+        })
+
+        return {
+          operation_type: group.internalLogic,  // AND or OR within the group
+          conditions: groupConditions,
+          nested_operations: nestedOps,
+          _parentLogic: group.logic  // Store for later processing
+        }
+      } else {
+        // This is a simple condition
+        const cond = item as ConditionItem
+        return {
+          operation_type: 'AND',  // Single conditions are wrapped in AND
+          conditions: [{
+            field: cond.field,
+            operator: cond.operator,
+            value: cond.value
+          }],
+          nested_operations: []
+        }
+      }
+    }
+
+    // Convert root level logic
+    const internalLogic = 'internalLogic' in tree ? tree.internalLogic : 'AND'
+
+    // Separate items by their parent logic (AND, OR, NOT)
+    const regularItems: any[] = []
+    const notItems: any[] = []
+
+    items.forEach(item => {
+      const converted = convertItem(item)
+
+      if ('type' in item && item.type === 'group' && (item as ConditionGroup).logic === 'NOT') {
+        // This is a NOT group
+        converted.operation_type = 'NOT'
+        notItems.push(converted)
+      } else {
+        regularItems.push(converted)
+      }
+    })
+
+    const operations: any[] = []
+
+    // Add main operation with all regular items
+    if (regularItems.length > 0) {
+      if (regularItems.length === 1) {
+        operations.push(regularItems[0])
+      } else {
+        // Combine multiple items according to root internal logic
+        const allConditions: any[] = []
+        const allNested: any[] = []
+
+        regularItems.forEach(item => {
+          allConditions.push(...item.conditions)
+          allNested.push(...item.nested_operations)
+        })
+
+        operations.push({
+          operation_type: internalLogic,
+          conditions: allConditions,
+          nested_operations: allNested
+        })
+      }
+    }
+
+    // Add NOT operations
+    operations.push(...notItems)
+
+    return operations
+  }
+
   const previewResults = async () => {
-    if (conditions.length === 0) {
+    // Check if tree has any items
+    if (conditionTree.items.length === 0) {
       alert('Please add at least one condition.')
       return
     }
 
     setIsLoadingPreview(true)
     try {
-      const operations = buildOperationsFromConditions()
+      // Use NEW tree-based builder
+      const operations = buildOperationsFromTree(conditionTree)
+
+      console.log('Generated operations from tree:', JSON.stringify(operations, null, 2))
+
       const response = await apiCall<{
         devices: DeviceInfo[]
         total_count: number
@@ -673,7 +989,9 @@ export function DeviceSelector({
       setCurrentPage(1)
 
       if (onDevicesSelected) {
-        onDevicesSelected(response.devices, conditions)
+        // Convert tree to flat conditions for backward compatibility
+        const flatConditions = treeToFlatConditions(conditionTree)
+        onDevicesSelected(response.devices, flatConditions)
       }
     } catch (error) {
       console.error('Error previewing results:', error)
@@ -681,6 +999,31 @@ export function DeviceSelector({
     } finally {
       setIsLoadingPreview(false)
     }
+  }
+
+  // Helper to convert tree back to flat conditions (for backward compatibility)
+  const treeToFlatConditions = (tree: ConditionTree): LogicalCondition[] => {
+    const flatConditions: LogicalCondition[] = []
+
+    const flatten = (items: (ConditionItem | ConditionGroup)[], logic: string = 'AND') => {
+      items.forEach((item, index) => {
+        if ('type' in item && item.type === 'group') {
+          const group = item as ConditionGroup
+          flatten(group.items, group.internalLogic)
+        } else {
+          const cond = item as ConditionItem
+          flatConditions.push({
+            field: cond.field,
+            operator: cond.operator,
+            value: cond.value,
+            logic: index === 0 ? 'AND' : logic
+          })
+        }
+      })
+    }
+
+    flatten(tree.items, tree.internalLogic)
+    return flatConditions
   }
 
   const getFieldLabel = (field: string) => {
@@ -721,6 +1064,80 @@ export function DeviceSelector({
   const startIndex = (currentPage - 1) * pageSize
   const endIndex = Math.min(startIndex + pageSize, previewDevices.length)
   const currentPageDevices = previewDevices.slice(startIndex, endIndex)
+
+  // Recursive function to render tree items (conditions and groups)
+  const renderTreeItem = (item: ConditionItem | ConditionGroup, isFirst: boolean): React.ReactNode => {
+    if ('type' in item && item.type === 'group') {
+      // This is a group
+      const group = item as ConditionGroup
+      return (
+        <div className="border-l-4 border-purple-300 pl-4 py-2 bg-purple-50/50 rounded-r">
+          {/* Group header with logic operators */}
+          <div className="flex items-center gap-2 mb-2">
+            {!isFirst && (
+              <Badge className={getLogicBadgeColor(group.logic)}>
+                {group.logic}
+              </Badge>
+            )}
+            <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300">
+              GROUP ({group.internalLogic})
+            </Badge>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-5 text-xs px-2"
+              onClick={() => updateGroupLogic(group.id, group.internalLogic === 'AND' ? 'OR' : 'AND')}
+              title="Toggle group logic"
+            >
+              Toggle
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => removeItemFromTree(group.id)}
+              className="h-5 w-5 p-0 hover:bg-red-100 ml-auto"
+              title="Delete group"
+            >
+              <X className="h-3 w-3 text-red-600" />
+            </Button>
+          </div>
+          {/* Group contents */}
+          <div className="space-y-1">
+            {group.items.length === 0 ? (
+              <p className="text-xs text-gray-400 italic">Empty group - add conditions here</p>
+            ) : (
+              group.items.map((subItem, subIndex) => (
+                <div key={subItem.id}>
+                  {renderTreeItem(subItem, subIndex === 0)}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )
+    } else {
+      // This is a simple condition
+      const condition = item as ConditionItem
+      return (
+        <div className="flex items-center gap-2">
+          <div className="inline-flex items-center space-x-2 px-3 py-1.5 bg-blue-100 text-blue-800 rounded text-sm">
+            <span className="font-medium">{getFieldLabel(condition.field)}</span>
+            <span className="text-gray-600">{condition.operator}</span>
+            <span className="font-medium">&quot;{condition.value}&quot;</span>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => removeItemFromTree(condition.id)}
+              className="h-4 w-4 p-0 hover:bg-blue-200"
+              title="Delete condition"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      )
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -883,46 +1300,50 @@ export function DeviceSelector({
             <div className="space-y-2">
               <Label>&nbsp;</Label>
               <div className="flex space-x-2">
-                <Button onClick={addCondition} size="sm">
+                <Button onClick={addConditionToTree} size="sm" title="Add Condition">
                   <Plus className="h-4 w-4" />
                 </Button>
-                <Button onClick={clearAllConditions} variant="outline" size="sm">
+                <Button onClick={addGroup} size="sm" variant="secondary" title="Add Group">
+                  <Plus className="h-4 w-4 mr-1" />
+                  <span className="text-xs">Group</span>
+                </Button>
+                <Button onClick={() => setConditionTree(createEmptyTree())} variant="outline" size="sm" title="Clear All">
                   <RotateCcw className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* Current Conditions Display */}
+          {/* NEW: Tree-based Conditions Display */}
           <div className="mt-6">
-            <Label className="text-base font-medium">Current Conditions</Label>
+            <Label className="text-base font-medium">Logical Expression</Label>
             <div className="mt-2 p-4 bg-gray-50 rounded-lg min-h-[60px]">
-              {conditions.length === 0 ? (
+              {conditionTree.items.length === 0 ? (
                 <p className="text-gray-500 text-sm italic">
-                  No conditions added yet. Add conditions above to filter devices.
+                  No conditions added yet. Add conditions or groups above to filter devices.
                 </p>
               ) : (
-                <div className="flex flex-wrap gap-2">
-                  {conditions.map((condition, index) => (
-                    <div key={`${condition.field}-${condition.operator}-${condition.value}-${condition.logic}`} className="flex items-center space-x-2">
-                      {index > 0 && (
-                        <Badge className={getLogicBadgeColor(condition.logic)}>
-                          {condition.logic}
-                        </Badge>
-                      )}
-                      <div className="inline-flex items-center space-x-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                        <span className="font-medium">{getFieldLabel(condition.field)}</span>
-                        <span>{condition.operator}</span>
-                        <span className="font-medium">&quot;{condition.value}&quot;</span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => removeCondition(index)}
-                          className="h-4 w-4 p-0 hover:bg-blue-200"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
+                <div className="space-y-2">
+                  {/* Root level logic indicator */}
+                  <div className="text-xs text-gray-500 mb-2">
+                    Root logic: <Badge variant="outline">{conditionTree.internalLogic}</Badge>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="ml-2 h-5 text-xs"
+                      onClick={() => {
+                        setConditionTree(prev => ({
+                          ...prev,
+                          internalLogic: prev.internalLogic === 'AND' ? 'OR' : 'AND'
+                        }))
+                      }}
+                    >
+                      Toggle
+                    </Button>
+                  </div>
+                  {conditionTree.items.map((item, index) => (
+                    <div key={item.id}>
+                      {renderTreeItem(item, index === 0)}
                     </div>
                   ))}
                 </div>
@@ -935,7 +1356,7 @@ export function DeviceSelector({
             <div className="flex justify-start gap-2 mt-4">
               <Button
                 onClick={previewResults}
-                disabled={conditions.length === 0 || isLoadingPreview}
+                disabled={conditionTree.items.length === 0 || isLoadingPreview}
                 className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white border-0"
               >
                 <Play className="h-4 w-4" />
@@ -945,7 +1366,7 @@ export function DeviceSelector({
                 <>
                   <Button
                     onClick={openSaveModal}
-                    disabled={conditions.length === 0}
+                    disabled={conditionTree.items.length === 0}
                     className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white border-0"
                   >
                     <Save className="h-4 w-4" />
