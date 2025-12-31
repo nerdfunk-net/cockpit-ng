@@ -170,7 +170,9 @@ def _convert_item(item: Dict[str, Any]) -> LogicalOperation:
         )
 
 
-def convert_saved_inventory_to_operations(conditions: List[Any]) -> List[LogicalOperation]:
+def convert_saved_inventory_to_operations(
+    conditions: List[Any],
+) -> List[LogicalOperation]:
     """
     Convert saved inventory conditions to LogicalOperation objects.
 

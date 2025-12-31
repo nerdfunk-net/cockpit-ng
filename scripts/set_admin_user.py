@@ -8,6 +8,7 @@ schema creation stay consistent.
 
 Usage: python ./scripts/set_admin_user.py
 """
+
 from __future__ import annotations
 
 import getpass
@@ -49,7 +50,11 @@ def main() -> None:
 
     # Check for existing admin users and offer to remove them
     try:
-        admins = [u for u in user_db_manager.get_all_users(include_inactive=True) if u.get('permissions') == user_db_manager.PERMISSIONS_ADMIN]
+        admins = [
+            u
+            for u in user_db_manager.get_all_users(include_inactive=True)
+            if u.get("permissions") == user_db_manager.PERMISSIONS_ADMIN
+        ]
     except Exception:
         admins = []
 
@@ -57,20 +62,29 @@ def main() -> None:
         print("Found existing admin user(s):")
         for a in admins:
             print(f"  - {a['username']} (id={a['id']})")
-        resp = input("Remove existing admin user(s) before creating a new one? (y/N): ").strip().lower()
-        if resp == 'y':
+        resp = (
+            input("Remove existing admin user(s) before creating a new one? (y/N): ")
+            .strip()
+            .lower()
+        )
+        if resp == "y":
             for a in admins:
                 try:
                     # Permanently remove admin user
-                    user_db_manager.hard_delete_user(a['id'])
+                    user_db_manager.hard_delete_user(a["id"])
                     print(f"Removed admin user {a['username']} (id={a['id']})")
                 except Exception as e:
                     print(f"Failed to remove user {a['username']} (id={a['id']}): {e}")
         else:
-            print("Keeping existing admin user(s). You can still create another admin if desired.")
+            print(
+                "Keeping existing admin user(s). You can still create another admin if desired."
+            )
 
     username = prompt_non_empty("Enter username")
-    realname = input("Enter real name (optional, press Enter to use username): ").strip() or username
+    realname = (
+        input("Enter real name (optional, press Enter to use username): ").strip()
+        or username
+    )
     email = input("Enter email (optional): ").strip() or None
 
     # Password prompt with confirmation
@@ -93,12 +107,16 @@ def main() -> None:
         existing = user_db_manager.get_user_by_username(username)
         if existing:
             print(f"User '{username}' already exists (id={existing['id']}).")
-            overwrite = input("Do you want to overwrite the existing user (y/N)? ").strip().lower()
-            if overwrite != 'y':
+            overwrite = (
+                input("Do you want to overwrite the existing user (y/N)? ")
+                .strip()
+                .lower()
+            )
+            if overwrite != "y":
                 print("Aborting.")
                 sys.exit(0)
             # If overwrite, update the user using update_user
-            user_id = existing['id']
+            user_id = existing["id"]
             user_db_manager.update_user(
                 user_id=user_id,
                 realname=realname,
@@ -106,7 +124,7 @@ def main() -> None:
                 password=password,
                 permissions=user_db_manager.PERMISSIONS_ADMIN,
                 debug=False,
-                is_active=True
+                is_active=True,
             )
             print(f"Updated existing user '{username}' (id={user_id}) as admin.")
         else:
@@ -117,7 +135,7 @@ def main() -> None:
                 password=password,
                 email=email,
                 permissions=user_db_manager.PERMISSIONS_ADMIN,
-                debug=False
+                debug=False,
             )
             print(f"Created admin user '{username}'")
 
@@ -126,5 +144,5 @@ def main() -> None:
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

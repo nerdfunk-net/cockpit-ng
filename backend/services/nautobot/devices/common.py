@@ -860,7 +860,10 @@ class DeviceCommonService:
             error_message = str(e)
 
             # Check if error is due to duplicate IP with different netmask
-            if "IP address with this Parent and Host already exists" in error_message and use_assigned_ip_if_exists:
+            if (
+                "IP address with this Parent and Host already exists" in error_message
+                and use_assigned_ip_if_exists
+            ):
                 logger.warning(
                     f"IP creation failed: IP {ip_address} already exists with different netmask. "
                     f"Attempting to find existing IP..."
@@ -868,11 +871,14 @@ class DeviceCommonService:
 
                 # Extract the host IP without netmask (e.g., "192.168.1.1/24" -> "192.168.1.1")
                 import ipaddress
+
                 try:
                     ip_obj = ipaddress.ip_interface(ip_address)
                     host_ip = str(ip_obj.ip)
 
-                    logger.info(f"Searching for existing IP with host address: {host_ip}")
+                    logger.info(
+                        f"Searching for existing IP with host address: {host_ip}"
+                    )
 
                     # Search for IP by host address (without netmask) in the namespace
                     # Nautobot's address filter accepts IP without netmask and returns all IPs with that host
@@ -910,14 +916,18 @@ class DeviceCommonService:
                     ) from lookup_error
 
             # Check if error is due to missing prefix
-            elif "No suitable parent Prefix" in error_message and add_prefixes_automatically:
+            elif (
+                "No suitable parent Prefix" in error_message
+                and add_prefixes_automatically
+            ):
                 logger.warning(
-                    f"IP creation failed due to missing prefix. "
-                    f"Attempting to create prefix automatically..."
+                    "IP creation failed due to missing prefix. "
+                    "Attempting to create prefix automatically..."
                 )
 
                 # Extract the network prefix from the IP address (e.g., "192.168.1.1/24" -> "192.168.1.0/24")
                 import ipaddress
+
                 try:
                     ip_obj = ipaddress.ip_interface(ip_address)
                     network_prefix = str(ip_obj.network)
@@ -934,7 +944,9 @@ class DeviceCommonService:
                         description=f"Auto-created for IP {ip_address}",
                     )
 
-                    logger.info(f"Successfully created prefix {network_prefix}, retrying IP creation...")
+                    logger.info(
+                        f"Successfully created prefix {network_prefix}, retrying IP creation..."
+                    )
 
                     # Retry IP creation
                     ip_create_result = await self.nautobot.rest_request(

@@ -263,7 +263,9 @@ def _get_target_devices(
 
         try:
             from inventory_manager import inventory_manager
-            from services.network.automation.ansible_inventory import ansible_inventory_service
+            from services.network.automation.ansible_inventory import (
+                ansible_inventory_service,
+            )
 
             # Load inventory from database by name
             # Note: We need to get the username from the template context
@@ -287,9 +289,13 @@ def _get_target_devices(
 
             try:
                 # Convert tree structure to LogicalOperations (version 2)
-                from utils.inventory_converter import convert_saved_inventory_to_operations
-                
-                operations = convert_saved_inventory_to_operations(inventory["conditions"])
+                from utils.inventory_converter import (
+                    convert_saved_inventory_to_operations,
+                )
+
+                operations = convert_saved_inventory_to_operations(
+                    inventory["conditions"]
+                )
 
                 if not operations:
                     logger.warning(
@@ -1700,7 +1706,9 @@ def sync_checkmk_task(self, job_schedule_id: Optional[int] = None) -> dict:
         )
 
         # Import here to avoid circular imports
-        from services.checkmk.sync.background import nb2cmk_background_service as background_service
+        from services.checkmk.sync.background import (
+            nb2cmk_background_service as background_service,
+        )
         import asyncio
 
         # Create event loop for async operations
