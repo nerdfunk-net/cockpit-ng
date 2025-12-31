@@ -114,15 +114,6 @@ export default function AnsibleInventoryPage() {
       </div>
 
       {/* Device Selector - replaces ConditionBuilderTab and PreviewResultsTab */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Select Devices</CardTitle>
-          <CardDescription>
-            Use logical operations to filter devices for inventory generation
-          </CardDescription>
-        </CardHeader>
-      </Card>
-
       <DeviceSelector
         onDevicesSelected={handleDevicesSelected}
         showActions={true}
