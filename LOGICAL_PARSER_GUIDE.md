@@ -26,16 +26,16 @@ Now you can group conditions to control precedence:
 1. Select a field (Location, Role, Status, etc.)
 2. Choose an operator (equals, contains)
 3. Enter a value
-4. Select logic operator for the NEXT item (AND or OR)
+4. Select **Connector** for the NEXT item (AND or OR)
 5. Optionally check **"Negate (NOT)"** to exclude instead of include
 6. Click the **"+"** button to add the condition
 
-**Note on Logic Controls:**
-- **AND/OR dropdown**: How this item combines with the previous item
+**Note on Connector Controls:**
+- **Connector dropdown (AND/OR)**: How this item combines with the previous item
 - **Negate checkbox**: When checked, creates NOT logic (excludes the condition)
 - Examples:
-  - AND + Negate = "AND NOT" (include previous AND exclude this)
-  - OR + Negate = "OR NOT" (include previous OR exclude this)
+  - Connector=AND + Negate checked = "AND NOT" (include previous AND exclude this)
+  - Connector=OR + Negate checked = "OR NOT" (include previous OR exclude this)
 
 ### Creating Groups
 
@@ -114,8 +114,8 @@ ROOT (AND logic)
 
 **Steps**:
 1. Add condition: Field=Role, Value=Switch, click **"+"**
-2. Add condition: Field=Status, Logic=AND, Value=Active, click **"+"**
-3. Add condition: Field=Tag, Logic=AND, **Check "Negate (NOT)"**, Value=deprecated, click **"+"**
+2. Add condition: Field=Status, Connector=AND, Value=Active, click **"+"**
+3. Add condition: Field=Tag, Connector=AND, **Check "Negate (NOT)"**, Value=deprecated, click **"+"**
 
 **Evaluation**:
 1. Devices with Role = Switch

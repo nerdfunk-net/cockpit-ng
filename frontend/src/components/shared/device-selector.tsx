@@ -1438,12 +1438,12 @@ export function DeviceSelector({
 
             {/* Logic Selection - Split into two controls */}
             <div className="space-y-2">
-              <Label htmlFor="logic">Logic</Label>
+              <Label htmlFor="logic">Connector</Label>
               <div className="flex flex-col gap-2">
                 {/* Dropdown for AND/OR */}
                 <Select value={currentLogic} onValueChange={setCurrentLogic}>
                   <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
-                    <SelectValue placeholder="Select logic..." />
+                    <SelectValue placeholder="Select connector..." />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="AND">AND</SelectItem>
