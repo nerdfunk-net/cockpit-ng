@@ -128,11 +128,8 @@ export function DeviceSelector({
 }: DeviceSelectorProps) {
   const { apiCall } = useApi()
 
-  // NEW: Tree-based condition state (primary)
+  // Tree-based condition state
   const [conditionTree, setConditionTree] = useState<ConditionTree>(EMPTY_TREE)
-
-  // LEGACY: Keep for backward compatibility with saved inventories
-  const [conditions, setConditions] = useState<LogicalCondition[]>(initialConditions)
 
   // Current input state for adding new conditions
   const [currentField, setCurrentField] = useState('')
@@ -150,7 +147,6 @@ export function DeviceSelector({
   // Field options and values
   const [fieldOptions, setFieldOptions] = useState<FieldOption[]>([])
   const [operatorOptions, setOperatorOptions] = useState<FieldOption[]>([])
-  const [logicOptions, setLogicOptions] = useState<FieldOption[]>([])
   const [fieldValues, setFieldValues] = useState<FieldOption[]>([])
   const [customFields, setCustomFields] = useState<CustomField[]>([])
 
@@ -208,7 +204,9 @@ export function DeviceSelector({
   // Sync with initial props when they change
   useEffect(() => {
     if (initialConditions.length > 0) {
-      setConditions(initialConditions)
+      // Convert initial flat conditions to tree structure
+      const initialTree = flatConditionsToTree(initialConditions)
+      setConditionTree(initialTree)
     }
   }, [initialConditions])
 
@@ -268,13 +266,7 @@ export function DeviceSelector({
       setFieldOptions(response.fields)
       setOperatorOptions(response.operators)
 
-      const modifiedLogicOptions = response.logical_operations.map(option => {
-        if (option.value === 'not') {
-          return { ...option, label: '& NOT' }
-        }
-        return option
-      })
-      setLogicOptions(modifiedLogicOptions)
+      // Logic options no longer needed - using Connector dropdown + Negate checkbox
     } catch (error) {
       console.error('Error loading field options:', error)
     }
@@ -390,9 +382,6 @@ export function DeviceSelector({
       // Convert loaded flat conditions to tree structure
       const loadedTree = flatConditionsToTree(response.conditions)
       setConditionTree(loadedTree)
-
-      // Also update legacy conditions for backward compatibility
-      setConditions(response.conditions)
 
       setShowPreviewResults(false)
       setPreviewDevices([])
@@ -709,7 +698,6 @@ export function DeviceSelector({
           if (item.id === itemId) return false
           if ('type' in item && item.type === 'group') {
             // Recursively remove from group items
-            const group = item as ConditionGroup
             return true // Keep the group, but clean its items
           }
           return true
@@ -851,124 +839,7 @@ export function DeviceSelector({
     return lines.join('\n')
   }
 
-  // LEGACY: Keep for backward compatibility
-  const addCondition = () => {
-    if (!currentField || !currentValue) {
-      alert('Please select a field and enter a value.')
-      return
-    }
-
-    const condition: LogicalCondition = {
-      field: currentField,
-      operator: currentOperator,
-      value: currentValue,
-      logic: currentLogic
-    }
-
-    setConditions([...conditions, condition])
-
-    setCurrentField('')
-    setCurrentOperator('equals')
-    setCurrentValue('')
-    setCurrentLogic('AND')
-    setLocationSearchValue('')
-    setSelectedLocationValue('')
-    setFieldValues([])
-  }
-
-  const removeCondition = (index: number) => {
-    const newConditions = conditions.filter((_, i) => i !== index)
-    setConditions(newConditions)
-
-    if (newConditions.length === 0) {
-      setShowPreviewResults(false)
-    }
-  }
-
-  const clearAllConditions = () => {
-    setConditions([])
-    setCurrentField('')
-    setCurrentOperator('equals')
-    setCurrentValue('')
-    setCurrentLogic('AND')
-    setLocationSearchValue('')
-    setSelectedLocationValue('')
-    setFieldValues([])
-    setPreviewDevices([])
-    setTotalDevices(0)
-    setOperationsExecuted(0)
-    setShowPreviewResults(false)
-  }
-
-  const buildOperationsFromConditions = () => {
-    if (conditions.length === 0) return []
-
-    if (conditions.length === 1 && conditions[0]) {
-      return [{
-        operation_type: 'AND',
-        conditions: [{
-          field: conditions[0].field,
-          operator: conditions[0].operator,
-          value: conditions[0].value
-        }],
-        nested_operations: []
-      }]
-    }
-
-    const andConditions: Array<{field: string, operator: string, value: string}> = []
-    const orConditions: Array<{field: string, operator: string, value: string}> = []
-    const notConditions: Array<{field: string, operator: string, value: string}> = []
-
-    conditions.forEach((condition, index) => {
-      const conditionData = {
-        field: condition.field,
-        operator: condition.operator,
-        value: condition.value
-      }
-
-      if (index === 0) {
-        andConditions.push(conditionData)
-      } else {
-        switch (condition.logic) {
-          case 'AND':
-            andConditions.push(conditionData)
-            break
-          case 'OR':
-            orConditions.push(conditionData)
-            break
-          case 'NOT':
-            notConditions.push(conditionData)
-            break
-        }
-      }
-    })
-
-    const operations = []
-
-    if (orConditions.length > 0) {
-      operations.push({
-        operation_type: 'OR',
-        conditions: [...andConditions, ...orConditions],
-        nested_operations: []
-      })
-    } else if (andConditions.length > 0) {
-      operations.push({
-        operation_type: 'AND',
-        conditions: andConditions,
-        nested_operations: []
-      })
-    }
-
-    notConditions.forEach(condition => {
-      operations.push({
-        operation_type: 'NOT',
-        conditions: [condition],
-        nested_operations: []
-      })
-    })
-
-    return operations
-  }
+  // LEGACY functions removed - now using tree-based structure exclusively
 
   // NEW: Build operations from tree structure
   const buildOperationsFromTree = (tree: ConditionTree | ConditionGroup): any[] => {
