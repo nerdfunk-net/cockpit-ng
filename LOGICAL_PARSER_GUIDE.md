@@ -37,11 +37,29 @@ Now you can group conditions to control precedence:
 4. Groups have their own internal logic (AND or OR)
 5. Click **"Toggle"** on a group to switch between AND/OR logic
 
+### Targeting Groups (Where to Add Conditions)
+
+**NEW FEATURE**: You can now choose where to add conditions!
+
+1. **By default**, conditions are added to **Root** level
+2. **Click on a group** to set it as the active target
+3. The group will **highlight in blue** and show **"Active Target"** badge
+4. All new conditions will be added **inside** that group
+5. Click **"Back to Root"** button to return to adding at root level
+
+**Visual Cues**:
+- **Target indicator** at top shows current location (e.g., "Adding conditions to: Root")
+- **Blue highlight**: Active group receiving new conditions
+- **Purple highlight**: Inactive groups (hover to see clickable effect)
+- **"Active Target"** badge: Shows which group is currently selected
+
 ### Visual Indicators
 
 - **Blue boxes**: Individual conditions
-- **Purple boxes with left border**: Groups
+- **Purple boxes with left border**: Groups (click to set as target)
+- **Blue boxes with darker border**: Active target group
 - **"GROUP (AND)"** or **"GROUP (OR)"**: Shows the group's internal logic
+- **"Active Target"** badge: Appears on the currently selected group
 - **Root logic badge**: Shows how top-level items are combined
 
 ## Example Use Cases
@@ -51,17 +69,35 @@ Now you can group conditions to control precedence:
 
 **Expression**: `(Location = LAB OR Location = DC1) AND Status = Active`
 
-**Steps**:
-1. Create a new group (will default to AND logic)
-2. Add condition: Location = LAB
-3. Add condition to same group: Location = OR, LAB → DC1
-4. Toggle the group to OR logic
-5. Add condition at root level: Status = AND, Active
+**Steps** (Updated with new targeting feature):
+1. **Create a new group**: Click **"+ Group"** button
+   - Empty group is created at root level
+2. **Click on the group** to set it as active target
+   - Group highlights in blue, shows "Active Target" badge
+   - Top indicator shows: "Adding conditions to: Group 1"
+3. **Add first location**: Field=Location, Value=City A, click **"+"**
+   - Condition added inside the group
+4. **Add second location**: Field=Location, Value=City B, click **"+"**
+   - Another condition added inside the same group
+5. **Toggle group logic**: Click **"Toggle"** button on group to change from AND to OR
+6. **Go back to root**: Click **"Back to Root"** button
+   - Top indicator shows: "Adding conditions to: Root"
+7. **Add status condition**: Field=Status, Value=Active, click **"+"**
+   - Condition added at root level (outside the group)
+
+**Result Tree**:
+```
+ROOT (AND logic)
+├─ GROUP (OR logic)          ← Contains location conditions
+│  ├─ Location = City A
+│  └─ Location = City B
+└─ Status = Active           ← At root level
+```
 
 **Evaluation**:
-1. Group evaluates to: devices in LAB **OR** DC1
+1. Group evaluates to: devices in City A **OR** City B
 2. Root combines with: result **AND** Active status
-3. Final: Active devices from either LAB or DC1
+3. Final: Active devices from either City A or City B
 
 ### Example 2: Exclude Deprecated Devices
 **Goal**: Get all active switches excluding deprecated ones
