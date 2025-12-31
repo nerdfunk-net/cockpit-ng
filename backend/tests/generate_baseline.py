@@ -371,7 +371,7 @@ def write_yaml_with_blank_lines(data, file):
                     if j == 0:
                         lines.append('- ' + line[2:])  # First line with '-'
                     else:
-                        lines.append('  ' + line)  # Indent other lines
+                        lines.append(line)  # Keep original indentation from yaml.dump
         else:
             # For other sections, add blank line before section
             if lines:  # Add blank line before section (except first)
