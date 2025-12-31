@@ -1105,12 +1105,19 @@ export function DeviceSelector({
   const endIndex = Math.min(startIndex + pageSize, previewDevices.length)
   const currentPageDevices = previewDevices.slice(startIndex, endIndex)
 
+  // Helper to check if an item is at root level
+  const isItemAtRootLevel = (itemId: string): boolean => {
+    return conditionTree.items.some(item => item.id === itemId)
+  }
+
   // Recursive function to render tree items (conditions and groups)
   const renderTreeItem = (item: ConditionItem | ConditionGroup, isFirst: boolean): React.ReactNode => {
     if ('type' in item && item.type === 'group') {
       // This is a group
       const group = item as ConditionGroup
       const isActiveTarget = currentGroupPath.length > 0 && currentGroupPath[currentGroupPath.length - 1] === group.id
+      const isAtRoot = isItemAtRootLevel(group.id)
+
       return (
         <div
           className={`border-l-4 pl-4 py-2 rounded-r cursor-pointer transition-colors ${
@@ -1123,7 +1130,8 @@ export function DeviceSelector({
         >
           {/* Group header with logic operators */}
           <div className="flex items-center gap-2 mb-2">
-            {!isFirst && (
+            {/* Only show group logic badge if NOT at root level and NOT first item */}
+            {!isFirst && !isAtRoot && (
               <Badge className={getLogicBadgeColor(group.logic)}>
                 {group.logic}
               </Badge>
