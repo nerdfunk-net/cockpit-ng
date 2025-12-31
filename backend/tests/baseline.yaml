@@ -194,17 +194,18 @@ devices:
   roles:
   - Network
   location: City C
+  status: Active
   tags:
   - Production
   serial: NET0000001
-  primary_ip4: 192.168.178.58/24
+  primary_ip4: 192.168.178.36/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.58/24
+    ip_address: 192.168.178.36/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.58/24
+    ip_address: 192.168.179.36/24
   custom_fields:
     net: netA
     checkmk_site: siteC
@@ -217,23 +218,24 @@ devices:
   platform: Cisco IOS
   roles:
   - Network
-  location: City A
+  location: City C
+  status: Offline
   tags:
-  - lab
+  - Production
   serial: NET0000002
-  primary_ip4: 192.168.178.23/24
+  primary_ip4: 192.168.178.9/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.23/24
+    ip_address: 192.168.178.9/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.23/24
+    ip_address: 192.168.179.9/24
   custom_fields:
-    net: netA
+    net: lab
     checkmk_site: siteC
-    free_textfield: Network device in City A
-    last_backup: '2024-05-12'
+    free_textfield: Network device in City C
+    last_backup: '2024-01-15'
     snmp_credentials: credC
 
 - name: lab-003
@@ -241,48 +243,50 @@ devices:
   platform: Cisco IOS
   roles:
   - Network
-  location: City C
+  location: City A
+  status: Active
   tags:
-  - Staging
+  - Production
   serial: NET0000003
-  primary_ip4: 192.168.178.60/24
+  primary_ip4: 192.168.178.144/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.60/24
+    ip_address: 192.168.178.144/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.60/24
+    ip_address: 192.168.179.144/24
   custom_fields:
     net: netA
     checkmk_site: siteA
-    free_textfield: Network device in City C
-    last_backup: '2024-02-20'
-    snmp_credentials: credA
+    free_textfield: Network device in City A
+    last_backup: '2024-05-12'
+    snmp_credentials: credC
 
 - name: lab-004
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
-  location: City C
+  location: City A
+  status: Active
   tags:
   - lab
   serial: NET0000004
-  primary_ip4: 192.168.178.167/24
+  primary_ip4: 192.168.178.115/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.167/24
+    ip_address: 192.168.178.115/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.167/24
+    ip_address: 192.168.179.115/24
   custom_fields:
-    net: netA
+    net: lab
     checkmk_site: siteC
-    free_textfield: Network device in City C
-    last_backup: '2024-06-01'
-    snmp_credentials: credA
+    free_textfield: Network device in City A
+    last_backup: '2024-04-05'
+    snmp_credentials: credC
 
 - name: lab-005
   device_type: networkA
@@ -290,8 +294,9 @@ devices:
   roles:
   - Network
   location: City C
+  status: Offline
   tags:
-  - lab
+  - Staging
   serial: NET0000005
   primary_ip4: 192.168.178.72/24
   interfaces:
@@ -302,11 +307,11 @@ devices:
     type: 1000base-t
     ip_address: 192.168.179.72/24
   custom_fields:
-    net: netB
+    net: netA
     checkmk_site: siteA
     free_textfield: Network device in City C
-    last_backup: '2024-05-12'
-    snmp_credentials: credB
+    last_backup: '2024-04-05'
+    snmp_credentials: credC
 
 - name: lab-006
   device_type: networkA
@@ -314,33 +319,10 @@ devices:
   roles:
   - Network
   location: City A
+  status: Active
   tags:
   - Production
   serial: NET0000006
-  primary_ip4: 192.168.178.40/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.40/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.40/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteB
-    free_textfield: Network device in City A
-    last_backup: '2024-03-10'
-    snmp_credentials: credB
-
-- name: lab-007
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - Staging
-  serial: NET0000007
   primary_ip4: 192.168.178.92/24
   interfaces:
   - name: GigabitEthernet1/0/1
@@ -350,11 +332,36 @@ devices:
     type: 1000base-t
     ip_address: 192.168.179.92/24
   custom_fields:
-    net: netA
+    net: netB
     checkmk_site: siteA
     free_textfield: Network device in City A
-    last_backup: '2024-01-15'
-    snmp_credentials: credB
+    last_backup: '2024-04-05'
+    snmp_credentials: credA
+
+- name: lab-007
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Active
+  tags:
+  - lab
+  serial: NET0000007
+  primary_ip4: 192.168.178.250/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.250/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.250/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteA
+    free_textfield: Network device in City B
+    last_backup: '2024-04-05'
+    snmp_credentials: credC
 
 - name: lab-008
   device_type: networkA
@@ -362,22 +369,23 @@ devices:
   roles:
   - Network
   location: City B
+  status: Offline
   tags:
-  - lab
+  - Production
   serial: NET0000008
-  primary_ip4: 192.168.178.138/24
+  primary_ip4: 192.168.178.148/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.138/24
+    ip_address: 192.168.178.148/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.138/24
+    ip_address: 192.168.179.148/24
   custom_fields:
-    net: netB
-    checkmk_site: siteA
+    net: lab
+    checkmk_site: siteB
     free_textfield: Network device in City B
-    last_backup: '2024-04-05'
+    last_backup: '2024-05-12'
     snmp_credentials: credC
 
 - name: lab-009
@@ -386,105 +394,60 @@ devices:
   roles:
   - Network
   location: City A
+  status: Offline
   tags:
-  - Staging
+  - lab
   serial: NET0000009
-  primary_ip4: 192.168.178.159/24
+  primary_ip4: 192.168.178.253/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.159/24
+    ip_address: 192.168.178.253/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.159/24
+    ip_address: 192.168.179.253/24
   custom_fields:
     net: netA
-    checkmk_site: siteC
+    checkmk_site: siteA
     free_textfield: Network device in City A
-    last_backup: '2024-06-01'
-    snmp_credentials: credB
+    last_backup: '2024-02-20'
+    snmp_credentials: credC
 
 - name: lab-010
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
-  location: City B
+  location: City A
+  status: Offline
   tags:
-  - lab
+  - Production
   serial: NET0000010
-  primary_ip4: 192.168.178.170/24
+  primary_ip4: 192.168.178.42/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.170/24
+    ip_address: 192.168.178.42/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.170/24
+    ip_address: 192.168.179.42/24
   custom_fields:
     net: netA
-    checkmk_site: siteC
-    free_textfield: Network device in City B
-    last_backup: '2024-01-15'
-    snmp_credentials: credA
+    checkmk_site: siteB
+    free_textfield: Network device in City A
+    last_backup: '2024-04-05'
+    snmp_credentials: credB
 
 - name: lab-011
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
-  location: City A
+  location: City B
+  status: Active
   tags:
   - Staging
   serial: NET0000011
-  primary_ip4: 192.168.178.72/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.72/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.72/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteA
-    free_textfield: Network device in City A
-    last_backup: '2024-04-05'
-    snmp_credentials: credA
-
-- name: lab-012
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - lab
-  serial: NET0000012
-  primary_ip4: 192.168.178.54/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.54/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.54/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteA
-    free_textfield: Network device in City B
-    last_backup: '2024-03-10'
-    snmp_credentials: credB
-
-- name: lab-013
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - Staging
-  serial: NET0000013
   primary_ip4: 192.168.178.156/24
   interfaces:
   - name: GigabitEthernet1/0/1
@@ -494,789 +457,72 @@ devices:
     type: 1000base-t
     ip_address: 192.168.179.156/24
   custom_fields:
+    net: netA
+    checkmk_site: siteC
+    free_textfield: Network device in City B
+    last_backup: '2024-06-01'
+    snmp_credentials: credB
+
+- name: lab-012
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Offline
+  tags:
+  - Production
+  serial: NET0000012
+  primary_ip4: 192.168.178.98/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.98/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.98/24
+  custom_fields:
     net: lab
     checkmk_site: siteC
     free_textfield: Network device in City C
-    last_backup: '2024-01-15'
-    snmp_credentials: credC
+    last_backup: '2024-02-20'
+    snmp_credentials: credA
+
+- name: lab-013
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Offline
+  tags:
+  - lab
+  serial: NET0000013
+  primary_ip4: 192.168.178.216/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.216/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.216/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteC
+    free_textfield: Network device in City B
+    last_backup: '2024-06-01'
+    snmp_credentials: credA
 
 - name: lab-014
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
-  location: City C
+  location: City A
+  status: Active
   tags:
   - Production
   serial: NET0000014
-  primary_ip4: 192.168.178.119/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.119/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.119/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteC
-    free_textfield: Network device in City C
-    last_backup: '2024-02-20'
-    snmp_credentials: credA
-
-- name: lab-015
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - Staging
-  serial: NET0000015
-  primary_ip4: 192.168.178.176/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.176/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.176/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteC
-    free_textfield: Network device in City B
-    last_backup: '2024-02-20'
-    snmp_credentials: credC
-
-- name: lab-016
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - Production
-  serial: NET0000016
-  primary_ip4: 192.168.178.69/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.69/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.69/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteA
-    free_textfield: Network device in City B
-    last_backup: '2024-04-05'
-    snmp_credentials: credB
-
-- name: lab-017
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - Production
-  serial: NET0000017
-  primary_ip4: 192.168.178.168/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.168/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.168/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteC
-    free_textfield: Network device in City A
-    last_backup: '2024-02-20'
-    snmp_credentials: credB
-
-- name: lab-018
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - Staging
-  serial: NET0000018
-  primary_ip4: 192.168.178.36/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.36/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.36/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteB
-    free_textfield: Network device in City B
-    last_backup: '2024-03-10'
-    snmp_credentials: credA
-
-- name: lab-019
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - lab
-  serial: NET0000019
-  primary_ip4: 192.168.178.150/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.150/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.150/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteC
-    free_textfield: Network device in City A
-    last_backup: '2024-06-01'
-    snmp_credentials: credB
-
-- name: lab-020
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - lab
-  serial: NET0000020
-  primary_ip4: 192.168.178.131/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.131/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.131/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteB
-    free_textfield: Network device in City B
-    last_backup: '2024-02-20'
-    snmp_credentials: credA
-
-- name: lab-021
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - Production
-  serial: NET0000021
-  primary_ip4: 192.168.178.41/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.41/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.41/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteA
-    free_textfield: Network device in City B
-    last_backup: '2024-06-01'
-    snmp_credentials: credA
-
-- name: lab-022
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - Staging
-  serial: NET0000022
-  primary_ip4: 192.168.178.153/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.153/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.153/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteA
-    free_textfield: Network device in City C
-    last_backup: '2024-04-05'
-    snmp_credentials: credB
-
-- name: lab-023
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - lab
-  serial: NET0000023
-  primary_ip4: 192.168.178.185/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.185/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.185/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteC
-    free_textfield: Network device in City B
-    last_backup: '2024-06-01'
-    snmp_credentials: credA
-
-- name: lab-024
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - lab
-  serial: NET0000024
-  primary_ip4: 192.168.178.29/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.29/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.29/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteB
-    free_textfield: Network device in City A
-    last_backup: '2024-03-10'
-    snmp_credentials: credC
-
-- name: lab-025
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - Staging
-  serial: NET0000025
-  primary_ip4: 192.168.178.225/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.225/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.225/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteB
-    free_textfield: Network device in City B
-    last_backup: '2024-06-01'
-    snmp_credentials: credA
-
-- name: lab-026
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - Staging
-  serial: NET0000026
-  primary_ip4: 192.168.178.223/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.223/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.223/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteA
-    free_textfield: Network device in City C
-    last_backup: '2024-01-15'
-    snmp_credentials: credC
-
-- name: lab-027
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - Staging
-  serial: NET0000027
-  primary_ip4: 192.168.178.40/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.40/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.40/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteC
-    free_textfield: Network device in City C
-    last_backup: '2024-02-20'
-    snmp_credentials: credC
-
-- name: lab-028
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - Production
-  serial: NET0000028
-  primary_ip4: 192.168.178.83/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.83/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.83/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteC
-    free_textfield: Network device in City B
-    last_backup: '2024-05-12'
-    snmp_credentials: credA
-
-- name: lab-029
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - Production
-  serial: NET0000029
-  primary_ip4: 192.168.178.15/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.15/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.15/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteB
-    free_textfield: Network device in City B
-    last_backup: '2024-02-20'
-    snmp_credentials: credB
-
-- name: lab-030
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - lab
-  serial: NET0000030
-  primary_ip4: 192.168.178.209/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.209/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.209/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteA
-    free_textfield: Network device in City A
-    last_backup: '2024-04-05'
-    snmp_credentials: credC
-
-- name: lab-031
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - lab
-  serial: NET0000031
-  primary_ip4: 192.168.178.243/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.243/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.243/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteA
-    free_textfield: Network device in City A
-    last_backup: '2024-04-05'
-    snmp_credentials: credC
-
-- name: lab-032
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - Production
-  serial: NET0000032
-  primary_ip4: 192.168.178.247/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.247/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.247/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteC
-    free_textfield: Network device in City C
-    last_backup: '2024-04-05'
-    snmp_credentials: credC
-
-- name: lab-033
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - lab
-  serial: NET0000033
-  primary_ip4: 192.168.178.80/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.80/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.80/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteC
-    free_textfield: Network device in City A
-    last_backup: '2024-06-01'
-    snmp_credentials: credA
-
-- name: lab-034
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - lab
-  serial: NET0000034
-  primary_ip4: 192.168.178.116/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.116/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.116/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteB
-    free_textfield: Network device in City B
-    last_backup: '2024-05-12'
-    snmp_credentials: credB
-
-- name: lab-035
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - Production
-  serial: NET0000035
-  primary_ip4: 192.168.178.151/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.151/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.151/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteA
-    free_textfield: Network device in City A
-    last_backup: '2024-01-15'
-    snmp_credentials: credB
-
-- name: lab-036
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - Production
-  serial: NET0000036
-  primary_ip4: 192.168.178.182/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.182/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.182/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteA
-    free_textfield: Network device in City C
-    last_backup: '2024-01-15'
-    snmp_credentials: credA
-
-- name: lab-037
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - Production
-  serial: NET0000037
-  primary_ip4: 192.168.178.19/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.19/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.19/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteA
-    free_textfield: Network device in City C
-    last_backup: '2024-03-10'
-    snmp_credentials: credA
-
-- name: lab-038
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - Production
-  serial: NET0000038
-  primary_ip4: 192.168.178.139/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.139/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.139/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteC
-    free_textfield: Network device in City C
-    last_backup: '2024-02-20'
-    snmp_credentials: credB
-
-- name: lab-039
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - lab
-  serial: NET0000039
-  primary_ip4: 192.168.178.201/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.201/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.201/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteC
-    free_textfield: Network device in City A
-    last_backup: '2024-02-20'
-    snmp_credentials: credB
-
-- name: lab-040
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - Staging
-  serial: NET0000040
-  primary_ip4: 192.168.178.111/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.111/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.111/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteA
-    free_textfield: Network device in City B
-    last_backup: '2024-06-01'
-    snmp_credentials: credA
-
-- name: lab-041
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - Staging
-  serial: NET0000041
-  primary_ip4: 192.168.178.173/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.173/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.173/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteB
-    free_textfield: Network device in City B
-    last_backup: '2024-01-15'
-    snmp_credentials: credC
-
-- name: lab-042
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - lab
-  serial: NET0000042
-  primary_ip4: 192.168.178.87/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.87/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.87/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteA
-    free_textfield: Network device in City C
-    last_backup: '2024-06-01'
-    snmp_credentials: credB
-
-- name: lab-043
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - Production
-  serial: NET0000043
-  primary_ip4: 192.168.178.36/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.36/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.36/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteA
-    free_textfield: Network device in City A
-    last_backup: '2024-04-05'
-    snmp_credentials: credC
-
-- name: lab-044
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - Production
-  serial: NET0000044
-  primary_ip4: 192.168.178.114/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.114/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.114/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteB
-    free_textfield: Network device in City B
-    last_backup: '2024-01-15'
-    snmp_credentials: credA
-
-- name: lab-045
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - Production
-  serial: NET0000045
-  primary_ip4: 192.168.178.249/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.249/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.249/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteC
-    free_textfield: Network device in City C
-    last_backup: '2024-01-15'
-    snmp_credentials: credC
-
-- name: lab-046
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - Production
-  serial: NET0000046
   primary_ip4: 192.168.178.55/24
   interfaces:
   - name: GigabitEthernet1/0/1
@@ -1289,330 +535,119 @@ devices:
     net: netA
     checkmk_site: siteB
     free_textfield: Network device in City A
-    last_backup: '2024-04-05'
-    snmp_credentials: credB
-
-- name: lab-047
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - Production
-  serial: NET0000047
-  primary_ip4: 192.168.178.68/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.68/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.68/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteB
-    free_textfield: Network device in City B
-    last_backup: '2024-04-05'
-    snmp_credentials: credA
-
-- name: lab-048
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - Staging
-  serial: NET0000048
-  primary_ip4: 192.168.178.170/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.170/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.170/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteC
-    free_textfield: Network device in City B
-    last_backup: '2024-05-12'
-    snmp_credentials: credC
-
-- name: lab-049
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - Staging
-  serial: NET0000049
-  primary_ip4: 192.168.178.248/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.248/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.248/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteA
-    free_textfield: Network device in City C
-    last_backup: '2024-02-20'
-    snmp_credentials: credB
-
-- name: lab-050
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - lab
-  serial: NET0000050
-  primary_ip4: 192.168.178.81/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.81/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.81/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteC
-    free_textfield: Network device in City A
-    last_backup: '2024-06-01'
-    snmp_credentials: credA
-
-- name: lab-051
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - Production
-  serial: NET0000051
-  primary_ip4: 192.168.178.41/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.41/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.41/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteB
-    free_textfield: Network device in City A
-    last_backup: '2024-05-12'
-    snmp_credentials: credC
-
-- name: lab-052
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - lab
-  serial: NET0000052
-  primary_ip4: 192.168.178.18/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.18/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.18/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteA
-    free_textfield: Network device in City A
-    last_backup: '2024-05-12'
-    snmp_credentials: credA
-
-- name: lab-053
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - Production
-  serial: NET0000053
-  primary_ip4: 192.168.178.149/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.149/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.149/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteA
-    free_textfield: Network device in City C
-    last_backup: '2024-02-20'
-    snmp_credentials: credC
-
-- name: lab-054
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - Production
-  serial: NET0000054
-  primary_ip4: 192.168.178.150/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.150/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.150/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteA
-    free_textfield: Network device in City C
-    last_backup: '2024-06-01'
-    snmp_credentials: credB
-
-- name: lab-055
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - lab
-  serial: NET0000055
-  primary_ip4: 192.168.178.184/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.184/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.184/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteB
-    free_textfield: Network device in City C
-    last_backup: '2024-06-01'
-    snmp_credentials: credA
-
-- name: lab-056
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - Production
-  serial: NET0000056
-  primary_ip4: 192.168.178.166/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.166/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.166/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteB
-    free_textfield: Network device in City B
-    last_backup: '2024-06-01'
-    snmp_credentials: credA
-
-- name: lab-057
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - Staging
-  serial: NET0000057
-  primary_ip4: 192.168.178.160/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.160/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.160/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteA
-    free_textfield: Network device in City B
-    last_backup: '2024-04-05'
-    snmp_credentials: credA
-
-- name: lab-058
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - Production
-  serial: NET0000058
-  primary_ip4: 192.168.178.68/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.68/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.68/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteC
-    free_textfield: Network device in City C
-    last_backup: '2024-05-12'
-    snmp_credentials: credA
-
-- name: lab-059
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - Staging
-  serial: NET0000059
-  primary_ip4: 192.168.178.41/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.41/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.41/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteA
-    free_textfield: Network device in City A
     last_backup: '2024-03-10'
     snmp_credentials: credB
 
-- name: lab-060
+- name: lab-015
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Offline
+  tags:
+  - lab
+  serial: NET0000015
+  primary_ip4: 192.168.178.227/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.227/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.227/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteA
+    free_textfield: Network device in City C
+    last_backup: '2024-04-05'
+    snmp_credentials: credC
+
+- name: lab-016
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Offline
+  tags:
+  - Staging
+  serial: NET0000016
+  primary_ip4: 192.168.178.192/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.192/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.192/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteB
+    free_textfield: Network device in City C
+    last_backup: '2024-02-20'
+    snmp_credentials: credA
+
+- name: lab-017
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000017
+  primary_ip4: 192.168.178.131/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.131/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.131/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteB
+    free_textfield: Network device in City C
+    last_backup: '2024-02-20'
+    snmp_credentials: credB
+
+- name: lab-018
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City B
+  status: Active
   tags:
-  - lab
-  serial: NET0000060
+  - Production
+  serial: NET0000018
+  primary_ip4: 192.168.178.203/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.203/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.203/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteA
+    free_textfield: Network device in City B
+    last_backup: '2024-06-01'
+    snmp_credentials: credA
+
+- name: lab-019
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Offline
+  tags:
+  - Staging
+  serial: NET0000019
   primary_ip4: 192.168.178.136/24
   interfaces:
   - name: GigabitEthernet1/0/1
@@ -1623,116 +658,46 @@ devices:
     ip_address: 192.168.179.136/24
   custom_fields:
     net: lab
-    checkmk_site: siteB
-    free_textfield: Network device in City B
-    last_backup: '2024-06-01'
-    snmp_credentials: credC
-
-- name: lab-061
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - lab
-  serial: NET0000061
-  primary_ip4: 192.168.178.241/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.241/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.241/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteB
-    free_textfield: Network device in City A
-    last_backup: '2024-01-15'
-    snmp_credentials: credC
-
-- name: lab-062
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - Staging
-  serial: NET0000062
-  primary_ip4: 192.168.178.40/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.40/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.40/24
-  custom_fields:
-    net: netA
     checkmk_site: siteA
-    free_textfield: Network device in City A
-    last_backup: '2024-05-12'
-    snmp_credentials: credC
+    free_textfield: Network device in City C
+    last_backup: '2024-04-05'
+    snmp_credentials: credB
 
-- name: lab-063
+- name: lab-020
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City B
+  status: Offline
   tags:
-  - Staging
-  serial: NET0000063
-  primary_ip4: 192.168.178.53/24
+  - lab
+  serial: NET0000020
+  primary_ip4: 192.168.178.197/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.53/24
+    ip_address: 192.168.178.197/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.53/24
+    ip_address: 192.168.179.197/24
   custom_fields:
-    net: lab
-    checkmk_site: siteA
+    net: netA
+    checkmk_site: siteC
     free_textfield: Network device in City B
-    last_backup: '2024-03-10'
+    last_backup: '2024-01-15'
     snmp_credentials: credC
 
-- name: lab-064
+- name: lab-021
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City C
+  status: Offline
   tags:
-  - lab
-  serial: NET0000064
-  primary_ip4: 192.168.178.232/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.232/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.232/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteC
-    free_textfield: Network device in City C
-    last_backup: '2024-03-10'
-    snmp_credentials: credB
-
-- name: lab-065
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - Production
-  serial: NET0000065
+  - Staging
+  serial: NET0000021
   primary_ip4: 192.168.178.1/24
   interfaces:
   - name: GigabitEthernet1/0/1
@@ -1742,69 +707,847 @@ devices:
     type: 1000base-t
     ip_address: 192.168.179.1/24
   custom_fields:
-    net: lab
+    net: netA
     checkmk_site: siteB
-    free_textfield: Network device in City A
-    last_backup: '2024-01-15'
+    free_textfield: Network device in City C
+    last_backup: '2024-02-20'
     snmp_credentials: credB
 
-- name: lab-066
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - Production
-  serial: NET0000066
-  primary_ip4: 192.168.178.114/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.114/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.114/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteB
-    free_textfield: Network device in City B
-    last_backup: '2024-06-01'
-    snmp_credentials: credA
-
-- name: lab-067
+- name: lab-022
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City C
+  status: Active
   tags:
   - lab
-  serial: NET0000067
-  primary_ip4: 192.168.178.20/24
+  serial: NET0000022
+  primary_ip4: 192.168.178.223/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.20/24
+    ip_address: 192.168.178.223/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.20/24
+    ip_address: 192.168.179.223/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteC
+    free_textfield: Network device in City C
+    last_backup: '2024-05-12'
+    snmp_credentials: credA
+
+- name: lab-023
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000023
+  primary_ip4: 192.168.178.96/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.96/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.96/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteC
+    free_textfield: Network device in City C
+    last_backup: '2024-02-20'
+    snmp_credentials: credC
+
+- name: lab-024
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Offline
+  tags:
+  - lab
+  serial: NET0000024
+  primary_ip4: 192.168.178.5/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.5/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.5/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteA
+    free_textfield: Network device in City A
+    last_backup: '2024-03-10'
+    snmp_credentials: credC
+
+- name: lab-025
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000025
+  primary_ip4: 192.168.178.22/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.22/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.22/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteA
+    free_textfield: Network device in City A
+    last_backup: '2024-02-20'
+    snmp_credentials: credA
+
+- name: lab-026
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Offline
+  tags:
+  - Staging
+  serial: NET0000026
+  primary_ip4: 192.168.178.243/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.243/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.243/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteC
+    free_textfield: Network device in City C
+    last_backup: '2024-02-20'
+    snmp_credentials: credA
+
+- name: lab-027
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Active
+  tags:
+  - Production
+  serial: NET0000027
+  primary_ip4: 192.168.178.238/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.238/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.238/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteC
+    free_textfield: Network device in City C
+    last_backup: '2024-04-05'
+    snmp_credentials: credC
+
+- name: lab-028
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Offline
+  tags:
+  - lab
+  serial: NET0000028
+  primary_ip4: 192.168.178.172/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.172/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.172/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteA
+    free_textfield: Network device in City C
+    last_backup: '2024-03-10'
+    snmp_credentials: credC
+
+- name: lab-029
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000029
+  primary_ip4: 192.168.178.58/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.58/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.58/24
   custom_fields:
     net: netB
     checkmk_site: siteC
     free_textfield: Network device in City C
     last_backup: '2024-01-15'
+    snmp_credentials: credB
+
+- name: lab-030
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000030
+  primary_ip4: 192.168.178.2/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.2/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.2/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteC
+    free_textfield: Network device in City A
+    last_backup: '2024-02-20'
+    snmp_credentials: credC
+
+- name: lab-031
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Active
+  tags:
+  - lab
+  serial: NET0000031
+  primary_ip4: 192.168.178.221/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.221/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.221/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteA
+    free_textfield: Network device in City A
+    last_backup: '2024-01-15'
     snmp_credentials: credA
 
-- name: lab-068
+- name: lab-032
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Offline
+  tags:
+  - Production
+  serial: NET0000032
+  primary_ip4: 192.168.178.55/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.55/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.55/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteA
+    free_textfield: Network device in City B
+    last_backup: '2024-06-01'
+    snmp_credentials: credB
+
+- name: lab-033
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City C
+  status: Active
   tags:
   - Production
-  serial: NET0000068
+  serial: NET0000033
+  primary_ip4: 192.168.178.201/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.201/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.201/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteC
+    free_textfield: Network device in City C
+    last_backup: '2024-04-05'
+    snmp_credentials: credC
+
+- name: lab-034
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Offline
+  tags:
+  - Staging
+  serial: NET0000034
+  primary_ip4: 192.168.178.91/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.91/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.91/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteA
+    free_textfield: Network device in City B
+    last_backup: '2024-06-01'
+    snmp_credentials: credA
+
+- name: lab-035
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000035
+  primary_ip4: 192.168.178.16/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.16/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.16/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteC
+    free_textfield: Network device in City B
+    last_backup: '2024-06-01'
+    snmp_credentials: credA
+
+- name: lab-036
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Active
+  tags:
+  - lab
+  serial: NET0000036
+  primary_ip4: 192.168.178.138/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.138/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.138/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteA
+    free_textfield: Network device in City B
+    last_backup: '2024-02-20'
+    snmp_credentials: credA
+
+- name: lab-037
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Active
+  tags:
+  - Production
+  serial: NET0000037
+  primary_ip4: 192.168.178.224/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.224/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.224/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteA
+    free_textfield: Network device in City B
+    last_backup: '2024-04-05'
+    snmp_credentials: credB
+
+- name: lab-038
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000038
+  primary_ip4: 192.168.178.249/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.249/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.249/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteA
+    free_textfield: Network device in City A
+    last_backup: '2024-06-01'
+    snmp_credentials: credA
+
+- name: lab-039
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Active
+  tags:
+  - Production
+  serial: NET0000039
+  primary_ip4: 192.168.178.222/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.222/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.222/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteB
+    free_textfield: Network device in City A
+    last_backup: '2024-04-05'
+    snmp_credentials: credB
+
+- name: lab-040
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Offline
+  tags:
+  - Production
+  serial: NET0000040
+  primary_ip4: 192.168.178.238/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.238/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.238/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteB
+    free_textfield: Network device in City B
+    last_backup: '2024-04-05'
+    snmp_credentials: credA
+
+- name: lab-041
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Offline
+  tags:
+  - Staging
+  serial: NET0000041
+  primary_ip4: 192.168.178.40/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.40/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.40/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteC
+    free_textfield: Network device in City B
+    last_backup: '2024-05-12'
+    snmp_credentials: credC
+
+- name: lab-042
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000042
+  primary_ip4: 192.168.178.192/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.192/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.192/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteA
+    free_textfield: Network device in City A
+    last_backup: '2024-06-01'
+    snmp_credentials: credC
+
+- name: lab-043
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Active
+  tags:
+  - Production
+  serial: NET0000043
+  primary_ip4: 192.168.178.15/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.15/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.15/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteC
+    free_textfield: Network device in City B
+    last_backup: '2024-05-12'
+    snmp_credentials: credB
+
+- name: lab-044
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Active
+  tags:
+  - Production
+  serial: NET0000044
+  primary_ip4: 192.168.178.104/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.104/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.104/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteA
+    free_textfield: Network device in City C
+    last_backup: '2024-01-15'
+    snmp_credentials: credC
+
+- name: lab-045
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Active
+  tags:
+  - lab
+  serial: NET0000045
+  primary_ip4: 192.168.178.108/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.108/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.108/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteC
+    free_textfield: Network device in City A
+    last_backup: '2024-01-15'
+    snmp_credentials: credC
+
+- name: lab-046
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Active
+  tags:
+  - lab
+  serial: NET0000046
+  primary_ip4: 192.168.178.172/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.172/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.172/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteC
+    free_textfield: Network device in City C
+    last_backup: '2024-03-10'
+    snmp_credentials: credB
+
+- name: lab-047
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Offline
+  tags:
+  - Staging
+  serial: NET0000047
+  primary_ip4: 192.168.178.118/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.118/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.118/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteB
+    free_textfield: Network device in City C
+    last_backup: '2024-02-20'
+    snmp_credentials: credB
+
+- name: lab-048
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Active
+  tags:
+  - Production
+  serial: NET0000048
+  primary_ip4: 192.168.178.19/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.19/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.19/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteB
+    free_textfield: Network device in City B
+    last_backup: '2024-05-12'
+    snmp_credentials: credC
+
+- name: lab-049
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Active
+  tags:
+  - Production
+  serial: NET0000049
+  primary_ip4: 192.168.178.226/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.226/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.226/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteB
+    free_textfield: Network device in City C
+    last_backup: '2024-03-10'
+    snmp_credentials: credA
+
+- name: lab-050
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Offline
+  tags:
+  - Staging
+  serial: NET0000050
+  primary_ip4: 192.168.178.157/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.157/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.157/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteA
+    free_textfield: Network device in City A
+    last_backup: '2024-05-12'
+    snmp_credentials: credB
+
+- name: lab-051
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Active
+  tags:
+  - lab
+  serial: NET0000051
+  primary_ip4: 192.168.178.241/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.241/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.241/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteC
+    free_textfield: Network device in City C
+    last_backup: '2024-03-10'
+    snmp_credentials: credC
+
+- name: lab-052
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000052
+  primary_ip4: 192.168.178.70/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.70/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.70/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteA
+    free_textfield: Network device in City A
+    last_backup: '2024-05-12'
+    snmp_credentials: credC
+
+- name: lab-053
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Offline
+  tags:
+  - lab
+  serial: NET0000053
+  primary_ip4: 192.168.178.130/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.130/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.130/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteC
+    free_textfield: Network device in City B
+    last_backup: '2024-02-20'
+    snmp_credentials: credB
+
+- name: lab-054
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Offline
+  tags:
+  - Staging
+  serial: NET0000054
+  primary_ip4: 192.168.178.12/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.12/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.12/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteA
+    free_textfield: Network device in City B
+    last_backup: '2024-04-05'
+    snmp_credentials: credC
+
+- name: lab-055
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Offline
+  tags:
+  - Staging
+  serial: NET0000055
   primary_ip4: 192.168.178.142/24
   interfaces:
   - name: GigabitEthernet1/0/1
@@ -1814,69 +1557,97 @@ devices:
     type: 1000base-t
     ip_address: 192.168.179.142/24
   custom_fields:
-    net: lab
-    checkmk_site: siteA
-    free_textfield: Network device in City C
-    last_backup: '2024-05-12'
-    snmp_credentials: credB
-
-- name: lab-069
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - Staging
-  serial: NET0000069
-  primary_ip4: 192.168.178.231/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.231/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.231/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteA
-    free_textfield: Network device in City A
-    last_backup: '2024-03-10'
-    snmp_credentials: credB
-
-- name: lab-070
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - Staging
-  serial: NET0000070
-  primary_ip4: 192.168.178.27/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.27/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.27/24
-  custom_fields:
     net: netA
     checkmk_site: siteC
     free_textfield: Network device in City A
-    last_backup: '2024-06-01'
+    last_backup: '2024-02-20'
+    snmp_credentials: credB
+
+- name: lab-056
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000056
+  primary_ip4: 192.168.178.140/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.140/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.140/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteA
+    free_textfield: Network device in City C
+    last_backup: '2024-01-15'
     snmp_credentials: credA
 
-- name: lab-071
+- name: lab-057
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000057
+  primary_ip4: 192.168.178.11/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.11/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.11/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteC
+    free_textfield: Network device in City A
+    last_backup: '2024-04-05'
+    snmp_credentials: credA
+
+- name: lab-058
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City B
+  status: Active
   tags:
-  - lab
-  serial: NET0000071
+  - Staging
+  serial: NET0000058
+  primary_ip4: 192.168.178.171/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.171/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.171/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteB
+    free_textfield: Network device in City B
+    last_backup: '2024-06-01'
+    snmp_credentials: credA
+
+- name: lab-059
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000059
   primary_ip4: 192.168.178.237/24
   interfaces:
   - name: GigabitEthernet1/0/1
@@ -1886,29 +1657,30 @@ devices:
     type: 1000base-t
     ip_address: 192.168.179.237/24
   custom_fields:
-    net: netB
-    checkmk_site: siteC
-    free_textfield: Network device in City B
-    last_backup: '2024-02-20'
+    net: lab
+    checkmk_site: siteB
+    free_textfield: Network device in City A
+    last_backup: '2024-06-01'
     snmp_credentials: credC
 
-- name: lab-072
+- name: lab-060
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City A
+  status: Offline
   tags:
   - Production
-  serial: NET0000072
-  primary_ip4: 192.168.178.189/24
+  serial: NET0000060
+  primary_ip4: 192.168.178.201/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.189/24
+    ip_address: 192.168.178.201/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.189/24
+    ip_address: 192.168.179.201/24
   custom_fields:
     net: netA
     checkmk_site: siteB
@@ -1916,111 +1688,91 @@ devices:
     last_backup: '2024-02-20'
     snmp_credentials: credA
 
-- name: lab-073
+- name: lab-061
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City B
+  status: Active
   tags:
-  - Staging
-  serial: NET0000073
-  primary_ip4: 192.168.178.41/24
+  - lab
+  serial: NET0000061
+  primary_ip4: 192.168.178.98/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.41/24
+    ip_address: 192.168.178.98/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.41/24
+    ip_address: 192.168.179.98/24
   custom_fields:
     net: lab
-    checkmk_site: siteC
-    free_textfield: Network device in City B
-    last_backup: '2024-03-10'
-    snmp_credentials: credA
-
-- name: lab-074
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - Production
-  serial: NET0000074
-  primary_ip4: 192.168.178.52/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.52/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.52/24
-  custom_fields:
-    net: netB
     checkmk_site: siteA
-    free_textfield: Network device in City C
+    free_textfield: Network device in City B
     last_backup: '2024-02-20'
     snmp_credentials: credB
 
-- name: lab-075
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - Staging
-  serial: NET0000075
-  primary_ip4: 192.168.178.169/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.169/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.169/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteA
-    free_textfield: Network device in City B
-    last_backup: '2024-01-15'
-    snmp_credentials: credA
-
-- name: lab-076
+- name: lab-062
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City A
+  status: Offline
   tags:
   - Staging
-  serial: NET0000076
-  primary_ip4: 192.168.178.90/24
+  serial: NET0000062
+  primary_ip4: 192.168.178.211/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.90/24
+    ip_address: 192.168.178.211/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.90/24
+    ip_address: 192.168.179.211/24
   custom_fields:
-    net: netB
-    checkmk_site: siteB
+    net: netA
+    checkmk_site: siteA
     free_textfield: Network device in City A
     last_backup: '2024-03-10'
-    snmp_credentials: credA
+    snmp_credentials: credB
 
-- name: lab-077
+- name: lab-063
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
-  location: City C
+  location: City A
+  status: Offline
   tags:
-  - lab
-  serial: NET0000077
+  - Production
+  serial: NET0000063
+  primary_ip4: 192.168.178.72/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.72/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.72/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteC
+    free_textfield: Network device in City A
+    last_backup: '2024-04-05'
+    snmp_credentials: credA
+
+- name: lab-064
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Offline
+  tags:
+  - Staging
+  serial: NET0000064
   primary_ip4: 192.168.178.241/24
   interfaces:
   - name: GigabitEthernet1/0/1
@@ -2032,27 +1784,28 @@ devices:
   custom_fields:
     net: netB
     checkmk_site: siteC
-    free_textfield: Network device in City C
-    last_backup: '2024-03-10'
+    free_textfield: Network device in City A
+    last_backup: '2024-04-05'
     snmp_credentials: credC
 
-- name: lab-078
+- name: lab-065
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City A
+  status: Active
   tags:
   - Production
-  serial: NET0000078
-  primary_ip4: 192.168.178.10/24
+  serial: NET0000065
+  primary_ip4: 192.168.178.28/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.10/24
+    ip_address: 192.168.178.28/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.10/24
+    ip_address: 192.168.179.28/24
   custom_fields:
     net: netB
     checkmk_site: siteA
@@ -2060,231 +1813,191 @@ devices:
     last_backup: '2024-03-10'
     snmp_credentials: credC
 
-- name: lab-079
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - lab
-  serial: NET0000079
-  primary_ip4: 192.168.178.112/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.112/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.112/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteB
-    free_textfield: Network device in City A
-    last_backup: '2024-03-10'
-    snmp_credentials: credC
-
-- name: lab-080
+- name: lab-066
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City C
+  status: Active
   tags:
-  - lab
-  serial: NET0000080
-  primary_ip4: 192.168.178.66/24
+  - Staging
+  serial: NET0000066
+  primary_ip4: 192.168.178.99/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.66/24
+    ip_address: 192.168.178.99/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.66/24
+    ip_address: 192.168.179.99/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteC
+    free_textfield: Network device in City C
+    last_backup: '2024-04-05'
+    snmp_credentials: credB
+
+- name: lab-067
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Active
+  tags:
+  - Production
+  serial: NET0000067
+  primary_ip4: 192.168.178.134/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.134/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.134/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteA
+    free_textfield: Network device in City C
+    last_backup: '2024-04-05'
+    snmp_credentials: credC
+
+- name: lab-068
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Active
+  tags:
+  - lab
+  serial: NET0000068
+  primary_ip4: 192.168.178.94/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.94/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.94/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteC
+    free_textfield: Network device in City C
+    last_backup: '2024-06-01'
+    snmp_credentials: credC
+
+- name: lab-069
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Active
+  tags:
+  - Production
+  serial: NET0000069
+  primary_ip4: 192.168.178.185/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.185/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.185/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteB
+    free_textfield: Network device in City B
+    last_backup: '2024-03-10'
+    snmp_credentials: credC
+
+- name: lab-070
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Offline
+  tags:
+  - lab
+  serial: NET0000070
+  primary_ip4: 192.168.178.179/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.179/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.179/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteC
+    free_textfield: Network device in City B
+    last_backup: '2024-03-10'
+    snmp_credentials: credB
+
+- name: lab-071
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Offline
+  tags:
+  - lab
+  serial: NET0000071
+  primary_ip4: 192.168.178.174/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.174/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.174/24
   custom_fields:
     net: netA
-    checkmk_site: siteB
-    free_textfield: Network device in City C
-    last_backup: '2024-02-20'
-    snmp_credentials: credC
-
-- name: lab-081
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - lab
-  serial: NET0000081
-  primary_ip4: 192.168.178.176/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.176/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.176/24
-  custom_fields:
-    net: netB
     checkmk_site: siteA
-    free_textfield: Network device in City A
-    last_backup: '2024-05-12'
-    snmp_credentials: credC
+    free_textfield: Network device in City B
+    last_backup: '2024-06-01'
+    snmp_credentials: credB
 
-- name: lab-082
+- name: lab-072
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City C
+  status: Active
   tags:
-  - lab
-  serial: NET0000082
-  primary_ip4: 192.168.178.111/24
+  - Production
+  serial: NET0000072
+  primary_ip4: 192.168.178.78/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.111/24
+    ip_address: 192.168.178.78/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.111/24
+    ip_address: 192.168.179.78/24
   custom_fields:
     net: lab
     checkmk_site: siteC
     free_textfield: Network device in City C
-    last_backup: '2024-03-10'
-    snmp_credentials: credA
-
-- name: lab-083
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - lab
-  serial: NET0000083
-  primary_ip4: 192.168.178.218/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.218/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.218/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteC
-    free_textfield: Network device in City A
-    last_backup: '2024-06-01'
+    last_backup: '2024-04-05'
     snmp_credentials: credB
 
-- name: lab-084
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - lab
-  serial: NET0000084
-  primary_ip4: 192.168.178.105/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.105/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.105/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteC
-    free_textfield: Network device in City A
-    last_backup: '2024-06-01'
-    snmp_credentials: credB
-
-- name: lab-085
+- name: lab-073
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City B
+  status: Offline
   tags:
-  - Staging
-  serial: NET0000085
-  primary_ip4: 192.168.178.50/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.50/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.50/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteB
-    free_textfield: Network device in City B
-    last_backup: '2024-02-20'
-    snmp_credentials: credC
-
-- name: lab-086
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - lab
-  serial: NET0000086
-  primary_ip4: 192.168.178.158/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.158/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.158/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteC
-    free_textfield: Network device in City B
-    last_backup: '2024-02-20'
-    snmp_credentials: credC
-
-- name: lab-087
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - Staging
-  serial: NET0000087
-  primary_ip4: 192.168.178.74/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.74/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.74/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteC
-    free_textfield: Network device in City C
-    last_backup: '2024-03-10'
-    snmp_credentials: credA
-
-- name: lab-088
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - Staging
-  serial: NET0000088
+  - Production
+  serial: NET0000073
   primary_ip4: 192.168.178.120/24
   interfaces:
   - name: GigabitEthernet1/0/1
@@ -2294,29 +2007,30 @@ devices:
     type: 1000base-t
     ip_address: 192.168.179.120/24
   custom_fields:
-    net: lab
+    net: netB
     checkmk_site: siteC
-    free_textfield: Network device in City A
-    last_backup: '2024-03-10'
+    free_textfield: Network device in City B
+    last_backup: '2024-06-01'
     snmp_credentials: credC
 
-- name: lab-089
+- name: lab-074
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City B
+  status: Active
   tags:
   - Staging
-  serial: NET0000089
-  primary_ip4: 192.168.178.204/24
+  serial: NET0000074
+  primary_ip4: 192.168.178.169/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.204/24
+    ip_address: 192.168.178.169/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.204/24
+    ip_address: 192.168.179.169/24
   custom_fields:
     net: lab
     checkmk_site: siteA
@@ -2324,207 +2038,91 @@ devices:
     last_backup: '2024-04-05'
     snmp_credentials: credC
 
-- name: lab-090
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - Production
-  serial: NET0000090
-  primary_ip4: 192.168.178.170/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.170/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.170/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteA
-    free_textfield: Network device in City C
-    last_backup: '2024-05-12'
-    snmp_credentials: credB
-
-- name: lab-091
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City C
-  tags:
-  - lab
-  serial: NET0000091
-  primary_ip4: 192.168.178.80/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.80/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.80/24
-  custom_fields:
-    net: netB
-    checkmk_site: siteA
-    free_textfield: Network device in City C
-    last_backup: '2024-06-01'
-    snmp_credentials: credA
-
-- name: lab-092
+- name: lab-075
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City A
+  status: Offline
   tags:
-  - Production
-  serial: NET0000092
-  primary_ip4: 192.168.178.252/24
+  - Staging
+  serial: NET0000075
+  primary_ip4: 192.168.178.24/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.252/24
+    ip_address: 192.168.178.24/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.252/24
+    ip_address: 192.168.179.24/24
   custom_fields:
-    net: netA
+    net: lab
+    checkmk_site: siteC
+    free_textfield: Network device in City A
+    last_backup: '2024-05-12'
+    snmp_credentials: credC
+
+- name: lab-076
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Active
+  tags:
+  - lab
+  serial: NET0000076
+  primary_ip4: 192.168.178.12/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.12/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.12/24
+  custom_fields:
+    net: netB
     checkmk_site: siteA
     free_textfield: Network device in City A
     last_backup: '2024-02-20'
     snmp_credentials: credA
 
-- name: lab-093
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City B
-  tags:
-  - lab
-  serial: NET0000093
-  primary_ip4: 192.168.178.148/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.148/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.148/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteB
-    free_textfield: Network device in City B
-    last_backup: '2024-06-01'
-    snmp_credentials: credB
-
-- name: lab-094
+- name: lab-077
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City A
+  status: Active
   tags:
-  - lab
-  serial: NET0000094
-  primary_ip4: 192.168.178.63/24
+  - Staging
+  serial: NET0000077
+  primary_ip4: 192.168.178.184/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.63/24
+    ip_address: 192.168.178.184/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.63/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteB
-    free_textfield: Network device in City A
-    last_backup: '2024-04-05'
-    snmp_credentials: credB
-
-- name: lab-095
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - lab
-  serial: NET0000095
-  primary_ip4: 192.168.178.57/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.57/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.57/24
+    ip_address: 192.168.179.184/24
   custom_fields:
     net: lab
     checkmk_site: siteA
     free_textfield: Network device in City A
     last_backup: '2024-04-05'
-    snmp_credentials: credA
+    snmp_credentials: credB
 
-- name: lab-096
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - lab
-  serial: NET0000096
-  primary_ip4: 192.168.178.64/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.64/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.64/24
-  custom_fields:
-    net: lab
-    checkmk_site: siteB
-    free_textfield: Network device in City A
-    last_backup: '2024-05-12'
-    snmp_credentials: credA
-
-- name: lab-097
-  device_type: networkA
-  platform: Cisco IOS
-  roles:
-  - Network
-  location: City A
-  tags:
-  - Staging
-  serial: NET0000097
-  primary_ip4: 192.168.178.253/24
-  interfaces:
-  - name: GigabitEthernet1/0/1
-    type: 1000base-t
-    ip_address: 192.168.178.253/24
-  - name: GigabitEthernet1/0/2
-    type: 1000base-t
-    ip_address: 192.168.179.253/24
-  custom_fields:
-    net: netA
-    checkmk_site: siteB
-    free_textfield: Network device in City A
-    last_backup: '2024-05-12'
-    snmp_credentials: credC
-
-- name: lab-098
+- name: lab-078
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City C
+  status: Active
   tags:
-  - lab
-  serial: NET0000098
+  - Staging
+  serial: NET0000078
   primary_ip4: 192.168.178.229/24
   interfaces:
   - name: GigabitEthernet1/0/1
@@ -2537,42 +2135,94 @@ devices:
     net: netB
     checkmk_site: siteB
     free_textfield: Network device in City C
-    last_backup: '2024-06-01'
+    last_backup: '2024-02-20'
+    snmp_credentials: credA
+
+- name: lab-079
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Offline
+  tags:
+  - Staging
+  serial: NET0000079
+  primary_ip4: 192.168.178.13/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.13/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.13/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteA
+    free_textfield: Network device in City A
+    last_backup: '2024-05-12'
     snmp_credentials: credC
 
-- name: lab-099
+- name: lab-080
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City C
+  status: Offline
   tags:
-  - Staging
-  serial: NET0000099
-  primary_ip4: 192.168.178.221/24
+  - Production
+  serial: NET0000080
+  primary_ip4: 192.168.178.244/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.221/24
+    ip_address: 192.168.178.244/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.221/24
+    ip_address: 192.168.179.244/24
   custom_fields:
-    net: lab
+    net: netA
     checkmk_site: siteB
     free_textfield: Network device in City C
-    last_backup: '2024-06-01'
+    last_backup: '2024-04-05'
     snmp_credentials: credA
 
-- name: lab-100
+- name: lab-081
   device_type: networkA
   platform: Cisco IOS
   roles:
   - Network
   location: City B
+  status: Offline
   tags:
-  - Staging
-  serial: NET0000100
+  - lab
+  serial: NET0000081
+  primary_ip4: 192.168.178.230/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.230/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.230/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteC
+    free_textfield: Network device in City B
+    last_backup: '2024-05-12'
+    snmp_credentials: credB
+
+- name: lab-082
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Offline
+  tags:
+  - lab
+  serial: NET0000082
   primary_ip4: 192.168.178.197/24
   interfaces:
   - name: GigabitEthernet1/0/1
@@ -2583,10 +2233,460 @@ devices:
     ip_address: 192.168.179.197/24
   custom_fields:
     net: netB
+    checkmk_site: siteB
+    free_textfield: Network device in City A
+    last_backup: '2024-02-20'
+    snmp_credentials: credB
+
+- name: lab-083
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000083
+  primary_ip4: 192.168.178.183/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.183/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.183/24
+  custom_fields:
+    net: lab
     checkmk_site: siteA
+    free_textfield: Network device in City C
+    last_backup: '2024-04-05'
+    snmp_credentials: credB
+
+- name: lab-084
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Active
+  tags:
+  - Production
+  serial: NET0000084
+  primary_ip4: 192.168.178.36/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.36/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.36/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteB
+    free_textfield: Network device in City B
+    last_backup: '2024-05-12'
+    snmp_credentials: credB
+
+- name: lab-085
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Active
+  tags:
+  - Production
+  serial: NET0000085
+  primary_ip4: 192.168.178.17/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.17/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.17/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteC
+    free_textfield: Network device in City A
+    last_backup: '2024-06-01'
+    snmp_credentials: credA
+
+- name: lab-086
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000086
+  primary_ip4: 192.168.178.53/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.53/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.53/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteC
+    free_textfield: Network device in City B
+    last_backup: '2024-04-05'
+    snmp_credentials: credB
+
+- name: lab-087
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Offline
+  tags:
+  - Staging
+  serial: NET0000087
+  primary_ip4: 192.168.178.123/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.123/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.123/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteC
+    free_textfield: Network device in City B
+    last_backup: '2024-05-12'
+    snmp_credentials: credA
+
+- name: lab-088
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000088
+  primary_ip4: 192.168.178.125/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.125/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.125/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteB
+    free_textfield: Network device in City A
+    last_backup: '2024-05-12'
+    snmp_credentials: credB
+
+- name: lab-089
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Offline
+  tags:
+  - Staging
+  serial: NET0000089
+  primary_ip4: 192.168.178.172/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.172/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.172/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteB
+    free_textfield: Network device in City A
+    last_backup: '2024-04-05'
+    snmp_credentials: credA
+
+- name: lab-090
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000090
+  primary_ip4: 192.168.178.233/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.233/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.233/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteA
+    free_textfield: Network device in City C
+    last_backup: '2024-02-20'
+    snmp_credentials: credB
+
+- name: lab-091
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Offline
+  tags:
+  - lab
+  serial: NET0000091
+  primary_ip4: 192.168.178.35/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.35/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.35/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteC
+    free_textfield: Network device in City B
+    last_backup: '2024-01-15'
+    snmp_credentials: credA
+
+- name: lab-092
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Active
+  tags:
+  - Production
+  serial: NET0000092
+  primary_ip4: 192.168.178.117/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.117/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.117/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteB
     free_textfield: Network device in City B
     last_backup: '2024-03-10'
+    snmp_credentials: credB
+
+- name: lab-093
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000093
+  primary_ip4: 192.168.178.121/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.121/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.121/24
+  custom_fields:
+    net: netB
+    checkmk_site: siteB
+    free_textfield: Network device in City B
+    last_backup: '2024-03-10'
+    snmp_credentials: credB
+
+- name: lab-094
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Active
+  tags:
+  - lab
+  serial: NET0000094
+  primary_ip4: 192.168.178.200/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.200/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.200/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteA
+    free_textfield: Network device in City A
+    last_backup: '2024-02-20'
+    snmp_credentials: credB
+
+- name: lab-095
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Active
+  tags:
+  - Production
+  serial: NET0000095
+  primary_ip4: 192.168.178.62/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.62/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.62/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteA
+    free_textfield: Network device in City C
+    last_backup: '2024-01-15'
+    snmp_credentials: credA
+
+- name: lab-096
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Offline
+  tags:
+  - Staging
+  serial: NET0000096
+  primary_ip4: 192.168.178.180/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.180/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.180/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteA
+    free_textfield: Network device in City A
+    last_backup: '2024-02-20'
     snmp_credentials: credC
+
+- name: lab-097
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City B
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000097
+  primary_ip4: 192.168.178.200/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.200/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.200/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteC
+    free_textfield: Network device in City B
+    last_backup: '2024-06-01'
+    snmp_credentials: credC
+
+- name: lab-098
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City A
+  status: Offline
+  tags:
+  - Staging
+  serial: NET0000098
+  primary_ip4: 192.168.178.102/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.102/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.102/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteC
+    free_textfield: Network device in City A
+    last_backup: '2024-03-10'
+    snmp_credentials: credA
+
+- name: lab-099
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Active
+  tags:
+  - Production
+  serial: NET0000099
+  primary_ip4: 192.168.178.27/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.27/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.27/24
+  custom_fields:
+    net: netA
+    checkmk_site: siteC
+    free_textfield: Network device in City C
+    last_backup: '2024-06-01'
+    snmp_credentials: credC
+
+- name: lab-100
+  device_type: networkA
+  platform: Cisco IOS
+  roles:
+  - Network
+  location: City C
+  status: Active
+  tags:
+  - Staging
+  serial: NET0000100
+  primary_ip4: 192.168.178.89/24
+  interfaces:
+  - name: GigabitEthernet1/0/1
+    type: 1000base-t
+    ip_address: 192.168.178.89/24
+  - name: GigabitEthernet1/0/2
+    type: 1000base-t
+    ip_address: 192.168.179.89/24
+  custom_fields:
+    net: lab
+    checkmk_site: siteC
+    free_textfield: Network device in City C
+    last_backup: '2024-05-12'
+    snmp_credentials: credA
 
 - name: server-01
   device_type: serverA
@@ -2594,6 +2694,7 @@ devices:
   roles:
   - server
   location: City C
+  status: Offline
   tags:
   - Staging
   serial: SRV0000001
@@ -2604,18 +2705,19 @@ devices:
     ip_address: 192.168.180.1/24
   custom_fields:
     net: lab
-    checkmk_site: siteA
+    checkmk_site: siteB
     free_textfield: Server in City C
-    last_backup: '2024-03-10'
+    last_backup: '2024-01-15'
 
 - name: server-02
   device_type: serverA
   platform: ServerPlatform
   roles:
   - server
-  location: City B
+  location: City A
+  status: Offline
   tags:
-  - Production
+  - Staging
   serial: SRV0000002
   primary_ip4: 192.168.180.2/24
   interfaces:
@@ -2623,17 +2725,18 @@ devices:
     type: 1000base-t
     ip_address: 192.168.180.2/24
   custom_fields:
-    net: lab
-    checkmk_site: siteB
-    free_textfield: Server in City B
-    last_backup: '2024-02-20'
+    net: netB
+    checkmk_site: siteA
+    free_textfield: Server in City A
+    last_backup: '2024-04-05'
 
 - name: server-03
   device_type: serverA
   platform: ServerPlatform
   roles:
   - server
-  location: City B
+  location: City C
+  status: Active
   tags:
   - Staging
   serial: SRV0000003
@@ -2643,19 +2746,20 @@ devices:
     type: 1000base-t
     ip_address: 192.168.180.3/24
   custom_fields:
-    net: netB
-    checkmk_site: siteC
-    free_textfield: Server in City B
-    last_backup: '2024-01-15'
+    net: lab
+    checkmk_site: siteA
+    free_textfield: Server in City C
+    last_backup: '2024-04-05'
 
 - name: server-04
   device_type: serverA
   platform: ServerPlatform
   roles:
   - server
-  location: City A
+  location: City C
+  status: Offline
   tags:
-  - Production
+  - lab
   serial: SRV0000004
   primary_ip4: 192.168.180.4/24
   interfaces:
@@ -2663,19 +2767,20 @@ devices:
     type: 1000base-t
     ip_address: 192.168.180.4/24
   custom_fields:
-    net: netA
+    net: lab
     checkmk_site: siteB
-    free_textfield: Server in City A
-    last_backup: '2024-06-01'
+    free_textfield: Server in City C
+    last_backup: '2024-05-12'
 
 - name: server-05
   device_type: serverA
   platform: ServerPlatform
   roles:
   - server
-  location: City A
+  location: City B
+  status: Offline
   tags:
-  - lab
+  - Staging
   serial: SRV0000005
   primary_ip4: 192.168.180.5/24
   interfaces:
@@ -2683,19 +2788,20 @@ devices:
     type: 1000base-t
     ip_address: 192.168.180.5/24
   custom_fields:
-    net: netA
-    checkmk_site: siteA
-    free_textfield: Server in City A
-    last_backup: '2024-04-05'
+    net: lab
+    checkmk_site: siteC
+    free_textfield: Server in City B
+    last_backup: '2024-03-10'
 
 - name: server-06
   device_type: serverA
   platform: ServerPlatform
   roles:
   - server
-  location: City B
+  location: City A
+  status: Offline
   tags:
-  - Staging
+  - Production
   serial: SRV0000006
   primary_ip4: 192.168.180.6/24
   interfaces:
@@ -2703,19 +2809,20 @@ devices:
     type: 1000base-t
     ip_address: 192.168.180.6/24
   custom_fields:
-    net: lab
+    net: netB
     checkmk_site: siteB
-    free_textfield: Server in City B
-    last_backup: '2024-04-05'
+    free_textfield: Server in City A
+    last_backup: '2024-02-20'
 
 - name: server-07
   device_type: serverA
   platform: ServerPlatform
   roles:
   - server
-  location: City A
+  location: City C
+  status: Active
   tags:
-  - Production
+  - lab
   serial: SRV0000007
   primary_ip4: 192.168.180.7/24
   interfaces:
@@ -2723,19 +2830,20 @@ devices:
     type: 1000base-t
     ip_address: 192.168.180.7/24
   custom_fields:
-    net: netB
+    net: lab
     checkmk_site: siteB
-    free_textfield: Server in City A
-    last_backup: '2024-05-12'
+    free_textfield: Server in City C
+    last_backup: '2024-03-10'
 
 - name: server-08
   device_type: serverA
   platform: ServerPlatform
   roles:
   - server
-  location: City C
+  location: City B
+  status: Offline
   tags:
-  - Production
+  - Staging
   serial: SRV0000008
   primary_ip4: 192.168.180.8/24
   interfaces:
@@ -2743,17 +2851,18 @@ devices:
     type: 1000base-t
     ip_address: 192.168.180.8/24
   custom_fields:
-    net: lab
+    net: netA
     checkmk_site: siteB
-    free_textfield: Server in City C
-    last_backup: '2024-04-05'
+    free_textfield: Server in City B
+    last_backup: '2024-02-20'
 
 - name: server-09
   device_type: serverA
   platform: ServerPlatform
   roles:
   - server
-  location: City A
+  location: City B
+  status: Offline
   tags:
   - Staging
   serial: SRV0000009
@@ -2764,9 +2873,9 @@ devices:
     ip_address: 192.168.180.9/24
   custom_fields:
     net: netB
-    checkmk_site: siteB
-    free_textfield: Server in City A
-    last_backup: '2024-04-05'
+    checkmk_site: siteC
+    free_textfield: Server in City B
+    last_backup: '2024-06-01'
 
 - name: server-10
   device_type: serverA
@@ -2774,8 +2883,9 @@ devices:
   roles:
   - server
   location: City C
+  status: Active
   tags:
-  - lab
+  - Production
   serial: SRV0000010
   primary_ip4: 192.168.180.10/24
   interfaces:
@@ -2784,16 +2894,17 @@ devices:
     ip_address: 192.168.180.10/24
   custom_fields:
     net: lab
-    checkmk_site: siteC
+    checkmk_site: siteA
     free_textfield: Server in City C
-    last_backup: '2024-05-12'
+    last_backup: '2024-01-15'
 
 - name: server-11
   device_type: serverA
   platform: ServerPlatform
   roles:
   - server
-  location: City A
+  location: City C
+  status: Offline
   tags:
   - Staging
   serial: SRV0000011
@@ -2803,19 +2914,20 @@ devices:
     type: 1000base-t
     ip_address: 192.168.180.11/24
   custom_fields:
-    net: netA
-    checkmk_site: siteB
-    free_textfield: Server in City A
-    last_backup: '2024-04-05'
+    net: netB
+    checkmk_site: siteC
+    free_textfield: Server in City C
+    last_backup: '2024-02-20'
 
 - name: server-12
   device_type: serverA
   platform: ServerPlatform
   roles:
   - server
-  location: City B
+  location: City C
+  status: Active
   tags:
-  - Production
+  - lab
   serial: SRV0000012
   primary_ip4: 192.168.180.12/24
   interfaces:
@@ -2825,17 +2937,18 @@ devices:
   custom_fields:
     net: netB
     checkmk_site: siteB
-    free_textfield: Server in City B
-    last_backup: '2024-06-01'
+    free_textfield: Server in City C
+    last_backup: '2024-01-15'
 
 - name: server-13
   device_type: serverA
   platform: ServerPlatform
   roles:
   - server
-  location: City C
+  location: City B
+  status: Offline
   tags:
-  - Staging
+  - Production
   serial: SRV0000013
   primary_ip4: 192.168.180.13/24
   interfaces:
@@ -2843,17 +2956,18 @@ devices:
     type: 1000base-t
     ip_address: 192.168.180.13/24
   custom_fields:
-    net: lab
-    checkmk_site: siteA
-    free_textfield: Server in City C
-    last_backup: '2024-04-05'
+    net: netB
+    checkmk_site: siteC
+    free_textfield: Server in City B
+    last_backup: '2024-02-20'
 
 - name: server-14
   device_type: serverA
   platform: ServerPlatform
   roles:
   - server
-  location: City A
+  location: City C
+  status: Offline
   tags:
   - lab
   serial: SRV0000014
@@ -2863,17 +2977,18 @@ devices:
     type: 1000base-t
     ip_address: 192.168.180.14/24
   custom_fields:
-    net: lab
-    checkmk_site: siteA
-    free_textfield: Server in City A
-    last_backup: '2024-04-05'
+    net: netB
+    checkmk_site: siteB
+    free_textfield: Server in City C
+    last_backup: '2024-05-12'
 
 - name: server-15
   device_type: serverA
   platform: ServerPlatform
   roles:
   - server
-  location: City C
+  location: City B
+  status: Offline
   tags:
   - lab
   serial: SRV0000015
@@ -2884,16 +2999,17 @@ devices:
     ip_address: 192.168.180.15/24
   custom_fields:
     net: lab
-    checkmk_site: siteA
-    free_textfield: Server in City C
-    last_backup: '2024-01-15'
+    checkmk_site: siteB
+    free_textfield: Server in City B
+    last_backup: '2024-03-10'
 
 - name: server-16
   device_type: serverA
   platform: ServerPlatform
   roles:
   - server
-  location: City C
+  location: City B
+  status: Active
   tags:
   - Staging
   serial: SRV0000016
@@ -2903,19 +3019,20 @@ devices:
     type: 1000base-t
     ip_address: 192.168.180.16/24
   custom_fields:
-    net: netA
-    checkmk_site: siteB
-    free_textfield: Server in City C
-    last_backup: '2024-02-20'
+    net: netB
+    checkmk_site: siteA
+    free_textfield: Server in City B
+    last_backup: '2024-01-15'
 
 - name: server-17
   device_type: serverA
   platform: ServerPlatform
   roles:
   - server
-  location: City A
+  location: City B
+  status: Active
   tags:
-  - Staging
+  - Production
   serial: SRV0000017
   primary_ip4: 192.168.180.17/24
   interfaces:
@@ -2923,19 +3040,20 @@ devices:
     type: 1000base-t
     ip_address: 192.168.180.17/24
   custom_fields:
-    net: netB
-    checkmk_site: siteB
-    free_textfield: Server in City A
-    last_backup: '2024-02-20'
+    net: lab
+    checkmk_site: siteC
+    free_textfield: Server in City B
+    last_backup: '2024-06-01'
 
 - name: server-18
   device_type: serverA
   platform: ServerPlatform
   roles:
   - server
-  location: City B
+  location: City A
+  status: Offline
   tags:
-  - Staging
+  - Production
   serial: SRV0000018
   primary_ip4: 192.168.180.18/24
   interfaces:
@@ -2943,9 +3061,9 @@ devices:
     type: 1000base-t
     ip_address: 192.168.180.18/24
   custom_fields:
-    net: netB
+    net: lab
     checkmk_site: siteB
-    free_textfield: Server in City B
+    free_textfield: Server in City A
     last_backup: '2024-03-10'
 
 - name: server-19
@@ -2953,9 +3071,10 @@ devices:
   platform: ServerPlatform
   roles:
   - server
-  location: City B
+  location: City A
+  status: Active
   tags:
-  - Staging
+  - Production
   serial: SRV0000019
   primary_ip4: 192.168.180.19/24
   interfaces:
@@ -2963,19 +3082,20 @@ devices:
     type: 1000base-t
     ip_address: 192.168.180.19/24
   custom_fields:
-    net: netA
-    checkmk_site: siteB
-    free_textfield: Server in City B
-    last_backup: '2024-01-15'
+    net: netB
+    checkmk_site: siteA
+    free_textfield: Server in City A
+    last_backup: '2024-03-10'
 
 - name: server-20
   device_type: serverA
   platform: ServerPlatform
   roles:
   - server
-  location: City C
+  location: City B
+  status: Offline
   tags:
-  - lab
+  - Production
   serial: SRV0000020
   primary_ip4: 192.168.180.20/24
   interfaces:
@@ -2983,7 +3103,7 @@ devices:
     type: 1000base-t
     ip_address: 192.168.180.20/24
   custom_fields:
-    net: netA
-    checkmk_site: siteB
-    free_textfield: Server in City C
+    net: lab
+    checkmk_site: siteC
+    free_textfield: Server in City B
     last_backup: '2024-02-20'

@@ -259,6 +259,7 @@ net_values = ["netA", "netB", "lab"]
 sites = ["siteA", "siteB", "siteC"]
 creds = ["credA", "credB", "credC"]
 dates = ["2024-01-15", "2024-02-20", "2024-03-10", "2024-04-05", "2024-05-12", "2024-06-01"]
+statuses = ["Active", "Offline"]
 
 print("Generating 100 network devices...")
 for i in range(1, 101):
@@ -268,6 +269,7 @@ for i in range(1, 101):
     site = random.choice(sites)
     cred = random.choice(creds)
     backup_date = random.choice(dates)
+    status = random.choice(statuses)
 
     # Random IP addresses
     ip_base = random.randint(1, 253)
@@ -278,6 +280,7 @@ for i in range(1, 101):
         "platform": "Cisco IOS",
         "roles": ["Network"],
         "location": location,
+        "status": status,
         "tags": [tag],
         "serial": f"NET{i:07d}",
         "primary_ip4": f"192.168.178.{ip_base}/24",
@@ -312,6 +315,7 @@ for i in range(1, 21):
     net = random.choice(net_values)
     site = random.choice(sites)
     backup_date = random.choice(dates)
+    status = random.choice(statuses)
 
     # Server IPs in different subnet
     ip_num = i
@@ -322,6 +326,7 @@ for i in range(1, 21):
         "platform": "ServerPlatform",
         "roles": ["server"],
         "location": location,
+        "status": status,
         "tags": [tag],
         "serial": f"SRV{i:07d}",
         "primary_ip4": f"192.168.180.{ip_num}/24",
@@ -395,11 +400,14 @@ print("\nDistribution summary:")
 # Count distribution
 location_counts = {}
 tag_counts = {}
+status_counts = {}
 for device in baseline["devices"]:
     loc = device["location"]
     location_counts[loc] = location_counts.get(loc, 0) + 1
     tag = device["tags"][0]
     tag_counts[tag] = tag_counts.get(tag, 0) + 1
+    status = device["status"]
+    status_counts[status] = status_counts.get(status, 0) + 1
 
 print("\nBy Location:")
 for loc, count in sorted(location_counts.items()):
@@ -408,3 +416,7 @@ for loc, count in sorted(location_counts.items()):
 print("\nBy Tag:")
 for tag, count in sorted(tag_counts.items()):
     print(f"  {tag}: {count} devices")
+
+print("\nBy Status:")
+for status, count in sorted(status_counts.items()):
+    print(f"  {status}: {count} devices")
