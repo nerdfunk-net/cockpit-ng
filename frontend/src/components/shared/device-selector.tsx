@@ -325,8 +325,11 @@ export function DeviceSelector({
 
     setIsSavingInventory(true)
     try {
-      // Convert tree to flat conditions for backward compatibility
-      const flatConditions = treeToFlatConditions(conditionTree)
+      // Save the tree structure directly as JSON
+      const treeData = {
+        version: 2, // Version 2 = tree structure
+        tree: conditionTree
+      }
 
       if (existingInventory) {
         // Update existing inventory
@@ -334,7 +337,7 @@ export function DeviceSelector({
           method: 'PUT',
           body: {
             description: saveInventoryDescription || undefined,
-            conditions: flatConditions,
+            conditions: [treeData], // Wrap in array for backend compatibility
           }
         })
       } else {
@@ -344,7 +347,7 @@ export function DeviceSelector({
           body: {
             name: saveInventoryName,
             description: saveInventoryDescription || undefined,
-            conditions: flatConditions,
+            conditions: [treeData], // Wrap in array for backend compatibility
             scope: 'global'
           }
         })
@@ -372,16 +375,28 @@ export function DeviceSelector({
         id: number
         name: string
         description?: string
-        conditions: LogicalCondition[]
+        conditions: any[] // Can be either legacy flat conditions or new tree structure
         scope: string
         created_by: string
         created_at?: string
         updated_at?: string
       }>(`inventory/by-name/${encodeURIComponent(inventoryName)}`)
 
-      // Convert loaded flat conditions to tree structure
-      const loadedTree = flatConditionsToTree(response.conditions)
-      setConditionTree(loadedTree)
+      // Check if this is a new tree structure (version 2) or legacy flat format
+      if (response.conditions && response.conditions.length > 0) {
+        const firstItem = response.conditions[0]
+
+        if (firstItem && typeof firstItem === 'object' && 'version' in firstItem && firstItem.version === 2) {
+          // New tree structure format
+          console.log('Loading tree structure (version 2)')
+          setConditionTree(firstItem.tree)
+        } else {
+          // Legacy flat conditions format
+          console.log('Loading legacy flat conditions (version 1)')
+          const loadedTree = flatConditionsToTree(response.conditions as LogicalCondition[])
+          setConditionTree(loadedTree)
+        }
+      }
 
       setShowPreviewResults(false)
       setPreviewDevices([])
