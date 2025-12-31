@@ -14,19 +14,19 @@ baseline = {
     "location_types": [
         {
             "name": "Country",
-            "description": "A sovereign state or nation",
+            "description": "Country",
             "content_types": "dcim.device"
         },
         {
             "name": "State",
             "parent": "Country",
-            "description": "A subdivision within a country",
+            "description": "State",
             "content_types": "dcim.device"
         },
         {
             "name": "City",
             "parent": "State",
-            "description": "A populated area within a state",
+            "description": "City",
             "content_types": "dcim.device"
         }
     ],
@@ -108,6 +108,11 @@ baseline = {
             "name": "server",
             "description": "This device is a server",
             "content_types": ["dcim.device"]
+        },
+        {
+            "name": "lab",
+            "description": "This is a lab device",
+            "content_types": ["dcim.device"]
         }
     ],
     "tags": [
@@ -124,8 +129,8 @@ baseline = {
             "content_types": ["dcim.device"]
         },
         {
-            "name": "Development",
-            "description": "Development environment",
+            "name": "lab",
+            "description": "Lab environment",
             "color": "blue",
             "content_types": ["dcim.device"]
         }
@@ -164,22 +169,26 @@ baseline = {
     "prefixes": [
         {
             "prefix": "192.168.178.0/24",
-            "description": "LAB Network A"
+            "description": "Network A"
         },
         {
             "prefix": "192.168.179.0/24",
-            "description": "LAB Network B"
+            "description": "Network B"
         },
         {
             "prefix": "192.168.180.0/24",
-            "description": "LAB Server Network"
+            "description": "Server Network"
+        },
+        {
+            "prefix": "192.168.181.0/24",
+            "description": "LAB Network"
         }
     ],
     "custom_field_choices": {
         "net": [
             {"value": "netA", "label": "Network A"},
             {"value": "netB", "label": "Network B"},
-            {"value": "netC", "label": "Network C"}
+            {"value": "lab", "label": "lab"}
         ],
         "checkmk_site": [
             {"value": "siteA", "label": "Site A"},
@@ -245,8 +254,8 @@ baseline = {
 
 # Generate 100 network devices
 cities = ["City A", "City B", "City C"]
-tags = ["Production", "Staging", "Development"]
-net_values = ["netA", "netB", "netC"]
+tags = ["Production", "Staging", "lab"]
+net_values = ["netA", "netB", "lab"]
 sites = ["siteA", "siteB", "siteC"]
 creds = ["credA", "credB", "credC"]
 dates = ["2024-01-15", "2024-02-20", "2024-03-10", "2024-04-05", "2024-05-12", "2024-06-01"]
@@ -333,12 +342,47 @@ for i in range(1, 21):
 
     baseline["devices"].append(device)
 
-# Write to file
+# Write to file with blank lines between sections
 output_file = "/Users/mp/programming/cockpit-ng/backend/tests/baseline.yaml"
 print(f"Writing to {output_file}...")
 
+# Custom YAML dumper to add blank lines between major sections
+class BlankLineDumper(yaml.Dumper):
+    pass
+
+def write_yaml_with_blank_lines(data, file):
+    """Write YAML with blank lines between major sections and devices"""
+    lines = []
+
+    # Write each top-level section
+    for key in data.keys():
+        if key == 'devices':
+            # Handle devices separately to add blank lines between them
+            lines.append('devices:')
+            for i, device in enumerate(data[key]):
+                # Add blank line before each device (except first)
+                if i > 0:
+                    lines.append('')
+                # Dump the device
+                device_yaml = yaml.dump([device], default_flow_style=False, sort_keys=False, allow_unicode=True)
+                # Remove the leading '- ' and adjust indentation
+                device_lines = device_yaml.strip().split('\n')
+                for j, line in enumerate(device_lines):
+                    if j == 0:
+                        lines.append('- ' + line[2:])  # First line with '-'
+                    else:
+                        lines.append('  ' + line)  # Indent other lines
+        else:
+            # For other sections, add blank line before section
+            if lines:  # Add blank line before section (except first)
+                lines.append('')
+            section_yaml = yaml.dump({key: data[key]}, default_flow_style=False, sort_keys=False, allow_unicode=True)
+            lines.extend(section_yaml.rstrip().split('\n'))
+
+    file.write('\n'.join(lines) + '\n')
+
 with open(output_file, 'w') as f:
-    yaml.dump(baseline, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    write_yaml_with_blank_lines(baseline, f)
 
 print("✓ Generated baseline.yaml with:")
 print(f"  - 100 network devices (lab-001 to lab-100)")
