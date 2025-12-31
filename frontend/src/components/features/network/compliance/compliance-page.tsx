@@ -62,8 +62,6 @@ export default function CompliancePage() {
         {/* Devices Tab */}
         <TabsContent value="devices" className="space-y-6">
           <DeviceSelectionTab
-            previewDevices={previewDevices}
-            deviceConditions={deviceConditions}
             selectedDeviceIds={selectedDeviceIds}
             selectedDevices={selectedDevices}
             onDevicesSelected={handleDevicesSelected}

@@ -7,8 +7,6 @@ import { DeviceSelectionTab as UnifiedDeviceSelectionTab } from '@/components/sh
 import type { DeviceInfo, LogicalCondition } from '@/components/shared/device-selector'
 
 interface DeviceSelectionTabProps {
-  previewDevices: DeviceInfo[]
-  deviceConditions: LogicalCondition[]
   selectedDeviceIds: string[]
   selectedDevices: DeviceInfo[]
   onDevicesSelected: (devices: DeviceInfo[], conditions: LogicalCondition[]) => void

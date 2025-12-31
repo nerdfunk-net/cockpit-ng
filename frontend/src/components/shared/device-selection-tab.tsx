@@ -24,8 +24,6 @@ import { DeviceSelector, type DeviceInfo, type LogicalCondition } from './device
 
 interface DeviceSelectionTabProps {
   // Required device selector props
-  previewDevices: DeviceInfo[]
-  deviceConditions: LogicalCondition[]
   selectedDeviceIds: string[]
   selectedDevices: DeviceInfo[]
   onDevicesSelected: (devices: DeviceInfo[], conditions: LogicalCondition[]) => void
@@ -44,8 +42,6 @@ const EMPTY_CONDITIONS: LogicalCondition[] = []
 const EMPTY_DEVICE_IDS: string[] = []
 
 export function DeviceSelectionTab({
-  previewDevices = EMPTY_DEVICES,
-  deviceConditions = EMPTY_CONDITIONS,
   selectedDeviceIds = EMPTY_DEVICE_IDS,
   selectedDevices = EMPTY_DEVICES,
   onDevicesSelected,
@@ -90,8 +86,6 @@ export function DeviceSelectionTab({
         onDevicesSelected={onDevicesSelected}
         showActions={true}
         showSaveLoad={true}
-        initialConditions={deviceConditions}
-        initialDevices={previewDevices}
         enableSelection={true}
         selectedDeviceIds={selectedDeviceIds}
         onSelectionChange={onSelectionChange}

@@ -11,8 +11,6 @@ import { Upload, Info } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface DeviceSelectionTabProps {
-  previewDevices: DeviceInfo[]
-  deviceConditions: LogicalCondition[]
   selectedDeviceIds: string[]
   selectedDevices: DeviceInfo[]
   onDevicesSelected: (devices: DeviceInfo[], conditions: LogicalCondition[]) => void

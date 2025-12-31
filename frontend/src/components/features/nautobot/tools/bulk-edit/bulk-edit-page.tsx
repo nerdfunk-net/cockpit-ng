@@ -352,8 +352,6 @@ export default function BulkEditPage() {
         {/* Devices Tab */}
         <TabsContent value="devices" className="space-y-6">
           <DeviceSelectionTab
-            previewDevices={stableState.previewDevices}
-            deviceConditions={stableState.deviceConditions}
             selectedDeviceIds={stableState.selectedDeviceIds}
             selectedDevices={stableState.selectedDevices}
             onDevicesSelected={handleDevicesSelected}
