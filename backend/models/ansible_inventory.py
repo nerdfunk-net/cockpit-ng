@@ -97,8 +97,8 @@ class SavedInventory(BaseModel):
 
     name: str = Field(..., description="Inventory name")
     description: Optional[str] = Field(None, description="Inventory description")
-    conditions: List[SavedInventoryCondition] = Field(
-        ..., description="List of logical conditions"
+    conditions: List[dict] = Field(
+        ..., description="List of logical conditions or tree structure"
     )
     created_at: Optional[str] = Field(None, description="Creation timestamp")
     updated_at: Optional[str] = Field(None, description="Last update timestamp")

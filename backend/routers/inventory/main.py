@@ -37,8 +37,8 @@ class CreateInventoryRequest(BaseModel):
 
     name: str = Field(..., description="Inventory name")
     description: Optional[str] = Field(None, description="Inventory description")
-    conditions: List[SavedInventoryCondition] = Field(
-        ..., description="List of logical conditions"
+    conditions: List[dict] = Field(
+        ..., description="List of logical conditions or tree structure"
     )
     template_category: Optional[str] = Field(
         None, description="Template category (optional)"
@@ -52,8 +52,8 @@ class UpdateInventoryRequest(BaseModel):
 
     name: Optional[str] = Field(None, description="Inventory name")
     description: Optional[str] = Field(None, description="Inventory description")
-    conditions: Optional[List[SavedInventoryCondition]] = Field(
-        None, description="List of logical conditions"
+    conditions: Optional[List[dict]] = Field(
+        None, description="List of logical conditions or tree structure"
     )
     template_category: Optional[str] = Field(None, description="Template category")
     template_name: Optional[str] = Field(None, description="Template name")
@@ -66,7 +66,7 @@ class InventoryResponse(BaseModel):
     id: int
     name: str
     description: Optional[str]
-    conditions: List[SavedInventoryCondition]
+    conditions: List[dict]
     template_category: Optional[str]
     template_name: Optional[str]
     scope: str
