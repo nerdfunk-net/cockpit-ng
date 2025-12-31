@@ -26,7 +26,8 @@ import {
   ChevronRight,
   Save,
   FolderOpen,
-  Settings
+  Settings,
+  HelpCircle
 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 import { ManageInventoryDialog } from '@/components/features/network/automation/ansible-inventory/dialogs/manage-inventory-dialog'
@@ -143,6 +144,7 @@ export function DeviceSelector({
 
   // Modal states
   const [showLogicalTreeModal, setShowLogicalTreeModal] = useState(false)
+  const [showHelpModal, setShowHelpModal] = useState(false)
 
   // Field options and values
   const [fieldOptions, setFieldOptions] = useState<FieldOption[]>([])
@@ -1201,9 +1203,14 @@ export function DeviceSelector({
             <Filter className="h-4 w-4" />
             <span className="text-sm font-medium">Device Filter</span>
           </div>
-          <div className="text-xs text-blue-100">
-            Build logical operations to filter devices
-          </div>
+          <button
+            onClick={() => setShowHelpModal(true)}
+            className="flex items-center gap-1.5 text-xs text-white/90 hover:text-white hover:bg-white/10 px-2.5 py-1 rounded transition-colors"
+            title="Show help and examples"
+          >
+            <HelpCircle className="h-3.5 w-3.5" />
+            <span>Help</span>
+          </button>
         </div>
         <div className="p-6 bg-gradient-to-b from-white to-gray-50">
           {/* Target Location Indicator */}
@@ -1855,6 +1862,214 @@ export function DeviceSelector({
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     Copy to Clipboard
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Help Modal */}
+          <Dialog open={showHelpModal} onOpenChange={setShowHelpModal}>
+            <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold text-blue-900">Building Logical Filter Expressions</DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-6 mt-4">
+                {/* Introduction */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-blue-900 mb-2">What is this?</h3>
+                  <p className="text-sm text-blue-800">
+                    The logical expression builder allows you to create complex device filters with <strong>groups</strong> and
+                    <strong> proper bracket precedence</strong> using AND, OR, and NOT operations. Think of it like writing advanced
+                    search queries with parentheses to control evaluation order.
+                  </p>
+                </div>
+
+                {/* Quick Start */}
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-sm">Quick Start</span>
+                    Building Simple Conditions
+                  </h3>
+                  <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700 ml-2">
+                    <li><strong>Select a field</strong> (Location, Role, Status, etc.)</li>
+                    <li><strong>Choose an operator</strong> (equals, contains)</li>
+                    <li><strong>Enter a value</strong></li>
+                    <li><strong>Select Connector</strong> (AND or OR) - this determines how the NEXT item connects</li>
+                    <li><strong>Optional:</strong> Check <strong>&quot;Negate (NOT)&quot;</strong> to exclude instead of include</li>
+                    <li><strong>Click the &quot;+&quot; button</strong> to add the condition</li>
+                  </ol>
+                </div>
+
+                {/* Understanding Connectors */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-yellow-900 mb-2">Understanding Connectors</h3>
+                  <div className="text-sm text-yellow-800 space-y-2">
+                    <p><strong>Connector dropdown (AND/OR):</strong> Determines how this item combines with the previous item</p>
+                    <p><strong>Negate checkbox:</strong> When checked, creates NOT logic (excludes the condition)</p>
+                    <p className="font-semibold mt-3">Examples:</p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Connector=AND + Negate checked = <strong>&quot;AND NOT&quot;</strong> (include previous AND exclude this)</li>
+                      <li>Connector=OR + Negate checked = <strong>&quot;OR NOT&quot;</strong> (include previous OR exclude this)</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Creating Groups */}
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Creating Groups (Advanced)</h3>
+                  <p className="text-sm text-gray-700 mb-2">
+                    Groups allow you to control the order of evaluation, just like using parentheses in mathematics:
+                  </p>
+                  <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700 ml-2">
+                    <li>Click the <strong>&quot;+ Group&quot;</strong> button to create an empty group</li>
+                    <li><strong>Click on the group</strong> to set it as the active target (it will highlight in blue)</li>
+                    <li>Add conditions inside the group using the regular &quot;+&quot; button</li>
+                    <li>Click <strong>&quot;Toggle&quot;</strong> on a group to switch between AND/OR logic</li>
+                    <li>Click <strong>&quot;Back to Root&quot;</strong> to return to adding items at the root level</li>
+                  </ol>
+                </div>
+
+                {/* Root Logic */}
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-purple-900 mb-2">Root Logic Configuration</h3>
+                  <p className="text-sm text-purple-800 mb-2">
+                    The <strong>Root logic</strong> determines how all top-level items (conditions and groups) are combined:
+                  </p>
+                  <ul className="list-disc list-inside text-sm text-purple-800 space-y-1 ml-4">
+                    <li><strong>Root logic: AND</strong> - All top-level items must match</li>
+                    <li><strong>Root logic: OR</strong> - At least one top-level item must match</li>
+                    <li>Click the <strong>&quot;Toggle&quot;</strong> button next to &quot;Root logic:&quot; to switch</li>
+                  </ul>
+                </div>
+
+                {/* Visual Indicators */}
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Visual Indicators</h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="flex items-start gap-2">
+                      <div className="w-4 h-4 bg-blue-100 border-2 border-blue-400 rounded mt-0.5"></div>
+                      <div>
+                        <strong>Blue boxes:</strong> Individual conditions
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-4 h-4 bg-purple-50 border-l-4 border-purple-300 mt-0.5"></div>
+                      <div>
+                        <strong>Purple boxes:</strong> Groups (click to target)
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-4 h-4 bg-blue-50 border-2 border-blue-600 rounded mt-0.5"></div>
+                      <div>
+                        <strong>Dark blue border:</strong> Active target group
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Badge className="bg-blue-500 text-white text-xs mt-0.5">Active Target</Badge>
+                      <div>
+                        <strong>Badge:</strong> Currently selected group
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Example 1 */}
+                <div className="border border-gray-200 rounded-lg p-4 bg-gradient-to-br from-white to-gray-50">
+                  <h3 className="font-semibold text-gray-900 mb-2">Example 1: Multiple Locations with Status Filter</h3>
+                  <p className="text-sm text-gray-600 mb-3"><strong>Goal:</strong> Get devices from City A OR City B that are Active</p>
+                  <div className="bg-gray-800 text-green-400 p-3 rounded font-mono text-xs mb-3">
+                    (Location = City A OR Location = City B) AND Status = Active
+                  </div>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">Steps:</p>
+                  <ol className="list-decimal list-inside space-y-1.5 text-sm text-gray-700 ml-2">
+                    <li>Click <strong>&quot;+ Group&quot;</strong> - empty group created</li>
+                    <li><strong>Click on the group</strong> - it highlights blue, shows &quot;Active Target&quot;</li>
+                    <li>Add: Field=Location, Value=&quot;City A&quot;, click <strong>&quot;+&quot;</strong></li>
+                    <li>Add: Field=Location, Value=&quot;City B&quot;, click <strong>&quot;+&quot;</strong></li>
+                    <li>Click <strong>&quot;Toggle&quot;</strong> on group to change from AND to OR</li>
+                    <li>Click <strong>&quot;Back to Root&quot;</strong></li>
+                    <li>Add: Field=Status, Value=&quot;Active&quot;, click <strong>&quot;+&quot;</strong></li>
+                  </ol>
+                  <div className="mt-3 p-2 bg-white border border-gray-200 rounded text-xs font-mono">
+                    <div>ROOT (AND logic)</div>
+                    <div>├─ GROUP (OR logic)</div>
+                    <div>│&nbsp;&nbsp;├─ Location equals &quot;City A&quot;</div>
+                    <div>│&nbsp;&nbsp;└─ Location equals &quot;City B&quot;</div>
+                    <div>└─ Status equals &quot;Active&quot;</div>
+                  </div>
+                </div>
+
+                {/* Example 2 */}
+                <div className="border border-gray-200 rounded-lg p-4 bg-gradient-to-br from-white to-gray-50">
+                  <h3 className="font-semibold text-gray-900 mb-2">Example 2: Exclude Devices</h3>
+                  <p className="text-sm text-gray-600 mb-3"><strong>Goal:</strong> Get all active network devices EXCEPT those tagged &quot;lab&quot;</p>
+                  <div className="bg-gray-800 text-green-400 p-3 rounded font-mono text-xs mb-3">
+                    Role = Network AND Status = Active AND NOT Tag = lab
+                  </div>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">Steps:</p>
+                  <ol className="list-decimal list-inside space-y-1.5 text-sm text-gray-700 ml-2">
+                    <li>Add: Field=Role, Value=&quot;Network&quot;, click <strong>&quot;+&quot;</strong></li>
+                    <li>Add: Field=Status, Connector=AND, Value=&quot;Active&quot;, click <strong>&quot;+&quot;</strong></li>
+                    <li>Add: Field=Tag, Connector=AND, <strong>Check &quot;Negate (NOT)&quot;</strong>, Value=&quot;lab&quot;, click <strong>&quot;+&quot;</strong></li>
+                  </ol>
+                  <p className="text-sm text-gray-600 mt-3"><strong>Result:</strong> Devices with Role=Network AND Status=Active AND NOT Tag=lab</p>
+                </div>
+
+                {/* Example 3 */}
+                <div className="border border-gray-200 rounded-lg p-4 bg-gradient-to-br from-white to-gray-50">
+                  <h3 className="font-semibold text-gray-900 mb-2">Example 3: Complex Multi-Group Expression</h3>
+                  <p className="text-sm text-gray-600 mb-3"><strong>Goal:</strong> Network devices in City A OR servers in City B</p>
+                  <div className="bg-gray-800 text-green-400 p-3 rounded font-mono text-xs mb-3">
+                    (Location = City A AND Role = Network) OR (Location = City B AND Role = server)
+                  </div>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">Steps:</p>
+                  <ol className="list-decimal list-inside space-y-1.5 text-sm text-gray-700 ml-2">
+                    <li>Create Group 1, click it, add Location=&quot;City A&quot; and Role=&quot;Network&quot;</li>
+                    <li>Back to Root, toggle root logic to <strong>OR</strong></li>
+                    <li>Create Group 2, click it, add Location=&quot;City B&quot; and Role=&quot;server&quot;</li>
+                  </ol>
+                </div>
+
+                {/* Tips */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-green-900 mb-2">Pro Tips</h3>
+                  <ul className="list-disc list-inside text-sm text-green-800 space-y-1 ml-2">
+                    <li><strong>Start simple:</strong> Add individual conditions first, then group them if needed</li>
+                    <li><strong>Use &quot;Show Tree&quot;:</strong> Click to see ASCII visualization of your expression</li>
+                    <li><strong>Save frequently:</strong> Use the &quot;Save&quot; button to store complex filters for reuse</li>
+                    <li><strong>Test incrementally:</strong> Use &quot;Preview Results&quot; after building each group</li>
+                    <li><strong>Root logic matters:</strong> Don&apos;t forget to check the root-level logic operator</li>
+                  </ul>
+                </div>
+
+                {/* Troubleshooting */}
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Troubleshooting</h3>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    <div>
+                      <strong>Q: My groups disappeared after clicking preview?</strong>
+                      <p className="ml-4 text-gray-600">A: This should no longer happen. If it does, please report the bug.</p>
+                    </div>
+                    <div>
+                      <strong>Q: How do I add conditions to a specific group?</strong>
+                      <p className="ml-4 text-gray-600">A: Click on the group - it will highlight blue and show &quot;Active Target&quot; badge. All new conditions will be added inside that group.</p>
+                    </div>
+                    <div>
+                      <strong>Q: What&apos;s the difference between Group logic and Root logic?</strong>
+                      <p className="ml-4 text-gray-600">A: <strong>Group logic</strong> controls how items inside a group combine. <strong>Root logic</strong> controls how top-level items (including groups) combine.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Close Button */}
+                <div className="flex justify-end pt-4 border-t">
+                  <Button
+                    onClick={() => setShowHelpModal(false)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Got it, thanks!
                   </Button>
                 </div>
               </div>
