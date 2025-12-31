@@ -1,0 +1,366 @@
+#!/usr/bin/env python3
+"""
+Generate baseline.yaml with 100 network devices and 20 servers
+Randomly distributed across City A, B, C with varied tags and custom fields
+"""
+
+import random
+import yaml
+
+# Set seed for reproducibility
+random.seed(42)
+
+baseline = {
+    "location_types": [
+        {
+            "name": "Country",
+            "description": "A sovereign state or nation",
+            "content_types": "dcim.device"
+        },
+        {
+            "name": "State",
+            "parent": "Country",
+            "description": "A subdivision within a country",
+            "content_types": "dcim.device"
+        },
+        {
+            "name": "City",
+            "parent": "State",
+            "description": "A populated area within a state",
+            "content_types": "dcim.device"
+        }
+    ],
+    "location": [
+        # Country A hierarchy
+        {
+            "location_types": "Country",
+            "parent": None,
+            "name": "Country A",
+            "status": "active",
+            "description": "Country A"
+        },
+        {
+            "parent": "Country A",
+            "location_types": "State",
+            "name": "State A",
+            "description": "State A",
+            "status": "active"
+        },
+        {
+            "parent": "State A",
+            "location_types": "City",
+            "name": "City A",
+            "description": "City A",
+            "status": "active"
+        },
+        # Country B hierarchy
+        {
+            "location_types": "Country",
+            "parent": None,
+            "name": "Country B",
+            "status": "active",
+            "description": "Country B"
+        },
+        {
+            "parent": "Country B",
+            "location_types": "State",
+            "name": "State B",
+            "description": "State B",
+            "status": "active"
+        },
+        {
+            "parent": "State B",
+            "location_types": "City",
+            "name": "City B",
+            "description": "City B",
+            "status": "active"
+        },
+        # Country C hierarchy
+        {
+            "location_types": "Country",
+            "parent": None,
+            "name": "Country C",
+            "status": "active",
+            "description": "Country C"
+        },
+        {
+            "parent": "Country C",
+            "location_types": "State",
+            "name": "State C",
+            "description": "State C",
+            "status": "active"
+        },
+        {
+            "parent": "State C",
+            "location_types": "City",
+            "name": "City C",
+            "description": "City C",
+            "status": "active"
+        }
+    ],
+    "roles": [
+        {
+            "name": "Network",
+            "description": "This device is a network device",
+            "content_types": ["dcim.device"]
+        },
+        {
+            "name": "server",
+            "description": "This device is a server",
+            "content_types": ["dcim.device"]
+        }
+    ],
+    "tags": [
+        {
+            "name": "Production",
+            "description": "Production environment",
+            "color": "green",
+            "content_types": ["dcim.device"]
+        },
+        {
+            "name": "Staging",
+            "description": "Staging environment",
+            "color": "yellow",
+            "content_types": ["dcim.device"]
+        },
+        {
+            "name": "Development",
+            "description": "Development environment",
+            "color": "blue",
+            "content_types": ["dcim.device"]
+        }
+    ],
+    "manufacturers": [
+        {
+            "name": "NetworkInc",
+            "description": "Network Incorporated"
+        },
+        {
+            "name": "ServerInc",
+            "description": "Server Incorporated"
+        }
+    ],
+    "device_types": [
+        {
+            "manufacturer": "NetworkInc",
+            "model": "networkA"
+        },
+        {
+            "manufacturer": "ServerInc",
+            "model": "serverA"
+        }
+    ],
+    "platforms": [
+        {
+            "name": "Cisco IOS",
+            "manufacturer": "Cisco",
+            "network_driver": "cisco_ios"
+        },
+        {
+            "name": "ServerPlatform",
+            "manufacturer": "ServerInc"
+        }
+    ],
+    "prefixes": [
+        {
+            "prefix": "192.168.178.0/24",
+            "description": "LAB Network A"
+        },
+        {
+            "prefix": "192.168.179.0/24",
+            "description": "LAB Network B"
+        },
+        {
+            "prefix": "192.168.180.0/24",
+            "description": "LAB Server Network"
+        }
+    ],
+    "custom_field_choices": {
+        "net": [
+            {"value": "netA", "label": "Network A"},
+            {"value": "netB", "label": "Network B"},
+            {"value": "netC", "label": "Network C"}
+        ],
+        "checkmk_site": [
+            {"value": "siteA", "label": "Site A"},
+            {"value": "siteB", "label": "Site B"},
+            {"value": "siteC", "label": "Site C"}
+        ],
+        "snmp_credentials": [
+            {"value": "credA", "label": "Credential A"},
+            {"value": "credB", "label": "Credential B"},
+            {"value": "credC", "label": "Credential C"}
+        ]
+    },
+    "custom_fields": {
+        "net": [
+            {
+                "label": "net",
+                "type": "select",
+                "selection_type": "single",
+                "selections": ["netA", "netB", "netC"],
+                "description": "Network assignment",
+                "content_types": ["dcim.device"]
+            }
+        ],
+        "checkmk_site": [
+            {
+                "label": "checkmk_site",
+                "type": "select",
+                "selection_type": "single",
+                "selections": ["siteA", "siteB", "siteC"],
+                "description": "CheckMK Site Name",
+                "content_types": ["dcim.device"]
+            }
+        ],
+        "free_textfield": [
+            {
+                "label": "free_textfield",
+                "type": "text",
+                "description": "A free text field for devices",
+                "content_types": ["dcim.device"]
+            }
+        ],
+        "last_backup": [
+            {
+                "label": "last_backup",
+                "type": "date",
+                "description": "Date of the last backup",
+                "content_types": ["dcim.device"]
+            }
+        ],
+        "snmp_credentials": [
+            {
+                "label": "snmp_credentials",
+                "type": "select",
+                "selection_type": "single",
+                "selections": ["credA", "credB", "credC"],
+                "description": "SNMP Credentials",
+                "content_types": ["dcim.device"]
+            }
+        ]
+    },
+    "devices": []
+}
+
+# Generate 100 network devices
+cities = ["City A", "City B", "City C"]
+tags = ["Production", "Staging", "Development"]
+net_values = ["netA", "netB", "netC"]
+sites = ["siteA", "siteB", "siteC"]
+creds = ["credA", "credB", "credC"]
+dates = ["2024-01-15", "2024-02-20", "2024-03-10", "2024-04-05", "2024-05-12", "2024-06-01"]
+
+print("Generating 100 network devices...")
+for i in range(1, 101):
+    location = random.choice(cities)
+    tag = random.choice(tags)
+    net = random.choice(net_values)
+    site = random.choice(sites)
+    cred = random.choice(creds)
+    backup_date = random.choice(dates)
+
+    # Random IP addresses
+    ip_base = random.randint(1, 253)
+
+    device = {
+        "name": f"lab-{i:03d}",
+        "device_type": "networkA",
+        "platform": "Cisco IOS",
+        "roles": ["Network"],
+        "location": location,
+        "tags": [tag],
+        "serial": f"NET{i:07d}",
+        "primary_ip4": f"192.168.178.{ip_base}/24",
+        "interfaces": [
+            {
+                "name": "GigabitEthernet1/0/1",
+                "type": "1000base-t",
+                "ip_address": f"192.168.178.{ip_base}/24"
+            },
+            {
+                "name": "GigabitEthernet1/0/2",
+                "type": "1000base-t",
+                "ip_address": f"192.168.179.{ip_base}/24"
+            }
+        ],
+        "custom_fields": {
+            "net": net,
+            "checkmk_site": site,
+            "free_textfield": f"Network device in {location}",
+            "last_backup": backup_date,
+            "snmp_credentials": cred
+        }
+    }
+
+    baseline["devices"].append(device)
+
+# Generate 20 server devices
+print("Generating 20 server devices...")
+for i in range(1, 21):
+    location = random.choice(cities)
+    tag = random.choice(tags)
+    net = random.choice(net_values)
+    site = random.choice(sites)
+    backup_date = random.choice(dates)
+
+    # Server IPs in different subnet
+    ip_num = i
+
+    device = {
+        "name": f"server-{i:02d}",
+        "device_type": "serverA",
+        "platform": "ServerPlatform",
+        "roles": ["server"],
+        "location": location,
+        "tags": [tag],
+        "serial": f"SRV{i:07d}",
+        "primary_ip4": f"192.168.180.{ip_num}/24",
+        "interfaces": [
+            {
+                "name": "eth0",
+                "type": "1000base-t",
+                "ip_address": f"192.168.180.{ip_num}/24"
+            }
+        ],
+        "custom_fields": {
+            "net": net,
+            "checkmk_site": site,
+            "free_textfield": f"Server in {location}",
+            "last_backup": backup_date
+        }
+    }
+
+    baseline["devices"].append(device)
+
+# Write to file
+output_file = "/Users/mp/programming/cockpit-ng/backend/tests/baseline.yaml"
+print(f"Writing to {output_file}...")
+
+with open(output_file, 'w') as f:
+    yaml.dump(baseline, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+
+print("✓ Generated baseline.yaml with:")
+print(f"  - 100 network devices (lab-001 to lab-100)")
+print(f"  - 20 server devices (server-01 to server-20)")
+print(f"  - Randomly distributed across: {', '.join(cities)}")
+print(f"  - Random tags: {', '.join(tags)}")
+print(f"  - Random custom fields for testing logical expressions")
+print("\nDistribution summary:")
+
+# Count distribution
+location_counts = {}
+tag_counts = {}
+for device in baseline["devices"]:
+    loc = device["location"]
+    location_counts[loc] = location_counts.get(loc, 0) + 1
+    tag = device["tags"][0]
+    tag_counts[tag] = tag_counts.get(tag, 0) + 1
+
+print("\nBy Location:")
+for loc, count in sorted(location_counts.items()):
+    print(f"  {loc}: {count} devices")
+
+print("\nBy Tag:")
+for tag, count in sorted(tag_counts.items()):
+    print(f"  {tag}: {count} devices")
