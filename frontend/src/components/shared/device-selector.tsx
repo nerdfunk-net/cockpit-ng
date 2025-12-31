@@ -139,6 +139,7 @@ export function DeviceSelector({
   const [currentOperator, setCurrentOperator] = useState('equals')
   const [currentValue, setCurrentValue] = useState('')
   const [currentLogic, setCurrentLogic] = useState('AND')
+  const [currentNegate, setCurrentNegate] = useState(false)
 
   // Track current editing context (which group we're adding to)
   const [currentGroupPath, setCurrentGroupPath] = useState<string[]>([]) // Array of group IDs representing path
@@ -627,6 +628,7 @@ export function DeviceSelector({
     setCurrentOperator('equals')
     setCurrentValue('')
     setCurrentLogic('AND')
+    setCurrentNegate(false)
     setLocationSearchValue('')
     setSelectedLocationValue('')
     setFieldValues([])
@@ -634,10 +636,16 @@ export function DeviceSelector({
 
   // NEW: Add a new group to the tree
   const addGroup = () => {
+    // Determine group logic based on currentLogic and currentNegate
+    let groupLogic: 'AND' | 'OR' | 'NOT' = currentLogic as 'AND' | 'OR'
+    if (currentNegate) {
+      groupLogic = 'NOT'
+    }
+
     const newGroup: ConditionGroup = {
       id: generateId(),
       type: 'group',
-      logic: currentLogic as 'AND' | 'OR' | 'NOT',
+      logic: groupLogic,
       internalLogic: 'AND',  // Default to AND within group
       items: []
     }
@@ -676,6 +684,9 @@ export function DeviceSelector({
 
       return newTree
     })
+
+    // Reset negate state after adding group
+    setCurrentNegate(false)
   }
 
   // NEW: Remove item from tree by ID
@@ -1368,21 +1379,31 @@ export function DeviceSelector({
               )}
             </div>
 
-            {/* Logic Selection */}
+            {/* Logic Selection - Split into two controls */}
             <div className="space-y-2">
               <Label htmlFor="logic">Logic</Label>
-              <Select value={currentLogic} onValueChange={setCurrentLogic}>
-                <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
-                  <SelectValue placeholder="Select logic..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {logicOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col gap-2">
+                {/* Dropdown for AND/OR */}
+                <Select value={currentLogic} onValueChange={setCurrentLogic}>
+                  <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                    <SelectValue placeholder="Select logic..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AND">AND</SelectItem>
+                    <SelectItem value="OR">OR</SelectItem>
+                  </SelectContent>
+                </Select>
+                {/* Checkbox for Negate */}
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={currentNegate}
+                    onChange={(e) => setCurrentNegate(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-gray-700">Negate (NOT)</span>
+                </label>
+              </div>
             </div>
 
             {/* Action Buttons */}
