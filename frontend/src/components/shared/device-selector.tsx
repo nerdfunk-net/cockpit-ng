@@ -970,19 +970,25 @@ export function DeviceSelector({
       if (regularItems.length === 1) {
         operations.push(regularItems[0])
       } else {
-        // Combine multiple items according to root internal logic
-        const allConditions: any[] = []
-        const allNested: any[] = []
+        // Separate root-level conditions from groups
+        const rootConditions: any[] = []
+        const nestedOps: any[] = []
 
         regularItems.forEach(item => {
-          allConditions.push(...item.conditions)
-          allNested.push(...item.nested_operations)
+          // Check if this item represents a group or a single condition
+          if (item.conditions.length > 1 || item.nested_operations.length > 0) {
+            // This is a group - add it as a nested operation
+            nestedOps.push(item)
+          } else if (item.conditions.length === 1) {
+            // This is a single condition - add to root conditions
+            rootConditions.push(...item.conditions)
+          }
         })
 
         operations.push({
           operation_type: internalLogic,
-          conditions: allConditions,
-          nested_operations: allNested
+          conditions: rootConditions,
+          nested_operations: nestedOps
         })
       }
     }
