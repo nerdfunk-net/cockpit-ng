@@ -144,6 +144,9 @@ export function DeviceSelector({
   // Track current editing context (which group we're adding to)
   const [currentGroupPath, setCurrentGroupPath] = useState<string[]>([]) // Array of group IDs representing path
 
+  // Modal states
+  const [showLogicalTreeModal, setShowLogicalTreeModal] = useState(false)
+
   // Field options and values
   const [fieldOptions, setFieldOptions] = useState<FieldOption[]>([])
   const [operatorOptions, setOperatorOptions] = useState<FieldOption[]>([])
@@ -785,6 +788,60 @@ export function DeviceSelector({
     return `Group ${currentGroupPath.length}`
   }
 
+  // NEW: Generate ASCII tree visualization
+  const generateTreeVisualization = (): string => {
+    const lines: string[] = []
+
+    // Add header
+    lines.push(`ROOT (${conditionTree.internalLogic})`)
+
+    if (conditionTree.items.length === 0) {
+      lines.push('  (empty)')
+      return lines.join('\n')
+    }
+
+    const renderTreeItemText = (
+      item: ConditionItem | ConditionGroup,
+      prefix: string = '',
+      isLast: boolean = true,
+      isFirst: boolean = false
+    ) => {
+      const connector = isLast ? '└─ ' : '├─ '
+      const extension = isLast ? '   ' : '│  '
+
+      if ('type' in item && item.type === 'group') {
+        const group = item as ConditionGroup
+
+        // Add logic operator badge if not first
+        const logicBadge = !isFirst ? `[${group.logic}] ` : ''
+        lines.push(`${prefix}${connector}${logicBadge}GROUP (${group.internalLogic})`)
+
+        // Render group items
+        if (group.items.length === 0) {
+          lines.push(`${prefix}${extension}   (empty group)`)
+        } else {
+          group.items.forEach((subItem, subIndex) => {
+            const subIsLast = subIndex === group.items.length - 1
+            renderTreeItemText(subItem, `${prefix}${extension}`, subIsLast, subIndex === 0)
+          })
+        }
+      } else {
+        // This is a condition
+        const condition = item as ConditionItem
+        const fieldLabel = getFieldLabel(condition.field)
+        lines.push(`${prefix}${connector}${fieldLabel} ${condition.operator} "${condition.value}"`)
+      }
+    }
+
+    // Render all root-level items
+    conditionTree.items.forEach((item, index) => {
+      const isLast = index === conditionTree.items.length - 1
+      renderTreeItemText(item, '', isLast, index === 0)
+    })
+
+    return lines.join('\n')
+  }
+
   // LEGACY: Keep for backward compatibility
   const addCondition = () => {
     if (!currentField || !currentValue) {
@@ -1420,6 +1477,17 @@ export function DeviceSelector({
                 <Button onClick={() => setConditionTree(createEmptyTree())} variant="outline" size="sm" title="Clear All">
                   <RotateCcw className="h-4 w-4" />
                 </Button>
+                <Button
+                  onClick={() => setShowLogicalTreeModal(true)}
+                  variant="outline"
+                  size="sm"
+                  title="Show Logical Tree"
+                  disabled={conditionTree.items.length === 0}
+                  className="ml-auto"
+                >
+                  <Settings className="h-4 w-4 mr-1" />
+                  <span className="text-xs">Show Tree</span>
+                </Button>
               </div>
             </div>
           </div>
@@ -1829,6 +1897,52 @@ export function DeviceSelector({
             inventories={savedInventories}
             isLoading={isLoadingInventories}
           />
+
+          {/* Logical Tree Visualization Modal */}
+          <Dialog open={showLogicalTreeModal} onOpenChange={setShowLogicalTreeModal}>
+            <DialogContent className="sm:max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>Logical Expression Tree</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 mt-4">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <pre className="font-mono text-sm whitespace-pre overflow-x-auto">
+                    {generateTreeVisualization()}
+                  </pre>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-900">
+                    <strong>Legend:</strong>
+                  </p>
+                  <ul className="text-xs text-blue-800 mt-2 space-y-1 ml-4">
+                    <li>• <strong>ROOT (AND/OR)</strong>: How root-level items are combined</li>
+                    <li>• <strong>[AND/OR/NOT]</strong>: Logic operator before this item</li>
+                    <li>• <strong>GROUP (AND/OR)</strong>: How items inside the group are combined</li>
+                    <li>• <strong>└─</strong> or <strong>├─</strong>: Tree structure connectors</li>
+                    <li>• <strong>│</strong>: Vertical connection line</li>
+                  </ul>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowLogicalTreeModal(false)}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const treeText = generateTreeVisualization()
+                      navigator.clipboard.writeText(treeText)
+                      alert('Tree copied to clipboard!')
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Copy to Clipboard
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>
