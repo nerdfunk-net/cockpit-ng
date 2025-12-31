@@ -113,13 +113,11 @@ async def create_inventory(
                 detail="Username not found in token",
             )
 
-        # Convert Pydantic models to dicts for the manager
-        conditions_list = [cond.model_dump() for cond in request.conditions]
-
+        # Conditions are already dicts (flexible structure for tree format)
         inventory_data = {
             "name": request.name,
             "description": request.description,
-            "conditions": conditions_list,
+            "conditions": request.conditions,
             "template_category": request.template_category,
             "template_name": request.template_name,
             "scope": request.scope,
@@ -308,9 +306,8 @@ async def update_inventory(
         if request.description is not None:
             update_data["description"] = request.description
         if request.conditions is not None:
-            update_data["conditions"] = [
-                cond.model_dump() for cond in request.conditions
-            ]
+            # Conditions are already dicts (flexible structure for tree format)
+            update_data["conditions"] = request.conditions
         if request.template_category is not None:
             update_data["template_category"] = request.template_category
         if request.template_name is not None:
