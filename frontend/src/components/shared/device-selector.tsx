@@ -319,7 +319,7 @@ export function DeviceSelector({
       return
     }
 
-    if (conditions.length === 0) {
+    if (conditionTree.items.length === 0) {
       alert('Please add at least one condition before saving.')
       return
     }
@@ -333,13 +333,16 @@ export function DeviceSelector({
 
     setIsSavingInventory(true)
     try {
+      // Convert tree to flat conditions for backward compatibility
+      const flatConditions = treeToFlatConditions(conditionTree)
+
       if (existingInventory) {
         // Update existing inventory
         await apiCall(`inventory/${existingInventory.id}`, {
           method: 'PUT',
           body: {
             description: saveInventoryDescription || undefined,
-            conditions: conditions,
+            conditions: flatConditions,
           }
         })
       } else {
@@ -349,7 +352,7 @@ export function DeviceSelector({
           body: {
             name: saveInventoryName,
             description: saveInventoryDescription || undefined,
-            conditions: conditions,
+            conditions: flatConditions,
             scope: 'global'
           }
         })
@@ -384,7 +387,13 @@ export function DeviceSelector({
         updated_at?: string
       }>(`inventory/by-name/${encodeURIComponent(inventoryName)}`)
 
+      // Convert loaded flat conditions to tree structure
+      const loadedTree = flatConditionsToTree(response.conditions)
+      setConditionTree(loadedTree)
+
+      // Also update legacy conditions for backward compatibility
       setConditions(response.conditions)
+
       setShowPreviewResults(false)
       setPreviewDevices([])
       setShowLoadModal(false)
@@ -395,7 +404,7 @@ export function DeviceSelector({
   }
 
   const openSaveModal = async () => {
-    if (conditions.length === 0) {
+    if (conditionTree.items.length === 0) {
       alert('Please add at least one condition before saving.')
       return
     }
@@ -1132,6 +1141,28 @@ export function DeviceSelector({
 
     flatten(tree.items, tree.internalLogic)
     return flatConditions
+  }
+
+  // Helper to convert flat conditions to tree structure (for loading saved inventories)
+  const flatConditionsToTree = (flatConditions: LogicalCondition[]): ConditionTree => {
+    const tree: ConditionTree = {
+      type: 'root',
+      internalLogic: 'AND',
+      items: []
+    }
+
+    // Simple conversion: each flat condition becomes a ConditionItem at root level
+    flatConditions.forEach((condition) => {
+      const item: ConditionItem = {
+        id: generateId(),
+        field: condition.field,
+        operator: condition.operator,
+        value: condition.value
+      }
+      tree.items.push(item)
+    })
+
+    return tree
   }
 
   const getFieldLabel = (field: string) => {
