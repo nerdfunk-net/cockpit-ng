@@ -1,3 +1,25 @@
+# Baseline Test Data Statistics
+# ==============================
+# Total Devices: 120
+#   - Network Devices: 100
+#   - Server Devices: 20
+#
+# Distribution by Location:
+#   - City A: 39 devices
+#   - City B: 40 devices
+#   - City C: 41 devices
+#
+# Distribution by Status:
+#   - Active: 66 devices
+#   - Offline: 54 devices
+#
+# Distribution by Tag:
+#   - Production: 39 devices
+#   - Staging: 52 devices
+#   - lab: 29 devices
+#
+
+
 location_types:
 - name: Country
   description: Country

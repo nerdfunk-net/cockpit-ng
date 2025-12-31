@@ -355,9 +355,30 @@ print(f"Writing to {output_file}...")
 class BlankLineDumper(yaml.Dumper):
     pass
 
-def write_yaml_with_blank_lines(data, file):
+def write_yaml_with_blank_lines(data, file, stats):
     """Write YAML with blank lines between major sections and devices"""
     lines = []
+
+    # Write statistics header as YAML comments
+    lines.append('# Baseline Test Data Statistics')
+    lines.append('# ==============================')
+    lines.append(f'# Total Devices: {stats["total_devices"]}')
+    lines.append(f'#   - Network Devices: {stats["network_devices"]}')
+    lines.append(f'#   - Server Devices: {stats["server_devices"]}')
+    lines.append('#')
+    lines.append('# Distribution by Location:')
+    for loc, count in sorted(stats["locations"].items()):
+        lines.append(f'#   - {loc}: {count} devices')
+    lines.append('#')
+    lines.append('# Distribution by Status:')
+    for status, count in sorted(stats["statuses"].items()):
+        lines.append(f'#   - {status}: {count} devices')
+    lines.append('#')
+    lines.append('# Distribution by Tag:')
+    for tag, count in sorted(stats["tags"].items()):
+        lines.append(f'#   - {tag}: {count} devices')
+    lines.append('#')
+    lines.append('')  # Blank line after header
 
     # Write each top-level section
     for key in data.keys():
@@ -386,28 +407,53 @@ def write_yaml_with_blank_lines(data, file):
 
     file.write('\n'.join(lines) + '\n')
 
+# Count distribution statistics
+location_counts = {}
+tag_counts = {}
+status_counts = {}
+network_device_count = 0
+server_device_count = 0
+
+for device in baseline["devices"]:
+    # Count by location
+    loc = device["location"]
+    location_counts[loc] = location_counts.get(loc, 0) + 1
+
+    # Count by tag
+    tag = device["tags"][0]
+    tag_counts[tag] = tag_counts.get(tag, 0) + 1
+
+    # Count by status
+    status = device["status"]
+    status_counts[status] = status_counts.get(status, 0) + 1
+
+    # Count by device type
+    if "Network" in device["roles"]:
+        network_device_count += 1
+    elif "server" in device["roles"]:
+        server_device_count += 1
+
+# Prepare statistics dictionary
+stats = {
+    "total_devices": len(baseline["devices"]),
+    "network_devices": network_device_count,
+    "server_devices": server_device_count,
+    "locations": location_counts,
+    "tags": tag_counts,
+    "statuses": status_counts
+}
+
+# Write YAML file with statistics
 with open(output_file, 'w') as f:
-    write_yaml_with_blank_lines(baseline, f)
+    write_yaml_with_blank_lines(baseline, f, stats)
 
 print("✓ Generated baseline.yaml with:")
-print(f"  - 100 network devices (lab-001 to lab-100)")
-print(f"  - 20 server devices (server-01 to server-20)")
+print(f"  - {network_device_count} network devices (lab-001 to lab-100)")
+print(f"  - {server_device_count} server devices (server-01 to server-20)")
 print(f"  - Randomly distributed across: {', '.join(cities)}")
 print(f"  - Random tags: {', '.join(tags)}")
 print(f"  - Random custom fields for testing logical expressions")
 print("\nDistribution summary:")
-
-# Count distribution
-location_counts = {}
-tag_counts = {}
-status_counts = {}
-for device in baseline["devices"]:
-    loc = device["location"]
-    location_counts[loc] = location_counts.get(loc, 0) + 1
-    tag = device["tags"][0]
-    tag_counts[tag] = tag_counts.get(tag, 0) + 1
-    status = device["status"]
-    status_counts[status] = status_counts.get(status, 0) + 1
 
 print("\nBy Location:")
 for loc, count in sorted(location_counts.items()):
