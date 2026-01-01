@@ -137,9 +137,14 @@ def _convert_item(item: Dict[str, Any]) -> LogicalOperation:
 
         for sub_item in item.get("items", []):
             if sub_item.get("type") == "group":
-                # Nested group
-                sub_group_ops = tree_to_operations(sub_item)
-                nested_ops.extend(sub_group_ops)
+                # Nested group - recursively convert it
+                converted_sub_group = _convert_item(sub_item)
+                
+                # Preserve the logic operator (AND/OR/NOT) from the group
+                if sub_item.get("logic") == "NOT":
+                    converted_sub_group.operation_type = "NOT"
+                
+                nested_ops.append(converted_sub_group)
             else:
                 # Regular condition
                 group_conditions.append(

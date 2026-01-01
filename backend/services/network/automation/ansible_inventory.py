@@ -96,6 +96,12 @@ class AnsibleInventoryService:
         try:
             logger.info(f"Preview inventory called with {len(operations)} operations")
 
+            # Handle empty operations - return all devices
+            if not operations:
+                logger.info("No operations provided, returning all devices")
+                all_devices = await self._query_all_devices()
+                return all_devices, 0
+
             # Start with empty result set
             result_devices: Set[str] = set()  # Use device IDs for set operations
             all_devices_data: Dict[str, DeviceInfo] = {}
@@ -188,6 +194,7 @@ class AnsibleInventoryService:
 
         # Execute all conditions in this operation
         condition_results: List[Set[str]] = []
+        not_results: List[Set[str]] = []  # Separate list for NOT operations
 
         for i, condition in enumerate(operation.conditions):
             logger.info(
@@ -201,22 +208,45 @@ class AnsibleInventoryService:
 
         # Execute nested operations
         for i, nested_op in enumerate(operation.nested_operations):
-            logger.info(f"  Executing nested operation {i}")
+            logger.info(f"  Executing nested operation {i}: type={nested_op.operation_type}")
             nested_result, nested_count, nested_data = await self._execute_operation(
                 nested_op
             )
-            condition_results.append(nested_result)
             operations_count += nested_count
             all_devices_data.update(nested_data)
-            logger.info(f"  Nested operation {i} result: {len(nested_result)} devices")
+            logger.info(f"  Nested operation {i} result: {len(nested_result)} devices, type={nested_op.operation_type}")
+            
+            # Separate NOT operations from regular operations
+            if nested_op.operation_type.upper() == "NOT":
+                not_results.append(nested_result)
+                logger.info(f"  Added to NOT results for subtraction")
+            else:
+                condition_results.append(nested_result)
+                logger.info(f"  Added to regular results for combination")
 
         # Combine results based on operation type
         if operation.operation_type.upper() == "AND":
             result = self._intersect_sets(condition_results)
-            logger.info(f"  AND operation result: {len(result)} devices")
+            logger.info(f"  AND operation result (before NOT): {len(result)} devices")
+            
+            # Subtract all NOT results
+            for i, not_set in enumerate(not_results):
+                old_count = len(result)
+                result = result.difference(not_set)
+                logger.info(f"  Subtracted NOT operation {i}: {old_count} - {len(not_set)} = {len(result)} devices")
+            
+            logger.info(f"  AND operation final result: {len(result)} devices")
         elif operation.operation_type.upper() == "OR":
             result = self._union_sets(condition_results)
-            logger.info(f"  OR operation result: {len(result)} devices")
+            logger.info(f"  OR operation result (before NOT): {len(result)} devices")
+            
+            # Subtract all NOT results
+            for i, not_set in enumerate(not_results):
+                old_count = len(result)
+                result = result.difference(not_set)
+                logger.info(f"  Subtracted NOT operation {i}: {old_count} - {len(not_set)} = {len(result)} devices")
+            
+            logger.info(f"  OR operation final result: {len(result)} devices")
         elif operation.operation_type.upper() == "NOT":
             # For NOT operations, return the devices that match the conditions
             # The actual NOT logic will be applied in the main preview_inventory method
@@ -259,10 +289,19 @@ class AnsibleInventoryService:
             # Check if this is a custom field (starts with cf_)
             if condition.field.startswith("cf_"):
                 # Keep the full field name with cf_ prefix for GraphQL query
-                use_contains = condition.operator == "contains"
+                use_contains = condition.operator in ["contains", "not_contains"]
+                is_negated = condition.operator in ["not_equals", "not_contains"]
+
                 devices_data = await self._query_devices_by_custom_field(
                     condition.field, condition.value, use_contains
                 )
+
+                # Handle negation for custom fields
+                if is_negated:
+                    all_devices = await self._query_all_devices()
+                    matched_ids = {device.id for device in devices_data}
+                    devices_data = [d for d in all_devices if d.id not in matched_ids]
+
                 device_ids = {device.id for device in devices_data}
                 devices_dict = {device.id: device for device in devices_data}
                 return device_ids, 1, devices_dict
@@ -273,8 +312,9 @@ class AnsibleInventoryService:
                 logger.error(f"No query function found for field: {condition.field}")
                 return set(), 0, {}
 
-            # Determine if we should use contains matching
-            use_contains = condition.operator == "contains"
+            # Determine operator type
+            use_contains = condition.operator in ["contains", "not_contains"]
+            is_negated = condition.operator in ["not_equals", "not_contains"]
 
             # Only name and location support contains matching
             if condition.field in ["name", "location"] and use_contains:
@@ -288,6 +328,19 @@ class AnsibleInventoryService:
                         f"Field {condition.field} does not support 'contains' operator, using exact match"
                     )
                 devices_data = await query_func(condition.value)
+
+            # Handle negation (not_equals, not_contains)
+            if is_negated:
+                # Get all devices
+                all_devices = await self._query_all_devices()
+
+                # Filter out devices that match the condition
+                matched_ids = {device.id for device in devices_data}
+                devices_data = [d for d in all_devices if d.id not in matched_ids]
+
+                logger.info(
+                    f"Negated condition {condition.field} {condition.operator} '{condition.value}' returned {len(devices_data)} devices"
+                )
 
             device_ids = {device.id for device in devices_data}
             devices_dict = {device.id: device for device in devices_data}
@@ -319,6 +372,49 @@ class AnsibleInventoryService:
         for s in sets:
             result = result.union(s)
         return result
+
+    async def _query_all_devices(self) -> List[DeviceInfo]:
+        """Query all devices from Nautobot without any filters."""
+        from services.nautobot import nautobot_service
+
+        query = """
+        query all_devices {
+            devices {
+                id
+                name
+                serial
+                primary_ip4 {
+                    address
+                }
+                status {
+                    name
+                }
+                device_type {
+                    model
+                    manufacturer {
+                        name
+                    }
+                }
+                role {
+                    name
+                }
+                location {
+                    name
+                }
+                tags {
+                    name
+                }
+                platform {
+                    name
+                }
+            }
+        }
+        """
+
+        result = await nautobot_service.graphql_query(query, {})
+        devices_data = result.get("data", {}).get("devices", [])
+        logger.info(f"Retrieved {len(devices_data)} total devices")
+        return self._parse_device_data(devices_data)
 
     # GraphQL Query Methods
     async def _query_devices_by_name(

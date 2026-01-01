@@ -166,7 +166,9 @@ async def get_field_options(
             ],
             "operators": [
                 {"value": "equals", "label": "Equals"},
+                {"value": "not_equals", "label": "Not Equals"},
                 {"value": "contains", "label": "Contains"},
+                {"value": "not_contains", "label": "Not Contains"},
             ],
             "logical_operations": [
                 {"value": "AND", "label": "AND"},

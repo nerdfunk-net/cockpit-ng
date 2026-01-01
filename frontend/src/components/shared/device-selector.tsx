@@ -818,6 +818,31 @@ export function DeviceSelector({
     if (currentGroupPath.length === 0) {
       return 'Root'
     }
+    
+    // Find the actual group to get its logic type
+    const targetGroupId = currentGroupPath[currentGroupPath.length - 1]
+    
+    const findGroupById = (
+      items: (ConditionItem | ConditionGroup)[],
+      groupId: string
+    ): ConditionGroup | null => {
+      for (const item of items) {
+        if ('type' in item && item.type === 'group') {
+          if (item.id === groupId) {
+            return item as ConditionGroup
+          }
+          const found = findGroupById(item.items, groupId)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    
+    const group = findGroupById(conditionTree.items, targetGroupId)
+    if (group) {
+      return `Group (${group.internalLogic})`
+    }
+    
     return `Group ${currentGroupPath.length}`
   }
 
@@ -893,9 +918,16 @@ export function DeviceSelector({
 
         group.items.forEach(subItem => {
           if ('type' in subItem && subItem.type === 'group') {
-            // Nested group
-            const subGroupOps = buildOperationsFromTree(subItem as ConditionGroup)
-            nestedOps.push(...subGroupOps)
+            // Nested group - recursively convert it
+            const subGroup = subItem as ConditionGroup
+            const convertedSubGroup = convertItem(subGroup)
+            
+            // Preserve the logic operator (NOT) from the nested group
+            if (subGroup.logic === 'NOT') {
+              convertedSubGroup.operation_type = 'NOT'
+            }
+            
+            nestedOps.push(convertedSubGroup)
           } else {
             // Regular condition
             const cond = subItem as ConditionItem
@@ -1132,7 +1164,10 @@ export function DeviceSelector({
               ? 'border-blue-500 bg-blue-50/70'
               : 'border-purple-300 bg-purple-50/50 hover:bg-purple-100/50'
           }`}
-          onClick={() => setTargetGroup(group.id)}
+          onClick={(e) => {
+            e.stopPropagation()
+            setTargetGroup(group.id)
+          }}
           title="Click to add conditions to this group"
         >
           {/* Group header with logic operators */}
