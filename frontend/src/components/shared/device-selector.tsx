@@ -590,12 +590,18 @@ export function DeviceSelector({
   }
 
   const updateOperatorOptions = (fieldName: string) => {
-    const restrictedFields = ['role', 'tag', 'device_type', 'manufacturer', 'platform', 'location', 'has_primary']
+    const restrictedFields = ['role', 'tag', 'device_type', 'manufacturer', 'platform', 'has_primary']
     const isCustomField = fieldName && fieldName.startsWith('cf_')
 
     if (restrictedFields.includes(fieldName)) {
       setOperatorOptions([{ value: 'equals', label: 'Equals' }])
       setCurrentOperator('equals')
+    } else if (fieldName === 'location') {
+      // Location supports equals and not_equals
+      setOperatorOptions([
+        { value: 'equals', label: 'Equals' },
+        { value: 'not_equals', label: 'Not Equals' }
+      ])
     } else if (isCustomField || fieldName === 'name') {
       setOperatorOptions([
         { value: 'equals', label: 'Equals' },
@@ -1952,7 +1958,7 @@ export function DeviceSelector({
                   </h3>
                   <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700 ml-2">
                     <li><strong>Select a field</strong> (Location, Role, Status, etc.)</li>
-                    <li><strong>Choose an operator</strong> (equals, contains)</li>
+                    <li><strong>Choose an operator</strong> (equals, not equals, contains, not contains - available operators vary by field)</li>
                     <li><strong>Enter a value</strong></li>
                     <li><strong>Select Connector</strong> (AND or OR) - this determines how the NEXT item connects</li>
                     <li><strong>Optional:</strong> Check <strong>&quot;Negate (NOT)&quot;</strong> to exclude instead of include</li>
@@ -2000,6 +2006,19 @@ export function DeviceSelector({
                     <li><strong>Root logic: OR</strong> - At least one top-level item must match</li>
                     <li>Click the <strong>&quot;Toggle&quot;</strong> button next to &quot;Root logic:&quot; to switch</li>
                   </ul>
+                </div>
+
+                {/* Available Operators */}
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-indigo-900 mb-2">Available Operators by Field</h3>
+                  <div className="text-sm text-indigo-800 space-y-2">
+                    <p><strong>Location field:</strong> Supports <span className="font-mono bg-white px-1 rounded">equals</span> and <span className="font-mono bg-white px-1 rounded">not equals</span> operators</p>
+                    <p><strong>Name field:</strong> Supports <span className="font-mono bg-white px-1 rounded">equals</span>, <span className="font-mono bg-white px-1 rounded">not equals</span>, <span className="font-mono bg-white px-1 rounded">contains</span>, and <span className="font-mono bg-white px-1 rounded">not contains</span></p>
+                    <p><strong>Other fields (Role, Tag, Status, etc.):</strong> Support <span className="font-mono bg-white px-1 rounded">equals</span> only</p>
+                    <p className="mt-3 text-xs">
+                      <strong>💡 Tip:</strong> For Location, use &quot;not equals&quot; to efficiently exclude devices from a specific location and all its child locations.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Visual Indicators */}
@@ -2061,18 +2080,18 @@ export function DeviceSelector({
 
                 {/* Example 2 */}
                 <div className="border border-gray-200 rounded-lg p-4 bg-gradient-to-br from-white to-gray-50">
-                  <h3 className="font-semibold text-gray-900 mb-2">Example 2: Exclude Devices</h3>
-                  <p className="text-sm text-gray-600 mb-3"><strong>Goal:</strong> Get all active network devices EXCEPT those tagged &quot;lab&quot;</p>
+                  <h3 className="font-semibold text-gray-900 mb-2">Example 2: Exclude Devices Using Operators</h3>
+                  <p className="text-sm text-gray-600 mb-3"><strong>Goal:</strong> Get all active network devices NOT in City A</p>
                   <div className="bg-gray-800 text-green-400 p-3 rounded font-mono text-xs mb-3">
-                    Role = Network AND Status = Active AND NOT Tag = lab
+                    Role = Network AND Status = Active AND Location ≠ City A
                   </div>
                   <p className="text-sm font-semibold text-gray-700 mb-2">Steps:</p>
                   <ol className="list-decimal list-inside space-y-1.5 text-sm text-gray-700 ml-2">
                     <li>Add: Field=Role, Value=&quot;Network&quot;, click <strong>&quot;+&quot;</strong></li>
                     <li>Add: Field=Status, Connector=AND, Value=&quot;Active&quot;, click <strong>&quot;+&quot;</strong></li>
-                    <li>Add: Field=Tag, Connector=AND, <strong>Check &quot;Negate (NOT)&quot;</strong>, Value=&quot;lab&quot;, click <strong>&quot;+&quot;</strong></li>
+                    <li>Add: Field=Location, Connector=AND, <strong>Operator=&quot;Not Equals&quot;</strong>, Value=&quot;City A&quot;, click <strong>&quot;+&quot;</strong></li>
                   </ol>
-                  <p className="text-sm text-gray-600 mt-3"><strong>Result:</strong> Devices with Role=Network AND Status=Active AND NOT Tag=lab</p>
+                  <p className="text-sm text-gray-600 mt-3"><strong>Result:</strong> All network devices with Active status, excluding those in City A and its child locations</p>
                 </div>
 
                 {/* Example 3 */}

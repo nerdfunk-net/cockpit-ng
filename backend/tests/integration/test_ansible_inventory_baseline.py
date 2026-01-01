@@ -1158,6 +1158,40 @@ class TestBaselineNotLogic:
             # Device should be in State A or Another City A (since Another City A is child of State A)
             assert device.location in ["State A", "Another City A"]
 
+    @pytest.mark.asyncio
+    async def test_location_not_equals_operator(self, real_ansible_inventory_service):
+        """
+        Test location field with not_equals operator.
+        
+        Expected: All devices except those in City A (which has 21 devices)
+        Total devices: 120, City A devices: 21, Expected: 99 devices
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "location",
+                    "operator": "not_equals",
+                    "value": "City A",
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        # City A has 21 devices, so we should get 120 - 21 = 99 devices
+        assert len(devices) == 99, f"Expected 99 devices (all except City A), found {len(devices)}"
+
+        # Verify no device is from City A
+        for device in devices:
+            assert device.location != "City A", f"Device {device.name} should not be in City A, found location: {device.location}"
+
 
 # =============================================================================
 # Integration Tests - Custom Fields

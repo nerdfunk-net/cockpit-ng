@@ -316,6 +316,18 @@ class AnsibleInventoryService:
             use_contains = condition.operator in ["contains", "not_contains"]
             is_negated = condition.operator in ["not_equals", "not_contains"]
 
+            # Special handling for location with not_equals - use GraphQL location__n filter
+            if condition.field == "location" and condition.operator == "not_equals":
+                devices_data = await self._query_devices_by_location(
+                    condition.value, use_contains=False, use_negation=True
+                )
+                device_ids = {device.id for device in devices_data}
+                devices_dict = {device.id: device for device in devices_data}
+                logger.info(
+                    f"Condition {condition.field} {condition.operator} '{condition.value}' returned {len(devices_data)} devices (using GraphQL location__n)"
+                )
+                return device_ids, len(devices_data), devices_dict
+
             # Only name and location support contains matching
             if condition.field in ["name", "location"] and use_contains:
                 devices_data = await query_func(condition.value, use_contains=True)
@@ -512,7 +524,7 @@ class AnsibleInventoryService:
         return self._parse_device_data(devices_data)
 
     async def _query_devices_by_location(
-        self, location_filter: str, use_contains: bool = False
+        self, location_filter: str, use_contains: bool = False, use_negation: bool = False
     ) -> List[DeviceInfo]:
         """Query devices by location using GraphQL.
 
@@ -521,6 +533,11 @@ class AnsibleInventoryService:
 
         For example, querying location="Europe" will return devices from all child
         locations like "Germany", "Berlin", etc.
+        
+        Args:
+            location_filter: Location name or ID to filter by
+            use_contains: Use case-insensitive contains matching
+            use_negation: Use negation (location__n) to exclude devices from this location
         """
         from services.nautobot import nautobot_service
 
@@ -533,7 +550,42 @@ class AnsibleInventoryService:
 
         # Query devices directly by location - this includes hierarchical locations
         # The location filter in Nautobot automatically includes devices from descendant locations
-        if use_contains:
+        if use_negation:
+            # Use location__n to exclude devices from this location (NOT filter)
+            query = """
+            query devices_by_location ($location_filter: [String]) {
+                devices (location__n: $location_filter) {
+                    id
+                    name
+                    serial
+                    role {
+                        name
+                    }
+                    location {
+                        name
+                    }
+                    primary_ip4 {
+                        address
+                    }
+                    status {
+                        name
+                    }
+                    device_type {
+                        model
+                        manufacturer {
+                            name
+                        }
+                    }
+                    tags {
+                        name
+                    }
+                    platform {
+                        name
+                    }
+                }
+            }
+            """
+        elif use_contains:
             # Use case-insensitive contains for location name
             query = """
             query devices_by_location ($location_filter: [String]) {
