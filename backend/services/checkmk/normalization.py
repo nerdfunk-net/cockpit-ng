@@ -29,67 +29,126 @@ class DeviceNormalizationService:
         Raises:
             ValueError: If device data is invalid or missing required fields
         """
-        if not device_data:
-            raise ValueError("Device data cannot be empty")
+        device_name = device_data.get("name", "UNKNOWN") if device_data else "UNKNOWN"
 
-        # Force load the configuration on service initialization
-        config_service.load_checkmk_config(force_reload=True)
+        try:
+            if not device_data:
+                error_msg = "Device data cannot be empty"
+                logger.error(f"[NORMALIZATION ERROR] {error_msg}")
+                raise ValueError(error_msg)
 
-        # Create the root extension dictionary
-        extensions = DeviceExtensions(folder="", attributes={}, internal={})
+            logger.info(f"[NORMALIZATION] Starting normalization for device: {device_name}")
+            logger.debug(f"[NORMALIZATION] Device data keys: {list(device_data.keys())}")
 
-        # Set hostname in internal dict (needed for CheckMK queries but not for comparison)
-        extensions.internal["hostname"] = device_data.get("name", "")
+            # Force load the configuration on service initialization
+            try:
+                config_service.load_checkmk_config(force_reload=True)
+                logger.debug(f"[NORMALIZATION] CheckMK config loaded successfully for {device_name}")
+            except Exception as config_error:
+                logger.error(f"[NORMALIZATION ERROR] Failed to load CheckMK config for {device_name}: {config_error}", exc_info=True)
+                raise ValueError(f"Failed to load CheckMK configuration: {str(config_error)}")
 
-        # Store device metadata in internal dict (for UI display, not for comparison)
-        # Extract role name
-        role = device_data.get("role")
-        if isinstance(role, dict):
-            extensions.internal["role"] = role.get("name", "")
-        elif isinstance(role, str):
-            extensions.internal["role"] = role
-        else:
-            extensions.internal["role"] = ""
+            # Create the root extension dictionary
+            extensions = DeviceExtensions(folder="", attributes={}, internal={})
 
-        # Extract status name
-        status = device_data.get("status")
-        if isinstance(status, dict):
-            extensions.internal["status"] = status.get("name", "")
-        elif isinstance(status, str):
-            extensions.internal["status"] = status
-        else:
-            extensions.internal["status"] = ""
+            # Set hostname in internal dict (needed for CheckMK queries but not for comparison)
+            extensions.internal["hostname"] = device_data.get("name", "")
+            logger.debug(f"[NORMALIZATION] Set hostname: {extensions.internal['hostname']}")
 
-        # Extract location name
-        location = device_data.get("location")
-        if isinstance(location, dict):
-            extensions.internal["location"] = location.get("name", "")
-        elif isinstance(location, str):
-            extensions.internal["location"] = location
-        else:
-            extensions.internal["location"] = ""
+            # Store device metadata in internal dict (for UI display, not for comparison)
+            # Extract role name
+            try:
+                role = device_data.get("role")
+                if isinstance(role, dict):
+                    extensions.internal["role"] = role.get("name", "")
+                elif isinstance(role, str):
+                    extensions.internal["role"] = role
+                else:
+                    extensions.internal["role"] = ""
+                logger.debug(f"[NORMALIZATION] Device {device_name} role: {extensions.internal['role']}")
+            except Exception as e:
+                logger.warning(f"[NORMALIZATION] Failed to extract role for {device_name}: {e}")
+                extensions.internal["role"] = ""
 
-        # Set site using utility function
-        extensions.attributes["site"] = get_monitored_site(device_data, None)
-        logger.info(
-            f"Determined site for device {device_data.get('name', '')}: {extensions.attributes['site']}"
-        )
+            # Extract status name
+            try:
+                status = device_data.get("status")
+                if isinstance(status, dict):
+                    extensions.internal["status"] = status.get("name", "")
+                elif isinstance(status, str):
+                    extensions.internal["status"] = status
+                else:
+                    extensions.internal["status"] = ""
+                logger.debug(f"[NORMALIZATION] Device {device_name} status: {extensions.internal['status']}")
+            except Exception as e:
+                logger.warning(f"[NORMALIZATION] Failed to extract status for {device_name}: {e}")
+                extensions.internal["status"] = ""
 
-        # Set folder using utility function
-        extensions.folder = get_device_folder(device_data, None)
+            # Extract location name
+            try:
+                location = device_data.get("location")
+                if isinstance(location, dict):
+                    extensions.internal["location"] = location.get("name", "")
+                elif isinstance(location, str):
+                    extensions.internal["location"] = location
+                else:
+                    extensions.internal["location"] = ""
+                logger.debug(f"[NORMALIZATION] Device {device_name} location: {extensions.internal['location']}")
+            except Exception as e:
+                logger.warning(f"[NORMALIZATION] Failed to extract location for {device_name}: {e}")
+                extensions.internal["location"] = ""
 
-        # Set IP address from primary_ip4 (remove CIDR netmask for CheckMK compatibility)
-        self._process_ip_address(device_data, extensions)
+            # Set site using utility function
+            try:
+                extensions.attributes["site"] = get_monitored_site(device_data, None)
+                logger.info(
+                    f"[NORMALIZATION] Determined site for device {device_name}: {extensions.attributes['site']}"
+                )
+            except Exception as e:
+                logger.error(f"[NORMALIZATION ERROR] Failed to determine site for {device_name}: {e}", exc_info=True)
+                raise ValueError(f"Failed to determine CheckMK site for device {device_name}: {str(e)}")
 
-        # Process various configuration mappings
-        self._process_snmp_config(device_data, extensions)
-        self._process_additional_attributes(device_data, extensions)
-        self._process_cf2htg_mappings(device_data, extensions)
-        self._process_tags2htg_mappings(device_data, extensions)
-        self._process_attr2htg_mappings(device_data, extensions)
-        self._process_field_mappings(device_data, extensions)
+            # Set folder using utility function
+            try:
+                extensions.folder = get_device_folder(device_data, None)
+                logger.info(f"[NORMALIZATION] Determined folder for device {device_name}: {extensions.folder}")
+            except Exception as e:
+                logger.error(f"[NORMALIZATION ERROR] Failed to determine folder for {device_name}: {e}", exc_info=True)
+                raise ValueError(f"Failed to determine CheckMK folder for device {device_name}: {str(e)}")
 
-        return extensions
+            # Set IP address from primary_ip4 (remove CIDR netmask for CheckMK compatibility)
+            try:
+                self._process_ip_address(device_data, extensions)
+                logger.debug(f"[NORMALIZATION] Device {device_name} IP address: {extensions.attributes.get('ipaddress', 'N/A')}")
+            except Exception as e:
+                logger.error(f"[NORMALIZATION ERROR] Failed to process IP address for {device_name}: {e}", exc_info=True)
+                raise ValueError(f"Failed to process IP address for device {device_name}: {str(e)}")
+
+            # Process various configuration mappings
+            try:
+                self._process_snmp_config(device_data, extensions)
+                self._process_additional_attributes(device_data, extensions)
+                self._process_cf2htg_mappings(device_data, extensions)
+                self._process_tags2htg_mappings(device_data, extensions)
+                self._process_attr2htg_mappings(device_data, extensions)
+                self._process_field_mappings(device_data, extensions)
+
+                logger.info(f"[NORMALIZATION] Successfully normalized device {device_name}")
+                logger.debug(f"[NORMALIZATION] Final attributes for {device_name}: {list(extensions.attributes.keys())}")
+                logger.debug(f"[NORMALIZATION] Final folder for {device_name}: {extensions.folder}")
+            except Exception as e:
+                logger.error(f"[NORMALIZATION ERROR] Failed to process configuration mappings for {device_name}: {e}", exc_info=True)
+                raise ValueError(f"Failed to process configuration mappings for device {device_name}: {str(e)}")
+
+            return extensions
+
+        except ValueError:
+            # Re-raise ValueError with context already logged
+            raise
+        except Exception as e:
+            error_msg = f"Unexpected error normalizing device {device_name}: {str(e)}"
+            logger.error(f"[NORMALIZATION ERROR] {error_msg}", exc_info=True)
+            raise ValueError(error_msg)
 
     def _process_ip_address(
         self, device_data: Dict[str, Any], extensions: DeviceExtensions

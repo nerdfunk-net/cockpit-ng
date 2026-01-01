@@ -38,15 +38,30 @@ async def compare_device_config(
 ):
     """Compare normalized Nautobot device config with CheckMK host config."""
     try:
+        logger.info(f"[ROUTER] Compare request for device ID: {device_id}")
         result = await nb2cmk_service.compare_device_config(device_id)
+        logger.info(f"[ROUTER] Compare successful for device ID: {device_id}")
         return result.model_dump()
-    except HTTPException:
+    except HTTPException as http_exc:
+        # Re-raise HTTP exceptions with additional logging
+        logger.error(
+            f"[ROUTER] HTTP {http_exc.status_code} error comparing device {device_id}: {http_exc.detail}"
+        )
         raise
+    except ValueError as val_err:
+        # Catch validation errors from normalization/comparison
+        error_msg = f"Validation error for device {device_id}: {str(val_err)}"
+        logger.error(f"[ROUTER] {error_msg}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_msg,
+        )
     except Exception as e:
-        logger.error(f"Error comparing device configs for {device_id}: {str(e)}")
+        error_msg = f"Unexpected error comparing device {device_id}: {str(e)}"
+        logger.error(f"[ROUTER] {error_msg}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to compare device configs: {str(e)}",
+            detail=error_msg,
         )
 
 
@@ -57,15 +72,28 @@ async def add_device_to_checkmk(
 ):
     """Add a device from Nautobot to CheckMK using normalized config."""
     try:
+        logger.info(f"[ROUTER] Add device request for device ID: {device_id}")
         result = await nb2cmk_service.add_device_to_checkmk(device_id)
+        logger.info(f"[ROUTER] Device {device_id} added successfully to CheckMK")
         return result.model_dump()
-    except HTTPException:
+    except HTTPException as http_exc:
+        logger.error(
+            f"[ROUTER] HTTP {http_exc.status_code} error adding device {device_id}: {http_exc.detail}"
+        )
         raise
+    except ValueError as val_err:
+        error_msg = f"Validation error adding device {device_id}: {str(val_err)}"
+        logger.error(f"[ROUTER] {error_msg}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_msg,
+        )
     except Exception as e:
-        logger.error(f"Error adding device {device_id} to CheckMK: {str(e)}")
+        error_msg = f"Unexpected error adding device {device_id} to CheckMK: {str(e)}"
+        logger.error(f"[ROUTER] {error_msg}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to add device {device_id} to CheckMK: {str(e)}",
+            detail=error_msg,
         )
 
 
@@ -76,15 +104,28 @@ async def update_device_in_checkmk(
 ):
     """Update/sync a device from Nautobot to CheckMK using normalized config."""
     try:
+        logger.info(f"[ROUTER] Update device request for device ID: {device_id}")
         result = await nb2cmk_service.update_device_in_checkmk(device_id)
+        logger.info(f"[ROUTER] Device {device_id} updated successfully in CheckMK")
         return result.model_dump()
-    except HTTPException:
+    except HTTPException as http_exc:
+        logger.error(
+            f"[ROUTER] HTTP {http_exc.status_code} error updating device {device_id}: {http_exc.detail}"
+        )
         raise
+    except ValueError as val_err:
+        error_msg = f"Validation error updating device {device_id}: {str(val_err)}"
+        logger.error(f"[ROUTER] {error_msg}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_msg,
+        )
     except Exception as e:
-        logger.error(f"Error updating device {device_id} in CheckMK: {str(e)}")
+        error_msg = f"Unexpected error updating device {device_id} in CheckMK: {str(e)}"
+        logger.error(f"[ROUTER] {error_msg}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update device {device_id} in CheckMK: {str(e)}",
+            detail=error_msg,
         )
 
 

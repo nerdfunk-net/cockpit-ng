@@ -318,18 +318,31 @@ class NautobotToCheckMKService:
         """
         try:
             # Get normalized config
-            normalized_config = await self.get_device_normalized(device_id)
-            logger.debug(f"comparing device config of device id {device_id}")
+            logger.info(f"[COMPARE] Starting comparison for device ID: {device_id}")
+            try:
+                normalized_config = await self.get_device_normalized(device_id)
+                logger.debug(f"[COMPARE] Successfully retrieved normalized config for device {device_id}")
+            except Exception as norm_error:
+                error_msg = f"Failed to normalize device config for device {device_id}: {str(norm_error)}"
+                logger.error(f"[COMPARE ERROR] {error_msg}", exc_info=True)
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=error_msg,
+                )
 
             # Get hostname from internal dict
             internal_data = normalized_config.get("internal", {})
             hostname = internal_data.get("hostname")
 
             if not hostname:
+                error_msg = f"Device {device_id} has no hostname configured in normalized data"
+                logger.error(f"[COMPARE ERROR] {error_msg}. Internal data: {internal_data}")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Device has no hostname configured",
                 )
+
+            logger.info(f"[COMPARE] Comparing device: {hostname} (ID: {device_id})")
 
             # Get CheckMK host config using internal API
             try:
@@ -340,6 +353,7 @@ class NautobotToCheckMKService:
 
                 # Call internal CheckMK API to get host data
                 try:
+                    logger.debug(f"[COMPARE] Fetching CheckMK data for host: {hostname}")
                     checkmk_response = await get_host(hostname, False, admin_user)
                     # Extract the actual data from the CheckMKOperationResponse
                     checkmk_data = (
@@ -347,10 +361,11 @@ class NautobotToCheckMKService:
                         if hasattr(checkmk_response, "data")
                         else checkmk_response
                     )
+                    logger.debug(f"[COMPARE] Successfully retrieved CheckMK data for {hostname}")
                 except HTTPException as e:
                     if e.status_code == 404:
                         logger.info(
-                            f"Host '{hostname}' not found in CheckMK during comparison"
+                            f"[COMPARE] Host '{hostname}' not found in CheckMK during comparison"
                         )
                         return DeviceComparison(
                             result="host_not_found",
@@ -359,42 +374,58 @@ class NautobotToCheckMKService:
                             checkmk_config=None,
                         )
                     else:
-                        logger.error(
-                            f"CheckMK API error for host {hostname}: {e.detail}"
-                        )
+                        error_msg = f"CheckMK API error for host {hostname}: {e.detail}"
+                        logger.error(f"[COMPARE ERROR] {error_msg}")
                         raise HTTPException(
                             status_code=e.status_code,
-                            detail=f"CheckMK API error for host {hostname}: {e.detail}",
+                            detail=error_msg,
                         )
 
             except HTTPException:
                 raise
             except Exception as e:
-                logger.error(f"Error getting CheckMK host data for {hostname}: {e}")
+                error_msg = f"Unexpected error getting CheckMK host data for {hostname}: {str(e)}"
+                logger.error(f"[COMPARE ERROR] {error_msg}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Failed to get CheckMK host data: {e}",
+                    detail=error_msg,
                 )
 
             # Extract attributes from CheckMK data
-            checkmk_extensions = checkmk_data.get("extensions", {})
+            try:
+                checkmk_extensions = checkmk_data.get("extensions", {})
+                logger.debug(f"[COMPARE] CheckMK extensions keys for {hostname}: {list(checkmk_extensions.keys())}")
 
-            # Remove meta_data key from CheckMK config before comparison
-            if "meta_data" in checkmk_extensions.get("attributes", {}):
-                del checkmk_extensions["attributes"]["meta_data"]
+                # Remove meta_data key from CheckMK config before comparison
+                if "meta_data" in checkmk_extensions.get("attributes", {}):
+                    del checkmk_extensions["attributes"]["meta_data"]
+                    logger.debug(f"[COMPARE] Removed meta_data from CheckMK attributes for {hostname}")
 
-            # Create clean copies for comparison (remove internal dicts)
-            nb_config_for_comparison = {
-                k: v for k, v in normalized_config.items() if k != "internal"
-            }
-            cmk_config_for_comparison = {
-                k: v for k, v in checkmk_extensions.items() if k != "internal"
-            }
+                # Create clean copies for comparison (remove internal dicts)
+                nb_config_for_comparison = {
+                    k: v for k, v in normalized_config.items() if k != "internal"
+                }
+                cmk_config_for_comparison = {
+                    k: v for k, v in checkmk_extensions.items() if k != "internal"
+                }
 
-            # Compare the configurations
-            differences = self._compare_configurations(
-                nb_config_for_comparison, cmk_config_for_comparison
-            )
+                logger.debug(f"[COMPARE] Nautobot config keys for {hostname}: {list(nb_config_for_comparison.keys())}")
+                logger.debug(f"[COMPARE] CheckMK config keys for {hostname}: {list(cmk_config_for_comparison.keys())}")
+
+                # Compare the configurations
+                logger.info(f"[COMPARE] Starting configuration comparison for {hostname}")
+                differences = self._compare_configurations(
+                    nb_config_for_comparison, cmk_config_for_comparison
+                )
+                logger.info(f"[COMPARE] Found {len(differences)} difference(s) for {hostname}")
+
+            except Exception as e:
+                error_msg = f"Error processing configurations for comparison of {hostname}: {str(e)}"
+                logger.error(f"[COMPARE ERROR] {error_msg}", exc_info=True)
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=error_msg,
+                )
 
             # Determine result
             if differences:
@@ -440,86 +471,125 @@ class NautobotToCheckMKService:
             List of difference descriptions
         """
         differences = []
-        compare_keys = config_service.get_comparison_keys()
-        ignore_attributes = config_service.get_ignore_attributes()
+
+        try:
+            compare_keys = config_service.get_comparison_keys()
+            ignore_attributes = config_service.get_ignore_attributes()
+            logger.debug(f"[COMPARE] Comparison keys: {compare_keys}")
+            logger.debug(f"[COMPARE] Ignore attributes: {ignore_attributes}")
+        except Exception as e:
+            error_msg = f"Failed to load comparison configuration: {str(e)}"
+            logger.error(f"[COMPARE ERROR] {error_msg}", exc_info=True)
+            raise ValueError(error_msg)
 
         for compare_key in compare_keys:
-            if compare_key == "attributes":
-                # Special handling for attributes (compare nested values)
-                nb_attributes = nb_config.get("attributes", {})
-                cmk_attributes = cmk_config.get("attributes", {})
+            try:
+                if compare_key == "attributes":
+                    # Special handling for attributes (compare nested values)
+                    nb_attributes = nb_config.get("attributes", {})
+                    cmk_attributes = cmk_config.get("attributes", {})
 
-                # Filter out ignored attributes
-                nb_attributes_filtered = {
-                    k: v for k, v in nb_attributes.items() if k not in ignore_attributes
-                }
-                cmk_attributes_filtered = {
-                    k: v
-                    for k, v in cmk_attributes.items()
-                    if k not in ignore_attributes
-                }
+                    logger.debug(f"[COMPARE] Nautobot attributes before filtering: {list(nb_attributes.keys())}")
+                    logger.debug(f"[COMPARE] CheckMK attributes before filtering: {list(cmk_attributes.keys())}")
 
-                # Debug logging for filtered attributes
-                nb_filtered_out = {
-                    k: v for k, v in nb_attributes.items() if k in ignore_attributes
-                }
-                cmk_filtered_out = {
-                    k: v for k, v in cmk_attributes.items() if k in ignore_attributes
-                }
+                    # Validate that attributes are dictionaries
+                    if not isinstance(nb_attributes, dict):
+                        error_msg = f"Nautobot attributes is not a dictionary: {type(nb_attributes)}"
+                        logger.error(f"[COMPARE ERROR] {error_msg}")
+                        raise ValueError(error_msg)
 
-                if nb_filtered_out:
-                    logger.debug(f"Nautobot attributes filtered out: {nb_filtered_out}")
-                if cmk_filtered_out:
-                    logger.debug(f"CheckMK attributes filtered out: {cmk_filtered_out}")
+                    if not isinstance(cmk_attributes, dict):
+                        error_msg = f"CheckMK attributes is not a dictionary: {type(cmk_attributes)}"
+                        logger.error(f"[COMPARE ERROR] {error_msg}")
+                        raise ValueError(error_msg)
 
-                logger.debug(f"Ignore attributes list: {ignore_attributes}")
-                logger.debug(
-                    f"Nautobot attributes after filtering: {list(nb_attributes_filtered.keys())}"
-                )
-                logger.debug(
-                    f"CheckMK attributes after filtering: {list(cmk_attributes_filtered.keys())}"
-                )
+                    # Filter out ignored attributes
+                    try:
+                        nb_attributes_filtered = {
+                            k: v for k, v in nb_attributes.items() if k not in ignore_attributes
+                        }
+                        cmk_attributes_filtered = {
+                            k: v
+                            for k, v in cmk_attributes.items()
+                            if k not in ignore_attributes
+                        }
+                        logger.debug(f"[COMPARE] Nautobot attributes after filtering: {list(nb_attributes_filtered.keys())}")
+                        logger.debug(f"[COMPARE] CheckMK attributes after filtering: {list(cmk_attributes_filtered.keys())}")
+                    except Exception as filter_error:
+                        error_msg = f"Error filtering attributes: {str(filter_error)}"
+                        logger.error(f"[COMPARE ERROR] {error_msg}", exc_info=True)
+                        raise ValueError(error_msg)
 
-                # Compare attributes (only non-ignored ones)
-                for key, nb_value in nb_attributes_filtered.items():
-                    if key in cmk_attributes_filtered:
-                        cmk_value = cmk_attributes_filtered[key]
+                    # Debug logging for filtered attributes
+                    nb_filtered_out = {
+                        k: v for k, v in nb_attributes.items() if k in ignore_attributes
+                    }
+                    cmk_filtered_out = {
+                        k: v for k, v in cmk_attributes.items() if k in ignore_attributes
+                    }
+
+                    if nb_filtered_out:
+                        logger.debug(f"[COMPARE] Nautobot attributes filtered out: {nb_filtered_out}")
+                    if cmk_filtered_out:
+                        logger.debug(f"[COMPARE] CheckMK attributes filtered out: {cmk_filtered_out}")
+
+                    # Compare attributes (only non-ignored ones)
+                    try:
+                        for key, nb_value in nb_attributes_filtered.items():
+                            if key in cmk_attributes_filtered:
+                                cmk_value = cmk_attributes_filtered[key]
+                                if nb_value != cmk_value:
+                                    logger.debug(
+                                        f"[COMPARE] Attribute '{key}' differs: Nautobot='{nb_value}' vs CheckMK='{cmk_value}'"
+                                    )
+                                    differences.append(
+                                        f"attributes.'{key}': Nautobot='{nb_value}' vs CheckMK='{cmk_value}'"
+                                    )
+                            else:
+                                logger.debug(
+                                    f"[COMPARE] Attribute '{key}' present in Nautobot but missing in CheckMK"
+                                )
+                                differences.append(
+                                    f"attributes.'{key}': Present in Nautobot ('{nb_value}') but missing in CheckMK"
+                                )
+
+                        # Check for attributes in CheckMK that are not in normalized config (only non-ignored ones)
+                        for key, cmk_value in cmk_attributes_filtered.items():
+                            if key not in nb_attributes_filtered:
+                                logger.debug(
+                                    f"[COMPARE] Attribute '{key}' present in CheckMK but missing in Nautobot"
+                                )
+                                differences.append(
+                                    f"attributes.'{key}': Present in CheckMK ('{cmk_value}') but missing in Nautobot"
+                                )
+                    except Exception as attr_compare_error:
+                        error_msg = f"Error comparing attributes: {str(attr_compare_error)}"
+                        logger.error(f"[COMPARE ERROR] {error_msg}", exc_info=True)
+                        raise ValueError(error_msg)
+
+                else:
+                    # Direct comparison for other keys (like folder)
+                    try:
+                        nb_value = nb_config.get(compare_key)
+                        cmk_value = cmk_config.get(compare_key)
+
                         if nb_value != cmk_value:
                             logger.debug(
-                                f"Attribute '{key}' differs: Nautobot='{nb_value}' vs CheckMK='{cmk_value}'"
+                                f"[COMPARE] Key '{compare_key}' differs: Nautobot='{nb_value}' vs CheckMK='{cmk_value}'"
                             )
                             differences.append(
-                                f"attributes.'{key}': Nautobot='{nb_value}' vs CheckMK='{cmk_value}'"
+                                f"'{compare_key}': Nautobot='{nb_value}' vs CheckMK='{cmk_value}'"
                             )
-                        # else:
-                        #     logger.debug(f"Attribute '{key}' matches: '{nb_value}'")
-                    else:
-                        logger.debug(
-                            f"Attribute '{key}' present in Nautobot but missing in CheckMK"
-                        )
-                        differences.append(
-                            f"attributes.'{key}': Present in Nautobot ('{nb_value}') but missing in CheckMK"
-                        )
+                    except Exception as key_compare_error:
+                        error_msg = f"Error comparing key '{compare_key}': {str(key_compare_error)}"
+                        logger.error(f"[COMPARE ERROR] {error_msg}", exc_info=True)
+                        raise ValueError(error_msg)
 
-                # Check for attributes in CheckMK that are not in normalized config (only non-ignored ones)
-                for key, cmk_value in cmk_attributes_filtered.items():
-                    if key not in nb_attributes_filtered:
-                        logger.debug(
-                            f"Attribute '{key}' present in CheckMK but missing in Nautobot"
-                        )
-                        differences.append(
-                            f"attributes.'{key}': Present in CheckMK ('{cmk_value}') but missing in Nautobot"
-                        )
-
-            else:
-                # Direct comparison for other keys (like folder)
-                nb_value = nb_config.get(compare_key)
-                cmk_value = cmk_config.get(compare_key)
-
-                if nb_value != cmk_value:
-                    differences.append(
-                        f"'{compare_key}': Nautobot='{nb_value}' vs CheckMK='{cmk_value}'"
-                    )
+            except Exception as compare_key_error:
+                error_msg = f"Error processing comparison key '{compare_key}': {str(compare_key_error)}"
+                logger.error(f"[COMPARE ERROR] {error_msg}", exc_info=True)
+                # Add to differences instead of failing entirely
+                differences.append(f"ERROR comparing '{compare_key}': {str(compare_key_error)}")
 
         return differences
 
