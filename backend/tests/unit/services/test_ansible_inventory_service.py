@@ -465,14 +465,32 @@ class TestComplexQueries:
             assert isinstance(result_devices, list)
 
     @pytest.mark.asyncio
-    async def test_empty_operations(self):
-        """Test handling empty operations list."""
-        # Act
-        result_devices, op_count = await self.service.preview_inventory([])
+    async def test_empty_operations(self, mock_nautobot_service):
+        """Test handling empty operations list - should return all devices."""
+        # Arrange
+        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+            # Mock the graphql_query to return all devices
+            all_devices_response = {
+                "data": {
+                    "devices": [
+                        {"id": "dev-1", "name": "device-1", "location": {"name": "DC1"}},
+                        {"id": "dev-2", "name": "device-2", "location": {"name": "DC2"}},
+                        {"id": "dev-3", "name": "device-3", "location": {"name": "DC3"}},
+                    ]
+                }
+            }
+            mock_nautobot_service.graphql_query = AsyncMock(return_value=all_devices_response)
+            
+            # Act
+            result_devices, op_count = await self.service.preview_inventory([])
 
-        # Assert
-        assert op_count == 0
-        assert result_devices == []
+            # Assert
+            assert op_count == 0
+            # Empty operations should return all devices
+            assert len(result_devices) == 3
+            assert isinstance(result_devices, list)
+            # Verify graphql_query was called to fetch all devices
+            assert mock_nautobot_service.graphql_query.called
 
 
 # ==============================================================================

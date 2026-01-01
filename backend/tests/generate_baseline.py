@@ -49,6 +49,13 @@ baseline = {
             "description": "City A",
             "status": "active",
         },
+                {
+            "parent": "State A",
+            "location_types": "City",
+            "name": "Another City A",
+            "description": "Another City A",
+            "status": "active",
+        },
         # Country B hierarchy
         {
             "location_types": "Country",
@@ -71,6 +78,13 @@ baseline = {
             "description": "City B",
             "status": "active",
         },
+                {
+            "parent": "State B",
+            "location_types": "City",
+            "name": "Another City B",
+            "description": "Another City B",
+            "status": "active",
+        },
         # Country C hierarchy
         {
             "location_types": "Country",
@@ -91,6 +105,13 @@ baseline = {
             "location_types": "City",
             "name": "City C",
             "description": "City C",
+            "status": "active",
+        },
+                {
+            "parent": "State C",
+            "location_types": "City",
+            "name": "Another City C",
+            "description": "Another City C",
             "status": "active",
         },
     ],
@@ -218,18 +239,18 @@ baseline = {
 }
 
 # Generate 100 network devices
-cities = ["City A", "City B", "City C"]
+cities = ["City A", "Another City A", "City B", "Another City B", "City C", "Another City C"]
 tags = ["Production", "Staging", "lab"]
 net_values = ["netA", "netB", "lab"]
 sites = ["siteA", "siteB", "siteC"]
 creds = ["credA", "credB", "credC"]
 dates = [
-    "2024-01-15",
-    "2024-02-20",
-    "2024-03-10",
-    "2024-04-05",
-    "2024-05-12",
-    "2024-06-01",
+    "2025-01-15",
+    "2025-02-20",
+    "2025-03-10",
+    "2025-04-05",
+    "2025-05-12",
+    "2025-06-01",
 ]
 statuses = ["Active", "Offline"]
 

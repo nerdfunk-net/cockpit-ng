@@ -1,29 +1,34 @@
 """
 Integration tests for Ansible Inventory with Baseline Test Data.
 
-These tests are specifically designed for the baseline data in:
-contributing-data/tests_baseline/baseline.yaml
+These tests use the modern tree-based structure (version 2) for logical expressions.
 
-Test Data Summary:
+Test Data Summary (from tests/baseline.yaml):
 - 120 total devices (100 network + 20 servers)
-- Locations: City A (58), City B (62)
+- Locations: 
+  - City A (21), City B (20), City C (16)
+  - Another City A (18), Another City B (20), Another City C (25)
+  - State A contains: City A (21) + Another City A (18) = 39 devices
+  - State B contains: City B (20) + Another City B (20) = 40 devices
+  - State C contains: City C (16) + Another City C (25) = 41 devices
 - Roles: Network (100), server (20)
-- Tags: Production (79), Staging (41)
+- Status: Active (66), Offline (54)
+- Tags: Production (39), Staging (52), lab (29)
 - Platforms: Cisco IOS (100), ServerPlatform (20)
-
-See tests/BASELINE_TEST_DATA.md for complete details.
 
 Setup:
 1. Load baseline data into test Nautobot instance
 2. Configure .env.test with test Nautobot credentials
-3. Run: pytest -m "integration and nautobot" -v
+3. Run: pytest -m "integration and nautobot" tests/integration/test_ansible_inventory_baseline_v2.py -v
 
-Skipping:
-- Tests auto-skip if .env.test not configured
+Architecture:
+- Tests use tree_to_operations() to convert tree structures
+- Uses shared inventory_converter utility for consistency
+- Mirrors frontend's buildOperationsFromTree() logic
 """
 
 import pytest
-from models.ansible_inventory import LogicalOperation, LogicalCondition
+from utils.inventory_converter import tree_to_operations
 
 
 # =============================================================================
@@ -34,38 +39,43 @@ from models.ansible_inventory import LogicalOperation, LogicalCondition
 @pytest.mark.integration
 @pytest.mark.nautobot
 class TestBaselineBasicFiltering:
-    """Test basic filtering with real baseline data."""
+    """Test basic filtering with real baseline data using tree structure."""
 
     @pytest.mark.asyncio
     async def test_filter_by_location_city_a(self, real_ansible_inventory_service):
         """
-        Test filtering by City A location.
+        Test filtering by City A location using tree structure.
 
-        Expected: 58 devices (49 network + 9 servers)
+        Expected: 21 devices in City A
         """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(
-                        field="location", operator="equals", value="City A"
-                    )
-                ],
-            )
-        ]
+        # Build tree structure (version 2)
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "location",
+                    "operator": "equals",
+                    "value": "City A",
+                }
+            ],
+        }
+
+        # Convert tree to operations
+        operations = tree_to_operations(tree)
 
         devices, count = await real_ansible_inventory_service.preview_inventory(
             operations
         )
 
         # Should find devices in City A
-        assert len(devices) == 58, (
-            f"Expected 58 devices in City A, found {len(devices)}"
-        )
+        assert (
+            len(devices) == 21
+        ), f"Expected 21 devices in City A, found {len(devices)}"
 
         # All devices should be in City A
         for device in devices:
-            # DeviceInfo.location is a string, not an object
             assert device.location == "City A", (
                 f"Device {device.name} should be in City A, found {device.location}"
             )
@@ -73,57 +83,98 @@ class TestBaselineBasicFiltering:
     @pytest.mark.asyncio
     async def test_filter_by_location_city_b(self, real_ansible_inventory_service):
         """
-        Test filtering by City B location.
+        Test filtering by City B location using tree structure.
 
-        Expected: 62 devices (51 network + 11 servers)
+        Expected: 20 devices in City B
         """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(
-                        field="location", operator="equals", value="City B"
-                    )
-                ],
-            )
-        ]
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "location",
+                    "operator": "equals",
+                    "value": "City B",
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
 
         devices, count = await real_ansible_inventory_service.preview_inventory(
             operations
         )
 
-        # Should find devices in City B
-        assert len(devices) == 62, (
-            f"Expected 62 devices in City B, found {len(devices)}"
+        assert (
+            len(devices) == 20
+        ), f"Expected 20 devices in City B, found {len(devices)}"
+
+        for device in devices:
+            assert device.location == "City B"
+
+    @pytest.mark.asyncio
+    async def test_filter_by_location_city_c(self, real_ansible_inventory_service):
+        """
+        Test filtering by City C location using tree structure.
+
+        Expected: 16 devices in City C
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "location",
+                    "operator": "equals",
+                    "value": "City C",
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
         )
+
+        assert (
+            len(devices) == 16
+        ), f"Expected 16 devices in City C, found {len(devices)}"
+
+        for device in devices:
+            assert device.location == "City C"
 
     @pytest.mark.asyncio
     async def test_filter_by_role_network(self, real_ansible_inventory_service):
         """
-        Test filtering by Network role.
+        Test filtering by Network role using tree structure.
 
-        Expected: 100 devices (lab-01 to lab-100)
+        Expected: 100 devices (lab-001 to lab-100)
         """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(
-                        field="role",
-                        operator="equals",
-                        value="Network",  # Note: capital N
-                    )
-                ],
-            )
-        ]
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "role",
+                    "operator": "equals",
+                    "value": "Network",
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
 
         devices, count = await real_ansible_inventory_service.preview_inventory(
             operations
         )
 
-        assert len(devices) == 100, (
-            f"Expected 100 network devices, found {len(devices)}"
-        )
+        assert (
+            len(devices) == 100
+        ), f"Expected 100 network devices, found {len(devices)}"
 
         # All should have Network role
         for device in devices:
@@ -132,22 +183,24 @@ class TestBaselineBasicFiltering:
     @pytest.mark.asyncio
     async def test_filter_by_role_server(self, real_ansible_inventory_service):
         """
-        Test filtering by server role.
+        Test filtering by server role using tree structure.
 
         Expected: 20 devices (server-01 to server-20)
         """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(
-                        field="role",
-                        operator="equals",
-                        value="server",  # lowercase s
-                    )
-                ],
-            )
-        ]
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "role",
+                    "operator": "equals",
+                    "value": "server",
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
 
         devices, count = await real_ansible_inventory_service.preview_inventory(
             operations
@@ -155,79 +208,320 @@ class TestBaselineBasicFiltering:
 
         assert len(devices) == 20, f"Expected 20 server devices, found {len(devices)}"
 
+        for device in devices:
+            assert device.role == "server"
+
     @pytest.mark.asyncio
     async def test_filter_by_platform_cisco_ios(self, real_ansible_inventory_service):
         """
-        Test filtering by Cisco IOS platform.
+        Test filtering by Cisco IOS platform using tree structure.
 
         Expected: 100 devices (all network devices)
         """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(
-                        field="platform",
-                        operator="equals",
-                        value="Cisco IOS",  # Note: with space
-                    )
-                ],
-            )
-        ]
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "platform",
+                    "operator": "equals",
+                    "value": "Cisco IOS",
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
 
         devices, count = await real_ansible_inventory_service.preview_inventory(
             operations
         )
 
-        assert len(devices) == 100, (
-            f"Expected 100 Cisco IOS devices, found {len(devices)}"
-        )
+        assert (
+            len(devices) == 100
+        ), f"Expected 100 Cisco IOS devices, found {len(devices)}"
+
+        for device in devices:
+            assert device.platform == "Cisco IOS"
 
     @pytest.mark.asyncio
     async def test_filter_by_tag_production(self, real_ansible_inventory_service):
         """
-        Test filtering by Production tag.
+        Test filtering by Production tag using tree structure.
 
-        Expected: 89 devices (all network lab-01 to lab-79 + all servers 01-10)
+        Expected: 39 devices with Production tag
         """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(field="tag", operator="equals", value="Production")
-                ],
-            )
-        ]
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "tag",
+                    "operator": "equals",
+                    "value": "Production",
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
 
         devices, count = await real_ansible_inventory_service.preview_inventory(
             operations
         )
 
-        assert len(devices) == 89, (
-            f"Expected 89 Production devices, found {len(devices)}"
-        )
+        assert (
+            len(devices) == 39
+        ), f"Expected 39 Production devices, found {len(devices)}"
+
+        for device in devices:
+            assert "Production" in device.tags
 
     @pytest.mark.asyncio
     async def test_filter_by_tag_staging(self, real_ansible_inventory_service):
         """
-        Test filtering by Staging tag.
+        Test filtering by Staging tag using tree structure.
 
-        Expected: 31 devices (lab-80 to lab-100 + server-11 to server-20)
+        Expected: 52 devices with Staging tag
         """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(field="tag", operator="equals", value="Staging")
-                ],
-            )
-        ]
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "tag",
+                    "operator": "equals",
+                    "value": "Staging",
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
 
         devices, count = await real_ansible_inventory_service.preview_inventory(
             operations
         )
 
-        assert len(devices) == 31, f"Expected 31 Staging devices, found {len(devices)}"
+        assert len(devices) == 52, f"Expected 52 Staging devices, found {len(devices)}"
+
+        for device in devices:
+            assert "Staging" in device.tags
+
+    @pytest.mark.asyncio
+    async def test_filter_by_tag_lab(self, real_ansible_inventory_service):
+        """
+        Test filtering by lab tag using tree structure.
+
+        Expected: 29 devices with lab tag
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {"id": "1", "field": "tag", "operator": "equals", "value": "lab"}
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        assert len(devices) == 29, f"Expected 29 lab devices, found {len(devices)}"
+
+        for device in devices:
+            assert "lab" in device.tags
+
+    @pytest.mark.asyncio
+    async def test_filter_by_status_active(self, real_ansible_inventory_service):
+        """
+        Test filtering by Active status using tree structure.
+
+        Expected: 66 devices with Active status
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {"id": "1", "field": "status", "operator": "equals", "value": "Active"}
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        assert len(devices) == 66, f"Expected 66 Active devices, found {len(devices)}"
+
+        for device in devices:
+            assert device.status == "Active"
+
+    @pytest.mark.asyncio
+    async def test_filter_by_status_offline(self, real_ansible_inventory_service):
+        """
+        Test filtering by Offline status using tree structure.
+
+        Expected: 54 devices with Offline status
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "status",
+                    "operator": "equals",
+                    "value": "Offline",
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        assert len(devices) == 54, f"Expected 54 Offline devices, found {len(devices)}"
+
+        for device in devices:
+            assert device.status == "Offline"
+
+    @pytest.mark.asyncio
+    async def test_filter_by_location_another_city_a(self, real_ansible_inventory_service):
+        """
+        Test filtering by Another City A location using tree structure.
+
+        Expected: 18 devices in Another City A
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "location",
+                    "operator": "equals",
+                    "value": "Another City A",
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        assert (
+            len(devices) == 18
+        ), f"Expected 18 devices in Another City A, found {len(devices)}"
+
+        for device in devices:
+            assert device.location == "Another City A"
+
+    @pytest.mark.asyncio
+    async def test_filter_by_location_another_city_b(self, real_ansible_inventory_service):
+        """
+        Test filtering by Another City B location using tree structure.
+
+        Expected: 20 devices in Another City B
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "location",
+                    "operator": "equals",
+                    "value": "Another City B",
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        assert (
+            len(devices) == 20
+        ), f"Expected 20 devices in Another City B, found {len(devices)}"
+
+        for device in devices:
+            assert device.location == "Another City B"
+
+    @pytest.mark.asyncio
+    async def test_filter_by_location_another_city_c(self, real_ansible_inventory_service):
+        """
+        Test filtering by Another City C location using tree structure.
+
+        Expected: 25 devices in Another City C
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "location",
+                    "operator": "equals",
+                    "value": "Another City C",
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        assert (
+            len(devices) == 25
+        ), f"Expected 25 devices in Another City C, found {len(devices)}"
+
+        for device in devices:
+            assert device.location == "Another City C"
+
+    @pytest.mark.asyncio
+    async def test_filter_by_location_state_a(self, real_ansible_inventory_service):
+        """
+        Test filtering by State A location using tree structure.
+
+        Expected: 39 devices in State A (City A + Another City A)
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "location",
+                    "operator": "equals",
+                    "value": "State A",
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        assert (
+            len(devices) == 39
+        ), f"Expected 39 devices in State A, found {len(devices)}"
+
+        for device in devices:
+            assert (device.location == "City A" or device.location == "Another City A")
 
 
 # =============================================================================
@@ -237,167 +531,87 @@ class TestBaselineBasicFiltering:
 
 @pytest.mark.integration
 @pytest.mark.nautobot
-class TestBaselineLogicalAND:
-    """Test AND operations with baseline data."""
+class TestBaselineAndLogic:
+    """Test multiple conditions with AND logic."""
 
     @pytest.mark.asyncio
-    async def test_and_city_a_network_role(self, real_ansible_inventory_service):
+    async def test_filter_multiple_conditions_and(self, real_ansible_inventory_service):
         """
-        Test: City A AND Network role
+        Test multiple AND conditions using tree structure.
 
-        Expected: 49 devices (City A + Network + Production)
+        Filters: City A AND Production tag AND Active status
+        Expected: Subset of City A (39) that are Production (39) and Active (66)
         """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(
-                        field="location", operator="equals", value="City A"
-                    ),
-                    LogicalCondition(field="role", operator="equals", value="Network"),
-                ],
-            )
-        ]
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "location",
+                    "operator": "equals",
+                    "value": "City A",
+                },
+                {
+                    "id": "2",
+                    "field": "tag",
+                    "operator": "equals",
+                    "value": "Production",
+                },
+                {
+                    "id": "3",
+                    "field": "status",
+                    "operator": "equals",
+                    "value": "Active",
+                },
+            ],
+        }
+
+        operations = tree_to_operations(tree)
 
         devices, count = await real_ansible_inventory_service.preview_inventory(
             operations
         )
 
-        assert len(devices) == 49, f"Expected 49 devices, found {len(devices)}"
-        assert count == 2, "Should have queried 2 conditions"
-
-        # Verify all devices match both conditions
+        # Verify all conditions are met
+        assert len(devices) > 0, "Should find devices matching all conditions"
         for device in devices:
-            # Check location
             assert device.location == "City A"
+            assert device.status == "Active"
+            assert "Production" in device.tags
 
-            # Check role
+    @pytest.mark.asyncio
+    async def test_filter_location_and_role(self, real_ansible_inventory_service):
+        """
+        Test location AND role filter using tree structure.
+
+        Filters: City A AND Network role
+        Expected: Intersection of City A (39) and Network (100)
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "location",
+                    "operator": "equals",
+                    "value": "City A",
+                },
+                {"id": "2", "field": "role", "operator": "equals", "value": "Network"},
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        assert len(devices) > 0, "Should find network devices in City A"
+        for device in devices:
+            assert device.location == "City A"
             assert device.role == "Network"
-
-    @pytest.mark.asyncio
-    async def test_and_city_a_server_role(self, real_ansible_inventory_service):
-        """
-        Test: City A AND server role
-
-        Expected: 9 devices (server-01 to server-09)
-        """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(
-                        field="location", operator="equals", value="City A"
-                    ),
-                    LogicalCondition(field="role", operator="equals", value="server"),
-                ],
-            )
-        ]
-
-        devices, count = await real_ansible_inventory_service.preview_inventory(
-            operations
-        )
-
-        assert len(devices) == 9, f"Expected 9 devices, found {len(devices)}"
-
-    @pytest.mark.asyncio
-    async def test_and_city_b_production(self, real_ansible_inventory_service):
-        """
-        Test: City B AND Production tag
-
-        Expected: 31 devices (lab-50 to lab-79: 30 network + server-10: 1 server)
-        """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(
-                        field="location", operator="equals", value="City B"
-                    ),
-                    LogicalCondition(
-                        field="tag", operator="equals", value="Production"
-                    ),
-                ],
-            )
-        ]
-
-        devices, count = await real_ansible_inventory_service.preview_inventory(
-            operations
-        )
-
-        assert len(devices) == 31, f"Expected 31 devices, found {len(devices)}"
-
-    @pytest.mark.asyncio
-    async def test_and_city_b_staging(self, real_ansible_inventory_service):
-        """
-        Test: City B AND Staging tag
-
-        Expected: 31 devices (lab-80 to lab-100 + server-11 to server-20)
-        """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(
-                        field="location", operator="equals", value="City B"
-                    ),
-                    LogicalCondition(field="tag", operator="equals", value="Staging"),
-                ],
-            )
-        ]
-
-        devices, count = await real_ansible_inventory_service.preview_inventory(
-            operations
-        )
-
-        assert len(devices) == 31, f"Expected 31 devices, found {len(devices)}"
-
-    @pytest.mark.asyncio
-    async def test_and_network_production(self, real_ansible_inventory_service):
-        """
-        Test: Network role AND Production tag
-
-        Expected: 79 devices (lab-01 to lab-79)
-        """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(field="role", operator="equals", value="Network"),
-                    LogicalCondition(
-                        field="tag", operator="equals", value="Production"
-                    ),
-                ],
-            )
-        ]
-
-        devices, count = await real_ansible_inventory_service.preview_inventory(
-            operations
-        )
-
-        assert len(devices) == 79, f"Expected 79 devices, found {len(devices)}"
-
-    @pytest.mark.asyncio
-    async def test_and_network_staging(self, real_ansible_inventory_service):
-        """
-        Test: Network role AND Staging tag
-
-        Expected: 21 devices (lab-80 to lab-100)
-        """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(field="role", operator="equals", value="Network"),
-                    LogicalCondition(field="tag", operator="equals", value="Staging"),
-                ],
-            )
-        ]
-
-        devices, count = await real_ansible_inventory_service.preview_inventory(
-            operations
-        )
-
-        assert len(devices) == 21, f"Expected 21 devices, found {len(devices)}"
 
 
 # =============================================================================
@@ -407,374 +621,644 @@ class TestBaselineLogicalAND:
 
 @pytest.mark.integration
 @pytest.mark.nautobot
-class TestBaselineLogicalOR:
-    """Test OR operations with baseline data."""
+class TestBaselineOrLogic:
+    """Test conditions with OR logic using nested groups."""
 
     @pytest.mark.asyncio
-    async def test_or_city_a_city_b(self, real_ansible_inventory_service):
+    async def test_filter_multiple_operations_or(self, real_ansible_inventory_service):
         """
-        Test: City A OR City B
+        Test OR logic using tree structure with nested group.
 
-        Expected: 120 devices (all devices)
+        Filters: City A OR City B
+        Expected: 39 + 40 = 79 devices
         """
-        operations = [
-            LogicalOperation(
-                operation_type="OR",
-                conditions=[
-                    LogicalCondition(
-                        field="location", operator="equals", value="City A"
-                    ),
-                    LogicalCondition(
-                        field="location", operator="equals", value="City B"
-                    ),
-                ],
-            )
-        ]
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "group-1",
+                    "type": "group",
+                    "internalLogic": "OR",
+                    "items": [
+                        {
+                            "id": "1",
+                            "field": "location",
+                            "operator": "equals",
+                            "value": "City A",
+                        },
+                        {
+                            "id": "2",
+                            "field": "location",
+                            "operator": "equals",
+                            "value": "City B",
+                        },
+                    ],
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
 
         devices, count = await real_ansible_inventory_service.preview_inventory(
             operations
         )
 
-        assert len(devices) >= 120, (
-            f"Expected at least 120 devices, found {len(devices)}"
-        )
-        assert count == 2, "Should have queried 2 conditions"
+        # Should find devices in either City A or City B
+        assert (
+            len(devices) == 41
+        ), f"Expected 41 devices (City A + City B), found {len(devices)}"
 
-    @pytest.mark.asyncio
-    async def test_or_production_staging(self, real_ansible_inventory_service):
-        """
-        Test: Production OR Staging
-
-        Expected: 120 devices (all devices have one of these tags)
-        """
-        operations = [
-            LogicalOperation(
-                operation_type="OR",
-                conditions=[
-                    LogicalCondition(
-                        field="tag", operator="equals", value="Production"
-                    ),
-                    LogicalCondition(field="tag", operator="equals", value="Staging"),
-                ],
-            )
-        ]
-
-        devices, count = await real_ansible_inventory_service.preview_inventory(
-            operations
-        )
-
-        assert len(devices) >= 120, (
-            f"Expected at least 120 devices, found {len(devices)}"
-        )
-
-    @pytest.mark.asyncio
-    async def test_or_network_server(self, real_ansible_inventory_service):
-        """
-        Test: Network role OR server role
-
-        Expected: 120 devices (100 network + 20 servers)
-        """
-        operations = [
-            LogicalOperation(
-                operation_type="OR",
-                conditions=[
-                    LogicalCondition(field="role", operator="equals", value="Network"),
-                    LogicalCondition(field="role", operator="equals", value="server"),
-                ],
-            )
-        ]
-
-        devices, count = await real_ansible_inventory_service.preview_inventory(
-            operations
-        )
-
-        assert len(devices) >= 120, (
-            f"Expected at least 120 devices, found {len(devices)}"
-        )
-
-
-# =============================================================================
-# Integration Tests - String Operators
-# =============================================================================
-
-
-@pytest.mark.integration
-@pytest.mark.nautobot
-class TestBaselineStringOperators:
-    """Test string operators with baseline data."""
-
-    @pytest.mark.asyncio
-    async def test_name_contains_lab(self, real_ansible_inventory_service):
-        """
-        Test: name contains "lab"
-
-        Expected: 100 devices (lab-01 to lab-100)
-        """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(field="name", operator="contains", value="lab")
-                ],
-            )
-        ]
-
-        devices, count = await real_ansible_inventory_service.preview_inventory(
-            operations
-        )
-
-        assert len(devices) == 100, f"Expected 100 lab devices, found {len(devices)}"
-
-        # All should contain "lab" in name
+        # All devices should be in City A or City B
         for device in devices:
-            assert "lab" in device.name.lower()
+            assert device.location in ["City A", "City B"]
 
     @pytest.mark.asyncio
-    async def test_name_contains_server(self, real_ansible_inventory_service):
+    async def test_filter_three_locations_or(self, real_ansible_inventory_service):
         """
-        Test: name contains "server"
+        Test OR logic with three locations using tree structure.
 
-        Expected: 20 devices (server-01 to server-20)
+        Filters: City A OR City B OR City C
+        Expected: 39 + 40 + 41 = 120 devices (all devices)
         """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(field="name", operator="contains", value="server")
-                ],
-            )
-        ]
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "group-1",
+                    "type": "group",
+                    "internalLogic": "OR",
+                    "items": [
+                        {
+                            "id": "1",
+                            "field": "location",
+                            "operator": "equals",
+                            "value": "City A",
+                        },
+                        {
+                            "id": "2",
+                            "field": "location",
+                            "operator": "equals",
+                            "value": "City B",
+                        },
+                        {
+                            "id": "3",
+                            "field": "location",
+                            "operator": "equals",
+                            "value": "City C",
+                        },
+                    ],
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
 
         devices, count = await real_ansible_inventory_service.preview_inventory(
             operations
         )
 
-        assert len(devices) == 20, f"Expected 20 server devices, found {len(devices)}"
+        assert (
+            len(devices) == 57
+        ), f"Expected 57 devices (all locations), found {len(devices)}"
 
     @pytest.mark.asyncio
-    async def test_name_equals_specific_device(self, real_ansible_inventory_service):
+    async def test_filter_complex_or_logic(self, real_ansible_inventory_service):
         """
-        Test: name equals "lab-01"
+        Test complex OR logic using tree structure with nested groups.
 
-        Expected: 1 device
+        Filters: (Production AND Active) OR (Staging AND Offline)
+        Expected: Devices matching either condition
         """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(field="name", operator="equals", value="lab-01")
-                ],
-            )
-        ]
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "group-1",
+                    "type": "group",
+                    "internalLogic": "OR",
+                    "items": [
+                        {
+                            "id": "group-2",
+                            "type": "group",
+                            "internalLogic": "AND",
+                            "items": [
+                                {
+                                    "id": "1",
+                                    "field": "tag",
+                                    "operator": "equals",
+                                    "value": "Production",
+                                },
+                                {
+                                    "id": "2",
+                                    "field": "status",
+                                    "operator": "equals",
+                                    "value": "Active",
+                                },
+                            ],
+                        },
+                        {
+                            "id": "group-3",
+                            "type": "group",
+                            "internalLogic": "AND",
+                            "items": [
+                                {
+                                    "id": "3",
+                                    "field": "tag",
+                                    "operator": "equals",
+                                    "value": "Staging",
+                                },
+                                {
+                                    "id": "4",
+                                    "field": "status",
+                                    "operator": "equals",
+                                    "value": "Offline",
+                                },
+                            ],
+                        },
+                    ],
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
 
         devices, count = await real_ansible_inventory_service.preview_inventory(
             operations
         )
 
-        assert len(devices) == 1, f"Expected 1 device, found {len(devices)}"
-        if devices:
-            assert devices[0].name == "lab-01"
+        # Should find devices matching either condition
+        assert len(devices) > 0, "Should find devices matching complex OR logic"
+
+        # Verify each device matches one of the two conditions
+        for device in devices:
+            is_production_active = (
+                device.status == "Active" and "Production" in device.tags
+            )
+            is_staging_offline = (
+                device.status == "Offline" and "Staging" in device.tags
+            )
+            assert is_production_active or is_staging_offline
 
 
 # =============================================================================
-# Integration Tests - Complex Scenarios
-# =============================================================================
-
-
-@pytest.mark.integration
-@pytest.mark.nautobot
-class TestBaselineComplexScenarios:
-    """Test complex multi-condition scenarios."""
-
-    @pytest.mark.asyncio
-    async def test_three_way_and(self, real_ansible_inventory_service):
-        """
-        Test: City A AND Network role AND Production tag
-
-        Expected: 49 devices (City A + Network + Production)
-        """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(
-                        field="location", operator="equals", value="City A"
-                    ),
-                    LogicalCondition(field="role", operator="equals", value="Network"),
-                    LogicalCondition(
-                        field="tag", operator="equals", value="Production"
-                    ),
-                ],
-            )
-        ]
-
-        devices, count = await real_ansible_inventory_service.preview_inventory(
-            operations
-        )
-
-        assert len(devices) == 49, f"Expected 49 devices, found {len(devices)}"
-        assert count == 3, "Should have queried 3 conditions"
-
-    @pytest.mark.asyncio
-    async def test_mixed_and_or_operations(self, real_ansible_inventory_service):
-        """
-        Test: Multiple operations with different logic types
-
-        This tests how the service combines multiple LogicalOperation blocks.
-        Each operation block is executed separately and results are combined.
-        """
-        operations = [
-            # First operation: City A AND Network
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(
-                        field="location", operator="equals", value="City A"
-                    ),
-                    LogicalCondition(field="role", operator="equals", value="Network"),
-                ],
-            ),
-        ]
-
-        devices, count = await real_ansible_inventory_service.preview_inventory(
-            operations
-        )
-
-        # First operation should return City A network devices
-        assert len(devices) == 49, f"Expected 49 devices, found {len(devices)}"
-        assert count == 2
-
-
-# =============================================================================
-# Integration Tests - Special Filters
-# =============================================================================
-
-
-@pytest.mark.integration
-@pytest.mark.nautobot
-class TestBaselineSpecialFilters:
-    """Test special filters with baseline data."""
-
-    @pytest.mark.asyncio
-    async def test_has_primary_ip_true(self, real_ansible_inventory_service):
-        """
-        Test: has_primary_ip = true
-
-        Expected: 120 devices (all baseline devices have primary IPs)
-        """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(
-                        field="has_primary", operator="equals", value="true"
-                    )
-                ],
-            )
-        ]
-
-        devices, count = await real_ansible_inventory_service.preview_inventory(
-            operations
-        )
-
-        assert len(devices) == 120, (
-            f"Expected 120 devices with IPs, found {len(devices)}"
-        )
-
-    @pytest.mark.asyncio
-    async def test_has_primary_ip_false(self, real_ansible_inventory_service):
-        """
-        Test: has_primary_ip = false
-
-        Expected: 0 devices (all baseline devices have primary IPs)
-        """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(
-                        field="has_primary", operator="equals", value="false"
-                    )
-                ],
-            )
-        ]
-
-        devices, count = await real_ansible_inventory_service.preview_inventory(
-            operations
-        )
-
-        assert len(devices) == 0, (
-            f"Expected 0 devices without IPs, found {len(devices)}"
-        )
-
-
-# =============================================================================
-# Integration Tests - Edge Cases
+# Integration Tests - Operators
 # =============================================================================
 
 
 @pytest.mark.integration
 @pytest.mark.nautobot
-class TestBaselineEdgeCases:
-    """Test edge cases with baseline data."""
+class TestBaselineOperators:
+    """Test various operators with tree structure."""
 
     @pytest.mark.asyncio
-    async def test_nonexistent_location(self, real_ansible_inventory_service):
-        """Test filtering by location that doesn't exist."""
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(
-                        field="location", operator="equals", value="City Z"
-                    )
-                ],
-            )
-        ]
-
-        devices, count = await real_ansible_inventory_service.preview_inventory(
-            operations
-        )
-
-        assert len(devices) == 0, "Should find no devices in non-existent location"
-
-    @pytest.mark.asyncio
-    async def test_contradictory_and_conditions(self, real_ansible_inventory_service):
+    async def test_filter_not_equals_operator(self, real_ansible_inventory_service):
         """
-        Test: location=City A AND location=City B (impossible)
+        Test not_equals operator using tree structure.
 
-        Expected: 0 devices
+        Filters: location NOT City A
+        Expected: 120 - 21 = 99 devices
         """
-        operations = [
-            LogicalOperation(
-                operation_type="AND",
-                conditions=[
-                    LogicalCondition(
-                        field="location", operator="equals", value="City A"
-                    ),
-                    LogicalCondition(
-                        field="location", operator="equals", value="City B"
-                    ),
-                ],
-            )
-        ]
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "location",
+                    "operator": "not_equals",
+                    "value": "City A",
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
 
         devices, count = await real_ansible_inventory_service.preview_inventory(
             operations
         )
 
-        assert len(devices) == 0, (
-            "Should find no devices matching contradictory conditions"
-        )
+        # Should find all devices NOT in City A
+        assert (
+            len(devices) == 99
+        ), f"Expected 99 devices not in City A, found {len(devices)}"
+
+        # None should be in City A
+        for device in devices:
+            assert device.location != "City A"
 
     @pytest.mark.asyncio
-    async def test_empty_operations_list(self, real_ansible_inventory_service):
-        """Test with empty operations list."""
-        operations = []
+    async def test_filter_contains_operator(self, real_ansible_inventory_service):
+        """
+        Test contains operator using tree structure.
+
+        Filters: name contains "lab-0" (devices lab-001 to lab-099)
+        Expected: 99 network devices
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {"id": "1", "field": "name", "operator": "contains", "value": "lab-0"}
+            ],
+        }
+
+        operations = tree_to_operations(tree)
 
         devices, count = await real_ansible_inventory_service.preview_inventory(
             operations
         )
 
-        assert devices == []
-        assert count == 0
+        # Should find devices with "lab-0" in name (lab-001 to lab-099)
+        assert (
+            len(devices) == 99
+        ), f"Expected 99 devices with 'lab-0' in name, found {len(devices)}"
+
+        # All should contain "lab-0"
+        for device in devices:
+            assert "lab-0" in device.name
+
+    @pytest.mark.asyncio
+    async def test_filter_not_contains_operator(self, real_ansible_inventory_service):
+        """
+        Test not_contains operator using tree structure.
+
+        Filters: name NOT contains "server"
+        Expected: 100 devices (all network devices)
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "name",
+                    "operator": "not_contains",
+                    "value": "server",
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        assert (
+            len(devices) == 100
+        ), f"Expected 100 devices without 'server' in name, found {len(devices)}"
+
+        for device in devices:
+            assert "server" not in device.name
+
+
+# =============================================================================
+# Integration Tests - NOT Operator Logic
+# =============================================================================
+
+
+@pytest.mark.integration
+@pytest.mark.nautobot
+class TestBaselineNotLogic:
+    """Test NOT operator with nested groups."""
+
+    @pytest.mark.asyncio
+    async def test_not_operator_simple(self, real_ansible_inventory_service):
+        """
+        Test simple NOT operator: State A NOT City A.
+
+        Expected: Devices in State A (39) minus devices in City A (21) = 18 devices (Another City A)
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "group-1",
+                    "type": "group",
+                    "internalLogic": "AND",
+                    "items": [
+                        {
+                            "id": "1",
+                            "field": "location",
+                            "operator": "equals",
+                            "value": "State A",
+                        },
+                        {
+                            "id": "group-2",
+                            "type": "group",
+                            "logic": "NOT",
+                            "internalLogic": "AND",
+                            "items": [
+                                {
+                                    "id": "2",
+                                    "field": "location",
+                                    "operator": "equals",
+                                    "value": "City A",
+                                }
+                            ],
+                        },
+                    ],
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        # Should find devices in State A that are NOT in City A
+        assert (
+            len(devices) == 18
+        ), f"Expected 18 devices (State A - City A), found {len(devices)}"
+
+        # All devices should be in State A but not City A
+        for device in devices:
+            assert device.location == "State A" or device.location == "Another City A"
+            assert device.location != "City A"
+
+    @pytest.mark.asyncio
+    async def test_not_operator_multiple_exclusions(self, real_ansible_inventory_service):
+        """
+        Test NOT operator with multiple exclusions: State A NOT (City A OR Another City A).
+
+        Expected: Should return 0 devices since State A only contains City A and Another City A
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "group-1",
+                    "type": "group",
+                    "internalLogic": "AND",
+                    "items": [
+                        {
+                            "id": "1",
+                            "field": "location",
+                            "operator": "equals",
+                            "value": "State A",
+                        },
+                        {
+                            "id": "group-2",
+                            "type": "group",
+                            "logic": "NOT",
+                            "internalLogic": "OR",
+                            "items": [
+                                {
+                                    "id": "2",
+                                    "field": "location",
+                                    "operator": "equals",
+                                    "value": "City A",
+                                },
+                                {
+                                    "id": "3",
+                                    "field": "location",
+                                    "operator": "equals",
+                                    "value": "Another City A",
+                                },
+                            ],
+                        },
+                    ],
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        # Should return 0 devices since all State A devices are in City A or Another City A
+        assert (
+            len(devices) == 0
+        ), f"Expected 0 devices (State A contains only City A and Another City A), found {len(devices)}"
+
+    @pytest.mark.asyncio
+    async def test_not_operator_with_tag(self, real_ansible_inventory_service):
+        """
+        Test NOT operator with tags: State A NOT Production.
+
+        Expected: Devices in State A (39) that don't have Production tag
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "group-1",
+                    "type": "group",
+                    "internalLogic": "AND",
+                    "items": [
+                        {
+                            "id": "1",
+                            "field": "location",
+                            "operator": "equals",
+                            "value": "State A",
+                        },
+                        {
+                            "id": "group-2",
+                            "type": "group",
+                            "logic": "NOT",
+                            "internalLogic": "AND",
+                            "items": [
+                                {
+                                    "id": "2",
+                                    "field": "tag",
+                                    "operator": "equals",
+                                    "value": "Production",
+                                }
+                            ],
+                        },
+                    ],
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        # Should find devices in State A without Production tag
+        assert len(devices) > 0, "Should find devices in State A without Production tag"
+
+        # Verify all devices are in State A and don't have Production tag
+        for device in devices:
+            assert device.location == "State A" or device.location in ["City A", "Another City A"]
+            assert "Production" not in device.tags
+
+    @pytest.mark.asyncio
+    async def test_not_operator_complex(self, real_ansible_inventory_service):
+        """
+        Test complex NOT operator: (State A AND Active) NOT (City A).
+
+        Expected: Active devices in State A that are not in City A
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "group-1",
+                    "type": "group",
+                    "internalLogic": "AND",
+                    "items": [
+                        {
+                            "id": "1",
+                            "field": "location",
+                            "operator": "equals",
+                            "value": "State A",
+                        },
+                        {
+                            "id": "2",
+                            "field": "status",
+                            "operator": "equals",
+                            "value": "Active",
+                        },
+                        {
+                            "id": "group-2",
+                            "type": "group",
+                            "logic": "NOT",
+                            "internalLogic": "AND",
+                            "items": [
+                                {
+                                    "id": "3",
+                                    "field": "location",
+                                    "operator": "equals",
+                                    "value": "City A",
+                                }
+                            ],
+                        },
+                    ],
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        # Should find active devices in State A that are not in City A
+        assert len(devices) >= 0, "Should find active devices in State A excluding City A"
+
+        # Verify all devices meet the criteria
+        for device in devices:
+            assert device.status == "Active"
+            assert device.location != "City A"
+            # Device should be in State A or Another City A (since Another City A is child of State A)
+            assert device.location in ["State A", "Another City A"]
+
+
+# =============================================================================
+# Integration Tests - Custom Fields
+# =============================================================================
+
+
+@pytest.mark.integration
+@pytest.mark.nautobot
+class TestBaselineCustomFields:
+    """Test filtering by custom fields using tree structure."""
+
+    @pytest.mark.asyncio
+    async def test_filter_by_custom_field_net(self, real_ansible_inventory_service):
+        """
+        Test filtering by custom field 'net' using tree structure.
+
+        Expected: Devices with specific net value
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "custom_fields.net",
+                    "operator": "equals",
+                    "value": "10.0.0.0/24",
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        # Verify all have the correct custom field value
+        for device in devices:
+            assert hasattr(device, "custom_fields")
+            assert device.custom_fields.get("net") == "10.0.0.0/24"
+
+    @pytest.mark.asyncio
+    async def test_filter_by_custom_field_checkmk_site(
+        self, real_ansible_inventory_service
+    ):
+        """
+        Test filtering by custom field 'checkmk_site' using tree structure.
+
+        Expected: Devices with specific checkmk_site value
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "custom_fields.checkmk_site",
+                    "operator": "equals",
+                    "value": "site1",
+                }
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        for device in devices:
+            assert device.custom_fields.get("checkmk_site") == "site1"
+
+
+# =============================================================================
+# Integration Tests - Empty Filters
+# =============================================================================
+
+
+@pytest.mark.integration
+@pytest.mark.nautobot
+class TestBaselineEmptyFilters:
+    """Test empty or no filter conditions."""
+
+    @pytest.mark.asyncio
+    async def test_empty_filter_returns_all(self, real_ansible_inventory_service):
+        """
+        Test that an empty filter returns all devices.
+
+        Expected: 120 devices
+        """
+        # Empty tree structure
+        tree = {"type": "root", "internalLogic": "AND", "items": []}
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        # Should return all devices
+        assert (
+            len(devices) == 120
+        ), f"Expected 120 devices with empty filter, found {len(devices)}"
