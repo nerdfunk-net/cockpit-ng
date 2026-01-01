@@ -1020,3 +1020,631 @@ class TestDeviceOperationsEdgeCases:
         )
 
         logger.info("✓ Non-existent device update rejected as expected")
+
+
+# =============================================================================
+# Integration Tests - Add Device with Tags and Custom Fields
+# =============================================================================
+
+
+@pytest.mark.integration
+@pytest.mark.nautobot
+class TestAddDeviceWithTagsAndCustomFields:
+    """Test adding devices with tags and custom fields."""
+
+    @pytest.mark.asyncio
+    async def test_add_device_with_tags(
+        self, real_nautobot_service, device_creation_service, test_device_ids
+    ):
+        """
+        Test adding a device with tags.
+
+        This tests that tags are properly assigned when creating a device.
+        Uses baseline tags: Production, Staging, lab
+        """
+        # Get required IDs
+        ids = await get_required_ids(real_nautobot_service)
+
+        # Get tag IDs from baseline
+        tag_query = """
+        query {
+          tags(name: ["Production", "Staging"]) {
+            id
+            name
+          }
+        }
+        """
+        tag_result = await real_nautobot_service.graphql_query(tag_query)
+        tags = tag_result["data"]["tags"]
+        tag_ids = [tag["id"] for tag in tags]
+
+        assert len(tag_ids) >= 2, "Need at least 2 tags for testing"
+
+        # Create device with tags
+        request = AddDeviceRequest(
+            name="test-device-with-tags",
+            role=ids["role_id"],
+            status=ids["status_id"],
+            location=ids["location_id"],
+            device_type=ids["device_type_id"],
+            platform=ids["platform_id"],
+            serial="TEST-TAGS-001",
+            tags=tag_ids,  # Assign multiple tags
+            interfaces=[
+                InterfaceData(
+                    name="GigabitEthernet0/0",
+                    type="1000base-t",
+                    status=ids["status_id"],
+                    ip_address="192.168.178.140/24",
+                    namespace=ids["namespace_id"],
+                    is_primary_ipv4=True,
+                ),
+            ],
+        )
+
+        # Create the device
+        result = await device_creation_service.create_device_with_interfaces(request)
+
+        # Track for cleanup
+        if result.get("device_id"):
+            test_device_ids.append(result["device_id"])
+
+        # Verify success
+        assert result["success"] is True
+
+        # Verify device has tags
+        device_query = f"""
+        query {{
+          device(id: "{result["device_id"]}") {{
+            id
+            name
+            tags {{
+              id
+              name
+            }}
+          }}
+        }}
+        """
+        device_result = await real_nautobot_service.graphql_query(device_query)
+        device = device_result["data"]["device"]
+
+        # Verify tags were assigned
+        device_tag_ids = [tag["id"] for tag in device["tags"]]
+        for tag_id in tag_ids:
+            assert tag_id in device_tag_ids, f"Tag {tag_id} should be assigned to device"
+
+        logger.info(f"✓ Device created with {len(device['tags'])} tags")
+
+    @pytest.mark.asyncio
+    async def test_add_device_with_custom_fields(
+        self, real_nautobot_service, device_creation_service, test_device_ids
+    ):
+        """
+        Test adding a device with custom fields.
+
+        This tests that custom fields are properly set when creating a device.
+        Uses custom fields from baseline: net, checkmk_site
+
+        Note: The 'net' custom field has allowed choices: netA, netB, lab
+        """
+        # Get required IDs
+        ids = await get_required_ids(real_nautobot_service)
+
+        # Create device with custom fields (using valid choices)
+        request = AddDeviceRequest(
+            name="test-device-with-custom-fields",
+            role=ids["role_id"],
+            status=ids["status_id"],
+            location=ids["location_id"],
+            device_type=ids["device_type_id"],
+            platform=ids["platform_id"],
+            serial="TEST-CF-001",
+            custom_fields={
+                "net": "netA",  # Valid choice from baseline: netA, netB, lab
+                "checkmk_site": "siteA",  # Valid choice from baseline: siteA, siteB, siteC
+            },
+            interfaces=[
+                InterfaceData(
+                    name="GigabitEthernet0/0",
+                    type="1000base-t",
+                    status=ids["status_id"],
+                    ip_address="192.168.178.141/24",
+                    namespace=ids["namespace_id"],
+                    is_primary_ipv4=True,
+                ),
+            ],
+        )
+
+        # Create the device
+        result = await device_creation_service.create_device_with_interfaces(request)
+
+        # Track for cleanup
+        if result.get("device_id"):
+            test_device_ids.append(result["device_id"])
+
+        # Verify success
+        assert result["success"] is True
+
+        # Verify device has custom fields
+        device_query = f"""
+        query {{
+          device(id: "{result["device_id"]}") {{
+            id
+            name
+            _custom_field_data
+          }}
+        }}
+        """
+        device_result = await real_nautobot_service.graphql_query(device_query)
+        device = device_result["data"]["device"]
+
+        # Verify custom fields were set
+        custom_fields = device.get("_custom_field_data", {})
+        assert custom_fields.get("net") == "netA"
+        assert custom_fields.get("checkmk_site") == "siteA"
+
+        logger.info("✓ Device created with custom fields")
+
+    @pytest.mark.asyncio
+    async def test_add_device_with_tags_and_custom_fields(
+        self, real_nautobot_service, device_creation_service, test_device_ids
+    ):
+        """
+        Test adding a device with both tags AND custom fields.
+
+        This tests the combination of tags, custom fields, and asset_tag.
+        """
+        # Get required IDs
+        ids = await get_required_ids(real_nautobot_service)
+
+        # Get tag IDs
+        tag_query = """
+        query {
+          tags(name: "Production") {
+            id
+            name
+          }
+        }
+        """
+        tag_result = await real_nautobot_service.graphql_query(tag_query)
+        production_tag_id = tag_result["data"]["tags"][0]["id"]
+
+        # Create device with both tags and custom fields
+        request = AddDeviceRequest(
+            name="test-device-full-metadata",
+            role=ids["role_id"],
+            status=ids["status_id"],
+            location=ids["location_id"],
+            device_type=ids["device_type_id"],
+            platform=ids["platform_id"],
+            serial="TEST-FULL-001",
+            asset_tag="ASSET-FULL-001",
+            tags=[production_tag_id],
+            custom_fields={
+                "net": "netB",  # Valid choice from baseline: netA, netB, lab
+                "checkmk_site": "siteB",  # Valid choice from baseline: siteA, siteB, siteC
+            },
+            interfaces=[
+                InterfaceData(
+                    name="GigabitEthernet0/0",
+                    type="1000base-t",
+                    status=ids["status_id"],
+                    ip_address="192.168.178.142/24",
+                    namespace=ids["namespace_id"],
+                    is_primary_ipv4=True,
+                    description="Production management interface",
+                ),
+            ],
+        )
+
+        # Create the device
+        result = await device_creation_service.create_device_with_interfaces(request)
+
+        # Track for cleanup
+        if result.get("device_id"):
+            test_device_ids.append(result["device_id"])
+
+        # Verify success
+        assert result["success"] is True
+
+        # Verify all metadata
+        device_query = f"""
+        query {{
+          device(id: "{result["device_id"]}") {{
+            id
+            name
+            serial
+            asset_tag
+            tags {{
+              id
+              name
+            }}
+            _custom_field_data
+          }}
+        }}
+        """
+        device_result = await real_nautobot_service.graphql_query(device_query)
+        device = device_result["data"]["device"]
+
+        # Verify basic fields
+        assert device["serial"] == "TEST-FULL-001"
+        assert device["asset_tag"] == "ASSET-FULL-001"
+
+        # Verify tags
+        assert len(device["tags"]) >= 1
+        assert any(tag["name"] == "Production" for tag in device["tags"])
+
+        # Verify custom fields
+        custom_fields = device.get("_custom_field_data", {})
+        assert custom_fields.get("net") == "netB"
+        assert custom_fields.get("checkmk_site") == "siteB"
+
+        logger.info("✓ Device created with full metadata (tags + custom fields + asset_tag)")
+
+
+# =============================================================================
+# Integration Tests - Add Device with Multiple Interfaces
+# =============================================================================
+
+
+@pytest.mark.integration
+@pytest.mark.nautobot
+class TestAddDeviceWithMultipleInterfaces:
+    """Test adding devices with multiple interfaces and advanced interface configurations."""
+
+    @pytest.mark.asyncio
+    async def test_add_device_with_multiple_interfaces(
+        self, real_nautobot_service, device_creation_service, test_device_ids
+    ):
+        """
+        Test adding a device with multiple interfaces.
+
+        This tests creating a device with:
+        - Management interface (with IP)
+        - Data interface (with IP)
+        - Loopback interface (with IP)
+        """
+        # Get required IDs
+        ids = await get_required_ids(real_nautobot_service)
+
+        # Create device with 3 interfaces
+        request = AddDeviceRequest(
+            name="test-device-multi-interface",
+            role=ids["role_id"],
+            status=ids["status_id"],
+            location=ids["location_id"],
+            device_type=ids["device_type_id"],
+            platform=ids["platform_id"],
+            serial="TEST-MULTI-IF-001",
+            interfaces=[
+                InterfaceData(
+                    name="GigabitEthernet0/0",
+                    type="1000base-t",
+                    status=ids["status_id"],
+                    ip_address="192.168.178.150/24",
+                    namespace=ids["namespace_id"],
+                    is_primary_ipv4=True,
+                    description="Management interface",
+                    mgmt_only=True,
+                ),
+                InterfaceData(
+                    name="GigabitEthernet0/1",
+                    type="1000base-t",
+                    status=ids["status_id"],
+                    ip_address="192.168.178.151/24",
+                    namespace=ids["namespace_id"],
+                    description="Data interface",
+                ),
+                InterfaceData(
+                    name="Loopback0",
+                    type="virtual",
+                    status=ids["status_id"],
+                    ip_address="10.255.255.1/32",
+                    namespace=ids["namespace_id"],
+                    description="Loopback interface",
+                ),
+            ],
+        )
+
+        # Create the device
+        result = await device_creation_service.create_device_with_interfaces(request)
+
+        # Track for cleanup
+        if result.get("device_id"):
+            test_device_ids.append(result["device_id"])
+
+        # Verify success
+        assert result["success"] is True
+
+        # Verify summary
+        summary = result["summary"]
+        assert summary["interfaces_created"] == 3
+        assert summary["ip_addresses_created"] == 3
+
+        # Verify all interfaces exist
+        device_query = f"""
+        query {{
+          device(id: "{result["device_id"]}") {{
+            id
+            name
+            primary_ip4 {{
+              address
+            }}
+            interfaces {{
+              name
+              type
+              description
+              mgmt_only
+              ip_addresses {{
+                address
+              }}
+            }}
+          }}
+        }}
+        """
+        device_result = await real_nautobot_service.graphql_query(device_query)
+        device = device_result["data"]["device"]
+
+        # Verify primary IP
+        assert device["primary_ip4"]["address"] == "192.168.178.150/24"
+
+        # Verify all 3 interfaces
+        assert len(device["interfaces"]) == 3
+
+        # Find and verify each interface
+        interface_names = [iface["name"] for iface in device["interfaces"]]
+        assert "GigabitEthernet0/0" in interface_names
+        assert "GigabitEthernet0/1" in interface_names
+        assert "Loopback0" in interface_names
+
+        # Verify mgmt_only flag on management interface
+        mgmt_interface = next(
+            iface for iface in device["interfaces"] if iface["name"] == "GigabitEthernet0/0"
+        )
+        assert mgmt_interface["mgmt_only"] is True
+
+        logger.info("✓ Device created with 3 interfaces")
+
+    @pytest.mark.asyncio
+    async def test_add_device_with_interface_advanced_properties(
+        self, real_nautobot_service, device_creation_service, test_device_ids
+    ):
+        """
+        Test adding a device with advanced interface properties.
+
+        This tests interface properties like:
+        - MAC address
+        - MTU
+        - Enabled/disabled state
+        - Description
+        """
+        # Get required IDs
+        ids = await get_required_ids(real_nautobot_service)
+
+        # Create device with advanced interface config
+        request = AddDeviceRequest(
+            name="test-device-adv-interface",
+            role=ids["role_id"],
+            status=ids["status_id"],
+            location=ids["location_id"],
+            device_type=ids["device_type_id"],
+            platform=ids["platform_id"],
+            serial="TEST-ADV-IF-001",
+            interfaces=[
+                InterfaceData(
+                    name="GigabitEthernet0/0",
+                    type="1000base-t",
+                    status=ids["status_id"],
+                    ip_address="192.168.178.160/24",
+                    namespace=ids["namespace_id"],
+                    is_primary_ipv4=True,
+                    description="Management with custom MAC and MTU",
+                    mac_address="00:1A:2B:3C:4D:5E",
+                    mtu=9000,  # Jumbo frames
+                    enabled=True,
+                    mgmt_only=True,
+                ),
+            ],
+        )
+
+        # Create the device
+        result = await device_creation_service.create_device_with_interfaces(request)
+
+        # Track for cleanup
+        if result.get("device_id"):
+            test_device_ids.append(result["device_id"])
+
+        # Verify success
+        assert result["success"] is True
+
+        # Verify interface properties
+        device_query = f"""
+        query {{
+          device(id: "{result["device_id"]}") {{
+            interfaces(name: "GigabitEthernet0/0") {{
+              name
+              mac_address
+              mtu
+              enabled
+              description
+              mgmt_only
+            }}
+          }}
+        }}
+        """
+        device_result = await real_nautobot_service.graphql_query(device_query)
+        interface = device_result["data"]["device"]["interfaces"][0]
+
+        # Verify advanced properties
+        assert interface["mac_address"] == "00:1A:2B:3C:4D:5E"
+        assert interface["mtu"] == 9000
+        assert interface["enabled"] is True
+        assert "custom MAC and MTU" in interface["description"]
+        assert interface["mgmt_only"] is True
+
+        logger.info("✓ Device created with advanced interface properties")
+
+
+# =============================================================================
+# Integration Tests - Add Device with Different Locations and Roles
+# =============================================================================
+
+
+@pytest.mark.integration
+@pytest.mark.nautobot
+class TestAddDeviceWithDifferentLocationsAndRoles:
+    """Test adding devices with different locations and roles."""
+
+    @pytest.mark.asyncio
+    async def test_add_device_in_different_location(
+        self, real_nautobot_service, device_creation_service, test_device_ids
+    ):
+        """
+        Test adding devices in different locations.
+
+        This creates devices in City B instead of the default City A.
+        """
+        # Get City B location
+        location_query = """
+        query {
+          locations(name: "City B") {
+            id
+            name
+          }
+        }
+        """
+        result = await real_nautobot_service.graphql_query(location_query)
+        city_b_id = result["data"]["locations"][0]["id"]
+
+        # Get other required IDs
+        ids = await get_required_ids(real_nautobot_service)
+
+        # Create device in City B
+        request = AddDeviceRequest(
+            name="test-device-city-b",
+            role=ids["role_id"],
+            status=ids["status_id"],
+            location=city_b_id,  # City B instead of City A
+            device_type=ids["device_type_id"],
+            platform=ids["platform_id"],
+            serial="TEST-CITY-B-001",
+            interfaces=[
+                InterfaceData(
+                    name="GigabitEthernet0/0",
+                    type="1000base-t",
+                    status=ids["status_id"],
+                    ip_address="192.168.178.170/24",
+                    namespace=ids["namespace_id"],
+                    is_primary_ipv4=True,
+                ),
+            ],
+        )
+
+        # Create the device
+        result = await device_creation_service.create_device_with_interfaces(request)
+
+        # Track for cleanup
+        if result.get("device_id"):
+            test_device_ids.append(result["device_id"])
+
+        # Verify success
+        assert result["success"] is True
+
+        # Verify location
+        device_query = f"""
+        query {{
+          device(id: "{result["device_id"]}") {{
+            name
+            location {{
+              id
+              name
+            }}
+          }}
+        }}
+        """
+        device_result = await real_nautobot_service.graphql_query(device_query)
+        device = device_result["data"]["device"]
+
+        assert device["location"]["id"] == city_b_id
+        assert device["location"]["name"] == "City B"
+
+        logger.info("✓ Device created in City B location")
+
+    @pytest.mark.asyncio
+    async def test_add_device_with_different_role(
+        self, real_nautobot_service, device_creation_service, test_device_ids
+    ):
+        """
+        Test adding a device with server role instead of network role.
+
+        Uses baseline server role from the test data.
+        """
+        # Get server role
+        role_query = """
+        query {
+          roles(name: "server") {
+            id
+            name
+          }
+        }
+        """
+        result = await real_nautobot_service.graphql_query(role_query)
+
+        if not result["data"]["roles"]:
+            pytest.skip("Server role not available in test environment")
+
+        server_role_id = result["data"]["roles"][0]["id"]
+
+        # Get other required IDs
+        ids = await get_required_ids(real_nautobot_service)
+
+        # Create server device
+        request = AddDeviceRequest(
+            name="test-server-001",
+            role=server_role_id,  # Server role instead of Network
+            status=ids["status_id"],
+            location=ids["location_id"],
+            device_type=ids["device_type_id"],
+            serial="TEST-SERVER-001",
+            interfaces=[
+                InterfaceData(
+                    name="eth0",
+                    type="1000base-t",
+                    status=ids["status_id"],
+                    ip_address="192.168.178.180/24",
+                    namespace=ids["namespace_id"],
+                    is_primary_ipv4=True,
+                    description="Primary network interface",
+                ),
+            ],
+        )
+
+        # Create the device
+        result = await device_creation_service.create_device_with_interfaces(request)
+
+        # Track for cleanup
+        if result.get("device_id"):
+            test_device_ids.append(result["device_id"])
+
+        # Verify success
+        assert result["success"] is True
+
+        # Verify role
+        device_query = f"""
+        query {{
+          device(id: "{result["device_id"]}") {{
+            name
+            role {{
+              id
+              name
+            }}
+          }}
+        }}
+        """
+        device_result = await real_nautobot_service.graphql_query(device_query)
+        device = device_result["data"]["device"]
+
+        assert device["role"]["id"] == server_role_id
+        assert device["role"]["name"] == "server"
+
+        logger.info("✓ Server device created with server role")
