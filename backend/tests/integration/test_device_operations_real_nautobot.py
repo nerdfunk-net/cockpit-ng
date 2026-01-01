@@ -798,6 +798,198 @@ class TestBulkEdit:
 
         logger.info("✓ Primary IP updated on existing interface")
 
+    @pytest.mark.asyncio
+    async def test_update_primary_ip_using_existing_unassigned_ip(
+        self, real_nautobot_service, device_update_service, baseline_device_ids
+    ):
+        """
+        Test updating primary IPv4 using an EXISTING but UNASSIGNED IP address.
+
+        This tests the "Use Assigned IP address if IP exists and is not assigned" feature.
+        
+        Steps:
+        1. Create a new IP address that is not assigned to any device
+        2. Update a device's primary IP to use this existing unassigned IP
+        3. Verify the IP is now assigned to the device as primary IP
+        
+        Uses baseline device lab-100.
+        """
+        device_info = baseline_device_ids["lab-100"]
+        ids = await get_required_ids(real_nautobot_service)
+        
+        # Step 1: Create a new unassigned IP address (or reuse if exists)
+        # Use baseline prefix 192.168.178.x (IP 131 to avoid conflicts)
+        existing_unassigned_ip = "192.168.178.131/24"
+        
+        # First, check if IP already exists
+        check_ip_query = """
+        query {
+          ip_addresses(address: ["192.168.178.131/24"]) {
+            id
+            address
+            interfaces {
+              id
+            }
+          }
+        }
+        """
+        check_result = await real_nautobot_service.graphql_query(check_ip_query)
+        
+        existing_ips = check_result.get("data", {}).get("ip_addresses", [])
+        
+        if existing_ips:
+            # IP exists - check if it's unassigned
+            existing_ip = existing_ips[0]
+            created_ip_id = existing_ip["id"]
+            
+            if existing_ip.get("interfaces"):
+                # IP is assigned to interface, delete it and recreate
+                logger.info(f"IP {existing_unassigned_ip} exists and is assigned, deleting it")
+                await real_nautobot_service.rest_request(
+                    endpoint=f"ipam/ip-addresses/{created_ip_id}/",
+                    method="DELETE"
+                )
+                # Now create a fresh one
+                create_ip_payload = {
+                    "address": existing_unassigned_ip,
+                    "status": ids["status_id"],
+                    "namespace": ids["namespace_id"],
+                    "type": "host",
+                }
+                
+                logger.info(f"Creating unassigned IP: {existing_unassigned_ip}")
+                ip_create_result = await real_nautobot_service.rest_request(
+                    endpoint="ipam/ip-addresses/",
+                    method="POST",
+                    data=create_ip_payload
+                )
+                created_ip_id = ip_create_result["id"]
+            else:
+                # IP exists and is unassigned, perfect - use it
+                logger.info(f"Using existing unassigned IP: {existing_unassigned_ip}")
+        else:
+            # IP doesn't exist, create it
+            create_ip_payload = {
+                "address": existing_unassigned_ip,
+                "status": ids["status_id"],
+                "namespace": ids["namespace_id"],
+                "type": "host",
+            }
+            
+            logger.info(f"Creating unassigned IP: {existing_unassigned_ip}")
+            ip_create_result = await real_nautobot_service.rest_request(
+                endpoint="ipam/ip-addresses/",
+                method="POST",
+                data=create_ip_payload
+            )
+            created_ip_id = ip_create_result["id"]
+        
+        logger.info(f"✓ Unassigned IP ready with ID: {created_ip_id}")
+        
+        # Verify IP exists and is not assigned
+        ip_query = f"""
+        query {{
+          ip_address(id: "{created_ip_id}") {{
+            id
+            address
+            interfaces {{
+              id
+            }}
+          }}
+        }}
+        """
+        ip_result = await real_nautobot_service.graphql_query(ip_query)
+        ip_data = ip_result["data"]["ip_address"]
+        assert ip_data["address"] == existing_unassigned_ip
+        assert ip_data.get("interfaces") is None or len(ip_data.get("interfaces", [])) == 0, (
+            "IP should not be assigned yet"
+        )
+        
+        # Step 2: Update device to use this existing unassigned IP
+        logger.info(f"Updating device {device_info['name']} to use existing unassigned IP")
+        result = await device_update_service.update_device(
+            device_identifier={"id": device_info["id"]},
+            update_data={
+                "primary_ip4": existing_unassigned_ip,
+                "ip_namespace": "Global",
+            },
+            interface_config={
+                "name": "Loopback131",
+                "type": "virtual",
+                "status": "active",
+                "mgmt_interface_create_on_ip_change": True,
+            },
+        )
+        
+        # Verify success
+        assert result["success"] is True, f"IP update failed: {result.get('message')}"
+        assert "primary_ip4" in result["updated_fields"]
+        
+        # Step 3: Verify the existing IP is now assigned to the device
+        device_query = f"""
+        query {{
+          device(id: "{device_info["id"]}") {{
+            primary_ip4 {{
+              id
+              address
+            }}
+            interfaces(name: "Loopback131") {{
+              name
+              type
+              ip_addresses {{
+                id
+                address
+              }}
+            }}
+          }}
+        }}
+        """
+        device_result = await real_nautobot_service.graphql_query(device_query)
+        device = device_result["data"]["device"]
+        
+        # Verify primary IP is set to the existing unassigned IP
+        assert device["primary_ip4"]["address"] == existing_unassigned_ip
+        assert device["primary_ip4"]["id"] == created_ip_id, (
+            "Should use the existing IP, not create a new one"
+        )
+        
+        # Verify interface was created and has the IP
+        assert len(device["interfaces"]) == 1
+        interface = device["interfaces"][0]
+        assert interface["name"] == "Loopback131"
+        assert interface["type"] == "VIRTUAL"
+        
+        # Verify the IP is assigned to the interface
+        ip_addresses = [ip["address"] for ip in interface["ip_addresses"]]
+        assert existing_unassigned_ip in ip_addresses
+        
+        # Verify the IP is no longer unassigned
+        ip_check_query = f"""
+        query {{
+          ip_address(id: "{created_ip_id}") {{
+            interfaces {{
+              id
+              name
+              device {{
+                id
+                name
+              }}
+            }}
+          }}
+        }}
+        """
+        ip_check_result = await real_nautobot_service.graphql_query(ip_check_query)
+        ip_check_data = ip_check_result["data"]["ip_address"]
+        
+        assert ip_check_data.get("interfaces") is not None and len(ip_check_data["interfaces"]) > 0, (
+            "IP should now be assigned to interface"
+        )
+        interface_data = ip_check_data["interfaces"][0]
+        assert interface_data["name"] == "Loopback131"
+        assert interface_data["device"]["id"] == device_info["id"]
+        
+        logger.info("✓ Existing unassigned IP successfully assigned to device")
+
 
 # =============================================================================
 # Integration Tests - Edge Cases
