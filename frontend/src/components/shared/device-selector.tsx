@@ -819,9 +819,6 @@ export function DeviceSelector({
       return 'Root'
     }
     
-    // Find the actual group to get its logic type
-    const targetGroupId = currentGroupPath[currentGroupPath.length - 1]
-    
     const findGroupById = (
       items: (ConditionItem | ConditionGroup)[],
       groupId: string
@@ -836,6 +833,12 @@ export function DeviceSelector({
         }
       }
       return null
+    }
+    
+    // Find the actual group to get its logic type
+    const targetGroupId = currentGroupPath[currentGroupPath.length - 1]
+    if (!targetGroupId) {
+      return `Group ${currentGroupPath.length}`
     }
     
     const group = findGroupById(conditionTree.items, targetGroupId)
