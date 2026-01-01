@@ -11,6 +11,21 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { Settings, Search, Globe, Lock, Eye, Edit2, Trash2, X, Check } from 'lucide-react'
+import { conditionTreeToExpression, type ConditionTree, type ConditionGroup } from '@/components/features/network/automation/ansible-inventory/utils/helpers'
+
+// Legacy flat condition format
+interface LegacyCondition {
+  field: string
+  operator: string
+  value: string
+  logic: string
+}
+
+// Version 2 wrapper format
+interface ConditionTreeWrapper {
+  version: 2
+  tree: ConditionTree
+}
 
 interface SavedInventory {
   id: number
@@ -20,12 +35,7 @@ interface SavedInventory {
   created_by: string
   created_at?: string
   updated_at?: string
-  conditions: Array<{
-    field: string
-    operator: string
-    value: string
-    logic: string
-  }>
+  conditions: (LegacyCondition | ConditionTreeWrapper)[] // Can be tree structure or legacy flat format
 }
 
 interface ManageInventoryDialogProps {
@@ -122,6 +132,72 @@ export function ManageInventoryDialog({
     })
   }
 
+  const getLogicalExpression = (inventory: SavedInventory): string => {
+    // Check if conditions array exists and has items
+    if (!inventory.conditions || inventory.conditions.length === 0) {
+      return 'No conditions'
+    }
+
+    const firstItem = inventory.conditions[0]
+
+    // Check if this is version 2 (tree structure)
+    if (firstItem && typeof firstItem === 'object' && 'version' in firstItem && firstItem.version === 2) {
+      // New tree structure format
+      const tree = firstItem.tree as ConditionTree
+      return conditionTreeToExpression(tree)
+    }
+
+    // Legacy flat format - convert to readable expression
+    const flatConditions = inventory.conditions as Array<{
+      field: string
+      operator: string
+      value: string
+      logic: string
+    }>
+
+    if (flatConditions.length === 1) {
+      const c = flatConditions[0]
+      if (!c) return 'No conditions'
+      return `${c.field} ${c.operator} "${c.value}"`
+    }
+
+    return flatConditions.map((c, index) => {
+      const expr = `${c.field} ${c.operator} "${c.value}"`
+      return index === 0 ? expr : `${c.logic} ${expr}`
+    }).join(' ')
+  }
+
+  const getConditionCount = (inventory: SavedInventory): number => {
+    if (!inventory.conditions || inventory.conditions.length === 0) {
+      return 0
+    }
+
+    const firstItem = inventory.conditions[0]
+
+    // Version 2: count items in tree
+    if (firstItem && typeof firstItem === 'object' && 'version' in firstItem && firstItem.version === 2) {
+      const tree = firstItem.tree as ConditionTree
+      return countTreeItems(tree)
+    }
+
+    // Legacy: just return array length
+    return inventory.conditions.length
+  }
+
+  const countTreeItems = (tree: ConditionTree | ConditionGroup): number => {
+    if (!tree || !tree.items) return 0
+
+    let count = 0
+    tree.items.forEach((item) => {
+      if ('type' in item && item.type === 'group') {
+        count += countTreeItems(item)
+      } else {
+        count += 1
+      }
+    })
+    return count
+  }
+
   return (
     <Dialog open={show} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[800px] max-h-[85vh]">
@@ -206,7 +282,7 @@ export function ManageInventoryDialog({
                             </p>
                           )}
                           <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span>{inventory.conditions.length} condition(s)</span>
+                            <span>{getConditionCount(inventory)} condition(s)</span>
                             <span>•</span>
                             <span>Created by {inventory.created_by}</span>
                             {inventory.updated_at && (
@@ -324,34 +400,10 @@ export function ManageInventoryDialog({
 
               <div className="border-t pt-3">
                 <Label className="text-sm font-semibold text-gray-700 mb-2 block">
-                  Logical Expression ({selectedInventory.conditions.length} condition{selectedInventory.conditions.length !== 1 ? 's' : ''})
+                  Logical Expression ({getConditionCount(selectedInventory)} condition{getConditionCount(selectedInventory) !== 1 ? 's' : ''})
                 </Label>
-                <div className="bg-white rounded-md p-3 border border-gray-200 font-mono text-sm">
-                  {selectedInventory.conditions.length === 0 ? (
-                    <span className="text-gray-400 italic">No conditions defined</span>
-                  ) : (
-                    <div className="space-y-1">
-                      {selectedInventory.conditions.map((condition, index) => (
-                        <div key={`condition-${condition.field}-${condition.operator}-${condition.value}`} className="flex items-center gap-2">
-                          {index > 0 && (
-                            <Badge
-                              variant="outline"
-                              className={`text-xs ${
-                                condition.logic === 'AND' ? 'bg-green-50 text-green-700 border-green-300' :
-                                condition.logic === 'OR' ? 'bg-blue-50 text-blue-700 border-blue-300' :
-                                'bg-red-50 text-red-700 border-red-300'
-                              }`}
-                            >
-                              {condition.logic}
-                            </Badge>
-                          )}
-                          <span className="text-purple-600 font-semibold">{condition.field}</span>
-                          <span className="text-gray-500">{condition.operator}</span>
-                          <span className="text-blue-600">&quot;{condition.value}&quot;</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                <div className="bg-white rounded-md p-3 border border-gray-200 font-mono text-sm text-gray-800 break-words">
+                  {getLogicalExpression(selectedInventory)}
                 </div>
               </div>
             </div>
@@ -412,6 +464,15 @@ export function ManageInventoryDialog({
                     <Badge variant={selectedInventory.scope === 'global' ? 'default' : 'secondary'} className="text-xs">
                       {selectedInventory.scope === 'global' ? 'Global' : 'Private'}
                     </Badge>
+                  </div>
+                </div>
+
+                <div className="border-t pt-3">
+                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                    Logical Expression ({getConditionCount(selectedInventory)} condition{getConditionCount(selectedInventory) !== 1 ? 's' : ''})
+                  </Label>
+                  <div className="bg-gray-50 rounded-md p-3 border border-gray-300 font-mono text-sm text-gray-700 break-words">
+                    {getLogicalExpression(selectedInventory)}
                   </div>
                 </div>
 
