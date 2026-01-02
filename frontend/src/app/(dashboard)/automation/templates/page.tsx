@@ -87,14 +87,14 @@ function HelpAndExamplesContent() {
   return (
     <div className="space-y-8">
       {/* Introduction */}
-      <Card>
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
-          <CardTitle className="flex items-center gap-2 text-lg">
+      <div className="shadow-lg border-0 p-0 bg-white rounded-lg overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 py-2 px-4 border-b">
+          <div className="flex items-center gap-2 text-lg font-semibold">
             <BookOpen className="h-5 w-5 text-blue-600" />
-            Template System Overview
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6 space-y-4">
+            <span>Template System Overview</span>
+          </div>
+        </div>
+        <div className="p-6 space-y-4">
           <p className="text-gray-700">
             The Template System allows you to create reusable configuration templates using <strong>Jinja2</strong> syntax.
             Templates can dynamically pull data from <strong>Nautobot</strong> (your source of truth for network devices)
@@ -120,18 +120,18 @@ function HelpAndExamplesContent() {
               </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Jinja2 Basics */}
-      <Card>
-        <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 border-b">
-          <CardTitle className="flex items-center gap-2 text-lg">
+      <div className="shadow-lg border-0 p-0 bg-white rounded-lg overflow-hidden">
+        <div className="bg-gradient-to-r from-slate-50 to-slate-100 py-2 px-4 border-b">
+          <div className="flex items-center gap-2 text-lg font-semibold">
             <FileCode className="h-5 w-5 text-slate-600" />
-            Jinja2 Template Basics
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6 space-y-6">
+            <span>Jinja2 Template Basics</span>
+          </div>
+        </div>
+        <div className="p-6 space-y-6">
           <div className="space-y-4">
             <h4 className="font-semibold text-gray-800">Variable Syntax</h4>
             <p className="text-gray-600 text-sm">
@@ -210,18 +210,18 @@ ip address {{ nautobot.primary_ip4.address }}
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Nautobot Context */}
-      <Card>
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 border-b">
-          <CardTitle className="flex items-center gap-2 text-lg">
+      <div className="shadow-lg border-0 p-0 bg-white rounded-lg overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-50 to-blue-100 py-2 px-4 border-b">
+          <div className="flex items-center gap-2 text-lg font-semibold">
             <Globe className="h-5 w-5 text-blue-600" />
-            Nautobot Context Variables
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6 space-y-6">
+            <span>Nautobot Context Variables</span>
+          </div>
+        </div>
+        <div className="p-6 space-y-6">
           <p className="text-gray-600 text-sm">
             When &quot;Use Nautobot Context&quot; is enabled, device information is available under the <code className="bg-gray-100 px-1 rounded">nautobot</code> namespace.
             Select a device when rendering to populate this data.
@@ -281,18 +281,18 @@ snmp-server contact {{ nautobot.tenant.name | default("NOC") }}
 snmp-server host {{ nautobot.custom_fields.snmp_trap_server }} traps
 {% endif %}`}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Pre-run Commands */}
-      <Card>
-        <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
-          <CardTitle className="flex items-center gap-2 text-lg">
+      <div className="shadow-lg border-0 p-0 bg-white rounded-lg overflow-hidden">
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 py-2 px-4 border-b">
+          <div className="flex items-center gap-2 text-lg font-semibold">
             <Terminal className="h-5 w-5 text-amber-600" />
-            Pre-run Commands
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6 space-y-6">
+            <span>Pre-run Commands</span>
+          </div>
+        </div>
+        <div className="p-6 space-y-6">
           <p className="text-gray-600 text-sm">
             Pre-run commands allow you to execute a command on the device <strong>before</strong> rendering the template.
             The command output is automatically parsed using <strong>TextFSM</strong> (when a parser is available) and
@@ -352,18 +352,18 @@ interface {{ intf.interface }}
 !   Ports: {{ vlan.ports | default("none") }}
 {% endfor %}`}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Complete Examples */}
-      <Card>
-        <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b">
-          <CardTitle className="flex items-center gap-2 text-lg">
+      <div className="shadow-lg border-0 p-0 bg-white rounded-lg overflow-hidden">
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 py-2 px-4 border-b">
+          <div className="flex items-center gap-2 text-lg font-semibold">
             <FileCode className="h-5 w-5 text-green-600" />
-            Complete Template Examples
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6 space-y-6">
+            <span>Complete Template Examples</span>
+          </div>
+        </div>
+        <div className="p-6 space-y-6">
           <CodeExample
             title="Basic Switch Port Configuration"
             code={`! Port Configuration Template
@@ -444,18 +444,18 @@ ip access-list {{ acl.type | default("standard") }} {{ acl.name }}
 ! No ACLs found on device
 {% endif %}`}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Tips and Best Practices */}
-      <Card>
-        <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 border-b">
-          <CardTitle className="flex items-center gap-2 text-lg">
+      <div className="shadow-lg border-0 p-0 bg-white rounded-lg overflow-hidden">
+        <div className="bg-gradient-to-r from-purple-50 to-violet-50 py-2 px-4 border-b">
+          <div className="flex items-center gap-2 text-lg font-semibold">
             <HelpCircle className="h-5 w-5 text-purple-600" />
-            Tips & Best Practices
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
+            <span>Tips & Best Practices</span>
+          </div>
+        </div>
+        <div className="p-6">
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <h4 className="font-semibold text-gray-800 border-b pb-2">✅ Do</h4>
@@ -530,8 +530,8 @@ ip access-list {{ acl.type | default("standard") }} {{ acl.name }}
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }
