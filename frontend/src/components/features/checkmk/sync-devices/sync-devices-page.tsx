@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
 import { Button } from '@/components/ui/button'
@@ -1852,21 +1852,21 @@ export function CheckMKSyncDevicesPage() {
                             <div>
                               <div className="font-semibold text-red-700 mb-2">Field Problems:</div>
                               <div className="bg-white border border-red-300 rounded p-3 space-y-2">
-                                {Object.entries(errorData.fields).map(([field, errors]: [string, any]) => {
+                                {Object.entries(errorData.fields).map(([field, errors]: [string, unknown]) => {
                                   // Recursive function to render nested field errors
-                                  const renderErrors = (value: any, depth: number = 0): JSX.Element => {
+                                  const renderErrors = (value: unknown, depth: number = 0): React.ReactElement => {
                                     if (Array.isArray(value)) {
                                       return (
                                         <ul className="list-disc list-inside text-red-600 mt-1 space-y-1">
-                                          {value.map((error: string, idx: number) => (
-                                            <li key={idx} className="text-sm">{error}</li>
+                                          {value.map((error: string) => (
+                                            <li key={error} className="text-sm">{error}</li>
                                           ))}
                                         </ul>
                                       )
                                     } else if (typeof value === 'object' && value !== null) {
                                       return (
                                         <div className={depth > 0 ? "ml-4 mt-1" : ""}>
-                                          {Object.entries(value).map(([subField, subErrors]: [string, any]) => (
+                                          {Object.entries(value as Record<string, unknown>).map(([subField, subErrors]) => (
                                             <div key={subField} className="border-l-2 border-red-300 pl-3 mt-1">
                                               <div className="font-medium text-red-700 text-sm">{subField}:</div>
                                               {renderErrors(subErrors, depth + 1)}

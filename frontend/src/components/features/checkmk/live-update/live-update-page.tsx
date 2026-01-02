@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Search, X, ChevronLeft, ChevronRight, RotateCcw, GitCompare, RefreshCw, ChevronDown, Radar } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -334,7 +334,7 @@ export default function LiveUpdatePage() {
 
               // If there are failed results, extract the first error for display
               if (response.result?.results && Array.isArray(response.result.results)) {
-                const failedResult = response.result.results.find((r: any) => r.success === false)
+                const failedResult = response.result.results.find((r: { success: boolean; error?: string }) => r.success === false)
                 if (failedResult?.error) {
                   errorMessage = failedResult.error
                 }
@@ -1160,21 +1160,21 @@ export default function LiveUpdatePage() {
                                         <div>
                                           <div className="font-semibold text-red-700 mb-1">Field Problems:</div>
                                           <div className="bg-red-50 border border-red-200 rounded p-2 space-y-2">
-                                            {Object.entries(errorData.fields).map(([field, errors]: [string, any]) => {
+                                            {Object.entries(errorData.fields).map(([field, errors]: [string, unknown]) => {
                                               // Recursive function to render nested field errors
-                                              const renderErrors = (value: any, depth: number = 0): JSX.Element => {
+                                              const renderErrors = (value: unknown, depth: number = 0): React.ReactElement => {
                                                 if (Array.isArray(value)) {
                                                   return (
                                                     <ul className="list-disc list-inside text-red-600 mt-1 space-y-0.5">
-                                                      {value.map((error: string, idx: number) => (
-                                                        <li key={idx} className="text-xs">{error}</li>
+                                                      {value.map((error: string) => (
+                                                        <li key={error} className="text-xs">{error}</li>
                                                       ))}
                                                     </ul>
                                                   )
                                                 } else if (typeof value === 'object' && value !== null) {
                                                   return (
                                                     <div className={depth > 0 ? "ml-3 mt-1" : ""}>
-                                                      {Object.entries(value).map(([subField, subErrors]: [string, any]) => (
+                                                      {Object.entries(value as Record<string, unknown>).map(([subField, subErrors]) => (
                                                         <div key={subField} className="border-l-2 border-red-300 pl-2 mt-1">
                                                           <div className="font-medium text-red-700 text-xs">{subField}:</div>
                                                           {renderErrors(subErrors, depth + 1)}

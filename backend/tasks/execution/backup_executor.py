@@ -143,8 +143,41 @@ def execute_backup(
                 "credential_info": credential_info,
             }
 
-        if not target_devices:
-            logger.error("ERROR: No target devices specified")
+        # If no target devices provided, fetch all from Nautobot
+        device_ids = target_devices
+        if not device_ids:
+            logger.info(
+                "No target devices specified, fetching all devices from Nautobot"
+            )
+            task_context.update_state(
+                state="PROGRESS",
+                meta={
+                    "current": 5,
+                    "total": 100,
+                    "status": "Fetching devices from Nautobot...",
+                },
+            )
+
+            import asyncio
+            from services.nautobot.devices.query import device_query_service
+
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                devices_result = loop.run_until_complete(
+                    device_query_service.get_devices()
+                )
+                if devices_result and devices_result.get("devices"):
+                    device_ids = [device.get("id") for device in devices_result["devices"]]
+                    logger.info(f"Fetched {len(device_ids)} devices from Nautobot")
+                else:
+                    logger.warning("No devices found in Nautobot")
+                    device_ids = []
+            finally:
+                loop.close()
+
+        if not device_ids:
+            logger.error("ERROR: No devices found to backup")
             return {
                 "success": False,
                 "error": "No devices to backup",
@@ -303,13 +336,13 @@ def execute_backup(
             meta={
                 "current": 20,
                 "total": 100,
-                "status": f"Backing up {len(target_devices)} devices...",
+                "status": f"Backing up {len(device_ids)} devices...",
             },
         )
 
         # STEP 3: Backup each device
         logger.info("-" * 80)
-        logger.info(f"STEP 3: BACKING UP {len(target_devices)} DEVICES")
+        logger.info(f"STEP 3: BACKING UP {len(device_ids)} DEVICES")
         logger.info(f"Parallel tasks: {parallel_tasks}")
         logger.info("-" * 80)
 
@@ -317,7 +350,7 @@ def execute_backup(
         failed_devices = []
         current_date = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        total_devices = len(target_devices)
+        total_devices = len(device_ids)
 
         # Use chord pattern for parallel execution
         if parallel_tasks > 1:
@@ -345,7 +378,7 @@ def execute_backup(
                     backup_startup_config_path=backup_startup_config_path,
                     job_run_id=job_run_id,  # Pass for progress tracking
                 )
-                for idx, device_id in enumerate(target_devices, 1)
+                for idx, device_id in enumerate(device_ids, 1)
             )(
                 # Callback with repo config and job_run_id
                 finalize_backup_task.s(
@@ -381,7 +414,7 @@ def execute_backup(
         nautobot_service = NautobotService()
         netmiko_service = NetmikoService()
 
-        for idx, device_id in enumerate(target_devices, 1):
+        for idx, device_id in enumerate(device_ids, 1):
             device_backup_info = {
                 "device_id": device_id,
                 "device_name": None,
@@ -545,7 +578,7 @@ def execute_backup(
                     continue
 
                 # Map platform to Netmiko device type
-                from tasks.backup_tasks import map_platform_to_netmiko
+                from utils.netmiko_platform_mapper import map_platform_to_netmiko
 
                 device_type = map_platform_to_netmiko(platform)
                 logger.info(f"[{idx}] Netmiko device type: {device_type}")

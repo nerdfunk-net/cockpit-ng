@@ -792,6 +792,60 @@ class TestBaselineOperators:
         for device in devices:
             assert "server" not in device.name
 
+    @pytest.mark.asyncio
+    async def test_filter_tag_not_equals_operator(self, real_ansible_inventory_service):
+        """
+        Test tag field with not_equals operator combined with location filter.
+
+        Filters: location = "City A" AND tag != "Staging"
+        Expected: 9 devices in City A without Staging tag
+
+        City A has 21 devices total:
+        - 12 devices with Staging tag
+        - 9 devices without Staging tag (Production: 5, lab: 3, server-19: 1)
+        """
+        tree = {
+            "type": "root",
+            "internalLogic": "AND",
+            "items": [
+                {
+                    "id": "1",
+                    "field": "location",
+                    "operator": "equals",
+                    "value": "City A",
+                },
+                {
+                    "id": "2",
+                    "field": "tag",
+                    "operator": "not_equals",
+                    "value": "Staging",
+                },
+            ],
+        }
+
+        operations = tree_to_operations(tree)
+
+        devices, count = await real_ansible_inventory_service.preview_inventory(
+            operations
+        )
+
+        # Should find exactly 9 devices in City A without Staging tag
+        assert len(devices) == 9, (
+            f"Expected 9 devices in City A without Staging tag, found {len(devices)}"
+        )
+
+        # Verify all devices are in City A
+        for device in devices:
+            assert device.location == "City A", (
+                f"Device {device.name} should be in City A, found {device.location}"
+            )
+
+        # Verify no device has Staging tag
+        for device in devices:
+            assert "Staging" not in device.tags, (
+                f"Device {device.name} should not have Staging tag, found tags: {device.tags}"
+            )
+
 
 # =============================================================================
 # Integration Tests - NOT Operator Logic

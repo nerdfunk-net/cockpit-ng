@@ -590,14 +590,14 @@ export function DeviceSelector({
   }
 
   const updateOperatorOptions = (fieldName: string) => {
-    const restrictedFields = ['role', 'tag', 'device_type', 'manufacturer', 'platform', 'has_primary']
+    const restrictedFields = ['role', 'device_type', 'manufacturer', 'platform', 'has_primary']
     const isCustomField = fieldName && fieldName.startsWith('cf_')
 
     if (restrictedFields.includes(fieldName)) {
       setOperatorOptions([{ value: 'equals', label: 'Equals' }])
       setCurrentOperator('equals')
-    } else if (fieldName === 'location') {
-      // Location supports equals and not_equals
+    } else if (fieldName === 'location' || fieldName === 'tag') {
+      // Location and Tag support equals and not_equals
       setOperatorOptions([
         { value: 'equals', label: 'Equals' },
         { value: 'not_equals', label: 'Not Equals' }

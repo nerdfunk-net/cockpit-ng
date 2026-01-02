@@ -395,6 +395,16 @@ export function JobTemplatesPage() {
     setIsDialogOpen(true)
   }, [])
 
+  // Helper function to check if form is valid
+  const isFormValid = useCallback(() => {
+    if (!formName.trim() || !formJobType) return false
+    if (formJobType === "backup" && formWriteTimestampToCustomField && !formTimestampCustomFieldName) return false
+    if (formJobType === "backup" && formBackupStartupConfigPath && !formBackupRunningConfigPath) return false
+    if (formInventorySource === "inventory" && !formInventoryName) return false
+    if (formJobType === "run_commands" && !formCommandTemplate) return false
+    return true
+  }, [formName, formJobType, formWriteTimestampToCustomField, formTimestampCustomFieldName, formBackupStartupConfigPath, formBackupRunningConfigPath, formInventorySource, formInventoryName, formCommandTemplate])
+
   const handleSaveTemplate = useCallback(async () => {
     if (!token || !formName || !formJobType) {
       toast({
@@ -798,7 +808,8 @@ export function JobTemplatesPage() {
               </Button>
               <Button
                 onClick={handleSaveTemplate}
-                className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={!isFormValid()}
+                className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-400 disabled:cursor-not-allowed"
               >
                 {editingTemplate ? (
                   <>

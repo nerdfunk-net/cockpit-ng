@@ -77,7 +77,7 @@ export function BackupJobTemplate({
             </Label>
             <Input
               id="running-config-path"
-              placeholder="{custom_field_data.cf_net}/{location.name}/{device_name}.running_config"
+              placeholder="{custom_field_data.net}/{location.name}/{device_name}.running_config"
               value={formBackupRunningConfigPath}
               onChange={(e) => setFormBackupRunningConfigPath(e.target.value)}
               className="h-9 bg-white border-amber-200 font-mono text-sm focus:ring-amber-500 focus:border-amber-500"
@@ -90,7 +90,7 @@ export function BackupJobTemplate({
             </Label>
             <Input
               id="startup-config-path"
-              placeholder="{custom_field_data.cf_net}/{location.name}/{device_name}.startup_config"
+              placeholder="{custom_field_data.net}/{location.name}/{device_name}.startup_config"
               value={formBackupStartupConfigPath}
               onChange={(e) => setFormBackupStartupConfigPath(e.target.value)}
               className="h-9 bg-white border-amber-200 font-mono text-sm focus:ring-amber-500 focus:border-amber-500"
@@ -124,13 +124,20 @@ export function BackupJobTemplate({
           </div>
 
           {formWriteTimestampToCustomField && (
-            <div className="flex-1">
+            <div className="flex-1 space-y-1">
               <Select
                 value={formTimestampCustomFieldName}
                 onValueChange={setFormTimestampCustomFieldName}
                 disabled={customFields.length === 0}
               >
-                <SelectTrigger id="timestamp-custom-field" className="h-9 bg-white border-teal-200">
+                <SelectTrigger 
+                  id="timestamp-custom-field" 
+                  className={`h-9 bg-white ${
+                    !formTimestampCustomFieldName 
+                      ? "border-red-300 focus:ring-red-500 focus:border-red-500" 
+                      : "border-teal-200"
+                  }`}
+                >
                   <SelectValue placeholder={customFields.length === 0 ? "No suitable custom fields found" : "Select custom field..."} />
                 </SelectTrigger>
                 <SelectContent>
@@ -146,6 +153,11 @@ export function BackupJobTemplate({
                   ))}
                 </SelectContent>
               </Select>
+              {!formTimestampCustomFieldName && (
+                <p className="text-xs text-red-600 font-medium">
+                  Please select a custom field
+                </p>
+              )}
             </div>
           )}
         </div>

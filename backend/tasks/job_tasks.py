@@ -1192,7 +1192,7 @@ def _execute_run_commands(
                     logger.info(f"[{idx}] Commands to execute: {len(commands)}")
 
                     # Map platform to Netmiko device type
-                    from tasks.backup_tasks import map_platform_to_netmiko
+                    from utils.netmiko_platform_mapper import map_platform_to_netmiko
 
                     device_type = map_platform_to_netmiko(platform)
                     logger.info(f"[{idx}] Netmiko device type: {device_type}")

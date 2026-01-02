@@ -86,8 +86,41 @@ def execute_run_commands(
                 "credential_info": credential_info,
             }
 
-        if not target_devices:
-            logger.error("ERROR: No target devices specified")
+        # If no target devices provided, fetch all from Nautobot
+        device_ids = target_devices
+        if not device_ids:
+            logger.info(
+                "No target devices specified, fetching all devices from Nautobot"
+            )
+            task_context.update_state(
+                state="PROGRESS",
+                meta={
+                    "current": 5,
+                    "total": 100,
+                    "status": "Fetching devices from Nautobot...",
+                },
+            )
+
+            import asyncio
+            from services.nautobot.devices.query import device_query_service
+
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                devices_result = loop.run_until_complete(
+                    device_query_service.get_devices()
+                )
+                if devices_result and devices_result.get("devices"):
+                    device_ids = [device.get("id") for device in devices_result["devices"]]
+                    logger.info(f"Fetched {len(device_ids)} devices from Nautobot")
+                else:
+                    logger.warning("No devices found in Nautobot")
+                    device_ids = []
+            finally:
+                loop.close()
+
+        if not device_ids:
+            logger.error("ERROR: No devices found to run commands on")
             return {
                 "success": False,
                 "error": "No devices to run commands on",
@@ -183,13 +216,13 @@ def execute_run_commands(
             meta={
                 "current": 10,
                 "total": 100,
-                "status": f"Running commands on {len(target_devices)} devices...",
+                "status": f"Running commands on {len(device_ids)} devices...",
             },
         )
 
         # STEP 2: Execute commands on each device
         logger.info("-" * 80)
-        logger.info(f"STEP 2: EXECUTING COMMANDS ON {len(target_devices)} DEVICES")
+        logger.info(f"STEP 2: EXECUTING COMMANDS ON {len(device_ids)} DEVICES")
         logger.info("-" * 80)
 
         nautobot_service = NautobotService()
@@ -202,10 +235,10 @@ def execute_run_commands(
 
         successful_devices = []
         failed_devices = []
-        total_devices = len(target_devices)
+        total_devices = len(device_ids)
 
         try:
-            for idx, device_id in enumerate(target_devices, 1):
+            for idx, device_id in enumerate(device_ids, 1):
                 device_result = {
                     "device_id": device_id,
                     "device_name": None,
@@ -389,7 +422,7 @@ def execute_run_commands(
                     logger.info(f"[{idx}] Commands to execute: {len(commands)}")
 
                     # Map platform to Netmiko device type
-                    from tasks.backup_tasks import map_platform_to_netmiko
+                    from utils.netmiko_platform_mapper import map_platform_to_netmiko
 
                     device_type = map_platform_to_netmiko(platform)
                     logger.info(f"[{idx}] Netmiko device type: {device_type}")

@@ -53,6 +53,7 @@ export default function DashboardDeviceBackupStatus({ refreshTrigger = 0 }: Dash
   const [error, setError] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchFilter, setSearchFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'success' | 'failed'>('all')
 
   const loadBackupStatus = useCallback(async () => {
     try {
@@ -88,10 +89,21 @@ export default function DashboardDeviceBackupStatus({ refreshTrigger = 0 }: Dash
     return date.toLocaleDateString()
   }
 
-  const filteredDevices = backupStatus?.devices?.filter(device =>
-    device.device_name.toLowerCase().includes(searchFilter.toLowerCase()) ||
-    device.device_id.toLowerCase().includes(searchFilter.toLowerCase())
-  ) || []
+  const filteredDevices = backupStatus?.devices?.filter(device => {
+    // Apply search filter
+    const matchesSearch = !searchFilter ||
+      device.device_name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+      device.device_id.toLowerCase().includes(searchFilter.toLowerCase())
+
+    // Apply status filter
+    const matchesStatus =
+      statusFilter === 'all' ? true :
+      statusFilter === 'success' ? device.last_backup_success :
+      statusFilter === 'failed' ? !device.last_backup_success :
+      true
+
+    return matchesSearch && matchesStatus
+  }) || []
 
   const successRate = backupStatus?.total_devices
     ? Math.round((backupStatus.devices_with_successful_backup / backupStatus.total_devices) * 100)
@@ -122,8 +134,8 @@ export default function DashboardDeviceBackupStatus({ refreshTrigger = 0 }: Dash
       >
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <div className="p-3 rounded-xl bg-purple-100 ring-1 ring-white/20">
-              <HardDrive className="h-6 w-6 text-purple-600" />
+            <div className="p-3 rounded-xl bg-blue-100 ring-1 ring-white/20">
+              <HardDrive className="h-6 w-6 text-blue-600" />
             </div>
             <div className="text-right">
               <div className={cn(
@@ -150,7 +162,7 @@ export default function DashboardDeviceBackupStatus({ refreshTrigger = 0 }: Dash
               <p className="text-xs text-slate-500 leading-relaxed">
                 {backupStatus?.devices_with_successful_backup || 0} successful, {backupStatus?.devices_with_failed_backup || 0} failed
               </p>
-              <p className="text-xs text-purple-600 font-medium">
+              <p className="text-xs text-blue-600 font-medium">
                 Click to view details →
               </p>
             </div>
@@ -162,12 +174,12 @@ export default function DashboardDeviceBackupStatus({ refreshTrigger = 0 }: Dash
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-5xl max-h-[80vh] p-0 gap-0 overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-purple-400/80 to-purple-500/80 px-6 py-4">
+          <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 px-6 py-4">
             <DialogHeader className="text-white">
               <DialogTitle className="text-lg font-semibold text-white">
                 Device Backup Status Report
               </DialogTitle>
-              <DialogDescription className="text-purple-50">
+              <DialogDescription className="text-blue-50">
                 Detailed per-device backup analysis
               </DialogDescription>
             </DialogHeader>
@@ -175,20 +187,38 @@ export default function DashboardDeviceBackupStatus({ refreshTrigger = 0 }: Dash
 
           {/* Summary Stats */}
           <div className="grid grid-cols-4 gap-4 p-6 bg-slate-50 border-b">
-            <div className="text-center">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={cn(
+                "text-center p-3 rounded-lg transition-all hover:bg-white hover:shadow-sm",
+                statusFilter === 'all' ? 'bg-white shadow-sm ring-2 ring-blue-200' : ''
+              )}
+            >
               <div className="text-2xl font-bold text-slate-900">{backupStatus?.total_devices || 0}</div>
               <div className="text-xs text-slate-600">Total Devices</div>
-            </div>
-            <div className="text-center">
+            </button>
+            <button
+              onClick={() => setStatusFilter('success')}
+              className={cn(
+                "text-center p-3 rounded-lg transition-all hover:bg-white hover:shadow-sm",
+                statusFilter === 'success' ? 'bg-white shadow-sm ring-2 ring-green-200' : ''
+              )}
+            >
               <div className="text-2xl font-bold text-green-600">{backupStatus?.devices_with_successful_backup || 0}</div>
               <div className="text-xs text-slate-600">Successful</div>
-            </div>
-            <div className="text-center">
+            </button>
+            <button
+              onClick={() => setStatusFilter('failed')}
+              className={cn(
+                "text-center p-3 rounded-lg transition-all hover:bg-white hover:shadow-sm",
+                statusFilter === 'failed' ? 'bg-white shadow-sm ring-2 ring-red-200' : ''
+              )}
+            >
               <div className="text-2xl font-bold text-red-600">{backupStatus?.devices_with_failed_backup || 0}</div>
               <div className="text-xs text-slate-600">Failed</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{successRate}%</div>
+            </button>
+            <div className="text-center p-3">
+              <div className="text-2xl font-bold text-blue-600">{successRate}%</div>
               <div className="text-xs text-slate-600">Success Rate</div>
             </div>
           </div>
@@ -245,8 +275,8 @@ export default function DashboardDeviceBackupStatus({ refreshTrigger = 0 }: Dash
                             </div>
                             <div className="flex items-center gap-1.5 text-xs text-slate-600">
                               <TrendingUp className="h-3.5 w-3.5" />
-                              <span>
-                                {device.total_successful_backups} success, {device.total_failed_backups} failed
+                              <span title="Total backup history: successful / failed">
+                                History: {device.total_successful_backups} / {device.total_failed_backups}
                               </span>
                             </div>
                           </div>

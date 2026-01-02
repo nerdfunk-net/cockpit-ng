@@ -128,6 +128,7 @@ export function JobsSchedulerPage() {
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingJob, setEditingJob] = useState<JobSchedule | null>(null)
+  const [runningJobId, setRunningJobId] = useState<number | null>(null)
   
   // Debug dialog state
   const [isDebugDialogOpen, setIsDebugDialogOpen] = useState(false)
@@ -429,6 +430,7 @@ export function JobsSchedulerPage() {
   const handleRunNow = useCallback(async (jobId: number, jobIdentifier: string) => {
     if (!token) return
 
+    setRunningJobId(jobId)
     try {
       const response = await fetch(`/api/proxy/job-runs/execute/${jobId}`, {
         method: "POST",
@@ -461,6 +463,8 @@ export function JobsSchedulerPage() {
         description: "An unexpected error occurred while starting the job.",
         variant: "destructive"
       })
+    } finally {
+      setRunningJobId(null)
     }
   }, [token, toast, fetchJobSchedules])
 
@@ -1113,10 +1117,20 @@ export function JobsSchedulerPage() {
                     size="sm"
                     variant="outline"
                     onClick={() => handleRunNow(job.id, job.job_identifier)}
+                    disabled={runningJobId === job.id}
                     className="flex-1"
                   >
-                    <Play className="mr-2 h-4 w-4" />
-                    Run Now
+                    {runningJobId === job.id ? (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        Starting...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="mr-2 h-4 w-4" />
+                        Run Now
+                      </>
+                    )}
                   </Button>
                   <Button
                     size="sm"
