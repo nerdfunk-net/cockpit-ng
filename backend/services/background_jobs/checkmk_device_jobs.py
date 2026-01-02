@@ -4,6 +4,7 @@ Background jobs for adding and updating devices in CheckMK from Nautobot.
 """
 
 import asyncio
+import json
 import logging
 from typing import Dict, Any
 from celery import shared_task
@@ -12,6 +13,7 @@ from services.checkmk.sync.database import (
     nb2cmk_db_service,
     JobStatus as NB2CMKJobStatus,
 )
+from checkmk.client import CheckMKAPIError
 
 logger = logging.getLogger(__name__)
 
@@ -350,13 +352,56 @@ def sync_devices_to_checkmk_task(
                 failed_count += 1
                 logger.error(f"Failed to sync device {device_id}: {e}")
 
-                # Store failure result in database
+                # Extract detailed error information if available
+                error_detail = str(e)
+
+                # Try to extract JSON error details from HTTPException or CheckMKAPIError
+                if isinstance(e, CheckMKAPIError) and e.response_data:
+                    # Direct CheckMKAPIError - extract detailed error
+                    error_info = {
+                        "error": str(e),
+                        "status_code": e.status_code,
+                    }
+
+                    # Include the full response data for detailed error analysis
+                    if "detail" in e.response_data:
+                        error_info["detail"] = e.response_data["detail"]
+                    if "fields" in e.response_data:
+                        error_info["fields"] = e.response_data["fields"]
+                    if "title" in e.response_data:
+                        error_info["title"] = e.response_data["title"]
+
+                    # Convert to JSON string for storage
+                    error_detail = json.dumps(error_info, indent=2)
+                else:
+                    # Try to parse error message as JSON (from HTTPException.detail)
+                    error_str = str(e)
+                    # Extract the part after "500: " or similar status codes
+                    if ": " in error_str:
+                        # Split on first occurrence of ": " to get the detail part
+                        parts = error_str.split(": ", 1)
+                        if len(parts) > 1:
+                            potential_json = parts[1]
+                            try:
+                                # Try to parse as JSON
+                                json.loads(potential_json)
+                                # If successful, use it directly (it's already JSON string)
+                                error_detail = potential_json
+                            except (json.JSONDecodeError, ValueError):
+                                # Not JSON, keep the original string
+                                error_detail = error_str
+                        else:
+                            error_detail = error_str
+                    else:
+                        error_detail = error_str
+
+                # Store failure result in database with detailed error
                 nb2cmk_db_service.add_device_result(
                     job_id=job_id,
                     device_id=device_id,
                     device_name=device_id,  # Use ID as fallback
                     checkmk_status="error",
-                    diff=str(e),  # Store error message as diff
+                    diff=error_detail,  # Store detailed error as diff
                     normalized_config={},
                     checkmk_config=None,
                     ignored_attributes=[],
@@ -367,7 +412,7 @@ def sync_devices_to_checkmk_task(
                         "device_id": device_id,
                         "operation": "sync",
                         "success": False,
-                        "error": str(e),
+                        "error": error_detail,
                     }
                 )
 

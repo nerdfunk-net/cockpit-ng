@@ -19,4 +19,8 @@ snmp-id-2:
   auth_protocol_long: MD5-96
   auth_protocol: MD5
   auth_password: authpass2
+snmp-id-3:
+  version: v2
+  community: snmpcommunity
+
   

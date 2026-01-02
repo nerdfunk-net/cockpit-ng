@@ -1215,7 +1215,7 @@ export function CheckMKSyncDevicesPage() {
       case 'missing':
         return <Badge variant="destructive">Missing</Badge>
       case 'error':
-        return <Badge variant="secondary">Error</Badge>
+        return <Badge variant="destructive" className="bg-red-100 text-red-800">Error</Badge>
       case 'unknown':
         return <Badge variant="outline">Unknown</Badge>
       default:
@@ -1523,7 +1523,20 @@ export function CheckMKSyncDevicesPage() {
                         {device.location}
                       </td>
                       <td className="pl-12 pr-4 py-3 w-32">
-                        {getCheckMKStatusBadge(device.checkmk_status)}
+                        <div className="flex items-center gap-1">
+                          {getCheckMKStatusBadge(device.checkmk_status)}
+                          {device.checkmk_status === 'error' && device.diff && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedDeviceForView(device)}
+                              title="View error details"
+                              className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                            >
+                              <AlertCircle className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </td>
                       <td className="pl-16 pr-4 py-3">
                         <div className="flex items-center gap-1">
@@ -1797,6 +1810,92 @@ export function CheckMKSyncDevicesPage() {
                 <h3 className="font-semibold mb-2 text-red-600">Error Message</h3>
                 <div className="bg-red-50 border border-red-200 p-4 rounded text-sm text-red-800">
                   {selectedDeviceForView.error_message}
+                </div>
+              </div>
+            )}
+
+            {selectedDeviceForView?.diff && selectedDeviceForView?.checkmk_status === 'error' && (
+              <div>
+                <h3 className="font-semibold mb-2 text-red-600">Error Details</h3>
+                <div className="bg-red-50 border border-red-200 p-4 rounded text-sm">
+                  {(() => {
+                    try {
+                      // Try to parse as JSON for detailed error info
+                      const errorData = JSON.parse(selectedDeviceForView.diff)
+                      return (
+                        <div className="space-y-3">
+                          {errorData.error && (
+                            <div>
+                              <span className="font-semibold text-red-700">Error: </span>
+                              <span className="text-red-800">{errorData.error}</span>
+                            </div>
+                          )}
+                          {errorData.status_code && (
+                            <div>
+                              <span className="font-semibold text-red-700">Status Code: </span>
+                              <span className="text-red-800">{errorData.status_code}</span>
+                            </div>
+                          )}
+                          {errorData.detail && (
+                            <div>
+                              <span className="font-semibold text-red-700">Detail: </span>
+                              <span className="text-red-800">{errorData.detail}</span>
+                            </div>
+                          )}
+                          {errorData.title && (
+                            <div>
+                              <span className="font-semibold text-red-700">Title: </span>
+                              <span className="text-red-800">{errorData.title}</span>
+                            </div>
+                          )}
+                          {errorData.fields && (
+                            <div>
+                              <div className="font-semibold text-red-700 mb-2">Field Problems:</div>
+                              <div className="bg-white border border-red-300 rounded p-3 space-y-2">
+                                {Object.entries(errorData.fields).map(([field, errors]: [string, any]) => {
+                                  // Recursive function to render nested field errors
+                                  const renderErrors = (value: any, depth: number = 0): JSX.Element => {
+                                    if (Array.isArray(value)) {
+                                      return (
+                                        <ul className="list-disc list-inside text-red-600 mt-1 space-y-1">
+                                          {value.map((error: string, idx: number) => (
+                                            <li key={idx} className="text-sm">{error}</li>
+                                          ))}
+                                        </ul>
+                                      )
+                                    } else if (typeof value === 'object' && value !== null) {
+                                      return (
+                                        <div className={depth > 0 ? "ml-4 mt-1" : ""}>
+                                          {Object.entries(value).map(([subField, subErrors]: [string, any]) => (
+                                            <div key={subField} className="border-l-2 border-red-300 pl-3 mt-1">
+                                              <div className="font-medium text-red-700 text-sm">{subField}:</div>
+                                              {renderErrors(subErrors, depth + 1)}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )
+                                    } else {
+                                      return <div className="text-sm text-red-600">{String(value)}</div>
+                                    }
+                                  }
+
+                                  return (
+                                    <div key={field} className="border-l-2 border-red-400 pl-3">
+                                      <div className="font-medium text-red-700">{field}:</div>
+                                      {renderErrors(errors)}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    } catch {
+                      // If not JSON, display as plain text
+                      return <div className="text-red-800 whitespace-pre-wrap">{selectedDeviceForView.diff}</div>
+                    }
+                  })()}
                 </div>
               </div>
             )}

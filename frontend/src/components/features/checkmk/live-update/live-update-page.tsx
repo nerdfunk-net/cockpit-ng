@@ -190,6 +190,9 @@ export default function LiveUpdatePage() {
   const [activeTasks, setActiveTasks] = useState<Map<string, DeviceTask>>(new Map())
   const pollingIntervalsRef = useRef<Map<string, NodeJS.Timeout>>(new Map())
 
+  // Error details expansion state
+  const [expandedErrorTasks, setExpandedErrorTasks] = useState<Set<string>>(new Set())
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(0)
   const [pageSize, setPageSize] = useState(50)
@@ -306,7 +309,11 @@ export default function LiveUpdatePage() {
           }
 
           // Handle success/failure states
-          if (response.status === 'SUCCESS') {
+          // Check both Celery status AND result.success field
+          const taskSucceeded = response.status === 'SUCCESS' && response.result?.success !== false
+          const taskFailed = response.status === 'FAILURE' || (response.status === 'SUCCESS' && response.result?.success === false)
+
+          if (taskSucceeded) {
             setHasDevicesSynced(true)
             // Remove task after 1 second on success
             setTimeout(() => {
@@ -316,7 +323,31 @@ export default function LiveUpdatePage() {
                 return updated
               })
             }, 1000)
-          } else if (response.status === 'FAILURE') {
+          } else if (taskFailed) {
+            // Mark task as failed in the UI
+            setActiveTasks(prev => {
+              const task = prev.get(taskId)
+              if (!task) return prev
+
+              // Extract error message from result
+              let errorMessage = response.result?.message || response.error || task.message
+
+              // If there are failed results, extract the first error for display
+              if (response.result?.results && Array.isArray(response.result.results)) {
+                const failedResult = response.result.results.find((r: any) => r.success === false)
+                if (failedResult?.error) {
+                  errorMessage = failedResult.error
+                }
+              }
+
+              const updated = new Map(prev)
+              updated.set(taskId, {
+                ...task,
+                status: 'FAILURE',
+                message: errorMessage
+              })
+              return updated
+            })
             // Keep failed tasks visible - don't auto-remove
             // They will stay in the panel showing the error
           }
@@ -856,6 +887,19 @@ export default function LiveUpdatePage() {
   // Mark handleSort as used to suppress linter warning
   void handleSort
 
+  // Toggle error details expansion
+  const toggleErrorDetails = useCallback((taskId: string) => {
+    setExpandedErrorTasks(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(taskId)) {
+        newSet.delete(taskId)
+      } else {
+        newSet.add(taskId)
+      }
+      return newSet
+    })
+  }, [])
+
   // Effects
   // Authentication effect - wait for auth before loading data
   useEffect(() => {
@@ -1067,6 +1111,103 @@ export default function LiveUpdatePage() {
                       }`}>
                         {isSuccess ? '✓ Successfully updated' : isFailure ? task.message : task.message}
                       </div>
+
+                      {/* Detailed Error Display for Failed Tasks */}
+                      {isFailure && task.message && (
+                        <div className="mt-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleErrorDetails(task.taskId)}
+                            className="h-6 text-xs text-red-700 hover:text-red-900 hover:bg-red-100 p-1"
+                          >
+                            {expandedErrorTasks.has(task.taskId) ? '▼' : '►'} View Error Details
+                          </Button>
+
+                          {expandedErrorTasks.has(task.taskId) && (
+                            <div className="mt-2 bg-white border border-red-300 rounded p-3 text-xs">
+                              {(() => {
+                                try {
+                                  // Try to parse as JSON for detailed error info
+                                  const errorData = JSON.parse(task.message)
+                                  return (
+                                    <div className="space-y-2">
+                                      {errorData.error && (
+                                        <div>
+                                          <span className="font-semibold text-red-700">Error: </span>
+                                          <span className="text-red-800">{errorData.error}</span>
+                                        </div>
+                                      )}
+                                      {errorData.status_code && (
+                                        <div>
+                                          <span className="font-semibold text-red-700">Status Code: </span>
+                                          <span className="text-red-800">{errorData.status_code}</span>
+                                        </div>
+                                      )}
+                                      {errorData.detail && (
+                                        <div>
+                                          <span className="font-semibold text-red-700">Detail: </span>
+                                          <span className="text-red-800">{errorData.detail}</span>
+                                        </div>
+                                      )}
+                                      {errorData.title && (
+                                        <div>
+                                          <span className="font-semibold text-red-700">Title: </span>
+                                          <span className="text-red-800">{errorData.title}</span>
+                                        </div>
+                                      )}
+                                      {errorData.fields && (
+                                        <div>
+                                          <div className="font-semibold text-red-700 mb-1">Field Problems:</div>
+                                          <div className="bg-red-50 border border-red-200 rounded p-2 space-y-2">
+                                            {Object.entries(errorData.fields).map(([field, errors]: [string, any]) => {
+                                              // Recursive function to render nested field errors
+                                              const renderErrors = (value: any, depth: number = 0): JSX.Element => {
+                                                if (Array.isArray(value)) {
+                                                  return (
+                                                    <ul className="list-disc list-inside text-red-600 mt-1 space-y-0.5">
+                                                      {value.map((error: string, idx: number) => (
+                                                        <li key={idx} className="text-xs">{error}</li>
+                                                      ))}
+                                                    </ul>
+                                                  )
+                                                } else if (typeof value === 'object' && value !== null) {
+                                                  return (
+                                                    <div className={depth > 0 ? "ml-3 mt-1" : ""}>
+                                                      {Object.entries(value).map(([subField, subErrors]: [string, any]) => (
+                                                        <div key={subField} className="border-l-2 border-red-300 pl-2 mt-1">
+                                                          <div className="font-medium text-red-700 text-xs">{subField}:</div>
+                                                          {renderErrors(subErrors, depth + 1)}
+                                                        </div>
+                                                      ))}
+                                                    </div>
+                                                  )
+                                                } else {
+                                                  return <div className="text-xs text-red-600">{String(value)}</div>
+                                                }
+                                              }
+
+                                              return (
+                                                <div key={field} className="border-l-2 border-red-400 pl-2">
+                                                  <div className="font-medium text-red-700">{field}:</div>
+                                                  {renderErrors(errors)}
+                                                </div>
+                                              )
+                                            })}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )
+                                } catch {
+                                  // If not JSON, display as plain text
+                                  return <div className="text-red-800 whitespace-pre-wrap">{task.message}</div>
+                                }
+                              })()}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Action Buttons */}
                       <div className="mt-2 flex items-center justify-end gap-2">

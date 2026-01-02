@@ -189,30 +189,49 @@ class DeviceNormalizationService:
 
             if snmp_credentials in snmp_mapping:
                 snmp_config = snmp_mapping[snmp_credentials]
-
-                # Map SNMP configuration to normalized format
-                snmp_community = {
-                    "type": snmp_config.get("type", ""),
-                    "auth_protocol": snmp_config.get("auth_protocol_long", ""),
-                    "security_name": snmp_config.get("username", ""),
-                    "auth_password": snmp_config.get("auth_password", ""),
-                    "privacy_protocol": snmp_config.get("privacy_protocol_long", ""),
-                    "privacy_password": snmp_config.get("privacy_password", ""),
-                }
-
-                if snmp_config.get("type", "") == "v3_auth_no_privacy":
-                    # we have to remove the keys privacy_protocol and privacy_password
-                    snmp_community.pop("privacy_protocol", None)
-                    snmp_community.pop("privacy_password", None)
-
-                extensions.attributes["snmp_community"] = snmp_community
-
-                # Add tag_snmp_ds for SNMP version 2 or 3
                 snmp_version = snmp_config.get("version")
-                if snmp_version in [2, 3, "v2", "v3"]:
+
+                # Handle SNMPv2/v1 (community-based)
+                if snmp_version in ["v1", "v2", "1", "2"]:
+                    snmp_community = {
+                        "type": "v1_v2_community",
+                        "community": snmp_config.get("community", ""),
+                    }
+                    extensions.attributes["snmp_community"] = snmp_community
                     extensions.attributes["tag_snmp_ds"] = "snmp-v2"
                     extensions.attributes["tag_agent"] = "no-agent"
+                    logger.info(
+                        f"Configured SNMPv{snmp_version} community-based authentication for device"
+                    )
+
+                # Handle SNMPv3 (user-based security)
+                elif snmp_version in ["v3", "3"]:
+                    # Map SNMP configuration to normalized format
+                    snmp_community = {
+                        "type": snmp_config.get("type", ""),
+                        "auth_protocol": snmp_config.get("auth_protocol_long", ""),
+                        "security_name": snmp_config.get("username", ""),
+                        "auth_password": snmp_config.get("auth_password", ""),
+                        "privacy_protocol": snmp_config.get("privacy_protocol_long", ""),
+                        "privacy_password": snmp_config.get("privacy_password", ""),
+                    }
+
+                    if snmp_config.get("type", "") == "v3_auth_no_privacy":
+                        # we have to remove the keys privacy_protocol and privacy_password
+                        snmp_community.pop("privacy_protocol", None)
+                        snmp_community.pop("privacy_password", None)
+
+                    extensions.attributes["snmp_community"] = snmp_community
+                    extensions.attributes["tag_snmp_ds"] = "snmp-v2"
+                    extensions.attributes["tag_agent"] = "no-agent"
+                    logger.info(
+                        f"Configured SNMPv3 with type '{snmp_config.get('type')}' for device"
+                    )
+
                 else:
+                    logger.warning(
+                        f"Unsupported SNMP version '{snmp_version}' in mapping"
+                    )
                     extensions.attributes["tag_agent"] = "no-agent"
             else:
                 extensions.attributes["tag_agent"] = "no-agent"
