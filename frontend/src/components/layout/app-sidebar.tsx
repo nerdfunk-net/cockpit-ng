@@ -378,7 +378,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
           {!isCollapsed && (
             <div className="pt-4 border-t border-slate-100">
               <p className="text-xs text-slate-400 text-center leading-relaxed">
-                © 2025 Cockpit Dashboard
+                © 2026 Cockpit Dashboard
                 <br />
                 <span className="text-slate-300">Network Management</span>
               </p>
