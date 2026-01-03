@@ -8,9 +8,73 @@ All fixtures follow the actual CheckMK API response structure.
 from typing import Dict, Any, List
 
 # =============================================================================
-# Host Response Fixtures
+# Host Response Fixtures (REAL CheckMK API Format)
 # =============================================================================
 
+# Real CheckMK API response captured from production (2026-01-03)
+# This is the actual structure returned by CheckMK REST API v1.0
+CHECKMK_HOST_REAL_API_RESPONSE: Dict[str, Any] = {
+    "links": [
+        {
+            "domainType": "link",
+            "rel": "self",
+            "href": "http://100.112.59.23:8080/cmk/check_mk/api/1.0/objects/host_config/LAB",
+            "method": "GET",
+            "type": "application/json",
+        },
+        {
+            "domainType": "link",
+            "rel": "urn:org.restfulobjects:rels/update",
+            "href": "http://100.112.59.23:8080/cmk/check_mk/api/1.0/objects/host_config/LAB",
+            "method": "PUT",
+            "type": "application/json",
+        },
+        {
+            "domainType": "link",
+            "rel": "urn:org.restfulobjects:rels/delete",
+            "href": "http://100.112.59.23:8080/cmk/check_mk/api/1.0/objects/host_config/LAB",
+            "method": "DELETE",
+            "type": "application/json",
+        },
+        {
+            "domainType": "link",
+            "rel": "urn:com.checkmk:rels/folder_config",
+            "href": "http://100.112.59.23:8080/cmk/check_mk/api/1.0/objects/folder_config/~network~Berlin",
+            "method": "GET",
+            "type": "application/json",
+            "title": "The folder config of the host.",
+        },
+    ],
+    "domainType": "host_config",
+    "id": "LAB",
+    "title": "LAB",
+    "members": {},
+    "extensions": {
+        "folder": "/network/Berlin",
+        "attributes": {
+            "alias": "LAB",
+            "site": "cmk",
+            "ipaddress": "192.168.178.240",
+            "tag_agent": "no-agent",
+            "tag_snmp_ds": "snmp-v2",
+            "snmp_community": {"type": "v1_v2_community", "community": "snmpcommunity"},
+            "tag_status": "Active",
+            "location": "Berlin",
+            "city": "Deutschland",
+            "meta_data": {
+                "created_at": "2026-01-02T18:31:05.248559+00:00",
+                "updated_at": "2026-01-03T17:34:39.400683+00:00",
+                "created_by": "automation",
+            },
+        },
+        "effective_attributes": None,
+        "is_cluster": False,
+        "is_offline": False,
+        "cluster_nodes": None,
+    },
+}
+
+# Simplified host response (legacy format for backward compatibility)
 CHECKMK_HOST_STANDARD: Dict[str, Any] = {
     "hostname": "test-switch-01",
     "folder": "/dc1/access",

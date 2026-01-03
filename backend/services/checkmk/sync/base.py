@@ -178,7 +178,14 @@ class NautobotToCheckMKService:
             extensions = device_normalization_service.normalize_device(device_data)
 
             # Convert to dictionary for API response
-            return extensions.model_dump()
+            normalized_dict = extensions.model_dump()
+
+            # DEBUG: Log normalized device config for test fixture creation
+            logger.debug(f"[NORMALIZE] Device {device_id} normalized config:")
+            logger.debug(f"[NORMALIZE] Config keys: {list(normalized_dict.keys())}")
+            logger.debug(f"[NORMALIZE] Full normalized config: {normalized_dict}")
+
+            return normalized_dict
 
         except HTTPException:
             raise

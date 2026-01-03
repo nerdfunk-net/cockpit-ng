@@ -1,6 +1,7 @@
 ---
+# Production SNMP credentials
 snmp-id-1:
-  version: v3
+  version: 3
   type: v3_auth_privacy
   username: noc
   group: nocgroup
@@ -11,16 +12,40 @@ snmp-id-1:
   privacy_protocol: AES
   privacy_password: snmppassword
   privacy_option: 256
+
 snmp-id-2:
-  version: v3
+  version: 3
   type: v3_auth_no_privacy
   username: user2
   group: group
   auth_protocol_long: MD5-96
   auth_protocol: MD5
   auth_password: authpass2
+
 snmp-id-3:
-  version: v2
+  version: 2
   community: snmpcommunity
+
+# Baseline test credentials (for testing with baseline.yaml data)
+credA:
+  version: 3
+  type: v3_auth_privacy
+  username: baseline_user_a
+  group: baseline_group
+  auth_protocol_long: SHA-2-256
+  auth_protocol: SHA-2-256
+  auth_password: baseline_auth_pass_a
+  privacy_protocol_long: AES-256
+  privacy_protocol: AES
+  privacy_password: baseline_priv_pass_a
+  privacy_option: 256
+
+credB:
+  version: 2
+  community: baseline_community_b
+
+credC:
+  version: 1
+  community: baseline_community_c
 
   

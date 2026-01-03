@@ -191,8 +191,11 @@ class DeviceNormalizationService:
                 snmp_config = snmp_mapping[snmp_credentials]
                 snmp_version = snmp_config.get("version")
 
+                # Convert version to string for comparison (YAML may parse unquoted numbers as int)
+                snmp_version_str = str(snmp_version) if snmp_version is not None else None
+
                 # Handle SNMPv2/v1 (community-based)
-                if snmp_version in ["v1", "v2", "1", "2"]:
+                if snmp_version_str in ["v1", "v2", "1", "2"]:
                     snmp_community = {
                         "type": "v1_v2_community",
                         "community": snmp_config.get("community", ""),
@@ -201,11 +204,11 @@ class DeviceNormalizationService:
                     extensions.attributes["tag_snmp_ds"] = "snmp-v2"
                     extensions.attributes["tag_agent"] = "no-agent"
                     logger.info(
-                        f"Configured SNMPv{snmp_version} community-based authentication for device"
+                        f"Configured SNMPv{snmp_version_str} community-based authentication for device"
                     )
 
                 # Handle SNMPv3 (user-based security)
-                elif snmp_version in ["v3", "3"]:
+                elif snmp_version_str in ["v3", "3"]:
                     # Map SNMP configuration to normalized format
                     snmp_community = {
                         "type": snmp_config.get("type", ""),
@@ -230,7 +233,7 @@ class DeviceNormalizationService:
 
                 else:
                     logger.warning(
-                        f"Unsupported SNMP version '{snmp_version}' in mapping"
+                        f"Unsupported SNMP version '{snmp_version_str}' (raw: {snmp_version}, type: {type(snmp_version).__name__}) in mapping"
                     )
                     extensions.attributes["tag_agent"] = "no-agent"
             else:

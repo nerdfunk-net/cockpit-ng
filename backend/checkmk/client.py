@@ -12,6 +12,8 @@ from typing import Dict, List
 import requests
 from urllib.parse import urljoin
 
+logger = logging.getLogger(__name__)
+
 
 class CheckMKAPIError(Exception):
     """Custom exception for CheckMK API errors"""
@@ -236,7 +238,15 @@ class CheckMKClient:
         response = self._make_request(
             "GET", f"objects/host_config/{hostname}", params=params
         )
-        return self._handle_response(response)
+        result = self._handle_response(response)
+
+        # DEBUG: Log complete CheckMK response for test fixture creation
+        logger.debug(f"[CHECKMK API] get_host({hostname}) full response:")
+        logger.debug(f"[CHECKMK API] Response type: {type(result)}")
+        logger.debug(f"[CHECKMK API] Response keys: {list(result.keys()) if isinstance(result, dict) else 'N/A'}")
+        logger.debug(f"[CHECKMK API] Full response data: {result}")
+
+        return result
 
     def create_host(
         self,

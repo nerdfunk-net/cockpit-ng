@@ -38,6 +38,12 @@ def add_device_to_checkmk_task(self, device_id: str) -> Dict[str, Any]:
     try:
         logger.info(f"Starting add_device_to_checkmk task for device: {device_id}")
 
+        # Force reload configuration files to ensure we use the latest SNMP mapping
+        # and other config changes without requiring Celery worker restart
+        from services.checkmk.config import config_service
+        config_service.reload_config()
+        logger.info("Reloaded configuration files for add device task")
+
         # Import here to avoid circular dependencies
         from services.checkmk.sync.base import nb2cmk_service
 
@@ -122,6 +128,12 @@ def update_device_in_checkmk_task(self, device_id: str) -> Dict[str, Any]:
     """
     try:
         logger.info(f"Starting update_device_in_checkmk task for device: {device_id}")
+
+        # Force reload configuration files to ensure we use the latest SNMP mapping
+        # and other config changes without requiring Celery worker restart
+        from services.checkmk.config import config_service
+        config_service.reload_config()
+        logger.info("Reloaded configuration files for update device task")
 
         # Import here to avoid circular dependencies
         from services.checkmk.sync.base import nb2cmk_service
@@ -212,6 +224,12 @@ def sync_devices_to_checkmk_task(
         logger.info(
             f"Starting sync_devices_to_checkmk task for {len(device_ids)} devices"
         )
+
+        # Force reload configuration files to ensure we use the latest SNMP mapping
+        # and other config changes without requiring Celery worker restart
+        from services.checkmk.config import config_service
+        config_service.reload_config()
+        logger.info("Reloaded configuration files for sync devices task")
 
         # Import here to avoid circular dependencies
         from services.checkmk.sync.base import nb2cmk_service
