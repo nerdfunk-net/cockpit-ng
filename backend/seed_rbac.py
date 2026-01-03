@@ -9,6 +9,66 @@ This script initializes the RBAC system with:
 import rbac_manager as rbac
 
 
+def migrate_inventory_permissions(verbose: bool = True):
+    """Migrate network.inventory permissions to general.inventory.
+    
+    This function handles migration for existing systems that have
+    network.inventory permissions assigned to roles or users.
+    """
+    if verbose:
+        print("\nMigrating inventory permissions from network.inventory to general.inventory...")
+    
+    # Get all permissions
+    all_permissions = rbac.list_permissions()
+    
+    # Find old network.inventory permissions
+    old_perms = {
+        p['id']: p for p in all_permissions 
+        if p['resource'] == 'network.inventory'
+    }
+    
+    if not old_perms and verbose:
+        print("  - No network.inventory permissions found to migrate")
+        return
+    
+    # Get all roles
+    all_roles = rbac.list_roles()
+    
+    # For each role, check if it has network.inventory permissions
+    migrated_count = 0
+    for role in all_roles:
+        role_perms = rbac.get_role_permissions(role['id'])
+        
+        for old_perm_id, old_perm in old_perms.items():
+            # Check if this role has the old permission
+            if any(p['id'] == old_perm_id for p in role_perms):
+                # Find or create the corresponding general.inventory permission
+                action = old_perm['action']
+                try:
+                    # Create the new permission if it doesn't exist
+                    new_perm_id = None
+                    for p in all_permissions:
+                        if p['resource'] == 'general.inventory' and p['action'] == action:
+                            new_perm_id = p['id']
+                            break
+                    
+                    if new_perm_id:
+                        # Assign the new permission to the role
+                        rbac.assign_permission_to_role(role['id'], new_perm_id, granted=True)
+                        migrated_count += 1
+                        if verbose:
+                            print(f"  ✓ Migrated {old_perm['resource']}:{action} -> general.inventory:{action} for role '{role['name']}'")
+                except Exception as e:
+                    if verbose:
+                        print(f"  ✗ Error migrating permission for role '{role['name']}': {e}")
+    
+    if verbose:
+        if migrated_count > 0:
+            print(f"\n  ✅ Migrated {migrated_count} permission assignments")
+        else:
+            print("  - No permissions needed migration")
+
+
 def seed_permissions(verbose: bool = True):
     """Create all default permissions."""
     if verbose:
@@ -39,10 +99,11 @@ def seed_permissions(verbose: bool = True):
         ("configs", "read", "View device configurations"),
         ("configs.backup", "execute", "Execute configuration backups"),
         ("configs.compare", "execute", "Compare configurations"),
+        # General inventory permissions (moved from network.inventory)
+        ("general.inventory", "read", "View device inventory"),
+        ("general.inventory", "write", "Modify device inventory"),
+        ("general.inventory", "delete", "Delete device inventory"),
         # Network automation permissions
-        ("network.inventory", "read", "View Ansible inventory"),
-        ("network.inventory", "write", "Modify Ansible inventory"),
-        ("network.inventory", "delete", "Delete Ansible inventory"),
         ("network.templates", "read", "View configuration templates"),
         ("network.templates", "write", "Create/modify templates"),
         ("network.templates", "delete", "Delete templates"),
@@ -178,9 +239,10 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "configs:read",
         "configs.backup:execute",
         "configs.compare:execute",
+        # Inventory
+        "general.inventory:read",
+        "general.inventory:write",
         # Network
-        "network.inventory:read",
-        "network.inventory:write",
         "network.templates:read",
         # Scan & Add
         "scan:execute",
@@ -226,10 +288,11 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "configs:read",
         "configs.backup:execute",
         "configs.compare:execute",
+        # Inventory (full access)
+        "general.inventory:read",
+        "general.inventory:write",
+        "general.inventory:delete",
         # Network (full access)
-        "network.inventory:read",
-        "network.inventory:write",
-        "network.inventory:delete",
         "network.templates:read",
         "network.templates:write",
         "network.templates:delete",
@@ -299,6 +362,9 @@ def main(verbose: bool = True):
 
     # Assign permissions to roles
     assign_permissions_to_roles(roles, verbose=verbose)
+    
+    # Run migration for existing systems
+    migrate_inventory_permissions(verbose=verbose)
 
     if verbose:
         print("=" * 60)

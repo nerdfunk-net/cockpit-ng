@@ -231,7 +231,6 @@ frontend/
 │   ├── app/                          # Next.js App Router pages
 │   │   ├── (dashboard)/             # Route group for dashboard pages
 │   │   │   ├── add-certificate/    # SSL certificate management
-│   │   │   ├── ansible-inventory/  # Ansible inventory page
 │   │   │   ├── automation/
 │   │   │   │   └── templates/      # Automation templates
 │   │   │   ├── backup/             # Configuration backup
@@ -242,6 +241,7 @@ frontend/
 │   │   │   ├── compare/            # Configuration comparison
 │   │   │   ├── compliance/         # Compliance management
 │   │   │   ├── configs/            # Configuration viewing
+│   │   │   ├── inventory/          # Device inventory builder
 │   │   │   ├── jobs/               # Job management
 │   │   │   │   ├── scheduler/      # Job scheduler
 │   │   │   │   ├── templates/      # Job templates
@@ -336,15 +336,17 @@ frontend/
 │   │   │   │       │   └── utils/
 │   │   │   │       └── check-ip/  # IP checking tool
 │   │   │   │
+│   │   │   ├── general/           # General features
+│   │   │   │   └── inventory/     # Device inventory builder
+│   │   │   │       ├── dialogs/
+│   │   │   │       ├── hooks/
+│   │   │   │       ├── tabs/
+│   │   │   │       ├── types/
+│   │   │   │       ├── utils/
+│   │   │   │       └── inventory-page.tsx
+│   │   │   │
 │   │   │   ├── network/           # Network-related features
 │   │   │   │   ├── automation/    # Network automation
-│   │   │   │   │   ├── ansible-inventory/ # Ansible inventory
-│   │   │   │   │   │   ├── components/
-│   │   │   │   │   │   ├── dialogs/
-│   │   │   │   │   │   ├── hooks/
-│   │   │   │   │   │   ├── tabs/
-│   │   │   │   │   │   ├── types/
-│   │   │   │   │   │   └── utils/
 │   │   │   │   │   ├── netmiko/   # Netmiko interface
 │   │   │   │   │   │   ├── components/
 │   │   │   │   │   │   ├── dialogs/
@@ -489,7 +491,7 @@ backend/
 │   ├── nb2cmk.py                   # Nautobot to CheckMK models
 │   ├── checkmk.py                  # CheckMK models
 │   ├── templates.py                # Template models
-│   ├── ansible_inventory.py        # Ansible inventory models
+│   ├── inventory.py                # Device inventory models
 │   └── settings.py                 # Settings models
 │
 ├── routers/                         # API route handlers (feature-based organization)
@@ -532,7 +534,6 @@ backend/
 │   │   │   └── view.py             # Configuration viewing
 │   │   ├── automation/             # Automation tools
 │   │   │   ├── __init__.py
-│   │   │   ├── ansible_inventory.py # Ansible inventory generation
 │   │   │   ├── netmiko.py          # Netmiko device connections
 │   │   │   └── templates.py        # Configuration templates
 │   │   ├── compliance/             # Compliance checking
@@ -618,11 +619,14 @@ backend/
 │   │       ├── background.py       # Background sync operations
 │   │       └── database.py         # Sync database operations
 │   │
+│   ├── inventory/                  # Device inventory services
+│   │   ├── __init__.py
+│   │   └── inventory.py            # Device inventory builder service
+│   │
 │   ├── network/                    # Network automation services
 │   │   ├── __init__.py
 │   │   ├── automation/             # Automation tool services
 │   │   │   ├── __init__.py
-│   │   │   ├── ansible_inventory.py # Ansible inventory generation
 │   │   │   ├── netmiko.py          # Netmiko device connections
 │   │   │   └── render.py           # Jinja2 template rendering
 │   │   ├── compliance/             # Compliance services

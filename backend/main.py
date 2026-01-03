@@ -39,7 +39,6 @@ from routers.settings import (
 # Network routers now use feature-based structure (Phase 3.4 migration - partial)
 from routers.network import (
     file_compare_router,
-    ansible_inventory_router,
     netmiko_router,
 )
 
@@ -49,7 +48,7 @@ from routers.tools import router as tools_router
 # Compliance check router disabled - requires pysnmp dependency
 # from routers.compliance_check import router as compliance_check_router
 # Inventory routers now use feature-based structure (Phase 3.7 migration)
-from routers.inventory import inventory_router, certificates_router
+from routers.inventory import general_inventory_router, inventory_router, certificates_router
 
 # git_repositories_router is included via git_router - no need to import separately
 # Job routers now use feature-based structure (Phase 3.2 migration)
@@ -90,7 +89,7 @@ app.include_router(file_compare_router)
 app.include_router(config_router)
 app.include_router(settings_router)
 app.include_router(templates_router)
-app.include_router(ansible_inventory_router)
+app.include_router(general_inventory_router)
 app.include_router(inventory_router)
 app.include_router(credentials_router)
 app.include_router(scan_and_add_router)

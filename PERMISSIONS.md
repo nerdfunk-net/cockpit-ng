@@ -127,14 +127,15 @@ These routers use the new RBAC permission system and properly enforce granular a
 | DELETE `/{id}` | `network.templates:delete` | Delete templates |
 | POST `/render` | `network.templates:read` | Render/preview (read-only) |
 
-#### 4. **Ansible Inventory** (`/api/ansible-inventory`) - ✅ RBAC Protected
+#### 4. **Device Inventory** (`/api/inventory`) - ✅ RBAC Protected
 
 | Endpoint | Permission Required | Description |
 |----------|--------------------|--------------|
-| POST `/preview` | `network.inventory:read` | Preview inventory |
-| GET `/field-options`, `/custom-fields` | `network.inventory:read` | Get options |
-| POST `/generate`, `/download` | `network.inventory:write` | Generate inventory |
-| POST `/push-to-git`, `/save-inventory` | `network.inventory:write` | Save inventory |
+| POST `/preview` | `general.inventory:read` | Preview inventory |
+| GET `/field-options`, `/custom-fields` | `general.inventory:read` | Get options |
+| POST `/generate`, `/download` | `general.inventory:write` | Generate inventory |
+| POST `/push-to-git` | `general.inventory:write` | Save to Git |
+| GET `/git-repositories` | `general.inventory:read` | List Git repositories |
 
 #### 5. **Netmiko Commands** (`/api/netmiko`) - ✅ RBAC Protected
 

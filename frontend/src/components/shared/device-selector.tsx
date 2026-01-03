@@ -25,7 +25,7 @@ import {
   HelpCircle
 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
-import { ManageInventoryDialog } from '@/components/features/network/automation/ansible-inventory/dialogs/manage-inventory-dialog'
+import { ManageInventoryDialog } from '@/components/features/general/inventory/dialogs/manage-inventory-dialog'
 
 // Legacy flat condition structure (kept for backward compatibility)
 export interface LogicalCondition {

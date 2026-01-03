@@ -84,7 +84,7 @@ export function InventoryGenerationTab({
         inventory_content: string
         template_used: string
         device_count: number
-      }>('ansible-inventory/generate', {
+      }>('inventory/generate', {
         method: 'POST',
         body: {
           operations,
@@ -113,7 +113,7 @@ export function InventoryGenerationTab({
       const operations = buildOperationsFromConditions(deviceConditions)
 
       // Use fetch for file download
-      const response = await fetch('/api/proxy/ansible-inventory/download', {
+      const response = await fetch('/api/proxy/inventory/download', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -168,7 +168,7 @@ export function InventoryGenerationTab({
         file: string
         device_count: number
         commit_message: string
-      }>('ansible-inventory/push-to-git', {
+      }>('inventory/push-to-git', {
         method: 'POST',
         body: {
           operations,
@@ -197,7 +197,7 @@ export function InventoryGenerationTab({
             inventory_content: string
             template_used: string
             device_count: number
-          }>('ansible-inventory/generate', {
+          }>('inventory/generate', {
             method: 'POST',
             body: {
               operations,

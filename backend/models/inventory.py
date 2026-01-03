@@ -1,5 +1,5 @@
 """
-Ansible Inventory models for request/response data.
+Inventory models for request/response data.
 """
 
 from __future__ import annotations

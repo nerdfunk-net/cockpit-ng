@@ -60,6 +60,7 @@ const navigationSections: NavSection[] = [
     title: 'General',
     items: [
       { label: 'Home', href: '/', icon: Home },
+      { label: 'Inventory', href: '/inventory', icon: List },
     ],
   },
   {
@@ -105,7 +106,6 @@ const navigationSections: NavSection[] = [
         icon: Zap,
         children: [
           { label: 'Netmiko', href: '/netmiko', icon: Terminal },
-          { label: 'Inventory', href: '/ansible-inventory', icon: List },
           { label: 'Templates', href: '/automation/templates', icon: FileText },
         ],
       },

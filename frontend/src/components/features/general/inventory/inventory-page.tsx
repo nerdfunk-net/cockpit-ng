@@ -1,5 +1,5 @@
 /**
- * Refactored Ansible Inventory Page - Main Component
+ * Refactored Inventory Page - Main Component
  * Uses shared DeviceSelector component and custom hooks for maintainability
  */
 
@@ -62,7 +62,7 @@ export default function AnsibleInventoryPage() {
         const gitResponse = await apiCall<{
           repositories: Array<{id: number, name: string, url: string, branch: string}>
           total: number
-        }>('ansible-inventory/git-repositories')
+        }>('inventory/git-repositories')
         gitOperations.setGitRepositories(gitResponse.repositories)
       } catch (error) {
         console.error('Error loading initial data:', error)
@@ -87,7 +87,7 @@ export default function AnsibleInventoryPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500" />
-              Loading Ansible Inventory Builder
+              Loading Inventory Builder
             </CardTitle>
             <CardDescription>
               Establishing authentication and initializing inventory tools...
@@ -107,8 +107,8 @@ export default function AnsibleInventoryPage() {
             <List className="h-6 w-6 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Ansible Inventory Builder</h1>
-            <p className="text-gray-600 mt-1">Build dynamic Ansible inventories using logical operations</p>
+            <h1 className="text-3xl font-bold text-gray-900">Inventory Builder</h1>
+            <p className="text-gray-600 mt-1">Build dynamic device inventories using logical operations</p>
           </div>
         </div>
       </div>
