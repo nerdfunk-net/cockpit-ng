@@ -12,7 +12,7 @@ from models.inventory import (
     InventoryGenerateResponse,
     LogicalOperation,
 )
-from rbac_manager import require_permission
+from core.auth import require_permission
 from services.inventory.inventory import inventory_service
 
 router = APIRouter(prefix="/api/ansible-inventory", tags=["ansible-inventory"])
