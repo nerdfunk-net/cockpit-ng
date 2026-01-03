@@ -291,7 +291,7 @@ export function DeviceSelector({
         fields: FieldOption[]
         operators: FieldOption[]
         logical_operations: FieldOption[]
-      }>('ansible-inventory/field-options')
+      }>('inventory/field-options')
 
       setFieldOptions(response.fields)
       setOperatorOptions(response.operators)
@@ -490,7 +490,7 @@ export function DeviceSelector({
 
   const loadCustomFields = async () => {
     try {
-      const response = await apiCall<{ custom_fields: CustomField[] }>('ansible-inventory/custom-fields')
+      const response = await apiCall<{ custom_fields: CustomField[] }>('inventory/custom-fields')
       setCustomFields(response.custom_fields)
     } catch (error) {
       console.error('Error loading custom fields:', error)
@@ -514,7 +514,7 @@ export function DeviceSelector({
           field: string
           values: FieldOption[]
           input_type: string
-        }>(`ansible-inventory/field-values/${fieldName}`)
+        }>(`inventory/field-values/${fieldName}`)
         setFieldValues(response.values)
       }
     } catch (error) {
@@ -1043,7 +1043,7 @@ export function DeviceSelector({
         devices: DeviceInfo[]
         total_count: number
         operations_executed: number
-      }>('ansible-inventory/preview', {
+      }>('inventory/preview', {
         method: 'POST',
         body: { operations }
       })
