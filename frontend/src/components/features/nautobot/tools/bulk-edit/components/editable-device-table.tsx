@@ -70,10 +70,10 @@ export function EditableDeviceTable({
         console.log('[BulkEdit] Loading field options...')
         // Load all field options in parallel
         const [roles, locationsRaw, deviceTypesRaw, platforms] = await Promise.all([
-          apiCall<{ field: string; values: FieldOption[] }>('ansible-inventory/field-values/role'),
+          apiCall<{ field: string; values: FieldOption[] }>('inventory/field-values/role'),
           apiCall<Array<{ id: string; name: string; parent?: { id: string } }>>('nautobot/locations'),
           fetchDeviceTypesWithManufacturer(apiCall),
-          apiCall<{ field: string; values: FieldOption[] }>('ansible-inventory/field-values/platform'),
+          apiCall<{ field: string; values: FieldOption[] }>('inventory/field-values/platform'),
         ])
 
         console.log('[BulkEdit] Loaded locations:', locationsRaw.length)

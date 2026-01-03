@@ -284,7 +284,7 @@ export default function BulkEditPage() {
         devices: DeviceInfo[]
         total_count: number
         operations_executed: number
-      }>('ansible-inventory/preview', {
+      }>('inventory/preview', {
         method: 'POST',
         body: { operations }
       })
