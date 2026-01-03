@@ -62,7 +62,7 @@ export default function AnsibleInventoryPage() {
         const gitResponse = await apiCall<{
           repositories: Array<{id: number, name: string, url: string, branch: string}>
           total: number
-        }>('inventory/git-repositories')
+        }>('ansible-inventory/git-repositories')
         gitOperations.setGitRepositories(gitResponse.repositories)
       } catch (error) {
         console.error('Error loading initial data:', error)
