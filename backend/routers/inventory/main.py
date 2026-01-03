@@ -15,7 +15,7 @@ from core.auth import require_permission
 from inventory_manager import inventory_manager
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/inventory", tags=["inventory"])
+router = APIRouter(prefix="/api/inventories", tags=["inventories"])
 
 
 # ============================================================================

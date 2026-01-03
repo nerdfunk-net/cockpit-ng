@@ -363,7 +363,7 @@ export function DeviceSelector({
 
       if (existingInventory) {
         // Update existing inventory
-        await apiCall(`inventory/${existingInventory.id}`, {
+        await apiCall(`inventories/${existingInventory.id}`, {
           method: 'PUT',
           body: {
             description: saveInventoryDescription || undefined,
@@ -372,7 +372,7 @@ export function DeviceSelector({
         })
       } else {
         // Create new inventory
-        await apiCall('inventory', {
+        await apiCall('inventories', {
           method: 'POST',
           body: {
             name: saveInventoryName,
@@ -401,7 +401,7 @@ export function DeviceSelector({
 
   const handleLoadInventory = async (inventoryName: string) => {
     try {
-      const response = await apiCall<BackendConditionsResponse>(`inventory/by-name/${encodeURIComponent(inventoryName)}`)
+      const response = await apiCall<BackendConditionsResponse>(`inventories/by-name/${encodeURIComponent(inventoryName)}`)
 
       // Check if this is a new tree structure (version 2) or legacy flat format
       if (response.conditions && response.conditions.length > 0) {
