@@ -97,12 +97,12 @@ TEST_DEVICES = [
             "site": "cmk",
             "alias": "Test Device 02",
             "tag_agent": "no-agent",
-            "tag_snmp_ds": "snmp-v3",
+            "tag_snmp_ds": "snmp-v2",  # CheckMK uses snmp-v2 for both v2 and v3
             "snmp_community": {
                 "type": "v3_auth_privacy",
-                "auth_protocol": "SHA-256",
+                "auth_protocol": "SHA-2-256",  # Must use exact CheckMK enum value
                 "auth_password": "test_auth_pass",
-                "privacy_protocol": "AES",
+                "privacy_protocol": "AES-256",  # Must specify bit length
                 "privacy_password": "test_priv_pass",
                 "security_name": "test_user",
             },
@@ -116,6 +116,7 @@ TEST_DEVICES = [
             "site": "cmk",
             "alias": "Test Device 03 - No SNMP",
             "tag_agent": "cmk-agent",
+            "tag_snmp_ds": "no-snmp",  # Explicitly set no SNMP
         },
     },
 ]
@@ -379,10 +380,12 @@ class TestCheckMKDeviceLifecycle:
         """Test updating a device in CheckMK."""
         print("\n✏️ Testing device update in CheckMK")
 
-        test_hostname = TEST_DEVICES[0]["host_name"]
+        # Use test-device-03 (agent-only, no SNMP) for update test
+        # This avoids interfering with SNMP attribute tests later
+        test_hostname = TEST_DEVICES[2]["host_name"]
 
-        # Update the device
-        new_attributes = {"alias": "Test Device 01 - UPDATED"}
+        # Update the device alias
+        new_attributes = {"alias": "Test Device 03 - UPDATED"}
 
         try:
             result = checkmk_client.update_host(test_hostname, new_attributes)
@@ -392,8 +395,10 @@ class TestCheckMKDeviceLifecycle:
             host_data = checkmk_client.get_host(test_hostname)
             assert (
                 host_data["extensions"]["attributes"]["alias"]
-                == "Test Device 01 - UPDATED"
-            )
+                == "Test Device 03 - UPDATED"
+            ), f"Alias not updated correctly"
+
+            print(f"  ✅ Verified alias updated to 'Test Device 03 - UPDATED'")
 
             # Activate changes
             checkmk_client.activate_changes()
@@ -486,7 +491,91 @@ class TestCheckMKDeviceLifecycle:
     # Step 7: Manual Cleanup Test (Tests cleanup mechanism)
     # =========================================================================
 
-    def test_10_delete_one_test_device(self, checkmk_client):
+    def test_10_snmp_v2_device_attributes(self, checkmk_client):
+        """Test SNMPv2 device has correct attributes."""
+        print("\n🔍 Testing SNMPv2 device attributes")
+
+        # Use test-device-01 (SNMPv2)
+        test_hostname = TEST_DEVICES[0]["host_name"]
+
+        try:
+            host_data = checkmk_client.get_host(test_hostname)
+            attributes = host_data["extensions"]["attributes"]
+
+            # Verify SNMP attributes
+            assert "snmp_community" in attributes, "Missing snmp_community attribute"
+            snmp_config = attributes["snmp_community"]
+
+            assert (
+                snmp_config["type"] == "v1_v2_community"
+            ), "Incorrect SNMP community type"
+            assert (
+                snmp_config["community"] == "test_community"
+            ), "Incorrect SNMP community string"
+
+            # Verify tags
+            assert (
+                attributes["tag_snmp_ds"] == "snmp-v2"
+            ), "Incorrect SNMP version tag"
+            assert (
+                attributes["tag_agent"] == "no-agent"
+            ), "Incorrect agent tag for SNMP-only device"
+
+            print(f"  ✅ SNMPv2 attributes correct for {test_hostname}")
+
+        except CheckMKAPIError as e:
+            if e.status_code == 404:
+                pytest.fail(f"Test device {test_hostname} not found in CheckMK")
+            raise
+
+    def test_11_snmp_v3_device_attributes(self, checkmk_client):
+        """Test SNMPv3 device has correct attributes."""
+        print("\n🔍 Testing SNMPv3 device attributes")
+
+        # Use test-device-02 (SNMPv3)
+        test_hostname = TEST_DEVICES[1]["host_name"]
+
+        try:
+            host_data = checkmk_client.get_host(test_hostname)
+            attributes = host_data["extensions"]["attributes"]
+
+            # Verify SNMP attributes
+            assert "snmp_community" in attributes, "Missing snmp_community attribute"
+            snmp_config = attributes["snmp_community"]
+
+            assert (
+                snmp_config["type"] == "v3_auth_privacy"
+            ), "Incorrect SNMPv3 type"
+            assert (
+                "auth_protocol" in snmp_config
+            ), "Missing auth_protocol in SNMPv3 config"
+            assert (
+                "privacy_protocol" in snmp_config
+            ), "Missing privacy_protocol in SNMPv3 config"
+            assert (
+                "security_name" in snmp_config
+            ), "Missing security_name in SNMPv3 config"
+
+            # Verify tags
+            # Note: CheckMK uses "snmp-v2" tag for both v2 and v3, differentiated by snmp_community type
+            assert (
+                attributes["tag_snmp_ds"] == "snmp-v2"
+            ), "Incorrect SNMP version tag (CheckMK uses snmp-v2 for both v2 and v3)"
+            assert (
+                attributes["tag_agent"] == "no-agent"
+            ), "Incorrect agent tag for SNMP-only device"
+
+            print(f"  ✅ SNMPv3 attributes correct for {test_hostname}")
+            print(
+                f"  Note: CheckMK uses tag 'snmp-v2' for both v2 and v3, type='{snmp_config['type']}' differentiates"
+            )
+
+        except CheckMKAPIError as e:
+            if e.status_code == 404:
+                pytest.fail(f"Test device {test_hostname} not found in CheckMK")
+            raise
+
+    def test_12_delete_one_test_device(self, checkmk_client):
         """Test manual deletion of one test device."""
         print("\n🗑️ Testing manual device deletion")
 
@@ -527,110 +616,6 @@ class TestCheckMKDeviceLifecycle:
                 print(f"  ⚠️ Device {test_hostname} already deleted")
             else:
                 raise
-
-
-# =============================================================================
-# Test Class: SNMP Configuration Testing
-# =============================================================================
-
-
-@pytest.mark.integration
-@pytest.mark.checkmk
-@pytest.mark.snmp
-class TestCheckMKSNMPConfiguration:
-    """Test SNMP configuration in CheckMK devices."""
-
-    def test_snmp_v2_device_attributes(self, checkmk_client):
-        """Test SNMPv2 device has correct attributes."""
-        print("\n🔍 Testing SNMPv2 device attributes")
-
-        # Use test-device-01 (SNMPv2)
-        test_hostname = TEST_DEVICES[0]["host_name"]
-
-        try:
-            # Verify device exists first
-            try:
-                checkmk_client.get_host(test_hostname)
-            except CheckMKAPIError as e:
-                if e.status_code == 404:
-                    pytest.skip(f"Test device {test_hostname} not found in CheckMK")
-                raise
-
-            host_data = checkmk_client.get_host(test_hostname)
-            attributes = host_data["extensions"]["attributes"]
-
-            # Verify SNMP attributes
-            assert "snmp_community" in attributes, "Missing snmp_community attribute"
-            snmp_config = attributes["snmp_community"]
-
-            assert (
-                snmp_config["type"] == "v1_v2_community"
-            ), "Incorrect SNMP community type"
-            assert (
-                snmp_config["community"] == "test_community"
-            ), "Incorrect SNMP community string"
-
-            # Verify tags
-            assert (
-                attributes["tag_snmp_ds"] == "snmp-v2"
-            ), "Incorrect SNMP version tag"
-            assert (
-                attributes["tag_agent"] == "no-agent"
-            ), "Incorrect agent tag for SNMP-only device"
-
-            print(f"  ✅ SNMPv2 attributes correct for {test_hostname}")
-
-        except Exception as e:
-            pytest.fail(f"SNMP attribute verification failed: {e}")
-
-    def test_snmp_v3_device_attributes(self, checkmk_client):
-        """Test SNMPv3 device has correct attributes."""
-        print("\n🔍 Testing SNMPv3 device attributes")
-
-        # Use test-device-02 (SNMPv3)
-        test_hostname = TEST_DEVICES[1]["host_name"]
-
-        try:
-            # Verify device exists first
-            try:
-                checkmk_client.get_host(test_hostname)
-            except CheckMKAPIError as e:
-                if e.status_code == 404:
-                    pytest.skip(f"Test device {test_hostname} not found in CheckMK")
-                raise
-
-            host_data = checkmk_client.get_host(test_hostname)
-            attributes = host_data["extensions"]["attributes"]
-
-            # Verify SNMP attributes
-            assert "snmp_community" in attributes, "Missing snmp_community attribute"
-            snmp_config = attributes["snmp_community"]
-
-            assert (
-                snmp_config["type"] == "v3_auth_privacy"
-            ), "Incorrect SNMPv3 type"
-            assert (
-                "auth_protocol" in snmp_config
-            ), "Missing auth_protocol in SNMPv3 config"
-            assert (
-                "privacy_protocol" in snmp_config
-            ), "Missing privacy_protocol in SNMPv3 config"
-            assert (
-                "security_name" in snmp_config
-            ), "Missing security_name in SNMPv3 config"
-
-            # Verify tags
-            assert (
-                attributes["tag_snmp_ds"] == "snmp-v3"
-            ), "Incorrect SNMP version tag"
-            assert (
-                attributes["tag_agent"] == "no-agent"
-            ), "Incorrect agent tag for SNMP-only device"
-
-            print(f"  ✅ SNMPv3 attributes correct for {test_hostname}")
-
-        except Exception as e:
-            pytest.fail(f"SNMP attribute verification failed: {e}")
 
 
 # =============================================================================

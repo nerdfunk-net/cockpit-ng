@@ -13,7 +13,7 @@ Used by:
 
 import logging
 from typing import List, Dict, Any
-from models.ansible_inventory import LogicalOperation, LogicalCondition
+from models.inventory import LogicalOperation, LogicalCondition
 
 logger = logging.getLogger(__name__)
 

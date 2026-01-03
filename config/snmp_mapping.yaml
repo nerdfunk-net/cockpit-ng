@@ -48,4 +48,33 @@ credC:
   version: 1
   community: baseline_community_c
 
-  
+# Test credentials for integration tests
+snmp-string-v3:
+  version: 3
+  type: v3_auth_privacy
+  username: test_user
+  group: test_group
+  auth_protocol_long: SHA-2-256
+  auth_protocol: SHA-2-256
+  auth_password: test_auth_pass
+  privacy_protocol_long: AES-256
+  privacy_protocol: AES-256
+  privacy_password: test_priv_pass
+  privacy_option: 256
+
+snmp-string-v2:
+  version: 2
+  community: test_community
+
+snmp-v3-auth-only:
+  version: 3
+  type: v3_auth_no_privacy
+  username: test_user_auth
+  group: test_group
+  auth_protocol_long: MD5-96
+  auth_protocol: MD5-96
+  auth_password: test_auth_only
+
+test-snmp:
+  version: 2
+  community: test_community_reload

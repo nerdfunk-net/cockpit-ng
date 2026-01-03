@@ -53,20 +53,29 @@ pytest tests/integration/test_checkmk_api_structure.py -v
 
 ### 3. `test_snmp_mapping_comparison.py` - SNMP Version Detection Tests
 
-**Uses**: Mocked config service
+**Uses**: Mocked config service + Real CheckMK devices (optional)
 **Purpose**: Test SNMP version detection and normalization
-**Speed**: Fast
+**Speed**: Fast (with mocks) / Medium (with real CheckMK)
 
 ```bash
-# Run SNMP tests
+# Run SNMP tests (unit tests with mocks)
 pytest tests/integration/test_snmp_mapping_comparison.py -v
+
+# Or run with real CheckMK (requires test devices from test_checkmk_device_lifecycle.py)
+pytest tests/integration/test_checkmk_device_lifecycle.py -v  # Create devices first
+pytest tests/integration/test_snmp_mapping_comparison.py::TestDeviceComparisonLiveUpdate -v
 ```
 
 **What it tests**:
-- SNMP v1, v2, v3 detection
-- Integer vs string version formats (`2` vs `"v2"`)
-- SNMPv3 auth+privacy vs auth-only
-- Config reload without worker restart
+- **Unit tests** (mocked):
+  - SNMP v1, v2, v3 detection
+  - Integer vs string version formats (`2` vs `"v2"`)
+  - SNMPv3 auth+privacy vs auth-only
+  - Config reload without worker restart
+- **Integration tests** (real CheckMK):
+  - Real SNMPv3 device verification (`test-device-02`)
+  - Real SNMPv2 device verification (`test-device-01`)
+  - Real non-SNMP device verification (`test-device-03`)
 
 ---
 
@@ -157,11 +166,11 @@ pytest tests/integration/ --cov=services.checkmk --cov-report=html
 # Run specific test
 pytest tests/integration/test_checkmk_baseline.py::TestCheckMKWithBaseline::test_fetch_baseline_devices -v
 
-# Run lifecycle test class
+# Run lifecycle test class (includes SNMP tests)
 pytest tests/integration/test_checkmk_device_lifecycle.py::TestCheckMKDeviceLifecycle -v
 
-# Run SNMP configuration tests only
-pytest tests/integration/test_checkmk_device_lifecycle.py::TestCheckMKSNMPConfiguration -v
+# Run connection prerequisites only
+pytest tests/integration/test_checkmk_device_lifecycle.py::TestCheckMKConnectionPrerequisites -v
 ```
 
 ## Test Markers

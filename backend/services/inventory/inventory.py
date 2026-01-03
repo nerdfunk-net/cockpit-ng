@@ -1689,7 +1689,7 @@ class InventoryService:
         from git_repositories_manager import GitRepositoryManager
         from services.settings.git.service import git_service
         from services.settings.git.auth import git_auth_service
-        from models.ansible_inventory import SavedInventory, SavedInventoryCondition
+        from models.inventory import SavedInventory, SavedInventoryCondition
 
         try:
             logger.info(f"Listing inventories from repository {repository_id}")
@@ -1773,7 +1773,7 @@ class InventoryService:
         from git_repositories_manager import GitRepositoryManager
         from services.settings.git.service import git_service
         from services.settings.git.auth import git_auth_service
-        from models.ansible_inventory import SavedInventory, SavedInventoryCondition
+        from models.inventory import SavedInventory, SavedInventoryCondition
 
         try:
             logger.info(f"Loading inventory '{name}' from repository {repository_id}")

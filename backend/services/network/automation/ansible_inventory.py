@@ -5,7 +5,7 @@ Ansible Inventory service for handling device queries and inventory generation.
 from __future__ import annotations
 import logging
 from typing import List, Dict, Any, Set
-from models.ansible_inventory import LogicalOperation, LogicalCondition, DeviceInfo
+from models.inventory import LogicalOperation, LogicalCondition, DeviceInfo
 
 logger = logging.getLogger(__name__)
 
@@ -1689,7 +1689,7 @@ class AnsibleInventoryService:
         from git_repositories_manager import GitRepositoryManager
         from services.settings.git.service import git_service
         from services.settings.git.auth import git_auth_service
-        from models.ansible_inventory import SavedInventory, SavedInventoryCondition
+        from models.inventory import SavedInventory, SavedInventoryCondition
 
         try:
             logger.info(f"Listing inventories from repository {repository_id}")
@@ -1773,7 +1773,7 @@ class AnsibleInventoryService:
         from git_repositories_manager import GitRepositoryManager
         from services.settings.git.service import git_service
         from services.settings.git.auth import git_auth_service
-        from models.ansible_inventory import SavedInventory, SavedInventoryCondition
+        from models.inventory import SavedInventory, SavedInventoryCondition
 
         try:
             logger.info(f"Loading inventory '{name}' from repository {repository_id}")
