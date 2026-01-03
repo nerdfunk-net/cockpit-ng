@@ -251,7 +251,7 @@ export function JobTemplatesPage() {
 
     setLoadingInventories(true)
     try {
-      const response = await fetch('/api/proxy/inventories', {
+      const response = await fetch('/api/proxy/inventory', {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
