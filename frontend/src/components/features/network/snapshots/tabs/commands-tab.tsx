@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Trash2, Save } from 'lucide-react'
@@ -22,17 +22,44 @@ import type { SnapshotCommand } from '../types/snapshot-types'
 import { useSnapshotTemplates } from '../hooks/use-snapshot-templates'
 import { SaveTemplateDialog } from '../dialogs/save-template-dialog'
 
-export function CommandsTab() {
+interface CommandsTabProps {
+  selectedTemplateId: number | null
+  commands: Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]
+  onTemplateChange: (templateId: number | null) => void
+  onCommandsChange: (commands: Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]) => void
+}
+
+export function CommandsTab({
+  selectedTemplateId: parentTemplateId,
+  commands: parentCommands,
+  onTemplateChange,
+  onCommandsChange,
+}: CommandsTabProps) {
   const {
     templates,
   } = useSnapshotTemplates()
 
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('none')
-  const [commands, setCommands] = useState<SnapshotCommand[]>([])
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(parentTemplateId?.toString() || 'none')
+  const [commands, setCommands] = useState<SnapshotCommand[]>(
+    parentCommands.map((cmd, idx) => ({ ...cmd, id: idx + 1, order: idx }))
+  )
   const [showSaveDialog, setShowSaveDialog] = useState(false)
+
+  // Sync local commands with parent
+  useEffect(() => {
+    const mappedCommands = commands.map(({ command, use_textfsm, order }) => ({
+      command,
+      use_textfsm,
+      order,
+    }))
+    onCommandsChange(mappedCommands)
+  }, [commands, onCommandsChange])
 
   const handleTemplateChange = (value: string) => {
     setSelectedTemplateId(value)
+    
+    // Notify parent of template change
+    onTemplateChange(value === 'none' ? null : parseInt(value))
     
     if (value === 'none') {
       setCommands([])

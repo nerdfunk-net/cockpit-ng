@@ -1,26 +1,24 @@
 /**
- * Snapshots Tab
- * Execute snapshots and compare results
+ * Execute Snapshot Tab
+ * Configure and execute network snapshots
  */
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Play, GitCompare, RefreshCw } from 'lucide-react'
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Play } from 'lucide-react'
 import { ExecuteSnapshotDialog } from '../dialogs/execute-snapshot-dialog'
-import { CompareSnapshotsDialog } from '../dialogs/compare-snapshots-dialog'
-import { useSnapshots } from '../hooks/use-snapshots'
 import { useToast } from '@/hooks/use-toast'
+import { useGitRepositories } from '@/hooks/git'
 import type { SnapshotCommand } from '../types/snapshot-types'
 import type { DeviceInfo } from '@/components/shared/device-selector'
 
@@ -28,174 +26,125 @@ interface SnapshotsTabProps {
   selectedTemplateId: number | null
   commands: Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]
   selectedDevices: DeviceInfo[]
+  snapshotPath: string
+  snapshotGitRepoId: number | null
+  onSnapshotPathChange: (path: string) => void
+  onSnapshotGitRepoIdChange: (repoId: number | null) => void
 }
 
 export function SnapshotsTab({
   selectedTemplateId,
   commands,
   selectedDevices,
+  snapshotPath,
+  snapshotGitRepoId,
+  onSnapshotPathChange,
+  onSnapshotGitRepoIdChange,
 }: SnapshotsTabProps) {
-  const { snapshots, loading, loadSnapshots } = useSnapshots()
+  const { repositories, loading: reposLoading } = useGitRepositories()
   const [showExecuteDialog, setShowExecuteDialog] = useState(false)
-  const [showCompareDialog, setShowCompareDialog] = useState(false)
-  const [selectedSnapshotIds, setSelectedSnapshotIds] = useState<number[]>([])
   const { toast } = useToast()
-
-  useEffect(() => {
-    loadSnapshots()
-  }, [loadSnapshots])
 
   const handleExecuteSuccess = async () => {
     setShowExecuteDialog(false)
-    await loadSnapshots()
     toast({
       title: 'Snapshot Started',
       description: 'Snapshot execution has been started',
     })
   }
 
-  const handleCompare = (snapshotId: number) => {
-    if (selectedSnapshotIds.includes(snapshotId)) {
-      setSelectedSnapshotIds(selectedSnapshotIds.filter(id => id !== snapshotId))
-    } else {
-      if (selectedSnapshotIds.length >= 2) {
-        // Replace oldest selection
-        setSelectedSnapshotIds([selectedSnapshotIds[1]!, snapshotId])
-      } else {
-        setSelectedSnapshotIds([...selectedSnapshotIds, snapshotId])
-      }
-    }
-  }
-
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      pending: 'secondary',
-      running: 'default',
-      completed: 'outline',
-      failed: 'destructive',
-    }
-    return (
-      <Badge variant={variants[status] || 'default'}>
-        {status}
-      </Badge>
-    )
-  }
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return '-'
-    return new Date(dateString).toLocaleString()
-  }
-
   return (
     <div className="space-y-6">
-      {/* Action Buttons */}
+      {/* Execute Snapshot */}
       <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
         <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium">Snapshot Actions</span>
+            <span className="text-sm font-medium">Execute Snapshot</span>
           </div>
           <div className="text-xs text-blue-100">
-            Execute a new snapshot or compare existing snapshots
+            Configure and execute a new snapshot for selected devices
           </div>
         </div>
-        <div className="p-6 bg-gradient-to-b from-white to-gray-50 flex gap-4">
-          <Button
-            onClick={() => setShowExecuteDialog(true)}
-            disabled={!selectedTemplateId || commands.length === 0 || selectedDevices.length === 0}
-          >
-            <Play className="mr-2 h-4 w-4" />
-            Execute Snapshot
-          </Button>
-          <Button
-            onClick={() => setShowCompareDialog(true)}
-            disabled={selectedSnapshotIds.length !== 2}
-            variant="outline"
-          >
-            <GitCompare className="mr-2 h-4 w-4" />
-            Compare Selected ({selectedSnapshotIds.length}/2)
-          </Button>
-          <Button
-            onClick={() => loadSnapshots()}
-            variant="ghost"
-            disabled={loading}
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </div>
-      </div>
+        <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-6">
+          {/* Path Configuration */}
+          <div className="rounded-lg border border-amber-200 bg-amber-50/30 p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-amber-900">Snapshot Path</span>
+            </div>
 
-      {/* Snapshots List */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium">Recent Snapshots</span>
-          </div>
-          <div className="text-xs text-blue-100">
-            Click on snapshots to select them for comparison
-          </div>
-        </div>
-        <div className="p-6 bg-gradient-to-b from-white to-gray-50">
-          {loading && snapshots.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Loading snapshots...
+            <div className="bg-amber-100/50 border border-amber-200 rounded-md px-3 py-2 space-y-1">
+              <p className="text-xs text-amber-800 leading-relaxed">
+                <span className="font-semibold">Available variables:</span>
+              </p>
+              <p className="text-xs text-amber-700 leading-relaxed">
+                Template: {'{template_name}'}
+              </p>
+              <p className="text-xs text-amber-700 leading-relaxed">
+                Device: {'{device_name}'}, {'{hostname}'}, {'{serial}'}, {'{asset_tag}'}
+              </p>
+              <p className="text-xs text-amber-700 leading-relaxed">
+                Location: {'{location.name}'}, {'{location.parent.name}'}, {'{location.parent.parent.name}'}
+              </p>
+              <p className="text-xs text-amber-700 leading-relaxed">
+                Platform: {'{platform.name}'}, {'{platform.manufacturer.name}'}, {'{device_type.model}'}
+              </p>
+              <p className="text-xs text-amber-700 leading-relaxed">
+                Other: {'{role.name}'}, {'{status.name}'}, {'{tenant.name}'}, {'{rack.name}'}, {'{custom_field_data.FIELD_NAME}'}
+              </p>
             </div>
-          ) : snapshots.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No snapshots found. Execute a snapshot to get started.
+
+            <div className="space-y-2">
+              <Input
+                id="snapshot-path"
+                value={snapshotPath}
+                onChange={(e) => onSnapshotPathChange(e.target.value)}
+                placeholder="snapshots/{device_name}-{template_name}"
+                className="h-9 bg-white border-amber-200 font-mono text-sm focus:ring-amber-500 focus:border-amber-500"
+              />
             </div>
-          ) : (
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12"></TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Template</TableHead>
-                    <TableHead>Devices</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Success/Failed</TableHead>
-                    <TableHead>Executed By</TableHead>
-                    <TableHead>Created</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {snapshots.map(snapshot => (
-                    <TableRow
-                      key={snapshot.id}
-                      className={`cursor-pointer ${
-                        selectedSnapshotIds.includes(snapshot.id)
-                          ? 'bg-muted'
-                          : ''
-                      }`}
-                      onClick={() => handleCompare(snapshot.id)}
-                    >
-                      <TableCell>
-                        <div className="flex items-center justify-center">
-                          {selectedSnapshotIds.includes(snapshot.id) && (
-                            <div className="w-4 h-4 rounded-full bg-primary" />
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">{snapshot.name}</TableCell>
-                      <TableCell>{snapshot.template_name || '-'}</TableCell>
-                      <TableCell>{snapshot.device_count}</TableCell>
-                      <TableCell>{getStatusBadge(snapshot.status)}</TableCell>
-                      <TableCell>
-                        <span className="text-green-600">{snapshot.success_count}</span>
-                        {' / '}
-                        <span className="text-red-600">{snapshot.failed_count}</span>
-                      </TableCell>
-                      <TableCell>{snapshot.executed_by}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDate(snapshot.created_at)}
-                      </TableCell>
-                    </TableRow>
+          </div>
+
+          {/* Git Repository Selection */}
+          <div className="rounded-lg border border-teal-200 bg-teal-50/30 p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-teal-900">Git Repository</span>
+            </div>
+
+            <div className="space-y-2">
+              <Select
+                value={snapshotGitRepoId?.toString() || 'none'}
+                onValueChange={(value) => onSnapshotGitRepoIdChange(value === 'none' ? null : parseInt(value))}
+                disabled={reposLoading}
+              >
+                <SelectTrigger id="git-repo" className="h-9 bg-white border-teal-200">
+                  <SelectValue placeholder="Select a git repository..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No git repository</SelectItem>
+                  {repositories.map((repo) => (
+                    <SelectItem key={repo.id} value={repo.id.toString()}>
+                      {repo.name}
+                    </SelectItem>
                   ))}
-                </TableBody>
-              </Table>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-teal-700">
+                Select a git repository to store snapshot results
+              </p>
             </div>
-          )}
+          </div>
+
+          {/* Execute Button */}
+          <div className="flex justify-end pt-2">
+            <Button
+              onClick={() => setShowExecuteDialog(true)}
+              disabled={!selectedTemplateId || commands.length === 0 || selectedDevices.length === 0}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Play className="mr-2 h-4 w-4" />
+              Execute Snapshot
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -203,15 +152,9 @@ export function SnapshotsTab({
       <ExecuteSnapshotDialog
         open={showExecuteDialog}
         onOpenChange={setShowExecuteDialog}
+        onExecuteSuccess={handleExecuteSuccess}
         templateId={selectedTemplateId}
         selectedDevices={selectedDevices}
-        onExecuteSuccess={handleExecuteSuccess}
-      />
-      <CompareSnapshotsDialog
-        open={showCompareDialog}
-        onOpenChange={setShowCompareDialog}
-        snapshotIds={selectedSnapshotIds}
-        onClose={() => setSelectedSnapshotIds([])}
       />
     </div>
   )

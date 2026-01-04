@@ -15,6 +15,7 @@ import type { SnapshotCommand } from './types/snapshot-types'
 import { DevicesTab } from './tabs/devices-tab'
 import { CommandsTab } from './tabs/commands-tab'
 import { SnapshotsTab } from './tabs/snapshots-tab'
+import { ManageSnapshotsTab } from './tabs/manage-snapshots-tab'
 
 const EMPTY_DEVICES: DeviceInfo[] = []
 const EMPTY_DEVICE_IDS: string[] = []
@@ -24,6 +25,14 @@ export default function SnapshotsPage() {
   // Device selection state
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>(EMPTY_DEVICE_IDS)
   const [selectedDevices, setSelectedDevices] = useState<DeviceInfo[]>(EMPTY_DEVICES)
+
+  // Template and commands state (shared between Commands and Snapshots tabs)
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null)
+  const [commands, setCommands] = useState<Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]>(EMPTY_COMMANDS)
+
+  // Snapshot properties state
+  const [snapshotPath, setSnapshotPath] = useState<string>('snapshots/{device_name}-{template_name}')
+  const [snapshotGitRepoId, setSnapshotGitRepoId] = useState<number | null>(null)
 
   const handleDevicesSelected = (devices: DeviceInfo[], _conditions: LogicalCondition[]) => {
     const deviceIds = devices.map(d => d.id)
@@ -53,7 +62,7 @@ export default function SnapshotsPage() {
 
       {/* Main Tabs */}
       <Tabs defaultValue="devices" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="devices">
             Devices
             {selectedDevices.length > 0 && (
@@ -65,7 +74,8 @@ export default function SnapshotsPage() {
           <TabsTrigger value="commands">
             Commands
           </TabsTrigger>
-          <TabsTrigger value="snapshots">Snapshots</TabsTrigger>
+          <TabsTrigger value="execute">Execute Snapshot</TabsTrigger>
+          <TabsTrigger value="manage">Manage Snapshots</TabsTrigger>
         </TabsList>
 
         {/* Devices Tab */}
@@ -80,16 +90,30 @@ export default function SnapshotsPage() {
 
         {/* Commands Tab */}
         <TabsContent value="commands">
-          <CommandsTab />
+          <CommandsTab
+            selectedTemplateId={selectedTemplateId}
+            commands={commands}
+            onTemplateChange={setSelectedTemplateId}
+            onCommandsChange={setCommands}
+          />
         </TabsContent>
 
-        {/* Snapshots Tab */}
-        <TabsContent value="snapshots">
+        {/* Execute Snapshot Tab */}
+        <TabsContent value="execute">
           <SnapshotsTab
-            selectedTemplateId={null}
-            commands={EMPTY_COMMANDS}
+            selectedTemplateId={selectedTemplateId}
+            commands={commands}
             selectedDevices={selectedDevices}
+            snapshotPath={snapshotPath}
+            snapshotGitRepoId={snapshotGitRepoId}
+            onSnapshotPathChange={setSnapshotPath}
+            onSnapshotGitRepoIdChange={setSnapshotGitRepoId}
           />
+        </TabsContent>
+
+        {/* Manage Snapshots Tab */}
+        <TabsContent value="manage">
+          <ManageSnapshotsTab />
         </TabsContent>
       </Tabs>
     </div>
