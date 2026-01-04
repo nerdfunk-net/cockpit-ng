@@ -406,22 +406,48 @@ const handleExecuteSnapshot = async () => {
    - Button shows loading spinner
    - Executes immediately (no modal)
 
-**Step 4: View Results (Manage Snapshots Tab)**
-1. Table shows all snapshots with status
-2. **View snapshot details**:
-   - Click eye icon to view full snapshot information
-   - **Overview tab**: Shows general info, execution details, statistics, and Git info
-   - **Results & Commands tab**: Shows per-device results with expandable command outputs
-   - Command outputs displayed as parsed JSON (TextFSM) or raw text
-3. **Compare snapshots**:
-   - Select two snapshots to compare
-   - View detailed comparison results
-4. **Delete snapshots**:
+**Step 4: Manage Snapshots (Manage Snapshots Tab)**
+
+1. **View All Snapshots**:
+   - Table shows all snapshots with status, device counts, execution details
+   - Status badges (Completed, Failed, Running, Pending)
+   - Success/Failed counts per snapshot
+
+2. **View Snapshot Details** (Eye Icon):
+   - Opens detailed modal dialog (800px wide)
+   - **Overview Tab**:
+     - General Information: Name, status, template name, snapshot path
+     - Execution Details: Executed by, start/end times, duration calculation
+     - Device Statistics: Total devices, successful count, failed count
+     - Git Repository: Repository ID
+   - **Results & Commands Tab**:
+     - Accordion list of all devices in the snapshot
+     - Expand device to see:
+       - File path and Git commit hash
+       - Error messages (if failed)
+       - Nested accordion of executed commands
+     - Click any command to view its output:
+       - TextFSM parsed data: Formatted JSON objects
+       - Raw text: Terminal-style code block
+       - Other data: Pretty-printed JSON
+
+3. **Compare Snapshots**:
+   - Select two snapshots using checkboxes
+   - Click "Compare Selected (2/2)" button
+   - View detailed comparison results showing differences
+
+4. **Delete Snapshots** (Trash Icon):
    - Click trash icon on any snapshot
-   - Choose deletion mode:
+   - Confirmation dialog with three options:
      - **Cancel**: Close dialog without changes
      - **Remove from DB**: Delete database record only (files remain in Git)
      - **Remove DB & Files**: Delete database record AND remove all files from Git repository
+   - Git file deletion:
+     - Analyzes snapshot results to find all file paths
+     - Opens Git repository
+     - Deletes files from local repo
+     - Commits and pushes deletion to remote
+     - Removes database records
 
 ### Backend Workflow
 
@@ -725,6 +751,17 @@ def delete_snapshot_with_files(self, snapshot_id: int) -> bool:
 - ✅ Uses `git_service.commit_and_push()`
 - ✅ Creates directory structure automatically
 - ✅ Stores commit hash in database
+- ✅ File deletion with Git commit/push
+- ✅ Proper staging of file deletions using `repo.index.remove()`
+
+### Snapshot Management
+
+**Implemented:**
+- ✅ View detailed snapshot information with modal dialog
+- ✅ Two-tab view: Overview and Results & Commands
+- ✅ Delete snapshots from database only or database + Git files
+- ✅ Interactive command output viewing with nested accordions
+- ✅ Smart rendering of TextFSM parsed vs raw text output
 
 ## Troubleshooting
 
@@ -785,10 +822,12 @@ def delete_snapshot_with_files(self, snapshot_id: int) -> bool:
 1. **Per-Command TextFSM Control**: Execute commands in batches based on TextFSM flag
 2. **Snapshot Scheduling**: Integrate with Celery Beat for automated snapshots
 3. **Background Execution**: Use Celery for long-running snapshot jobs
-4. **Result Viewing**: UI to view individual snapshot JSON data
-5. **Baseline Management**: Mark snapshots as "baseline" for comparisons
-6. **Alerting**: Send alerts when snapshot diffs exceed threshold
-7. **Compliance Integration**: Link snapshots to compliance checks
-8. **Report Generation**: PDF reports of snapshot comparisons
-9. **Rollback Generation**: Use snapshot data to generate rollback configurations
-10. **Edit Snapshot Metadata**: Allow editing snapshot name and description
+4. **Baseline Management**: Mark snapshots as "baseline" for comparisons
+5. **Alerting**: Send alerts when snapshot diffs exceed threshold
+6. **Compliance Integration**: Link snapshots to compliance checks
+7. **Report Generation**: PDF reports of snapshot comparisons
+8. **Rollback Generation**: Use snapshot data to generate rollback configurations
+9. **Edit Snapshot Metadata**: Allow editing snapshot name and description
+10. **Export Snapshot Data**: Download snapshot results as JSON or CSV
+11. **Snapshot Retention Policies**: Auto-delete old snapshots based on age or count
+12. **Diff View Enhancements**: Side-by-side view for comparing command outputs

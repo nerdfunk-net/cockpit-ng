@@ -105,13 +105,16 @@ export function ViewSnapshotDialog({
     if (Array.isArray(output)) {
       return (
         <div className="space-y-2">
-          {output.map((item, idx) => (
-            <div key={`output-${idx}-${JSON.stringify(item).substring(0, 30)}`} className="bg-gray-50 rounded p-3 border">
-              <pre className="text-xs font-mono whitespace-pre-wrap">
-                {JSON.stringify(item, null, 2)}
-              </pre>
-            </div>
-          ))}
+          {output.map((item) => {
+            const itemKey = JSON.stringify(item)
+            return (
+              <div key={itemKey} className="bg-gray-50 rounded p-3 border">
+                <pre className="text-xs font-mono whitespace-pre-wrap">
+                  {JSON.stringify(item, null, 2)}
+                </pre>
+              </div>
+            )
+          })}
         </div>
       )
     }
