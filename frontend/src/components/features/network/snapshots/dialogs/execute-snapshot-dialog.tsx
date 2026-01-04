@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -18,28 +18,38 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useSnapshots } from '../hooks/use-snapshots'
-import { useApi } from '@/hooks/use-api'
 import { useToast } from '@/hooks/use-toast'
 import type { DeviceInfo } from '@/components/shared/device-selector'
-import type { GitRepository } from '../types/snapshot-types'
+import type { SnapshotCommand } from '../types/snapshot-types'
 
 interface ExecuteSnapshotDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   templateId: number | null
+  templateName: string | null
   selectedDevices: DeviceInfo[]
+  commands: Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]
+  snapshotPath: string
+  snapshotGitRepoId: number | null
+  selectedCredentialId: string
+  username: string
+  password: string
   onExecuteSuccess: () => void
 }
-
-const EMPTY_REPOS: GitRepository[] = []
 
 export function ExecuteSnapshotDialog({
   open,
   onOpenChange,
   templateId,
+  templateName,
   selectedDevices,
+  commands,
+  snapshotPath,
+  snapshotGitRepoId,
+  selectedCredentialId,
+  username,
+  password,
   onExecuteSuccess,
 }: ExecuteSnapshotDialogProps) {
   const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0]
@@ -47,38 +57,10 @@ export function ExecuteSnapshotDialog({
 
   const [name, setName] = useState(defaultName)
   const [description, setDescription] = useState('')
-  const [gitRepoId, setGitRepoId] = useState<string>('')
-  const [snapshotPath, setSnapshotPath] = useState('snapshots/{device}/{timestamp}.json')
-  const [gitRepos, setGitRepos] = useState<GitRepository[]>(EMPTY_REPOS)
-  const [loadingRepos, setLoadingRepos] = useState(false)
   const [executing, setExecuting] = useState(false)
 
   const { executeSnapshot } = useSnapshots()
-  const { apiCall } = useApi()
   const { toast } = useToast()
-
-  const loadGitRepositories = useCallback(async () => {
-    setLoadingRepos(true)
-    try {
-      const response = await apiCall<{ repositories: GitRepository[] }>('git-repositories')
-      setGitRepos(response.repositories || EMPTY_REPOS)
-    } catch (error) {
-      console.error('Failed to load git repositories:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to load Git repositories',
-        variant: 'destructive',
-      })
-    } finally {
-      setLoadingRepos(false)
-    }
-  }, [apiCall, toast])
-
-  useEffect(() => {
-    if (open) {
-      loadGitRepositories()
-    }
-  }, [open, loadGitRepositories])
 
   const handleExecute = async () => {
     if (!name.trim()) {
@@ -90,19 +72,19 @@ export function ExecuteSnapshotDialog({
       return
     }
 
-    if (!gitRepoId) {
+    if (!snapshotGitRepoId) {
       toast({
         title: 'Validation Error',
-        description: 'Please select a Git repository',
+        description: 'Please select a Git repository in the Execute Snapshot tab',
         variant: 'destructive',
       })
       return
     }
 
-    if (!templateId) {
+    if (commands.length === 0) {
       toast({
         title: 'Validation Error',
-        description: 'No template selected',
+        description: 'No commands to execute',
         variant: 'destructive',
       })
       return
@@ -110,13 +92,21 @@ export function ExecuteSnapshotDialog({
 
     setExecuting(true)
     try {
+      // Prepare credential payload
+      const credentialPayload = selectedCredentialId === 'manual'
+        ? { username, password }
+        : { credential_id: parseInt(selectedCredentialId) }
+
       await executeSnapshot({
-        template_id: templateId,
         name: name.trim(),
         description: description.trim() || undefined,
-        git_repository_id: parseInt(gitRepoId),
+        commands,
+        git_repository_id: snapshotGitRepoId,
         snapshot_path: snapshotPath,
         devices: selectedDevices,
+        template_id: templateId ?? undefined,
+        template_name: templateName ?? undefined,
+        ...credentialPayload,
       })
 
       onExecuteSuccess()
@@ -137,7 +127,7 @@ export function ExecuteSnapshotDialog({
         <DialogHeader>
           <DialogTitle>Execute Snapshot</DialogTitle>
           <DialogDescription>
-            Execute snapshot on {selectedDevices.length} selected device{selectedDevices.length !== 1 ? 's' : ''}
+            Execute snapshot on {selectedDevices.length} selected device{selectedDevices.length !== 1 ? 's' : ''} with {commands.length} command{commands.length !== 1 ? 's' : ''}
           </DialogDescription>
         </DialogHeader>
 
@@ -151,7 +141,7 @@ export function ExecuteSnapshotDialog({
               onChange={(e) => setName(e.target.value)}
             />
             <p className="text-sm text-muted-foreground">
-              Supports placeholders: {'{device}'}, {'{timestamp}'}
+              This will be the snapshot identifier in the database
             </p>
           </div>
 
@@ -159,39 +149,19 @@ export function ExecuteSnapshotDialog({
             <Label htmlFor="snapshot-description">Description</Label>
             <Textarea
               id="snapshot-description"
-              placeholder="Optional description"
+              placeholder="Optional description of this snapshot"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={2}
+              rows={3}
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="git-repo">Git Repository *</Label>
-            <Select value={gitRepoId} onValueChange={setGitRepoId} disabled={loadingRepos}>
-              <SelectTrigger id="git-repo">
-                <SelectValue placeholder="Select a Git repository..." />
-              </SelectTrigger>
-              <SelectContent>
-                {gitRepos.map(repo => (
-                  <SelectItem key={repo.id} value={repo.id.toString()}>
-                    {repo.name} ({repo.type})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="snapshot-path">Snapshot Path Template *</Label>
-            <Input
-              id="snapshot-path"
-              value={snapshotPath}
-              onChange={(e) => setSnapshotPath(e.target.value)}
-            />
-            <p className="text-sm text-muted-foreground">
-              Available placeholders: {'{device}'}, {'{timestamp}'}, {'{custom_field.net}'}
-            </p>
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md space-y-1">
+            <p className="text-sm font-medium text-blue-900">Configuration Summary</p>
+            <p className="text-xs text-blue-700">Git Repository: {snapshotGitRepoId ? `ID ${snapshotGitRepoId}` : 'None'}</p>
+            <p className="text-xs text-blue-700">Path: {snapshotPath}</p>
+            <p className="text-xs text-blue-700">Commands: {commands.length}</p>
+            <p className="text-xs text-blue-700">Credentials: {selectedCredentialId === 'manual' ? 'Manual' : `Stored (ID ${selectedCredentialId})`}</p>
           </div>
         </div>
 

@@ -43,6 +43,10 @@ class DeviceCommand(BaseModel):
         default=False,
         description="Whether to save config to startup after successful execution",
     )
+    use_textfsm: bool = Field(
+        default=False,
+        description="Whether to parse command output using TextFSM templates (only applies to exec mode commands)",
+    )
     session_id: str | None = Field(
         default=None, description="Optional session ID for cancellation support"
     )
@@ -149,6 +153,11 @@ async def execute_commands(
     concurrently, and executes the specified commands. It supports both exec mode
     and config mode execution.
 
+    When use_textfsm is enabled (only applies to exec mode commands), the output
+    will be automatically parsed using TextFSM templates if available for the
+    command and platform combination. Parsed output will be returned as structured
+    JSON data in the command_outputs field.
+
     Args:
         request: Command execution request with devices, commands, and credentials
         current_user: Current authenticated user
@@ -162,7 +171,8 @@ async def execute_commands(
     try:
         logger.info(
             f"Execute commands request from user: {current_user}, "
-            f"devices: {len(request.devices)}, commands: {len(request.commands)}"
+            f"devices: {len(request.devices)}, commands: {len(request.commands)}, "
+            f"use_textfsm: {request.use_textfsm}"
         )
 
         # Validate inputs
@@ -174,6 +184,13 @@ async def execute_commands(
         if not request.commands:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="No commands provided"
+            )
+
+        # Warn if TextFSM is used with config mode (it won't be applied)
+        if request.use_textfsm and request.enable_mode:
+            logger.warning(
+                "use_textfsm=True is ignored when enable_mode=True (config mode). "
+                "TextFSM parsing only applies to exec mode commands."
             )
 
         # Get credentials - either from stored credential or manual entry
@@ -250,6 +267,7 @@ async def execute_commands(
             password=password,
             enable_mode=request.enable_mode,
             write_config=request.write_config,
+            use_textfsm=request.use_textfsm,
             session_id=request.session_id,
         )
 

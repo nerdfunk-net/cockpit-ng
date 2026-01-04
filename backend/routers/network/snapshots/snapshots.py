@@ -96,3 +96,41 @@ async def compare_snapshots(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Comparison failed: {str(e)}")
+
+
+@router.delete("/{snapshot_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_snapshot_db_only(
+    snapshot_id: int,
+    current_user: dict = Depends(require_permission("snapshots", "delete")),
+):
+    """
+    Delete snapshot from database only (files remain in Git).
+
+    Requires: snapshots:delete permission
+    """
+    service = SnapshotExecutionService()
+    success = service.delete_snapshot_db_only(snapshot_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Snapshot not found")
+
+
+@router.delete("/{snapshot_id}/files", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_snapshot_with_files(
+    snapshot_id: int,
+    current_user: dict = Depends(require_permission("snapshots", "delete")),
+):
+    """
+    Delete snapshot from database AND remove all files from Git repository.
+
+    Requires: snapshots:delete permission
+    """
+    service = SnapshotExecutionService()
+    try:
+        success = service.delete_snapshot_with_files(snapshot_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Snapshot not found")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete snapshot: {str(e)}")
+

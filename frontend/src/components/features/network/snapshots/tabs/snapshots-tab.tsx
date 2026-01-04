@@ -15,42 +15,121 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Play } from 'lucide-react'
-import { ExecuteSnapshotDialog } from '../dialogs/execute-snapshot-dialog'
+import { Play, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useGitRepositories } from '@/hooks/git'
+import { useSnapshots } from '../hooks/use-snapshots'
+import { CredentialSelector } from '../../automation/netmiko/ui/credential-selector'
 import type { SnapshotCommand } from '../types/snapshot-types'
 import type { DeviceInfo } from '@/components/shared/device-selector'
+import type { StoredCredential } from '../../automation/netmiko/types'
 
 interface SnapshotsTabProps {
   selectedTemplateId: number | null
+  selectedTemplateName: string | null
   commands: Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]
   selectedDevices: DeviceInfo[]
   snapshotPath: string
   snapshotGitRepoId: number | null
   onSnapshotPathChange: (path: string) => void
   onSnapshotGitRepoIdChange: (repoId: number | null) => void
+  // Credential props
+  storedCredentials: StoredCredential[]
+  selectedCredentialId: string
+  username: string
+  password: string
+  onCredentialChange: (credId: string) => void
+  onUsernameChange: (username: string) => void
+  onPasswordChange: (password: string) => void
 }
 
 export function SnapshotsTab({
   selectedTemplateId,
+  selectedTemplateName,
   commands,
   selectedDevices,
   snapshotPath,
   snapshotGitRepoId,
   onSnapshotPathChange,
   onSnapshotGitRepoIdChange,
+  storedCredentials,
+  selectedCredentialId,
+  username,
+  password,
+  onCredentialChange,
+  onUsernameChange,
+  onPasswordChange,
 }: SnapshotsTabProps) {
   const { repositories, loading: reposLoading } = useGitRepositories()
-  const [showExecuteDialog, setShowExecuteDialog] = useState(false)
+  const { executeSnapshot } = useSnapshots()
   const { toast } = useToast()
 
-  const handleExecuteSuccess = async () => {
-    setShowExecuteDialog(false)
-    toast({
-      title: 'Snapshot Started',
-      description: 'Snapshot execution has been started',
-    })
+  const [executing, setExecuting] = useState(false)
+
+  const handleExecuteSnapshot = async () => {
+    if (!snapshotGitRepoId) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please select a Git repository',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (commands.length === 0) {
+      toast({
+        title: 'Validation Error',
+        description: 'No commands to execute',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (!snapshotPath.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please enter a snapshot path',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setExecuting(true)
+    try {
+      // Prepare credential payload
+      const credentialPayload = selectedCredentialId === 'manual'
+        ? { username, password }
+        : { credential_id: parseInt(selectedCredentialId) }
+
+      // Generate a snapshot name from timestamp
+      const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0]
+      const snapshotName = `snapshot-${timestamp}`
+
+      await executeSnapshot({
+        name: snapshotName,
+        description: undefined,
+        commands,
+        git_repository_id: snapshotGitRepoId,
+        snapshot_path: snapshotPath,
+        devices: selectedDevices,
+        template_id: selectedTemplateId || undefined,
+        template_name: selectedTemplateName || undefined,
+        ...credentialPayload,
+      })
+
+      toast({
+        title: 'Snapshot Executed',
+        description: 'Snapshot has been executed successfully',
+      })
+    } catch (error) {
+      toast({
+        title: 'Execution Failed',
+        description: error instanceof Error ? error.message : 'Failed to execute snapshot',
+        variant: 'destructive',
+      })
+    } finally {
+      setExecuting(false)
+    }
   }
 
   return (
@@ -104,6 +183,23 @@ export function SnapshotsTab({
             </div>
           </div>
 
+          {/* Credentials Selection */}
+          <div className="rounded-lg border border-purple-200 bg-purple-50/30 p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-purple-900">SSH Credentials</span>
+            </div>
+
+            <CredentialSelector
+              storedCredentials={storedCredentials}
+              selectedCredentialId={selectedCredentialId}
+              username={username}
+              password={password}
+              onCredentialChange={onCredentialChange}
+              onUsernameChange={onUsernameChange}
+              onPasswordChange={onPasswordChange}
+            />
+          </div>
+
           {/* Git Repository Selection */}
           <div className="rounded-lg border border-teal-200 bg-teal-50/30 p-4 space-y-4">
             <div className="flex items-center gap-2">
@@ -137,25 +233,32 @@ export function SnapshotsTab({
           {/* Execute Button */}
           <div className="flex justify-end pt-2">
             <Button
-              onClick={() => setShowExecuteDialog(true)}
-              disabled={!selectedTemplateId || commands.length === 0 || selectedDevices.length === 0}
+              onClick={handleExecuteSnapshot}
+              disabled={
+                executing ||
+                !snapshotPath.trim() ||
+                commands.length === 0 ||
+                selectedDevices.length === 0 ||
+                !snapshotGitRepoId ||
+                (selectedCredentialId === 'manual' && (!username || !password))
+              }
               className="bg-blue-600 hover:bg-blue-700"
             >
-              <Play className="mr-2 h-4 w-4" />
-              Execute Snapshot
+              {executing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Executing...
+                </>
+              ) : (
+                <>
+                  <Play className="mr-2 h-4 w-4" />
+                  Execute Snapshot
+                </>
+              )}
             </Button>
           </div>
         </div>
       </div>
-
-      {/* Dialogs */}
-      <ExecuteSnapshotDialog
-        open={showExecuteDialog}
-        onOpenChange={setShowExecuteDialog}
-        onExecuteSuccess={handleExecuteSuccess}
-        templateId={selectedTemplateId}
-        selectedDevices={selectedDevices}
-      />
     </div>
   )
 }

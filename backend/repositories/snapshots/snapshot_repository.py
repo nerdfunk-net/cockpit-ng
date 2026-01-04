@@ -314,3 +314,31 @@ class SnapshotRepository:
             )
         finally:
             db.close()
+
+    def delete_snapshot(self, snapshot_id: int) -> bool:
+        """
+        Delete a snapshot and all its results from the database.
+
+        Args:
+            snapshot_id: Snapshot ID to delete
+
+        Returns:
+            True if deleted, False if not found
+        """
+        db = get_db_session()
+        try:
+            snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
+            if not snapshot:
+                return False
+
+            # Delete results first (foreign key constraint)
+            db.query(SnapshotResult).filter(
+                SnapshotResult.snapshot_id == snapshot_id
+            ).delete()
+
+            # Delete snapshot
+            db.delete(snapshot)
+            db.commit()
+            return True
+        finally:
+            db.close()

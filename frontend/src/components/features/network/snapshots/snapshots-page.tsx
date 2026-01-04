@@ -8,6 +8,7 @@
 import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Camera } from 'lucide-react'
+import { useCredentialManager } from '../automation/netmiko/hooks/use-credential-manager'
 import type { DeviceInfo, LogicalCondition } from '@/components/shared/device-selector'
 import type { SnapshotCommand } from './types/snapshot-types'
 
@@ -28,11 +29,23 @@ export default function SnapshotsPage() {
 
   // Template and commands state (shared between Commands and Snapshots tabs)
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null)
+  const [selectedTemplateName, setSelectedTemplateName] = useState<string | null>(null)
   const [commands, setCommands] = useState<Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]>(EMPTY_COMMANDS)
 
   // Snapshot properties state
   const [snapshotPath, setSnapshotPath] = useState<string>('snapshots/{device_name}-{template_name}')
   const [snapshotGitRepoId, setSnapshotGitRepoId] = useState<number | null>(null)
+
+  // Credential management
+  const {
+    storedCredentials,
+    selectedCredentialId,
+    username,
+    password,
+    setUsername,
+    setPassword,
+    handleCredentialChange,
+  } = useCredentialManager()
 
   const handleDevicesSelected = (devices: DeviceInfo[], _conditions: LogicalCondition[]) => {
     const deviceIds = devices.map(d => d.id)
@@ -94,6 +107,7 @@ export default function SnapshotsPage() {
             selectedTemplateId={selectedTemplateId}
             commands={commands}
             onTemplateChange={setSelectedTemplateId}
+            onTemplateNameChange={setSelectedTemplateName}
             onCommandsChange={setCommands}
           />
         </TabsContent>
@@ -102,12 +116,20 @@ export default function SnapshotsPage() {
         <TabsContent value="execute">
           <SnapshotsTab
             selectedTemplateId={selectedTemplateId}
+            selectedTemplateName={selectedTemplateName}
             commands={commands}
             selectedDevices={selectedDevices}
             snapshotPath={snapshotPath}
             snapshotGitRepoId={snapshotGitRepoId}
             onSnapshotPathChange={setSnapshotPath}
             onSnapshotGitRepoIdChange={setSnapshotGitRepoId}
+            storedCredentials={storedCredentials}
+            selectedCredentialId={selectedCredentialId}
+            username={username}
+            password={password}
+            onCredentialChange={handleCredentialChange}
+            onUsernameChange={setUsername}
+            onPasswordChange={setPassword}
           />
         </TabsContent>
 

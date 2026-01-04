@@ -93,18 +93,35 @@ class SnapshotCommandTemplateResponse(SnapshotCommandTemplateBase):
 class SnapshotExecuteRequest(BaseModel):
     """Model for executing a snapshot."""
 
-    template_id: int = Field(..., description="Command template to execute")
     name: str = Field(
         ..., description="Snapshot name (supports placeholders like {device})"
     )
     description: Optional[str] = Field(None, description="Snapshot description")
+    commands: List[SnapshotCommandCreate] = Field(
+        ..., description="List of commands to execute with use_textfsm flags", min_items=1
+    )
     git_repository_id: int = Field(..., description="Git repository to store results")
     snapshot_path: str = Field(
-        "snapshots/{device}/{timestamp}.json",
-        description="Path template with placeholders: {device}, {timestamp}, {custom_field.*}",
+        ...,
+        description="Path template with placeholders: {device_name}, {timestamp}, {template_name}, {custom_field.*}. MUST include filename with .json extension",
     )
     devices: List[Dict[str, Any]] = Field(
-        ..., description="List of devices to snapshot"
+        ..., description="List of devices to snapshot", min_items=1
+    )
+    credential_id: Optional[int] = Field(
+        None, description="ID of stored credential to use (optional)"
+    )
+    username: Optional[str] = Field(
+        None, description="SSH username (required if credential_id not provided)"
+    )
+    password: Optional[str] = Field(
+        None, description="SSH password (required if credential_id not provided)"
+    )
+    template_id: Optional[int] = Field(
+        None, description="Optional template ID to associate snapshot with"
+    )
+    template_name: Optional[str] = Field(
+        None, description="Template name for path placeholder replacement"
     )
 
 

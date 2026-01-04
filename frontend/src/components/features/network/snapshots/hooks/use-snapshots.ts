@@ -97,6 +97,44 @@ export function useSnapshots() {
     }
   }, [apiCall])
 
+  const deleteSnapshotDbOnly = useCallback(async (snapshotId: number) => {
+    setLoading(true)
+    setError(null)
+    try {
+      await apiCall(`network/snapshots/${snapshotId}`, {
+        method: 'DELETE',
+      })
+      // Reload snapshots list
+      await loadSnapshots()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete snapshot'
+      setError(message)
+      console.error('Error deleting snapshot:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [apiCall, loadSnapshots])
+
+  const deleteSnapshotWithFiles = useCallback(async (snapshotId: number) => {
+    setLoading(true)
+    setError(null)
+    try {
+      await apiCall(`network/snapshots/${snapshotId}/files`, {
+        method: 'DELETE',
+      })
+      // Reload snapshots list
+      await loadSnapshots()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete snapshot and files'
+      setError(message)
+      console.error('Error deleting snapshot and files:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [apiCall, loadSnapshots])
+
   return useMemo(() => ({
     snapshots,
     loading,
@@ -105,6 +143,8 @@ export function useSnapshots() {
     getSnapshot,
     executeSnapshot,
     compareSnapshots,
+    deleteSnapshotDbOnly,
+    deleteSnapshotWithFiles,
   }), [
     snapshots,
     loading,
@@ -113,5 +153,7 @@ export function useSnapshots() {
     getSnapshot,
     executeSnapshot,
     compareSnapshots,
+    deleteSnapshotDbOnly,
+    deleteSnapshotWithFiles,
   ])
 }

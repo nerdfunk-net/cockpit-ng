@@ -19,12 +19,18 @@ import {
 } from '@/components/ui/table'
 import { GitCompare, Eye, Edit, Trash2, RefreshCw } from 'lucide-react'
 import { CompareSnapshotsDialog } from '../dialogs/compare-snapshots-dialog'
+import { DeleteSnapshotDialog } from '../dialogs/delete-snapshot-dialog'
+import { ViewSnapshotDialog } from '../dialogs/view-snapshot-dialog'
 import { useSnapshots } from '../hooks/use-snapshots'
+import { useToast } from '@/hooks/use-toast'
 
 export function ManageSnapshotsTab() {
-  const { snapshots, loading, loadSnapshots } = useSnapshots()
+  const { snapshots, loading, loadSnapshots, deleteSnapshotDbOnly, deleteSnapshotWithFiles } = useSnapshots()
+  const { toast } = useToast()
   const [selectedSnapshotIds, setSelectedSnapshotIds] = useState<number[]>([])
   const [showCompareDialog, setShowCompareDialog] = useState(false)
+  const [deleteSnapshot, setDeleteSnapshot] = useState<{ id: number; name: string } | null>(null)
+  const [viewSnapshotId, setViewSnapshotId] = useState<number | null>(null)
 
   useEffect(() => {
     loadSnapshots()
@@ -47,6 +53,44 @@ export function ManageSnapshotsTab() {
   const handleCompare = () => {
     if (selectedSnapshotIds.length === 2) {
       setShowCompareDialog(true)
+    }
+  }
+
+  const handleDeleteClick = (snapshotId: number, snapshotName: string) => {
+    setDeleteSnapshot({ id: snapshotId, name: snapshotName })
+  }
+
+  const handleDeleteDbOnly = async (snapshotId: number) => {
+    try {
+      await deleteSnapshotDbOnly(snapshotId)
+      toast({
+        title: 'Snapshot Deleted',
+        description: 'Snapshot removed from database. Files remain in Git.',
+      })
+    } catch (error) {
+      toast({
+        title: 'Delete Failed',
+        description: error instanceof Error ? error.message : 'Failed to delete snapshot',
+        variant: 'destructive',
+      })
+      throw error
+    }
+  }
+
+  const handleDeleteDbAndFiles = async (snapshotId: number) => {
+    try {
+      await deleteSnapshotWithFiles(snapshotId)
+      toast({
+        title: 'Snapshot Deleted',
+        description: 'Snapshot and all files removed successfully.',
+      })
+    } catch (error) {
+      toast({
+        title: 'Delete Failed',
+        description: error instanceof Error ? error.message : 'Failed to delete snapshot and files',
+        variant: 'destructive',
+      })
+      throw error
     }
   }
 
@@ -155,6 +199,7 @@ export function ManageSnapshotsTab() {
                               variant="ghost"
                               className="h-8 w-8 p-0"
                               title="View snapshot"
+                              onClick={() => setViewSnapshotId(snapshot.id)}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -171,6 +216,7 @@ export function ManageSnapshotsTab() {
                               variant="ghost"
                               className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                               title="Delete snapshot"
+                              onClick={() => handleDeleteClick(snapshot.id, snapshot.name)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -205,6 +251,25 @@ export function ManageSnapshotsTab() {
         snapshotIds={selectedSnapshotIds}
         onClose={() => setShowCompareDialog(false)}
       />
+
+      {deleteSnapshot && (
+        <DeleteSnapshotDialog
+          open={!!deleteSnapshot}
+          onOpenChange={(open) => !open && setDeleteSnapshot(null)}
+          snapshotId={deleteSnapshot.id}
+          snapshotName={deleteSnapshot.name}
+          onDeleteDbOnly={handleDeleteDbOnly}
+          onDeleteDbAndFiles={handleDeleteDbAndFiles}
+        />
+      )}
+
+      {viewSnapshotId && (
+        <ViewSnapshotDialog
+          open={!!viewSnapshotId}
+          onOpenChange={(open) => !open && setViewSnapshotId(null)}
+          snapshotId={viewSnapshotId}
+        />
+      )}
     </div>
   )
 }

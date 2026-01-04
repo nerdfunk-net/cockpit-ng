@@ -75,6 +75,7 @@ class NetmikoService:
         commands: List[str],
         enable_mode: bool = False,
         write_config: bool = False,
+        use_textfsm: bool = False,
         session_id: str | None = None,
         privileged: bool = False,
     ) -> Dict[str, Any]:
@@ -89,6 +90,7 @@ class NetmikoService:
             commands: List of commands to execute
             enable_mode: Whether to enter config mode (configure terminal)
             write_config: Whether to save config after successful execution
+            use_textfsm: Whether to parse output using TextFSM (only for exec mode)
             session_id: Optional session ID for cancellation support
             privileged: Whether to enter privileged exec mode (enable)
 
@@ -162,19 +164,27 @@ class NetmikoService:
                         )
 
                         # Send command and wait for prompt (Netmiko handles this)
+                        # Use TextFSM parsing if requested
                         cmd_output = connection.send_command(
                             command,
+                            use_textfsm=use_textfsm,
                             read_timeout=30,
                             expect_string=None,  # Auto-detect prompt
                         )
 
-                        # Store raw output mapped to command
+                        # Store output mapped to command (can be string or list of dicts if TextFSM parsed)
                         command_outputs[command] = cmd_output
 
-                        # Clean concatenation for backward compatibility (optional, but good for logging)
+                        # For backward compatibility with concatenated output
+                        # Convert parsed data to string representation if needed
                         if output:
                             output += "\n"
-                        output += cmd_output
+                        if isinstance(cmd_output, list):
+                            # TextFSM returns list of dicts, convert to readable string
+                            import json
+                            output += json.dumps(cmd_output, indent=2)
+                        else:
+                            output += cmd_output
 
                 # Save config if requested and execution was successful
                 if write_config:
@@ -227,6 +237,7 @@ class NetmikoService:
         commands: List[str],
         enable_mode: bool = False,
         write_config: bool = False,
+        use_textfsm: bool = False,
         session_id: str | None = None,
     ) -> Dict[str, Any]:
         """
@@ -240,6 +251,7 @@ class NetmikoService:
             commands: List of commands to execute
             enable_mode: Whether to enter config mode
             write_config: Whether to save config after successful execution
+            use_textfsm: Whether to parse output using TextFSM (only for exec mode)
             session_id: Optional session ID for cancellation support
 
         Returns:
@@ -258,6 +270,7 @@ class NetmikoService:
             commands,
             enable_mode,
             write_config,
+            use_textfsm,
             session_id,
         )
 
@@ -271,6 +284,7 @@ class NetmikoService:
         password: str,
         enable_mode: bool = False,
         write_config: bool = False,
+        use_textfsm: bool = False,
         session_id: str | None = None,
     ) -> tuple[str, List[Dict[str, Any]]]:
         """
@@ -283,6 +297,7 @@ class NetmikoService:
             password: SSH password
             enable_mode: Whether to enter config mode
             write_config: Whether to save config after successful execution
+            use_textfsm: Whether to parse output using TextFSM (only for exec mode)
             session_id: Optional session ID for cancellation support
 
         Returns:
@@ -295,7 +310,8 @@ class NetmikoService:
         logger.info(
             f"Starting command execution on {len(devices)} devices "
             f"(session: {session_id}). "
-            f"Commands: {len(commands)}, Enable mode: {enable_mode}, Write config: {write_config}"
+            f"Commands: {len(commands)}, Enable mode: {enable_mode}, "
+            f"Write config: {write_config}, Use TextFSM: {use_textfsm}"
         )
 
         # Create tasks for all devices
@@ -325,6 +341,7 @@ class NetmikoService:
                 commands,
                 enable_mode,
                 write_config,
+                use_textfsm,
                 session_id,
             )
             tasks.append(task)

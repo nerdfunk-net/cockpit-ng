@@ -7,15 +7,15 @@ import json
 import os
 from datetime import datetime
 from typing import List, Dict, Any, Optional
-from netmiko import ConnectHandler
-from netmiko.exceptions import NetmikoTimeoutException, NetmikoAuthenticationException
-from concurrent.futures import ThreadPoolExecutor
-import asyncio
+from pathlib import Path
 
 from repositories.snapshots import SnapshotTemplateRepository, SnapshotRepository
 from models.snapshots import SnapshotExecuteRequest, SnapshotResponse
-from utils.netmiko_platform_mapper import map_platform_to_netmiko
+from services.network.automation.netmiko import netmiko_service
+from services.settings.git.service import git_service
+from services.settings.git.paths import repo_path
 from git_repositories_manager import GitRepositoryManager
+import credentials_manager as cred_mgr
 
 logger = logging.getLogger(__name__)
 
@@ -27,141 +27,39 @@ class SnapshotExecutionService:
         self.template_repo = SnapshotTemplateRepository()
         self.snapshot_repo = SnapshotRepository()
         self.git_manager = GitRepositoryManager()
-        self.executor = ThreadPoolExecutor(max_workers=10)
 
     def _render_path(
-        self, path_template: str, device: Dict[str, Any], timestamp: str
+        self, path_template: str, device: Dict[str, Any], timestamp: str, template_name: Optional[str] = None
     ) -> str:
         """
         Render path template with placeholders.
 
         Args:
-            path_template: Template with {device}, {timestamp}, {custom_field.*}
+            path_template: Template with {device_name}, {timestamp}, {template_name}, {custom_field.*}
             device: Device data
             timestamp: ISO timestamp string
+            template_name: Optional template name for {template_name} placeholder
 
         Returns:
             Rendered path
         """
         # Start with device name and timestamp
-        rendered = path_template.replace("{device}", device.get("name", "unknown"))
+        device_name = device.get("name", "unknown") if isinstance(device, dict) else str(device)
+        rendered = path_template.replace("{device_name}", device_name)
         rendered = rendered.replace("{timestamp}", timestamp)
 
+        # Replace template_name placeholder if provided
+        if template_name:
+            rendered = rendered.replace("{template_name}", template_name)
+
         # Handle custom fields
-        if "custom_fields" in device and device["custom_fields"]:
+        if isinstance(device, dict) and "custom_fields" in device and device["custom_fields"]:
             for key, value in device["custom_fields"].items():
                 placeholder = f"{{custom_field.{key}}}"
                 if placeholder in rendered:
                     rendered = rendered.replace(placeholder, str(value))
 
         return rendered
-
-    def _execute_snapshot_on_device(
-        self,
-        device: Dict[str, Any],
-        commands: List[Dict[str, Any]],
-        credentials: Dict[str, str],
-        result_id: int,
-    ) -> Dict[str, Any]:
-        """
-        Execute snapshot commands on a single device.
-
-        Args:
-            device: Device information
-            commands: List of command dicts with 'command' and 'use_textfsm'
-            credentials: SSH credentials (username, password)
-            result_id: Result ID for database updates
-
-        Returns:
-            Dictionary with parsed results
-        """
-        # Handle device data safely
-        device_name = device.get("name", "unknown") if isinstance(device, dict) else str(device)
-
-        # Extract IP address
-        primary_ip4 = device.get("primary_ip4") if isinstance(device, dict) else None
-        if isinstance(primary_ip4, dict):
-            device_ip = primary_ip4.get("address", "").split("/")[0]
-        elif isinstance(primary_ip4, str):
-            device_ip = primary_ip4.split("/")[0]
-        else:
-            device_ip = ""
-
-        # Extract platform
-        platform_data = device.get("platform") if isinstance(device, dict) else None
-        if isinstance(platform_data, dict):
-            platform = platform_data.get("name", "cisco_ios")
-        elif isinstance(platform_data, str):
-            platform = platform_data
-        else:
-            platform = "cisco_ios"
-
-        logger.info(f"Starting snapshot on device {device_name} ({device_ip})")
-
-        # Update result to running
-        self.snapshot_repo.update_result(
-            result_id=result_id,
-            status="running",
-            started_at=datetime.utcnow(),
-        )
-
-        result = {
-            "device": device_name,
-            "device_ip": device_ip,
-            "success": False,
-            "parsed_data": {},
-            "error": None,
-        }
-
-        try:
-            # Map platform to Netmiko device type
-            device_type = map_platform_to_netmiko(platform)
-
-            # Device connection parameters
-            device_params = {
-                "device_type": device_type,
-                "host": device_ip,
-                "username": credentials["username"],
-                "password": credentials["password"],
-                "timeout": 30,
-                "session_timeout": 60,
-            }
-
-            # Connect to device
-            with ConnectHandler(**device_params) as connection:
-                logger.info(f"Connected to {device_name}")
-
-                # Execute each command
-                for cmd_data in commands:
-                    command = cmd_data["command"]
-                    use_textfsm = cmd_data.get("use_textfsm", True)
-
-                    logger.info(f"Executing command on {device_name}: {command}")
-
-                    # Send command with optional TextFSM parsing
-                    output = connection.send_command(
-                        command,
-                        use_textfsm=use_textfsm,
-                        read_timeout=30,
-                    )
-
-                    # Store output (can be string or list of dicts if parsed)
-                    result["parsed_data"][command] = output
-
-                result["success"] = True
-                logger.info(f"Snapshot successful on {device_name}")
-
-        except NetmikoTimeoutException as e:
-            result["error"] = f"Connection timeout: {str(e)}"
-            logger.error(f"Timeout on {device_name}: {e}")
-        except NetmikoAuthenticationException as e:
-            result["error"] = f"Authentication failed: {str(e)}"
-            logger.error(f"Auth failed on {device_name}: {e}")
-        except Exception as e:
-            result["error"] = f"Unexpected error: {str(e)}"
-            logger.error(f"Error on {device_name}: {e}", exc_info=True)
-
-        return result
 
     def _save_to_git(
         self,
@@ -175,7 +73,7 @@ class SnapshotExecutionService:
 
         Args:
             git_repo_id: Git repository ID
-            file_path: Path within repo
+            file_path: Path within repo (including filename)
             content: JSON content
             commit_message: Commit message
 
@@ -183,17 +81,43 @@ class SnapshotExecutionService:
             Commit hash or None on error
         """
         try:
-            # Get repository
+            # Get repository metadata
             repo_data = self.git_manager.get_repository(git_repo_id)
             if not repo_data:
                 logger.error(f"Git repository {git_repo_id} not found")
                 return None
 
-            # TODO: Implement Git file writing and commit
-            # This should use the existing Git service
-            # For now, return a placeholder
-            logger.warning("Git integration not yet implemented in snapshot service")
-            return "pending_git_integration"
+            # Open or clone the repository
+            repo = git_service.open_or_clone(repo_data)
+
+            # Get the repository path
+            from services.settings.git.paths import repo_path
+            local_repo_path = repo_path(repo_data)
+
+            # Create full file path
+            full_path = Path(local_repo_path) / file_path
+
+            # Ensure directory exists
+            full_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Write content to file
+            full_path.write_text(content, encoding='utf-8')
+            logger.info(f"Wrote snapshot to {full_path}")
+
+            # Commit and push the file
+            result = git_service.commit_and_push(
+                repository=repo_data,
+                message=commit_message,
+                files=[file_path],  # Relative path for git
+                repo=repo,
+            )
+
+            if result.success and result.commit_sha:
+                logger.info(f"Committed snapshot to Git: {result.commit_sha}")
+                return result.commit_sha
+            else:
+                logger.warning(f"Git commit/push failed: {result.message}")
+                return None
 
         except Exception as e:
             logger.error(f"Failed to save to Git: {e}", exc_info=True)
@@ -213,24 +137,75 @@ class SnapshotExecutionService:
             Snapshot execution record
 
         Raises:
-            ValueError: If template or repository not found
+            ValueError: If repository not found or credentials invalid
         """
-        # Get template
-        template = self.template_repo.get_by_id(request.template_id)
-        if not template:
-            raise ValueError(f"Template {request.template_id} not found")
-
         # Validate git repository exists
         repo_data = self.git_manager.get_repository(request.git_repository_id)
         if not repo_data:
             raise ValueError(f"Git repository {request.git_repository_id} not found")
 
+        # Validate credentials
+        if not request.credential_id and (not request.username or not request.password):
+            raise ValueError("Either credential_id or both username and password must be provided")
+
+        # Get credentials
+        if request.credential_id is not None:
+            logger.info(f"Using stored credential ID: {request.credential_id}")
+            try:
+                # Get credential details - include both general and private credentials
+                general_creds = cred_mgr.list_credentials(
+                    include_expired=False, source="general"
+                )
+                private_creds = cred_mgr.list_credentials(
+                    include_expired=False, source="private"
+                )
+                user_private = [
+                    c for c in private_creds if c.get("owner") == username
+                ]
+                credentials = general_creds + user_private
+
+                credential = next(
+                    (c for c in credentials if c["id"] == request.credential_id), None
+                )
+
+                if not credential:
+                    raise ValueError(
+                        f"Credential with ID {request.credential_id} not found or not accessible"
+                    )
+
+                if credential["type"] != "ssh":
+                    raise ValueError(
+                        f"Credential must be of type 'ssh', got '{credential['type']}'"
+                    )
+
+                # Get decrypted password
+                cred_username = credential["username"]
+                cred_password = cred_mgr.get_decrypted_password(request.credential_id)
+
+                if not cred_password:
+                    raise ValueError("Failed to decrypt credential password")
+
+            except Exception as e:
+                logger.error(f"Error loading stored credential: {e}")
+                raise ValueError(f"Failed to load stored credential: {str(e)}")
+        else:
+            # Use manual credentials
+            cred_username = request.username
+            cred_password = request.password
+
+        # Get template name - prioritize request.template_name, then lookup from template_id
+        template_name = request.template_name
+        if not template_name and request.template_id:
+            template = self.template_repo.get_by_id(request.template_id)
+            if template:
+                template_name = template.name
+
         # Create snapshot record
         snapshot = self.snapshot_repo.create_snapshot(
             name=request.name,
             description=request.description,
-            template_id=template.id,
-            template_name=template.name,
+            template_id=request.template_id,
+            template_name=template_name,
             git_repository_id=request.git_repository_id,
             snapshot_path=request.snapshot_path,
             executed_by=username,
@@ -238,28 +213,30 @@ class SnapshotExecutionService:
         )
 
         # Create result records for each device
-        result_ids = []
+        device_results = []
         for device in request.devices:
             device_name = device.get("name", "unknown") if isinstance(device, dict) else str(device)
 
             # Extract IP safely
             primary_ip4 = device.get("primary_ip4") if isinstance(device, dict) else None
             if isinstance(primary_ip4, dict):
-                device_ip = primary_ip4.get("address", "")
+                device_ip = primary_ip4.get("address", "").split("/")[0]
             elif isinstance(primary_ip4, str):
-                device_ip = primary_ip4
+                device_ip = primary_ip4.split("/")[0] if "/" in primary_ip4 else primary_ip4
             else:
                 device_ip = ""
-
-            if "/" in device_ip:
-                device_ip = device_ip.split("/")[0]
 
             result = self.snapshot_repo.create_result(
                 snapshot_id=snapshot.id,
                 device_name=device_name,
                 device_ip=device_ip,
             )
-            result_ids.append((result.id, device))
+            device_results.append({
+                "result_id": result.id,
+                "device": device,
+                "device_name": device_name,
+                "device_ip": device_ip,
+            })
 
         # Update snapshot to running
         self.snapshot_repo.update_snapshot_status(
@@ -268,72 +245,128 @@ class SnapshotExecutionService:
             started_at=datetime.utcnow(),
         )
 
-        # Execute on devices asynchronously
-        # Note: credentials should be fetched from settings/credentials manager
-        # For now, using placeholder
-        credentials = {
-            "username": "admin",  # TODO: Get from credentials manager
-            "password": "admin",  # TODO: Get from credentials manager
-        }
-
-        # Prepare commands list
-        commands = [
-            {"command": cmd.command, "use_textfsm": cmd.use_textfsm}
-            for cmd in template.commands
-        ]
-
-        # Execute on all devices in parallel
+        # Prepare timestamp for file paths
         timestamp = datetime.utcnow().isoformat().replace(":", "-").split(".")[0]
 
-        async def execute_device(result_id: int, device: Dict[str, Any]):
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(
-                self.executor,
-                self._execute_snapshot_on_device,
-                device,
-                commands,
-                credentials,
-                result_id,
+        # Prepare commands list (just the command strings for netmiko)
+        command_list = [cmd.command for cmd in request.commands]
+
+        # Check if any command has use_textfsm enabled
+        use_textfsm = any(cmd.use_textfsm for cmd in request.commands)
+
+        # Prepare devices list for netmiko service
+        netmiko_devices = []
+        for dev_result in device_results:
+            device = dev_result["device"]
+
+            # Extract platform
+            platform_data = device.get("platform") if isinstance(device, dict) else None
+            if isinstance(platform_data, dict):
+                platform = platform_data.get("name", "cisco_ios")
+            elif isinstance(platform_data, str):
+                platform = platform_data
+            else:
+                platform = "cisco_ios"
+
+            netmiko_devices.append({
+                "ip": dev_result["device_ip"],
+                "platform": platform,
+                "name": dev_result["device_name"],
+            })
+
+        # Execute commands on all devices using netmiko service
+        logger.info(
+            f"Executing snapshot on {len(netmiko_devices)} devices with {len(command_list)} commands"
+        )
+
+        try:
+            session_id, results = await netmiko_service.execute_commands(
+                devices=netmiko_devices,
+                commands=command_list,
+                username=cred_username,
+                password=cred_password,
+                enable_mode=False,  # Snapshots use exec mode
+                write_config=False,  # Never write config for snapshots
+                use_textfsm=use_textfsm,
             )
 
-            # Save to Git
-            if result["success"]:
-                file_path = self._render_path(
-                    request.snapshot_path, device, timestamp
-                )
-                json_content = json.dumps(result["parsed_data"], indent=2)
+            logger.info(f"Snapshot execution session {session_id} completed")
 
-                commit_hash = self._save_to_git(
-                    git_repo_id=request.git_repository_id,
-                    file_path=file_path,
-                    content=json_content,
-                    commit_message=f"Snapshot: {request.name} - {device.get('name')}",
-                )
+            # Process results and save to Git
+            for idx, result in enumerate(results):
+                dev_result = device_results[idx]
+                result_id = dev_result["result_id"]
+                device = dev_result["device"]
 
-                # Update result
+                if result["success"]:
+                    # Build JSON structure: command -> output mapping
+                    snapshot_data = {}
+
+                    # If command_outputs exists (from modified netmiko service), use it
+                    if "command_outputs" in result and result["command_outputs"]:
+                        snapshot_data = result["command_outputs"]
+                    else:
+                        # Fallback: create mapping from commands to combined output
+                        # This is less ideal but maintains backward compatibility
+                        for cmd in command_list:
+                            snapshot_data[cmd] = result.get("output", "")
+
+                    # Convert to JSON
+                    json_content = json.dumps(snapshot_data, indent=2, default=str)
+
+                    # Render file path
+                    file_path = self._render_path(
+                        request.snapshot_path, device, timestamp, template_name
+                    )
+
+                    # Save to Git
+                    commit_hash = self._save_to_git(
+                        git_repo_id=request.git_repository_id,
+                        file_path=file_path,
+                        content=json_content,
+                        commit_message=f"Snapshot: {request.name} - {dev_result['device_name']} - {timestamp}",
+                    )
+
+                    # Update result
+                    self.snapshot_repo.update_result(
+                        result_id=result_id,
+                        status="success",
+                        git_file_path=file_path,
+                        git_commit_hash=commit_hash,
+                        parsed_data=json_content,
+                        completed_at=datetime.utcnow(),
+                    )
+                    self.snapshot_repo.increment_success_count(snapshot.id)
+                else:
+                    # Update result with error
+                    error_msg = result.get("error", "Unknown error")
+                    self.snapshot_repo.update_result(
+                        result_id=result_id,
+                        status="failed",
+                        error_message=error_msg,
+                        completed_at=datetime.utcnow(),
+                    )
+                    self.snapshot_repo.increment_failed_count(snapshot.id)
+
+        except Exception as e:
+            logger.error(f"Snapshot execution failed: {e}", exc_info=True)
+            # Mark all results as failed
+            for dev_result in device_results:
                 self.snapshot_repo.update_result(
-                    result_id=result_id,
-                    status="success",
-                    git_file_path=file_path,
-                    git_commit_hash=commit_hash,
-                    parsed_data=json_content,
-                    completed_at=datetime.utcnow(),
-                )
-                self.snapshot_repo.increment_success_count(snapshot.id)
-            else:
-                # Update result with error
-                self.snapshot_repo.update_result(
-                    result_id=result_id,
+                    result_id=dev_result["result_id"],
                     status="failed",
-                    error_message=result["error"],
+                    error_message=str(e),
                     completed_at=datetime.utcnow(),
                 )
-                self.snapshot_repo.increment_failed_count(snapshot.id)
+            self.snapshot_repo.increment_failed_count(snapshot.id, len(device_results))
 
-        # Execute all devices
-        await asyncio.gather(
-            *[execute_device(result_id, device) for result_id, device in result_ids]
-        )
+            # Update snapshot to failed
+            self.snapshot_repo.update_snapshot_status(
+                snapshot_id=snapshot.id,
+                status="failed",
+                completed_at=datetime.utcnow(),
+            )
+            raise
 
         # Update snapshot to completed
         self.snapshot_repo.update_snapshot_status(
@@ -362,3 +395,98 @@ class SnapshotExecutionService:
         from models.snapshots import SnapshotListResponse
 
         return [SnapshotListResponse.from_orm(s) for s in snapshots]
+
+    def delete_snapshot_db_only(self, snapshot_id: int) -> bool:
+        """
+        Delete snapshot from database only (files remain in Git).
+
+        Args:
+            snapshot_id: Snapshot ID to delete
+
+        Returns:
+            True if deleted successfully
+        """
+        return self.snapshot_repo.delete_snapshot(snapshot_id)
+
+    def delete_snapshot_with_files(self, snapshot_id: int) -> bool:
+        """
+        Delete snapshot from database AND remove all files from Git repository.
+
+        Args:
+            snapshot_id: Snapshot ID to delete
+
+        Returns:
+            True if deleted successfully
+
+        Raises:
+            ValueError: If snapshot not found or missing required data
+            Exception: If Git operations fail
+        """
+        # Get snapshot with results
+        snapshot = self.snapshot_repo.get_by_id(snapshot_id)
+        if not snapshot:
+            raise ValueError(f"Snapshot {snapshot_id} not found")
+
+        # Get all results with file paths
+        results = snapshot.results
+        if not results:
+            logger.warning(f"Snapshot {snapshot_id} has no results, deleting from DB only")
+            return self.snapshot_repo.delete_snapshot(snapshot_id)
+
+        # Get git repository
+        git_repo_id = snapshot.git_repository_id
+        if not git_repo_id:
+            raise ValueError(f"Snapshot {snapshot_id} has no git_repository_id")
+
+        repo_data = self.git_manager.get_repository(git_repo_id)
+        if not repo_data:
+            raise ValueError(f"Git repository {git_repo_id} not found")
+
+        # Open or clone repository
+        repo = git_service.open_or_clone(repo_data)
+        local_repo_path = Path(repo_path(repo_data))
+
+        # Collect file paths to delete
+        files_to_delete = []
+        for result in results:
+            if result.git_file_path:
+                file_path = Path(result.git_file_path)
+                full_path = local_repo_path / file_path
+                if full_path.exists():
+                    files_to_delete.append(str(file_path))
+                    logger.info(f"Marking file for deletion: {file_path}")
+
+        # Delete files from Git repository
+        if files_to_delete:
+            try:
+                # Remove files from filesystem and git index
+                for file_path in files_to_delete:
+                    full_path = local_repo_path / file_path
+                    if full_path.exists():
+                        full_path.unlink()
+                        logger.info(f"Deleted file: {file_path}")
+                    
+                    # Stage the deletion in git
+                    try:
+                        repo.index.remove([str(file_path)])
+                    except Exception as e:
+                        logger.warning(f"Could not remove {file_path} from git index: {e}")
+
+                # Commit and push (use add_all to catch any remaining changes)
+                commit_message = f"Delete snapshot: {snapshot.name} ({len(files_to_delete)} files)"
+                git_service.commit_and_push(
+                    repository=repo_data,
+                    message=commit_message,
+                    files=None,  # Don't pass files since they're deleted
+                    repo=repo,
+                    add_all=True  # Use add_all to stage deletions
+                )
+                logger.info(f"Committed deletion of {len(files_to_delete)} files")
+            except Exception as e:
+                logger.error(f"Failed to delete files from Git: {e}", exc_info=True)
+                raise Exception(f"Failed to delete files from Git repository: {str(e)}")
+        else:
+            logger.warning(f"No files found to delete for snapshot {snapshot_id}")
+
+        # Delete from database
+        return self.snapshot_repo.delete_snapshot(snapshot_id)

@@ -86,12 +86,17 @@ export interface SnapshotListItem {
 }
 
 export interface SnapshotExecuteRequest {
-  template_id: number
   name: string
   description?: string
+  commands: SnapshotCommand[]
   git_repository_id: number
   snapshot_path: string
   devices: unknown[] // Device objects from Nautobot (can be DeviceInfo[] or any device structure)
+  template_id?: number // Optional template ID
+  template_name?: string // Template name for path placeholder replacement
+  credential_id?: number // Stored credential ID
+  username?: string // Manual SSH username
+  password?: string // Manual SSH password
 }
 
 export interface CommandDiff {

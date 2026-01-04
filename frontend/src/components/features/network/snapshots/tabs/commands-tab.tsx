@@ -26,6 +26,7 @@ interface CommandsTabProps {
   selectedTemplateId: number | null
   commands: Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]
   onTemplateChange: (templateId: number | null) => void
+  onTemplateNameChange: (templateName: string | null) => void
   onCommandsChange: (commands: Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]) => void
 }
 
@@ -33,6 +34,7 @@ export function CommandsTab({
   selectedTemplateId: parentTemplateId,
   commands: parentCommands,
   onTemplateChange,
+  onTemplateNameChange,
   onCommandsChange,
 }: CommandsTabProps) {
   const {
@@ -57,16 +59,18 @@ export function CommandsTab({
 
   const handleTemplateChange = (value: string) => {
     setSelectedTemplateId(value)
-    
+
     // Notify parent of template change
     onTemplateChange(value === 'none' ? null : parseInt(value))
-    
+
     if (value === 'none') {
       setCommands([])
+      onTemplateNameChange(null)
     } else {
       const template = templates.find(t => t.id === parseInt(value))
       if (template) {
         setCommands(template.commands)
+        onTemplateNameChange(template.name)
       }
     }
   }
