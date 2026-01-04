@@ -58,6 +58,7 @@ export default function DatabaseMigrationPage() {
     const [showSeedDialog, setShowSeedDialog] = useState(false)
     const [seedResult, setSeedResult] = useState<SeedRbacResponse | null>(null)
     const [showSeedOutputModal, setShowSeedOutputModal] = useState(false)
+    const [seeding, setSeeding] = useState(false)
 
     const fetchStatus = useCallback(async () => {
         setLoading(true)
@@ -102,6 +103,7 @@ export default function DatabaseMigrationPage() {
     const handleSeedRbac = async () => {
         setShowSeedDialog(false)
         setSeedResult(null)
+        setSeeding(true)
         try {
             const data = await apiCall<SeedRbacResponse>('tools/rbac/seed', {
                 method: 'POST'
@@ -116,6 +118,8 @@ export default function DatabaseMigrationPage() {
                 output: `Error: ${errorMessage}`
             })
             setShowSeedOutputModal(true)
+        } finally {
+            setSeeding(false)
         }
     }
 
@@ -290,6 +294,57 @@ export default function DatabaseMigrationPage() {
                                 )}
                             </div>
                         ) : null}
+                    </CardContent>
+                </Card>
+
+                {/* RBAC Seeding Card - Always available */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>RBAC System Seeding</CardTitle>
+                        <CardDescription>
+                            Initialize or update the Role-Based Access Control system with default permissions and roles.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            <Alert className="border-blue-200 bg-blue-50">
+                                <AlertTriangle className="h-4 w-4 text-blue-600" />
+                                <AlertTitle>About RBAC Seeding</AlertTitle>
+                                <AlertDescription className="text-blue-800 space-y-2">
+                                    <p>This process will:</p>
+                                    <ul className="list-disc list-inside ml-2 space-y-1 text-sm">
+                                        <li>Create or update all default permissions for system resources</li>
+                                        <li>Create system roles (admin, operator, network_engineer, viewer)</li>
+                                        <li>Assign appropriate permissions to each role</li>
+                                        <li>Migrate any legacy permissions (network.inventory → general.inventory)</li>
+                                    </ul>
+                                    <p className="mt-2 font-medium">Safe to run multiple times - existing data will be preserved.</p>
+                                </AlertDescription>
+                            </Alert>
+
+                            <div className="flex justify-between items-center pt-2">
+                                <div className="text-sm text-gray-600">
+                                    Run this after database changes or when adding new features that require permissions.
+                                </div>
+                                <Button 
+                                    onClick={handleSeedRbac} 
+                                    disabled={seeding}
+                                    className="bg-green-600 hover:bg-green-700"
+                                >
+                                    {seeding ? (
+                                        <>
+                                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                            Seeding RBAC...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckCircle className="w-4 h-4 mr-2" />
+                                            Seed RBAC System
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
 
