@@ -109,6 +109,10 @@ def seed_permissions(verbose: bool = True):
         ("network.templates", "delete", "Delete templates"),
         ("network.netmiko", "execute", "Execute Netmiko commands"),
         ("network.ping", "execute", "Execute network ping operations"),
+        # Snapshot permissions
+        ("snapshots", "read", "View network snapshots"),
+        ("snapshots", "write", "Create/execute network snapshots"),
+        ("snapshots", "delete", "Delete network snapshots"),
         # Git permissions
         ("git.repositories", "read", "View git repositories"),
         ("git.repositories", "write", "Create/modify git repositories"),
@@ -244,6 +248,9 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "general.inventory:write",
         # Network
         "network.templates:read",
+        # Snapshots
+        "snapshots:read",
+        "snapshots:write",
         # Scan & Add
         "scan:execute",
         "devices.onboard:execute",
@@ -298,6 +305,10 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "network.templates:delete",
         "network.netmiko:execute",
         "network.ping:execute",
+        # Snapshots (full access)
+        "snapshots:read",
+        "snapshots:write",
+        "snapshots:delete",
         # Git
         "git.repositories:read",
         "git.operations:execute",

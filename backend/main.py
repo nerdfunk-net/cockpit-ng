@@ -42,6 +42,9 @@ from routers.network import (
     netmiko_router,
 )
 
+# Snapshot routers (Network / Automation / Snapshots)
+from routers.network.snapshots import templates_router as snapshot_templates_router, snapshots_router
+
 # Tools router kept in old location (depends on nautobot_service, now fixed)
 from routers.tools import router as tools_router
 
@@ -102,6 +105,8 @@ app.include_router(job_schedules_router)
 app.include_router(job_templates_router)
 app.include_router(job_runs_router)
 app.include_router(netmiko_router)
+app.include_router(snapshot_templates_router)
+app.include_router(snapshots_router)
 app.include_router(rbac_router)
 app.include_router(compliance_router)
 # app.include_router(compliance_check_router)  # Disabled - requires pysnmp

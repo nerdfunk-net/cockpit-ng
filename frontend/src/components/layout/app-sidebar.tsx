@@ -40,6 +40,7 @@ import {
   BarChart3,
   Edit,
   HelpCircle,
+  Camera,
 } from 'lucide-react'
 
 interface NavItem {
@@ -107,6 +108,7 @@ const navigationSections: NavSection[] = [
         children: [
           { label: 'Netmiko', href: '/netmiko', icon: Terminal },
           { label: 'Templates', href: '/automation/templates', icon: FileText },
+          { label: 'Snapshots', href: '/network/snapshots', icon: Camera },
         ],
       },
       {
