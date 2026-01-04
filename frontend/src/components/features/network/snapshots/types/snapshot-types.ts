@@ -91,13 +91,13 @@ export interface SnapshotExecuteRequest {
   description?: string
   git_repository_id: number
   snapshot_path: string
-  devices: any[] // Device objects from Nautobot
+  devices: unknown[] // Device objects from Nautobot (can be DeviceInfo[] or any device structure)
 }
 
 export interface CommandDiff {
   command: string
   status: 'added' | 'removed' | 'modified' | 'unchanged'
-  diff?: Record<string, any>
+  diff?: Record<string, unknown>
 }
 
 export interface DeviceComparisonResult {

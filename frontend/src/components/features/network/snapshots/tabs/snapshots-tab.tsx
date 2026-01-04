@@ -6,7 +6,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -17,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Play, GitCompare, Eye, RefreshCw } from 'lucide-react'
+import { Play, GitCompare, RefreshCw } from 'lucide-react'
 import { ExecuteSnapshotDialog } from '../dialogs/execute-snapshot-dialog'
 import { CompareSnapshotsDialog } from '../dialogs/compare-snapshots-dialog'
 import { useSnapshots } from '../hooks/use-snapshots'
@@ -61,7 +60,7 @@ export function SnapshotsTab({
     } else {
       if (selectedSnapshotIds.length >= 2) {
         // Replace oldest selection
-        setSelectedSnapshotIds([selectedSnapshotIds[1], snapshotId])
+        setSelectedSnapshotIds([selectedSnapshotIds[1]!, snapshotId])
       } else {
         setSelectedSnapshotIds([...selectedSnapshotIds, snapshotId])
       }
@@ -90,14 +89,16 @@ export function SnapshotsTab({
   return (
     <div className="space-y-6">
       {/* Action Buttons */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Snapshot Actions</CardTitle>
-          <CardDescription>
+      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium">Snapshot Actions</span>
+          </div>
+          <div className="text-xs text-blue-100">
             Execute a new snapshot or compare existing snapshots
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex gap-4">
+          </div>
+        </div>
+        <div className="p-6 bg-gradient-to-b from-white to-gray-50 flex gap-4">
           <Button
             onClick={() => setShowExecuteDialog(true)}
             disabled={!selectedTemplateId || commands.length === 0 || selectedDevices.length === 0}
@@ -121,18 +122,20 @@ export function SnapshotsTab({
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Snapshots List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Snapshots</CardTitle>
-          <CardDescription>
+      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium">Recent Snapshots</span>
+          </div>
+          <div className="text-xs text-blue-100">
             Click on snapshots to select them for comparison
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </div>
+        </div>
+        <div className="p-6 bg-gradient-to-b from-white to-gray-50">
           {loading && snapshots.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               Loading snapshots...
@@ -193,8 +196,8 @@ export function SnapshotsTab({
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Dialogs */}
       <ExecuteSnapshotDialog

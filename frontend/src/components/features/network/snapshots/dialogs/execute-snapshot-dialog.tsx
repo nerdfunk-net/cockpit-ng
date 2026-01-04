@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -57,13 +57,7 @@ export function ExecuteSnapshotDialog({
   const { apiCall } = useApi()
   const { toast } = useToast()
 
-  useEffect(() => {
-    if (open) {
-      loadGitRepositories()
-    }
-  }, [open])
-
-  const loadGitRepositories = async () => {
+  const loadGitRepositories = useCallback(async () => {
     setLoadingRepos(true)
     try {
       const response = await apiCall<{ repositories: GitRepository[] }>('git-repositories')
@@ -78,7 +72,13 @@ export function ExecuteSnapshotDialog({
     } finally {
       setLoadingRepos(false)
     }
-  }
+  }, [apiCall, toast])
+
+  useEffect(() => {
+    if (open) {
+      loadGitRepositories()
+    }
+  }, [open, loadGitRepositories])
 
   const handleExecute = async () => {
     if (!name.trim()) {

@@ -6,217 +6,202 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Plus, Trash2, Save } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, Trash2, Save, Upload } from 'lucide-react'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import type { SnapshotCommand } from '../types/snapshot-types'
 import { useSnapshotTemplates } from '../hooks/use-snapshot-templates'
 import { SaveTemplateDialog } from '../dialogs/save-template-dialog'
-import { useToast } from '@/hooks/use-toast'
-import type { SnapshotCommand } from '../types/snapshot-types'
 
-interface CommandsTabProps {
-  selectedTemplateId: number | null
-  commands: Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]
-  onTemplateSelected: (templateId: number | null) => void
-  onCommandsChanged: (commands: Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]) => void
-}
+export function CommandsTab() {
+  const {
+    templates,
+  } = useSnapshotTemplates()
 
-export function CommandsTab({
-  selectedTemplateId,
-  commands,
-  onTemplateSelected,
-  onCommandsChanged,
-}: CommandsTabProps) {
-  const { templates, loading: templatesLoading, loadTemplates } = useSnapshotTemplates()
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('none')
+  const [commands, setCommands] = useState<SnapshotCommand[]>([])
   const [showSaveDialog, setShowSaveDialog] = useState(false)
-  const { toast } = useToast()
+
+  const handleTemplateChange = (value: string) => {
+    setSelectedTemplateId(value)
+    
+    if (value === 'none') {
+      setCommands([])
+    } else {
+      const template = templates.find(t => t.id === parseInt(value))
+      if (template) {
+        setCommands(template.commands)
+      }
+    }
+  }
 
   const handleAddCommand = () => {
-    onCommandsChanged([
-      ...commands,
-      {
-        command: '',
-        use_textfsm: true,
-        order: commands.length,
-      },
-    ])
+    const newCommand: SnapshotCommand = {
+      id: Date.now(),
+      command: '',
+      use_textfsm: false,
+      order: commands.length,
+    }
+    setCommands([...commands, newCommand])
   }
 
-  const handleRemoveCommand = (index: number) => {
-    const newCommands = commands.filter((_, i) => i !== index)
-    // Re-index order
-    const reindexed = newCommands.map((cmd, i) => ({ ...cmd, order: i }))
-    onCommandsChanged(reindexed)
+  const handleRemoveCommand = (id: number) => {
+    setCommands(commands.filter(cmd => cmd.id !== id))
   }
 
-  const handleCommandChange = (index: number, field: keyof SnapshotCommand, value: any) => {
-    const newCommands = [...commands]
-    newCommands[index] = { ...newCommands[index], [field]: value }
-    onCommandsChanged(newCommands)
+  const handleUpdateCommand = (id: number, field: keyof SnapshotCommand, value: string | boolean) => {
+    setCommands(commands.map(cmd => 
+      cmd.id === id ? { ...cmd, [field]: value } : cmd
+    ))
   }
 
-  const handleTemplateLoad = (templateId: string) => {
-    if (templateId === 'none') {
-      onTemplateSelected(null)
-      onCommandsChanged([])
+  const handleSaveTemplate = () => {
+    if (commands.length === 0) {
+      alert('Please add at least one command before saving.')
       return
     }
-
-    const template = templates.find(t => t.id.toString() === templateId)
-    if (template) {
-      onTemplateSelected(template.id)
-      // Load commands from template
-      const templateCommands = template.commands.map(cmd => ({
-        command: cmd.command,
-        use_textfsm: cmd.use_textfsm,
-        order: cmd.order,
-      }))
-      onCommandsChanged(templateCommands)
-      toast({
-        title: 'Template Loaded',
-        description: `Loaded ${template.commands.length} commands from "${template.name}"`,
-      })
-    }
-  }
-
-  const handleSaveSuccess = async () => {
-    await loadTemplates()
-    setShowSaveDialog(false)
-    toast({
-      title: 'Template Saved',
-      description: 'Command template saved successfully',
-    })
+    setShowSaveDialog(true)
   }
 
   return (
     <div className="space-y-6">
-      {/* Template Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Command Templates</CardTitle>
-          <CardDescription>
-            Load an existing template or create a new one
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Label htmlFor="template-select">Load Template</Label>
-              <Select
-                value={selectedTemplateId?.toString() || 'none'}
-                onValueChange={handleTemplateLoad}
-                disabled={templatesLoading}
-              >
+      {/* Template Selection Section */}
+      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium">Command Template</span>
+          </div>
+          <div className="text-xs text-blue-100">
+            Select an existing template or create a new one
+          </div>
+        </div>
+        <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="template-select">Template</Label>
+              <Select value={selectedTemplateId} onValueChange={handleTemplateChange}>
                 <SelectTrigger id="template-select">
-                  <SelectValue placeholder="Select a template..." />
+                  <SelectValue placeholder="Select a template" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">-- None --</SelectItem>
+                  <SelectItem value="none">No template (manual commands)</SelectItem>
                   {templates.map(template => (
                     <SelectItem key={template.id} value={template.id.toString()}>
-                      {template.name} ({template.scope === 'private' ? 'Private' : 'Global'})
+                      {template.name} ({template.scope})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-end">
-              <Button
-                onClick={() => setShowSaveDialog(true)}
-                disabled={commands.length === 0}
-                variant="outline"
-              >
-                <Save className="mr-2 h-4 w-4" />
-                Save Template
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Commands List */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Commands</CardTitle>
-              <CardDescription>
-                Add commands to execute on selected devices
-              </CardDescription>
-            </div>
-            <Button onClick={handleAddCommand} size="sm">
-              <Plus className="mr-2 h-4 w-4" />
+            {selectedTemplateId !== 'none' && (
+              <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+                <p className="font-medium">Description:</p>
+                <p>{templates.find(t => t.id === parseInt(selectedTemplateId))?.description}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Commands Section */}
+      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium">Commands</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleAddCommand}
+              className="bg-white text-blue-600 hover:bg-blue-50 border-0"
+            >
+              <Plus className="h-4 w-4 mr-2" />
               Add Command
             </Button>
+            {commands.length > 0 && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleSaveTemplate}
+                className="bg-white text-blue-600 hover:bg-blue-50 border-0"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save Template
+              </Button>
+            )}
           </div>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="p-6 bg-gradient-to-b from-white to-gray-50">
           {commands.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No commands added yet. Click "Add Command" to get started.
+            <div className="text-center py-12 text-gray-500">
+              <p className="text-lg font-medium">No commands added yet</p>
+              <p className="text-sm mt-1">Click &quot;Add Command&quot; to get started</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {commands.map((cmd, index) => (
-                <div
-                  key={index}
-                  className="flex gap-4 items-start p-4 border rounded-lg"
-                >
-                  <div className="flex-1 space-y-2">
-                    <div className="flex gap-4 items-center">
-                      <span className="text-sm font-medium text-muted-foreground w-8">
-                        #{index + 1}
-                      </span>
-                      <Input
-                        placeholder="Enter command (e.g., show ip route)"
-                        value={cmd.command}
-                        onChange={(e) =>
-                          handleCommandChange(index, 'command', e.target.value)
-                        }
-                        className="flex-1"
-                      />
-                    </div>
-                    <div className="flex items-center space-x-2 ml-12">
-                      <Checkbox
-                        id={`textfsm-${index}`}
-                        checked={cmd.use_textfsm}
-                        onCheckedChange={(checked) =>
-                          handleCommandChange(index, 'use_textfsm', checked)
-                        }
-                      />
-                      <Label
-                        htmlFor={`textfsm-${index}`}
-                        className="text-sm font-normal"
-                      >
-                        Parse output with TextFSM
-                      </Label>
-                    </div>
+            <div className="space-y-2">
+              {commands.map((cmd) => (
+                <div key={cmd.id} className="flex items-center gap-2 p-2 border rounded-md bg-white shadow-sm hover:shadow-md transition-shadow group">
+                  <Input
+                    id={`command-${cmd.id}`}
+                    value={cmd.command}
+                    onChange={(e) => handleUpdateCommand(cmd.id!, 'command', e.target.value)}
+                    placeholder="Enter command (e.g., show ip route)"
+                    className="flex-1 font-mono text-sm h-8 focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div className="flex items-center gap-1.5">
+                    <Checkbox
+                      id={`textfsm-${cmd.id}`}
+                      checked={cmd.use_textfsm}
+                      onCheckedChange={(checked) => 
+                        handleUpdateCommand(cmd.id!, 'use_textfsm', checked as boolean)
+                      }
+                      className="h-4 w-4"
+                    />
+                    <label 
+                      htmlFor={`textfsm-${cmd.id}`} 
+                      className="text-xs text-gray-600 cursor-pointer whitespace-nowrap hover:text-gray-900"
+                      title="Parse output using TextFSM templates"
+                    >
+                      TextFSM
+                    </label>
                   </div>
                   <Button
                     variant="ghost"
-                    size="icon"
-                    onClick={() => handleRemoveCommand(index)}
-                    className="text-destructive hover:text-destructive"
+                    size="sm"
+                    onClick={() => handleRemoveCommand(cmd.id!)}
+                    className="h-8 w-8 p-0 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remove command"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 text-red-600" />
                   </Button>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Save Template Dialog */}
       <SaveTemplateDialog
         open={showSaveDialog}
         onOpenChange={setShowSaveDialog}
-        commands={commands}
-        onSaveSuccess={handleSaveSuccess}
+        commands={commands.map(({ command, use_textfsm, order }) => ({
+          command,
+          use_textfsm,
+          order,
+        }))}
+        onSaveSuccess={() => setShowSaveDialog(false)}
       />
     </div>
   )

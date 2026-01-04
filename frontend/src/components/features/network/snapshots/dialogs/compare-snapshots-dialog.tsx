@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/accordion'
 import { useSnapshots } from '../hooks/use-snapshots'
 import { useToast } from '@/hooks/use-toast'
-import type { SnapshotCompareResponse, DeviceComparisonResult } from '../types/snapshot-types'
+import type { SnapshotCompareResponse } from '../types/snapshot-types'
 
 interface CompareSnapshotsDialogProps {
   open: boolean
@@ -43,18 +43,14 @@ export function CompareSnapshotsDialog({
   const { compareSnapshots } = useSnapshots()
   const { toast } = useToast()
 
-  useEffect(() => {
-    if (open && snapshotIds.length === 2) {
-      loadComparison()
-    }
-  }, [open, snapshotIds])
-
-  const loadComparison = async () => {
+  const loadComparison = useCallback(async () => {
+    if (snapshotIds.length !== 2) return
+    
     setLoading(true)
     try {
       const result = await compareSnapshots({
-        snapshot_id_1: snapshotIds[0],
-        snapshot_id_2: snapshotIds[1],
+        snapshot_id_1: snapshotIds[0]!,
+        snapshot_id_2: snapshotIds[1]!,
       })
       setComparison(result)
     } catch (error) {
@@ -66,7 +62,13 @@ export function CompareSnapshotsDialog({
     } finally {
       setLoading(false)
     }
-  }
+  }, [snapshotIds, compareSnapshots, toast])
+
+  useEffect(() => {
+    if (open && snapshotIds.length === 2) {
+      loadComparison()
+    }
+  }, [open, snapshotIds, loadComparison])
 
   const getDeviceStatusBadge = (status: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -189,8 +191,8 @@ export function CompareSnapshotsDialog({
               </CardHeader>
               <CardContent>
                 <Accordion type="multiple" className="w-full">
-                  {comparison.devices.map((device, index) => (
-                    <AccordionItem key={index} value={`device-${index}`}>
+                  {comparison.devices.map((device) => (
+                    <AccordionItem key={device.device_name} value={`device-${device.device_name}`}>
                       <AccordionTrigger className="hover:no-underline">
                         <div className="flex items-center justify-between w-full pr-4">
                           <span className="font-medium">{device.device_name}</span>
@@ -204,8 +206,8 @@ export function CompareSnapshotsDialog({
                           </div>
                         ) : (
                           <div className="space-y-2 px-4">
-                            {device.commands.map((cmd, cmdIndex) => (
-                              <div key={cmdIndex} className="border-l-2 border-muted pl-4 py-2">
+                            {device.commands.map((cmd) => (
+                              <div key={cmd.command} className="border-l-2 border-muted pl-4 py-2">
                                 <div className="flex items-center justify-between mb-2">
                                   <span className="text-sm font-mono">{cmd.command}</span>
                                   {getCommandStatusBadge(cmd.status)}

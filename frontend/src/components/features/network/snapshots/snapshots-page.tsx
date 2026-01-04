@@ -25,14 +25,7 @@ export default function SnapshotsPage() {
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>(EMPTY_DEVICE_IDS)
   const [selectedDevices, setSelectedDevices] = useState<DeviceInfo[]>(EMPTY_DEVICES)
 
-  // Template and commands state
-  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null)
-  const [commands, setCommands] = useState<Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]>(EMPTY_COMMANDS)
-
-  // Active tab state
-  const [activeTab, setActiveTab] = useState('devices')
-
-  const handleDevicesSelected = (devices: DeviceInfo[], conditions: LogicalCondition[]) => {
+  const handleDevicesSelected = (devices: DeviceInfo[], _conditions: LogicalCondition[]) => {
     const deviceIds = devices.map(d => d.id)
     setSelectedDeviceIds(deviceIds)
     setSelectedDevices(devices)
@@ -43,33 +36,23 @@ export default function SnapshotsPage() {
     setSelectedDevices(devices)
   }
 
-  const handleTemplateSelected = (templateId: number | null) => {
-    setSelectedTemplateId(templateId)
-  }
-
-  const handleCommandsChanged = (
-    newCommands: Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]
-  ) => {
-    setCommands(newCommands)
-  }
-
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10">
-          <Camera className="h-6 w-6 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold">Network Snapshots</h1>
-          <p className="text-muted-foreground">
-            Capture and compare device snapshots with TextFSM parsing
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="bg-blue-100 p-2 rounded-lg">
+            <Camera className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Network Snapshots</h1>
+            <p className="text-gray-600 mt-1">Capture and compare device state snapshots</p>
+          </div>
         </div>
       </div>
 
       {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="devices" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="devices">
             Devices
@@ -81,16 +64,12 @@ export default function SnapshotsPage() {
           </TabsTrigger>
           <TabsTrigger value="commands">
             Commands
-            {commands.length > 0 && (
-              <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-primary text-primary-foreground">
-                {commands.length}
-              </span>
-            )}
           </TabsTrigger>
           <TabsTrigger value="snapshots">Snapshots</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="devices" className="mt-6">
+        {/* Devices Tab */}
+        <TabsContent value="devices">
           <DevicesTab
             selectedDeviceIds={selectedDeviceIds}
             selectedDevices={selectedDevices}
@@ -99,19 +78,16 @@ export default function SnapshotsPage() {
           />
         </TabsContent>
 
-        <TabsContent value="commands" className="mt-6">
-          <CommandsTab
-            selectedTemplateId={selectedTemplateId}
-            commands={commands}
-            onTemplateSelected={handleTemplateSelected}
-            onCommandsChanged={handleCommandsChanged}
-          />
+        {/* Commands Tab */}
+        <TabsContent value="commands">
+          <CommandsTab />
         </TabsContent>
 
-        <TabsContent value="snapshots" className="mt-6">
+        {/* Snapshots Tab */}
+        <TabsContent value="snapshots">
           <SnapshotsTab
-            selectedTemplateId={selectedTemplateId}
-            commands={commands}
+            selectedTemplateId={null}
+            commands={EMPTY_COMMANDS}
             selectedDevices={selectedDevices}
           />
         </TabsContent>
