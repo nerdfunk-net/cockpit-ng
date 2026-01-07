@@ -189,9 +189,7 @@ async def check_compliance(
                             priv_password=snmp["snmp_v3_priv_password"],
                         )
                     # Add SNMP mapping name to result details
-                    result["details"]["mapping_name"] = snmp.get(
-                        "name", snmp["device_type"]
-                    )
+                    result["details"]["mapping_name"] = snmp.get("name", "Unknown")
                     snmp_results.append(result)
 
                 device_result["checks"]["snmp_credentials"] = {

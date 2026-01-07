@@ -244,15 +244,23 @@ class ComplianceCheckService:
             Dictionary with success status, message, and details
         """
         try:
+            # Normalize empty strings to None
+            auth_password = auth_password if auth_password else None
+            priv_password = priv_password if priv_password else None
+            auth_protocol = auth_protocol if auth_protocol else None
+            priv_protocol = priv_protocol if priv_protocol else None
+            
             # Determine authentication and privacy levels
+            # If no auth password, force noAuth regardless of protocol setting
             auth_proto = (
                 ComplianceCheckService._get_snmp_auth_protocol(auth_protocol)
-                if auth_protocol
+                if auth_protocol and auth_password
                 else usmNoAuthProtocol
             )
+            # If no priv password OR no auth, force noPriv (privacy requires auth)
             priv_proto = (
                 ComplianceCheckService._get_snmp_priv_protocol(priv_protocol)
-                if priv_protocol
+                if priv_protocol and priv_password and auth_password
                 else usmNoPrivProtocol
             )
 
@@ -265,10 +273,11 @@ class ComplianceCheckService:
             logger.debug(f"  Priv Password: {'***set***' if priv_password else 'None'}")
 
             # Create USM user data for SNMPv3
+            # Only pass passwords if they exist and corresponding protocol is not noAuth/noPriv
             usm_user = UsmUserData(
                 username,
-                auth_password if auth_password else None,
-                priv_password if priv_password else None,
+                auth_password if auth_proto != usmNoAuthProtocol else None,
+                priv_password if priv_proto != usmNoPrivProtocol else None,
                 authProtocol=auth_proto,
                 privProtocol=priv_proto,
             )

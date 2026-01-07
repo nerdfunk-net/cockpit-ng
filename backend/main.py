@@ -40,6 +40,7 @@ from routers.settings import (
 from routers.network import (
     file_compare_router,
     netmiko_router,
+    compliance_check_router,
 )
 
 # Snapshot routers (Network / Automation / Snapshots)
@@ -47,9 +48,6 @@ from routers.network.snapshots import templates_router as snapshot_templates_rou
 
 # Tools router kept in old location (depends on nautobot_service, now fixed)
 from routers.tools import router as tools_router
-
-# Compliance check router disabled - requires pysnmp dependency
-# from routers.compliance_check import router as compliance_check_router
 # Inventory routers now use feature-based structure (Phase 3.7 migration)
 from routers.inventory import general_inventory_router, inventory_router, certificates_router, ansible_inventory_router
 
@@ -109,7 +107,7 @@ app.include_router(snapshot_templates_router)
 app.include_router(snapshots_router)
 app.include_router(rbac_router)
 app.include_router(compliance_router)
-# app.include_router(compliance_check_router)  # Disabled - requires pysnmp
+app.include_router(compliance_check_router)
 app.include_router(certificates_router)
 app.include_router(tools_router)
 app.include_router(health_router)
