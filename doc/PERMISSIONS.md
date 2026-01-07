@@ -42,8 +42,6 @@ Permissions follow the format: `resource:action`
 - `configs.compare:execute` - Compare configurations
 
 #### Network Automation Permissions
-- `network.inventory:read` - View Ansible inventory
-- `network.inventory:write` - Modify Ansible inventory
 - `network.templates:read` - View configuration templates
 - `network.templates:write` - Create/modify templates
 - `network.templates:delete` - Delete templates

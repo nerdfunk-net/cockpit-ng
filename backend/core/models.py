@@ -779,6 +779,15 @@ class Template(Base):
     pre_run_command = Column(
         Text
     )  # Command to execute before rendering (output available as context)
+    credential_id = Column(
+        Integer
+    )  # ID of stored credential to use for pre-run command execution
+    execution_mode = Column(
+        String(50), default="run_on_device", nullable=False
+    )  # 'run_on_device', 'write_to_file', 'sync_to_nautobot'
+    file_path = Column(
+        Text
+    )  # File path when execution_mode is 'write_to_file', supports variables like {device_name}, {template_name}
 
     # Ownership and scope
     created_by = Column(String(255), index=True)

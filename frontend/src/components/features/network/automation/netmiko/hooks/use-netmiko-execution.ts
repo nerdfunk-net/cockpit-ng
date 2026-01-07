@@ -148,53 +148,123 @@ export function useNetmikoExecution() {
       const varsObject = prepareVariablesObject(variables)
       const useEditedContent = selectedTemplate && editedTemplateContent !== selectedTemplate.content
 
-      const baseBody = {
-        device_ids: selectedDevices.map(d => d.id),
-        user_variables: varsObject,
-        use_nautobot_context: useNautobotContext,
-        dry_run: dryRun,
-        enable_mode: enableMode,
-        write_config: writeConfig,
-        session_id: sessionId,
-        ...(useEditedContent 
-          ? { template_content: editedTemplateContent }
-          : { template_id: selectedTemplate?.id }
-        )
-      }
+      // Check if template is in "Sync to Nautobot" mode
+      if (selectedTemplate?.execution_mode === 'sync_to_nautobot') {
+        // Use the new execute-and-sync endpoint
+        console.log('Using execute-and-sync endpoint for Sync to Nautobot mode')
 
-      const requestBody = buildCredentialRequestBody(
-        baseBody,
-        selectedCredentialId,
-        username,
-        password
-      )
-
-      const response = await apiCall<{
-        session_id: string
-        results: Array<{
-          device_id: string
-          device_name: string
+        const response = await apiCall<{
           success: boolean
-          rendered_content?: string
-          output?: string
-          error?: string
-        }>
-        summary: Record<string, number>
-      }>('netmiko/execute-template', {
-        method: 'POST',
-        body: requestBody
-      })
+          message: string
+          task_id?: string
+          job_id?: string
+          rendered_outputs?: Record<string, string>
+          parsed_updates?: Array<Record<string, unknown>>
+          errors?: string[]
+          warnings?: string[]
+        }>('templates/execute-and-sync', {
+          method: 'POST',
+          body: {
+            template_id: selectedTemplate.id,
+            device_ids: selectedDevices.map(d => d.id),
+            user_variables: varsObject,
+            dry_run: dryRun,
+            output_format: 'json' // Default to JSON, could be made configurable
+          }
+        })
 
-      const convertedResults = formatExecutionResults(response.results, dryRun)
+        // Convert response to execution results format
+        const convertedResults: CommandResult[] = []
 
-      setExecutionResults(convertedResults)
-      setExecutionSummary({
-        total: response.summary.total || 0,
-        successful: dryRun ? (response.summary.rendered_successfully || 0) : (response.summary.executed_successfully || 0),
-        failed: response.summary.failed || 0,
-        cancelled: response.summary.cancelled || 0
-      })
-      setShowResults(true)
+        if (response.rendered_outputs) {
+          Object.entries(response.rendered_outputs).forEach(([deviceId, output]) => {
+            const device = selectedDevices.find(d => d.id === deviceId)
+            const hasError = response.errors?.some(err => err.includes(deviceId))
+
+            convertedResults.push({
+              device: device?.name || deviceId,
+              success: !hasError && response.success,
+              output: dryRun
+                ? `Rendered Output:\n${output}\n\n${response.parsed_updates ? `Parsed Update:\n${JSON.stringify(response.parsed_updates.find(u => u.id === deviceId), null, 2)}` : ''}`
+                : response.success
+                  ? `✅ Successfully queued sync to Nautobot\nTask ID: ${response.task_id}\nJob ID: ${response.job_id}\n\nRendered Output:\n${output}`
+                  : `❌ Failed to sync\n${response.errors?.filter(err => err.includes(deviceId)).join('\n')}`,
+              error: hasError ? response.errors?.filter(err => err.includes(deviceId)).join('\n') : undefined
+            })
+          })
+        }
+
+        // Show warnings if any
+        if (response.warnings && response.warnings.length > 0) {
+          console.warn('Warnings:', response.warnings)
+        }
+
+        setExecutionResults(convertedResults)
+        setExecutionSummary({
+          total: selectedDevices.length,
+          successful: convertedResults.filter(r => r.success).length,
+          failed: convertedResults.filter(r => !r.success).length,
+          cancelled: 0
+        })
+        setShowResults(true)
+
+        // Show success message with job tracking info
+        if (response.success && response.job_id) {
+          alert(`✅ ${response.message}\n\nJob ID: ${response.job_id}\nYou can track this job in the Jobs/Views page.`)
+        } else if (!response.success) {
+          alert(`❌ ${response.message}\n\n${response.errors?.join('\n') || ''}`)
+        }
+
+      } else {
+        // Regular template execution (run on device or write to file)
+        const baseBody = {
+          device_ids: selectedDevices.map(d => d.id),
+          user_variables: varsObject,
+          use_nautobot_context: useNautobotContext,
+          dry_run: dryRun,
+          enable_mode: enableMode,
+          write_config: writeConfig,
+          session_id: sessionId,
+          ...(useEditedContent
+            ? { template_content: editedTemplateContent }
+            : { template_id: selectedTemplate?.id }
+          )
+        }
+
+        const requestBody = buildCredentialRequestBody(
+          baseBody,
+          selectedCredentialId,
+          username,
+          password
+        )
+
+        const response = await apiCall<{
+          session_id: string
+          results: Array<{
+            device_id: string
+            device_name: string
+            success: boolean
+            rendered_content?: string
+            output?: string
+            error?: string
+          }>
+          summary: Record<string, number>
+        }>('netmiko/execute-template', {
+          method: 'POST',
+          body: requestBody
+        })
+
+        const convertedResults = formatExecutionResults(response.results, dryRun)
+
+        setExecutionResults(convertedResults)
+        setExecutionSummary({
+          total: response.summary.total || 0,
+          successful: dryRun ? (response.summary.rendered_successfully || 0) : (response.summary.executed_successfully || 0),
+          failed: response.summary.failed || 0,
+          cancelled: response.summary.cancelled || 0
+        })
+        setShowResults(true)
+      }
     } catch (error) {
       console.error('Error executing:', error)
       alert('Error executing: ' + (error as Error).message)

@@ -76,13 +76,17 @@ export function VariablesAndTemplatesTab(props: VariablesAndTemplatesTabProps) {
           category: 'netmiko',
           device_id: device.id,
           user_variables: varsObject,
-          use_nautobot_context: props.useNautobotContext
+          use_nautobot_context: props.useNautobotContext,
+          pre_run_command: props.selectedTemplate.pre_run_command,
+          credential_id: props.selectedTemplate.credential_id
         } : {
           template_id: props.selectedTemplate.id,
           category: 'netmiko',
           device_id: device.id,
           user_variables: varsObject,
-          use_nautobot_context: props.useNautobotContext
+          use_nautobot_context: props.useNautobotContext,
+          pre_run_command: props.selectedTemplate.pre_run_command,
+          credential_id: props.selectedTemplate.credential_id
         }
       })
 

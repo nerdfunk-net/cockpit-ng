@@ -1,0 +1,45 @@
+{#
+  Template: Parse "show ip int" and create interfaces with multiple IPs
+
+  This template handles multiple IP addresses per interface:
+  - First IP: no role (primary)
+  - Additional IPs (2nd, 3rd, etc.): role = "Secondary"
+
+  Available context variables:
+    - nautobot.id: Device UUID
+    - nautobot.name: Device name
+    - pre_run_parsed: Parsed output from pre-run command
+    - user_variables.namespace_id: (optional) Defaults to "Global"
+#}
+{
+  "id": "{{ nautobot.id }}",
+  "interfaces": [
+{%- set comma = joiner(",") %}
+{%- set global_first = namespace(value=true) %}
+{%- for interface in pre_run_parsed %}
+{%- if interface.ip_address and interface.ip_address is iterable and interface.ip_address|length > 0 %}
+{%- for ip_index in range(interface.ip_address|length) %}
+{%- set ip = interface.ip_address[ip_index] %}
+{%- set prefix = interface.prefix_length[ip_index] if ip_index < (interface.prefix_length|length) else '24' %}
+{{ comma() }}
+    {
+      "name": "{{ interface.interface }}",
+      "type": "{% if 'Ethernet' in interface.interface %}1000base-t{% elif 'Loopback' in interface.interface %}virtual{% else %}other{% endif %}",
+      "status": "{% if interface.link_status == 'up' %}active{% else %}failed{% endif %}",
+      "enabled": {% if interface.link_status != 'administratively down' %}true{% else %}false{% endif %},
+      "ip_address": "{{ ip }}/{{ prefix }}",
+      "namespace": "{{ user_variables.namespace_id|default('Global') }}",
+{%- if ip_index > 0 %}
+      "ip_role": "Secondary",
+{%- endif %}
+      "is_primary_ipv4": {% if global_first.value %}true{% else %}false{% endif %}
+{%- if interface.mtu and interface.mtu != '' and interface.mtu != '[]' %},
+      "mtu": {{ interface.mtu }}
+{%- endif %}
+    }
+{%- set global_first.value = false %}
+{%- endfor %}
+{%- endif %}
+{%- endfor %}
+  ]
+}

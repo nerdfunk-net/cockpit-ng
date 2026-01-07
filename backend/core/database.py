@@ -83,6 +83,7 @@ def init_db():
         migrate_nb2cmk_job_results_table()
         migrate_git_repositories_table()
         migrate_job_templates_parallel_tasks()
+        migrate_templates_table()
         # Commit the DDL changes
         engine.dispose()
         logger.info(
@@ -348,3 +349,49 @@ def migrate_job_templates_parallel_tasks():
 
     except Exception as e:
         logger.warning(f"Could not migrate job_templates table for parallel_tasks: {e}")
+
+
+def migrate_templates_table():
+    """
+    Add credential_id, execution_mode and file_path columns to templates table if they don't exist.
+    Called during application startup.
+    """
+    from sqlalchemy import text, inspect
+
+    columns_to_add = [
+        ("credential_id", "INTEGER"),
+        ("execution_mode", "VARCHAR(50) DEFAULT 'run_on_device' NOT NULL"),
+        ("file_path", "TEXT"),
+    ]
+
+    try:
+        # Use inspector to check existing columns
+        inspector = inspect(engine)
+
+        # Check if table exists
+        if "templates" not in inspector.get_table_names():
+            logger.debug("templates table doesn't exist yet, skipping migration")
+            return
+
+        existing_columns = {
+            col["name"] for col in inspector.get_columns("templates")
+        }
+
+        with engine.connect() as conn:
+            for column_name, column_def in columns_to_add:
+                if column_name not in existing_columns:
+                    logger.info(f"Adding column {column_name} to templates table")
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE templates ADD COLUMN {column_name} {column_def}"
+                        )
+                    )
+                    conn.commit()
+                    logger.info(f"Successfully added column {column_name}")
+                else:
+                    logger.debug(
+                        f"Column {column_name} already exists in templates"
+                    )
+
+    except Exception as e:
+        logger.warning(f"Could not migrate templates table: {e}")

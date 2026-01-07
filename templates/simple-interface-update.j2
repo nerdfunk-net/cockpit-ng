@@ -1,0 +1,28 @@
+{#
+  Simple Template: Update Device with Interfaces
+
+  This is a basic template showing the minimum required fields.
+
+  Available context variables:
+    - nautobot.id: Device UUID
+    - nautobot.name: Device name
+    - pre_run_parsed: Parsed output from pre-run command
+
+  This template expects pre_run_parsed to be an array of interface objects.
+  Each interface should have: name, type, status, ip_address, prefix_length
+#}
+{
+  "id": "{{ nautobot.id }}",
+  "interfaces": [
+{%- for iface in pre_run_parsed %}
+    {
+      "name": "{{ iface.interface }}",
+      "type": "{{ iface.type|default('other') }}",
+      "status": "{{ iface.status|default('active') }}",
+      "ip_address": "{{ iface.ip_address }}/{{ iface.prefix_length }}",
+      "namespace": "Global",
+      "is_primary_ipv4": {% if loop.first %}true{% else %}false{% endif %}
+    }{% if not loop.last %},{% endif %}
+{%- endfor %}
+  ]
+}

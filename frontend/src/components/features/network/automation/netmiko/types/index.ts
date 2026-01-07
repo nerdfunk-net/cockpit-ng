@@ -26,6 +26,10 @@ export interface Template {
   content: string
   scope: 'global' | 'private'
   created_by?: string
+  execution_mode?: 'run_on_device' | 'write_to_file' | 'sync_to_nautobot'
+  file_path?: string
+  credential_id?: number
+  pre_run_command?: string
 }
 
 export interface ExecutionSummary {

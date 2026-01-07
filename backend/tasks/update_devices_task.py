@@ -127,6 +127,7 @@ def update_devices_task(
         logger.info("-" * 80)
         logger.info(f"STEP 3: UPDATING {total_devices} DEVICES")
         logger.info(f"Dry run mode: {dry_run}")
+        logger.info(f"First device data received: {devices[0] if devices else 'NONE'}")
         logger.info("-" * 80)
 
         successes = []
@@ -170,12 +171,14 @@ def update_devices_task(
                 )
 
                 # Prepare data for service
-                device_identifier, update_data, interface_config = _prepare_device_data(
+                logger.info(f"Raw device_data before prepare: {device_data}")
+                device_identifier, update_data, interface_config, interfaces = _prepare_device_data(
                     device_data
                 )
+                logger.info(f"After prepare - interfaces: {interfaces}")
 
-                if not update_data:
-                    logger.info(f"No update data for device {identifier}, skipping")
+                if not update_data and not interfaces:
+                    logger.info(f"No update data or interfaces for device {identifier}, skipping")
                     skipped.append(
                         {
                             "device_identifier": device_identifier,
@@ -191,11 +194,14 @@ def update_devices_task(
                     )
                     if interface_config:
                         logger.info(f"[DRY RUN] Interface config: {interface_config}")
+                    if interfaces:
+                        logger.info(f"[DRY RUN] Interfaces: {len(interfaces)} interface(s)")
 
                     successes.append(
                         {
                             "device_identifier": device_identifier,
                             "updates": update_data,
+                            "interfaces": len(interfaces) if interfaces else 0,
                             "dry_run": True,
                         }
                     )
@@ -205,12 +211,15 @@ def update_devices_task(
                     logger.debug(f"Update data: {update_data}")
                     if interface_config:
                         logger.debug(f"Interface config: {interface_config}")
+                    if interfaces:
+                        logger.debug(f"Interfaces: {len(interfaces)} interface(s)")
 
                     result = asyncio.run(
                         update_service.update_device(
                             device_identifier=device_identifier,
                             update_data=update_data,
                             interface_config=interface_config,
+                            interfaces=interfaces,
                         )
                     )
 
@@ -336,7 +345,7 @@ def update_devices_task(
 
 def _prepare_device_data(
     device_data: Dict[str, Any],
-) -> tuple[Dict[str, Any], Dict[str, Any], Optional[Dict[str, str]]]:
+) -> tuple[Dict[str, Any], Dict[str, Any], Optional[Dict[str, str]], Optional[List[Dict[str, Any]]]]:
     """
     Prepare device data for DeviceUpdateService.
 
@@ -344,7 +353,7 @@ def _prepare_device_data(
         device_data: Raw device data object
 
     Returns:
-        Tuple of (device_identifier, update_data, interface_config)
+        Tuple of (device_identifier, update_data, interface_config, interfaces)
     """
     # Fields used for device identification
     identifier_fields = ["id", "name", "ip_address"]
@@ -367,15 +376,21 @@ def _prepare_device_data(
         if value:
             device_identifier[field] = value
 
-    # Build update data (exclude identifier and interface fields)
-    excluded_fields = set(identifier_fields + interface_fields)
+    # Extract interfaces array if present
+    interfaces = device_data.get("interfaces")
+    if interfaces and not isinstance(interfaces, list):
+        logger.warning(f"interfaces field is not a list, ignoring: {type(interfaces)}")
+        interfaces = None
+
+    # Build update data (exclude identifier, interface fields, and interfaces array)
+    excluded_fields = set(identifier_fields + interface_fields + ["interfaces"])
     update_data = {
         k: v
         for k, v in device_data.items()
         if k not in excluded_fields and v is not None
     }
 
-    # Build interface config if present
+    # Build interface config if present (for legacy primary_ip4 updates)
     interface_config = None
     if device_data.get("primary_ip4"):
         # Only include interface config if we're updating primary IP
@@ -385,4 +400,4 @@ def _prepare_device_data(
             if value:
                 interface_config[field] = value
 
-    return device_identifier, update_data, interface_config
+    return device_identifier, update_data, interface_config, interfaces

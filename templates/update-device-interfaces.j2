@@ -1,0 +1,63 @@
+{#
+  Advanced Template: Update Device Interfaces from "show ip int" Output
+
+  This template handles MULTIPLE IP addresses per interface by creating
+  separate interface entries for each IP.
+
+  Available context variables:
+    - nautobot.id: Device UUID
+    - nautobot.name: Device name
+    - pre_run_parsed: Parsed output from pre-run command (your "show ip int" data)
+    - user_variables: Any custom variables you pass in
+
+  Optional user variables:
+    - namespace_id: Namespace UUID (defaults to "Global")
+    - default_interface_type: Fallback interface type (defaults to "other")
+
+  Example pre_run_parsed data:
+  [
+    {
+      "interface": "Ethernet0/0",
+      "link_status": "up",
+      "protocol_status": "up",
+      "ip_address": ["192.168.178.240", "192.168.178.120"],
+      "prefix_length": ["24", "24"],
+      "vrf": "",
+      "mtu": "1500"
+    },
+    ...
+  ]
+
+  NOTE: This creates one interface entry per IP address!
+  If you want one interface per physical interface, use show-ip-int-basic.j2
+#}
+{
+  "id": "{{ nautobot.id }}",
+  "interfaces": [
+{%- set ns = namespace(first_interface=true) %}
+{%- for interface in pre_run_parsed %}
+{%- if interface.ip_address and interface.ip_address|length > 0 %}
+{%- for ip_index in range(interface.ip_address|length) %}
+{%- set ip = interface.ip_address[ip_index] %}
+{%- set prefix = interface.prefix_length[ip_index] if ip_index < interface.prefix_length|length else '24' %}
+    {
+      "name": "{{ interface.interface }}",
+      "type": "{% if 'Ethernet' in interface.interface or 'GigabitEthernet' in interface.interface %}1000base-t{% elif 'FastEthernet' in interface.interface %}100base-tx{% elif 'TenGigabit' in interface.interface %}10gbase-x-sfpp{% elif 'Loopback' in interface.interface %}virtual{% else %}{{ user_variables.default_interface_type|default('other') }}{% endif %}",
+      "status": "{% if interface.link_status == 'up' %}active{% elif interface.link_status == 'administratively down' %}planned{% else %}failed{% endif %}",
+      "enabled": {% if interface.link_status != 'administratively down' %}true{% else %}false{% endif %},
+      "ip_address": "{{ ip }}/{{ prefix }}",
+      "namespace": "{{ user_variables.namespace_id|default('Global') }}",
+      "is_primary_ipv4": {% if ns.first_interface %}true{% else %}false{% endif %}
+{%- if interface.vrf and interface.vrf != '' %},
+      "description": "VRF: {{ interface.vrf }}"
+{%- endif %}
+{%- if interface.mtu and interface.mtu != '' %},
+      "mtu": {{ interface.mtu }}
+{%- endif %}
+    }{% if not (loop.last and loop.parent.loop.last) %},{% endif %}
+{%- set ns.first_interface = false %}
+{%- endfor %}
+{%- endif %}
+{%- endfor %}
+  ]
+}

@@ -30,6 +30,9 @@ interface Template {
   variables?: Record<string, string>
   use_nautobot_context?: boolean
   pre_run_command?: string
+  credential_id?: number
+  execution_mode?: 'run_on_device' | 'write_to_file' | 'sync_to_nautobot'
+  file_path?: string
   created_by?: string
   category: string
   template_type: string
@@ -558,7 +561,8 @@ function UserTemplatesContent() {
     name: '',
     description: '',
     content: '',
-    scope: (isAdmin ? 'global' : 'private') as 'global' | 'private'
+    scope: (isAdmin ? 'global' : 'private') as 'global' | 'private',
+    execution_mode: 'run_on_device' as 'run_on_device' | 'write_to_file' | 'sync_to_nautobot'
   })
 
   // Use variable manager for template variables
@@ -586,6 +590,9 @@ function UserTemplatesContent() {
   const [storedCredentials, setStoredCredentials] = useState<Array<{ id: number; name: string; username: string }>>([])
   const [isPreRunPanelExpanded, setIsPreRunPanelExpanded] = useState(false)
 
+  // File path state (for write_to_file mode)
+  const [filePath, setFilePath] = useState('templates/{device_name}-{template_name}.txt')
+
   useEffect(() => {
     loadTemplates()
     loadCredentials()
@@ -610,6 +617,7 @@ function UserTemplatesContent() {
       const response = await apiCall<Array<{ id: number; name: string; username: string; type: string }>>('credentials?include_expired=false')
       // Filter for SSH credentials only
       const sshCredentials = response.filter(cred => cred.type === 'ssh')
+      console.log('Loaded SSH credentials:', sshCredentials.map(c => ({ id: c.id, name: c.name })))
       setStoredCredentials(sshCredentials)
     } catch (error) {
       console.error('Error loading credentials:', error)
@@ -631,7 +639,8 @@ function UserTemplatesContent() {
       name: '',
       description: '',
       content: '',
-      scope: isAdmin ? 'global' : 'private'
+      scope: isAdmin ? 'global' : 'private',
+      execution_mode: 'run_on_device'
     })
     // Reset variables to one empty variable
     variableManager.setVariables([{ id: crypto.randomUUID(), name: '', value: '' }])
@@ -644,6 +653,8 @@ function UserTemplatesContent() {
     setPreRunCommand('')
     setSelectedCredentialId(null)
     setIsPreRunPanelExpanded(false)
+    // Reset file path
+    setFilePath('templates/{device_name}-{template_name}.txt')
   }
 
   // Load devices when search term changes (min 3 chars)
@@ -827,6 +838,12 @@ function UserTemplatesContent() {
       return
     }
 
+    // Validate file path if execution_mode is write_to_file
+    if (formData.execution_mode === 'write_to_file' && !filePath.trim()) {
+      showMessage('Please enter a file path for write_to_file mode')
+      return
+    }
+
     try {
       const templateData = {
         name: formData.name,
@@ -838,7 +855,10 @@ function UserTemplatesContent() {
         scope: formData.scope,
         variables: variablesToObject(),
         use_nautobot_context: variableManager.useNautobotContext,
-        pre_run_command: preRunCommand || undefined
+        pre_run_command: preRunCommand || undefined,
+        credential_id: selectedCredentialId,
+        execution_mode: formData.execution_mode,
+        file_path: formData.execution_mode === 'write_to_file' ? filePath : undefined
       }
 
       await apiCall('templates', {
@@ -859,6 +879,12 @@ function UserTemplatesContent() {
   const handleUpdateTemplate = async () => {
     if (!editingTemplate) return
 
+    // Validate file path if execution_mode is write_to_file
+    if (formData.execution_mode === 'write_to_file' && !filePath.trim()) {
+      showMessage('Please enter a file path for write_to_file mode')
+      return
+    }
+
     try {
       await apiCall(`templates/${editingTemplate.id}`, {
         method: 'PUT',
@@ -869,7 +895,10 @@ function UserTemplatesContent() {
           scope: formData.scope,
           variables: variablesToObject(),
           use_nautobot_context: variableManager.useNautobotContext,
-          pre_run_command: preRunCommand || undefined
+          pre_run_command: preRunCommand || undefined,
+          credential_id: selectedCredentialId,
+          execution_mode: formData.execution_mode,
+          file_path: formData.execution_mode === 'write_to_file' ? filePath : undefined
         }
       })
 
@@ -892,7 +921,8 @@ function UserTemplatesContent() {
         name: response.name,
         description: response.description || '',
         content: response.content || '',
-        scope: response.scope || 'global'
+        scope: response.scope || 'global',
+        execution_mode: response.execution_mode || 'run_on_device'
       })
       // Load variables into variable manager
       variableManager.setVariables(objectToVariables(response.variables))
@@ -900,10 +930,17 @@ function UserTemplatesContent() {
 
       // Load pre-run command if present
       setPreRunCommand(response.pre_run_command || '')
+      // Load credential if present
+      console.log('Loading credential_id from template:', response.credential_id, 'Type:', typeof response.credential_id)
+      setSelectedCredentialId(response.credential_id || null)
+      console.log('Set selectedCredentialId to:', response.credential_id || null)
       // Expand the panel if there's a saved pre-run command
       if (response.pre_run_command) {
         setIsPreRunPanelExpanded(true)
       }
+
+      // Load file path if present
+      setFilePath(response.file_path || 'templates/{device_name}-{template_name}.txt')
 
       setEditingTemplate(template)
       setActiveTab('create')
@@ -1162,13 +1199,14 @@ function UserTemplatesContent() {
                       <div className="space-y-2">
                         <Label htmlFor="pre-run-credential">Credentials {preRunCommand.trim() && '*'}</Label>
                         <Select
-                          value={selectedCredentialId?.toString() ?? ''}
-                          onValueChange={(value) => setSelectedCredentialId(value ? parseInt(value, 10) : null)}
+                          value={selectedCredentialId?.toString() ?? 'none'}
+                          onValueChange={(value) => setSelectedCredentialId(value && value !== 'none' ? parseInt(value, 10) : null)}
                         >
                           <SelectTrigger className={`border-2 bg-white shadow-sm ${preRunCommand.trim() ? 'border-slate-400' : 'border-slate-300'} focus:border-slate-500 focus:ring-2 focus:ring-slate-200`}>
                             <SelectValue placeholder="Select credentials..." />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
                             {storedCredentials.map((cred) => (
                               <SelectItem key={cred.id} value={cred.id.toString()}>
                                 <div className="flex items-center gap-2">
@@ -1192,6 +1230,67 @@ function UserTemplatesContent() {
                   </div>
                 )}
               </div>
+
+              {/* Mode Selection */}
+              <div className="space-y-2 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                <Label htmlFor="execution_mode" className="text-sm font-medium text-blue-900">Mode *</Label>
+                <Select
+                  value={formData.execution_mode}
+                  onValueChange={(value) => handleFormChange('execution_mode', value)}
+                >
+                  <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                    <SelectValue placeholder="Select mode..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="run_on_device">Run on Device</SelectItem>
+                    <SelectItem value="write_to_file">Write to File</SelectItem>
+                    <SelectItem value="sync_to_nautobot">Sync to Nautobot</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-blue-700">
+                  Select how this template will be used when executed
+                </p>
+              </div>
+
+              {/* File Path - Only shown when execution_mode is write_to_file */}
+              {formData.execution_mode === 'write_to_file' && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50/30 p-4 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-amber-900">File Path *</span>
+                  </div>
+
+                  <div className="bg-amber-100/50 border border-amber-200 rounded-md px-3 py-2 space-y-1">
+                    <p className="text-xs text-amber-800 leading-relaxed">
+                      <span className="font-semibold">Available variables:</span>
+                    </p>
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      Template: {'{template_name}'}
+                    </p>
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      Device: {'{device_name}'}, {'{hostname}'}, {'{serial}'}, {'{asset_tag}'}
+                    </p>
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      Location: {'{location.name}'}, {'{location.parent.name}'}, {'{location.parent.parent.name}'}
+                    </p>
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      Platform: {'{platform.name}'}, {'{platform.manufacturer.name}'}, {'{device_type.model}'}
+                    </p>
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      Other: {'{role.name}'}, {'{status.name}'}, {'{tenant.name}'}, {'{rack.name}'}, {'{custom_field_data.FIELD_NAME}'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Input
+                      id="file-path"
+                      value={filePath}
+                      onChange={(e) => setFilePath(e.target.value)}
+                      placeholder="templates/{device_name}-{template_name}.txt"
+                      className="h-9 bg-white border-amber-200 font-mono text-sm focus:ring-amber-500 focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Template Content */}
               <div className="space-y-2">

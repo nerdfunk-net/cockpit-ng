@@ -69,6 +69,17 @@ class TemplateRequest(BaseModel):
         None,
         description="Command to execute on device before rendering. Output is parsed with TextFSM and available as context.",
     )
+    credential_id: Optional[int] = Field(
+        None, description="ID of stored credential to use for pre-run command execution"
+    )
+    execution_mode: Optional[str] = Field(
+        default="run_on_device",
+        description="Execution mode: 'run_on_device', 'write_to_file', 'sync_to_nautobot'",
+    )
+    file_path: Optional[str] = Field(
+        None,
+        description="File path when execution_mode is 'write_to_file', supports variables like {device_name}, {template_name}",
+    )
 
 
 class TemplateResponse(BaseModel):
@@ -93,7 +104,10 @@ class TemplateResponse(BaseModel):
     variables: Dict[str, Any]
     tags: List[str]
     use_nautobot_context: bool
-    pre_run_command: Optional[str]
+    pre_run_command: Optional[str] = None
+    credential_id: Optional[int] = None
+    execution_mode: Optional[str] = None
+    file_path: Optional[str] = None
 
     # Timestamps
     created_at: str
@@ -241,6 +255,17 @@ class TemplateUpdateRequest(BaseModel):
         None,
         description="Command to execute on device before rendering. Output is parsed with TextFSM and available as context.",
     )
+    credential_id: Optional[int] = Field(
+        None, description="ID of stored credential to use for pre-run command execution"
+    )
+    execution_mode: Optional[str] = Field(
+        None,
+        description="Execution mode: 'run_on_device', 'write_to_file', 'sync_to_nautobot'",
+    )
+    file_path: Optional[str] = Field(
+        None,
+        description="File path when execution_mode is 'write_to_file', supports variables like {device_name}, {template_name}",
+    )
 
 
 class TemplateRenderRequest(BaseModel):
@@ -292,4 +317,46 @@ class TemplateRenderResponse(BaseModel):
     )
     pre_run_parsed: Optional[List[Dict[str, Any]]] = Field(
         None, description="TextFSM parsed output from pre-run command (if available)"
+    )
+
+
+class TemplateExecuteAndSyncRequest(BaseModel):
+    """Request model for executing template and syncing to Nautobot."""
+
+    template_id: int = Field(..., description="Template ID to execute")
+    device_ids: List[str] = Field(..., description="List of device UUIDs to update")
+    user_variables: Optional[Dict[str, Any]] = Field(
+        default_factory=dict, description="User-provided variables for template"
+    )
+    dry_run: bool = Field(
+        default=False, description="If True, validate without making changes"
+    )
+    output_format: str = Field(
+        default="json",
+        description="Expected output format: 'json', 'yaml', or 'text'",
+    )
+
+
+class TemplateExecuteAndSyncResponse(BaseModel):
+    """Response model for execute-and-sync operation."""
+
+    success: bool = Field(..., description="Whether the operation succeeded")
+    message: str = Field(..., description="Summary message")
+    task_id: Optional[str] = Field(
+        None, description="Celery task ID for tracking the update job"
+    )
+    job_id: Optional[str] = Field(
+        None, description="Job ID for tracking in Jobs/Views"
+    )
+    rendered_outputs: Optional[Dict[str, str]] = Field(
+        None, description="Map of device_id to rendered template output"
+    )
+    parsed_updates: Optional[List[Dict[str, Any]]] = Field(
+        None, description="Parsed device update objects that will be sent to Nautobot"
+    )
+    errors: Optional[List[str]] = Field(
+        default_factory=list, description="List of errors encountered"
+    )
+    warnings: Optional[List[str]] = Field(
+        default_factory=list, description="List of warnings"
     )

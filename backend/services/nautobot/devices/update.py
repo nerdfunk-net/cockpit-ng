@@ -46,6 +46,7 @@ class DeviceUpdateService:
         device_identifier: Dict[str, Any],
         update_data: Dict[str, Any],
         interface_config: Optional[Dict[str, str]] = None,
+        interfaces: Optional[List[Dict[str, Any]]] = None,
         create_if_missing: bool = False,
     ) -> Dict[str, Any]:
         """
@@ -55,7 +56,7 @@ class DeviceUpdateService:
         1. Resolve device UUID from identifier
         2. Validate and resolve update data (names → UUIDs)
         3. Update device properties via PATCH
-        4. Update/create interface if needed (for primary_ip4)
+        4. Update/create interfaces if needed
         5. Verify updates applied
 
         Args:
@@ -77,12 +78,28 @@ class DeviceUpdateService:
                 - primary_ip4: IP address (will create interface if needed)
                 - Any other device field
 
-            interface_config: Optional interface config for primary_ip4 updates:
+            interface_config: Optional interface config for primary_ip4 updates (legacy):
                 {
                     "name": "Loopback0",        # Default: "Loopback"
                     "type": "virtual",          # Default: "virtual"
                     "status": "active",         # Default: "active"
                 }
+
+            interfaces: Optional list of interfaces to create/update:
+                [
+                    {
+                        "name": "Ethernet0/0",
+                        "type": "1000base-t",
+                        "status": "active",
+                        "ip_address": "192.168.1.1/24",
+                        "namespace": "Global",
+                        "is_primary_ipv4": True,
+                        "enabled": True,
+                        "description": "...",
+                        ...
+                    },
+                    ...
+                ]
 
             create_if_missing: If True, create device if not found (uses DeviceImportService)
 
@@ -94,6 +111,8 @@ class DeviceUpdateService:
                 "message": str,
                 "updated_fields": List[str],
                 "warnings": List[str],
+                "interfaces_created": int,
+                "interfaces_failed": int,
                 "details": {
                     "before": {...},  # Device state before update
                     "after": {...},   # Device state after update
@@ -147,28 +166,53 @@ class DeviceUpdateService:
                 device_id, update_data, interface_config
             )
 
-            if not validated_data:
-                logger.info(f"No fields to update for device {device_name}")
+            # Only return early if BOTH validated_data AND interfaces are empty
+            if not validated_data and not interfaces:
+                logger.info(f"No fields to update and no interfaces for device {device_name}")
                 return {
                     "success": True,
                     "device_id": device_id,
                     "device_name": device_name,
-                    "message": f"Device '{device_name}' - no fields to update",
+                    "message": f"Device '{device_name}' - no fields to update and no interfaces",
                     "updated_fields": [],
-                    "warnings": ["No fields to update"],
+                    "warnings": ["No fields to update and no interfaces"],
                     "details": details,
                 }
 
-            # Step 3: Update device properties
-            logger.info(f"Step 3: Updating device {device_name}")
-            updated_fields = await self._update_device_properties(
-                device_id=device_id,
-                validated_data=validated_data,
-                interface_config=interface_config,
-                ip_namespace=ip_namespace,
-                device_name=device_name,
-                current_primary_ip4=current_primary_ip4,
-            )
+            # Log what we're going to process
+            if not validated_data and interfaces:
+                logger.info(f"No device fields to update, but processing {len(interfaces)} interface(s)")
+
+            # Step 3: Update device properties (if any)
+            updated_fields = []
+            if validated_data:
+                logger.info(f"Step 3: Updating device {device_name} with {len(validated_data)} field(s)")
+                updated_fields = await self._update_device_properties(
+                    device_id=device_id,
+                    validated_data=validated_data,
+                    interface_config=interface_config,
+                    ip_namespace=ip_namespace,
+                    device_name=device_name,
+                    current_primary_ip4=current_primary_ip4,
+                )
+            else:
+                logger.info(f"Step 3: Skipping device property updates (no fields to update)")
+
+            # Step 3.5: Create/update interfaces if provided
+            interfaces_created = 0
+            interfaces_updated = 0
+            interfaces_failed = 0
+            if interfaces:
+                logger.info(f"Step 3.5: Creating/updating {len(interfaces)} interface(s)")
+                interface_result = await self._update_device_interfaces(
+                    device_id=device_id,
+                    interfaces=interfaces,
+                )
+                interfaces_created = interface_result.get("interfaces_created", 0)
+                interfaces_updated = interface_result.get("interfaces_updated", 0)
+                interfaces_failed = interface_result.get("interfaces_failed", 0)
+                warnings.extend(interface_result.get("warnings", []))
+                logger.info(f"Interface update complete: {interfaces_created} created, {interfaces_updated} updated, {interfaces_failed} failed")
 
             # Get device state after update
             details["after"] = await self.common.get_device_details(
@@ -200,6 +244,8 @@ class DeviceUpdateService:
 
             # Success!
             success_message = f"Device '{device_name}' updated successfully"
+            if interfaces_created > 0 or interfaces_updated > 0:
+                success_message += f" ({interfaces_created} interface(s) created, {interfaces_updated} updated)"
 
             return {
                 "success": True,
@@ -208,6 +254,9 @@ class DeviceUpdateService:
                 "message": success_message,
                 "updated_fields": updated_fields,
                 "warnings": warnings,
+                "interfaces_created": interfaces_created,
+                "interfaces_updated": interfaces_updated,
+                "interfaces_failed": interfaces_failed,
                 "details": details,
             }
 
@@ -531,28 +580,319 @@ class DeviceUpdateService:
     async def _update_device_interfaces(
         self,
         device_id: str,
-        interface_config: Dict[str, Any],
+        interfaces: List[Dict[str, Any]],
     ) -> Dict[str, Any]:
         """
-        Update or create interfaces for device.
+        Create or update multiple interfaces for a device.
 
-        This method is for future use when updating interfaces beyond
-        just primary_ip4. Currently, primary_ip4 updates are handled
-        in _update_device_properties via ensure_interface_with_ip.
+        This method handles:
+        1. Creating IP addresses in IPAM
+        2. Creating interfaces on the device
+        3. Assigning IP addresses to interfaces
+        4. Setting primary IPv4 if specified
 
         Args:
             device_id: Device UUID
-            interface_config: Interface configuration dict
+            interfaces: List of interface dicts with format:
+                {
+                    "name": "Ethernet0/0",
+                    "type": "1000base-t",
+                    "status": "active",
+                    "ip_address": "192.168.1.1/24",  # Optional
+                    "namespace": "Global",            # Required if ip_address provided
+                    "is_primary_ipv4": True,          # Optional
+                    "enabled": True,                  # Optional
+                    "description": "...",             # Optional
+                    ... (other interface properties)
+                }
 
         Returns:
-            Result dict with interface updates
+            Dict with:
+                - interfaces_created: Number of interfaces created
+                - interfaces_failed: Number of interfaces that failed
+                - ip_addresses_created: Number of IP addresses created
+                - primary_ip4_id: Primary IPv4 ID if set
+                - warnings: List of warning messages
         """
-        # Placeholder for future implementation
-        # This would handle more complex interface updates beyond primary_ip4
-        logger.info(f"Interface updates for device {device_id}: {interface_config}")
+        logger.info(f"Creating/updating {len(interfaces)} interface(s) for device {device_id}")
+
+        created_interfaces = []
+        updated_interfaces = []  # Interfaces that already existed
+        failed_interfaces = []
+        ip_address_map = {}  # Maps interface name to IP ID
+        primary_ipv4_id = None
+        warnings = []
+        cleaned_interfaces = set()  # Track which interfaces we've already cleaned IPs from
+
+        # Step 1: Create IP addresses first
+        for interface in interfaces:
+            if not interface.get("ip_address"):
+                continue
+
+            ip_address = interface["ip_address"]
+            namespace = interface.get("namespace", "Global")
+            status = interface.get("status", "active")
+            ip_role = interface.get("ip_role")  # Optional: "Secondary" for secondary IPs
+
+            if not namespace:
+                warnings.append(f"Interface {interface['name']}: namespace required for IP {ip_address}, skipping IP creation")
+                continue
+
+            try:
+                # Resolve status name to UUID if needed
+                if not self.common._is_valid_uuid(status):
+                    status_id = await self.common.resolve_status_id(status, "ipam.ipaddress")
+                else:
+                    status_id = status
+
+                # Resolve namespace name to UUID if needed
+                if not self.common._is_valid_uuid(namespace):
+                    namespace_id = await self.common.resolve_namespace_id(namespace)
+                else:
+                    namespace_id = namespace
+
+                # Resolve role name to ID if provided
+                role_id = None
+                if ip_role:
+                    # Role is typically "Secondary", "Anycast", etc.
+                    # Keep the original case (Nautobot uses "Secondary" not "secondary")
+                    role_id = ip_role
+
+                # Create or get existing IP address
+                ip_payload = {
+                    "address": ip_address,
+                    "status": status_id,
+                    "namespace": namespace_id,
+                }
+
+                # Add role if specified
+                if role_id:
+                    ip_payload["role"] = role_id
+
+                try:
+                    ip_response = await self.nautobot.rest_request(
+                        endpoint="ipam/ip-addresses/",
+                        method="POST",
+                        data=ip_payload,
+                    )
+                    if ip_response and "id" in ip_response:
+                        ip_address_map[interface["name"]] = ip_response["id"]
+                        logger.info(f"Created IP address {ip_address} with ID: {ip_response['id']}")
+
+                except Exception as create_error:
+                    error_msg = str(create_error)
+
+                    # If IP already exists, look it up
+                    if "already exists" in error_msg.lower():
+                        logger.info(f"IP address {ip_address} already exists, looking it up...")
+
+                        # Try to find the existing IP address
+                        try:
+                            query = """
+                            query GetIPAddress($filter: [String], $namespace: [String]) {
+                              ip_addresses(address: $filter, namespace: $namespace) {
+                                id
+                                address
+                              }
+                            }
+                            """
+                            variables = {
+                                "filter": [ip_address],
+                                "namespace": [namespace_id],
+                            }
+
+                            result = await self.nautobot.graphql_query(query, variables)
+
+                            if result and "data" in result and "ip_addresses" in result["data"]:
+                                ip_addresses = result["data"]["ip_addresses"]
+                                if ip_addresses and len(ip_addresses) > 0:
+                                    existing_ip = ip_addresses[0]
+                                    ip_id = existing_ip["id"]
+                                    ip_address_map[interface["name"]] = ip_id
+                                    logger.info(f"Found existing IP address {ip_address} with ID: {ip_id}")
+                                else:
+                                    warnings.append(f"Interface {interface['name']}: IP {ip_address} exists but could not be found")
+
+                        except Exception as lookup_error:
+                            warnings.append(f"Interface {interface['name']}: Failed to lookup existing IP {ip_address}: {str(lookup_error)}")
+                    else:
+                        warnings.append(f"Interface {interface['name']}: Failed to create IP {ip_address}: {error_msg}")
+
+            except Exception as e:
+                warnings.append(f"Interface {interface['name']}: Error processing IP address: {str(e)}")
+
+        # Step 2: Create interfaces
+        for interface in interfaces:
+            try:
+                # Resolve status name to UUID if needed
+                interface_status = interface.get("status", "active")
+                if not self.common._is_valid_uuid(interface_status):
+                    interface_status_id = await self.common.resolve_status_id(interface_status, "dcim.interface")
+                else:
+                    interface_status_id = interface_status
+
+                interface_payload = {
+                    "name": interface["name"],
+                    "device": device_id,
+                    "type": interface["type"],
+                    "status": interface_status_id,
+                }
+
+                # Add optional properties
+                if "enabled" in interface and interface["enabled"] is not None:
+                    interface_payload["enabled"] = interface["enabled"]
+                if "mgmt_only" in interface and interface["mgmt_only"] is not None:
+                    interface_payload["mgmt_only"] = interface["mgmt_only"]
+                if interface.get("description"):
+                    interface_payload["description"] = interface["description"]
+                if interface.get("mac_address"):
+                    interface_payload["mac_address"] = interface["mac_address"]
+                if interface.get("mtu"):
+                    interface_payload["mtu"] = interface["mtu"]
+                if interface.get("mode"):
+                    interface_payload["mode"] = interface["mode"]
+
+                # Create the interface (or get existing if already exists)
+                interface_id = None
+                try:
+                    interface_response = await self.nautobot.rest_request(
+                        endpoint="dcim/interfaces/",
+                        method="POST",
+                        data=interface_payload,
+                    )
+
+                    if interface_response and "id" in interface_response:
+                        interface_id = interface_response["id"]
+                        logger.info(f"Created interface {interface['name']} with ID: {interface_id}")
+                        created_interfaces.append(interface["name"])
+
+                except Exception as create_error:
+                    error_msg = str(create_error)
+
+                    # Check if this is a "unique set" error (interface already exists)
+                    if "must make a unique set" in error_msg.lower():
+                        logger.info(f"Interface {interface['name']} already exists, looking it up...")
+
+                        # Look up the existing interface
+                        try:
+                            query = """
+                            query GetInterface($device: [String], $name: [String]) {
+                              interfaces(device_id: $device, name: $name) {
+                                id
+                                name
+                              }
+                            }
+                            """
+                            variables = {
+                                "device": [device_id],
+                                "name": [interface["name"]],
+                            }
+
+                            result = await self.nautobot.graphql_query(query, variables)
+
+                            if result and "data" in result and "interfaces" in result["data"]:
+                                interfaces_list = result["data"]["interfaces"]
+                                if interfaces_list and len(interfaces_list) > 0:
+                                    existing_interface = interfaces_list[0]
+                                    interface_id = existing_interface["id"]
+                                    logger.info(f"Found existing interface {interface['name']} with ID: {interface_id}")
+                                    updated_interfaces.append(interface["name"])
+                                else:
+                                    warnings.append(f"Interface {interface['name']}: Interface exists but could not be found via GraphQL")
+                                    continue
+
+                        except Exception as lookup_error:
+                            warnings.append(f"Interface {interface['name']}: Failed to lookup existing interface: {str(lookup_error)}")
+                            continue
+                    else:
+                        # Different error, re-raise
+                        raise
+
+                if interface_id:
+                    # First, unassign any existing IP addresses from the interface (only once per interface)
+                    if interface_id not in cleaned_interfaces:
+                        try:
+                            # Get all existing IP assignments for this interface
+                            existing_assignments_endpoint = f"ipam/ip-address-to-interface/?interface={interface_id}&format=json"
+                            existing_assignments = await self.nautobot.rest_request(
+                                endpoint=existing_assignments_endpoint,
+                                method="GET"
+                            )
+
+                            if existing_assignments and existing_assignments.get("count", 0) > 0:
+                                logger.info(f"Found {existing_assignments['count']} existing IP assignment(s) on interface {interface['name']}, removing them...")
+                                for assignment in existing_assignments.get("results", []):
+                                    assignment_id = assignment["id"]
+                                    try:
+                                        await self.nautobot.rest_request(
+                                            endpoint=f"ipam/ip-address-to-interface/{assignment_id}/",
+                                            method="DELETE"
+                                        )
+                                        logger.info(f"Unassigned IP assignment {assignment_id} from interface {interface['name']}")
+                                    except Exception as delete_error:
+                                        warnings.append(f"Interface {interface['name']}: Failed to unassign existing IP: {str(delete_error)}")
+
+                            # Mark this interface as cleaned
+                            cleaned_interfaces.add(interface_id)
+
+                        except Exception as e:
+                            warnings.append(f"Interface {interface['name']}: Failed to check existing IP assignments: {str(e)}")
+                    else:
+                        logger.info(f"Interface {interface['name']} already cleaned in this run, skipping unassignment")
+
+                    # Assign IP address to interface if available
+                    if interface["name"] in ip_address_map:
+                        ip_id = ip_address_map[interface["name"]]
+                        try:
+                            assignment_payload = {
+                                "ip_address": ip_id,
+                                "interface": interface_id,
+                            }
+                            await self.nautobot.rest_request(
+                                endpoint="ipam/ip-address-to-interface/",
+                                method="POST",
+                                data=assignment_payload,
+                            )
+                            logger.info(f"Assigned IP to interface {interface['name']}")
+
+                            # Check if this should be the primary IPv4
+                            is_ipv4 = interface.get("ip_address") and ":" not in interface["ip_address"]
+
+                            if is_ipv4:
+                                if interface.get("is_primary_ipv4"):
+                                    primary_ipv4_id = ip_id
+                                    logger.info(f"Interface {interface['name']} marked as primary IPv4 (explicit)")
+                                elif primary_ipv4_id is None:
+                                    primary_ipv4_id = ip_id
+                                    logger.info(f"Interface {interface['name']} set as primary IPv4 (first IPv4 found)")
+
+                        except Exception as e:
+                            warnings.append(f"Interface {interface['name']}: Failed to assign IP address: {str(e)}")
+
+            except Exception as e:
+                error_msg = str(e)
+                failed_interfaces.append(interface["name"])
+                warnings.append(f"Interface {interface['name']}: Failed to process interface: {error_msg}")
+                logger.error(f"Error processing interface {interface['name']}: {error_msg}")
+
+        # Step 3: Set primary IPv4 if found
+        if primary_ipv4_id:
+            try:
+                update_payload = {"primary_ip4": primary_ipv4_id}
+                await self.nautobot.rest_request(
+                    endpoint=f"dcim/devices/{device_id}/",
+                    method="PATCH",
+                    data=update_payload,
+                )
+                logger.info(f"Set primary IPv4 to {primary_ipv4_id}")
+            except Exception as e:
+                warnings.append(f"Failed to set primary IPv4: {str(e)}")
 
         return {
-            "updated_interfaces": [],
-            "created_interfaces": [],
-            "warnings": [],
+            "interfaces_created": len(created_interfaces),
+            "interfaces_updated": len(updated_interfaces),
+            "interfaces_failed": len(failed_interfaces),
+            "ip_addresses_created": len(ip_address_map),
+            "primary_ip4_id": primary_ipv4_id,
+            "warnings": warnings,
         }

@@ -98,12 +98,12 @@ class InventoryDeleteResponse(BaseModel):
 @router.post("", response_model=InventoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_inventory(
     request: CreateInventoryRequest,
-    current_user: dict = Depends(require_permission("network.inventory", "write")),
+    current_user: dict = Depends(require_permission("general.inventory", "write")),
 ) -> InventoryResponse:
     """
     Create a new inventory configuration.
 
-    Requires network.inventory:write permission.
+    Requires general.inventory:write permission.
     """
     try:
         username = current_user.get("username")
@@ -160,7 +160,7 @@ async def create_inventory(
 async def list_inventories(
     scope: Optional[str] = None,
     active_only: bool = True,
-    current_user: dict = Depends(require_permission("network.inventory", "read")),
+    current_user: dict = Depends(require_permission("general.inventory", "read")),
 ) -> ListInventoriesResponse:
     """
     List all inventories accessible to the current user.
@@ -173,7 +173,7 @@ async def list_inventories(
     - scope: Filter by scope ('global', 'private', or None for both)
     - active_only: Only return active inventories (default: true)
 
-    Requires network.inventory:read permission.
+    Requires general.inventory:read permission.
     """
     try:
         username = current_user.get("username")
@@ -203,12 +203,12 @@ async def list_inventories(
 @router.get("/{inventory_id}", response_model=InventoryResponse)
 async def get_inventory(
     inventory_id: int,
-    current_user: dict = Depends(require_permission("network.inventory", "read")),
+    current_user: dict = Depends(require_permission("general.inventory", "read")),
 ) -> InventoryResponse:
     """
     Get a specific inventory by ID.
 
-    Requires network.inventory:read permission.
+    Requires general.inventory:read permission.
     """
     try:
         inventory = inventory_manager.get_inventory(inventory_id)
@@ -241,14 +241,14 @@ async def get_inventory(
 @router.get("/by-name/{inventory_name}", response_model=InventoryResponse)
 async def get_inventory_by_name(
     inventory_name: str,
-    current_user: dict = Depends(require_permission("network.inventory", "read")),
+    current_user: dict = Depends(require_permission("general.inventory", "read")),
 ) -> InventoryResponse:
     """
     Get a specific inventory by name.
 
     Returns the inventory owned by the current user with the given name.
 
-    Requires network.inventory:read permission.
+    Requires general.inventory:read permission.
     """
     try:
         username = current_user.get("username")
@@ -281,7 +281,7 @@ async def get_inventory_by_name(
 async def update_inventory(
     inventory_id: int,
     request: UpdateInventoryRequest,
-    current_user: dict = Depends(require_permission("network.inventory", "write")),
+    current_user: dict = Depends(require_permission("general.inventory", "write")),
 ) -> InventoryResponse:
     """
     Update an existing inventory.
@@ -289,7 +289,7 @@ async def update_inventory(
     Only the owner of a private inventory can update it.
     Global inventories can be updated by anyone with write permission.
 
-    Requires network.inventory:write permission.
+    Requires general.inventory:write permission.
     """
     try:
         username = current_user.get("username")
@@ -354,7 +354,7 @@ async def update_inventory(
 async def delete_inventory(
     inventory_id: int,
     hard_delete: bool = False,
-    current_user: dict = Depends(require_permission("network.inventory", "delete")),
+    current_user: dict = Depends(require_permission("general.inventory", "delete")),
 ) -> InventoryDeleteResponse:
     """
     Delete an inventory (soft delete by default).
@@ -365,7 +365,7 @@ async def delete_inventory(
     Query Parameters:
     - hard_delete: If true, permanently delete. If false (default), soft delete.
 
-    Requires network.inventory:delete permission.
+    Requires general.inventory:delete permission.
     """
     try:
         username = current_user.get("username")
@@ -409,14 +409,14 @@ async def delete_inventory(
 async def search_inventories(
     query: str,
     active_only: bool = True,
-    current_user: dict = Depends(require_permission("network.inventory", "read")),
+    current_user: dict = Depends(require_permission("general.inventory", "read")),
 ) -> ListInventoriesResponse:
     """
     Search inventories by name or description.
 
     Returns inventories accessible to the current user that match the search query.
 
-    Requires network.inventory:read permission.
+    Requires general.inventory:read permission.
     """
     try:
         username = current_user.get("username")

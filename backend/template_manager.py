@@ -70,6 +70,9 @@ class TemplateManager:
                 tags=tags_json,
                 use_nautobot_context=template_data.get("use_nautobot_context", False),
                 pre_run_command=template_data.get("pre_run_command"),
+                credential_id=template_data.get("credential_id"),
+                execution_mode=template_data.get("execution_mode", "run_on_device"),
+                file_path=template_data.get("file_path"),
                 created_by=template_data.get("created_by"),
                 scope=template_data.get("scope", "global"),
                 is_active=True,
@@ -220,6 +223,15 @@ class TemplateManager:
                 "pre_run_command": template_data.get(
                     "pre_run_command", current.get("pre_run_command")
                 ),
+                "credential_id": template_data.get(
+                    "credential_id", current.get("credential_id")
+                ),
+                "execution_mode": template_data.get(
+                    "execution_mode", current.get("execution_mode", "run_on_device")
+                ),
+                "file_path": template_data.get(
+                    "file_path", current.get("file_path")
+                ),
                 "scope": new_scope,
             }
 
@@ -358,6 +370,9 @@ class TemplateManager:
             "is_active": bool(template.is_active),
             "use_nautobot_context": bool(template.use_nautobot_context),
             "pre_run_command": template.pre_run_command,
+            "credential_id": template.credential_id,
+            "execution_mode": template.execution_mode,
+            "file_path": template.file_path,
             "last_sync": template.last_sync.isoformat() if template.last_sync else None,
             "sync_status": template.sync_status,
             "created_at": template.created_at.isoformat()

@@ -113,6 +113,46 @@ export function TemplateSelectionPanel({
               )}
             </div>
 
+            {/* Template Configuration Display */}
+            <div className="space-y-3 p-4 bg-blue-50 rounded-md border-2 border-blue-200">
+              <Label className="text-sm font-semibold text-blue-900">Template Configuration</Label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-blue-700">Execution Mode:</span>
+                  <Badge
+                    variant={
+                      selectedTemplate.execution_mode === 'sync_to_nautobot' ? 'default' :
+                      selectedTemplate.execution_mode === 'write_to_file' ? 'secondary' :
+                      'outline'
+                    }
+                    className={
+                      selectedTemplate.execution_mode === 'sync_to_nautobot' ? 'bg-green-100 text-green-800 border-green-300' :
+                      selectedTemplate.execution_mode === 'write_to_file' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                      'bg-slate-100 text-slate-800 border-slate-300'
+                    }
+                  >
+                    {selectedTemplate.execution_mode === 'run_on_device' ? 'Run on Device' :
+                     selectedTemplate.execution_mode === 'write_to_file' ? 'Write to File' :
+                     selectedTemplate.execution_mode === 'sync_to_nautobot' ? 'Sync to Nautobot' :
+                     'Run on Device (default)'}
+                  </Badge>
+                </div>
+                {selectedTemplate.execution_mode === 'write_to_file' && selectedTemplate.file_path && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm font-medium text-blue-700">File Path:</span>
+                    <code className="text-xs font-mono bg-white px-2 py-1 rounded border border-blue-200 flex-1">
+                      {selectedTemplate.file_path}
+                    </code>
+                  </div>
+                )}
+                {selectedTemplate.execution_mode === 'sync_to_nautobot' && (
+                  <div className="text-xs text-green-700 mt-2">
+                    ℹ️ This template will sync the rendered output to Nautobot when executed
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Test Template Section */}
             <div className="space-y-3 p-4 bg-gray-50 rounded-md border border-gray-200">
               <Label className="text-sm font-medium">Test Template Rendering</Label>

@@ -147,6 +147,8 @@ function ContextDataViewer({ data, label, depth = 0 }: { data: unknown; label: s
 
 export function TemplateRenderResultDialog({ open, onOpenChange, result }: TemplateRenderResultDialogProps) {
   const [copied, setCopied] = useState(false)
+  const [copiedParsed, setCopiedParsed] = useState(false)
+  const [copiedRaw, setCopiedRaw] = useState(false)
   const [activeContextTab, setActiveContextTab] = useState<'nautobot' | 'prerun'>('nautobot')
 
   if (!result) return null
@@ -163,6 +165,22 @@ export function TemplateRenderResultDialog({ open, onOpenChange, result }: Templ
       await navigator.clipboard.writeText(result.rendered_content)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  const handleCopyParsed = async () => {
+    if (preRunParsed) {
+      await navigator.clipboard.writeText(JSON.stringify(preRunParsed, null, 2))
+      setCopiedParsed(true)
+      setTimeout(() => setCopiedParsed(false), 2000)
+    }
+  }
+
+  const handleCopyRaw = async () => {
+    if (preRunOutput) {
+      await navigator.clipboard.writeText(preRunOutput)
+      setCopiedRaw(true)
+      setTimeout(() => setCopiedRaw(false), 2000)
     }
   }
 
@@ -304,13 +322,33 @@ export function TemplateRenderResultDialog({ open, onOpenChange, result }: Templ
                     {/* Parsed output (structured data) */}
                     {preRunParsed && preRunParsed.length > 0 && (
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="bg-green-100 text-green-700 border border-green-200">
-                            TextFSM Parsed
-                          </Badge>
-                          <span className="text-xs text-slate-500">
-                            {preRunParsed.length} record(s)
-                          </span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="bg-green-100 text-green-700 border border-green-200">
+                              TextFSM Parsed
+                            </Badge>
+                            <span className="text-xs text-slate-500">
+                              {preRunParsed.length} record(s)
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleCopyParsed}
+                            className="h-6 text-xs"
+                          >
+                            {copiedParsed ? (
+                              <>
+                                <Check className="h-3 w-3 mr-1 text-green-600" />
+                                Copied
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3 w-3 mr-1" />
+                                Copy
+                              </>
+                            )}
+                          </Button>
                         </div>
                         <div className="text-sm font-mono bg-white p-2 rounded border border-amber-200">
                           <ContextDataViewer data={preRunParsed} label="pre_run_parsed" />
@@ -321,13 +359,33 @@ export function TemplateRenderResultDialog({ open, onOpenChange, result }: Templ
                     {/* Raw output */}
                     {preRunOutput && (
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="bg-slate-100 text-slate-700 border border-slate-200">
-                            Raw Output
-                          </Badge>
-                          <span className="text-xs text-slate-500">
-                            Access via <code className="bg-slate-200 px-1 rounded">{'{{ pre_run_output }}'}</code>
-                          </span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="bg-slate-100 text-slate-700 border border-slate-200">
+                              Raw Output
+                            </Badge>
+                            <span className="text-xs text-slate-500">
+                              Access via <code className="bg-slate-200 px-1 rounded">{'{{ pre_run_output }}'}</code>
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleCopyRaw}
+                            className="h-6 text-xs"
+                          >
+                            {copiedRaw ? (
+                              <>
+                                <Check className="h-3 w-3 mr-1 text-green-600" />
+                                Copied
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3 w-3 mr-1" />
+                                Copy
+                              </>
+                            )}
+                          </Button>
                         </div>
                         <pre className="text-xs font-mono bg-white p-3 rounded border border-amber-200 overflow-x-auto whitespace-pre-wrap max-h-[300px] overflow-y-auto">
                           {preRunOutput}
