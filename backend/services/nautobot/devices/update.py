@@ -657,6 +657,7 @@ class DeviceUpdateService:
                     # Role is typically "Secondary", "Anycast", etc.
                     # Keep the original case (Nautobot uses "Secondary" not "secondary")
                     role_id = ip_role
+                    logger.info(f"IP role detected for {ip_address}: '{ip_role}' → using '{role_id}'")
 
                 # Create or get existing IP address
                 ip_payload = {
@@ -668,16 +669,20 @@ class DeviceUpdateService:
                 # Add role if specified
                 if role_id:
                     ip_payload["role"] = role_id
+                    logger.info(f"Added role '{role_id}' to IP payload for {ip_address}")
 
                 try:
+                    logger.info(f"Creating IP address {ip_address} for interface {interface['name']} with payload: {ip_payload}")
                     ip_response = await self.nautobot.rest_request(
                         endpoint="ipam/ip-addresses/",
                         method="POST",
                         data=ip_payload,
                     )
                     if ip_response and "id" in ip_response:
-                        ip_address_map[interface["name"]] = ip_response["id"]
-                        logger.info(f"Created IP address {ip_address} with ID: {ip_response['id']}")
+                        # Store IP ID using interface name + IP address as key (to handle multiple IPs per interface)
+                        map_key = f"{interface['name']}:{ip_address}"
+                        ip_address_map[map_key] = ip_response["id"]
+                        logger.info(f"Created IP address {ip_address} with ID: {ip_response['id']}, stored with key '{map_key}'")
 
                 except Exception as create_error:
                     error_msg = str(create_error)
@@ -708,8 +713,10 @@ class DeviceUpdateService:
                                 if ip_addresses and len(ip_addresses) > 0:
                                     existing_ip = ip_addresses[0]
                                     ip_id = existing_ip["id"]
-                                    ip_address_map[interface["name"]] = ip_id
-                                    logger.info(f"Found existing IP address {ip_address} with ID: {ip_id}")
+                                    # Store IP ID using interface name + IP address as key
+                                    map_key = f"{interface['name']}:{ip_address}"
+                                    ip_address_map[map_key] = ip_id
+                                    logger.info(f"Found existing IP address {ip_address} with ID: {ip_id}, stored with key '{map_key}'")
                                 else:
                                     warnings.append(f"Interface {interface['name']}: IP {ip_address} exists but could not be found")
 
@@ -841,19 +848,36 @@ class DeviceUpdateService:
                         logger.info(f"Interface {interface['name']} already cleaned in this run, skipping unassignment")
 
                     # Assign IP address to interface if available
-                    if interface["name"] in ip_address_map:
-                        ip_id = ip_address_map[interface["name"]]
+                    # Use composite key (interface name + IP address) to look up the correct IP
+                    ip_address_from_interface = interface.get("ip_address", "")
+                    map_key = f"{interface['name']}:{ip_address_from_interface}"
+
+                    if map_key in ip_address_map:
+                        ip_id = ip_address_map[map_key]
+                        logger.info(f"Attempting to assign IP {ip_address_from_interface} (ID: {ip_id}) to interface {interface['name']} (interface_id: {interface_id})")
+
                         try:
-                            assignment_payload = {
-                                "ip_address": ip_id,
-                                "interface": interface_id,
-                            }
-                            await self.nautobot.rest_request(
-                                endpoint="ipam/ip-address-to-interface/",
-                                method="POST",
-                                data=assignment_payload,
+                            # Check if this assignment already exists
+                            check_assignment_endpoint = f"ipam/ip-address-to-interface/?ip_address={ip_id}&interface={interface_id}&format=json"
+                            existing_assignment = await self.nautobot.rest_request(
+                                endpoint=check_assignment_endpoint,
+                                method="GET"
                             )
-                            logger.info(f"Assigned IP to interface {interface['name']}")
+
+                            if existing_assignment and existing_assignment.get("count", 0) > 0:
+                                logger.info(f"IP-to-Interface assignment already exists for IP {ip_id} and interface {interface['name']}, skipping creation")
+                            else:
+                                # Create new assignment
+                                assignment_payload = {
+                                    "ip_address": ip_id,
+                                    "interface": interface_id,
+                                }
+                                await self.nautobot.rest_request(
+                                    endpoint="ipam/ip-address-to-interface/",
+                                    method="POST",
+                                    data=assignment_payload,
+                                )
+                                logger.info(f"Created new IP-to-Interface assignment: IP {ip_id} → interface {interface['name']}")
 
                             # Check if this should be the primary IPv4
                             is_ipv4 = interface.get("ip_address") and ":" not in interface["ip_address"]
@@ -868,6 +892,8 @@ class DeviceUpdateService:
 
                         except Exception as e:
                             warnings.append(f"Interface {interface['name']}: Failed to assign IP address: {str(e)}")
+                    else:
+                        logger.warning(f"IP address not found in map for key '{map_key}' - this IP may not have been created successfully")
 
             except Exception as e:
                 error_msg = str(e)

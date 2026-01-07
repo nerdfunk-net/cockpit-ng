@@ -175,7 +175,10 @@ def update_devices_task(
                 device_identifier, update_data, interface_config, interfaces = _prepare_device_data(
                     device_data
                 )
-                logger.info(f"After prepare - interfaces: {interfaces}")
+                logger.info(f"After prepare - interfaces ({len(interfaces) if interfaces else 0} total):")
+                if interfaces:
+                    for idx, iface in enumerate(interfaces):
+                        logger.info(f"  Interface {idx+1}: name={iface.get('name')}, ip={iface.get('ip_address')}, role={iface.get('ip_role', 'NOT SET')}")
 
                 if not update_data and not interfaces:
                     logger.info(f"No update data or interfaces for device {identifier}, skipping")
