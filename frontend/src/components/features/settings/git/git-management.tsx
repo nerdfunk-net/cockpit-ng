@@ -208,8 +208,8 @@ const GitManagement: React.FC = () => {
   const loadCredentials = async () => {
     try {
       const response = await apiCall<GitCredential[]>('credentials/?include_expired=false')
-      // Load both token and ssh_key type credentials for git authentication
-      const filtered = (response || []).filter(c => c.type === 'token' || c.type === 'ssh_key')
+      // Load token, ssh_key, and generic type credentials for git authentication
+      const filtered = (response || []).filter(c => c.type === 'token' || c.type === 'ssh_key' || c.type === 'generic')
       setCredentials(filtered)
     } catch (error) {
       console.error('Error loading credentials:', error)
@@ -320,7 +320,14 @@ const GitManagement: React.FC = () => {
     // Find the matching credential and construct the "id:name" format expected by the Select component
     let credentialValue = '__none__'
     if (repo.credential_name) {
-      const expectedType = repo.auth_type === 'ssh_key' ? 'ssh_key' : 'token'
+      // Determine expected credential type based on auth_type
+      let expectedType = 'token'
+      if (repo.auth_type === 'ssh_key') {
+        expectedType = 'ssh_key'
+      } else if (repo.auth_type === 'generic') {
+        expectedType = 'generic'
+      }
+      
       const matchingCred = credentials.find(
         cred => cred.name === repo.credential_name && cred.type === expectedType
       )
@@ -799,6 +806,7 @@ const GitManagement: React.FC = () => {
                       <SelectItem key="create-auth-none" value="none">None (Public Repository)</SelectItem>
                       <SelectItem key="create-auth-token" value="token">Token</SelectItem>
                       <SelectItem key="create-auth-ssh" value="ssh_key">SSH Key</SelectItem>
+                      <SelectItem key="create-auth-generic" value="generic">Generic (Username/Password)</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-gray-600">How to authenticate with this repository</p>
@@ -807,14 +815,14 @@ const GitManagement: React.FC = () => {
                 {formData.auth_type !== 'none' && (
                   <div className="space-y-2">
                     <Label htmlFor="credential" className="text-sm font-semibold text-gray-800">
-                      {formData.auth_type === 'ssh_key' ? 'SSH Key Credential' : 'Token Credential'}
+                      {formData.auth_type === 'ssh_key' ? 'SSH Key Credential' : formData.auth_type === 'generic' ? 'Generic Credential' : 'Token Credential'}
                     </Label>
                     <Select 
                       value={formData.credential_name} 
                       onValueChange={(value) => setFormData(prev => ({ ...prev, credential_name: value }))}
                     >
                       <SelectTrigger id="credential" className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200">
-                        <SelectValue placeholder={`Select ${formData.auth_type === 'ssh_key' ? 'SSH key' : 'token'} credential`} />
+                        <SelectValue placeholder={`Select ${formData.auth_type === 'ssh_key' ? 'SSH key' : formData.auth_type === 'generic' ? 'generic' : 'token'} credential`} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem key="create-cred-none" value="__none__">No credential selected</SelectItem>
@@ -822,6 +830,8 @@ const GitManagement: React.FC = () => {
                           .filter(cred =>
                             formData.auth_type === 'ssh_key'
                               ? cred.type === 'ssh_key'
+                              : formData.auth_type === 'generic'
+                              ? cred.type === 'generic'
                               : cred.type === 'token'
                           )
                           .map((cred, index) => {
@@ -839,6 +849,8 @@ const GitManagement: React.FC = () => {
                     <p className="text-xs text-gray-600">
                       {formData.auth_type === 'ssh_key' 
                         ? 'Select an SSH key credential for authentication' 
+                        : formData.auth_type === 'generic'
+                        ? 'Select a generic credential (username/password) for authentication'
                         : 'Select a token credential for authentication'}
                     </p>
                   </div>
@@ -1047,6 +1059,7 @@ const GitManagement: React.FC = () => {
                   <SelectItem key="edit-auth-none" value="none">None (Public Repository)</SelectItem>
                   <SelectItem key="edit-auth-token" value="token">Token</SelectItem>
                   <SelectItem key="edit-auth-ssh" value="ssh_key">SSH Key</SelectItem>
+                  <SelectItem key="edit-auth-generic" value="generic">Generic (Username/Password)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1054,14 +1067,14 @@ const GitManagement: React.FC = () => {
             {editFormData.auth_type !== 'none' && (
               <div className="space-y-2">
                 <Label htmlFor="edit-credential">
-                  {editFormData.auth_type === 'ssh_key' ? 'SSH Key Credential' : 'Token Credential'}
+                  {editFormData.auth_type === 'ssh_key' ? 'SSH Key Credential' : editFormData.auth_type === 'generic' ? 'Generic Credential' : 'Token Credential'}
                 </Label>
                 <Select 
                   value={editFormData.credential_name} 
                   onValueChange={(value) => setEditFormData(prev => ({ ...prev, credential_name: value }))}
                 >
                   <SelectTrigger id="edit-credential">
-                    <SelectValue placeholder={`Select ${editFormData.auth_type === 'ssh_key' ? 'SSH key' : 'token'} credential`} />
+                    <SelectValue placeholder={`Select ${editFormData.auth_type === 'ssh_key' ? 'SSH key' : editFormData.auth_type === 'generic' ? 'generic' : 'token'} credential`} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem key="edit-cred-none" value="__none__">No credential selected</SelectItem>
@@ -1069,6 +1082,8 @@ const GitManagement: React.FC = () => {
                       .filter(cred =>
                         editFormData.auth_type === 'ssh_key'
                           ? cred.type === 'ssh_key'
+                          : editFormData.auth_type === 'generic'
+                          ? cred.type === 'generic'
                           : cred.type === 'token'
                       )
                       .map((cred, index) => {

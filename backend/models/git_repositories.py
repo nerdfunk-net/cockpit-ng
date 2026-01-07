@@ -23,6 +23,7 @@ class GitAuthType(str, Enum):
     NONE = "none"
     TOKEN = "token"
     SSH_KEY = "ssh_key"
+    GENERIC = "generic"
 
 
 class GitRepositoryRequest(BaseModel):
@@ -34,7 +35,7 @@ class GitRepositoryRequest(BaseModel):
     branch: str = Field(default="main", description="Default branch")
     auth_type: GitAuthType = Field(
         default=GitAuthType.TOKEN,
-        description="Authentication type (none, token, ssh_key)",
+        description="Authentication type (none, token, ssh_key, generic)",
     )
     credential_name: Optional[str] = Field(
         None, description="Name of stored credential to use (token or ssh_key)"
@@ -92,7 +93,7 @@ class GitRepositoryUpdateRequest(BaseModel):
     url: Optional[str] = Field(None, description="Repository URL")
     branch: Optional[str] = Field(None, description="Default branch")
     auth_type: Optional[GitAuthType] = Field(
-        None, description="Authentication type (none, token, ssh_key)"
+        None, description="Authentication type (none, token, ssh_key, generic)"
     )
     credential_name: Optional[str] = Field(
         None, description="Name of stored credential to use (token or ssh_key)"

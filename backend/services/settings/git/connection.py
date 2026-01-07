@@ -47,6 +47,13 @@ class GitConnectionService:
             >>> result.success
             True
         """
+        logger.info(f"=== Starting Git Connection Test ===")
+        logger.info(f"URL: {test_request.url}")
+        logger.info(f"Branch: {test_request.branch}")
+        logger.info(f"Auth Type: {test_request.auth_type}")
+        logger.info(f"Credential Name: {test_request.credential_name}")
+        logger.info(f"Verify SSL: {test_request.verify_ssl}")
+        
         try:
             # Create temporary directory for test
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -56,6 +63,7 @@ class GitConnectionService:
                 auth_type = (
                     test_request.auth_type.value if test_request.auth_type else "token"
                 )
+                logger.debug(f"Resolved auth_type to: {auth_type}")
 
                 # Create a temporary repository dict for credential resolution
                 temp_repo = {
@@ -68,9 +76,16 @@ class GitConnectionService:
                 }
 
                 # Resolve credentials using authentication service
+                logger.info(f"Resolving credentials for auth_type: {auth_type}")
                 resolved_username, resolved_token, ssh_key_path = (
                     git_auth_service.resolve_credentials(temp_repo)
                 )
+                
+                # Log resolved credentials (without exposing secrets)
+                logger.info(f"Credential resolution results:")
+                logger.info(f"  - Username: {resolved_username if resolved_username else 'None'}")
+                logger.info(f"  - Token/Password: {'<present>' if resolved_token else 'None'}")
+                logger.info(f"  - SSH Key Path: {ssh_key_path if ssh_key_path else 'None'}")
 
                 # Validate credential resolution
                 validation_result = self._validate_credentials(
@@ -155,6 +170,15 @@ class GitConnectionService:
                     details={},
                 )
 
+        # Validate generic credentials
+        elif auth_type == "generic":
+            if test_request.credential_name and not resolved_token:
+                return GitConnectionTestResponse(
+                    success=False,
+                    message=f"Failed to resolve generic credential '{test_request.credential_name}' - credential not found, not a generic type, or decryption failed",
+                    details={},
+                )
+
         return None
 
     def _build_clone_url(
@@ -176,12 +200,18 @@ class GitConnectionService:
             Clone URL with authentication embedded if using token auth
         """
         clone_url = test_request.url
+        logger.info(f"Building clone URL for auth_type: {auth_type}")
 
-        if auth_type == "token" and resolved_username and resolved_token:
+        # Both 'token' and 'generic' auth types use username/password in URL
+        if auth_type in ["token", "generic"] and resolved_username and resolved_token:
+            logger.info(f"Adding {auth_type} authentication to URL")
             # Add authentication to URL using the service
             clone_url = git_auth_service.build_auth_url(
                 clone_url, resolved_username, resolved_token
             )
+            logger.debug(f"Authentication added to URL (credentials hidden)")
+        else:
+            logger.info(f"No authentication added to URL (auth_type={auth_type}, has_username={bool(resolved_username)}, has_token={bool(resolved_token)})")
 
         return clone_url
 
@@ -227,6 +257,10 @@ class GitConnectionService:
             clone_url,
             str(test_path),
         ]
+        
+        logger.info(f"Executing git clone command...")
+        logger.debug(f"Command: git clone --depth 1 --branch {branch} <url> {test_path}")
+        logger.debug(f"Environment SSH_COMMAND: {env.get('GIT_SSH_COMMAND', 'not set')}")
 
         # Execute clone with timeout
         result = subprocess.run(

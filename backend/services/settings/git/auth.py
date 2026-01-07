@@ -85,6 +85,41 @@ class GitAuthenticationService:
                         f"SSH key credential '{credential_name}' not found in {len(creds)} credentials"
                     )
                     return None, None, None
+            elif auth_type == "generic":
+                # Look for generic credential (username/password, not for SSH)
+                match = next(
+                    (
+                        c
+                        for c in creds
+                        if c["name"] == credential_name and c["type"] == "generic"
+                    ),
+                    None,
+                )
+                if match:
+                    username = match.get("username")
+                    logger.debug(
+                        f"Found generic credential: id={match['id']}, username={username}"
+                    )
+                    try:
+                        password = cred_mgr.get_decrypted_password(match["id"])
+                        logger.debug(
+                            f"Successfully decrypted password for '{credential_name}'"
+                        )
+                        return username, password, None
+                    except Exception as de:
+                        logger.error(
+                            f"Failed to decrypt credential '{credential_name}': {de}",
+                            exc_info=True,
+                        )
+                        return None, None, None
+                else:
+                    logger.warning(
+                        f"Generic credential '{credential_name}' not found in {len(creds)} credentials"
+                    )
+                    logger.debug(
+                        f"Available generic credentials: {[c['name'] for c in creds if c['type'] == 'generic']}"
+                    )
+                    return None, None, None
             else:
                 # Look for token credential (default behavior)
                 match = next(
