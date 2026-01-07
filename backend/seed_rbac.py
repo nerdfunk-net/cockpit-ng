@@ -69,6 +69,40 @@ def migrate_inventory_permissions(verbose: bool = True):
             print("  - No permissions needed migration")
 
 
+def cleanup_obsolete_permissions(verbose: bool = True):
+    """Remove obsolete permissions that are no longer used.
+    
+    This removes old permissions like network.inventory that have been
+    replaced by newer permissions (e.g., general.inventory).
+    """
+    if verbose:
+        print("\nCleaning up obsolete permissions...")
+    
+    obsolete_resources = [
+        "network.inventory",  # Replaced by general.inventory
+    ]
+    
+    all_permissions = rbac.list_permissions()
+    removed_count = 0
+    
+    for perm in all_permissions:
+        if perm['resource'] in obsolete_resources:
+            try:
+                rbac.delete_permission(perm['id'])
+                removed_count += 1
+                if verbose:
+                    print(f"  ✓ Removed obsolete permission: {perm['resource']}:{perm['action']}")
+            except Exception as e:
+                if verbose:
+                    print(f"  ✗ Error removing permission {perm['resource']}:{perm['action']}: {e}")
+    
+    if verbose:
+        if removed_count > 0:
+            print(f"\n  ✅ Removed {removed_count} obsolete permissions")
+        else:
+            print("  - No obsolete permissions found")
+
+
 def seed_permissions(verbose: bool = True):
     """Create all default permissions."""
     if verbose:
@@ -376,6 +410,9 @@ def main(verbose: bool = True):
     
     # Run migration for existing systems
     migrate_inventory_permissions(verbose=verbose)
+    
+    # Cleanup obsolete permissions (after migration is complete)
+    cleanup_obsolete_permissions(verbose=verbose)
 
     if verbose:
         print("=" * 60)
