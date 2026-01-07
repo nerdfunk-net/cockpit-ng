@@ -23,7 +23,7 @@ from .export_devices_task import export_devices_task
 
 # Import update devices tasks
 from .update_devices_task import update_devices_task
-from .update_devices_task_refactored import update_devices_from_csv_task
+from .update_devices_from_csv_task import update_devices_from_csv_task
 
 # Import ping network task
 from .ping_network_task import ping_network_task

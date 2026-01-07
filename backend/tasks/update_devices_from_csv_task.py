@@ -1,13 +1,14 @@
 """
 Celery task for updating Nautobot devices from CSV data.
 
-REFACTORED VERSION - Uses DeviceUpdateService for all business logic.
-
-This task is a thin wrapper that:
+This task handles CSV-formatted device updates and:
 1. Parses CSV content
 2. Tracks Celery progress
 3. Calls DeviceUpdateService for each device
 4. Aggregates results
+
+Note: For JSON-based updates with full interface array support,
+use update_devices_task.py instead.
 """
 
 from celery_app import celery_app

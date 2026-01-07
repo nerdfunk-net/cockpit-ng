@@ -7,6 +7,28 @@ This package contains services for:
 - Device querying and search
 - Device import operations
 - Common device utilities
+- Interface management
+- Type definitions
 """
 
-__all__ = []
+from services.nautobot.devices.common import DeviceCommonService
+from services.nautobot.devices.update import DeviceUpdateService
+from services.nautobot.devices.interface_manager import InterfaceManagerService
+from services.nautobot.devices.types import (
+    DeviceIdentifier,
+    InterfaceConfig,
+    InterfaceSpec,
+    DeviceUpdateResult,
+    InterfaceUpdateResult,
+)
+
+__all__ = [
+    "DeviceCommonService",
+    "DeviceUpdateService",
+    "InterfaceManagerService",
+    "DeviceIdentifier",
+    "InterfaceConfig",
+    "InterfaceSpec",
+    "DeviceUpdateResult",
+    "InterfaceUpdateResult",
+]

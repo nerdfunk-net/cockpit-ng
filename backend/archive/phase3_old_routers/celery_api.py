@@ -1229,7 +1229,7 @@ async def trigger_update_devices_from_csv(
     Returns:
         TaskWithJobResponse with task_id (for Celery) and job_id (for Jobs/Views tracking)
     """
-    from tasks.update_devices_task_refactored import update_devices_from_csv_task
+    from tasks.update_devices_from_csv_task import update_devices_from_csv_task
 
     if not request.csv_content:
         raise HTTPException(
