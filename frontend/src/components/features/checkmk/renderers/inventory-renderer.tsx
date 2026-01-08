@@ -119,16 +119,30 @@ export const InventoryRenderer = ({ data, depth = 0 }: { data: unknown; depth?: 
                   </tr>
                 </thead>
                 <tbody>
-                  {((objData.Table as Record<string, unknown>).Rows as Record<string, unknown>[]).map((row, idx) => (
-                    // eslint-disable-next-line react/no-array-index-key
-                    <tr key={idx} className="hover:bg-gray-50">
-                      {Object.entries(row).map(([key, value]) => (
-                        <td key={key} className="border border-gray-300 px-2 py-1">
-                          <InventoryRenderer data={value} depth={depth + 1} />
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
+                  {((objData.Table as Record<string, unknown>).Rows as Record<string, unknown>[]).map((row, idx) => {
+                    const keyColumns = (objData.Table as Record<string, unknown>).KeyColumns as string[] | undefined
+                    const allColumns = Object.keys(row)
+                    const otherColumns = keyColumns
+                      ? allColumns.filter(k => !keyColumns.includes(k))
+                      : allColumns
+
+                    // Render columns in the same order as header: KeyColumns first, then others
+                    const orderedColumns = [
+                      ...(keyColumns || []),
+                      ...otherColumns
+                    ]
+
+                    return (
+                      // eslint-disable-next-line react/no-array-index-key
+                      <tr key={idx} className="hover:bg-gray-50">
+                        {orderedColumns.map((key) => (
+                          <td key={key} className="border border-gray-300 px-2 py-1">
+                            <InventoryRenderer data={row[key]} depth={depth + 1} />
+                          </td>
+                        ))}
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
