@@ -5,9 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
 import {
-  CheckCircle2,
   XCircle,
-  PlayCircle,
   Loader2,
   AlertTriangle
 } from 'lucide-react'
@@ -67,15 +65,6 @@ export default function DashboardJobStats({ refreshTrigger = 0 }: DashboardJobSt
 
   const jobRunCards = [
     {
-      title: 'Completed Jobs',
-      value: jobStats?.job_runs.completed || 0,
-      icon: CheckCircle2,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      iconBg: 'bg-green-100',
-      description: 'Successfully completed'
-    },
-    {
       title: 'Failed Jobs',
       value: jobStats?.job_runs.failed || 0,
       icon: XCircle,
@@ -83,15 +72,6 @@ export default function DashboardJobStats({ refreshTrigger = 0 }: DashboardJobSt
       bgColor: 'bg-red-50',
       iconBg: 'bg-red-100',
       description: 'Jobs with errors'
-    },
-    {
-      title: 'Running Jobs',
-      value: jobStats?.job_runs.running || 0,
-      icon: PlayCircle,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      iconBg: 'bg-blue-100',
-      description: 'Currently executing'
     }
   ]
 

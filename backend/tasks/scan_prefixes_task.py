@@ -441,6 +441,9 @@ def _execute_scan_prefixes(
             except Exception:
                 prefix_ip_counts[cidr] = 0
 
+        # Store original prefixes before any splitting (for accurate tracking)
+        original_cidrs = cidrs.copy()
+
         # If strict splitting, check total
         if scan_max_ips and total_ips_count > scan_max_ips:
             # Check for large prefixes that need splitting themselves
@@ -568,7 +571,8 @@ def _execute_scan_prefixes(
             result = {
                 "success": True,
                 "message": f"Job split into {len(batches)} sub-tasks due to IP limit",
-                "total_prefixes": len(cidrs),
+                "total_prefixes": len(original_cidrs),
+                "prefixes": original_cidrs,  # Store ORIGINAL prefixes (before splitting) for accurate tracking
                 "total_ips_to_scan": total_ips_count,
                 "split_into_batches": len(batches),
                 "sub_task_ids": sub_task_ids,

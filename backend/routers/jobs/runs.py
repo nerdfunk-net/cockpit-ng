@@ -194,6 +194,117 @@ async def get_latest_compare_devices_result(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/dashboard/scan-prefix")
+async def get_latest_scan_prefix_result(
+    current_user: dict = Depends(require_permission("jobs", "read")),
+):
+    """
+    Get the latest scan_prefix job result for dashboard.
+
+    Returns:
+    - Latest scan prefix job statistics
+    - Total IPs scanned, reachable, unreachable
+    - Number of prefixes scanned
+
+    Handles both regular jobs and split jobs (parent + sub-tasks).
+    """
+    try:
+        # Get recent completed scan_prefixes jobs (need multiple to check for sub-tasks)
+        runs = job_run_manager.get_recent_runs(
+            limit=20, status="completed", job_type="scan_prefixes"
+        )
+
+        if not runs:
+            return {
+                "has_data": False,
+                "message": "No scan prefix job has been run yet",
+            }
+
+        # Build a set of all sub-task celery IDs to identify which jobs are sub-tasks
+        all_sub_task_ids = set()
+        for run in runs:
+            result = run.get("result", {})
+            if result and "sub_task_ids" in result:
+                all_sub_task_ids.update(result.get("sub_task_ids", []))
+
+        # Find the most recent job that is NOT a sub-task
+        # (i.e., either a parent job or a standalone job)
+        latest_parent_run = None
+        for run in runs:
+            # Skip if this is a sub-task
+            if run.get("celery_task_id") in all_sub_task_ids:
+                continue
+
+            result = run.get("result", {})
+            if result:
+                # This is either a parent job or standalone job
+                latest_parent_run = run
+                break
+
+        if not latest_parent_run:
+            return {
+                "has_data": False,
+                "message": "No valid scan results found",
+            }
+
+        result = latest_parent_run.get("result", {})
+
+        # Case 1: Parent job that was split into sub-tasks
+        if "sub_task_ids" in result:
+            sub_task_ids = result.get("sub_task_ids", [])
+
+            # Aggregate results from all sub-tasks
+            total_ips_scanned = 0
+            total_reachable = 0
+            total_unreachable = 0
+            resolve_dns = False
+
+            # Find sub-tasks by their celery_task_id
+            for run in runs:
+                if run.get("celery_task_id") in sub_task_ids:
+                    sub_result = run.get("result", {})
+                    total_ips_scanned += sub_result.get("total_ips_scanned", 0)
+                    total_reachable += sub_result.get("total_reachable", 0)
+                    total_unreachable += sub_result.get("total_unreachable", 0)
+                    if sub_result.get("resolve_dns"):
+                        resolve_dns = True
+
+            # Use actual prefixes list from parent for accurate count
+            prefixes_list = result.get("prefixes", [])
+            total_prefixes = len(prefixes_list) if prefixes_list else result.get("total_prefixes", 0)
+
+        # Case 2: Regular job (not split)
+        else:
+            total_ips_scanned = result.get("total_ips_scanned", 0)
+            total_reachable = result.get("total_reachable", 0)
+            total_unreachable = result.get("total_unreachable", 0)
+            total_prefixes = result.get("total_prefixes", 0)
+            resolve_dns = result.get("resolve_dns", False)
+
+        # Calculate reachability percentage
+        reachability_percent = (
+            (total_reachable / total_ips_scanned * 100) if total_ips_scanned > 0 else 0
+        )
+
+        return {
+            "has_data": True,
+            "job_id": latest_parent_run.get("id"),
+            "job_name": latest_parent_run.get("job_name"),
+            "completed_at": latest_parent_run.get("completed_at"),
+            "total_prefixes": total_prefixes,
+            "total_ips_scanned": total_ips_scanned,
+            "total_reachable": total_reachable,
+            "total_unreachable": total_unreachable,
+            "reachability_percent": round(reachability_percent, 1),
+            "resolve_dns": resolve_dns,
+            "success": result.get("success", False),
+            "was_split": "sub_task_ids" in result,
+        }
+    except Exception as e:
+        logger.error(f"Error getting scan prefix stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{run_id}", response_model=JobRunResponse)
 async def get_job_run(
     run_id: int, current_user: dict = Depends(require_permission("jobs", "read"))

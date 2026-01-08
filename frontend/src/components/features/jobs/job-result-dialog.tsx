@@ -21,6 +21,7 @@ import {
   isBulkOnboardJobResult,
   isUpdateDevicesJobResult,
   isCheckIPJobResult,
+  isScanPrefixJobResult,
   GenericJobResult,
 } from "./types/job-results"
 import { BackupJobResultView } from "./results/backup-job-result"
@@ -30,6 +31,7 @@ import { ExportDevicesResultView } from "./results/export-devices-result"
 import { BulkOnboardResultView } from "./results/bulk-onboard-result"
 import { UpdateDevicesResultView } from "./results/update-devices-result"
 import { CheckIPResultView } from "./results/check-ip-result"
+import { ScanPrefixResultView } from "./results/scan-prefix-result"
 import { GenericJobResultView } from "./results/generic-job-result"
 
 interface JobResultDialogProps {
@@ -52,6 +54,11 @@ function renderJobResult(result: Record<string, any>, taskId?: string): React.Re
   // Check IP result has unique statistics structure
   if (isCheckIPJobResult(result)) {
     return <CheckIPResultView result={result} />
+  }
+
+  // Scan prefix result has unique prefixes array structure
+  if (isScanPrefixJobResult(result)) {
+    return <ScanPrefixResultView result={result} />
   }
 
   // Run commands must be checked before others as it has similar fields
