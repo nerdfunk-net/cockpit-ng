@@ -16,6 +16,9 @@ interface UseNautobotSyncReturn {
   nautobotMetadata: NautobotMetadata | null
   propertyMappings: Record<string, PropertyMapping>
   loadingMetadata: boolean
+  inventoryData: Record<string, unknown> | null
+  loadingInventory: boolean
+  ipAddressStatuses: Array<{ id: string; name: string }> | null
   handleSyncToNautobot: (host: CheckMKHost) => Promise<void>
   updatePropertyMapping: (checkMkKey: string, nautobotField: string) => void
   updatePropertyMappings: (mappings: Record<string, PropertyMapping>) => void
@@ -42,20 +45,46 @@ export function useNautobotSync({
   const [propertyMappings, setPropertyMappings] = useState<Record<string, PropertyMapping>>(EMPTY_MAPPINGS)
   const [loadingMetadata, setLoadingMetadata] = useState(false)
 
+  // Inventory data
+  const [inventoryData, setInventoryData] = useState<Record<string, unknown> | null>(null)
+  const [loadingInventory, setLoadingInventory] = useState(false)
+
+  // IP address statuses
+  const [ipAddressStatuses, setIpAddressStatuses] = useState<Array<{ id: string; name: string }> | null>(null)
+
+  /**
+   * Load CheckMK inventory data for interface mapping
+   */
+  const loadInventoryData = useCallback(async (hostName: string) => {
+    try {
+      setLoadingInventory(true)
+      const response = await apiCall<{ success: boolean; message: string; data: Record<string, unknown> }>(
+        `checkmk/inventory/${hostName}`
+      )
+      setInventoryData(response?.data || null)
+    } catch (err) {
+      console.error('Failed to load inventory:', err)
+      setInventoryData(null)
+    } finally {
+      setLoadingInventory(false)
+    }
+  }, [apiCall])
+
   /**
    * Load Nautobot metadata for sync mapping
    */
   const loadNautobotMetadata = useCallback(async () => {
     try {
       setLoadingMetadata(true)
-      
-      const [locations, roles, statuses, deviceTypes, platforms, customFields] = await Promise.all([
+
+      const [locations, roles, statuses, deviceTypes, platforms, customFields, ipStatuses] = await Promise.all([
         apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/locations'),
         apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/roles/devices'),
         apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/statuses/device'),
         apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/device-types'),
         apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/platforms'),
         apiCall<{ results: Array<{ id: string; name: string; key: string }> }>('nautobot/custom-fields/devices'),
+        apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/statuses/ipaddress'),
       ])
       
       // Handle different response formats: some endpoints return { results: [...] }, others return array directly
@@ -73,6 +102,9 @@ export function useNautobotSync({
         platforms: extractResults(platforms),
         customFields: extractResults(customFields),
       })
+
+      // Set IP address statuses separately
+      setIpAddressStatuses(extractResults(ipStatuses))
     } catch (err) {
       console.error('Failed to load Nautobot metadata:', err)
       onMessage('Failed to load Nautobot metadata', 'error')
@@ -103,17 +135,17 @@ export function useNautobotSync({
       onMessage(`Searching for ${host.host_name} in Nautobot...`, 'info')
       
       try {
-        const searchResult = await apiCall<{ data: { devices: unknown[] } }>(
+        const searchResult = await apiCall<{ devices: unknown[] }>(
           `nautobot/devices?filter_type=name&filter_value=${encodeURIComponent(host.host_name)}`
         )
-        
-        if (searchResult?.data?.devices && searchResult.data.devices.length > 0) {
-          const deviceBasic = searchResult.data.devices[0] as Record<string, unknown>
-          
+
+        if (searchResult?.devices && searchResult.devices.length > 0) {
+          const deviceBasic = searchResult.devices[0] as Record<string, unknown>
+
           // Get detailed device information
           const deviceId = deviceBasic.id as string
           const deviceDetails = await apiCall<Record<string, unknown>>(`nautobot/devices/${deviceId}`)
-          
+
           setNautobotDevice(deviceDetails || null)
           onMessage(`Device found in Nautobot`, 'success')
         } else {
@@ -126,20 +158,23 @@ export function useNautobotSync({
       }
       
       setCheckingNautobot(false)
-      
-      // Load Nautobot metadata (locations, roles, etc.)
-      await loadNautobotMetadata()
-      
+
+      // Load Nautobot metadata (locations, roles, etc.) and inventory data in parallel
+      await Promise.all([
+        loadNautobotMetadata(),
+        loadInventoryData(host.host_name)
+      ])
+
       // Initialize property mappings
       initializeMappings(host)
-      
+
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to prepare sync'
       onMessage(`Failed to prepare sync for ${host.host_name}: ${message}`, 'error')
       setCheckingNautobot(false)
       setIsSyncModalOpen(false)
     }
-  }, [apiCall, onMessage, loadNautobotMetadata, initializeMappings])
+  }, [apiCall, onMessage, loadNautobotMetadata, loadInventoryData, initializeMappings])
 
   /**
    * Update a single property mapping
@@ -219,6 +254,8 @@ export function useNautobotSync({
     setSelectedHostForSync(null)
     setNautobotDevice(null)
     setPropertyMappings(EMPTY_MAPPINGS)
+    setInventoryData(null)
+    setIpAddressStatuses(null)
   }, [])
 
   // Re-initialize mappings when checkmkConfig or nautobotMetadata changes
@@ -236,6 +273,9 @@ export function useNautobotSync({
     nautobotMetadata,
     propertyMappings,
     loadingMetadata,
+    inventoryData,
+    loadingInventory,
+    ipAddressStatuses,
     handleSyncToNautobot,
     updatePropertyMapping,
     updatePropertyMappings,
@@ -249,6 +289,9 @@ export function useNautobotSync({
     nautobotMetadata,
     propertyMappings,
     loadingMetadata,
+    inventoryData,
+    loadingInventory,
+    ipAddressStatuses,
     handleSyncToNautobot,
     updatePropertyMapping,
     updatePropertyMappings,

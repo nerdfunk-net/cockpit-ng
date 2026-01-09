@@ -85,6 +85,9 @@ export default function HostsInventoryPage() {
     nautobotMetadata,
     propertyMappings,
     loadingMetadata,
+    inventoryData,
+    loadingInventory,
+    ipAddressStatuses,
     handleSyncToNautobot,
     updatePropertyMapping,
     updatePropertyMappings,
@@ -549,6 +552,9 @@ export default function HostsInventoryPage() {
         nautobotMetadata={nautobotMetadata}
         propertyMappings={propertyMappings}
         loadingMetadata={loadingMetadata}
+        inventoryData={inventoryData}
+        loadingInventory={loadingInventory}
+        ipAddressStatuses={ipAddressStatuses}
         onSync={executeSyncToNautobot}
         onUpdateMapping={updatePropertyMapping}
         onUpdatePropertyMappings={updatePropertyMappings}

@@ -1,10 +1,12 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { InterfaceMappingTable } from '@/components/features/checkmk/sync/interface-mapping-table'
+import { parseInterfacesFromInventory } from '@/lib/checkmk/interface-mapping-utils'
 import type { CheckMKHost, NautobotMetadata } from '@/types/checkmk/types'
 
 interface PropertyMapping {
@@ -22,6 +24,9 @@ interface SyncToNautobotModalProps {
   nautobotMetadata: NautobotMetadata | null
   propertyMappings: Record<string, PropertyMapping>
   loadingMetadata: boolean
+  inventoryData: Record<string, unknown> | null
+  loadingInventory: boolean
+  ipAddressStatuses: Array<{ id: string; name: string }> | null
   onSync: () => void
   onUpdateMapping: (checkMkKey: string, nautobotField: string) => void
   onUpdatePropertyMappings: (mappings: Record<string, PropertyMapping>) => void
@@ -36,10 +41,17 @@ export function SyncToNautobotModal({
   nautobotMetadata,
   propertyMappings,
   loadingMetadata,
+  inventoryData,
+  loadingInventory,
+  ipAddressStatuses,
   onSync,
   onUpdateMapping,
   onUpdatePropertyMappings,
 }: SyncToNautobotModalProps) {
+  // Parse interfaces from inventory data
+  const interfaces = useMemo(() => {
+    return parseInterfacesFromInventory(inventoryData)
+  }, [inventoryData])
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!max-w-[72vw] !w-[72vw] max-h-[90vh] overflow-hidden flex flex-col p-0" style={{ maxWidth: '72vw', width: '72vw' }}>
@@ -336,6 +348,33 @@ export function SyncToNautobotModal({
                       </div>
                     )}
                   </div>
+                )}
+              </div>
+
+              {/* Interface Mapping Section */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Interface Mapping</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Select which interfaces to sync to Nautobot and assign roles. Interfaces are automatically detected from CheckMK inventory.
+                </p>
+
+                {loadingInventory ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+                      <p className="mt-2 text-xs text-muted-foreground">Loading inventory data...</p>
+                    </div>
+                  </div>
+                ) : interfaces.length > 0 ? (
+                  <InterfaceMappingTable interfaces={interfaces} ipAddressStatuses={ipAddressStatuses} />
+                ) : (
+                  <Card className="border-gray-200 bg-gray-50">
+                    <CardContent className="p-4">
+                      <p className="text-sm text-gray-600 text-center">
+                        No interfaces found in inventory data. Make sure the device has been discovered by CheckMK.
+                      </p>
+                    </CardContent>
+                  </Card>
                 )}
               </div>
 
