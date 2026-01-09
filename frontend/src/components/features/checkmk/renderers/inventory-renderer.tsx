@@ -14,32 +14,32 @@ import React from 'react'
  */
 export const InventoryRenderer = ({ data, depth = 0 }: { data: unknown; depth?: number }): React.ReactNode => {
   if (data === null || data === undefined) {
-    return <span className="text-gray-400 italic">-</span>
+    return <span className="text-gray-400 italic text-xs">-</span>
   }
 
   if (typeof data !== 'object') {
     if (typeof data === 'boolean') {
-      return <span className="text-purple-600 font-medium">{data.toString()}</span>
+      return <span className="text-purple-600 font-medium text-xs">{data.toString()}</span>
     }
     if (typeof data === 'number') {
-      return <span className="text-blue-600 font-medium">{data}</span>
+      return <span className="text-blue-600 font-medium text-xs">{data}</span>
     }
     if (typeof data === 'string') {
-      return <span className="text-green-600">{data}</span>
+      return <span className="text-green-600 text-xs">{data}</span>
     }
-    return <span className="text-gray-500">{String(data)}</span>
+    return <span className="text-gray-500 text-xs">{String(data)}</span>
   }
 
   if (Array.isArray(data)) {
     if (data.length === 0) {
-      return <span className="text-gray-400 italic">empty</span>
+      return <span className="text-gray-400 italic text-xs">empty</span>
     }
     return (
-      <div className="space-y-2 w-full">
+      <div className="space-y-1 w-full">
         {data.map((item, index) => (
           // eslint-disable-next-line react/no-array-index-key
-          <div key={index} className="flex items-start gap-3 w-full">
-            <span className="text-gray-500 font-medium select-none min-w-[40px]">[{index}]</span>
+          <div key={index} className="flex items-start gap-2 w-full">
+            <span className="text-gray-500 text-xs font-medium select-none min-w-[35px]">[{index}]</span>
             <div className="flex-1 min-w-0">
               <InventoryRenderer data={item} depth={depth + 1} />
             </div>
@@ -54,41 +54,44 @@ export const InventoryRenderer = ({ data, depth = 0 }: { data: unknown; depth?: 
 
   // Check if this is a CheckMK inventory node (has Attributes, Nodes, Table)
   if ('Attributes' in objData || 'Nodes' in objData || 'Table' in objData) {
-    const hasAttributes = objData.Attributes && (objData.Attributes as Record<string, unknown>).Pairs
+    // Check if attributes has actual content (not just empty Pairs object)
+    const attributesPairs = objData.Attributes && (objData.Attributes as Record<string, unknown>).Pairs as Record<string, unknown> | undefined
+    const excludedKeys = ['available_ethernet_ports', 'total_ethernet_ports', 'total_interfaces']
+    const filteredAttributes = attributesPairs ?
+      Object.entries(attributesPairs).filter(([key]) => !excludedKeys.includes(key)) : []
+    const hasAttributes = filteredAttributes.length > 0
+
     const hasNodes = objData.Nodes && Object.keys(objData.Nodes as Record<string, unknown>).length > 0
     const hasTable = objData.Table && (objData.Table as Record<string, unknown>).Rows &&
                      ((objData.Table as Record<string, unknown>).Rows as unknown[]).length > 0
 
     return (
-      <div className="space-y-4 w-full">
+      <div className="space-y-3 w-full">
         {hasAttributes ? (
           <div>
-            <div className="text-sm font-semibold text-gray-600 mb-2">Attributes</div>
-            <div className="space-y-1 pl-4 border-l-2 border-blue-200">
-              <InventoryRenderer data={(objData.Attributes as Record<string, unknown>).Pairs} depth={depth + 1} />
+            <div className="text-xs font-medium text-gray-600 mb-1.5">Attributes</div>
+            <div className="space-y-1">
+              <InventoryRenderer data={Object.fromEntries(filteredAttributes)} depth={depth + 1} />
             </div>
           </div>
         ) : null}
 
         {hasNodes ? (
-          <div>
-            <div className="text-sm font-semibold text-gray-600 mb-2">Subsections</div>
-            <div className="space-y-3 pl-4">
-              {Object.entries(objData.Nodes as Record<string, unknown>).map(([key, value]) => (
-                <div key={key} className="border-l-2 border-purple-200 pl-4">
-                  <div className="font-semibold text-purple-700 mb-2">{key}</div>
-                  <InventoryRenderer data={value} depth={depth + 1} />
-                </div>
-              ))}
-            </div>
+          <div className="space-y-2">
+            {Object.entries(objData.Nodes as Record<string, unknown>).map(([key, value]) => (
+              <div key={key}>
+                <div className="text-xs font-semibold text-purple-700 mb-1.5">{key}</div>
+                <InventoryRenderer data={value} depth={depth + 1} />
+              </div>
+            ))}
           </div>
         ) : null}
 
         {hasTable ? (
           <div>
-            <div className="text-sm font-semibold text-gray-600 mb-2">Table</div>
+            <div className="text-xs font-medium text-gray-600 mb-1.5">Table</div>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-xs border border-gray-300">
+              <table className="min-w-full text-[11px] border border-gray-300">
                 <thead className="bg-gray-100">
                   <tr>
                     {(() => {
@@ -110,12 +113,12 @@ export const InventoryRenderer = ({ data, depth = 0 }: { data: unknown; depth?: 
                       return (
                         <>
                           {keyColumns?.map((col) => (
-                            <th key={col} className="border border-gray-300 px-2 py-1 text-left font-semibold text-gray-700">
+                            <th key={col} className="border border-gray-300 px-2 py-1 text-left font-medium text-gray-700">
                               {col}
                             </th>
                           ))}
                           {otherColumns.map((col) => (
-                            <th key={col} className="border border-gray-300 px-2 py-1 text-left font-semibold text-gray-700">
+                            <th key={col} className="border border-gray-300 px-2 py-1 text-left font-medium text-gray-700">
                               {col}
                             </th>
                           ))}
@@ -167,16 +170,18 @@ export const InventoryRenderer = ({ data, depth = 0 }: { data: unknown; depth?: 
   }
 
   // Regular object rendering
-  const entries = Object.entries(objData)
+  const excludedKeys = ['available_ethernet_ports', 'total_ethernet_ports', 'total_interfaces']
+  const entries = Object.entries(objData).filter(([key]) => !excludedKeys.includes(key))
+
   if (entries.length === 0) {
-    return <span className="text-gray-400 italic">empty</span>
+    return <span className="text-gray-400 italic text-xs">empty</span>
   }
 
   return (
-    <div className="space-y-1 w-full">
+    <div className="space-y-0.5 w-full">
       {entries.map(([key, value]) => (
-        <div key={key} className="flex items-start gap-3 w-full">
-          <span className="font-medium text-gray-700 min-w-[120px] flex-shrink-0">{key}:</span>
+        <div key={key} className="flex items-start gap-2 w-full">
+          <span className="text-xs font-medium text-gray-700 min-w-[120px] flex-shrink-0">{key}:</span>
           <div className="flex-1 min-w-0 break-words">
             <InventoryRenderer data={value} depth={depth + 1} />
           </div>

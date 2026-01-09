@@ -51,17 +51,17 @@ export function InventoryModal({ open, onOpenChange, host }: InventoryModalProps
           <DialogTitle>Inventory - {host?.host_name}</DialogTitle>
           <DialogDescription>View inventory data for the selected host</DialogDescription>
         </DialogHeader>
-        
-        {/* Blue Header */}
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 px-6">
+
+        {/* Compact Blue Header */}
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
           <div>
-            <h2 className="text-lg font-semibold">Host Inventory</h2>
-            <p className="text-blue-100 text-sm">{host?.host_name}</p>
+            <h2 className="text-base font-semibold">Host Inventory</h2>
+            <p className="text-blue-100 text-xs">{host?.host_name}</p>
           </div>
         </div>
 
         {/* Inventory Content */}
-        <div className="flex-1 overflow-y-auto bg-white">
+        <div className="flex-1 overflow-y-auto bg-gray-50/50">
           {loadingInventory ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
@@ -70,7 +70,7 @@ export function InventoryModal({ open, onOpenChange, host }: InventoryModalProps
               </div>
             </div>
           ) : inventoryData ? (
-            <div className="p-6">
+            <div className="p-4">
               {/* Check if result exists and has data */}
               {(inventoryData.result as Record<string, unknown>) &&
                Object.keys(inventoryData.result as Record<string, unknown>).length > 0 ? (
@@ -86,30 +86,30 @@ export function InventoryModal({ open, onOpenChange, host }: InventoryModalProps
                       {/* Render all top-level nodes dynamically */}
                       {Object.entries(nodes).map(([nodeName, nodeData]) => {
                         // Determine color scheme based on node name
-                        let borderColor = 'border-gray-500'
+                        let borderColor = 'border-gray-400/60'
                         let textColor = 'text-gray-900'
-                        let bgColor = 'bg-gray-50/50'
+                        let bgColor = 'bg-white'
 
                         if (nodeName === 'hardware') {
-                          borderColor = 'border-blue-500'
+                          borderColor = 'border-blue-400/60'
                           textColor = 'text-gray-900'
-                          bgColor = 'bg-gray-50'
+                          bgColor = 'bg-white'
                         } else if (nodeName === 'networking') {
-                          borderColor = 'border-green-500'
+                          borderColor = 'border-green-400/60'
                           textColor = 'text-green-700'
-                          bgColor = 'bg-green-50/50'
+                          bgColor = 'bg-green-50/30'
                         } else if (nodeName === 'software') {
-                          borderColor = 'border-purple-500'
+                          borderColor = 'border-purple-400/60'
                           textColor = 'text-purple-700'
-                          bgColor = 'bg-purple-50/50'
+                          bgColor = 'bg-purple-50/30'
                         }
 
                         return (
-                          <div key={nodeName} className="mb-6">
-                            <div className={`flex items-center mb-4 pb-2 border-b-2 ${borderColor}`}>
-                              <h3 className={`text-lg font-bold capitalize ${textColor}`}>{nodeName}</h3>
+                          <div key={nodeName} className="mb-4">
+                            <div className={`flex items-center mb-2 pb-1.5 border-b ${borderColor}`}>
+                              <h3 className={`text-sm font-semibold capitalize ${textColor}`}>{nodeName}</h3>
                             </div>
-                            <div className={`${bgColor} rounded-lg p-6 border ${borderColor.replace('border-', 'border-')}`}>
+                            <div className={`${bgColor} rounded-md p-4 border ${borderColor}`}>
                               <InventoryRenderer data={nodeData} />
                             </div>
                           </div>
@@ -126,12 +126,12 @@ export function InventoryModal({ open, onOpenChange, host }: InventoryModalProps
                       {/* Raw JSON Section */}
                       <div>
                         <details className="group">
-                          <summary className="flex items-center gap-2 text-sm font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-blue-600 transition-colors select-none py-3">
-                            <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                          <summary className="flex items-center gap-1.5 text-xs font-medium text-gray-600 uppercase tracking-wide cursor-pointer hover:text-blue-600 transition-colors select-none py-2">
+                            <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
                             Raw JSON Response
                           </summary>
-                          <div className="mt-3 bg-gray-900 rounded-lg p-4 overflow-auto max-h-96 border border-gray-700">
-                            <pre className="text-xs text-green-400 font-mono leading-relaxed">
+                          <div className="mt-2 bg-gray-900 rounded-md p-3 overflow-auto max-h-80 border border-gray-700">
+                            <pre className="text-[11px] text-green-400 font-mono leading-relaxed">
                               {JSON.stringify(inventoryData, null, 2)}
                             </pre>
                           </div>

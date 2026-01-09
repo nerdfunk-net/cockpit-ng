@@ -137,16 +137,16 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
   }
 
   return (
-    <div className="border rounded-lg overflow-hidden">
-      <table className="w-full text-sm">
-        <thead className="bg-blue-100 border-b">
+    <div className="border border-green-200/60 rounded-md overflow-hidden">
+      <table className="w-full text-xs">
+        <thead className="bg-green-50/50 border-b border-green-200/60">
           <tr>
-            <th className="text-left p-3 font-semibold text-gray-900 w-16">Sync</th>
-            <th className="text-left p-3 font-semibold text-gray-900">Interface</th>
-            <th className="text-left p-3 font-semibold text-gray-900">IP Address</th>
-            <th className="text-left p-3 font-semibold text-gray-900">IP Role</th>
-            <th className="text-left p-3 font-semibold text-gray-900">Status</th>
-            <th className="text-left p-3 font-semibold text-gray-900">Details</th>
+            <th className="text-left p-2 font-medium text-gray-900 w-14">Sync</th>
+            <th className="text-left p-2 font-medium text-gray-900">Interface</th>
+            <th className="text-left p-2 font-medium text-gray-900">IP Address</th>
+            <th className="text-left p-2 font-medium text-gray-900">IP Role</th>
+            <th className="text-left p-2 font-medium text-gray-900">Status</th>
+            <th className="text-left p-2 font-medium text-gray-900">Details</th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y">
@@ -162,18 +162,20 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
             const operStatus = getOperStatusLabel(row.interface.oper_status)
 
             return (
-              <tr key={row.rowKey} className={`hover:bg-blue-50 ${!mapping.enabled ? 'opacity-50' : ''}`}>
+              <tr key={row.rowKey} className={`hover:bg-green-50/30 ${!mapping.enabled ? 'opacity-50' : ''}`}>
                 {/* Sync checkbox */}
-                <td className="p-3">
-                  <Checkbox
-                    checked={mapping.enabled}
-                    onCheckedChange={() => handleToggleIpAddress(row.rowKey)}
-                  />
+                <td className="p-2 align-top">
+                  <div className="pt-1">
+                    <Checkbox
+                      checked={mapping.enabled}
+                      onCheckedChange={() => handleToggleIpAddress(row.rowKey)}
+                    />
+                  </div>
                 </td>
 
                 {/* Editable Interface name */}
-                <td className="p-3">
-                  <div className="space-y-1">
+                <td className="p-2 align-top">
+                  <div className="space-y-0.5">
                     <input
                       type="text"
                       value={mapping.interfaceName}
@@ -182,15 +184,15 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
                       className="w-full px-2 py-1 text-xs border border-gray-300 rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
                       placeholder="Ethernet0/0"
                     />
-                    {row.interface.alias && (
-                      <div className="text-xs text-gray-500">Alias: {row.interface.alias}</div>
-                    )}
+                    <div className="text-[10px] text-gray-500 h-3.5">
+                      {row.interface.alias ? `Alias: ${row.interface.alias}` : '\u00A0'}
+                    </div>
                   </div>
                 </td>
 
                 {/* Editable IP Address */}
-                <td className="p-3">
-                  <div className="flex items-center gap-2">
+                <td className="p-2 align-top">
+                  <div className="flex items-center gap-1.5">
                     <input
                       type="text"
                       value={mapping.ipAddress}
@@ -199,29 +201,29 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
                       className="w-full px-2 py-1 text-xs border border-gray-300 rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
                       placeholder="192.168.1.1/24"
                     />
-                    <span className="text-xs text-gray-500 whitespace-nowrap">({row.ipAddress.type})</span>
+                    <span className="text-[10px] text-gray-500 whitespace-nowrap">({row.ipAddress.type})</span>
                   </div>
                 </td>
 
                 {/* IP Role selector */}
-                <td className="p-3">
+                <td className="p-2 align-top">
                   <Select
                     value={mapping.ipRole}
                     onValueChange={(value) => handleIpRoleChange(row.rowKey, value)}
                     disabled={!mapping.enabled}
                   >
-                    <SelectTrigger className="w-full bg-white border-gray-300">
+                    <SelectTrigger className="h-7 text-xs bg-white border-gray-300">
                       <SelectValue placeholder="Select IP role..." />
                     </SelectTrigger>
                     <SelectContent>
                       {ipAddressRoles && ipAddressRoles.length > 0 ? (
                         ipAddressRoles.map((role) => (
-                          <SelectItem key={role.id} value={role.name}>
+                          <SelectItem key={role.id} value={role.name} className="text-xs">
                             {role.name}
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="loading" disabled>
+                        <SelectItem value="loading" disabled className="text-xs">
                           Loading roles...
                         </SelectItem>
                       )}
@@ -230,24 +232,24 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
                 </td>
 
                 {/* Status selector (for IP address status in Nautobot) */}
-                <td className="p-3">
+                <td className="p-2 align-top">
                   <Select
                     value={mapping.status}
                     onValueChange={(value) => handleStatusChange(row.rowKey, value)}
                     disabled={!mapping.enabled}
                   >
-                    <SelectTrigger className="w-full bg-white border-gray-300">
+                    <SelectTrigger className="h-7 text-xs bg-white border-gray-300">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {ipAddressStatuses && ipAddressStatuses.length > 0 ? (
                         ipAddressStatuses.map((status) => (
-                          <SelectItem key={status.id} value={status.name}>
+                          <SelectItem key={status.id} value={status.name} className="text-xs">
                             {status.name}
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="loading" disabled>
+                        <SelectItem value="loading" disabled className="text-xs">
                           Loading statuses...
                         </SelectItem>
                       )}
@@ -256,22 +258,22 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
                 </td>
 
                 {/* Details */}
-                <td className="p-3">
-                  <div className="space-y-1 text-xs text-gray-600">
-                    <div className="flex items-center gap-2">
+                <td className="p-2 align-top">
+                  <div className="space-y-0.5 text-[11px] text-gray-600">
+                    <div className="flex items-center gap-1.5">
                       <span>Admin:</span>
                       <Badge
-                        className={`text-xs ${
+                        className={`text-[10px] h-4 px-1 ${
                           adminStatus === 'Up' ? 'bg-green-500' : 'bg-red-500'
                         }`}
                       >
                         {adminStatus}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <span>Oper:</span>
                       <Badge
-                        className={`text-xs ${
+                        className={`text-[10px] h-4 px-1 ${
                           operStatus === 'Up' ? 'bg-green-500' : 'bg-red-500'
                         }`}
                       >
@@ -291,8 +293,8 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
       </table>
 
       {/* Summary */}
-      <div className="bg-gray-50 px-4 py-3 border-t text-xs text-gray-600">
-        <div className="flex gap-6">
+      <div className="bg-green-50/30 px-3 py-2 border-t border-green-200/60 text-[11px] text-gray-600">
+        <div className="flex gap-4">
           <span>
             <strong>Total:</strong> {displayedRows.length} IP addresses
           </span>
@@ -301,7 +303,7 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
             {Object.values(ipMappings).filter((m) => m.enabled).length}
           </span>
           <span>
-            <strong>Interfaces Up/Up:</strong>{' '}
+            <strong>Up/Up:</strong>{' '}
             {displayedRows.filter((r) => r.interface.admin_status === 1 && r.interface.oper_status === 1).length}
           </span>
         </div>

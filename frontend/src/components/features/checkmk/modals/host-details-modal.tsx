@@ -57,38 +57,36 @@ export function HostDetailsModal({ open, onOpenChange, host }: HostDetailsModalP
           <DialogTitle>Host Details - {host?.host_name}</DialogTitle>
           <DialogDescription>View detailed information and attributes for the selected host</DialogDescription>
         </DialogHeader>
-        
-        {/* Blue Header */}
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 px-6">
-          <div>
-            <h2 className="text-lg font-semibold">Host Details</h2>
-            <p className="text-blue-100 text-sm">{host?.host_name}</p>
-          </div>
-        </div>
 
-        {/* Controls Section */}
-        <div className="bg-gray-50 border-b px-6 py-3">
-          <div className="flex items-center gap-3">
-            <Label htmlFor="effective-attrs" className="text-sm font-medium text-gray-700">
-              Show Effective Attributes:
-            </Label>
-            <Select
-              value={showEffectiveAttributes ? 'true' : 'false'}
-              onValueChange={(value) => setShowEffectiveAttributes(value === 'true')}
-            >
-              <SelectTrigger className="w-24 h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 text-gray-900">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="false">False</SelectItem>
-                <SelectItem value="true">True</SelectItem>
-              </SelectContent>
-            </Select>
+        {/* Compact Blue Header */}
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 pr-14">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold">Host Details</h2>
+              <p className="text-blue-100 text-xs">{host?.host_name}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="effective-attrs" className="text-xs text-blue-100 whitespace-nowrap">
+                Effective Attributes:
+              </Label>
+              <Select
+                value={showEffectiveAttributes ? 'true' : 'false'}
+                onValueChange={(value) => setShowEffectiveAttributes(value === 'true')}
+              >
+                <SelectTrigger className="w-20 h-7 text-xs border-white/30 bg-white/10 hover:bg-white/20 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="false">No</SelectItem>
+                  <SelectItem value="true">Yes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
         {/* Host Details Content */}
-        <div className="flex-1 overflow-y-auto bg-white">
+        <div className="flex-1 overflow-y-auto bg-gray-50/50">
           {loadingHostDetails ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
@@ -97,15 +95,15 @@ export function HostDetailsModal({ open, onOpenChange, host }: HostDetailsModalP
               </div>
             </div>
           ) : hostDetails ? (
-            <div className="p-6">
+            <div className="p-4">
               {/* Host Info Section */}
-              <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-2 gap-3 mb-4">
                 {(() => {
                   if (hostDetails.id && typeof hostDetails.id === 'string') {
                     return (
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-lg p-4 border border-blue-200">
-                        <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">Host Name</div>
-                        <div className="font-mono text-lg font-semibold text-gray-900">{hostDetails.id}</div>
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-md p-3 border border-blue-200/60">
+                        <div className="text-[10px] font-semibold text-blue-600/80 uppercase tracking-wide mb-1">Host Name</div>
+                        <div className="font-mono text-sm font-semibold text-gray-900">{hostDetails.id}</div>
                       </div>
                     )
                   }
@@ -117,9 +115,9 @@ export function HostDetailsModal({ open, onOpenChange, host }: HostDetailsModalP
                   const folder = extensions?.folder
                   if (folder && typeof folder === 'string') {
                     return (
-                      <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-lg p-4 border border-purple-200">
-                        <div className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-2">Folder</div>
-                        <div className="font-mono text-lg font-semibold text-gray-900">
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-md p-3 border border-blue-200/60">
+                        <div className="text-[10px] font-semibold text-blue-600/80 uppercase tracking-wide mb-1">Folder</div>
+                        <div className="font-mono text-sm font-semibold text-gray-900">
                           {folder}
                         </div>
                       </div>
@@ -129,39 +127,105 @@ export function HostDetailsModal({ open, onOpenChange, host }: HostDetailsModalP
                 })()}
               </div>
 
-              {/* Attributes Section */}
+              {/* Attributes Section - Grouped */}
               {(() => {
                 const extensions = hostDetails.extensions as Record<string, unknown> | undefined
-                if (extensions?.attributes) {
+                if (extensions?.attributes && typeof extensions.attributes === 'object') {
+                  const allAttrs = extensions.attributes as Record<string, unknown>
+                  const tagAttrs: Record<string, unknown> = {}
+                  const coreAttrs: Record<string, unknown> = {}
+
+                  // Separate tags from core attributes
+                  Object.entries(allAttrs).forEach(([key, value]) => {
+                    if (key.startsWith('tag_')) {
+                      tagAttrs[key] = value
+                    } else {
+                      coreAttrs[key] = value
+                    }
+                  })
+
                   return (
-                    <div className="mb-6">
-                      <div className="flex items-center mb-4 pb-2 border-b-2 border-blue-500">
-                        <h3 className="text-lg font-bold text-gray-900">
-                          {showEffectiveAttributes ? 'Effective Attributes' : 'Attributes'}
-                        </h3>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-                        <JsonRenderer data={extensions.attributes} />
-                      </div>
-                    </div>
+                    <>
+                      {/* Core Attributes */}
+                      {Object.keys(coreAttrs).length > 0 && (
+                        <div className="mb-4">
+                          <div className="flex items-center mb-2 pb-1.5 border-b border-blue-400/60">
+                            <h3 className="text-sm font-semibold text-gray-900">
+                              Core Attributes
+                            </h3>
+                          </div>
+                          <div className="bg-white rounded-md p-4 border border-blue-200">
+                            <JsonRenderer data={coreAttrs} />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tag Attributes */}
+                      {Object.keys(tagAttrs).length > 0 && (
+                        <div className="mb-4">
+                          <div className="flex items-center mb-2 pb-1.5 border-b border-amber-400/60">
+                            <h3 className="text-sm font-semibold text-amber-800">
+                              Tags
+                            </h3>
+                          </div>
+                          <div className="bg-amber-50/50 rounded-md p-4 border border-amber-200">
+                            <JsonRenderer data={tagAttrs} />
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )
                 }
                 return null
               })()}
 
-              {/* Effective Attributes Section (separate) */}
+              {/* Effective Attributes Section - Grouped */}
               {(() => {
                 const extensions = hostDetails.extensions as Record<string, unknown> | undefined
-                if (showEffectiveAttributes && extensions?.effective_attributes) {
+                if (showEffectiveAttributes && extensions?.effective_attributes && typeof extensions.effective_attributes === 'object') {
+                  const allEffAttrs = extensions.effective_attributes as Record<string, unknown>
+                  const tagEffAttrs: Record<string, unknown> = {}
+                  const coreEffAttrs: Record<string, unknown> = {}
+
+                  // Separate tags from core attributes
+                  Object.entries(allEffAttrs).forEach(([key, value]) => {
+                    if (key.startsWith('tag_')) {
+                      tagEffAttrs[key] = value
+                    } else {
+                      coreEffAttrs[key] = value
+                    }
+                  })
+
                   return (
-                    <div className="mb-6">
-                      <div className="flex items-center mb-4 pb-2 border-b-2 border-indigo-500">
-                        <h3 className="text-lg font-bold text-indigo-700">Effective Attributes</h3>
-                      </div>
-                      <div className="bg-indigo-50/50 rounded-lg p-6 border border-indigo-200">
-                        <JsonRenderer data={extensions.effective_attributes} />
-                      </div>
-                    </div>
+                    <>
+                      {/* Effective Core Attributes */}
+                      {Object.keys(coreEffAttrs).length > 0 && (
+                        <div className="mb-4">
+                          <div className="flex items-center mb-2 pb-1.5 border-b border-blue-500/60">
+                            <h3 className="text-sm font-semibold text-blue-700">
+                              Effective Core Attributes
+                            </h3>
+                          </div>
+                          <div className="bg-blue-50/30 rounded-md p-4 border border-blue-300">
+                            <JsonRenderer data={coreEffAttrs} />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Effective Tag Attributes */}
+                      {Object.keys(tagEffAttrs).length > 0 && (
+                        <div className="mb-4">
+                          <div className="flex items-center mb-2 pb-1.5 border-b border-amber-500/60">
+                            <h3 className="text-sm font-semibold text-amber-900">
+                              Effective Tags
+                            </h3>
+                          </div>
+                          <div className="bg-amber-100/40 rounded-md p-4 border border-amber-300">
+                            <JsonRenderer data={tagEffAttrs} />
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )
                 }
                 return null
@@ -172,20 +236,20 @@ export function HostDetailsModal({ open, onOpenChange, host }: HostDetailsModalP
                 const extensions = hostDetails.extensions as Record<string, unknown> | undefined
                 if (extensions?.is_cluster) {
                   return (
-                    <div className="mb-6">
-                      <div className="flex items-center mb-4 pb-2 border-b-2 border-amber-500">
-                        <h3 className="text-lg font-bold text-amber-700">Cluster Information</h3>
+                    <div className="mb-4">
+                      <div className="flex items-center mb-2 pb-1.5 border-b border-blue-400/60">
+                        <h3 className="text-sm font-semibold text-gray-900">Cluster Information</h3>
                       </div>
-                      <div className="bg-amber-50 rounded-lg p-6 border border-amber-200">
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm font-semibold text-gray-700">Status:</span>
-                            <Badge className="bg-amber-500 hover:bg-amber-600">Cluster</Badge>
+                      <div className="bg-blue-50/30 rounded-md p-4 border border-blue-200">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-gray-700">Status:</span>
+                            <Badge className="bg-blue-500 hover:bg-blue-600 text-xs h-5">Cluster</Badge>
                           </div>
                           {extensions.cluster_nodes ? (
                             <div>
-                              <div className="text-sm font-semibold text-gray-700 mb-2">Cluster Nodes:</div>
-                              <div className="bg-white rounded p-4 border border-amber-200">
+                              <div className="text-xs font-medium text-gray-700 mb-1.5">Cluster Nodes:</div>
+                              <div className="bg-white rounded p-3 border border-blue-200">
                                 <JsonRenderer data={extensions.cluster_nodes} />
                               </div>
                             </div>
@@ -201,12 +265,12 @@ export function HostDetailsModal({ open, onOpenChange, host }: HostDetailsModalP
               {/* Raw JSON Section */}
               <div>
                 <details className="group">
-                  <summary className="flex items-center gap-2 text-sm font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-blue-600 transition-colors select-none py-3">
-                    <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                  <summary className="flex items-center gap-1.5 text-xs font-medium text-gray-600 uppercase tracking-wide cursor-pointer hover:text-blue-600 transition-colors select-none py-2">
+                    <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
                     Raw JSON Response
                   </summary>
-                  <div className="mt-3 bg-gray-900 rounded-lg p-4 overflow-auto max-h-96 border border-gray-700">
-                    <pre className="text-xs text-green-400 font-mono leading-relaxed">
+                  <div className="mt-2 bg-gray-900 rounded-md p-3 overflow-auto max-h-80 border border-gray-700">
+                    <pre className="text-[11px] text-green-400 font-mono leading-relaxed">
                       {JSON.stringify(hostDetails, null, 2)}
                     </pre>
                   </div>

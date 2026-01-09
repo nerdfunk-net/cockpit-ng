@@ -61,17 +61,17 @@ export function SyncToNautobotModal({
           <DialogTitle>Sync to Nautobot - {host?.host_name}</DialogTitle>
           <DialogDescription>Map CheckMK properties to Nautobot fields and sync the device</DialogDescription>
         </DialogHeader>
-        
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 px-6">
+
+        {/* Compact Header */}
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
           <div>
-            <h2 className="text-lg font-semibold">Sync Device to Nautobot</h2>
-            <p className="text-blue-100 text-sm">{host?.host_name}</p>
+            <h2 className="text-base font-semibold">Sync Device to Nautobot</h2>
+            <p className="text-blue-100 text-xs">{host?.host_name}</p>
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto bg-white p-6">
+        <div className="flex-1 overflow-y-auto bg-gray-50/50 p-4">
           {checkingNautobot ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
@@ -80,41 +80,35 @@ export function SyncToNautobotModal({
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Nautobot Device Status */}
               {nautobotDevice ? (
-                <Card className="border-blue-200 bg-blue-50">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 mt-0.5">
-                        <Badge className="bg-blue-500">Found in Nautobot</Badge>
-                      </div>
+                <Card className="border-blue-200/60 bg-blue-50/50">
+                  <CardContent className="p-3">
+                    <div className="flex items-start gap-2">
+                      <Badge className="bg-blue-500 text-xs h-5">Found in Nautobot</Badge>
                       <div className="flex-1">
-                        <p className="text-sm text-gray-700">
-                          This device already exists in Nautobot. The sync will update its properties.
+                        <p className="text-xs text-gray-700">
+                          Device exists in Nautobot. Sync will update properties.
                         </p>
-                        <div className="mt-2 space-y-1 text-xs">
-                          <div><span className="font-semibold">Name:</span> {(nautobotDevice.name as string) || 'N/A'}</div>
-                          <div><span className="font-semibold">Location:</span> {((nautobotDevice.location as Record<string, unknown>)?.name as string) || 'N/A'}</div>
-                          <div><span className="font-semibold">Role:</span> {((nautobotDevice.role as Record<string, unknown>)?.name as string) || 'N/A'}</div>
-                          <div><span className="font-semibold">Status:</span> {((nautobotDevice.status as Record<string, unknown>)?.name as string) || 'N/A'}</div>
+                        <div className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-0.5 text-[11px]">
+                          <div><span className="font-medium">Name:</span> {(nautobotDevice.name as string) || 'N/A'}</div>
+                          <div><span className="font-medium">Role:</span> {((nautobotDevice.role as Record<string, unknown>)?.name as string) || 'N/A'}</div>
+                          <div><span className="font-medium">Location:</span> {((nautobotDevice.location as Record<string, unknown>)?.name as string) || 'N/A'}</div>
+                          <div><span className="font-medium">Status:</span> {((nautobotDevice.status as Record<string, unknown>)?.name as string) || 'N/A'}</div>
                         </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               ) : (
-                <Card className="border-amber-200 bg-amber-50">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 mt-0.5">
-                        <Badge className="bg-amber-500">Not in Nautobot</Badge>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-700">
-                          This device does not exist in Nautobot. A new device will be created.
-                        </p>
-                      </div>
+                <Card className="border-amber-200/60 bg-amber-50/50">
+                  <CardContent className="p-3">
+                    <div className="flex items-start gap-2">
+                      <Badge className="bg-amber-500 text-xs h-5">Not in Nautobot</Badge>
+                      <p className="text-xs text-gray-700 flex-1">
+                        Device does not exist in Nautobot. A new device will be created.
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -122,9 +116,11 @@ export function SyncToNautobotModal({
 
               {/* Property Mapping Table */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Property Mapping</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Map CheckMK properties to Nautobot fields. Select the appropriate Nautobot field for each CheckMK property.
+                <div className="flex items-center mb-2 pb-1.5 border-b border-blue-400/60">
+                  <h3 className="text-sm font-semibold text-gray-900">Property Mapping</h3>
+                </div>
+                <p className="text-xs text-gray-600 mb-3">
+                  Map CheckMK properties to Nautobot fields.
                 </p>
 
                 {loadingMetadata ? (
@@ -135,38 +131,40 @@ export function SyncToNautobotModal({
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-6">
+                  <div className="space-y-3">
                     {/* Core Attributes Section */}
                     <div>
-                      <h4 className="text-md font-semibold text-gray-900 mb-3">Core Attributes (Required)</h4>
-                      <div className="border rounded-lg overflow-hidden">
-                        <table className="w-full">
-                          <thead className="bg-blue-100 border-b">
+                      <h4 className="text-xs font-semibold text-blue-700 mb-2">Core Attributes (Required)</h4>
+                      <div className="border border-blue-200/60 rounded-md overflow-hidden">
+                        <table className="w-full text-xs table-fixed">
+                          <thead className="bg-blue-100/50 border-b border-blue-200/60">
                             <tr>
-                              <th className="text-left p-3 font-semibold text-sm text-gray-900">CheckMK Property</th>
-                              <th className="text-left p-3 font-semibold text-sm text-gray-900">Current Value</th>
-                              <th className="text-left p-3 font-semibold text-sm text-gray-900">Nautobot Field</th>
+                              <th className="text-left p-2 font-medium text-gray-900 w-1/4">CheckMK Property</th>
+                              <th className="text-left p-2 font-medium text-gray-900 w-1/2">Current Value</th>
+                              <th className="text-left p-2 font-medium text-gray-900 w-1/4">Nautobot Field</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white">
                             {Object.entries(propertyMappings)
                               .filter(([, mapping]) => mapping.isCore)
                               .map(([checkMkKey, mapping]) => {
-                                const displayKey = checkMkKey.startsWith('tag_') 
+                                const displayKey = checkMkKey.startsWith('tag_')
                                   ? checkMkKey.replace('tag_', '')
                                   : checkMkKey
-                                
+
                                 return (
-                                  <tr key={`core-${checkMkKey}`} className="border-b hover:bg-blue-50">
-                                    <td className="p-3">
-                                      <code className="text-xs bg-blue-100 px-2 py-1 rounded font-mono text-blue-900">
-                                        {displayKey}
-                                      </code>
-                                      {mapping.nautobotField === 'role' && (
-                                        <Badge className="ml-2 bg-orange-500 text-white text-xs">Required</Badge>
-                                      )}
+                                  <tr key={`core-${checkMkKey}`} className="border-b border-blue-100/50 hover:bg-blue-50/30">
+                                    <td className="p-2">
+                                      <div className="flex items-center gap-1.5">
+                                        <code className="text-[11px] bg-blue-100/60 px-1.5 py-0.5 rounded font-mono text-blue-900">
+                                          {displayKey}
+                                        </code>
+                                        {mapping.nautobotField === 'role' && (
+                                          <Badge className="bg-orange-500 text-white text-[10px] h-4 px-1">Required</Badge>
+                                        )}
+                                      </div>
                                     </td>
-                                    <td className="p-3">
+                                    <td className="p-2">
                                       {mapping.nautobotField === 'role' ? (
                                         <Select
                                           value={String(mapping.value)}
@@ -181,8 +179,8 @@ export function SyncToNautobotModal({
                                             })
                                           }}
                                         >
-                                          <SelectTrigger className={`w-full bg-white ${!mapping.value ? 'border-orange-300' : 'border-gray-300'}`}>
-                                            <SelectValue placeholder="Select a role..." />
+                                          <SelectTrigger className={`w-48 h-7 text-xs ${!mapping.value ? 'border-orange-300' : 'border-gray-300'}`}>
+                                            <SelectValue placeholder="Select role..." />
                                           </SelectTrigger>
                                           <SelectContent>
                                             {nautobotMetadata?.roles && nautobotMetadata.roles.length > 0 ? (
@@ -199,28 +197,19 @@ export function SyncToNautobotModal({
                                           </SelectContent>
                                         </Select>
                                       ) : (
-                                        <span className="text-sm text-gray-900 font-medium">
+                                        <span className="text-xs text-gray-900 font-medium">
                                           {String(mapping.value)}
                                         </span>
                                       )}
                                     </td>
-                                    <td className="p-3">
-                                      <div className="space-y-2">
-                                        <div className="flex items-center gap-2">
-                                          <Badge className="bg-blue-600 text-white">
-                                            {mapping.nautobotField === 'name' && 'Device Name'}
-                                            {mapping.nautobotField === 'primary_ip4' && 'Primary IPv4'}
-                                            {mapping.nautobotField === 'location' && 'Location'}
-                                            {mapping.nautobotField === 'status' && 'Status'}
-                                            {mapping.nautobotField === 'role' && 'Role'}
-                                          </Badge>
-                                        </div>
-                                        {['location', 'role', 'status'].includes(mapping.nautobotField) && Boolean(mapping.value) && (
-                                          <p className="text-xs text-gray-600">
-                                            Will be matched to Nautobot {mapping.nautobotField}
-                                          </p>
-                                        )}
-                                      </div>
+                                    <td className="p-2">
+                                      <Badge className="bg-blue-600 text-white text-[10px] h-4">
+                                        {mapping.nautobotField === 'name' && 'Device Name'}
+                                        {mapping.nautobotField === 'primary_ip4' && 'Primary IPv4'}
+                                        {mapping.nautobotField === 'location' && 'Location'}
+                                        {mapping.nautobotField === 'status' && 'Status'}
+                                        {mapping.nautobotField === 'role' && 'Role'}
+                                      </Badge>
                                     </td>
                                   </tr>
                                 )
@@ -233,57 +222,57 @@ export function SyncToNautobotModal({
                     {/* Custom Fields Section */}
                     {Object.entries(propertyMappings).some(([, mapping]) => !mapping.isCore) && (
                       <div>
-                        <h4 className="text-md font-semibold text-gray-900 mb-3">Custom Fields & Tags</h4>
-                        <div className="border rounded-lg overflow-hidden">
-                          <table className="w-full">
-                            <thead className="bg-gray-100 border-b">
+                        <h4 className="text-xs font-semibold text-purple-700 mb-2">Custom Fields & Tags</h4>
+                        <div className="border border-purple-200/60 rounded-md overflow-hidden">
+                          <table className="w-full text-xs table-fixed">
+                            <thead className="bg-purple-50/50 border-b border-purple-200/60">
                               <tr>
-                                <th className="text-left p-3 font-semibold text-sm text-gray-900">CheckMK Property</th>
-                                <th className="text-left p-3 font-semibold text-sm text-gray-900">Current Value</th>
-                                <th className="text-left p-3 font-semibold text-sm text-gray-900">Nautobot Field</th>
+                                <th className="text-left p-2 font-medium text-gray-900 w-1/4">CheckMK Property</th>
+                                <th className="text-left p-2 font-medium text-gray-900 w-1/4">Current Value</th>
+                                <th className="text-left p-2 font-medium text-gray-900 w-1/2">Nautobot Field</th>
                               </tr>
                             </thead>
                             <tbody className="bg-white">
                               {Object.entries(propertyMappings)
                                 .filter(([, mapping]) => !mapping.isCore)
                                 .map(([checkMkKey, mapping]) => {
-                                  const displayKey = checkMkKey.startsWith('tag_') 
+                                  const displayKey = checkMkKey.startsWith('tag_')
                                     ? checkMkKey.replace('tag_', '')
                                     : checkMkKey
-                                  
+
                                   return (
-                                    <tr key={`custom-${checkMkKey}`} className="border-b hover:bg-gray-50">
-                                      <td className="p-3">
-                                        <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono text-gray-900">
+                                    <tr key={`custom-${checkMkKey}`} className="border-b border-purple-100/50 hover:bg-purple-50/20">
+                                      <td className="p-2">
+                                        <code className="text-[11px] bg-purple-100/60 px-1.5 py-0.5 rounded font-mono text-purple-900">
                                           {displayKey}
                                         </code>
                                       </td>
-                                      <td className="p-3">
-                                        <span className="text-sm text-gray-900">
+                                      <td className="p-2">
+                                        <span className="text-xs text-gray-900">
                                           {String(mapping.value)}
                                         </span>
                                       </td>
-                                      <td className="p-3">
-                                        <div className="space-y-2">
-                                          <Select
-                                            value={mapping.nautobotField}
-                                            onValueChange={(value) => onUpdateMapping(checkMkKey, value)}
-                                          >
-                                            <SelectTrigger className="w-full bg-white border-gray-300">
-                                              <SelectValue>
-                                                {mapping.nautobotField === 'no_mapping' ? (
-                                                  <span className="flex items-center gap-2">
-                                                    <Badge className="bg-gray-400 text-white text-xs">Skip</Badge>
-                                                    No mapping
-                                                  </span>
-                                                ) : mapping.nautobotField.startsWith('custom_field_') ? (
-                                                  <span className="flex items-center gap-2">
-                                                    <Badge className="bg-purple-600 text-white text-xs">CF</Badge>
-                                                    {mapping.nautobotField.replace('custom_field_', 'cf_')}
-                                                  </span>
-                                                ) : (
-                                                  <span className="flex items-center gap-2">
-                                                    <Badge className="bg-blue-600 text-white text-xs">Core</Badge>
+                                      <td className="p-2">
+                                        <Select
+                                          value={mapping.nautobotField}
+                                          onValueChange={(value) => onUpdateMapping(checkMkKey, value)}
+                                        >
+                                          <SelectTrigger className="w-full h-7 text-xs border-gray-300">
+                                            <SelectValue>
+                                              {mapping.nautobotField === 'no_mapping' ? (
+                                                <span className="flex items-center gap-1.5">
+                                                  <Badge className="bg-gray-400 text-white text-[10px] h-4 px-1">Skip</Badge>
+                                                  <span className="text-[11px]">No mapping</span>
+                                                </span>
+                                              ) : mapping.nautobotField.startsWith('custom_field_') ? (
+                                                <span className="flex items-center gap-1.5">
+                                                  <Badge className="bg-purple-600 text-white text-[10px] h-4 px-1">CF</Badge>
+                                                  <span className="text-[11px]">{mapping.nautobotField.replace('custom_field_', 'cf_')}</span>
+                                                </span>
+                                              ) : (
+                                                <span className="flex items-center gap-1.5">
+                                                  <Badge className="bg-blue-600 text-white text-[10px] h-4 px-1">Core</Badge>
+                                                  <span className="text-[11px]">
                                                     {mapping.nautobotField === 'name' && 'Device Name'}
                                                     {mapping.nautobotField === 'location' && 'Location'}
                                                     {mapping.nautobotField === 'role' && 'Role'}
@@ -295,51 +284,41 @@ export function SyncToNautobotModal({
                                                     {mapping.nautobotField === 'asset_tag' && 'Asset Tag'}
                                                     {mapping.nautobotField === 'software_version' && 'Software Version'}
                                                   </span>
-                                                )}
-                                              </SelectValue>
-                                            </SelectTrigger>
+                                                </span>
+                                              )}
+                                            </SelectValue>
+                                          </SelectTrigger>
                                             <SelectContent>
                                               <SelectItem value="no_mapping">
-                                                <span className="flex items-center gap-2">
-                                                  <Badge className="bg-gray-400 text-white text-xs">Skip</Badge>
-                                                  No mapping (don&apos;t sync)
+                                                <span className="flex items-center gap-1.5 text-xs">
+                                                  <Badge className="bg-gray-400 text-white text-[10px] h-4 px-1">Skip</Badge>
+                                                  No mapping
                                                 </span>
                                               </SelectItem>
-                                              <SelectItem disabled value="_core_separator">--- Core Attributes ---</SelectItem>
-                                              <SelectItem value="name">Device Name</SelectItem>
-                                              <SelectItem value="location">Location</SelectItem>
-                                              <SelectItem value="role">Role</SelectItem>
-                                              <SelectItem value="status">Status</SelectItem>
-                                              <SelectItem value="device_type">Device Type</SelectItem>
-                                              <SelectItem value="platform">Platform</SelectItem>
-                                              <SelectItem value="primary_ip4">Primary IPv4</SelectItem>
-                                              <SelectItem value="serial">Serial Number</SelectItem>
-                                              <SelectItem value="asset_tag">Asset Tag</SelectItem>
-                                              <SelectItem value="software_version">Software Version</SelectItem>
-                                              
+                                              <SelectItem disabled value="_core_separator" className="text-[10px] font-medium">— Core Attributes —</SelectItem>
+                                              <SelectItem value="name" className="text-xs">Device Name</SelectItem>
+                                              <SelectItem value="location" className="text-xs">Location</SelectItem>
+                                              <SelectItem value="role" className="text-xs">Role</SelectItem>
+                                              <SelectItem value="status" className="text-xs">Status</SelectItem>
+                                              <SelectItem value="device_type" className="text-xs">Device Type</SelectItem>
+                                              <SelectItem value="platform" className="text-xs">Platform</SelectItem>
+                                              <SelectItem value="primary_ip4" className="text-xs">Primary IPv4</SelectItem>
+                                              <SelectItem value="serial" className="text-xs">Serial Number</SelectItem>
+                                              <SelectItem value="asset_tag" className="text-xs">Asset Tag</SelectItem>
+                                              <SelectItem value="software_version" className="text-xs">Software Version</SelectItem>
+
                                               {nautobotMetadata?.customFields && nautobotMetadata.customFields.length > 0 && (
                                                 <>
-                                                  <SelectItem disabled value="_separator">--- Custom Fields ---</SelectItem>
+                                                  <SelectItem disabled value="_separator" className="text-[10px] font-medium">— Custom Fields —</SelectItem>
                                                   {nautobotMetadata.customFields.map((cf) => (
-                                                    <SelectItem key={cf.id} value={`custom_field_${cf.key}`}>
-                                                      {cf.name} (CF: cf_{cf.key})
+                                                    <SelectItem key={cf.id} value={`custom_field_${cf.key}`} className="text-xs">
+                                                      {cf.name} (cf_{cf.key})
                                                     </SelectItem>
                                                   ))}
                                                 </>
                                               )}
                                             </SelectContent>
                                           </Select>
-                                          
-                                          {mapping.nautobotField === 'no_mapping' ? (
-                                            <p className="text-xs text-gray-500 italic">
-                                              This attribute will not be synced to Nautobot
-                                            </p>
-                                          ) : mapping.nautobotField.startsWith('custom_field_') ? (
-                                            <p className="text-xs text-gray-600">
-                                              Maps to custom field: cf_{mapping.nautobotField.replace('custom_field_', '')}
-                                            </p>
-                                          ) : null}
-                                        </div>
                                       </td>
                                     </tr>
                                   )
@@ -355,9 +334,11 @@ export function SyncToNautobotModal({
 
               {/* Interface Mapping Section */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Interface Mapping</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Select which interfaces to sync to Nautobot and assign roles. Interfaces are automatically detected from CheckMK inventory.
+                <div className="flex items-center mb-2 pb-1.5 border-b border-green-400/60">
+                  <h3 className="text-sm font-semibold text-gray-900">Interface Mapping</h3>
+                </div>
+                <p className="text-xs text-gray-600 mb-3">
+                  Select interfaces to sync and assign roles.
                 </p>
 
                 {loadingInventory ? (
@@ -374,10 +355,10 @@ export function SyncToNautobotModal({
                     ipAddressRoles={ipAddressRoles}
                   />
                 ) : (
-                  <Card className="border-gray-200 bg-gray-50">
-                    <CardContent className="p-4">
-                      <p className="text-sm text-gray-600 text-center">
-                        No interfaces found in inventory data. Make sure the device has been discovered by CheckMK.
+                  <Card className="border-gray-200/60 bg-gray-50/50">
+                    <CardContent className="p-3">
+                      <p className="text-xs text-gray-600 text-center">
+                        No interfaces found in inventory. Ensure device is discovered by CheckMK.
                       </p>
                     </CardContent>
                   </Card>
@@ -385,18 +366,18 @@ export function SyncToNautobotModal({
               </div>
 
               {/* Required Fields Notice */}
-              <Card className="border-orange-200 bg-orange-50">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-0.5 text-orange-600">
-                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+              <Card className="border-orange-200/60 bg-orange-50/50">
+                <CardContent className="p-3">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-shrink-0 text-orange-600">
+                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-orange-800 mb-1">Required Fields</p>
-                      <p className="text-xs text-orange-700">
-                        Make sure to map the following required fields: <strong>name, role, status, location, device_type</strong>
+                      <p className="text-xs font-semibold text-orange-800 mb-0.5">Required Fields</p>
+                      <p className="text-[11px] text-orange-700">
+                        Ensure required fields are mapped: <strong>name, role, status, location, device_type</strong>
                       </p>
                     </div>
                   </div>
@@ -407,20 +388,23 @@ export function SyncToNautobotModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="border-t bg-gray-50 px-6 py-4 flex justify-end gap-3">
+        <div className="border-t bg-gray-50/80 px-4 py-3 flex justify-end gap-2">
           <Button
             variant="outline"
+            size="sm"
             onClick={() => onOpenChange(false)}
             disabled={checkingNautobot}
+            className="text-xs"
           >
             Cancel
           </Button>
           <Button
+            size="sm"
             onClick={onSync}
             disabled={checkingNautobot || loadingMetadata}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 text-xs"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
             Sync to Nautobot
           </Button>
         </div>
