@@ -19,6 +19,7 @@ interface UseNautobotSyncReturn {
   inventoryData: Record<string, unknown> | null
   loadingInventory: boolean
   ipAddressStatuses: Array<{ id: string; name: string }> | null
+  ipAddressRoles: Array<{ id: string; name: string }> | null
   handleSyncToNautobot: (host: CheckMKHost) => Promise<void>
   updatePropertyMapping: (checkMkKey: string, nautobotField: string) => void
   updatePropertyMappings: (mappings: Record<string, PropertyMapping>) => void
@@ -52,6 +53,9 @@ export function useNautobotSync({
   // IP address statuses
   const [ipAddressStatuses, setIpAddressStatuses] = useState<Array<{ id: string; name: string }> | null>(null)
 
+  // IP address roles
+  const [ipAddressRoles, setIpAddressRoles] = useState<Array<{ id: string; name: string }> | null>(null)
+
   /**
    * Load CheckMK inventory data for interface mapping
    */
@@ -77,7 +81,7 @@ export function useNautobotSync({
     try {
       setLoadingMetadata(true)
 
-      const [locations, roles, statuses, deviceTypes, platforms, customFields, ipStatuses] = await Promise.all([
+      const [locations, roles, statuses, deviceTypes, platforms, customFields, ipStatuses, ipRoles] = await Promise.all([
         apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/locations'),
         apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/roles/devices'),
         apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/statuses/device'),
@@ -85,6 +89,7 @@ export function useNautobotSync({
         apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/platforms'),
         apiCall<{ results: Array<{ id: string; name: string; key: string }> }>('nautobot/custom-fields/devices'),
         apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/statuses/ipaddress'),
+        apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/roles/ipaddress'),
       ])
       
       // Handle different response formats: some endpoints return { results: [...] }, others return array directly
@@ -103,8 +108,9 @@ export function useNautobotSync({
         customFields: extractResults(customFields),
       })
 
-      // Set IP address statuses separately
+      // Set IP address statuses and roles separately
       setIpAddressStatuses(extractResults(ipStatuses))
+      setIpAddressRoles(extractResults(ipRoles))
     } catch (err) {
       console.error('Failed to load Nautobot metadata:', err)
       onMessage('Failed to load Nautobot metadata', 'error')
@@ -256,6 +262,7 @@ export function useNautobotSync({
     setPropertyMappings(EMPTY_MAPPINGS)
     setInventoryData(null)
     setIpAddressStatuses(null)
+    setIpAddressRoles(null)
   }, [])
 
   // Re-initialize mappings when checkmkConfig or nautobotMetadata changes
@@ -276,6 +283,7 @@ export function useNautobotSync({
     inventoryData,
     loadingInventory,
     ipAddressStatuses,
+    ipAddressRoles,
     handleSyncToNautobot,
     updatePropertyMapping,
     updatePropertyMappings,
@@ -292,6 +300,7 @@ export function useNautobotSync({
     inventoryData,
     loadingInventory,
     ipAddressStatuses,
+    ipAddressRoles,
     handleSyncToNautobot,
     updatePropertyMapping,
     updatePropertyMappings,

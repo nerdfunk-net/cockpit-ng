@@ -92,39 +92,53 @@ export const InventoryRenderer = ({ data, depth = 0 }: { data: unknown; depth?: 
                 <thead className="bg-gray-100">
                   <tr>
                     {(() => {
-                      const keyColumns = (objData.Table as Record<string, unknown>).KeyColumns as string[] | undefined
-                      if (keyColumns) {
-                        return keyColumns.map((col) => (
-                          <th key={col} className="border border-gray-300 px-2 py-1 text-left font-semibold text-gray-700">
-                            {col}
-                          </th>
-                        ))
-                      }
-                      return null
-                    })()}
-                    {(() => {
                       const rows = (objData.Table as Record<string, unknown>).Rows as Record<string, unknown>[]
                       const keyColumns = (objData.Table as Record<string, unknown>).KeyColumns as string[] | undefined
-                      if (rows[0]) {
-                        return Object.keys(rows[0])
-                          .filter(k => !keyColumns || !keyColumns.includes(k))
-                          .map((col) => (
+
+                      // Collect ALL unique keys from ALL rows (to handle inconsistent structures)
+                      const allKeys = new Set<string>()
+                      rows.forEach(row => {
+                        Object.keys(row).forEach(key => allKeys.add(key))
+                      })
+
+                      // Separate key columns from other columns
+                      const otherColumns = Array.from(allKeys).filter(
+                        k => !keyColumns || !keyColumns.includes(k)
+                      )
+
+                      // Render headers: KeyColumns first, then all other columns
+                      return (
+                        <>
+                          {keyColumns?.map((col) => (
                             <th key={col} className="border border-gray-300 px-2 py-1 text-left font-semibold text-gray-700">
                               {col}
                             </th>
-                          ))
-                      }
-                      return null
+                          ))}
+                          {otherColumns.map((col) => (
+                            <th key={col} className="border border-gray-300 px-2 py-1 text-left font-semibold text-gray-700">
+                              {col}
+                            </th>
+                          ))}
+                        </>
+                      )
                     })()}
                   </tr>
                 </thead>
                 <tbody>
                   {((objData.Table as Record<string, unknown>).Rows as Record<string, unknown>[]).map((row, idx) => {
+                    const rows = (objData.Table as Record<string, unknown>).Rows as Record<string, unknown>[]
                     const keyColumns = (objData.Table as Record<string, unknown>).KeyColumns as string[] | undefined
-                    const allColumns = Object.keys(row)
-                    const otherColumns = keyColumns
-                      ? allColumns.filter(k => !keyColumns.includes(k))
-                      : allColumns
+
+                    // Collect ALL unique keys from ALL rows (same logic as header)
+                    const allKeys = new Set<string>()
+                    rows.forEach(r => {
+                      Object.keys(r).forEach(key => allKeys.add(key))
+                    })
+
+                    // Separate key columns from other columns
+                    const otherColumns = Array.from(allKeys).filter(
+                      k => !keyColumns || !keyColumns.includes(k)
+                    )
 
                     // Render columns in the same order as header: KeyColumns first, then others
                     const orderedColumns = [

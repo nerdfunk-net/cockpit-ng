@@ -88,6 +88,7 @@ export default function HostsInventoryPage() {
     inventoryData,
     loadingInventory,
     ipAddressStatuses,
+    ipAddressRoles,
     handleSyncToNautobot,
     updatePropertyMapping,
     updatePropertyMappings,
@@ -555,6 +556,7 @@ export default function HostsInventoryPage() {
         inventoryData={inventoryData}
         loadingInventory={loadingInventory}
         ipAddressStatuses={ipAddressStatuses}
+        ipAddressRoles={ipAddressRoles}
         onSync={executeSyncToNautobot}
         onUpdateMapping={updatePropertyMapping}
         onUpdatePropertyMappings={updatePropertyMappings}

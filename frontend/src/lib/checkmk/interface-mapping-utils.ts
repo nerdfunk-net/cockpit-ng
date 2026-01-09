@@ -32,6 +32,71 @@ export interface InterfaceMapping {
 }
 
 /**
+ * Extract letter prefix and numeric/special suffix from interface name
+ * Examples: "Et0/0" -> { prefix: "Et", suffix: "0/0" }
+ *           "GigabitEthernet1/1" -> { prefix: "GigabitEthernet", suffix: "1/1" }
+ */
+function extractInterfaceParts(name: string): { prefix: string; suffix: string } {
+  const match = name.match(/^([a-zA-Z]+)(.*)$/)
+  if (match && match[1] !== undefined && match[2] !== undefined) {
+    return {
+      prefix: match[1],
+      suffix: match[2],
+    }
+  }
+  return { prefix: name, suffix: '' }
+}
+
+/**
+ * Smart matching of device name to interface name
+ * Handles abbreviated names like "Et0/0" -> "Ethernet0/0"
+ */
+function matchesInterface(deviceName: string, interfaceName: string, interfaceAlias: string): boolean {
+  // Exact match (case-insensitive)
+  if (deviceName.toLowerCase() === interfaceName.toLowerCase() ||
+      deviceName.toLowerCase() === interfaceAlias.toLowerCase()) {
+    return true
+  }
+
+  // Extract parts from device name (e.g., "Et0/0" -> prefix="Et", suffix="0/0")
+  const deviceParts = extractInterfaceParts(deviceName)
+
+  // Extract parts from interface name (e.g., "Ethernet0/0" -> prefix="Ethernet", suffix="0/0")
+  const ifaceParts = extractInterfaceParts(interfaceName)
+  const aliasParts = interfaceAlias ? extractInterfaceParts(interfaceAlias) : { prefix: '', suffix: '' }
+
+  // Check if numeric/special suffix matches
+  const suffixMatches = (parts: { prefix: string; suffix: string }) => {
+    if (!deviceParts.suffix || !parts.suffix) return false
+    return parts.suffix === deviceParts.suffix
+  }
+
+  // Check if prefix matches (case-insensitive, check if interface prefix starts with device prefix)
+  const prefixMatches = (parts: { prefix: string; suffix: string }) => {
+    if (!deviceParts.prefix || !parts.prefix) return false
+    return parts.prefix.toLowerCase().startsWith(deviceParts.prefix.toLowerCase())
+  }
+
+  // Match if both suffix and prefix match for interface name
+  if (suffixMatches(ifaceParts) && prefixMatches(ifaceParts)) {
+    return true
+  }
+
+  // Match if both suffix and prefix match for interface alias
+  if (interfaceAlias && suffixMatches(aliasParts) && prefixMatches(aliasParts)) {
+    return true
+  }
+
+  // Fallback: check if interface name contains device name
+  if (interfaceName.toLowerCase().includes(deviceName.toLowerCase()) ||
+      interfaceAlias.toLowerCase().includes(deviceName.toLowerCase())) {
+    return true
+  }
+
+  return false
+}
+
+/**
  * Parse interfaces and addresses from CheckMK inventory data
  */
 export function parseInterfacesFromInventory(inventoryData: Record<string, unknown> | null): CheckMKInterface[] {
@@ -70,12 +135,11 @@ export function parseInterfacesFromInventory(inventoryData: Record<string, unkno
       const ifaceName = String(iface.description || '')
       const ifaceAlias = String(iface.alias || '')
 
-      // Find matching addresses by device field
-      // Match both exact name and alias (e.g., "Ethernet0/0" or "Et0/0")
+      // Find matching addresses using smart matching
+      // Handles abbreviated names like "Et0/0" -> "Ethernet0/0"
       const matchingAddresses = addressesRows.filter((addr) => {
         const device = String(addr.device || '')
-        return device === ifaceName || device === ifaceAlias ||
-               ifaceName.includes(device) || ifaceAlias.includes(device)
+        return matchesInterface(device, ifaceName, ifaceAlias)
       })
 
       return {

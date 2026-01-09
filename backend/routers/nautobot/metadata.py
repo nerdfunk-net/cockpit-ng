@@ -218,6 +218,23 @@ async def get_nautobot_device_roles(
         )
 
 
+@router.get("/roles/ipaddress", summary="🔶 REST: List IP Address Roles")
+async def get_nautobot_ipaddress_roles(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
+    """Get Nautobot roles specifically for ipam.ipaddress content type."""
+    try:
+        result = await nautobot_service.rest_request(
+            "extras/roles/?content_types=ipam.ipaddress&limit=0"
+        )
+        return result.get("results", [])
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch IP address roles: {str(e)}",
+        )
+
+
 @router.get("/platforms", summary="🔶 REST: List Platforms")
 async def get_nautobot_platforms(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),

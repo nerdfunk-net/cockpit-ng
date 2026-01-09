@@ -2,99 +2,136 @@ import React, { useState, useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { CheckMKInterface } from '@/lib/checkmk/interface-mapping-utils'
+import type { CheckMKInterface, CheckMKAddress } from '@/lib/checkmk/interface-mapping-utils'
 import { getAdminStatusLabel, getOperStatusLabel, formatSpeed } from '@/lib/checkmk/interface-mapping-utils'
 
 interface InterfaceMappingTableProps {
   interfaces: CheckMKInterface[]
   ipAddressStatuses: Array<{ id: string; name: string }> | null
+  ipAddressRoles: Array<{ id: string; name: string }> | null
 }
 
-// Interface role options
-const INTERFACE_ROLES = [
-  { value: 'none', label: 'None' },
-  { value: 'management', label: 'Management' },
-  { value: 'access', label: 'Access' },
-  { value: 'trunk', label: 'Trunk' },
-  { value: 'uplink', label: 'Uplink' },
-  { value: 'loopback', label: 'Loopback' },
-  { value: 'null', label: 'Null' },
-] as const
+// Flattened row structure: one row per IP address
+interface IPAddressRow {
+  interface: CheckMKInterface
+  ipAddress: CheckMKAddress
+  rowKey: string // Unique key: "interfaceIndex-ipAddress"
+}
 
-export function InterfaceMappingTable({ interfaces, ipAddressStatuses }: InterfaceMappingTableProps) {
-  // State for interface mappings: interfaceIndex -> { enabled, role, status }
-  const [interfaceMappings, setInterfaceMappings] = useState<Record<number, { enabled: boolean; role: string; status: string }>>(() => {
-    // Initialize with all interfaces enabled and role "none"
-    const initial: Record<number, { enabled: boolean; role: string; status: string }> = {}
-    // Get default status (first available status or "Active")
-    const defaultStatus = ipAddressStatuses?.[0]?.name || 'Active'
-
+export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddressRoles }: InterfaceMappingTableProps) {
+  // Flatten interfaces into IP address rows
+  const ipAddressRows = useMemo<IPAddressRow[]>(() => {
+    const rows: IPAddressRow[] = []
     interfaces.forEach((iface) => {
-      // Auto-detect role based on interface name
-      let defaultRole = 'none'
-      const name = iface.name.toLowerCase()
-      if (name.includes('null')) {
-        defaultRole = 'null'
-      } else if (name.includes('loopback') || name.includes('lo')) {
-        defaultRole = 'loopback'
-      } else if (name.includes('mgmt') || name.includes('management')) {
-        defaultRole = 'management'
+      if (iface.ipAddresses.length > 0) {
+        iface.ipAddresses.forEach((ipAddr) => {
+          rows.push({
+            interface: iface,
+            ipAddress: ipAddr,
+            rowKey: `${iface.index}-${ipAddr.address}`,
+          })
+        })
       }
+    })
+    return rows
+  }, [interfaces])
 
-      initial[iface.index] = {
-        enabled: iface.oper_status === 1, // Enable only if operationally up
-        role: defaultRole,
+  // State for IP address mappings: rowKey -> { enabled, ipRole, status, ipAddress, interfaceName }
+  const [ipMappings, setIpMappings] = useState<Record<string, { enabled: boolean; ipRole: string; status: string; ipAddress: string; interfaceName: string }>>(() => {
+    // Initialize with all IP addresses enabled and default IP role/status
+    const initial: Record<string, { enabled: boolean; ipRole: string; status: string; ipAddress: string; interfaceName: string }> = {}
+    const defaultStatus = ipAddressStatuses?.[0]?.name || 'Active'
+    const defaultIpRole = ipAddressRoles?.[0]?.name || ''
+
+    ipAddressRows.forEach((row) => {
+      initial[row.rowKey] = {
+        enabled: row.interface.oper_status === 1, // Enable only if interface is operationally up
+        ipRole: defaultIpRole,
         status: defaultStatus,
+        ipAddress: `${row.ipAddress.address}/${row.ipAddress.cidr}`, // Default value from inventory
+        interfaceName: row.interface.name, // Default interface name from inventory
       }
     })
     return initial
   })
 
-  const handleToggleInterface = (index: number) => {
-    setInterfaceMappings((prev) => ({
+  const handleToggleIpAddress = (rowKey: string) => {
+    setIpMappings((prev) => ({
       ...prev,
-      [index]: {
-        enabled: !prev[index]?.enabled,
-        role: prev[index]?.role || 'none',
-        status: prev[index]?.status || ipAddressStatuses?.[0]?.name || 'Active',
+      [rowKey]: {
+        enabled: !prev[rowKey]?.enabled,
+        ipRole: prev[rowKey]?.ipRole || ipAddressRoles?.[0]?.name || '',
+        status: prev[rowKey]?.status || ipAddressStatuses?.[0]?.name || 'Active',
+        ipAddress: prev[rowKey]?.ipAddress || '',
+        interfaceName: prev[rowKey]?.interfaceName || '',
       },
     }))
   }
 
-  const handleRoleChange = (index: number, role: string) => {
-    setInterfaceMappings((prev) => ({
+  const handleIpRoleChange = (rowKey: string, ipRole: string) => {
+    setIpMappings((prev) => ({
       ...prev,
-      [index]: {
-        enabled: prev[index]?.enabled || false,
-        role,
-        status: prev[index]?.status || ipAddressStatuses?.[0]?.name || 'Active',
+      [rowKey]: {
+        enabled: prev[rowKey]?.enabled || false,
+        ipRole,
+        status: prev[rowKey]?.status || ipAddressStatuses?.[0]?.name || 'Active',
+        ipAddress: prev[rowKey]?.ipAddress || '',
+        interfaceName: prev[rowKey]?.interfaceName || '',
       },
     }))
   }
 
-  const handleStatusChange = (index: number, status: string) => {
-    setInterfaceMappings((prev) => ({
+  const handleStatusChange = (rowKey: string, status: string) => {
+    setIpMappings((prev) => ({
       ...prev,
-      [index]: {
-        enabled: prev[index]?.enabled || false,
-        role: prev[index]?.role || 'none',
+      [rowKey]: {
+        enabled: prev[rowKey]?.enabled || false,
+        ipRole: prev[rowKey]?.ipRole || ipAddressRoles?.[0]?.name || '',
         status,
+        ipAddress: prev[rowKey]?.ipAddress || '',
+        interfaceName: prev[rowKey]?.interfaceName || '',
       },
     }))
   }
 
-  // Filter out Null interfaces by default (user can still enable them)
-  const displayedInterfaces = useMemo(() => {
-    return interfaces.filter((iface) => {
-      const name = iface.name.toLowerCase()
+  const handleIpAddressChange = (rowKey: string, ipAddress: string) => {
+    setIpMappings((prev) => ({
+      ...prev,
+      [rowKey]: {
+        enabled: prev[rowKey]?.enabled || false,
+        ipRole: prev[rowKey]?.ipRole || ipAddressRoles?.[0]?.name || '',
+        status: prev[rowKey]?.status || ipAddressStatuses?.[0]?.name || 'Active',
+        ipAddress,
+        interfaceName: prev[rowKey]?.interfaceName || '',
+      },
+    }))
+  }
+
+  const handleInterfaceNameChange = (rowKey: string, interfaceName: string) => {
+    setIpMappings((prev) => ({
+      ...prev,
+      [rowKey]: {
+        enabled: prev[rowKey]?.enabled || false,
+        ipRole: prev[rowKey]?.ipRole || ipAddressRoles?.[0]?.name || '',
+        status: prev[rowKey]?.status || ipAddressStatuses?.[0]?.name || 'Active',
+        ipAddress: prev[rowKey]?.ipAddress || '',
+        interfaceName,
+      },
+    }))
+  }
+
+  // Filter out rows from Null interfaces
+  const displayedRows = useMemo(() => {
+    return ipAddressRows.filter((row) => {
+      const name = row.interface.name.toLowerCase()
       return !name.includes('null') // Show all except Null interfaces
     })
-  }, [interfaces])
+  }, [ipAddressRows])
 
-  if (interfaces.length === 0) {
+  if (ipAddressRows.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        No interfaces found in inventory data
+        No IP addresses found in inventory data
       </div>
     )
   }
@@ -106,74 +143,88 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses }: Interfa
           <tr>
             <th className="text-left p-3 font-semibold text-gray-900 w-16">Sync</th>
             <th className="text-left p-3 font-semibold text-gray-900">Interface</th>
-            <th className="text-left p-3 font-semibold text-gray-900">IP Addresses</th>
-            <th className="text-left p-3 font-semibold text-gray-900">Role</th>
+            <th className="text-left p-3 font-semibold text-gray-900">IP Address</th>
+            <th className="text-left p-3 font-semibold text-gray-900">IP Role</th>
             <th className="text-left p-3 font-semibold text-gray-900">Status</th>
             <th className="text-left p-3 font-semibold text-gray-900">Details</th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y">
-          {displayedInterfaces.map((iface) => {
-            const mapping = interfaceMappings[iface.index] || { enabled: false, role: 'none', status: ipAddressStatuses?.[0]?.name || 'Active' }
-            const adminStatus = getAdminStatusLabel(iface.admin_status)
-            const operStatus = getOperStatusLabel(iface.oper_status)
+          {displayedRows.map((row) => {
+            const mapping = ipMappings[row.rowKey] || {
+              enabled: false,
+              ipRole: ipAddressRoles?.[0]?.name || '',
+              status: ipAddressStatuses?.[0]?.name || 'Active',
+              ipAddress: `${row.ipAddress.address}/${row.ipAddress.cidr}`,
+              interfaceName: row.interface.name,
+            }
+            const adminStatus = getAdminStatusLabel(row.interface.admin_status)
+            const operStatus = getOperStatusLabel(row.interface.oper_status)
 
             return (
-              <tr key={iface.index} className={`hover:bg-blue-50 ${!mapping.enabled ? 'opacity-50' : ''}`}>
+              <tr key={row.rowKey} className={`hover:bg-blue-50 ${!mapping.enabled ? 'opacity-50' : ''}`}>
                 {/* Sync checkbox */}
                 <td className="p-3">
                   <Checkbox
                     checked={mapping.enabled}
-                    onCheckedChange={() => handleToggleInterface(iface.index)}
+                    onCheckedChange={() => handleToggleIpAddress(row.rowKey)}
                   />
                 </td>
 
-                {/* Interface name */}
+                {/* Editable Interface name */}
                 <td className="p-3">
                   <div className="space-y-1">
-                    <code className="text-xs bg-blue-100 px-2 py-1 rounded font-mono text-blue-900">
-                      {iface.name}
-                    </code>
-                    {iface.alias && (
-                      <div className="text-xs text-gray-500">Alias: {iface.alias}</div>
+                    <input
+                      type="text"
+                      value={mapping.interfaceName}
+                      onChange={(e) => handleInterfaceNameChange(row.rowKey, e.target.value)}
+                      disabled={!mapping.enabled}
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+                      placeholder="Ethernet0/0"
+                    />
+                    {row.interface.alias && (
+                      <div className="text-xs text-gray-500">Alias: {row.interface.alias}</div>
                     )}
                   </div>
                 </td>
 
-                {/* IP Addresses */}
+                {/* Editable IP Address */}
                 <td className="p-3">
-                  {iface.ipAddresses.length > 0 ? (
-                    <div className="space-y-1">
-                      {iface.ipAddresses.map((addr, idx) => (
-                        <div key={idx} className="text-xs">
-                          <code className="bg-green-100 px-2 py-0.5 rounded text-green-900">
-                            {addr.address}/{addr.cidr}
-                          </code>
-                          <span className="text-gray-500 ml-1">({addr.type})</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className="text-xs text-gray-400 italic">No IP</span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={mapping.ipAddress}
+                      onChange={(e) => handleIpAddressChange(row.rowKey, e.target.value)}
+                      disabled={!mapping.enabled}
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+                      placeholder="192.168.1.1/24"
+                    />
+                    <span className="text-xs text-gray-500 whitespace-nowrap">({row.ipAddress.type})</span>
+                  </div>
                 </td>
 
-                {/* Role selector */}
+                {/* IP Role selector */}
                 <td className="p-3">
                   <Select
-                    value={mapping.role}
-                    onValueChange={(value) => handleRoleChange(iface.index, value)}
+                    value={mapping.ipRole}
+                    onValueChange={(value) => handleIpRoleChange(row.rowKey, value)}
                     disabled={!mapping.enabled}
                   >
                     <SelectTrigger className="w-full bg-white border-gray-300">
-                      <SelectValue />
+                      <SelectValue placeholder="Select IP role..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {INTERFACE_ROLES.map((role) => (
-                        <SelectItem key={role.value} value={role.value}>
-                          {role.label}
+                      {ipAddressRoles && ipAddressRoles.length > 0 ? (
+                        ipAddressRoles.map((role) => (
+                          <SelectItem key={role.id} value={role.name}>
+                            {role.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="loading" disabled>
+                          Loading roles...
                         </SelectItem>
-                      ))}
+                      )}
                     </SelectContent>
                   </Select>
                 </td>
@@ -182,8 +233,8 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses }: Interfa
                 <td className="p-3">
                   <Select
                     value={mapping.status}
-                    onValueChange={(value) => handleStatusChange(iface.index, value)}
-                    disabled={!mapping.enabled || !iface.ipAddresses.length}
+                    onValueChange={(value) => handleStatusChange(row.rowKey, value)}
+                    disabled={!mapping.enabled}
                   >
                     <SelectTrigger className="w-full bg-white border-gray-300">
                       <SelectValue />
@@ -227,10 +278,10 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses }: Interfa
                         {operStatus}
                       </Badge>
                     </div>
-                    {iface.phys_address && (
-                      <div>MAC: {iface.phys_address}</div>
+                    {row.interface.phys_address && (
+                      <div>MAC: {row.interface.phys_address}</div>
                     )}
-                    <div>Speed: {formatSpeed(iface.speed)}</div>
+                    <div>Speed: {formatSpeed(row.interface.speed)}</div>
                   </div>
                 </td>
               </tr>
@@ -243,15 +294,15 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses }: Interfa
       <div className="bg-gray-50 px-4 py-3 border-t text-xs text-gray-600">
         <div className="flex gap-6">
           <span>
-            <strong>Total:</strong> {displayedInterfaces.length} interfaces
+            <strong>Total:</strong> {displayedRows.length} IP addresses
           </span>
           <span>
             <strong>Enabled:</strong>{' '}
-            {Object.values(interfaceMappings).filter((m) => m.enabled).length}
+            {Object.values(ipMappings).filter((m) => m.enabled).length}
           </span>
           <span>
-            <strong>Up/Up:</strong>{' '}
-            {displayedInterfaces.filter((i) => i.admin_status === 1 && i.oper_status === 1).length}
+            <strong>Interfaces Up/Up:</strong>{' '}
+            {displayedRows.filter((r) => r.interface.admin_status === 1 && r.interface.oper_status === 1).length}
           </span>
         </div>
       </div>

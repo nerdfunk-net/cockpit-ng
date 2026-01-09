@@ -27,6 +27,7 @@ interface SyncToNautobotModalProps {
   inventoryData: Record<string, unknown> | null
   loadingInventory: boolean
   ipAddressStatuses: Array<{ id: string; name: string }> | null
+  ipAddressRoles: Array<{ id: string; name: string }> | null
   onSync: () => void
   onUpdateMapping: (checkMkKey: string, nautobotField: string) => void
   onUpdatePropertyMappings: (mappings: Record<string, PropertyMapping>) => void
@@ -44,6 +45,7 @@ export function SyncToNautobotModal({
   inventoryData,
   loadingInventory,
   ipAddressStatuses,
+  ipAddressRoles,
   onSync,
   onUpdateMapping,
   onUpdatePropertyMappings,
@@ -366,7 +368,11 @@ export function SyncToNautobotModal({
                     </div>
                   </div>
                 ) : interfaces.length > 0 ? (
-                  <InterfaceMappingTable interfaces={interfaces} ipAddressStatuses={ipAddressStatuses} />
+                  <InterfaceMappingTable
+                    interfaces={interfaces}
+                    ipAddressStatuses={ipAddressStatuses}
+                    ipAddressRoles={ipAddressRoles}
+                  />
                 ) : (
                   <Card className="border-gray-200 bg-gray-50">
                     <CardContent className="p-4">
