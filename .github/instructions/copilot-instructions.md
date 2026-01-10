@@ -12,7 +12,7 @@ Cockpit-NG is a modern network management dashboard designed for network enginee
 - **UI Framework**: React 19.1.0
 - **Styling**: Tailwind CSS 4
 - **UI Components**: Shadcn UI (built on Radix UI)
-- **State Management**: Zustand 5.0 for client-side state
+- **State Management**: TanStack Query v5, Zustand 5.0 for client-side state
 - **Icons**: Lucide React
 - **HTTP Client**: Native fetch API
 - **Cookies**: js-cookie for cookie management
@@ -213,6 +213,11 @@ backend/routers/monitoring.py:
 - Putting business logic in routers
 - Creating separate backend endpoints for GraphQL queries
 - Mixing server and client components unnecessarily
+- Manual `useState + useEffect` for server data (use TanStack Query)
+- Inline query keys (always use `queryKeys` factory)
+- Storing query data in `useState` (use `useMemo` for derived state)
+- Forgetting to invalidate cache after mutations
+
 ```
 
 **Enforcement**:
@@ -404,31 +409,34 @@ frontend/
 │   │       └── ... (other UI components)
 │   │
 │   ├── hooks/                     # Custom React hooks
-│   │   ├── use-api.ts            # API calling hook
-│   │   ├── use-mobile.ts         # Mobile detection hook
+│   │   ├── use-api.ts             # API calling hook
+│   │   ├── queries/               # TanStack Query hooks
+│   │   ├── use-mobile.ts          # Mobile detection hook
 │   │   ├── use-session-manager.ts # Session management hook
-│   │   ├── use-toast.ts          # Toast notifications hook
-│   │   ├── checkmk/              # CheckMK-specific hooks
-│   │   └── git/                  # Git-specific hooks
+│   │   ├── use-toast.ts           # Toast notifications hook
+│   │   ├── checkmk/               # CheckMK-specific hooks
+│   │   └── git/                   # Git-specific hooks
 │   │
 │   ├── services/                  # Service layer for API integration
-│   │   └── nautobot-graphql.ts   # Nautobot GraphQL queries and types
+│   │   └── nautobot-graphql.ts    # Nautobot GraphQL queries and types
 │   │
 │   ├── types/                     # TypeScript type definitions
 │   │   ├── checkmk/
-│   │   │   └── types.ts          # CheckMK-specific types
-│   │   └── git.ts                # Git-related types
+│   │   │   └── types.ts           # CheckMK-specific types
+│   │   └── git.ts                 # Git-related types
 │   │
 │   ├── utils/                     # Utility functions
-│   │   └── csv-parser.ts         # CSV parsing utility
+│   │   └── csv-parser.ts          # CSV parsing utility
 │   │
 │   └── lib/                       # Utility libraries
-│       ├── utils.ts              # General utilities
-│       ├── auth-store.ts         # Zustand auth store
-│       ├── security.ts           # Security utilities
-│       ├── local-fonts.ts        # Local font configuration
-│       ├── air-gap-config.ts     # Air-gapped environment config
-│       ├── compare-utils.ts      # Comparison utilities
+│       ├── utils.ts               # General utilities
+│       ├── auth-store.ts          # Zustand auth store
+│       ├── query-client.ts        # TanStack Query configuration
+│       ├── query-keys.ts.         # Query key factory (hierarchical)
+│       ├── security.ts            # Security utilities
+│       ├── local-fonts.ts         # Local font configuration
+│       ├── air-gap-config.ts      # Air-gapped environment config
+│       ├── compare-utils.ts       # Comparison utilities
 │       └── checkmk/
 │           └── property-mapping-utils.ts # CheckMK property mapping
 │
@@ -870,6 +878,7 @@ The backend follows a **layered architecture** with **feature-based organization
 ### State Management
 - Server-side: React Server Components (no state)
 - Client-side: Zustand stores (auth-store.ts)
+- TanStack Query: server state (data fetching, caching, mutations)
 - Session management: use-session-manager hook
 - Form state: React useState (local)
 
@@ -1804,18 +1813,184 @@ function MyComponent() {
 
 ### Best Practices
 
-**DO**:
-- ✅ Add all GraphQL queries to `/frontend/src/services/nautobot-graphql.ts`
-- ✅ Create TypeScript interfaces for all query responses
-- ✅ Use helper functions (`fetchDeviceTypesWithManufacturer`, etc.)
-- ✅ Reuse existing queries when possible
-- ✅ Use the generic `/nautobot/graphql` endpoint
+❌ DON'T create inline GraphQL queries or dedicated backend endpoints for each query
 
-**DON'T**:
-- ❌ Write inline GraphQL queries in components
-- ❌ Create dedicated backend endpoints for each GraphQL query (e.g., `/device-types/graphql`)
-- ❌ Use REST API when GraphQL provides better data structure
-- ❌ Duplicate query definitions across multiple files
+## TanStack Query (Data Fetching & Caching)
+
+**MANDATORY for all data fetching:** Use TanStack Query instead of manual state management
+
+### Core Principles
+- **Declarative data fetching**: Query hooks replace manual useState/useEffect
+- **Automatic caching**: Data persists across navigation, reduces API calls
+- **Background refetch**: Fresh data on window focus/reconnect
+- **Centralized keys**: Use query key factory for type-safe invalidation
+- **Smart polling**: Auto-start/stop based on data state
+
+### Query Hook Pattern
+
+```typescript
+// 1. Add query keys to /frontend/src/lib/query-keys.ts
+export const queryKeys = {
+  myFeature: {
+    all: ['myFeature'] as const,
+    list: (filters?: { status?: string }) =>
+      filters
+        ? ([...queryKeys.myFeature.all, 'list', filters] as const)
+        : ([...queryKeys.myFeature.all, 'list'] as const),
+    detail: (id: string) => [...queryKeys.myFeature.all, 'detail', id] as const,
+  },
+}
+
+// 2. Create hook in /frontend/src/hooks/queries/use-my-feature-query.ts
+import { useQuery } from '@tanstack/react-query'
+import { useApi } from '@/hooks/use-api'
+import { queryKeys } from '@/lib/query-keys'
+
+interface UseMyFeatureQueryOptions {
+  filters?: { status?: string }
+  enabled?: boolean
+}
+
+const DEFAULT_OPTIONS: UseMyFeatureQueryOptions = {}
+
+export function useMyFeatureQuery(options: UseMyFeatureQueryOptions = DEFAULT_OPTIONS) {
+  const { apiCall } = useApi()
+  const { filters, enabled = true } = options
+
+  return useQuery({
+    queryKey: queryKeys.myFeature.list(filters),
+    queryFn: async () => apiCall('my-feature', { method: 'GET' }),
+    enabled,
+    staleTime: 30 * 1000,  // Cache for 30s
+  })
+}
+
+// 3. Use in component
+const { data, isLoading, error, refetch } = useMyFeatureQuery({
+  filters: { status: 'active' }
+})
+const items = data?.items || []
+```
+
+### Mutation Hook Pattern
+
+```typescript
+// Create mutations in /frontend/src/hooks/queries/use-my-feature-mutations.ts
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useApi } from '@/hooks/use-api'
+import { queryKeys } from '@/lib/query-keys'
+import { useToast } from '@/hooks/use-toast'
+
+export function useMyFeatureMutations() {
+  const { apiCall } = useApi()
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  const createItem = useMutation({
+    mutationFn: async (data: CreateItemInput) => {
+      return apiCall('my-feature', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+    },
+    onSuccess: () => {
+      // Automatic cache invalidation → triggers refetch
+      queryClient.invalidateQueries({ queryKey: queryKeys.myFeature.list() })
+      toast({
+        title: 'Success',
+        description: 'Item created!',
+      })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive'
+      })
+    }
+  })
+
+  return { createItem, updateItem, deleteItem }
+}
+```
+
+### Polling Pattern (Jobs/Tasks)
+
+```typescript
+export function useJobQuery(taskId: string) {
+  return useQuery({
+    queryKey: queryKeys.jobs.detail(taskId),
+    queryFn: () => fetchJob(taskId),
+    enabled: !!taskId,
+    refetchInterval: (query) => {
+      const data = query.state.data
+      if (!data) return 2000  // Keep polling
+
+      // Auto-stop when job completes
+      if (['SUCCESS', 'FAILURE', 'REVOKED'].includes(data.status)) {
+        return false
+      }
+
+      return 2000  // Continue polling every 2s
+    },
+    staleTime: 0,  // Always fetch fresh
+  })
+}
+```
+
+### Optimistic Updates (Instant UI Feedback)
+
+```typescript
+const syncRepository = useMutation({
+  mutationFn: async (id) => apiCall(`git/${id}/sync`, { method: 'POST' }),
+
+  // Run BEFORE API call
+  onMutate: async (id) => {
+    await queryClient.cancelQueries({ queryKey: queryKeys.git.repositories() })
+    const previous = queryClient.getQueryData(queryKeys.git.repositories())
+
+    // Update UI immediately
+    queryClient.setQueryData(queryKeys.git.repositories(), (old) => ({
+      ...old,
+      repositories: old.repositories.map((r) =>
+        r.id === id ? { ...r, sync_status: 'syncing' } : r
+      )
+    }))
+
+    return { previous }  // For rollback
+  },
+
+  // Rollback on error
+  onError: (err, id, context) => {
+    queryClient.setQueryData(queryKeys.git.repositories(), context?.previous)
+  },
+
+  onSettled: () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.git.repositories() })
+  }
+})
+```
+
+### DO:
+- ✅ Use centralized query key factory (`queryKeys`)
+- ✅ Create dedicated hooks for each resource
+- ✅ Use `DEFAULT_OPTIONS = {}` constant for default params
+- ✅ Invalidate affected queries after mutations
+- ✅ Match `staleTime` to data volatility (5min for static, 30s for semi-static, 0 for polling)
+- ✅ Use `useMemo` for derived state (not `useState`)
+- ✅ Enable `refetchOnWindowFocus` for network monitoring
+
+### DON'T:
+- ❌ Use manual `useState + useEffect` for server data
+- ❌ Use inline query keys (always use `queryKeys` factory)
+- ❌ Store query data in `useState` (use `useMemo` for derived state)
+- ❌ Forget to invalidate cache after mutations
+- ❌ Use inline object literals as default params (`= {}` creates new object every render)
+
+### Documentation:
+- **Best Practices**: `/frontend/src/hooks/queries/BEST_PRACTICES.md`
+- **Optimistic Updates**: `/frontend/src/hooks/queries/OPTIMISTIC_UPDATES.md`
+- **Migration Guide**: `/frontend/TANSTACK_QUERY_MIGRATION.md`
 
 ### Why Use This Pattern?
 
@@ -2427,7 +2602,9 @@ app.include_router(devices_router)
 1. Create page in `/frontend/src/app/{path}/page.tsx`
 2. Create components in `/frontend/src/components/{feature}/`
 3. Add API calls to `/api/proxy/{backend-endpoint}`
-4. Update sidebar in `/frontend/src/components/app-sidebar.tsx`:
+4. Add query keys to `/lib/query-keys.ts`
+5. Create TanStack Query hooks in `/hooks/queries/use-{domain}-query.ts`
+6. Update sidebar in `/frontend/src/components/app-sidebar.tsx`:
    ```typescript
    {
      title: "New Feature",
@@ -2435,7 +2612,8 @@ app.include_router(devices_router)
      icon: IconName,
    }
    ```
-5. Add route to layout if needed
+7. Add route to layout if needed
+8. Use query hooks in components (NOT manual `useState + useEffect`)
 
 **Example**:
 ```typescript
@@ -2543,6 +2721,7 @@ def create_devices_table():
 - ✅ Server Components by default, Client Components when needed
 - ✅ Store auth tokens in cookies (not localStorage for SSR)
 - ✅ Use Zustand for client-side state management
+- ✅ Use TanStack Query for server state (data fetching, caching, mutations)
 
 ### Code Organization
 - ✅ Routers handle HTTP layer only

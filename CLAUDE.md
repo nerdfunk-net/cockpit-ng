@@ -5,7 +5,7 @@ Network management dashboard for NetDevOps with Nautobot & CheckMK integration, 
 
 ## Tech Stack
 
-**Frontend:** Next.js 15.4.7 (App Router), React 19, TypeScript 5, Tailwind CSS 4, Shadcn UI, Zustand, Lucide Icons
+**Frontend:** Next.js 15.4.7 (App Router), React 19, TypeScript 5, Tailwind CSS 4, Shadcn UI, TanStack Query v5, Zustand, Lucide Icons
 **Backend:** FastAPI, Python 3.9+, PostgreSQL, SQLAlchemy, JWT auth, Celery/Beat, Netmiko, Ansible, GitPython
 **Integrations:** Nautobot API, CheckMK, OIDC multi-provider
 
@@ -69,7 +69,10 @@ Network management dashboard for NetDevOps with Nautobot & CheckMK integration, 
 
 **Frontend Core:**
 - `/frontend/src/lib/auth-store.ts` - Zustand auth state
+- `/frontend/src/lib/query-client.ts` - TanStack Query configuration
+- `/frontend/src/lib/query-keys.ts` - Query key factory (hierarchical)
 - `/frontend/src/hooks/use-api.ts` - API calling hook
+- `/frontend/src/hooks/queries/*` - TanStack Query hooks
 - `/frontend/src/app/api/proxy/[...path]/route.ts` - Backend proxy
 - `/frontend/src/components/ui/*` - Shadcn UI primitives
 
@@ -189,6 +192,183 @@ const result = await fetchMyData(apiCall)
 
 ❌ DON'T create inline GraphQL queries or dedicated backend endpoints for each query
 
+## TanStack Query (Data Fetching & Caching)
+
+**MANDATORY for all data fetching:** Use TanStack Query instead of manual state management
+
+### Core Principles
+- **Declarative data fetching**: Query hooks replace manual useState/useEffect
+- **Automatic caching**: Data persists across navigation, reduces API calls
+- **Background refetch**: Fresh data on window focus/reconnect
+- **Centralized keys**: Use query key factory for type-safe invalidation
+- **Smart polling**: Auto-start/stop based on data state
+
+### Query Hook Pattern
+
+```typescript
+// 1. Add query keys to /frontend/src/lib/query-keys.ts
+export const queryKeys = {
+  myFeature: {
+    all: ['myFeature'] as const,
+    list: (filters?: { status?: string }) =>
+      filters
+        ? ([...queryKeys.myFeature.all, 'list', filters] as const)
+        : ([...queryKeys.myFeature.all, 'list'] as const),
+    detail: (id: string) => [...queryKeys.myFeature.all, 'detail', id] as const,
+  },
+}
+
+// 2. Create hook in /frontend/src/hooks/queries/use-my-feature-query.ts
+import { useQuery } from '@tanstack/react-query'
+import { useApi } from '@/hooks/use-api'
+import { queryKeys } from '@/lib/query-keys'
+
+interface UseMyFeatureQueryOptions {
+  filters?: { status?: string }
+  enabled?: boolean
+}
+
+const DEFAULT_OPTIONS: UseMyFeatureQueryOptions = {}
+
+export function useMyFeatureQuery(options: UseMyFeatureQueryOptions = DEFAULT_OPTIONS) {
+  const { apiCall } = useApi()
+  const { filters, enabled = true } = options
+
+  return useQuery({
+    queryKey: queryKeys.myFeature.list(filters),
+    queryFn: async () => apiCall('my-feature', { method: 'GET' }),
+    enabled,
+    staleTime: 30 * 1000,  // Cache for 30s
+  })
+}
+
+// 3. Use in component
+const { data, isLoading, error, refetch } = useMyFeatureQuery({
+  filters: { status: 'active' }
+})
+const items = data?.items || []
+```
+
+### Mutation Hook Pattern
+
+```typescript
+// Create mutations in /frontend/src/hooks/queries/use-my-feature-mutations.ts
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useApi } from '@/hooks/use-api'
+import { queryKeys } from '@/lib/query-keys'
+import { useToast } from '@/hooks/use-toast'
+
+export function useMyFeatureMutations() {
+  const { apiCall } = useApi()
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  const createItem = useMutation({
+    mutationFn: async (data: CreateItemInput) => {
+      return apiCall('my-feature', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+    },
+    onSuccess: () => {
+      // Automatic cache invalidation → triggers refetch
+      queryClient.invalidateQueries({ queryKey: queryKeys.myFeature.list() })
+      toast({
+        title: 'Success',
+        description: 'Item created!',
+      })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive'
+      })
+    }
+  })
+
+  return { createItem, updateItem, deleteItem }
+}
+```
+
+### Polling Pattern (Jobs/Tasks)
+
+```typescript
+export function useJobQuery(taskId: string) {
+  return useQuery({
+    queryKey: queryKeys.jobs.detail(taskId),
+    queryFn: () => fetchJob(taskId),
+    enabled: !!taskId,
+    refetchInterval: (query) => {
+      const data = query.state.data
+      if (!data) return 2000  // Keep polling
+
+      // Auto-stop when job completes
+      if (['SUCCESS', 'FAILURE', 'REVOKED'].includes(data.status)) {
+        return false
+      }
+
+      return 2000  // Continue polling every 2s
+    },
+    staleTime: 0,  // Always fetch fresh
+  })
+}
+```
+
+### Optimistic Updates (Instant UI Feedback)
+
+```typescript
+const syncRepository = useMutation({
+  mutationFn: async (id) => apiCall(`git/${id}/sync`, { method: 'POST' }),
+
+  // Run BEFORE API call
+  onMutate: async (id) => {
+    await queryClient.cancelQueries({ queryKey: queryKeys.git.repositories() })
+    const previous = queryClient.getQueryData(queryKeys.git.repositories())
+
+    // Update UI immediately
+    queryClient.setQueryData(queryKeys.git.repositories(), (old) => ({
+      ...old,
+      repositories: old.repositories.map((r) =>
+        r.id === id ? { ...r, sync_status: 'syncing' } : r
+      )
+    }))
+
+    return { previous }  // For rollback
+  },
+
+  // Rollback on error
+  onError: (err, id, context) => {
+    queryClient.setQueryData(queryKeys.git.repositories(), context?.previous)
+  },
+
+  onSettled: () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.git.repositories() })
+  }
+})
+```
+
+### DO:
+- ✅ Use centralized query key factory (`queryKeys`)
+- ✅ Create dedicated hooks for each resource
+- ✅ Use `DEFAULT_OPTIONS = {}` constant for default params
+- ✅ Invalidate affected queries after mutations
+- ✅ Match `staleTime` to data volatility (5min for static, 30s for semi-static, 0 for polling)
+- ✅ Use `useMemo` for derived state (not `useState`)
+- ✅ Enable `refetchOnWindowFocus` for network monitoring
+
+### DON'T:
+- ❌ Use manual `useState + useEffect` for server data
+- ❌ Use inline query keys (always use `queryKeys` factory)
+- ❌ Store query data in `useState` (use `useMemo` for derived state)
+- ❌ Forget to invalidate cache after mutations
+- ❌ Use inline object literals as default params (`= {}` creates new object every render)
+
+### Documentation:
+- **Best Practices**: `/frontend/src/hooks/queries/BEST_PRACTICES.md`
+- **Optimistic Updates**: `/frontend/src/hooks/queries/OPTIMISTIC_UPDATES.md`
+- **Migration Guide**: `/frontend/TANSTACK_QUERY_MIGRATION.md`
+
 ## React Best Practices (CRITICAL - Prevents Infinite Loops)
 
 ### MUST Follow to Prevent Re-render Loops
@@ -295,8 +475,10 @@ PORT=3000
 ### Adding New Frontend Page
 1. Create page in `/app/(dashboard)/{path}/page.tsx`
 2. Create feature components in `/components/features/{domain}/`
-3. Add sidebar link in `/components/layout/app-sidebar.tsx`
-4. Call backend via `/api/proxy/{endpoint}`
+3. Add query keys to `/lib/query-keys.ts`
+4. Create TanStack Query hooks in `/hooks/queries/use-{domain}-query.ts`
+5. Add sidebar link in `/components/layout/app-sidebar.tsx`
+6. Use query hooks in components (NOT manual `useState + useEffect`)
 
 ### Adding New Permission
 1. UI: `/settings/permissions` → Add Permission → Assign to roles
@@ -337,8 +519,9 @@ cd frontend && npm run dev
 - Feature-based organization
 - Server Components by default
 - API calls via `/api/proxy/*`
+- TanStack Query for server state (data fetching, caching, mutations)
+- Zustand for client-only state (UI state, preferences)
 - Shadcn UI for all components
-- Zustand for client state
 - react-hook-form + zod for forms
 
 **Database:**
@@ -365,3 +548,7 @@ cd frontend && npm run dev
 - ❌ Using inline array/object literals in default params
 - ❌ Custom hooks without memoized returns
 - ❌ Missing or incomplete useEffect dependencies
+- ❌ Manual `useState + useEffect` for server data (use TanStack Query)
+- ❌ Inline query keys (always use `queryKeys` factory)
+- ❌ Storing query data in `useState` (use `useMemo` for derived state)
+- ❌ Forgetting to invalidate cache after mutations
