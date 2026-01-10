@@ -32,10 +32,12 @@ const createTestQueryClient = () => new QueryClient({
   },
 })
 
+const EMPTY_OPTIONS = {}
+
 /**
  * Custom render function that sets up auth state and QueryClient before rendering
  */
-export function render(ui: ReactElement, options: CustomRenderOptions = {}) {
+export function render(ui: ReactElement, options: CustomRenderOptions = EMPTY_OPTIONS) {
   const { authState, ...renderOptions } = options
 
   // Create fresh query client for each test

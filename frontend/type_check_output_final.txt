@@ -1,0 +1,19 @@
+
+> frontend@0.1.0 type-check
+> tsc --noEmit
+
+src/components/shared/device-selector.tsx(103,5): error TS6133: 'setCurrentPage' is declared but its value is never read.
+src/hooks/checkmk/use-hosts-filter.test.ts(55,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(56,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(67,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(89,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(90,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(107,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(108,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(167,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(168,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(210,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(211,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/use-api.test.ts(107,25): error TS18048: 'fetchCall' is possibly 'undefined'.
+src/hooks/use-api.test.ts(111,12): error TS18048: 'fetchCall' is possibly 'undefined'.
+src/hooks/use-api.test.ts(217,25): error TS18048: 'fetchCall' is possibly 'undefined'.

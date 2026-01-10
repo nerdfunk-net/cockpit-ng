@@ -1,0 +1,65 @@
+
+> frontend@0.1.0 type-check
+> tsc --noEmit
+
+src/app/(dashboard)/nautobot-export/page.tsx(6,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/general/inventory/inventory-page.tsx(15,31): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/general/inventory/inventory-page.tsx(15,48): error TS2459: Module '"@/components/shared/device-selector"' declares 'LogicalCondition' locally, but it is not exported.
+src/components/features/nautobot/export/dialogs/preview-export-dialog.tsx(10,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/nautobot/export/tabs/device-selection-tab.tsx(7,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/nautobot/export/tabs/device-selection-tab.tsx(7,27): error TS2459: Module '"@/components/shared/device-selector"' declares 'LogicalCondition' locally, but it is not exported.
+src/components/features/nautobot/export/tabs/export-tab.tsx(9,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/nautobot/tools/bulk-edit/bulk-edit-page.tsx(6,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/nautobot/tools/bulk-edit/bulk-edit-page.tsx(6,27): error TS2459: Module '"@/components/shared/device-selector"' declares 'LogicalCondition' locally, but it is not exported.
+src/components/features/nautobot/tools/bulk-edit/components/editable-device-table.tsx(12,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/nautobot/tools/bulk-edit/components/editable-device-table.tsx(421,29): error TS7006: Parameter 'tag' implicitly has an 'any' type.
+src/components/features/nautobot/tools/bulk-edit/dialogs/preview-changes-dialog.tsx(15,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/nautobot/tools/bulk-edit/tabs/bulk-edit-tab.tsx(7,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/nautobot/tools/bulk-edit/tabs/device-selection-tab.tsx(7,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/nautobot/tools/bulk-edit/tabs/device-selection-tab.tsx(7,27): error TS2459: Module '"@/components/shared/device-selector"' declares 'LogicalCondition' locally, but it is not exported.
+src/components/features/nautobot/tools/bulk-edit/utils/csv-converter.ts(1,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/nautobot/tools/bulk-edit/utils/json-converter.ts(1,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/network/automation/netmiko/components/template-selection-panel.tsx(9,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/network/automation/netmiko/hooks/use-netmiko-execution.ts(9,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/network/automation/netmiko/netmiko-page.tsx(6,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/network/automation/netmiko/tabs/device-selection-tab.tsx(7,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/network/automation/netmiko/tabs/device-selection-tab.tsx(7,27): error TS2459: Module '"@/components/shared/device-selector"' declares 'LogicalCondition' locally, but it is not exported.
+src/components/features/network/automation/netmiko/tabs/variables-and-templates-tab.tsx(3,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/network/compliance/compliance-page.tsx(6,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/network/compliance/tabs/check-tab.tsx(16,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/network/compliance/tabs/device-selection-tab.tsx(7,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/network/compliance/tabs/device-selection-tab.tsx(7,27): error TS2459: Module '"@/components/shared/device-selector"' declares 'LogicalCondition' locally, but it is not exported.
+src/components/features/network/snapshots/dialogs/execute-snapshot-dialog.tsx(23,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/network/snapshots/snapshots-page.tsx(12,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/network/snapshots/snapshots-page.tsx(12,27): error TS2459: Module '"@/components/shared/device-selector"' declares 'LogicalCondition' locally, but it is not exported.
+src/components/features/network/snapshots/tabs/devices-tab.tsx(7,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/features/network/snapshots/tabs/devices-tab.tsx(7,27): error TS2459: Module '"@/components/shared/device-selector"' declares 'LogicalCondition' locally, but it is not exported.
+src/components/features/network/snapshots/tabs/snapshots-tab.tsx(24,15): error TS2459: Module '"@/components/shared/device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/shared/device-selection-tab.tsx(23,31): error TS2459: Module '"./device-selector"' declares 'DeviceInfo' locally, but it is not exported.
+src/components/shared/device-selection-tab.tsx(23,48): error TS2459: Module '"./device-selector"' declares 'LogicalCondition' locally, but it is not exported.
+src/components/shared/device-selector-components/device-table.tsx(10,1): error TS6133: 'Label' is declared but its value is never read.
+src/components/shared/device-selector-components/load-inventory-modal.tsx(4,28): error TS2307: Cannot find module '@/components/ui/scroll-area' or its corresponding type declarations.
+src/components/shared/device-selector-components/manage-inventory-modal.tsx(7,28): error TS2307: Cannot find module '@/components/ui/scroll-area' or its corresponding type declarations.
+src/components/shared/device-selector-components/manage-inventory-modal.tsx(9,45): error TS6133: 'AlertTriangle' is declared but its value is never read.
+src/components/shared/device-selector-components/manage-inventory-modal.tsx(154,109): error TS2551: Property 'created_at' does not exist on type '{ id: number; name: string; description?: string | undefined; conditions: LogicalCondition[]; scope: string; created_by: string; }'. Did you mean 'created_by'?
+src/components/shared/device-selector.tsx(8,3): error TS6133: 'ConditionTree' is declared but its value is never read.
+src/components/shared/device-selector.tsx(93,5): error TS6133: 'setCurrentPage' is declared but its value is never read.
+src/hooks/checkmk/use-hosts-filter.test.ts(55,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(56,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(67,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(89,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(90,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(107,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(108,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(167,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(168,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(210,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/checkmk/use-hosts-filter.test.ts(211,12): error TS2532: Object is possibly 'undefined'.
+src/hooks/shared/device-selector/use-condition-tree.ts(23,34): error TS6133: 'initialConditions' is declared but its value is never read.
+src/hooks/shared/device-selector/use-condition-tree.ts(49,42): error TS2532: Object is possibly 'undefined'.
+src/hooks/shared/device-selector/use-condition-tree.ts(50,34): error TS2532: Object is possibly 'undefined'.
+src/hooks/shared/device-selector/use-device-preview.ts(8,5): error TS2305: Module '"@/types/shared/device-selector"' has no exported member 'BackendOperation'.
+src/hooks/shared/device-selector/use-device-preview.ts(9,5): error TS2305: Module '"@/types/shared/device-selector"' has no exported member 'BackendCondition'.
+src/hooks/use-api.test.ts(107,25): error TS18048: 'fetchCall' is possibly 'undefined'.
+src/hooks/use-api.test.ts(111,12): error TS18048: 'fetchCall' is possibly 'undefined'.
+src/hooks/use-api.test.ts(217,25): error TS18048: 'fetchCall' is possibly 'undefined'.
