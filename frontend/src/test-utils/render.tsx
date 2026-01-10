@@ -1,5 +1,6 @@
 import { ReactElement } from 'react'
 import { render as rtlRender, RenderOptions } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuthStore } from '@/lib/auth-store'
 
 interface User {
@@ -18,11 +19,27 @@ interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
   }
 }
 
+// Create test query client with retries disabled
+const createTestQueryClient = () => new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      gcTime: 0,
+    },
+    mutations: {
+      retry: false,
+    },
+  },
+})
+
 /**
- * Custom render function that sets up auth state before rendering
+ * Custom render function that sets up auth state and QueryClient before rendering
  */
 export function render(ui: ReactElement, options: CustomRenderOptions = {}) {
   const { authState, ...renderOptions } = options
+
+  // Create fresh query client for each test
+  const queryClient = createTestQueryClient()
 
   // Set auth state if provided
   if (authState) {
@@ -40,7 +57,13 @@ export function render(ui: ReactElement, options: CustomRenderOptions = {}) {
     })
   }
 
-  return rtlRender(ui, renderOptions)
+  // Wrap with QueryClientProvider
+  return rtlRender(
+    <QueryClientProvider client={queryClient}>
+      {ui}
+    </QueryClientProvider>,
+    renderOptions
+  )
 }
 
 /**
