@@ -1,58 +1,63 @@
 # Frontend Codebase Analysis Report
 
 ## Executive Summary
-The frontend codebase is built on a modern stack (Next.js 15, React 19, TypeScript, Tailwind CSS). While the technology choices are solid, the codebase suffers from several architectural issues that will hinder scalability and maintainability. The most critical gap is the **complete absence of a unit testing framework**. Structurally, several "God Components" exist that rely on monolithic files rather than composed, smaller components.
+The frontend codebase has undergone significant improvements since the last review. The team has successfully addressed the most critical architectural gaps: **Test Infrastructure** and **Data Fetching Strategy**. The technology stack (Next.js 15, React 19, TypeScript, Tailwind CSS) is now supported by a robust testing framework (Vitest) and a modern async state management library (TanStack Query).
 
-## Critical Issues
+## Status Updates
 
 ### 1. Lack of Testing Infrastructure
-**Severity: CRITICAL**
-- **Issue**: The `package.json` contains no scripts or dependencies for unit testing (e.g., Jest, Vitest, React Testing Library).
-- **Impact**: Refactoring is extremely risky. There is no automated way to verify that changes don't break existing functionality.
-- **Recommendation**: Immediately install Vitest and React Testing Library. Establish a baseline of tests before tackling major refactors.
+**Status: RESOLVED**
+- **Previous State**: No testing framework or scripts.
+- **Current State**:
+    - **Vitest** is installed and configured (`vitest.config.ts`).
+    - **React Testing Library** and **User Event** are available.
+    - Test scripts (`test`, `test:coverage`) are added to `package.json`.
+    - Initial tests exist (e.g., `components/ui/button.test.tsx`, `hooks/checkmk/use-hosts-filter.test.ts`).
+- **Next Steps**: Continue expanding test coverage, particularly for complex features.
 
 ### 2. Manual Data Fetching & State Management
-**Severity: HIGH**
-- **Issue**: The application uses a custom `useApi` hook wrapping the native `fetch` API. Data loading is manually handled in `useEffect` hooks across components.
-- **Impact**:
-    - **Race Conditions**: Manual effect handling often leads to race conditions.
-    - **No Caching**: Data is not cached, leading to redundant network requests.
-    - **Boilerplate**: Components are cluttered with loading/error state management variables.
-- **Recommendation**: Adopt **TanStack Query (React Query)** or **SWR**. This will delete hundreds of lines of boilerplate code and improve application performance.
+**Status: RESOLVED**
+- **Previous State**: Manual `fetch` calls in `useEffect`, leading to race conditions and boilerplate.
+- **Current State**:
+    - **TanStack Query (v5)** is integrated.
+    - Dedicated hooks folder `src/hooks/queries/` established.
+    - Key features (Nautobot, CheckMK, Git) now use `useQuery` and `useMutation`.
+    - `git-management.tsx` has been partially updated to use these new hooks.
 
 ### 3. "God Components" (Monolithic Files)
-**Severity: MEDIUM**
-- **Issue**: several files exceed 1500-2000 lines of code, mixing UI, logic, types, and API calls.
-- **Top Offenders**:
-    1. `src/components/shared/device-selector.tsx` (**~2,160 lines**)
-       - Contains complex tree-based logic, legacy structures, and UI all in one.
-    2. `src/components/features/settings/git/git-management.tsx` (**~1,940 lines**)
-       - Handles the entire Git management workflow including CRUD, logs, and syncing logic.
-- **Impact**: These files are difficult to read, impossible to test in isolation, and prone to merge conflicts.
-- **Recommendation**: Apply the same refactoring pattern used for `hosts-inventory-page.tsx`:
-    - Extract Types to `types/`
-    - Extract Logic to Custom Hooks (`hooks/`)
-    - Extract UI Sub-components (`components/`)
+**Status: IN PROGRESS**
 
-## Refactoring Success
-**Status: VERIFIED**
-The file `hosts-inventory-page.tsx` was identified in a previous plan as a refactoring target.
-- **Current Status**: Successfully refactored.
-- **Size**: Reduced to reasonable size.
-- **Structure**: Logic has been moved to hooks (`use-hosts-data.ts`, `use-hosts-filter.ts`) and sub-components (`modals/`, `renderers/`).
-- **Takeaway**: This proves the team has a working pattern for breaking down monoliths. This pattern should be applied to `git-management.tsx` next.
+#### A. Device Selector (`src/components/shared/device-selector.tsx`)
+**Status: VERIFIED FIXED**
+- **Previous State**: ~2,160 lines, mixed concerns.
+- **Current State**: Refactored to ~300 lines.
+    - **Logic Extracted**: `useConditionTree`, `useDeviceFilter`, `useDevicePreview`.
+    - **UI Extracted**: `ConditionTreeBuilder`, `DeviceTable`, etc.
+    - This component now serves as a **Gold Standard** for how complex UI should be structured in this codebase.
 
-## Action Plan
+#### B. Git Management (`src/components/features/settings/git/git-management.tsx`)
+**Status: PENDING**
+- **Current State**: Still a large file (~1,925 lines).
+- **Improvements**: It now uses TanStack Query hooks (`useGitRepositoriesQuery`, `useGitMutations`), which has removed some data fetching boilerplate.
+- **Remaining Issues**:
+    - UI rendering is still monolithic.
+    - Form state and dialog management are mixed with presentation.
+    - Debug logic is inline.
+- **Recommendation**: Apply the "Device Selector Pattern" to this component next.
 
-1.  **Infrastructure (Day 1)**
-    - Install Vitest + React Testing Library.
-    - Create a "Smoke Test" for the main dashboard render.
+## Updated Action Plan
 
-2.  **Refactoring - Git Management (Day 2-3)**
-    - Create `src/components/features/settings/git/hooks/`
-    - Extract `useGitRepositories` and `useGitOperations`.
-    - Extract UI components: `GitRepositoryCard`, `GitCredentialForm`, `GitDebugModal`.
+1.  **Refactoring - Git Management (Priority: HIGH)**
+    - **Goal**: Decompose `git-management.tsx` following the patterns established in `device-selector`.
+    - **Tasks**:
+        - Extract UI: `GitRepositoryList`, `GitRepositoryForm`, `GitDebugDialog`.
+        - Extract Logic: `useGitForm`, `useGitDebug`.
 
-3.  **Refactoring - Device Selector (Day 4-5)**
-    - Isolate the recursive tree logic into a pure utility or hook.
-    - Break down the UI into `ConditionGroup` and `ConditionItem` components.
+2.  **Test Coverage (Priority: MEDIUM)**
+    - **Goal**: Increase confidence in refactors.
+    - **Tasks**:
+        - Write integration tests for the new `device-selector` to ensure the refactor is stable.
+        - Add unit tests for the newly created custom hooks in `src/hooks/queries/`.
+
+3.  **Cleanup (Priority: LOW)**
+    - Identify and remove any remaining legacy `useApi` manual fetch calls that haven't been migrated to TanStack Query yet.
