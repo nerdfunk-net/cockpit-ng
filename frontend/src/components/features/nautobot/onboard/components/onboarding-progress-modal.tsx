@@ -1,71 +1,16 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Loader2, CheckCircle2, XCircle, AlertCircle, ExternalLink } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
-import { useApi } from '@/hooks/use-api'
+import { useJobQuery } from '@/hooks/queries/use-job-query'
 
 interface OnboardingProgressModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   taskId: string | null
   ipAddress: string
-}
-
-interface TaskProgress {
-  stage?: string
-  status?: string
-  progress?: number
-  device_id?: string
-  device_name?: string
-  job_id?: string
-  job_url?: string
-  device_count?: number
-  current_device?: number
-  current_ip?: string
-  ip_addresses?: string[]
-}
-
-interface DeviceResult {
-  success: boolean
-  ip_address: string
-  device_id?: string
-  device_name?: string
-  error?: string
-  stage?: string
-  update_results?: Array<{ success: boolean; type: string; message?: string; error?: string }>
-  sync_result?: { success: boolean; job_url?: string }
-}
-
-interface TaskStatus {
-  task_id: string
-  status: 'PENDING' | 'PROGRESS' | 'SUCCESS' | 'FAILURE' | 'REVOKED'
-  result?: {
-    success: boolean
-    partial_success?: boolean
-    message?: string
-    error?: string
-    device_id?: string
-    device_name?: string
-    ip_address?: string
-    job_id?: string
-    job_url?: string
-    tags_applied?: number
-    custom_fields_applied?: number
-    stage?: string
-    device_count?: number
-    successful_devices?: number
-    failed_devices?: number
-    devices?: DeviceResult[]
-    sync_result?: {
-      success: boolean
-      job_url?: string
-    }
-  }
-  error?: string
-  progress?: TaskProgress
 }
 
 const STAGE_DESCRIPTIONS: Record<string, string> = {
@@ -90,67 +35,15 @@ export function OnboardingProgressModal({
   taskId,
   ipAddress
 }: OnboardingProgressModalProps) {
-  const { apiCall } = useApi()
-  const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null)
-  const [isPolling, setIsPolling] = useState(false)
-  const [pollCount, setPollCount] = useState(0)
+  // Use TanStack Query for automatic polling
+  const { data: taskStatus, isLoading } = useJobQuery({
+    taskId,
+    pollInterval: 2000,
+    enabled: open && !!taskId
+  })
 
-  const pollTaskStatus = useCallback(async () => {
-    if (!taskId) return
-
-    try {
-      const status = await apiCall<TaskStatus>(`celery/tasks/${taskId}`, {
-        method: 'GET'
-      })
-
-      setTaskStatus(status)
-
-      // Stop polling if task is complete (success, failure, or revoked)
-      if (['SUCCESS', 'FAILURE', 'REVOKED'].includes(status.status)) {
-        setIsPolling(false)
-      }
-    } catch (error) {
-      console.error('Error polling task status:', error)
-      setIsPolling(false)
-    }
-  }, [taskId, apiCall])
-
-  // Start polling when modal opens with a task ID
-  // Using setTimeout to defer state updates to avoid synchronous setState in effect
-  useEffect(() => {
-    if (!open || !taskId) {
-      return
-    }
-    // Defer state updates to next tick to satisfy lint rule
-    const timeoutId = setTimeout(() => {
-      setIsPolling(true)
-      setPollCount(0)
-      setTaskStatus(null)
-    }, 0)
-    return () => clearTimeout(timeoutId)
-  }, [open, taskId])
-
-  // Poll for task status
-  useEffect(() => {
-    if (!open || !taskId || !isPolling) {
-      return
-    }
-
-    // Use setTimeout for initial poll to avoid synchronous setState in effect
-    const initialPollTimeout = setTimeout(() => {
-      pollTaskStatus()
-    }, 0)
-
-    const interval = setInterval(() => {
-      pollTaskStatus()
-      setPollCount(prev => prev + 1)
-    }, 2000) // Poll every 2 seconds
-
-    return () => {
-      clearTimeout(initialPollTimeout)
-      clearInterval(interval)
-    }
-  }, [open, taskId, isPolling, pollTaskStatus])
+  // Determine if polling is active (task not in terminal state)
+  const isPolling = taskStatus ? !['SUCCESS', 'FAILURE', 'REVOKED'].includes(taskStatus.status) : isLoading
 
   const getStatusIcon = () => {
     if (!taskStatus) return <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
@@ -199,12 +92,10 @@ export function OnboardingProgressModal({
   }
 
   const handleClose = () => {
-    setIsPolling(false)
     onOpenChange(false)
   }
 
   const handleRunInBackground = () => {
-    setIsPolling(false)
     onOpenChange(false)
   }
 
@@ -449,7 +340,7 @@ export function OnboardingProgressModal({
             {isPolling && (
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                Polling status... ({pollCount})
+                Polling status...
               </p>
             )}
             {isPolling && taskStatus?.status !== 'SUCCESS' && taskStatus?.status !== 'FAILURE' && taskStatus?.status !== 'REVOKED' && (
