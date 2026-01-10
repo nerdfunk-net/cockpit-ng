@@ -82,17 +82,33 @@ export default function HostsInventoryPage() {
     return options
   }, [hosts])
 
-  // Filter state - folderFilters managed separately to sync with filterOptions
-  const [folderFilters, setFolderFilters] = useState<Record<string, boolean>>({})
+  // Track user's explicit folder filter changes (overrides default "all selected")
+  const [folderFilterOverrides, setFolderFilterOverrides] = useState<Record<string, boolean>>({})
 
-  // Initialize folder filters when filter options change
-  useEffect(() => {
-    const initialFolderFilters: Record<string, boolean> = {}
+  // Derive folderFilters from filterOptions + user overrides
+  // All folders are selected by default, unless user has explicitly changed them
+  const folderFilters = useMemo<Record<string, boolean>>(() => {
+    const filters: Record<string, boolean> = {}
     filterOptions.folders.forEach(folder => {
-      initialFolderFilters[folder] = true
+      // Use user override if exists, otherwise default to true (selected)
+      filters[folder] = folderFilterOverrides[folder] ?? true
     })
-    setFolderFilters(initialFolderFilters)
-  }, [filterOptions])
+    return filters
+  }, [filterOptions.folders, folderFilterOverrides])
+
+  // Wrapper to update folder filters (stores user override)
+  const setFolderFilters = useCallback((updater: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => {
+    if (typeof updater === 'function') {
+      setFolderFilterOverrides(() => {
+        const currentFilters = { ...folderFilters }
+        const newFilters = updater(currentFilters)
+        // Store as overrides
+        return newFilters
+      })
+    } else {
+      setFolderFilterOverrides(updater)
+    }
+  }, [folderFilters])
 
   // Convert query error to string for backward compatibility
   const error = queryError instanceof Error ? queryError.message : null

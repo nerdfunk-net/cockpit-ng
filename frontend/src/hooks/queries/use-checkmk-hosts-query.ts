@@ -15,6 +15,8 @@ interface UseCheckmkHostsQueryOptions {
   enabled?: boolean
 }
 
+const DEFAULT_OPTIONS: UseCheckmkHostsQueryOptions = {}
+
 /**
  * Hook for fetching CheckMK hosts using TanStack Query
  *
@@ -35,7 +37,7 @@ interface UseCheckmkHostsQueryOptions {
  * const hosts = data?.hosts || []
  * ```
  */
-export function useCheckmkHostsQuery(options: UseCheckmkHostsQueryOptions = {}) {
+export function useCheckmkHostsQuery(options: UseCheckmkHostsQueryOptions = DEFAULT_OPTIONS) {
   const { apiCall } = useApi()
   const { filters, enabled = true } = options
 

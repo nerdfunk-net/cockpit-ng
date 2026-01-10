@@ -37,6 +37,8 @@ import {
   Upload
 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
+import { useGitRepositoriesQuery } from '@/hooks/queries/use-git-repositories-query'
+import { useGitMutations } from '@/hooks/queries/use-git-mutations'
 
 interface GitRepository {
   id: number
@@ -130,11 +132,23 @@ interface DebugResult {
 
 const GitManagement: React.FC = () => {
   const { apiCall } = useApi()
-  
+
+  // TanStack Query hooks
+  const { data: reposData, isLoading: loadingRepos, refetch: refetchRepositories } = useGitRepositoriesQuery()
+  const {
+    createRepository: createRepoMutation,
+    updateRepository: updateRepoMutation,
+    deleteRepository: deleteRepoMutation,
+    syncRepository: syncRepoMutation,
+    removeAndSyncRepository: removeAndSyncRepoMutation,
+    testConnection: testConnectionMutation
+  } = useGitMutations()
+
+  // Extract repositories from query data
+  const repositories = reposData?.repositories || []
+
   // State
-  const [repositories, setRepositories] = useState<GitRepository[]>([])
   const [credentials, setCredentials] = useState<GitCredential[]>([])
-  const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   
   // Form state
@@ -181,9 +195,8 @@ const GitManagement: React.FC = () => {
   const [debugLoading, setDebugLoading] = useState(false)
   const [debugResult, setDebugResult] = useState<DebugResult | null>(null)
 
-  // Load data on mount
+  // Load credentials on mount (repositories loaded by TanStack Query)
   useEffect(() => {
-    loadRepositories()
     loadCredentials()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -191,18 +204,6 @@ const GitManagement: React.FC = () => {
   const showMessage = (text: string, type: 'success' | 'error') => {
     setMessage({ type, text })
     setTimeout(() => setMessage(null), 5000)
-  }
-
-  const loadRepositories = async () => {
-    try {
-      const response = await apiCall<{ repositories: GitRepository[] }>('git-repositories')
-      setRepositories(response.repositories || [])
-    } catch (error) {
-      console.error('Error loading repositories:', error)
-      showMessage('Failed to load repositories', 'error')
-    } finally {
-      setLoading(false)
-    }
   }
 
   const loadCredentials = async () => {
@@ -221,7 +222,7 @@ const GitManagement: React.FC = () => {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.name || !formData.category || !formData.url) {
       showMessage('Please fill in required fields', 'error')
       return
@@ -236,20 +237,15 @@ const GitManagement: React.FC = () => {
             ? formData.credential_name.split(':')[1]
             : formData.credential_name) || null
 
-      await apiCall('git-repositories', {
-        method: 'POST',
-        body: JSON.stringify({
-          ...formData,
-          auth_type: formData.auth_type || 'none',
-          credential_name: credentialName
-        })
+      await createRepoMutation.mutateAsync({
+        ...formData,
+        auth_type: formData.auth_type || 'none',
+        credential_name: credentialName
       })
 
-      showMessage('Repository added successfully!', 'success')
       resetForm()
-      loadRepositories()
     } catch {
-      showMessage('Failed to add repository', 'error')
+      // Error already handled by mutation's onError
     } finally {
       setIsSubmitting(false)
     }
@@ -289,15 +285,12 @@ const GitManagement: React.FC = () => {
             ? formData.credential_name.split(':')[1]
             : formData.credential_name) || null
 
-      const response = await apiCall<{ success: boolean; message: string }>('git-repositories/test-connection', {
-        method: 'POST',
-        body: JSON.stringify({
-          url: formData.url,
-          branch: formData.branch || 'main',
-          auth_type: formData.auth_type || 'none',
-          credential_name: credentialName,
-          verify_ssl: formData.verify_ssl
-        })
+      const response = await testConnectionMutation.mutateAsync({
+        url: formData.url,
+        branch: formData.branch || 'main',
+        auth_type: formData.auth_type || 'none',
+        credential_name: credentialName,
+        verify_ssl: formData.verify_ssl
       })
 
       setConnectionStatus({
@@ -367,23 +360,21 @@ const GitManagement: React.FC = () => {
             ? editFormData.credential_name.split(':')[1]
             : editFormData.credential_name) || null
 
-      await apiCall(`git-repositories/${editingRepo.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
+      await updateRepoMutation.mutateAsync({
+        id: editingRepo.id,
+        data: {
           ...editFormData,
           auth_type: editFormData.auth_type || 'none',
           credential_name: credentialName,
           is_active: editingRepo.is_active
-        })
+        }
       })
 
-      showMessage('Repository updated successfully!', 'success')
       setShowEditDialog(false)
       setEditingRepo(null)
-      loadRepositories()
     } catch (error) {
       console.error('Error updating repository:', error)
-      showMessage('Failed to update repository', 'error')
+      // Error already handled by mutation's onError
     } finally {
       setIsSubmitting(false)
     }
@@ -395,21 +386,17 @@ const GitManagement: React.FC = () => {
     }
 
     try {
-      await apiCall(`git-repositories/${repo.id}`, { method: 'DELETE' })
-      showMessage('Repository deleted successfully!', 'success')
-      loadRepositories()
+      await deleteRepoMutation.mutateAsync(repo.id)
     } catch {
-      showMessage('Failed to delete repository', 'error')
+      // Error already handled by mutation's onError
     }
   }
 
   const syncRepository = async (repo: GitRepository) => {
     try {
-      await apiCall(`git/${repo.id}/sync`, { method: 'POST' })
-      showMessage('Repository synced successfully!', 'success')
-      loadRepositories()
+      await syncRepoMutation.mutateAsync(repo.id)
     } catch {
-      showMessage('Failed to sync repository', 'error')
+      // Error already handled by mutation's onError
     }
   }
 
@@ -419,11 +406,9 @@ const GitManagement: React.FC = () => {
     }
 
     try {
-      await apiCall(`git/${repo.id}/remove-and-sync`, { method: 'POST' })
-      showMessage('Repository removed and re-cloned successfully!', 'success')
-      loadRepositories()
+      await removeAndSyncRepoMutation.mutateAsync(repo.id)
     } catch {
-      showMessage('Failed to remove and sync repository', 'error')
+      // Error already handled by mutation's onError
     }
   }
 
@@ -555,7 +540,7 @@ const GitManagement: React.FC = () => {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button onClick={loadRepositories} variant="ghost" size="sm" className="h-6 px-2 text-xs text-white hover:bg-white/20 shrink-0">
+                      <Button onClick={() => refetchRepositories()} variant="ghost" size="sm" className="h-6 px-2 text-xs text-white hover:bg-white/20 shrink-0">
                         <RefreshCw className="h-3 w-3 mr-1" />
                         Refresh
                       </Button>
@@ -568,7 +553,7 @@ const GitManagement: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent>
-              {loading ? (
+              {loadingRepos ? (
                 <div className="text-center py-8">
                   <RefreshCw className="h-8 w-8 animate-spin mx-auto text-gray-400" />
                   <p className="text-gray-500 mt-2">Loading repositories...</p>
