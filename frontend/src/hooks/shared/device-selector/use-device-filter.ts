@@ -1,10 +1,13 @@
-import { useState, useCallback, useEffect } from 'react'
-import { FieldOption, CustomField, LocationItem } from '@/types/shared/device-selector'
-import { useApi } from '@/hooks/use-api'
+import { useState, useMemo, useCallback } from 'react'
+import { FieldOption, LocationItem } from '@/types/shared/device-selector'
+import {
+    useInventoryFieldOptionsQuery,
+    useInventoryFieldValuesQuery,
+    useInventoryCustomFieldsQuery,
+    useNautobotLocationsQuery
+} from '@/hooks/queries/use-inventory-queries'
 
 export function useDeviceFilter() {
-    const { apiCall } = useApi()
-
     // Current input state for adding new conditions
     const [currentField, setCurrentField] = useState('')
     const [currentOperator, setCurrentOperator] = useState('equals')
@@ -12,48 +15,51 @@ export function useDeviceFilter() {
     const [currentLogic, setCurrentLogic] = useState('AND')
     const [currentNegate, setCurrentNegate] = useState(false)
 
-    // Field options and values
-    const [fieldOptions, setFieldOptions] = useState<FieldOption[]>([])
-    const [operatorOptions, setOperatorOptions] = useState<FieldOption[]>([])
-    const [fieldValues, setFieldValues] = useState<FieldOption[]>([])
-    const [customFields, setCustomFields] = useState<CustomField[]>([])
+    // Operator options override (for specific fields)
+    const [operatorOptionsOverride, setOperatorOptionsOverride] = useState<FieldOption[] | null>(null)
 
     // Location handling
-    const [locations, setLocations] = useState<LocationItem[]>([])
     const [locationSearchValue, setLocationSearchValue] = useState('')
     const [showLocationDropdown, setShowLocationDropdown] = useState(false)
     const [selectedLocationValue, setSelectedLocationValue] = useState('')
 
-    // Loading states
-    const [isLoadingFieldValues, setIsLoadingFieldValues] = useState(false)
-    const [isLoadingCustomFields, setIsLoadingCustomFields] = useState(false)
-
     // Selected custom field (when 'custom_fields' is chosen as field type)
     const [selectedCustomField, setSelectedCustomField] = useState('')
 
-    const loadFieldOptions = useCallback(async () => {
-        try {
-            const response = await apiCall<{
-                fields: FieldOption[]
-                operators: FieldOption[]
-                logical_operations: FieldOption[]
-            }>('inventory/field-options')
+    // Control when to load custom fields and locations
+    const [loadCustomFields, setLoadCustomFields] = useState(false)
+    const [loadLocations, setLoadLocations] = useState(false)
+    const [fieldNameToLoad, setFieldNameToLoad] = useState<string | null>(null)
 
-            setFieldOptions(response.fields)
-            setOperatorOptions(response.operators)
-        } catch (error) {
-            console.error('Error loading field options:', error)
-        }
-    }, [apiCall])
+    // Use TanStack Query for field options
+    const { data: fieldOptionsData } = useInventoryFieldOptionsQuery()
 
-    useEffect(() => {
-        loadFieldOptions()
-    }, [loadFieldOptions])
+    // Use TanStack Query for custom fields (load on demand)
+    const { data: customFieldsData, isLoading: isLoadingCustomFields } = useInventoryCustomFieldsQuery(loadCustomFields)
 
-    const buildLocationHierarchy = (locationData: LocationItem[]) => {
-        const locationMap = new Map(locationData.map(loc => [loc.id, loc]))
+    // Use TanStack Query for locations (load on demand)
+    const { data: locationsData } = useNautobotLocationsQuery(loadLocations)
 
-        locationData.forEach(location => {
+    // Use TanStack Query for field values (load on demand)
+    const { data: fieldValuesData, isLoading: isLoadingFieldValues } = useInventoryFieldValuesQuery(fieldNameToLoad)
+
+    // Extract data from queries and derive state - memoize to prevent new arrays on every render
+    const fieldOptions = useMemo(() => fieldOptionsData?.fields || [], [fieldOptionsData?.fields])
+    const customFields = useMemo(() => customFieldsData?.custom_fields || [], [customFieldsData?.custom_fields])
+    const fieldValues = useMemo(() => fieldValuesData?.values || [], [fieldValuesData?.values])
+
+    // Derive operator options from field options or override
+    const operatorOptions = useMemo(() => {
+        return operatorOptionsOverride || fieldOptionsData?.operators || []
+    }, [operatorOptionsOverride, fieldOptionsData?.operators])
+
+    // Build location hierarchy with useMemo to avoid recalculating on every render
+    const locations = useMemo(() => {
+        if (!locationsData) return []
+
+        const locationMap = new Map(locationsData.map(loc => [loc.id, loc]))
+
+        locationsData.forEach(location => {
             const path: string[] = []
             let current: LocationItem | null = location
 
@@ -69,115 +75,76 @@ export function useDeviceFilter() {
             location.hierarchicalPath = path.join(' → ')
         })
 
-        locationData.sort((a, b) => a.hierarchicalPath.localeCompare(b.hierarchicalPath))
-        setLocations(locationData)
-    }
+        return [...locationsData].sort((a, b) => a.hierarchicalPath.localeCompare(b.hierarchicalPath))
+    }, [locationsData])
 
-    const loadFieldValues = async (fieldName: string) => {
-        if (!fieldName || fieldName === 'custom_fields' || fieldName === 'has_primary') return
-
-        setIsLoadingFieldValues(true)
-        try {
-            if (fieldName === 'location') {
-                const response = await apiCall<LocationItem[]>('nautobot/locations')
-                setLocations(response)
-                buildLocationHierarchy(response)
-                setIsLoadingFieldValues(false)
-                return
-            } else {
-                const response = await apiCall<{
-                    field: string
-                    values: FieldOption[]
-                    input_type: string
-                }>(`inventory/field-values/${fieldName}`)
-                setFieldValues(response.values)
-            }
-        } catch (error) {
-            console.error(`Error loading field values for ${fieldName}:`, error)
-            setFieldValues([])
-        } finally {
-            setIsLoadingFieldValues(false)
-        }
-    }
-
-    const loadCustomFields = async () => {
-        try {
-            const response = await apiCall<{ custom_fields: CustomField[] }>('inventory/custom-fields')
-            setCustomFields(response.custom_fields)
-        } catch (error) {
-            console.error('Error loading custom fields:', error)
-            setCustomFields([])
-        }
-    }
-
-    const updateOperatorOptions = (fieldName: string) => {
+    // Helper function to update operator options based on field type
+    const updateOperatorOptions = useCallback((fieldName: string) => {
         const restrictedFields = ['role', 'device_type', 'manufacturer', 'platform', 'has_primary']
         const isCustomField = fieldName && fieldName.startsWith('cf_')
 
         if (restrictedFields.includes(fieldName)) {
-            setOperatorOptions([{ value: 'equals', label: 'Equals' }])
+            setOperatorOptionsOverride([{ value: 'equals', label: 'Equals' }])
             setCurrentOperator('equals')
         } else if (fieldName === 'location' || fieldName === 'tag') {
             // Location and Tag support equals and not_equals
-            setOperatorOptions([
+            setOperatorOptionsOverride([
                 { value: 'equals', label: 'Equals' },
                 { value: 'not_equals', label: 'Not Equals' }
             ])
         } else if (isCustomField || fieldName === 'name') {
-            setOperatorOptions([
+            setOperatorOptionsOverride([
                 { value: 'equals', label: 'Equals' },
                 { value: 'contains', label: 'Contains' }
             ])
         } else {
-            setOperatorOptions([
-                { value: 'equals', label: 'Equals' },
-                { value: 'contains', label: 'Contains' }
-            ])
+            setOperatorOptionsOverride(null) // Reset to default from field options
         }
-    }
+    }, [])
 
-    const handleFieldChange = async (fieldName: string) => {
+    const handleFieldChange = useCallback(async (fieldName: string) => {
         setCurrentField(fieldName)
         setCurrentValue('')
         setLocationSearchValue('')
         setSelectedLocationValue('')
-        setFieldValues([])
         setSelectedCustomField('')
 
         if (fieldName === 'custom_fields') {
-            // Load custom fields for the inline dropdown
-            setIsLoadingCustomFields(true)
-            await loadCustomFields()
-            setIsLoadingCustomFields(false)
+            // Trigger custom fields query
+            setLoadCustomFields(true)
             return
         }
 
         updateOperatorOptions(fieldName)
 
-        if (fieldName) {
-            await loadFieldValues(fieldName)
+        if (fieldName === 'location') {
+            // Trigger locations query
+            setLoadLocations(true)
+        } else if (fieldName && fieldName !== 'has_primary') {
+            // Trigger field values query
+            setFieldNameToLoad(fieldName)
         }
-    }
+    }, [updateOperatorOptions]) // Add updateOperatorOptions to dependencies
 
-    const handleCustomFieldSelect = async (customFieldValue: string) => {
-        setSelectedCustomField(customFieldValue)
+    const handleCustomFieldSelect = useCallback((customFieldName: string) => {
+        const customFieldValue = `cf_${customFieldName}`
+        setSelectedCustomField(customFieldName)
         // Set the actual field to the cf_ prefixed value
         setCurrentField(customFieldValue)
         setCurrentValue('')
-        setFieldValues([])
         updateOperatorOptions(customFieldValue)
 
         // Load field values - for 'select' type custom fields, this will return the available choices
         if (customFieldValue) {
-            await loadFieldValues(customFieldValue)
+            setFieldNameToLoad(customFieldValue)
         }
-    }
+    }, [updateOperatorOptions]) // Add updateOperatorOptions to dependencies
 
-    const handleOperatorChange = (operator: string) => {
+    const handleOperatorChange = useCallback((operator: string) => {
         setCurrentOperator(operator)
-    }
+    }, [])
 
-    return {
+    return useMemo(() => ({
         currentField,
         setCurrentField,
         currentOperator,
@@ -205,6 +172,25 @@ export function useDeviceFilter() {
         handleFieldChange,
         handleCustomFieldSelect,
         handleOperatorChange,
-        loadFieldValues // Needed if we want to manually trigger value reload
-    }
+    }), [
+        currentField,
+        currentOperator,
+        currentValue,
+        currentLogic,
+        currentNegate,
+        fieldOptions,
+        operatorOptions,
+        fieldValues,
+        customFields,
+        locations,
+        locationSearchValue,
+        showLocationDropdown,
+        selectedLocationValue,
+        isLoadingFieldValues,
+        isLoadingCustomFields,
+        selectedCustomField,
+        handleFieldChange,
+        handleCustomFieldSelect,
+        handleOperatorChange,
+    ])
 }

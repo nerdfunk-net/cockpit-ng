@@ -36,7 +36,7 @@ vi.mock('./components/job-controls', () => ({
 describe('CheckMKSyncDevicesPage', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-            ; (fetchDevices as any).mockResolvedValue({ devices: [] })
+        ;(fetchDevices as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ devices: [] })
     })
 
     it('should render the sync devices page', async () => {

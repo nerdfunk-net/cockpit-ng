@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
     DeviceInfo,
     ConditionTree,
@@ -8,7 +8,7 @@ import {
     BackendOperation,
     BackendCondition
 } from '@/types/shared/device-selector'
-import { useApi } from '@/hooks/use-api'
+import { useDevicePreviewMutation } from '@/hooks/mutations/use-device-preview-mutation'
 
 const EMPTY_DEVICES: DeviceInfo[] = []
 const EMPTY_DEVICE_IDS: string[] = []
@@ -20,9 +20,10 @@ export function useDevicePreview(
     onDevicesSelected?: (devices: DeviceInfo[], conditions: LogicalCondition[]) => void,
     onSelectionChange?: (selectedIds: string[], selectedDevices: DeviceInfo[]) => void
 ) {
-    const { apiCall } = useApi()
+    // Use TanStack Query mutation for preview
+    const { mutate: executePreview, isPending: isLoadingPreview, data: previewData, error: previewError } = useDevicePreviewMutation()
 
-    // Preview results
+    // Preview results (initialized from props or mutation data)
     const [previewDevices, setPreviewDevices] = useState<DeviceInfo[]>(initialDevices)
     const [totalDevices, setTotalDevices] = useState(initialDevices.length)
     const [operationsExecuted, setOperationsExecuted] = useState(0)
@@ -35,24 +36,17 @@ export function useDevicePreview(
     const [currentPage, setCurrentPage] = useState(1)
     const [pageSize, setPageSize] = useState(20)
 
-    // Loading states
-    const [isLoadingPreview, setIsLoadingPreview] = useState(false)
-
-    // Sync with initial props
-    useEffect(() => {
-        if (initialDevices.length > 0) {
-            setPreviewDevices(initialDevices)
-            setTotalDevices(initialDevices.length)
-            setShowPreviewResults(true)
-        }
-    }, [initialDevices])
+    // Store callbacks in refs to avoid making them dependencies
+    const onDevicesSelectedRef = useRef(onDevicesSelected)
+    const onSelectionChangeRef = useRef(onSelectionChange)
 
     useEffect(() => {
-        setSelectedIds(new Set(selectedDeviceIds))
-    }, [selectedDeviceIds])
+        onDevicesSelectedRef.current = onDevicesSelected
+        onSelectionChangeRef.current = onSelectionChange
+    })
 
     // Helper to convert tree back to flat conditions (for backward compatibility)
-    const treeToFlatConditions = (tree: ConditionTree): LogicalCondition[] => {
+    const treeToFlatConditions = useCallback((tree: ConditionTree): LogicalCondition[] => {
         const flatConditions: LogicalCondition[] = []
 
         const flatten = (items: (ConditionItem | ConditionGroup)[], logic: string = 'AND') => {
@@ -74,10 +68,49 @@ export function useDevicePreview(
 
         flatten(tree.items, tree.internalLogic)
         return flatConditions
-    }
+    }, []) // Empty deps - pure function
+
+    // Update local state when mutation succeeds
+    useEffect(() => {
+        if (previewData) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setPreviewDevices(previewData.devices)
+            setTotalDevices(previewData.total_count)
+            setOperationsExecuted(previewData.operations_executed)
+            setShowPreviewResults(true)
+            setCurrentPage(1)
+
+            if (onDevicesSelectedRef.current) {
+                const flatConditions = treeToFlatConditions(conditionTree)
+                onDevicesSelectedRef.current(previewData.devices, flatConditions)
+            }
+        }
+    }, [previewData, conditionTree, treeToFlatConditions])
+
+    // Show error toast when mutation fails
+    useEffect(() => {
+        if (previewError) {
+            alert('Error previewing results: ' + (previewError as Error).message)
+        }
+    }, [previewError])
+
+    // Sync with initial props
+    useEffect(() => {
+        if (initialDevices.length > 0) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setPreviewDevices(initialDevices)
+            setTotalDevices(initialDevices.length)
+            setShowPreviewResults(true)
+        }
+    }, [initialDevices])
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSelectedIds(new Set(selectedDeviceIds))
+    }, [selectedDeviceIds])
 
     // Build operations from tree structure
-    const buildOperationsFromTree = (tree: ConditionTree | ConditionGroup): BackendOperation[] => {
+    const buildOperationsFromTree = useCallback((tree: ConditionTree | ConditionGroup): BackendOperation[] => {
         const items = tree.items
 
         if (items.length === 0) return []
@@ -175,61 +208,34 @@ export function useDevicePreview(
         operations.push(...notItems)
 
         return operations
-    }
+    }, []) // Empty deps - pure function
 
-    const loadPreview = async () => {
+    const loadPreview = useCallback(() => {
         if (conditionTree.items.length === 0) {
             alert('Please add at least one condition.')
             return
         }
 
-        setIsLoadingPreview(true)
-        try {
-            const operations = buildOperationsFromTree(conditionTree)
+        const operations = buildOperationsFromTree(conditionTree)
+        executePreview({ operations })
+    }, [conditionTree, executePreview, buildOperationsFromTree])
 
-            const response = await apiCall<{
-                devices: DeviceInfo[]
-                total_count: number
-                operations_executed: number
-            }>('inventory/preview', {
-                method: 'POST',
-                body: { operations }
-            })
-
-            setPreviewDevices(response.devices)
-            setTotalDevices(response.total_count)
-            setOperationsExecuted(response.operations_executed)
-            setShowPreviewResults(true)
-            setCurrentPage(1)
-
-            if (onDevicesSelected) {
-                const flatConditions = treeToFlatConditions(conditionTree)
-                onDevicesSelected(response.devices, flatConditions)
-            }
-        } catch (error) {
-            console.error('Error previewing results:', error)
-            alert('Error previewing results: ' + (error as Error).message)
-        } finally {
-            setIsLoadingPreview(false)
-        }
-    }
-
-    const handleSelectAll = (checked: boolean) => {
+    const handleSelectAll = useCallback((checked: boolean) => {
         if (checked) {
             const allIds = new Set(previewDevices.map(d => d.id))
             setSelectedIds(allIds)
-            if (onSelectionChange) {
-                onSelectionChange(Array.from(allIds), previewDevices)
+            if (onSelectionChangeRef.current) {
+                onSelectionChangeRef.current(Array.from(allIds), previewDevices)
             }
         } else {
             setSelectedIds(new Set())
-            if (onSelectionChange) {
-                onSelectionChange([], [])
+            if (onSelectionChangeRef.current) {
+                onSelectionChangeRef.current([], [])
             }
         }
-    }
+    }, [previewDevices])
 
-    const handleSelectDevice = (deviceId: string, checked: boolean) => {
+    const handleSelectDevice = useCallback((deviceId: string, checked: boolean) => {
         const newSelectedIds = new Set(selectedIds)
         if (checked) {
             newSelectedIds.add(deviceId)
@@ -238,11 +244,11 @@ export function useDevicePreview(
         }
         setSelectedIds(newSelectedIds)
 
-        if (onSelectionChange) {
+        if (onSelectionChangeRef.current) {
             const selectedDevices = previewDevices.filter(d => newSelectedIds.has(d.id))
-            onSelectionChange(Array.from(newSelectedIds), selectedDevices)
+            onSelectionChangeRef.current(Array.from(newSelectedIds), selectedDevices)
         }
-    }
+    }, [selectedIds, previewDevices])
 
     // Pagination calculations
     const totalPages = Math.ceil(previewDevices.length / pageSize)
@@ -250,11 +256,11 @@ export function useDevicePreview(
     const endIndex = Math.min(startIndex + pageSize, previewDevices.length)
     const currentPageDevices = previewDevices.slice(startIndex, endIndex)
 
-    const handlePageChange = (page: number) => {
+    const handlePageChange = useCallback((page: number) => {
         setCurrentPage(page)
-    }
+    }, [])
 
-    return {
+    return useMemo(() => ({
         previewDevices,
         totalDevices,
         operationsExecuted,
@@ -274,5 +280,21 @@ export function useDevicePreview(
         handleSelectDevice,
         loadPreview,
         treeToFlatConditions
-    }
+    }), [
+        previewDevices,
+        totalDevices,
+        operationsExecuted,
+        showPreviewResults,
+        isLoadingPreview,
+        currentPage,
+        pageSize,
+        selectedIds,
+        currentPageDevices,
+        totalPages,
+        handlePageChange,
+        handleSelectAll,
+        handleSelectDevice,
+        loadPreview,
+        treeToFlatConditions
+    ])
 }

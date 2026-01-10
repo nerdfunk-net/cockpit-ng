@@ -2,54 +2,38 @@ import { useState, useCallback } from 'react'
 import {
     LogicalCondition,
     ConditionTree,
-    BackendConditionsResponse,
     ConditionItem
 } from '@/types/shared/device-selector'
-import { useApi } from '@/hooks/use-api'
+import {
+    useSavedInventoriesQuery,
+    useSaveInventoryMutation,
+    useUpdateInventoryMutation,
+    useDeleteInventoryMutation
+} from '@/hooks/queries/use-saved-inventories-queries'
 import { generateId } from './use-condition-tree'
+import { useApi } from '@/hooks/use-api'
 
 export function useSavedInventories() {
+    const [isSavingInventory, setIsSavingInventory] = useState(false)
     const { apiCall } = useApi()
 
-    const [savedInventories, setSavedInventories] = useState<Array<{
-        id: number
-        name: string
-        description?: string
-        conditions: LogicalCondition[]
-        scope: string
-        created_by: string
-        created_at?: string
-        updated_at?: string
-    }>>([])
+    // Use TanStack Query for loading saved inventories
+    const {
+        data: inventoriesData,
+        isLoading: isLoadingInventories,
+        refetch: reloadInventories
+    } = useSavedInventoriesQuery()
 
-    const [isLoadingInventories, setIsLoadingInventories] = useState(false)
-    const [isSavingInventory, setIsSavingInventory] = useState(false)
+    // Use TanStack Query mutations
+    const { mutateAsync: saveInventoryMutation } = useSaveInventoryMutation()
+    const { mutateAsync: updateInventoryMutation } = useUpdateInventoryMutation()
+    const { mutateAsync: deleteInventoryMutation } = useDeleteInventoryMutation()
+
+    const savedInventories = inventoriesData?.inventories || []
 
     const loadSavedInventories = useCallback(async () => {
-        setIsLoadingInventories(true)
-        try {
-            const response = await apiCall<{
-                inventories: Array<{
-                    id: number
-                    name: string
-                    description?: string
-                    conditions: LogicalCondition[]
-                    scope: string
-                    created_by: string
-                    created_at?: string
-                    updated_at?: string
-                }>
-                total: number
-            }>('inventory')
-
-            setSavedInventories(response.inventories)
-        } catch (error) {
-            console.error('Error loading saved inventories:', error)
-            setSavedInventories([])
-        } finally {
-            setIsLoadingInventories(false)
-        }
-    }, [apiCall])
+        await reloadInventories()
+    }, [reloadInventories])
 
     const saveInventory = async (
         name: string,
@@ -68,27 +52,23 @@ export function useSavedInventories() {
 
             if (isUpdate && existingId) {
                 // Update existing inventory
-                await apiCall(`inventory/${existingId}`, {
-                    method: 'PUT',
-                    body: {
+                await updateInventoryMutation({
+                    id: existingId,
+                    data: {
                         description: description || undefined,
                         conditions: [treeData], // Wrap in array for backend compatibility
                     }
                 })
             } else {
                 // Create new inventory
-                await apiCall('inventory', {
-                    method: 'POST',
-                    body: {
-                        name: name,
-                        description: description || undefined,
-                        conditions: [treeData], // Wrap in array for backend compatibility
-                        scope: 'global'
-                    }
+                await saveInventoryMutation({
+                    name: name,
+                    description: description || undefined,
+                    conditions: [treeData], // Wrap in array for backend compatibility
+                    scope: 'global'
                 })
             }
 
-            await loadSavedInventories()
             return true
         } catch (error) {
             console.error('Error saving inventory:', error)
@@ -121,7 +101,14 @@ export function useSavedInventories() {
 
     const loadInventory = async (inventoryName: string): Promise<ConditionTree | null> => {
         try {
-            const response = await apiCall<BackendConditionsResponse>(`inventory/by-name/${encodeURIComponent(inventoryName)}`)
+            // Make direct API call to load inventory by name
+            const response = await apiCall<{
+                conditions: LogicalCondition[] | Array<{ version: number; tree: ConditionTree }>
+            }>(`inventory/by-name/${encodeURIComponent(inventoryName)}`)
+
+            if (!response) {
+                return null
+            }
 
             // Check if this is a new tree structure (version 2) or legacy flat format
             if (response.conditions && response.conditions.length > 0) {
@@ -145,18 +132,15 @@ export function useSavedInventories() {
     const updateInventoryDetails = async (inventoryId: number, name: string, description: string) => {
         try {
             // Only send name and description - don't send conditions
-            const updateData: { name: string; description: string | null } = {
+            const updateData: { name: string; description: string | undefined } = {
                 name,
-                description: description || null,
+                description: description || undefined,
             }
 
-            await apiCall(`inventory/${inventoryId}`, {
-                method: 'PUT',
-                body: JSON.stringify(updateData),
+            await updateInventoryMutation({
+                id: inventoryId,
+                data: updateData
             })
-
-            // Reload inventories to reflect the change
-            await loadSavedInventories()
         } catch (error) {
             console.error('Error updating inventory:', error)
             throw error
@@ -165,12 +149,7 @@ export function useSavedInventories() {
 
     const deleteInventory = async (inventoryId: number) => {
         try {
-            await apiCall(`inventory/${inventoryId}`, {
-                method: 'DELETE',
-            })
-
-            // Reload inventories to reflect the deletion
-            await loadSavedInventories()
+            await deleteInventoryMutation(inventoryId)
         } catch (error) {
             console.error('Error deleting inventory:', error)
             throw error
