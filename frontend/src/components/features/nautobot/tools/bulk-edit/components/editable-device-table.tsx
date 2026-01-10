@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ArrowUp, ArrowDown } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
-import { fetchDeviceTypesWithManufacturer } from '@/services/nautobot-graphql'
+import { useNautobotDeviceTypesQuery } from '@/hooks/queries/use-nautobot-graphql-queries'
+import { useNautobotLocationsRestQuery } from '@/hooks/queries/use-nautobot-rest-queries'
 import type { DeviceInfo } from '@/components/shared/device-selector'
 import type { ColumnDefinition } from '../tabs/bulk-edit-tab'
 
@@ -44,14 +45,83 @@ export function EditableDeviceTable({
   const [editingCell, setEditingCell] = useState<{ deviceId: string; field: string } | null>(null)
   const [editValue, setEditValue] = useState<string>('')
 
-  // Field options cache
+  // Fetch data using TanStack Query
+  const { data: deviceTypesData } = useNautobotDeviceTypesQuery()
+  const { data: locationsData } = useNautobotLocationsRestQuery()
+
+  // Derive device types and manufacturer mapping from GraphQL data
+  const { deviceTypeOptions, deviceTypeToManufacturer } = useMemo(() => {
+    const deviceTypesArray = deviceTypesData?.data?.device_types || []
+    const mapping = new Map<string, string>()
+
+    const options = deviceTypesArray.map((dt) => {
+      const modelName = dt.model
+      const manufacturerName = dt.manufacturer?.name || ''
+
+      if (manufacturerName) {
+        mapping.set(modelName, manufacturerName)
+      }
+
+      return {
+        value: modelName,
+        label: modelName
+      }
+    })
+
+    options.sort((a, b) => a.label.localeCompare(b.label))
+
+    return {
+      deviceTypeOptions: options,
+      deviceTypeToManufacturer: mapping
+    }
+  }, [deviceTypesData])
+
+  // Derive location options with hierarchy
+  const locationOptions = useMemo(() => {
+    const locations = locationsData || []
+    const locationMap = new Map(locations.map(loc => [loc.id, loc]))
+
+    const locationsWithHierarchy = locations.map(location => {
+      const path: string[] = []
+      let current: typeof location | undefined = location
+
+      while (current) {
+        path.unshift(current.name)
+        current = current.parent?.id ? locationMap.get(current.parent.id) : undefined
+      }
+
+      return {
+        value: location.name,
+        label: path.join(' → ')
+      }
+    })
+
+    locationsWithHierarchy.sort((a, b) => a.label.localeCompare(b.label))
+    return locationsWithHierarchy
+  }, [locationsData])
+
+  // Load role and platform options (these are still REST API calls)
+  // TODO: Consider moving these to TanStack Query hooks in future
   const [roleOptions, setRoleOptions] = useState<FieldOption[]>([])
-  const [locationOptions, setLocationOptions] = useState<FieldOption[]>([])
-  const [deviceTypeOptions, setDeviceTypeOptions] = useState<FieldOption[]>([])
   const [platformOptions, setPlatformOptions] = useState<FieldOption[]>([])
 
-  // Device type to manufacturer mapping
-  const [deviceTypeToManufacturer, setDeviceTypeToManufacturer] = useState<Map<string, string>>(new Map())
+  // Load roles and platforms on mount
+  useEffect(() => {
+    const loadOtherOptions = async () => {
+      try {
+        const [roles, platforms] = await Promise.all([
+          apiCall<{ field: string; values: FieldOption[] }>('inventory/field-values/role'),
+          apiCall<{ field: string; values: FieldOption[] }>('inventory/field-values/platform'),
+        ])
+        setRoleOptions(roles.values || [])
+        setPlatformOptions(platforms.values || [])
+      } catch (error) {
+        console.error('Failed to load field options:', error)
+      }
+    }
+    void loadOtherOptions()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Location search state
   const [locationSearchValue, setLocationSearchValue] = useState<string>('')
@@ -62,84 +132,6 @@ export function EditableDeviceTable({
   const isDeviceModified = useCallback((deviceId: string) => {
     return modifiedDevices.has(deviceId)
   }, [modifiedDevices])
-
-  // Load field options on mount
-  useEffect(() => {
-    const loadFieldOptions = async () => {
-      try {
-        console.log('[BulkEdit] Loading field options...')
-        // Load all field options in parallel
-        const [roles, locationsRaw, deviceTypesRaw, platforms] = await Promise.all([
-          apiCall<{ field: string; values: FieldOption[] }>('inventory/field-values/role'),
-          apiCall<Array<{ id: string; name: string; parent?: { id: string } }>>('nautobot/locations'),
-          fetchDeviceTypesWithManufacturer(apiCall),
-          apiCall<{ field: string; values: FieldOption[] }>('inventory/field-values/platform'),
-        ])
-
-        console.log('[BulkEdit] Loaded locations:', locationsRaw.length)
-
-        // Build hierarchical paths for locations
-        const locationMap = new Map(locationsRaw.map(loc => [loc.id, loc]))
-        const locationsWithHierarchy = locationsRaw.map(location => {
-          const path: string[] = []
-          let current: typeof location | undefined = location
-
-          while (current) {
-            path.unshift(current.name)
-            current = current.parent?.id ? locationMap.get(current.parent.id) : undefined
-          }
-
-          return {
-            value: location.name,
-            label: path.join(' → ')
-          }
-        })
-
-        locationsWithHierarchy.sort((a, b) => a.label.localeCompare(b.label))
-
-        console.log('[BulkEdit] Built hierarchical locations:', locationsWithHierarchy.length)
-        console.log('[BulkEdit] Sample locations:', locationsWithHierarchy.slice(0, 3))
-
-        // Build device type options and manufacturer mapping from GraphQL response
-        const deviceTypeMapping = new Map<string, string>()
-        console.log('[BulkEdit] Device types GraphQL response:', deviceTypesRaw)
-
-        // Extract device types from GraphQL response
-        const deviceTypesArray = deviceTypesRaw?.data?.device_types || []
-        console.log('[BulkEdit] Device types array:', deviceTypesArray)
-
-        const deviceTypes = deviceTypesArray.map((dt: { id: string; model: string; manufacturer: { id: string; name: string } }) => {
-          const modelName = dt.model
-          const manufacturerName = dt.manufacturer?.name || ''
-
-          console.log('[BulkEdit] Processing device type:', modelName, 'manufacturer:', manufacturerName)
-
-          if (manufacturerName) {
-            deviceTypeMapping.set(modelName, manufacturerName)
-          }
-
-          return {
-            value: modelName,
-            label: modelName
-          }
-        })
-        deviceTypes.sort((a, b) => a.label.localeCompare(b.label))
-
-        console.log('[BulkEdit] Loaded device types:', deviceTypes.length)
-        console.log('[BulkEdit] deviceTypeMapping entries:', Array.from(deviceTypeMapping.entries()))
-
-        setRoleOptions(roles.values || [])
-        setLocationOptions(locationsWithHierarchy)
-        setDeviceTypeOptions(deviceTypes)
-        setPlatformOptions(platforms.values || [])
-        setDeviceTypeToManufacturer(deviceTypeMapping)
-      } catch (error) {
-        console.error('Failed to load field options:', error)
-      }
-    }
-
-    void loadFieldOptions()
-  }, [apiCall])
 
   const getFieldValue = useCallback((device: DeviceInfo, field: string): string => {
     const value = device[field as keyof DeviceInfo]
