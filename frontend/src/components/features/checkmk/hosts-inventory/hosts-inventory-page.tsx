@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Search, X, ChevronLeft, ChevronRight, RotateCcw, Server, Eye, RefreshCw, ChevronDown } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -24,7 +24,7 @@ import { HostDetailsModal } from '../modals/host-details-modal'
 import { InventoryModal } from '../modals/inventory-modal'
 import { SyncToNautobotModal } from '../modals/sync-to-nautobot-modal'
 
-import { useHostsData } from '@/hooks/checkmk/use-hosts-data'
+import { useCheckmkHostsQuery } from '@/hooks/queries/use-checkmk-hosts-query'
 import { useHostsFilter } from '@/hooks/checkmk/use-hosts-filter'
 import { useHostsPagination } from '@/hooks/checkmk/use-hosts-pagination'
 import { useHostsSelection } from '@/hooks/checkmk/use-hosts-selection'
@@ -55,23 +55,68 @@ export default function HostsInventoryPage() {
     closeInventoryModal
   } = useModalState()
 
-  // Filter state - folderFilters managed separately to sync with filterOptions
-  const [folderFilters, setFolderFilters] = useState<Record<string, boolean>>({})
+  // Fetch hosts using TanStack Query
+  const { data, isLoading, error: queryError, refetch } = useCheckmkHostsQuery({
+    enabled: authReady
+  })
 
-  // Initialize folder filters when filter options change
-  const handleFilterOptionsChange = useCallback((newFilterOptions: FilterOptions) => {
-    const initialFolderFilters: Record<string, boolean> = {}
-    newFilterOptions.folders.forEach(folder => {
-      initialFolderFilters[folder] = true
+  // Extract hosts from query data
+  const hosts = useMemo(() => data?.hosts || [], [data])
+
+  // Extract filter options from hosts
+  const filterOptions = useMemo<FilterOptions>(() => {
+    const options: FilterOptions = {
+      folders: new Set(),
+      labels: new Set(),
+    }
+
+    hosts.forEach((host: CheckMKHost) => {
+      if (host.folder) options.folders.add(host.folder)
+      if (host.labels) {
+        Object.keys(host.labels).forEach(label => {
+          options.labels.add(label)
+        })
+      }
     })
-    setFolderFilters(initialFolderFilters)
-  }, [])
 
-  // Custom hooks for business logic
-  const { hosts, loading, error, filterOptions, loadHosts, reloadHosts } = useHostsData(
-    showMessage,
-    handleFilterOptionsChange
-  )
+    return options
+  }, [hosts])
+
+  // Track user's explicit folder filter changes (overrides default "all selected")
+  const [folderFilterOverrides, setFolderFilterOverrides] = useState<Record<string, boolean>>({})
+
+  // Derive folderFilters from filterOptions + user overrides
+  // All folders are selected by default, unless user has explicitly changed them
+  const folderFilters = useMemo<Record<string, boolean>>(() => {
+    const filters: Record<string, boolean> = {}
+    filterOptions.folders.forEach(folder => {
+      // Use user override if exists, otherwise default to true (selected)
+      filters[folder] = folderFilterOverrides[folder] ?? true
+    })
+    return filters
+  }, [filterOptions.folders, folderFilterOverrides])
+
+  // Wrapper to update folder filters (stores user override)
+  const setFolderFilters = useCallback((updater: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => {
+    if (typeof updater === 'function') {
+      setFolderFilterOverrides(() => {
+        const currentFilters = { ...folderFilters }
+        const newFilters = updater(currentFilters)
+        // Store as overrides
+        return newFilters
+      })
+    } else {
+      setFolderFilterOverrides(updater)
+    }
+  }, [folderFilters])
+
+  // Convert query error to string for backward compatibility
+  const error = queryError instanceof Error ? queryError.message : null
+
+  // Reload hosts function for backward compatibility
+  const reloadHosts = useCallback(() => {
+    void refetch()
+  }, [refetch])
 
   const { selectedHosts, handleSelectHost, handleSelectAll } = useHostsSelection()
   const { checkmkConfig, loadCheckmkConfig } = useCheckmkConfig()
@@ -135,14 +180,9 @@ export default function HostsInventoryPage() {
     void loadCheckmkConfig()
   }, [loadCheckmkConfig])
 
-  // Load hosts when authenticated
-  useEffect(() => {
-    if (authReady) {
-      void loadHosts()
-    }
-  }, [authReady, loadHosts])
+  // TanStack Query automatically loads hosts when authReady is true (enabled prop)
 
-  if (!authReady || (loading && hosts.length === 0)) {
+  if (!authReady || (isLoading && hosts.length === 0)) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -255,10 +295,10 @@ export default function HostsInventoryPage() {
                 size="sm"
                 onClick={reloadHosts}
                 className="text-white hover:bg-white/20 text-xs h-7"
-                disabled={loading}
+                disabled={isLoading}
                 title="Reload hosts from CheckMK"
               >
-                {loading ? (
+                {isLoading ? (
                   <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1" />
                 ) : (
                   <Search className="h-3 w-3 mr-1" />

@@ -3,6 +3,7 @@ import React from "react";
 import "./globals.css";
 import { localFonts } from "@/lib/local-fonts";
 import { AuthHydration } from "@/components/auth/auth-hydration";
+import { QueryProvider } from "@/providers/query-provider";
 
 // Use local font configuration for air-gapped environments
 const geistSans = {
@@ -54,8 +55,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <React.StrictMode>
-          <AuthHydration />
-          {children}
+          <QueryProvider>
+            <AuthHydration />
+            {children}
+          </QueryProvider>
         </React.StrictMode>
       </body>
     </html>

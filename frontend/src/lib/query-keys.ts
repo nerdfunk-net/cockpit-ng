@@ -1,0 +1,77 @@
+// Query key factory pattern
+// Hierarchical structure enables targeted cache invalidation
+
+export const queryKeys = {
+  // CheckMK
+  checkmk: {
+    all: ['checkmk'] as const,
+    hosts: (filters?: { folder?: string; name?: string }) =>
+      filters
+        ? ([...queryKeys.checkmk.all, 'hosts', filters] as const)
+        : ([...queryKeys.checkmk.all, 'hosts'] as const),
+    host: (id: string) => [...queryKeys.checkmk.all, 'host', id] as const,
+    syncStatus: () => [...queryKeys.checkmk.all, 'sync-status'] as const,
+  },
+
+  // Git Repositories
+  git: {
+    all: ['git'] as const,
+    repositories: () => [...queryKeys.git.all, 'repositories'] as const,
+    repository: (id: number) => [...queryKeys.git.all, 'repository', id] as const,
+    status: (id: number) => [...queryKeys.git.repository(id), 'status'] as const,
+  },
+
+  // Celery Jobs
+  jobs: {
+    all: ['jobs'] as const,
+    list: (filters?: { status?: string }) =>
+      filters
+        ? ([...queryKeys.jobs.all, 'list', filters] as const)
+        : ([...queryKeys.jobs.all, 'list'] as const),
+    detail: (id: string) => [...queryKeys.jobs.all, 'detail', id] as const,
+    templates: () => [...queryKeys.jobs.all, 'templates'] as const,
+    schedules: () => [...queryKeys.jobs.all, 'schedules'] as const,
+  },
+
+  // Nautobot
+  nautobot: {
+    all: ['nautobot'] as const,
+    devices: (filters?: { location?: string; role?: string }) =>
+      filters
+        ? ([...queryKeys.nautobot.all, 'devices', filters] as const)
+        : ([...queryKeys.nautobot.all, 'devices'] as const),
+    device: (id: string) => [...queryKeys.nautobot.all, 'device', id] as const,
+    locations: () => [...queryKeys.nautobot.all, 'locations'] as const,
+    roles: () => [...queryKeys.nautobot.all, 'roles'] as const,
+    deviceTypes: () => [...queryKeys.nautobot.all, 'device-types'] as const,
+    platforms: () => [...queryKeys.nautobot.all, 'platforms'] as const,
+    statuses: () => [...queryKeys.nautobot.all, 'statuses'] as const,
+  },
+
+  // Inventory
+  inventory: {
+    all: ['inventory'] as const,
+    list: () => [...queryKeys.inventory.all, 'list'] as const,
+    detail: (id: number) => [...queryKeys.inventory.all, 'detail', id] as const,
+  },
+
+  // Compliance
+  compliance: {
+    all: ['compliance'] as const,
+    rules: () => [...queryKeys.compliance.all, 'rules'] as const,
+    checks: (deviceId?: string) =>
+      deviceId
+        ? ([...queryKeys.compliance.all, 'checks', deviceId] as const)
+        : ([...queryKeys.compliance.all, 'checks'] as const),
+  },
+
+  // Settings
+  settings: {
+    all: ['settings'] as const,
+    nautobot: () => [...queryKeys.settings.all, 'nautobot'] as const,
+    checkmk: () => [...queryKeys.settings.all, 'checkmk'] as const,
+    credentials: () => [...queryKeys.settings.all, 'credentials'] as const,
+    git: () => [...queryKeys.settings.all, 'git'] as const,
+    celery: () => [...queryKeys.settings.all, 'celery'] as const,
+  },
+}
