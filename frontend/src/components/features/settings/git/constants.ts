@@ -1,6 +1,7 @@
 // Git Repository Management Constants
 
-import type { GitFormData, GitCredential } from './types'
+import type { GitCredential } from './types'
+import type { RepositoryFormValues } from './validation'
 
 // Empty arrays (prevent re-render loops)
 export const EMPTY_CREDENTIALS: GitCredential[] = []
@@ -8,9 +9,9 @@ export const EMPTY_STRING_ARRAY: string[] = []
 export const EMPTY_BRANCHES: string[] = []
 
 // Default form values
-export const DEFAULT_FORM_DATA: GitFormData = {
+export const DEFAULT_FORM_DATA: RepositoryFormValues = {
   name: '',
-  category: '',
+  category: 'device_configs',
   url: '',
   branch: 'main',
   auth_type: 'none',
@@ -20,7 +21,7 @@ export const DEFAULT_FORM_DATA: GitFormData = {
   git_author_name: '',
   git_author_email: '',
   description: '',
-} as const
+}
 
 // Repository categories
 export const REPOSITORY_CATEGORIES = [

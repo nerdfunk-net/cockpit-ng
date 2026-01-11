@@ -9,7 +9,8 @@ export function extractCredentialName(credentialValue: string): string | null {
   if (credentialValue === '__none__') return null
 
   if (credentialValue.includes(':')) {
-    return credentialValue.split(':')[1]
+    const parts = credentialValue.split(':')
+    return parts[1] || null
   }
 
   return credentialValue ? credentialValue : null

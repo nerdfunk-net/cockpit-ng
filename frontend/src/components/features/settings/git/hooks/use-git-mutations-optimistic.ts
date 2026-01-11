@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
-import type { GitRepository, GitRepositoriesResponse } from './use-git-repositories-query'
+import type { GitRepository, GitRepositoriesResponse } from './queries/use-git-repositories-query'
 
 /**
  * Hook for Git repository mutations with optimistic updates
