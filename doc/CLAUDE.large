@@ -2870,8 +2870,12 @@ const { data } = useMyHook({
 7. ✅ Use React DevTools to check for unnecessary re-renders
 
 **When refactoring Code**
-1. The use of TanStack Query is MANDATORY. Always integrate TanStack Query when refactoring a file and check if the use of tanstack if useful.
-2. A time estimate must NOT be provided for the refactor.
+1. TanStack Query for ALL data fetching - No manual `useState + useEffect`
+2. react-hook-form + Zod for validation - Type-safe form validation
+3. Query key factory - Centralized in `/lib/query-keys.ts`
+4. Mutation hooks - For all write operations
+5. React Best Practices - Memoized returns, stable constants
+6. Feature-based organization - `/hooks/queries/` for TanStack hooks
 
 ### Performance
 - ✅ Minimize 'use client' directives

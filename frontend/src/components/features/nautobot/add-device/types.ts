@@ -1,6 +1,191 @@
 /**
- * Type definitions for CSV import functionality in nautobot-add-device
+ * Type definitions for nautobot-add-device feature
  */
+
+// ============================================================================
+// Core Data Types
+// ============================================================================
+
+export interface DropdownOption {
+  id: string
+  name: string
+  display?: string
+  value?: string
+}
+
+export interface DeviceType {
+  id: string
+  model: string
+  manufacturer: {
+    id: string
+    name?: string
+    display?: string
+  }
+  display?: string
+}
+
+export interface Platform {
+  id: string
+  name: string
+  display: string
+  description?: string
+  network_driver?: string
+  manufacturer?: {
+    id: string
+    object_type: string
+    url: string
+  }
+}
+
+export interface SoftwareVersion {
+  id: string
+  version: string
+  alias?: string
+  release_date?: string
+  end_of_support_date?: string
+  documentation_url?: string
+  long_term_support?: boolean
+  pre_release?: boolean
+  platform?: {
+    id: string
+    name: string
+  }
+  tags?: Array<{
+    id: string
+    name: string
+  }>
+}
+
+export interface LocationItem {
+  id: string
+  name: string
+  display?: string
+  parent?: {
+    id: string
+    name: string
+  }
+  hierarchicalPath?: string
+}
+
+export interface VlanItem {
+  id: string
+  name: string
+  description?: string
+  vid: number
+  role?: {
+    id: string
+    name: string
+  }
+  location?: {
+    id: string
+    name: string
+  }
+}
+
+export interface InterfaceData {
+  id: string
+  name: string
+  type: string
+  status: string
+  ip_address: string
+  namespace?: string
+  is_primary_ipv4?: boolean
+  // Optional properties
+  enabled?: boolean
+  mgmt_only?: boolean
+  description?: string
+  mac_address?: string
+  mtu?: number
+  mode?: string
+  untagged_vlan?: string
+  tagged_vlans?: string[]
+  parent_interface?: string
+  bridge?: string
+  lag?: string
+  tags?: string[]
+}
+
+export interface StatusMessage {
+  type: 'success' | 'error' | 'warning' | 'info'
+  message: string
+}
+
+export interface TagItem {
+  id: string
+  name: string
+  color?: string
+}
+
+export interface CustomField {
+  id: string
+  key: string
+  label: string
+  type: {
+    value: string
+  }
+  required: boolean
+  description?: string
+}
+
+export interface NautobotDefaults {
+  location: string
+  platform: string
+  interface_status: string
+  device_status: string
+  ip_address_status: string
+  namespace: string
+  device_role: string
+  secret_group: string
+  csv_delimiter: string
+}
+
+// ============================================================================
+// Response Types for TanStack Query
+// ============================================================================
+
+export interface NautobotDropdownsResponse {
+  roles: DropdownOption[]
+  statuses: DropdownOption[]
+  locations: LocationItem[]
+  deviceTypes: DeviceType[]
+  platforms: Platform[]
+  softwareVersions: SoftwareVersion[]
+  interfaceTypes: DropdownOption[]
+  interfaceStatuses: DropdownOption[]
+  namespaces: DropdownOption[]
+  nautobotDefaults: NautobotDefaults | null
+}
+
+export interface DeviceSubmissionData {
+  name: string
+  serial?: string
+  role: string
+  status: string
+  location: string
+  device_type: string
+  platform?: string
+  software_version?: string
+  tags?: string[]
+  custom_fields?: Record<string, string>
+  interfaces: InterfaceData[]
+  add_prefix: boolean
+  default_prefix_length: string
+}
+
+export interface DeviceSubmissionResult {
+  success: boolean
+  message: string
+  messageType: 'success' | 'error' | 'warning'
+  deviceId?: string
+  summary?: {
+    interfaces_created: number
+    ip_addresses_created: number
+  }
+}
+
+// ============================================================================
+// CSV Import Types
+// ============================================================================
 
 // Interface data from CSV row
 export interface CSVInterfaceData {

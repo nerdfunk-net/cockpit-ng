@@ -15,146 +15,27 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Plus, Trash2, Server, Network, AlertCircle, CheckCircle2, Info, Settings, FileSpreadsheet, Tags, FileText, Loader2, X } from 'lucide-react'
 import { useCSVUpload } from './hooks/use-csv-upload'
 import { CSVUploadModal } from './components/csv-upload-modal'
-import { ParsedDevice, DeviceImportResult } from './types'
-
-// Type definitions
-interface DropdownOption {
-  id: string
-  name: string
-  display?: string
-  value?: string
-}
-
-interface DeviceType {
-  id: string
-  model: string
-  manufacturer: {
-    id: string
-    name?: string
-    display?: string
-  }
-  display?: string
-}
-
-interface Platform {
-  id: string
-  name: string
-  display: string
-  description?: string
-  network_driver?: string
-  manufacturer?: {
-    id: string
-    object_type: string
-    url: string
-  }
-}
-
-interface SoftwareVersion {
-  id: string
-  version: string
-  alias?: string
-  release_date?: string
-  end_of_support_date?: string
-  documentation_url?: string
-  long_term_support?: boolean
-  pre_release?: boolean
-  platform?: {
-    id: string
-    name: string
-  }
-  tags?: Array<{
-    id: string
-    name: string
-  }>
-}
-
-interface LocationItem {
-  id: string
-  name: string
-  display?: string
-  parent?: {
-    id: string
-    name: string
-  }
-  hierarchicalPath?: string
-}
-
-interface VlanItem {
-  id: string
-  name: string
-  description?: string
-  vid: number
-  role?: {
-    id: string
-    name: string
-  }
-  location?: {
-    id: string
-    name: string
-  }
-}
-
-interface InterfaceData {
-  id: string
-  name: string
-  type: string
-  status: string
-  ip_address: string
-  namespace?: string
-  is_primary_ipv4?: boolean
-  // Optional properties
-  enabled?: boolean
-  mgmt_only?: boolean
-  description?: string
-  mac_address?: string
-  mtu?: number
-  mode?: string
-  untagged_vlan?: string
-  tagged_vlans?: string[]
-  parent_interface?: string
-  bridge?: string
-  lag?: string
-  tags?: string[]
-}
-
-interface StatusMessage {
-  type: 'success' | 'error' | 'warning' | 'info'
-  message: string
-}
-
-interface TagItem {
-  id: string
-  name: string
-  color?: string
-}
-
-interface CustomField {
-  id: string
-  key: string
-  label: string
-  type: {
-    value: string
-  }
-  required: boolean
-  description?: string
-}
-
-interface NautobotDefaults {
-  location: string
-  platform: string
-  interface_status: string
-  device_status: string
-  ip_address_status: string
-  namespace: string
-  device_role: string
-  secret_group: string
-  csv_delimiter: string
-}
-
-const EMPTY_DROPDOWN_OPTIONS: DropdownOption[] = []
-const EMPTY_DEVICE_TYPES: DeviceType[] = []
-const EMPTY_LOCATIONS: LocationItem[] = []
-const EMPTY_SOFTWARE_VERSIONS: SoftwareVersion[] = []
+import type {
+  ParsedDevice,
+  DeviceImportResult,
+  DropdownOption,
+  DeviceType,
+  Platform,
+  SoftwareVersion,
+  LocationItem,
+  VlanItem,
+  InterfaceData,
+  StatusMessage,
+  TagItem,
+  CustomField,
+  NautobotDefaults,
+} from './types'
+import {
+  EMPTY_DROPDOWN_OPTIONS,
+  EMPTY_DEVICE_TYPES,
+  EMPTY_LOCATIONS,
+  EMPTY_SOFTWARE_VERSIONS,
+} from './constants'
 
 export function AddDevicePage() {
   const { isAuthenticated } = useAuthStore()

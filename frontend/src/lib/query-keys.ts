@@ -41,11 +41,30 @@ export const queryKeys = {
         ? ([...queryKeys.nautobot.all, 'devices', filters] as const)
         : ([...queryKeys.nautobot.all, 'devices'] as const),
     device: (id: string) => [...queryKeys.nautobot.all, 'device', id] as const,
+
+    // Dropdown data (static-ish, cache for 5 minutes)
+    dropdowns: () => [...queryKeys.nautobot.all, 'dropdowns'] as const,
     locations: () => [...queryKeys.nautobot.all, 'locations'] as const,
     roles: () => [...queryKeys.nautobot.all, 'roles'] as const,
     deviceTypes: () => [...queryKeys.nautobot.all, 'device-types'] as const,
     platforms: () => [...queryKeys.nautobot.all, 'platforms'] as const,
-    statuses: () => [...queryKeys.nautobot.all, 'statuses'] as const,
+    statuses: (type?: string) =>
+      type
+        ? ([...queryKeys.nautobot.all, 'statuses', type] as const)
+        : ([...queryKeys.nautobot.all, 'statuses'] as const),
+    softwareVersions: () => [...queryKeys.nautobot.all, 'software-versions'] as const,
+    interfaceTypes: () => [...queryKeys.nautobot.all, 'interface-types'] as const,
+    namespaces: () => [...queryKeys.nautobot.all, 'namespaces'] as const,
+    defaults: () => [...queryKeys.nautobot.all, 'defaults'] as const,
+
+    // Dynamic data (short cache or no cache)
+    tags: (contentType: string) => [...queryKeys.nautobot.all, 'tags', contentType] as const,
+    customFields: (contentType: string) => [...queryKeys.nautobot.all, 'custom-fields', contentType] as const,
+    customFieldChoices: (fieldKey: string) => [...queryKeys.nautobot.all, 'custom-field-choices', fieldKey] as const,
+    vlans: (filters?: { location?: string; global?: boolean }) =>
+      filters
+        ? ([...queryKeys.nautobot.all, 'vlans', filters] as const)
+        : ([...queryKeys.nautobot.all, 'vlans'] as const),
   },
 
   // Inventory
