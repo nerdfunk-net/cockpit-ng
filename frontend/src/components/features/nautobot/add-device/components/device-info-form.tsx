@@ -175,12 +175,12 @@ export function DeviceInfoForm({
             const manufacturer = displayParts.length > 1 ? displayParts.slice(0, -1).join(' ') : ''
             return (
               <div className="flex items-center gap-2">
-                {manufacturer && (
-                  <span className="text-blue-600 font-medium">
+                {manufacturer ? (
+                  <span key="manufacturer" className="text-blue-600 font-medium">
                     {manufacturer}
                   </span>
-                )}
-                <span className="font-medium">{dt.model}</span>
+                ) : null}
+                <span key="model" className="font-medium">{dt.model}</span>
               </div>
             )
           }}
@@ -219,10 +219,10 @@ export function DeviceInfoForm({
           dropdownState={softwareVersionDropdown}
           renderItem={(sv) => (
             <div>
-              {sv.platform?.name && (
-                <span className="text-xs text-muted-foreground">{sv.platform.name} </span>
-              )}
-              {sv.version}
+              {sv.platform?.name ? (
+                <span key="platform" className="text-xs text-muted-foreground">{sv.platform.name} </span>
+              ) : null}
+              <span key="version">{sv.version}</span>
             </div>
           )}
           getItemKey={(sv) => sv.id}

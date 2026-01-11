@@ -13,6 +13,12 @@ export interface DropdownOption {
   value?: string
 }
 
+// Interface types come from OPTIONS API and have different structure
+export interface InterfaceTypeOption {
+  value: string
+  display_name: string
+}
+
 export interface DeviceType {
   id: string
   model: string
@@ -150,7 +156,7 @@ export interface NautobotDropdownsResponse {
   deviceTypes: DeviceType[]
   platforms: Platform[]
   softwareVersions: SoftwareVersion[]
-  interfaceTypes: DropdownOption[]
+  interfaceTypes: InterfaceTypeOption[]
   interfaceStatuses: DropdownOption[]
   namespaces: DropdownOption[]
   nautobotDefaults: NautobotDefaults | null

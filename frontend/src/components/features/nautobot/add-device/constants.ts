@@ -5,6 +5,7 @@
 
 import type {
   DropdownOption,
+  InterfaceTypeOption,
   DeviceType,
   LocationItem,
   SoftwareVersion,
@@ -18,6 +19,7 @@ import type {
 // ============================================================================
 
 export const EMPTY_DROPDOWN_OPTIONS: DropdownOption[] = []
+export const EMPTY_INTERFACE_TYPES: InterfaceTypeOption[] = []
 export const EMPTY_DEVICE_TYPES: DeviceType[] = []
 export const EMPTY_LOCATIONS: LocationItem[] = []
 export const EMPTY_SOFTWARE_VERSIONS: SoftwareVersion[] = []

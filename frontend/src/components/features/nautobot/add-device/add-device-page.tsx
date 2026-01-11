@@ -31,6 +31,7 @@ import {
 import { buildLocationHierarchy, formatDeviceSubmissionData } from './utils'
 import {
   EMPTY_DROPDOWN_OPTIONS,
+  EMPTY_INTERFACE_TYPES,
   EMPTY_LOCATIONS,
   EMPTY_DEVICE_TYPES,
   EMPTY_SOFTWARE_VERSIONS,
@@ -51,7 +52,7 @@ export function AddDevicePage() {
       deviceTypes: EMPTY_DEVICE_TYPES,
       platforms: EMPTY_PLATFORMS,
       softwareVersions: EMPTY_SOFTWARE_VERSIONS,
-      interfaceTypes: EMPTY_DROPDOWN_OPTIONS,
+      interfaceTypes: EMPTY_INTERFACE_TYPES,
       interfaceStatuses: EMPTY_DROPDOWN_OPTIONS,
       namespaces: EMPTY_DROPDOWN_OPTIONS,
       nautobotDefaults: null,
