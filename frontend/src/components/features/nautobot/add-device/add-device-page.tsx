@@ -151,13 +151,11 @@ export function AddDevicePage() {
       })
 
       if (result.success) {
-        reset() // Clear form on success
-        tagsManager.clearSelectedTags()
-        customFieldsManager.clearFieldValues()
+        // Don't reset form - allow user to add similar devices
         setTimeout(() => setStatusMessage(null), 3000)
       }
     },
-    [createDevice, reset, form, tagsManager, customFieldsManager]
+    [createDevice, form, tagsManager, customFieldsManager]
   )
 
   const handleClearForm = useCallback(() => {
@@ -297,6 +295,7 @@ export function AddDevicePage() {
           customFieldValues={customFieldsManager.customFieldValues}
           onUpdateField={customFieldsManager.updateFieldValue}
           isLoading={customFieldsManager.isLoading}
+          customFieldChoices={customFieldsManager.customFieldChoices}
         />
 
         <CSVUploadModal

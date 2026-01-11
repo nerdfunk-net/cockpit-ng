@@ -2,6 +2,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Loader2, FileText } from 'lucide-react'
 import type { CustomField } from '../types'
 
@@ -12,6 +20,7 @@ interface CustomFieldsModalProps {
   customFieldValues: Record<string, string>
   onUpdateField: (key: string, value: string) => void
   isLoading: boolean
+  customFieldChoices: Record<string, string[]>
 }
 
 export function CustomFieldsModal({
@@ -21,6 +30,7 @@ export function CustomFieldsModal({
   customFieldValues,
   onUpdateField,
   isLoading,
+  customFieldChoices,
 }: CustomFieldsModalProps) {
   return (
     <Dialog open={show} onOpenChange={(open) => !open && onClose()}>
@@ -49,14 +59,51 @@ export function CustomFieldsModal({
                     {field.label}
                     {field.required && <span className="text-destructive ml-1">*</span>}
                   </Label>
-                  <Input
-                    id={field.key}
-                    value={customFieldValues[field.key] || ''}
-                    onChange={(e) => onUpdateField(field.key, e.target.value)}
-                    placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
-                  />
-                  {field.description && (
-                    <p className="text-xs text-muted-foreground">{field.description}</p>
+                  {field.type?.value === 'select' && customFieldChoices[field.key] ? (
+                    <Select
+                      value={customFieldValues[field.key] || ''}
+                      onValueChange={(value) => onUpdateField(field.key, value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customFieldChoices[field.key]?.map((choice) => {
+                          const choiceValue = typeof choice === 'object' && choice !== null
+                            ? (choice as any).value || (choice as any).id || JSON.stringify(choice)
+                            : String(choice)
+                          return (
+                            <SelectItem key={`${field.key}-${choiceValue}`} value={choiceValue}>
+                              {choiceValue}
+                            </SelectItem>
+                          )
+                        })}
+                      </SelectContent>
+                    </Select>
+                  ) : field.type?.value === 'boolean' ? (
+                    <div className="flex items-center h-9">
+                      <Checkbox
+                        checked={customFieldValues[field.key] === 'true'}
+                        onCheckedChange={(checked) =>
+                          onUpdateField(field.key, checked ? 'true' : 'false')
+                        }
+                      />
+                    </div>
+                  ) : field.type?.value === 'integer' ? (
+                    <Input
+                      id={field.key}
+                      type="number"
+                      value={customFieldValues[field.key] || ''}
+                      onChange={(e) => onUpdateField(field.key, e.target.value)}
+                      placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
+                    />
+                  ) : (
+                    <Input
+                      id={field.key}
+                      value={customFieldValues[field.key] || ''}
+                      onChange={(e) => onUpdateField(field.key, e.target.value)}
+                      placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
+                    />
                   )}
                 </div>
               ))}

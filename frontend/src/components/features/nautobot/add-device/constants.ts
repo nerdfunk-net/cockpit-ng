@@ -69,7 +69,7 @@ export const PREFIX_LENGTH_OPTIONS = [
  * VLAN mode options
  */
 export const VLAN_MODES = [
-  { value: '', label: 'None' },
+  { value: 'none', label: 'None' },
   { value: 'access', label: 'Access' },
   { value: 'tagged', label: 'Tagged' },
   { value: 'tagged-all', label: 'Tagged All' },

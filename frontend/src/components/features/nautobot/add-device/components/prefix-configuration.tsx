@@ -14,45 +14,53 @@ export function PrefixConfiguration({ form, isLoading }: PrefixConfigurationProp
   const { watch, setValue } = form
 
   return (
-    <div className="rounded-xl border shadow-sm p-6 space-y-4">
-      <h2 className="text-lg font-semibold">Prefix Configuration</h2>
-
-      <div className="space-y-4">
+    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center space-x-2">
-          <Checkbox
-            id="addPrefix"
-            checked={watch('addPrefix')}
-            onCheckedChange={(checked) => setValue('addPrefix', checked as boolean)}
-            disabled={isLoading}
-          />
-          <Label htmlFor="addPrefix" className="text-sm font-medium cursor-pointer">
-            Automatically add prefix to IP addresses
-          </Label>
+          <span className="text-sm font-medium">Prefix Configuration</span>
         </div>
-
-        {watch('addPrefix') && (
-          <div className="ml-6 space-y-2">
-            <Label htmlFor="defaultPrefixLength" className="text-xs font-medium">
-              Default Prefix Length
-            </Label>
-            <Select
-              value={watch('defaultPrefixLength')}
-              onValueChange={(value) => setValue('defaultPrefixLength', value)}
+        <div className="text-xs text-blue-100">
+          Automatically add prefix to IP addresses
+        </div>
+      </div>
+      <div className="p-4 bg-gradient-to-b from-white to-gray-50">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="addPrefix"
+              checked={watch('addPrefix')}
+              onCheckedChange={(checked) => setValue('addPrefix', checked as boolean)}
               disabled={isLoading}
-            >
-              <SelectTrigger id="defaultPrefixLength" className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PREFIX_LENGTH_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
+            <Label htmlFor="addPrefix" className="text-sm font-medium cursor-pointer">
+              Enable
+            </Label>
           </div>
-        )}
+
+          {watch('addPrefix') && (
+            <div className="flex items-center gap-2">
+              <Label htmlFor="defaultPrefixLength" className="text-xs font-medium">
+                Prefix Length:
+              </Label>
+              <Select
+                value={watch('defaultPrefixLength')}
+                onValueChange={(value) => setValue('defaultPrefixLength', value)}
+                disabled={isLoading}
+              >
+                <SelectTrigger id="defaultPrefixLength" className="w-24 h-8 border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PREFIX_LENGTH_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

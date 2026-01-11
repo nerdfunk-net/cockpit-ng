@@ -19,7 +19,9 @@ export function useTagsQuery(options: UseTagsQueryOptions = DEFAULT_OPTIONS) {
   return useQuery({
     queryKey: queryKeys.nautobot.tags('devices'),
     queryFn: async (): Promise<TagItem[]> => {
+      console.log('[useTagsQuery] Fetching tags...')
       const data = await apiCall<TagItem[]>('nautobot/tags/devices', { method: 'GET' })
+      console.log('[useTagsQuery] Received tags:', data)
       return data || []
     },
     enabled,

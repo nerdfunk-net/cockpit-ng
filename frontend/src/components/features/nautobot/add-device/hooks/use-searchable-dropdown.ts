@@ -67,9 +67,19 @@ export function useSearchableDropdown<T extends { id: string }>(
   )
 
   const displayValue = useMemo(() => {
-    if (searchQuery) return searchQuery
+    // If user is actively searching, show their search query
+    if (searchQuery !== '') return searchQuery
+    // Otherwise show the selected item's text
     return selectedItem ? getDisplayText(selectedItem) : ''
   }, [searchQuery, selectedItem, getDisplayText])
+
+  // Clear selection when user clears the search
+  useEffect(() => {
+    if (searchQuery === '' && selectedItem) {
+      // User cleared the input, so clear the selection
+      onSelect('')
+    }
+  }, [searchQuery, selectedItem, onSelect])
 
   // CRITICAL: Memoize return object to prevent infinite loops
   return useMemo(

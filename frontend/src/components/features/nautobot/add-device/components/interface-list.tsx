@@ -47,21 +47,23 @@ export function InterfaceList({
   }
 
   return (
-    <div className="rounded-xl border shadow-sm p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Network Interfaces</h2>
+    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm font-medium">Network Interfaces</span>
+        </div>
         <Button
           type="button"
           onClick={handleAddInterface}
           disabled={isLoading}
           size="sm"
-          variant="outline"
+          className="bg-white/20 border-white/30 text-white hover:bg-white/30 h-7 text-xs"
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-3 w-3 mr-1" />
           Add Interface
         </Button>
       </div>
-
+      <div className="p-6 bg-gradient-to-b from-white to-gray-50">
       <div className="space-y-3">
         {fields.map((field, index) => {
           const interfaceErrors = errors.interfaces?.[index]
@@ -72,7 +74,7 @@ export function InterfaceList({
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
-                    onClick={() => onOpenProperties(field.id)}
+                    onClick={() => onOpenProperties(index.toString())}
                     disabled={isLoading}
                     size="sm"
                     variant="outline"
@@ -106,6 +108,7 @@ export function InterfaceList({
                     {...register(`interfaces.${index}.name`)}
                     placeholder="e.g., eth0, Ethernet0/0"
                     disabled={isLoading}
+                    className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
                   />
                   {interfaceErrors?.name && (
                     <p className="text-xs text-destructive">{interfaceErrors.name.message}</p>
@@ -122,13 +125,13 @@ export function InterfaceList({
                     onValueChange={(value) => setValue(`interfaces.${index}.type`, value)}
                     disabled={isLoading}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
                       <SelectValue placeholder="Select type..." />
                     </SelectTrigger>
                     <SelectContent>
                       {dropdownData.interfaceTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.display_name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -148,7 +151,7 @@ export function InterfaceList({
                     onValueChange={(value) => setValue(`interfaces.${index}.status`, value)}
                     disabled={isLoading}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
                       <SelectValue placeholder="Select status..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -174,6 +177,7 @@ export function InterfaceList({
                     {...register(`interfaces.${index}.ip_address`)}
                     placeholder="e.g., 192.168.1.10/24"
                     disabled={isLoading}
+                    className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
                   />
                   {interfaceErrors?.ip_address && (
                     <p className="text-xs text-destructive">{interfaceErrors.ip_address.message}</p>
@@ -188,7 +192,7 @@ export function InterfaceList({
                     onValueChange={(value) => setValue(`interfaces.${index}.namespace`, value)}
                     disabled={isLoading}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
                       <SelectValue placeholder="Select namespace..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -224,6 +228,7 @@ export function InterfaceList({
             </div>
           )
         })}
+      </div>
       </div>
     </div>
   )

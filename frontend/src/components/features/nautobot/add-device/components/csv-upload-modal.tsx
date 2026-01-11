@@ -393,7 +393,7 @@ export function CSVUploadModal({
                               {/* Show custom field option if header starts with cf_ */}
                               {header.startsWith('cf_') && (
                                 <SelectItem value={header}>
-                                  [Custom] {header.substring(3)}
+                                  {`[Custom] ${header.substring(3)}`}
                                 </SelectItem>
                               )}
                               {allNautobotFields.map(field => (

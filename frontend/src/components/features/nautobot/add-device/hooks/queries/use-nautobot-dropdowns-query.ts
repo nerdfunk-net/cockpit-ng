@@ -38,7 +38,7 @@ export function useNautobotDropdownsQuery(
         namespaces,
         nautobotDefaults,
       ] = await Promise.all([
-        apiCall<any>('nautobot/roles', { method: 'GET' }),
+        apiCall<any>('nautobot/roles/devices', { method: 'GET' }),
         apiCall<any>('nautobot/statuses/device', { method: 'GET' }),
         apiCall<any>('nautobot/locations', { method: 'GET' }),
         apiCall<any>('nautobot/device-types', { method: 'GET' }),
@@ -47,7 +47,7 @@ export function useNautobotDropdownsQuery(
         apiCall<any>('nautobot/interface-types', { method: 'GET' }),
         apiCall<any>('nautobot/statuses/interface', { method: 'GET' }),
         apiCall<any>('nautobot/namespaces', { method: 'GET' }),
-        apiCall<any>('nautobot/defaults', { method: 'GET' }).catch(() => null),
+        apiCall<any>('settings/nautobot/defaults', { method: 'GET' }).catch(() => null),
       ])
 
       return {

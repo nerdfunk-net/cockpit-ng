@@ -38,6 +38,7 @@ export function SearchableDropdownInput<T>({
             dropdownState.setShowDropdown(true)
           }}
           onFocus={() => dropdownState.setShowDropdown(true)}
+          onBlur={() => dropdownState.setShowDropdown(false)}
           disabled={disabled}
         />
         {dropdownState.showDropdown && dropdownState.filteredItems.length > 0 && (
@@ -46,7 +47,10 @@ export function SearchableDropdownInput<T>({
               <div
                 key={getItemKey(item)}
                 className="px-3 py-2 hover:bg-accent cursor-pointer text-sm border-b last:border-b-0"
-                onClick={() => dropdownState.selectItem(item)}
+                onMouseDown={(e) => {
+                  e.preventDefault() // Prevent input blur
+                  dropdownState.selectItem(item)
+                }}
               >
                 {renderItem(item)}
               </div>

@@ -41,13 +41,18 @@ export function InterfacePropertiesModal({
   show,
   onClose,
 }: InterfacePropertiesModalProps) {
+  console.log('[InterfacePropertiesModal] Component called!', { show, interfaceId })
   const { register, watch, setValue } = form
 
-  // Find the interface index
-  const interfaces = watch('interfaces')
-  const interfaceIndex = interfaces.findIndex((iface) => iface.id === interfaceId)
+  console.log('[InterfacePropertiesModal] Props:', { show, interfaceId })
 
-  if (interfaceIndex === -1 || !show) return null
+  // interfaceId is now the index as a string
+  const interfaceIndex = interfaceId ? parseInt(interfaceId, 10) : -1
+  const interfaces = watch('interfaces')
+
+  console.log('[InterfacePropertiesModal] Interface index:', interfaceIndex, 'total interfaces:', interfaces.length)
+
+  if (interfaceIndex === -1 || !show || isNaN(interfaceIndex)) return null
 
   const currentInterface = interfaces[interfaceIndex]
   if (!currentInterface) return null
@@ -96,7 +101,7 @@ export function InterfacePropertiesModal({
                   <Input
                     {...register(`interfaces.${interfaceIndex}.mac_address`)}
                     placeholder="00:1A:2B:3C:4D:5E"
-                    className="h-8 text-sm"
+                    className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
                   />
                 </div>
                 <div className="space-y-1">
@@ -107,7 +112,7 @@ export function InterfacePropertiesModal({
                       valueAsNumber: true,
                     })}
                     placeholder="1500"
-                    className="h-8 text-sm"
+                    className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
                   />
                 </div>
                 <div className="space-y-1">
@@ -115,7 +120,7 @@ export function InterfacePropertiesModal({
                   <Input
                     {...register(`interfaces.${interfaceIndex}.description`)}
                     placeholder="Interface description"
-                    className="h-8 text-sm"
+                    className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
                   />
                 </div>
               </div>
@@ -136,10 +141,10 @@ export function InterfacePropertiesModal({
                 <div className="space-y-1">
                   <Label className="text-xs">Mode</Label>
                   <Select
-                    value={watch(`interfaces.${interfaceIndex}.mode`) || ''}
+                    value={watch(`interfaces.${interfaceIndex}.mode`) || 'none'}
                     onValueChange={(value) => setValue(`interfaces.${interfaceIndex}.mode`, value)}
                   >
-                    <SelectTrigger className="h-8 text-sm">
+                    <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
                       <SelectValue placeholder="Select mode" />
                     </SelectTrigger>
                     <SelectContent>
@@ -163,15 +168,14 @@ export function InterfacePropertiesModal({
                     }
                     disabled={isLoadingVlans}
                   >
-                    <SelectTrigger className="h-8 text-sm">
+                    <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
                       <SelectValue placeholder={isLoadingVlans ? 'Loading...' : 'Select VLAN'} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
                       {vlans.map((vlan) => (
                         <SelectItem key={vlan.id} value={vlan.id}>
-                          {vlan.vid} - {vlan.name}
-                          {vlan.location ? ` (${vlan.location.name})` : ' (Global)'}
+                          {`${vlan.vid} - ${vlan.name}${vlan.location ? ` (${vlan.location.name})` : ' (Global)'}`}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -191,7 +195,7 @@ export function InterfacePropertiesModal({
                       isLoadingVlans || watch(`interfaces.${interfaceIndex}.mode`) !== 'tagged'
                     }
                   >
-                    <SelectTrigger className="h-8 text-sm">
+                    <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
                       <SelectValue
                         placeholder={
                           watch(`interfaces.${interfaceIndex}.mode`) !== 'tagged'
@@ -210,8 +214,7 @@ export function InterfacePropertiesModal({
                         )
                         .map((vlan) => (
                           <SelectItem key={vlan.id} value={vlan.id}>
-                            {vlan.vid} - {vlan.name}
-                            {vlan.location ? ` (${vlan.location.name})` : ' (Global)'}
+                            {`${vlan.vid} - ${vlan.name}${vlan.location ? ` (${vlan.location.name})` : ' (Global)'}`}
                           </SelectItem>
                         ))}
                     </SelectContent>
@@ -254,7 +257,7 @@ export function InterfacePropertiesModal({
                 <Input
                   {...register(`interfaces.${interfaceIndex}.parent_interface`)}
                   placeholder="UUID"
-                  className="h-8 text-sm"
+                  className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
                 />
               </div>
               <div className="space-y-1">
@@ -262,7 +265,7 @@ export function InterfacePropertiesModal({
                 <Input
                   {...register(`interfaces.${interfaceIndex}.bridge`)}
                   placeholder="UUID"
-                  className="h-8 text-sm"
+                  className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
                 />
               </div>
               <div className="space-y-1">
@@ -270,7 +273,7 @@ export function InterfacePropertiesModal({
                 <Input
                   {...register(`interfaces.${interfaceIndex}.lag`)}
                   placeholder="LAG Interface ID"
-                  className="h-8 text-sm"
+                  className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
                 />
               </div>
             </div>
@@ -285,7 +288,7 @@ export function InterfacePropertiesModal({
                   setValue(`interfaces.${interfaceIndex}.tags`, tags)
                 }}
                 placeholder="production, critical, monitored"
-                className="h-8 text-sm"
+                className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
               />
             </div>
           </div>

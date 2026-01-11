@@ -24,9 +24,11 @@ export function usePropertiesModal(): PropertiesModalHook {
   })
 
   const openModal = useCallback((interfaceId: string, location?: string) => {
+    console.log('[PropertiesModal] Opening modal for interface:', interfaceId, 'location:', location)
     setCurrentInterfaceId(interfaceId)
     setLocationName(location)
     setShowModal(true)
+    console.log('[PropertiesModal] Modal state set to true')
   }, [])
 
   const closeModal = useCallback(() => {

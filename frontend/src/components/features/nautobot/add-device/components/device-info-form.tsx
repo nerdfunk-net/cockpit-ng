@@ -50,38 +50,40 @@ export function DeviceInfoForm({
   } = form
 
   return (
-    <div className="rounded-xl border shadow-sm p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Device Information</h2>
+    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm font-medium">Device Information</span>
+        </div>
         <div className="flex gap-2">
           <Button
             type="button"
-            variant="outline"
             size="sm"
             onClick={onOpenTags}
             disabled={isLoading}
+            className="bg-white/20 border-white/30 text-white hover:bg-white/30 h-7 text-xs"
           >
             Tags {selectedTagsCount > 0 && `(${selectedTagsCount})`}
           </Button>
           <Button
             type="button"
-            variant="outline"
             size="sm"
             onClick={onOpenCustomFields}
             disabled={isLoading}
+            className="bg-white/20 border-white/30 text-white hover:bg-white/30 h-7 text-xs"
           >
             Custom Fields
           </Button>
         </div>
       </div>
-
+      <div className="p-6 bg-gradient-to-b from-white to-gray-50">
       <div className="grid grid-cols-2 gap-4">
         {/* Device Name */}
         <div className="space-y-1">
           <Label htmlFor="deviceName" className="text-xs font-medium">
             Device Name <span className="text-destructive">*</span>
           </Label>
-          <Input id="deviceName" {...register('deviceName')} disabled={isLoading} />
+          <Input id="deviceName" {...register('deviceName')} disabled={isLoading} className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm" />
           {errors.deviceName && (
             <p className="text-xs text-destructive">{errors.deviceName.message}</p>
           )}
@@ -92,7 +94,7 @@ export function DeviceInfoForm({
           <Label htmlFor="serialNumber" className="text-xs font-medium">
             Serial Number
           </Label>
-          <Input id="serialNumber" {...register('serialNumber')} disabled={isLoading} />
+          <Input id="serialNumber" {...register('serialNumber')} disabled={isLoading} className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm" />
         </div>
 
         {/* Role */}
@@ -105,7 +107,7 @@ export function DeviceInfoForm({
             onValueChange={(value) => setValue('selectedRole', value)}
             disabled={isLoading}
           >
-            <SelectTrigger id="selectedRole">
+            <SelectTrigger id="selectedRole" className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
               <SelectValue placeholder="Select role..." />
             </SelectTrigger>
             <SelectContent>
@@ -131,7 +133,7 @@ export function DeviceInfoForm({
             onValueChange={(value) => setValue('selectedStatus', value)}
             disabled={isLoading}
           >
-            <SelectTrigger id="selectedStatus">
+            <SelectTrigger id="selectedStatus" className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
               <SelectValue placeholder="Select status..." />
             </SelectTrigger>
             <SelectContent>
@@ -167,14 +169,21 @@ export function DeviceInfoForm({
           required
           disabled={isLoading}
           dropdownState={deviceTypeDropdown}
-          renderItem={(dt) => (
-            <div>
-              <div className="font-medium">{dt.model}</div>
-              <div className="text-xs text-muted-foreground">
-                {dt.manufacturer.name || dt.manufacturer.display}
+          renderItem={(dt) => {
+            // Extract manufacturer from display field (e.g., "NetworkInc networkA" -> "NetworkInc")
+            const displayParts = (dt.display || '').split(' ')
+            const manufacturer = displayParts.length > 1 ? displayParts.slice(0, -1).join(' ') : ''
+            return (
+              <div className="flex items-center gap-2">
+                {manufacturer && (
+                  <span className="text-blue-600 font-medium">
+                    {manufacturer}
+                  </span>
+                )}
+                <span className="font-medium">{dt.model}</span>
               </div>
-            </div>
-          )}
+            )
+          }}
           getItemKey={(dt) => dt.id}
         />
 
@@ -188,7 +197,7 @@ export function DeviceInfoForm({
             onValueChange={(value) => setValue('selectedPlatform', value)}
             disabled={isLoading}
           >
-            <SelectTrigger id="selectedPlatform">
+            <SelectTrigger id="selectedPlatform" className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
               <SelectValue placeholder="Select platform..." />
             </SelectTrigger>
             <SelectContent>
@@ -218,6 +227,7 @@ export function DeviceInfoForm({
           )}
           getItemKey={(sv) => sv.id}
         />
+      </div>
       </div>
     </div>
   )

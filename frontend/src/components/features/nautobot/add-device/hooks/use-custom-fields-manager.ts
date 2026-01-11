@@ -1,7 +1,8 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useCustomFieldsQuery } from './queries/use-custom-fields-query'
 import { EMPTY_OBJECT } from '../constants'
 import type { CustomField } from '../types'
+import { useApi } from '@/hooks/use-api'
 
 export interface CustomFieldsManagerHook {
   customFields: CustomField[]
@@ -18,15 +19,45 @@ export interface CustomFieldsManagerHook {
 
 export function useCustomFieldsManager(): CustomFieldsManagerHook {
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>(EMPTY_OBJECT)
+  const [customFieldChoices, setCustomFieldChoices] = useState<Record<string, string[]>>({})
   const [showModal, setShowModal] = useState(false)
+  const { apiCall } = useApi()
 
   // Fetch custom fields when modal opens
   const { data: customFields = [], isLoading } = useCustomFieldsQuery({
     enabled: showModal,
   })
 
-  // TODO: Load choices for select fields
-  // This would require using useQueries for multiple choice queries
+  // Load choices for select-type fields
+  useEffect(() => {
+    if (customFields.length > 0) {
+      const selectFields = customFields.filter(
+        (f) => f.type?.value === 'select' || f.type?.value === 'multi-select'
+      )
+      
+      if (selectFields.length > 0) {
+        Promise.all(
+          selectFields.map(async (field) => {
+            try {
+              const choices = await apiCall<string[]>(
+                `nautobot/custom-field-choices/${field.key}`,
+                { method: 'GET' }
+              )
+              return { key: field.key, choices: choices || [] }
+            } catch {
+              return { key: field.key, choices: [] }
+            }
+          })
+        ).then((results) => {
+          const choicesMap: Record<string, string[]> = {}
+          results.forEach((result) => {
+            choicesMap[result.key] = result.choices
+          })
+          setCustomFieldChoices(choicesMap)
+        })
+      }
+    }
+  }, [customFields, apiCall])
 
   const openModal = useCallback(() => {
     setShowModal(true)
@@ -51,7 +82,7 @@ export function useCustomFieldsManager(): CustomFieldsManagerHook {
     () => ({
       customFields,
       customFieldValues,
-      customFieldChoices: {}, // TODO: Implement with useQueries
+      customFieldChoices,
       isLoading,
       showModal,
       openModal,
@@ -63,6 +94,7 @@ export function useCustomFieldsManager(): CustomFieldsManagerHook {
     [
       customFields,
       customFieldValues,
+      customFieldChoices,
       isLoading,
       showModal,
       openModal,
