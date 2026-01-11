@@ -2869,6 +2869,10 @@ const { data } = useMyHook({
 6. ✅ **ALWAYS wrap callbacks passed to custom hooks in `useCallback()`**
 7. ✅ Use React DevTools to check for unnecessary re-renders
 
+**When refactoring Code**
+1. The use of TanStack Query is MANDATORY. Always integrate TanStack Query when refactoring a file and check if the use of tanstack if useful.
+2. A time estimate must NOT be provided for the refactor.
+
 ### Performance
 - ✅ Minimize 'use client' directives
 - ✅ Use dynamic imports for heavy components
