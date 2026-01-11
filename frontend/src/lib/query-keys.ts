@@ -98,4 +98,13 @@ export const queryKeys = {
     git: () => [...queryKeys.settings.all, 'git'] as const,
     celery: () => [...queryKeys.settings.all, 'celery'] as const,
   },
+
+  // Credentials
+  credentials: {
+    all: ['credentials'] as const,
+    list: (filters?: { git?: boolean }) =>
+      filters
+        ? ([...queryKeys.credentials.all, 'list', filters] as const)
+        : ([...queryKeys.credentials.all, 'list'] as const),
+  },
 }
