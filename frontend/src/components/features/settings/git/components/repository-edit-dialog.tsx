@@ -9,6 +9,7 @@ import { useGitMutations } from '../hooks/queries/use-git-mutations'
 import { RepositoryForm } from './repository-form'
 import { buildCredentialValue, extractCredentialName } from '../utils'
 import type { GitRepository, GitCredential } from '../types'
+import type { RepositoryFormValues } from '../validation'
 
 interface RepositoryEditDialogProps {
   repository: GitRepository | null
@@ -40,10 +41,10 @@ export function RepositoryEditDialog({
 
       form.reset({
         name: repository.name,
-        category: repository.category as any,
+        category: repository.category as RepositoryFormValues['category'],
         url: repository.url,
         branch: repository.branch,
-        auth_type: (repository.auth_type || 'none') as any,
+        auth_type: (repository.auth_type || 'none') as RepositoryFormValues['auth_type'],
         credential_name: credentialValue,
         path: repository.path || '',
         verify_ssl: repository.verify_ssl,
@@ -54,7 +55,7 @@ export function RepositoryEditDialog({
     }
   }, [repository, credentials, show, form])
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: RepositoryFormValues) => {
     if (!repository) return
 
     setIsSubmitting(true)

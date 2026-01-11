@@ -26,17 +26,24 @@ export function TestOperationTab({
   variant = 'default',
   warning,
 }: TestOperationTabProps) {
-  const getIcon = () => {
+  const renderIcon = () => {
+    if (isLoading) {
+      return <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+    }
+
     switch (operation) {
-      case 'read': return FileText
-      case 'write': return Edit
-      case 'delete': return X
-      case 'push': return Upload
-      default: return FileText
+      case 'read':
+        return <FileText className="h-4 w-4 mr-2" />
+      case 'write':
+        return <Edit className="h-4 w-4 mr-2" />
+      case 'delete':
+        return <X className="h-4 w-4 mr-2" />
+      case 'push':
+        return <Upload className="h-4 w-4 mr-2" />
+      default:
+        return <FileText className="h-4 w-4 mr-2" />
     }
   }
-
-  const Icon = getIcon()
 
   return (
     <Card>
@@ -65,13 +72,9 @@ export function TestOperationTab({
           onClick={onRun}
           disabled={isLoading}
           variant={variant}
-          className={variant === 'default' ? 'w-full' : 'w-full'}
+          className="w-full"
         >
-          {isLoading ? (
-            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Icon className="h-4 w-4 mr-2" />
-          )}
+          {renderIcon()}
           Test {operation.charAt(0).toUpperCase() + operation.slice(1)} Operation
         </Button>
 

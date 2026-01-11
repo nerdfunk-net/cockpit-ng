@@ -34,7 +34,7 @@ import type { RepositoryFormValues } from './validation'
 
 const GitManagement: React.FC = () => {
   // Message state
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [message] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   // TanStack Query - Repositories
   const { data: reposData, isLoading: loadingRepos, refetch: refetchRepositories } = useGitRepositoriesQuery()

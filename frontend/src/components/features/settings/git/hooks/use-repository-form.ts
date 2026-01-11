@@ -24,10 +24,10 @@ export function useRepositoryForm(
       // Edit mode - populate from repository
       return {
         name: repository.name,
-        category: repository.category as any,
+        category: repository.category as RepositoryFormValues['category'],
         url: repository.url,
         branch: repository.branch,
-        auth_type: (repository.auth_type || 'none') as any,
+        auth_type: (repository.auth_type || 'none') as RepositoryFormValues['auth_type'],
         credential_name: repository.credential_name || '__none__',
         path: repository.path || '',
         verify_ssl: repository.verify_ssl,

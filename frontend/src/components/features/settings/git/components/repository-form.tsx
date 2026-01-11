@@ -63,7 +63,7 @@ export function RepositoryForm({
           </Label>
           <Select
             value={watch('category')}
-            onValueChange={(value) => setValue('category', value as any)}
+            onValueChange={(value) => setValue('category', value as RepositoryFormValues['category'])}
             disabled={isSubmitting}
           >
             <SelectTrigger id="category" className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200">
@@ -128,7 +128,7 @@ export function RepositoryForm({
         <Select
           value={authType}
           onValueChange={(value) => {
-            setValue('auth_type', value as any)
+            setValue('auth_type', value as RepositoryFormValues['auth_type'])
             setValue('credential_name', '__none__')
           }}
           disabled={isSubmitting}
