@@ -29,17 +29,30 @@ export function RepositoryEditDialog({
   // Create form with repository data
   const form = useRepositoryForm({ repository: repository || undefined })
 
-  // Update credential_name when repository or credentials change
+  // Reset form when repository changes
   useEffect(() => {
-    if (repository && credentials.length > 0) {
+    if (repository && show) {
       const credentialValue = buildCredentialValue(
         credentials,
         repository.credential_name,
         repository.auth_type || 'none'
       )
-      form.setValue('credential_name', credentialValue)
+
+      form.reset({
+        name: repository.name,
+        category: repository.category as any,
+        url: repository.url,
+        branch: repository.branch,
+        auth_type: (repository.auth_type || 'none') as any,
+        credential_name: credentialValue,
+        path: repository.path || '',
+        verify_ssl: repository.verify_ssl,
+        git_author_name: repository.git_author_name || '',
+        git_author_email: repository.git_author_email || '',
+        description: repository.description || '',
+      })
     }
-  }, [repository, credentials, form])
+  }, [repository, credentials, show, form])
 
   const handleSubmit = async (data: any) => {
     if (!repository) return
