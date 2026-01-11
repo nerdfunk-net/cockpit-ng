@@ -37,8 +37,8 @@ import {
   Upload
 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
-import { useGitRepositoriesQuery } from '@/hooks/queries/use-git-repositories-query'
-import { useGitMutations } from '@/hooks/queries/use-git-mutations'
+import { useGitRepositoriesQuery } from './hooks/use-git-repositories-query'
+import { useGitMutations } from './hooks/use-git-mutations'
 
 interface GitRepository {
   id: number

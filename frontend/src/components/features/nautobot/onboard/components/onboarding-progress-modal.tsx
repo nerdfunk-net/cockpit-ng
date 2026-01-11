@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button'
 import { Loader2, CheckCircle2, XCircle, AlertCircle, ExternalLink } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
-import { useJobQuery } from '@/hooks/queries/use-job-query'
+import { useJobQuery } from '../hooks/use-job-query'
 
 interface OnboardingProgressModalProps {
   open: boolean

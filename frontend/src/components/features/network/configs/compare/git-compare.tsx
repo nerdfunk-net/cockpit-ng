@@ -17,7 +17,7 @@ import {
   useGitCommits,
   useFileSearch,
   useDiffNavigation
-} from '@/hooks/git'
+} from '@/components/features/shared/git/hooks'
 import {
   RepositorySelector,
   BranchSelector,

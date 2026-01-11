@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select'
 import { Play, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { useGitRepositories } from '@/hooks/git'
+import { useGitRepositories } from '@/components/features/shared/git/hooks'
 import { useSnapshots } from '../hooks/use-snapshots'
 import { CredentialSelector } from '../../automation/netmiko/ui/credential-selector'
 import type { SnapshotCommand } from '../types/snapshot-types'
