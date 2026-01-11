@@ -10,6 +10,7 @@ import type {
   SoftwareVersion,
   Platform,
   InterfaceData,
+  VlanItem,
 } from './types'
 
 // ============================================================================
@@ -23,6 +24,7 @@ export const EMPTY_SOFTWARE_VERSIONS: SoftwareVersion[] = []
 export const EMPTY_PLATFORMS: Platform[] = []
 export const EMPTY_INTERFACES: InterfaceData[] = []
 export const EMPTY_STRING_ARRAY: string[] = []
+export const EMPTY_VLANS: VlanItem[] = []
 export const EMPTY_OBJECT: Record<string, string> = {}
 
 // ============================================================================

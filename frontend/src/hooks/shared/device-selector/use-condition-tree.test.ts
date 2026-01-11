@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useConditionTree, createEmptyTree, generateId } from './use-condition-tree'
 import type { ConditionTree, ConditionItem, ConditionGroup, LogicalCondition } from '@/types/shared/device-selector'
@@ -119,14 +119,12 @@ describe('useConditionTree', () => {
     it('should remove condition from root level', () => {
       const { result } = renderHook(() => useConditionTree())
 
-      let itemId: string
-
       act(() => {
         result.current.addConditionToTree('device_type', 'equals', 'Router')
         result.current.addConditionToTree('role', 'equals', 'Core')
       })
 
-      itemId = (result.current.conditionTree.items[0] as ConditionItem).id
+      const itemId = (result.current.conditionTree.items[0] as ConditionItem).id
 
       act(() => {
         result.current.removeItemFromTree(itemId)
@@ -139,13 +137,11 @@ describe('useConditionTree', () => {
     it('should remove group and its contents', () => {
       const { result } = renderHook(() => useConditionTree())
 
-      let groupId: string
-
       act(() => {
         result.current.addGroup('OR', false)
       })
 
-      groupId = (result.current.conditionTree.items[0] as ConditionGroup).id
+      const groupId = (result.current.conditionTree.items[0] as ConditionGroup).id
 
       act(() => {
         result.current.setCurrentGroupPath([groupId])
@@ -169,14 +165,11 @@ describe('useConditionTree', () => {
     it('should remove item from nested group', () => {
       const { result } = renderHook(() => useConditionTree())
 
-      let groupId: string
-      let itemId: string
-
       act(() => {
         result.current.addGroup('OR', false)
       })
 
-      groupId = (result.current.conditionTree.items[0] as ConditionGroup).id
+      const groupId = (result.current.conditionTree.items[0] as ConditionGroup).id
 
       act(() => {
         result.current.setCurrentGroupPath([groupId])
@@ -190,7 +183,7 @@ describe('useConditionTree', () => {
       // Access nested items after state has updated
       const group = result.current.conditionTree.items[0] as ConditionGroup
       expect(group.items).toHaveLength(2)
-      itemId = (group.items[0] as ConditionItem).id
+      const itemId = (group.items[0] as ConditionItem).id
 
       act(() => {
         result.current.removeItemFromTree(itemId)
@@ -206,13 +199,11 @@ describe('useConditionTree', () => {
     it('should update group internal logic', () => {
       const { result } = renderHook(() => useConditionTree())
 
-      let groupId: string
-
       act(() => {
         result.current.addGroup('OR', false)
       })
 
-      groupId = (result.current.conditionTree.items[0] as ConditionGroup).id
+      const groupId = (result.current.conditionTree.items[0] as ConditionGroup).id
 
       act(() => {
         result.current.updateGroupLogic(groupId, 'OR', 'internalLogic')
@@ -225,13 +216,11 @@ describe('useConditionTree', () => {
     it('should update group parent logic', () => {
       const { result } = renderHook(() => useConditionTree())
 
-      let groupId: string
-
       act(() => {
         result.current.addGroup('OR', false)
       })
 
-      groupId = (result.current.conditionTree.items[0] as ConditionGroup).id
+      const groupId = (result.current.conditionTree.items[0] as ConditionGroup).id
 
       act(() => {
         result.current.updateGroupLogic(groupId, 'OR')
@@ -248,13 +237,11 @@ describe('useConditionTree', () => {
     it('should return null for condition at root level', () => {
       const { result } = renderHook(() => useConditionTree())
 
-      let itemId: string
-
       act(() => {
         result.current.addConditionToTree('device_type', 'equals', 'Router')
       })
 
-      itemId = (result.current.conditionTree.items[0] as ConditionItem).id
+      const itemId = (result.current.conditionTree.items[0] as ConditionItem).id
 
       // findGroupPath only finds groups, not conditions
       const path = result.current.findGroupPath(itemId)
@@ -264,14 +251,11 @@ describe('useConditionTree', () => {
     it('should find path to nested group', () => {
       const { result } = renderHook(() => useConditionTree())
 
-      let parentGroupId: string
-      let nestedGroupId: string
-
       act(() => {
         result.current.addGroup('OR', false)
       })
 
-      parentGroupId = (result.current.conditionTree.items[0] as ConditionGroup).id
+      const parentGroupId = (result.current.conditionTree.items[0] as ConditionGroup).id
 
       act(() => {
         result.current.setCurrentGroupPath([parentGroupId])
@@ -284,7 +268,7 @@ describe('useConditionTree', () => {
       // Access nested group after state has updated
       const parentGroup = result.current.conditionTree.items[0] as ConditionGroup
       expect(parentGroup.items).toHaveLength(1)
-      nestedGroupId = (parentGroup.items[0] as ConditionGroup).id
+      const nestedGroupId = (parentGroup.items[0] as ConditionGroup).id
 
       // findGroupPath returns the path TO the group (not including the group itself)
       // So for a nested group, it returns the parent path
@@ -354,15 +338,12 @@ describe('useConditionTree', () => {
     it('should handle deeply nested groups', () => {
       const { result } = renderHook(() => useConditionTree())
 
-      let group1Id: string
-      let group2Id: string
-
       // Add first level group
       act(() => {
         result.current.addGroup('OR', false)
       })
 
-      group1Id = (result.current.conditionTree.items[0] as ConditionGroup).id
+      const group1Id = (result.current.conditionTree.items[0] as ConditionGroup).id
 
       // Add second level group
       act(() => {
@@ -376,7 +357,7 @@ describe('useConditionTree', () => {
       // Access nested group after state has updated
       const group1 = result.current.conditionTree.items[0] as ConditionGroup
       expect(group1.items).toHaveLength(1)
-      group2Id = (group1.items[0] as ConditionGroup).id
+      const group2Id = (group1.items[0] as ConditionGroup).id
 
       // Add condition to deepest group
       act(() => {
@@ -396,8 +377,6 @@ describe('useConditionTree', () => {
     it('should maintain tree structure after multiple operations', () => {
       const { result } = renderHook(() => useConditionTree())
 
-      let groupId: string
-
       // Build complex tree
       act(() => {
         // Add root level conditions
@@ -410,7 +389,7 @@ describe('useConditionTree', () => {
 
       // Get group ID after state has updated
       expect(result.current.conditionTree.items).toHaveLength(3)
-      groupId = (result.current.conditionTree.items[2] as ConditionGroup).id
+      const groupId = (result.current.conditionTree.items[2] as ConditionGroup).id
 
       act(() => {
         // Add conditions to group

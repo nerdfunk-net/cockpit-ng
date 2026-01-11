@@ -22,7 +22,7 @@ export function useVlansQuery(options: UseVlansQueryOptions = DEFAULT_OPTIONS) {
   return useQuery({
     queryKey: queryKeys.nautobot.vlans({ location: locationName, global: includeGlobal }),
     queryFn: async (): Promise<VlanItem[]> => {
-      let url = 'nautobot/vlans'
+      const url = 'nautobot/vlans'
       const params = new URLSearchParams()
 
       if (includeGlobal) {

@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useVlansQuery } from './queries/use-vlans-query'
+import { EMPTY_VLANS } from '../constants'
 import type { VlanItem } from '../types'
 
 export interface PropertiesModalHook {
@@ -17,18 +18,16 @@ export function usePropertiesModal(): PropertiesModalHook {
   const [locationName, setLocationName] = useState<string | undefined>(undefined)
 
   // Fetch VLANs when modal is open
-  const { data: vlans = [], isLoading: isLoadingVlans } = useVlansQuery({
+  const { data: vlans = EMPTY_VLANS, isLoading: isLoadingVlans } = useVlansQuery({
     locationName,
     includeGlobal: true,
     enabled: showModal && !!locationName,
   })
 
   const openModal = useCallback((interfaceId: string, location?: string) => {
-    console.log('[PropertiesModal] Opening modal for interface:', interfaceId, 'location:', location)
     setCurrentInterfaceId(interfaceId)
     setLocationName(location)
     setShowModal(true)
-    console.log('[PropertiesModal] Modal state set to true')
   }, [])
 
   const closeModal = useCallback(() => {

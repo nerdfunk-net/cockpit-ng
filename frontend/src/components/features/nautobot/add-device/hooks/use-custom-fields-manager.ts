@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useCustomFieldsQuery } from './queries/use-custom-fields-query'
-import { EMPTY_OBJECT } from '../constants'
+import { EMPTY_OBJECT, EMPTY_STRING_ARRAY } from '../constants'
 import type { CustomField } from '../types'
 import { useApi } from '@/hooks/use-api'
 
@@ -24,7 +24,7 @@ export function useCustomFieldsManager(): CustomFieldsManagerHook {
   const { apiCall } = useApi()
 
   // Fetch custom fields when modal opens
-  const { data: customFields = [], isLoading } = useCustomFieldsQuery({
+  const { data: customFields = EMPTY_STRING_ARRAY as unknown as CustomField[], isLoading } = useCustomFieldsQuery({
     enabled: showModal,
   })
 

@@ -70,6 +70,7 @@ export function CustomFieldsModal({
                       <SelectContent>
                         {customFieldChoices[field.key]?.map((choice) => {
                           const choiceValue = typeof choice === 'object' && choice !== null
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             ? (choice as any).value || (choice as any).id || JSON.stringify(choice)
                             : String(choice)
                           return (

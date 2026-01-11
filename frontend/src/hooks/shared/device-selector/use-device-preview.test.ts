@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { useDevicePreview } from './use-device-preview'
-import type { ConditionTree, DeviceInfo, LogicalCondition } from '@/types/shared/device-selector'
+import type { ConditionTree, DeviceInfo } from '@/types/shared/device-selector'
 import { createEmptyTree } from './use-condition-tree'
 import * as devicePreviewMutation from '@/hooks/mutations/use-device-preview-mutation'
 
@@ -417,7 +418,7 @@ describe('useDevicePreview', () => {
         submittedAt: 0
       } as any)
 
-      const { result, rerender } = renderHook(
+      const { rerender } = renderHook(
         () => useDevicePreview(conditionTree, [], [], onDevicesSelected),
         { wrapper }
       )

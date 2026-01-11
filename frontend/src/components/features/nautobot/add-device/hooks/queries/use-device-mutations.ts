@@ -12,6 +12,7 @@ export function useDeviceMutations() {
   const createDevice = useMutation({
     mutationFn: async (data: DeviceSubmissionData): Promise<DeviceSubmissionResult> => {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const response = await apiCall<any>('nautobot/add-device', {
           method: 'POST',
           body: JSON.stringify(data),

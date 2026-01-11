@@ -130,8 +130,8 @@ export function InterfaceList({
                     </SelectTrigger>
                     <SelectContent>
                       {dropdownData.interfaceTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.display_name}
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
