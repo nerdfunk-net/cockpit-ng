@@ -67,6 +67,13 @@ export const queryKeys = {
         : ([...queryKeys.nautobot.all, 'vlans'] as const),
   },
 
+  // CSV Updates (Nautobot tool)
+  csvUpdates: {
+    all: ['csv-updates'] as const,
+    validation: (objectType: string, csvHash: string) =>
+      ['csv-updates', 'validation', objectType, csvHash] as const,
+  },
+
   // Inventory
   inventory: {
     all: ['inventory'] as const,

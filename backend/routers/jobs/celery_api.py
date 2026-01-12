@@ -854,6 +854,15 @@ class UpdateDevicesRequest(BaseModel):
     dry_run: bool = False
 
 
+class UpdateIPPrefixesRequest(BaseModel):
+    """Request model for updating IP prefixes from CSV."""
+
+    csv_content: str
+    csv_options: Optional[Dict[str, str]] = None
+    dry_run: bool = False
+    ignore_uuid: bool = True  # Default: use prefix+namespace lookup instead of UUID
+
+
 class ImportDevicesRequest(BaseModel):
     """Request model for importing devices from CSV."""
 
@@ -1271,6 +1280,97 @@ async def trigger_update_devices_from_csv(
         job_id=str(job_run["id"]),
         status="queued",
         message=f"Update devices task queued{' (dry run mode)' if request.dry_run else ''}: {task.id}",
+    )
+
+
+@router.post("/tasks/update-ip-prefixes-from-csv", response_model=TaskWithJobResponse)
+@handle_celery_errors("update IP prefixes from CSV")
+async def trigger_update_ip_prefixes_from_csv(
+    request: UpdateIPPrefixesRequest,
+    current_user: dict = Depends(require_permission("nautobot.locations", "write")),
+):
+    """
+    Update Nautobot IP prefixes from CSV data.
+
+    This endpoint triggers a background task that:
+    1. Parses the CSV content
+    2. For each prefix row:
+       - Extracts prefix and namespace (defaults to "Global")
+       - Queries Nautobot to find the prefix by prefix+namespace combination
+       - Updates the prefix with CSV data
+    3. Tracks successes and failures
+    4. Returns summary of operations
+
+    The task is tracked in the job database and can be viewed in the Jobs/Views app.
+
+    Strategy:
+    - Primary identifier: prefix (e.g., "192.168.178.0/24") + namespace__name
+    - If namespace__name is not in CSV, defaults to "Global"
+    - Queries Nautobot to find the prefix UUID, then updates it
+
+    Request Body:
+        csv_content: CSV file content as string
+        csv_options: Optional CSV parsing options:
+            - delimiter: Field delimiter (default: ",")
+            - quoteChar: Quote character (default: '"')
+        dry_run: If True, validate without making changes (default: False)
+
+    Returns:
+        TaskWithJobResponse with task_id (for Celery) and job_id (for Jobs/Views tracking)
+
+    Required CSV Columns:
+        - prefix: The IP prefix (e.g., "192.168.178.0/24") - REQUIRED
+        - namespace__name: Namespace name (optional, defaults to "Global")
+        - Other fields: Any updatable prefix fields (description, status, etc.)
+
+    Example CSV:
+        prefix,namespace__name,description,status__name
+        192.168.1.0/24,Global,Production Network,Active
+        10.0.0.0/8,Internal,Internal Network,Reserved
+    """
+    from tasks.update_ip_prefixes_from_csv_task import update_ip_prefixes_from_csv_task
+
+    if not request.csv_content:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="csv_content cannot be empty",
+        )
+
+    # Convert csv_options to proper format
+    csv_options = None
+    if request.csv_options:
+        csv_options = {
+            "delimiter": request.csv_options.get("delimiter", ","),
+            "quoteChar": request.csv_options.get("quoteChar", '"'),
+        }
+
+    # Trigger the task asynchronously
+    task = update_ip_prefixes_from_csv_task.delay(
+        csv_content=request.csv_content,
+        csv_options=csv_options,
+        dry_run=request.dry_run,
+        ignore_uuid=request.ignore_uuid,
+    )
+
+    # Create job run record for tracking in Jobs/View
+    import job_run_manager
+
+    job_name = f"Update IP Prefixes from CSV{' (DRY RUN)' if request.dry_run else ''}"
+    job_run = job_run_manager.create_job_run(
+        job_name=job_name,
+        job_type="update_ip_prefixes_from_csv",
+        triggered_by="manual",
+        executed_by=current_user.get("username"),
+    )
+
+    # Mark as started with Celery task ID
+    job_run_manager.mark_started(job_run["id"], task.id)
+
+    return TaskWithJobResponse(
+        task_id=task.id,
+        job_id=str(job_run["id"]),
+        status="queued",
+        message=f"Update IP prefixes task queued{' (dry run mode)' if request.dry_run else ''}: {task.id}",
     )
 
 

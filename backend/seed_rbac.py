@@ -117,6 +117,9 @@ def seed_permissions(verbose: bool = True):
         ("nautobot.locations", "write", "Create/update Nautobot locations"),
         ("nautobot.export", "execute", "Export Nautobot device data"),
         ("nautobot.export", "read", "Download exported device files"),
+        ("nautobot.csv_updates", "read", "View CSV updates"),
+        ("nautobot.csv_updates", "write", "Create/modify CSV updates"),
+        ("nautobot.csv_updates", "execute", "Execute CSV update operations"),
         ("settings.nautobot", "read", "View Nautobot settings"),
         ("settings.nautobot", "write", "Modify Nautobot settings"),
         # CheckMK permissions
@@ -263,6 +266,8 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "nautobot.locations:write",
         "nautobot.export:execute",
         "nautobot.export:read",
+        "nautobot.csv_updates:read",
+        "nautobot.csv_updates:execute",
         "settings.nautobot:read",
         # CheckMK
         "checkmk.devices:read",
@@ -319,6 +324,9 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "nautobot.locations:write",
         "nautobot.export:execute",
         "nautobot.export:read",
+        "nautobot.csv_updates:read",
+        "nautobot.csv_updates:write",
+        "nautobot.csv_updates:execute",
         # CheckMK
         "checkmk.devices:read",
         "checkmk.devices:write",

@@ -140,6 +140,7 @@ export function LoadInventoryDialog({
                     key={inventory.id}
                     className="p-4 hover:bg-gray-50 cursor-pointer transition-colors group"
                     onClick={() => handleLoad(inventory)}
+                    onDoubleClick={() => handleLoad(inventory)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">

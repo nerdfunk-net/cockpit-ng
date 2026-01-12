@@ -48,7 +48,8 @@ export function LoadInventoryModal({
                             {savedInventories.map((inventory) => (
                                 <div
                                     key={inventory.id}
-                                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                                    onDoubleClick={() => onLoad(inventory.name)}
                                 >
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2">
