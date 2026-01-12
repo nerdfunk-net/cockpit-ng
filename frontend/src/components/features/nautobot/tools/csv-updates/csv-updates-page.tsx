@@ -20,6 +20,7 @@ export default function CsvUpdatesPage() {
   const [objectType, setObjectType] = useState<ObjectType>('devices')
   const [ignoreUuid, setIgnoreUuid] = useState(true) // Default: ignore UUID
   const [ignoredColumns, setIgnoredColumns] = useState<Set<string>>(EMPTY_SET)
+  const [tagsMode, setTagsMode] = useState<'replace' | 'merge'>('replace') // Default: replace tags
 
   // Custom hook for CSV upload management
   const csvUpload = useCsvUpload({
@@ -49,6 +50,12 @@ export default function CsvUpdatesPage() {
   // Check if CSV has ID column
   const hasIdColumn = useMemo(
     () => csvUpload.parsedData.headers.includes('id'),
+    [csvUpload.parsedData.headers]
+  )
+
+  // Check if CSV has tags column
+  const hasTagsColumn = useMemo(
+    () => csvUpload.parsedData.headers.includes('tags'),
     [csvUpload.parsedData.headers]
   )
 
@@ -95,8 +102,9 @@ export default function CsvUpdatesPage() {
       },
       dryRun: false,
       ignoreUuid, // Pass the ignoreUuid option
+      tagsMode, // Pass the tags mode (replace or merge)
     })
-  }, [objectType, csvUpload.parsedData, csvUpload.csvConfig, csvUpload.validationSummary, ignoredColumns, ignoreUuid, processUpdates])
+  }, [objectType, csvUpload.parsedData, csvUpload.csvConfig, csvUpload.validationSummary, ignoredColumns, ignoreUuid, tagsMode, processUpdates])
 
   return (
     <div className="space-y-6">
@@ -290,6 +298,9 @@ export default function CsvUpdatesPage() {
           onIgnoreUuidChange={setIgnoreUuid}
           ignoredColumns={ignoredColumns}
           onIgnoredColumnsChange={setIgnoredColumns}
+          hasTagsColumn={hasTagsColumn}
+          tagsMode={tagsMode}
+          onTagsModeChange={setTagsMode}
         />
       )}
 

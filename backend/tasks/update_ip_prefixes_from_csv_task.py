@@ -40,6 +40,7 @@ def update_ip_prefixes_from_csv_task(
     csv_options: Optional[Dict[str, Any]] = None,
     dry_run: bool = False,
     ignore_uuid: bool = True,
+    tags_mode: str = "replace",
 ) -> dict:
     """
     Task: Update Nautobot IP prefixes from CSV data.
@@ -60,6 +61,7 @@ def update_ip_prefixes_from_csv_task(
             - quoteChar: Quote character (default: '"')
         dry_run: If True, validate without making changes (default: False)
         ignore_uuid: If True, use prefix+namespace lookup; if False, use UUID from CSV (default: True)
+        tags_mode: How to handle tags - "replace" to overwrite or "merge" to add (default: "replace")
 
     Returns:
         dict: Update results including success/failure counts and details
@@ -70,6 +72,7 @@ def update_ip_prefixes_from_csv_task(
         logger.info("=" * 80)
         logger.info(f"Dry run: {dry_run}")
         logger.info(f"Ignore UUID: {ignore_uuid}")
+        logger.info(f"Tags mode: {tags_mode}")
         logger.info(f"CSV Options: {csv_options}")
 
         self.update_state(
@@ -265,7 +268,9 @@ def update_ip_prefixes_from_csv_task(
                         continue
 
                 # Step 2: Prepare update data
-                update_data = _prepare_prefix_update_data(row, headers, existing_prefix)
+                update_data = _prepare_prefix_update_data(
+                    row, headers, existing_prefix, tags_mode
+                )
 
                 if not update_data:
                     logger.info(f"No update data for prefix {identifier}, skipping")
@@ -523,7 +528,10 @@ async def _update_prefix(
 
 
 def _prepare_prefix_update_data(
-    row: Dict[str, str], headers: list, existing_prefix: Dict[str, Any]
+    row: Dict[str, str],
+    headers: list,
+    existing_prefix: Dict[str, Any],
+    tags_mode: str = "replace",
 ) -> Dict[str, Any]:
     """
     Prepare update data for a prefix from CSV row.
@@ -539,10 +547,18 @@ def _prepare_prefix_update_data(
     - The "cf_" prefix is removed and they're grouped under "custom_fields" key
     - Example: "cf_vlan_id" becomes {"custom_fields": {"vlan_id": "..."}}
 
+    Tags handling:
+    - The "tags" field accepts comma-separated tag names
+    - Example: "production,core,monitored" becomes ["production", "core", "monitored"]
+    - Whitespace around tag names is automatically trimmed
+    - tags_mode "replace": CSV tags replace all existing tags
+    - tags_mode "merge": CSV tags are added to existing tags (no duplicates)
+
     Args:
         row: CSV row as dictionary
         headers: List of column headers
         existing_prefix: Existing prefix data from Nautobot
+        tags_mode: How to handle tags - "replace" or "merge" (default: "replace")
 
     Returns:
         Dictionary of fields to update
@@ -575,7 +591,45 @@ def _prepare_prefix_update_data(
 
         value = row.get(field, "").strip()
 
-        # Skip empty values
+        # Handle tags field specially - even if empty in replace mode
+        if field == "tags":
+            if not value:
+                # Empty tags value
+                if tags_mode == "replace":
+                    # Replace mode with empty value: clear all tags
+                    update_data[field] = []
+                    logger.debug("Replace mode: clearing all tags (empty value in CSV)")
+                # For merge mode with empty value: skip (don't modify existing tags)
+                continue
+            
+            # Non-empty tags value - process normally
+            csv_tags = [tag.strip() for tag in value.split(",") if tag.strip()]
+            
+            if tags_mode == "merge":
+                # Merge mode: combine CSV tags with existing tags
+                existing_tags = []
+                if existing_prefix and "tags" in existing_prefix:
+                    # Extract tag names from existing tags
+                    for tag in existing_prefix["tags"]:
+                        if isinstance(tag, dict) and "name" in tag:
+                            existing_tags.append(tag["name"])
+                        elif isinstance(tag, str):
+                            existing_tags.append(tag)
+                
+                # Combine and deduplicate tags
+                merged_tags = list(set(existing_tags + csv_tags))
+                update_data[field] = merged_tags
+                logger.debug(
+                    f"Merging tags: existing={existing_tags}, csv={csv_tags}, merged={merged_tags}"
+                )
+            else:
+                # Replace mode: use only CSV tags
+                update_data[field] = csv_tags
+                logger.debug(f"Replacing tags with: {csv_tags}")
+            
+            continue
+
+        # Skip empty values for all other fields
         if not value:
             continue
 

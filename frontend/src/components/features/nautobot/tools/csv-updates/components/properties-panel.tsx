@@ -13,6 +13,9 @@ interface PropertiesPanelProps {
   onIgnoreUuidChange: (ignore: boolean) => void
   ignoredColumns: Set<string>
   onIgnoredColumnsChange: (columns: Set<string>) => void
+  hasTagsColumn: boolean
+  tagsMode: 'replace' | 'merge'
+  onTagsModeChange: (mode: 'replace' | 'merge') => void
 }
 
 // Columns that should never be used for updates (read-only or identifiers)
@@ -81,6 +84,9 @@ export function PropertiesPanel({
   onIgnoreUuidChange,
   ignoredColumns,
   onIgnoredColumnsChange,
+  hasTagsColumn,
+  tagsMode,
+  onTagsModeChange,
 }: PropertiesPanelProps) {
   const alwaysIgnored = ALWAYS_IGNORED_COLUMNS[objectType] || []
   const lookupColumns = LOOKUP_COLUMNS[objectType] || []
@@ -147,6 +153,46 @@ export function PropertiesPanel({
                   <span className="font-medium">Use UUID</span> - Directly update by ID
                   <span className="block text-xs text-muted-foreground mt-0.5">
                     Only if UUIDs match your Nautobot instance
+                  </span>
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+        )}
+
+        {/* Tags Handling - Show when tags column exists */}
+        {hasTagsColumn && (
+          <div className="space-y-3">
+            <div className="flex items-start gap-2">
+              <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+              <div className="space-y-2 flex-1">
+                <Label className="text-sm font-medium">Tags Handling</Label>
+                <p className="text-xs text-muted-foreground">
+                  Your CSV contains a &quot;tags&quot; column. Choose how to apply these tags:
+                </p>
+              </div>
+            </div>
+
+            <RadioGroup
+              value={tagsMode}
+              onValueChange={(value) => onTagsModeChange(value as 'replace' | 'merge')}
+              className="space-y-2 ml-6"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="replace" id="tags-replace" />
+                <Label htmlFor="tags-replace" className="text-sm font-normal cursor-pointer">
+                  <span className="font-medium">Replace tags</span> - Overwrite all existing tags
+                  <span className="block text-xs text-muted-foreground mt-0.5">
+                    CSV tags will replace any existing tags on the object
+                  </span>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="merge" id="tags-merge" />
+                <Label htmlFor="tags-merge" className="text-sm font-normal cursor-pointer">
+                  <span className="font-medium">Merge tags</span> - Add to existing tags
+                  <span className="block text-xs text-muted-foreground mt-0.5">
+                    CSV tags will be added to any existing tags (no duplicates)
                   </span>
                 </Label>
               </div>

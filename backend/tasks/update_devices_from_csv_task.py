@@ -61,6 +61,7 @@ def update_devices_from_csv_task(
         logger.info("UPDATE DEVICES FROM CSV TASK STARTED")
         logger.info("=" * 80)
         logger.info(f"Dry run: {dry_run}")
+        logger.info(f"Tags mode: {tags_mode}")
         logger.info(f"CSV Options: {csv_options}")
 
         self.update_state(
@@ -345,6 +346,11 @@ def _prepare_row_data(
     - The "cf_" prefix is removed and they're grouped under "custom_fields"
     - Example: "cf_net" becomes {"custom_fields": {"net": "..."}}
 
+    Tags handling:
+    - The "tags" field accepts comma-separated tag names
+    - Example: "production,core,monitored" becomes ["production", "core", "monitored"]
+    - Whitespace around tag names is automatically trimmed
+
     Args:
         row: CSV row as dictionary
         headers: List of column headers
@@ -410,6 +416,13 @@ def _prepare_row_data(
             else:
                 custom_fields[custom_field_name] = value
             
+            continue
+
+        # Handle tags field - convert comma-separated string to list
+        if field == "tags":
+            # Split by comma and strip whitespace from each tag
+            tag_list = [tag.strip() for tag in value.split(",") if tag.strip()]
+            update_data[field] = tag_list
             continue
 
         # Add to update data as-is (service will handle validation/resolution)

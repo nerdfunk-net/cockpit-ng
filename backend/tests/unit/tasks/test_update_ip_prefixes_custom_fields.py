@@ -166,3 +166,214 @@ class TestCustomFieldsHandling:
         assert result["description"] == "Test"
         assert "custom_fields" in result
         assert result["custom_fields"]["vlan_id"] == "100"
+
+
+class TestTagsHandling:
+    """Test tags handling in IP prefix updates."""
+
+    def test_tags_comma_separated_converted_to_list(self):
+        """Test that comma-separated tags are converted to a list."""
+        row = {
+            "prefix": "192.168.1.0/24",
+            "description": "Test",
+            "tags": "production,core,monitored",
+        }
+        headers = list(row.keys())
+        existing_prefix = {}
+
+        result = _prepare_prefix_update_data(row, headers, existing_prefix)
+
+        assert result["description"] == "Test"
+        assert "tags" in result
+        assert result["tags"] == ["production", "core", "monitored"]
+        assert isinstance(result["tags"], list)
+
+    def test_tags_with_whitespace_are_trimmed(self):
+        """Test that whitespace around tag names is trimmed."""
+        row = {
+            "prefix": "192.168.1.0/24",
+            "tags": "production , core  ,  monitored  ",
+        }
+        headers = list(row.keys())
+        existing_prefix = {}
+
+        result = _prepare_prefix_update_data(row, headers, existing_prefix)
+
+        assert result["tags"] == ["production", "core", "monitored"]
+
+    def test_single_tag_converted_to_list(self):
+        """Test that a single tag is converted to a list."""
+        row = {
+            "prefix": "192.168.1.0/24",
+            "tags": "production",
+        }
+        headers = list(row.keys())
+        existing_prefix = {}
+
+        result = _prepare_prefix_update_data(row, headers, existing_prefix)
+
+        assert result["tags"] == ["production"]
+        assert isinstance(result["tags"], list)
+
+    def test_empty_tags_default_replace_mode_clears_tags(self):
+        """Test that empty tags in default replace mode clears all tags."""
+        row = {
+            "prefix": "192.168.1.0/24",
+            "description": "Test",
+            "tags": "",
+        }
+        headers = list(row.keys())
+        existing_prefix = {}
+
+        # Default mode is replace, so empty tags should send empty array
+        result = _prepare_prefix_update_data(row, headers, existing_prefix)
+
+        assert "tags" in result
+        assert result["tags"] == []
+        assert result["description"] == "Test"
+
+    def test_tags_with_empty_elements_filtered(self):
+        """Test that empty elements in comma-separated tags are filtered out."""
+        row = {
+            "prefix": "192.168.1.0/24",
+            "tags": "production,,core,  ,monitored",
+        }
+        headers = list(row.keys())
+        existing_prefix = {}
+
+        result = _prepare_prefix_update_data(row, headers, existing_prefix)
+
+        # Empty elements should be filtered out
+        assert result["tags"] == ["production", "core", "monitored"]
+        assert len(result["tags"]) == 3
+
+    def test_tags_with_special_characters(self):
+        """Test that tags with hyphens and underscores work correctly."""
+        row = {
+            "prefix": "192.168.1.0/24",
+            "tags": "network-core,high_priority,prod-env",
+        }
+        headers = list(row.keys())
+        existing_prefix = {}
+
+        result = _prepare_prefix_update_data(row, headers, existing_prefix)
+
+        assert result["tags"] == ["network-core", "high_priority", "prod-env"]
+
+    def test_tags_merge_mode_combines_with_existing(self):
+        """Test that tags merge mode combines CSV tags with existing tags."""
+        row = {
+            "prefix": "192.168.1.0/24",
+            "tags": "new-tag,another-tag",
+        }
+        headers = list(row.keys())
+        existing_prefix = {
+            "tags": [
+                {"name": "existing-tag"},
+                {"name": "old-tag"},
+            ]
+        }
+
+        result = _prepare_prefix_update_data(row, headers, existing_prefix, tags_mode="merge")
+
+        # Should contain both existing and new tags
+        assert set(result["tags"]) == {"existing-tag", "old-tag", "new-tag", "another-tag"}
+
+    def test_tags_merge_mode_no_duplicates(self):
+        """Test that tags merge mode doesn't create duplicates."""
+        row = {
+            "prefix": "192.168.1.0/24",
+            "tags": "production,core",
+        }
+        headers = list(row.keys())
+        existing_prefix = {
+            "tags": [
+                {"name": "production"},  # Duplicate
+                {"name": "monitoring"},
+            ]
+        }
+
+        result = _prepare_prefix_update_data(row, headers, existing_prefix, tags_mode="merge")
+
+        # Should deduplicate
+        assert set(result["tags"]) == {"production", "core", "monitoring"}
+        assert len(result["tags"]) == 3
+
+    def test_tags_replace_mode_ignores_existing(self):
+        """Test that tags replace mode ignores existing tags."""
+        row = {
+            "prefix": "192.168.1.0/24",
+            "tags": "new-tag,another-tag",
+        }
+        headers = list(row.keys())
+        existing_prefix = {
+            "tags": [
+                {"name": "existing-tag"},
+                {"name": "old-tag"},
+            ]
+        }
+
+        result = _prepare_prefix_update_data(row, headers, existing_prefix, tags_mode="replace")
+
+        # Should only have CSV tags
+        assert set(result["tags"]) == {"new-tag", "another-tag"}
+        assert len(result["tags"]) == 2
+
+    def test_tags_replace_mode_with_empty_value_clears_all(self):
+        """Test that replace mode with empty tags value clears all tags."""
+        row = {
+            "prefix": "192.168.1.0/24",
+            "description": "Test",
+            "tags": "",  # Empty tags
+        }
+        headers = list(row.keys())
+        existing_prefix = {
+            "tags": [
+                {"name": "existing-tag"},
+                {"name": "old-tag"},
+            ]
+        }
+
+        result = _prepare_prefix_update_data(row, headers, existing_prefix, tags_mode="replace")
+
+        # Should have empty tags array to clear existing tags
+        assert "tags" in result
+        assert result["tags"] == []
+        assert result["description"] == "Test"
+
+    def test_tags_merge_mode_with_empty_value_keeps_existing(self):
+        """Test that merge mode with empty tags value keeps existing tags unchanged."""
+        row = {
+            "prefix": "192.168.1.0/24",
+            "description": "Test",
+            "tags": "",  # Empty tags
+        }
+        headers = list(row.keys())
+        existing_prefix = {
+            "tags": [
+                {"name": "existing-tag"},
+                {"name": "old-tag"},
+            ]
+        }
+
+        result = _prepare_prefix_update_data(row, headers, existing_prefix, tags_mode="merge")
+
+        # Should NOT have tags field (skip empty value in merge mode)
+        assert "tags" not in result
+        assert result["description"] == "Test"
+
+    def test_tags_replace_mode_with_whitespace_only_clears_all(self):
+        """Test that replace mode with whitespace-only tags value clears all tags."""
+        row = {
+            "prefix": "192.168.1.0/24",
+            "tags": "   ",  # Whitespace only
+        }
+        headers = list(row.keys())
+        existing_prefix = {
+            "tags": [{"name": "existing-tag"}]
+        }
+
+        result = _prepare_prefix_update_data(row, headers, existing_prefix, tags_mode="replace")
+
+        # Should have empty tags array
+        assert result["tags"] == []
