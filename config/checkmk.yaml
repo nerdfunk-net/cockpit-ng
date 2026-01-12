@@ -45,7 +45,7 @@ cf2htg:
 tags2htg:
   # use tags2htg to map custom tags to checkmk host tag groups
   # name_of_tag: name_of_checkmk_host_tag_group
-  # teh value is set to true if the tag is present on the nautobot device
+  # the value is set to true if the tag is present on the nautobot device
   # otherwise it is set to false
   tag-1: nb_tag
 
@@ -63,6 +63,7 @@ mapping:
   # use mappings to map a value from nautobot to a value in checkmk
   # this is a simple key value mapping. The key is the name of the nautobot attribute
   # the value is the name in checkmk
+  # Look at the custom host attributes in checkmk to add additional checkmk attributes
   name: alias
   location.name: location
   location.parent.name: city
