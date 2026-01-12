@@ -12,6 +12,12 @@ Strategy:
 - Primary identifier: prefix (e.g., "192.168.178.0/24") + namespace__name
 - If namespace__name is not in CSV, defaults to "Global"
 - Queries Nautobot to find the prefix UUID, then updates it
+
+Custom Fields:
+- CSV columns starting with "cf_" are treated as custom fields
+- The "cf_" prefix is automatically removed and fields are grouped under "custom_fields"
+- Example: Column "cf_vlan_id" with value "100" becomes {"custom_fields": {"vlan_id": "100"}}
+- Multiple custom fields: "cf_vlan_id", "cf_network_type" -> {"custom_fields": {"vlan_id": "...", "network_type": "..."}}
 """
 
 from celery_app import celery_app
@@ -274,6 +280,14 @@ def update_ip_prefixes_from_csv_task(
                     )
                     continue
 
+                # Log custom fields if present
+                if "custom_fields" in update_data:
+                    custom_field_count = len(update_data["custom_fields"])
+                    logger.info(
+                        f"  - Custom fields to update: {custom_field_count} "
+                        f"({list(update_data['custom_fields'].keys())})"
+                    )
+
                 # Step 3: Update the prefix
                 if dry_run:
                     logger.info(
@@ -520,6 +534,11 @@ def _prepare_prefix_update_data(
     - namespace__name (used for lookup, should not change)
     - Any fields that are empty in the CSV
 
+    Custom fields handling:
+    - Fields starting with "cf_" are treated as custom fields
+    - The "cf_" prefix is removed and they're grouped under "custom_fields" key
+    - Example: "cf_vlan_id" becomes {"custom_fields": {"vlan_id": "..."}}
+
     Args:
         row: CSV row as dictionary
         headers: List of column headers
@@ -548,6 +567,7 @@ def _prepare_prefix_update_data(
     }
 
     update_data = {}
+    custom_fields = {}
 
     for field in headers:
         if field in excluded_fields:
@@ -557,6 +577,21 @@ def _prepare_prefix_update_data(
 
         # Skip empty values
         if not value:
+            continue
+
+        # Handle custom fields (fields starting with "cf_")
+        if field.startswith("cf_"):
+            # Extract custom field name by removing "cf_" prefix
+            custom_field_name = field[3:]  # Remove first 3 characters ("cf_")
+            
+            # Handle special values for custom fields
+            if value.upper() == "NULL" or value.upper() == "NOOBJECT":
+                custom_fields[custom_field_name] = None
+            elif value.lower() in ["true", "false"]:
+                custom_fields[custom_field_name] = value.lower() == "true"
+            else:
+                custom_fields[custom_field_name] = value
+            
             continue
 
         # Handle special values
@@ -579,5 +614,9 @@ def _prepare_prefix_update_data(
         else:
             # Regular field
             update_data[field] = value
+
+    # Add custom fields to update data if any were found
+    if custom_fields:
+        update_data["custom_fields"] = custom_fields
 
     return update_data

@@ -7,6 +7,11 @@ This task handles CSV-formatted device updates and:
 3. Calls DeviceUpdateService for each device
 4. Aggregates results
 
+Custom Fields:
+- CSV columns starting with "cf_" are treated as custom fields
+- The "cf_" prefix is automatically removed and fields are grouped under "custom_fields"
+- Example: Column "cf_net" with value "netA" becomes {"custom_fields": {"net": "netA"}}
+
 Note: For JSON-based updates with full interface array support,
 use update_devices_task.py instead.
 """
@@ -335,6 +340,11 @@ def _prepare_row_data(
     2. Update data (all other fields except identifier and interface fields)
     3. Interface config (if interface_name/type/status present)
 
+    Custom fields handling:
+    - Fields starting with "cf_" are treated as custom fields
+    - The "cf_" prefix is removed and they're grouped under "custom_fields"
+    - Example: "cf_net" becomes {"custom_fields": {"net": "..."}}
+
     Args:
         row: CSV row as dictionary
         headers: List of column headers
@@ -375,6 +385,7 @@ def _prepare_row_data(
 
     # Build update data (all fields except identifiers and interface fields)
     update_data = {}
+    custom_fields = {}
 
     for field in headers:
         if field in excluded_fields or field in interface_fields:
@@ -386,8 +397,27 @@ def _prepare_row_data(
         if not value:
             continue
 
+        # Handle custom fields (fields starting with "cf_")
+        if field.startswith("cf_"):
+            # Extract custom field name by removing "cf_" prefix
+            custom_field_name = field[3:]  # Remove first 3 characters ("cf_")
+            
+            # Handle special values for custom fields
+            if value.upper() == "NULL" or value.upper() == "NOOBJECT":
+                custom_fields[custom_field_name] = None
+            elif value.lower() in ["true", "false"]:
+                custom_fields[custom_field_name] = value.lower() == "true"
+            else:
+                custom_fields[custom_field_name] = value
+            
+            continue
+
         # Add to update data as-is (service will handle validation/resolution)
         update_data[field] = value
+
+    # Add custom fields to update data if any were found
+    if custom_fields:
+        update_data["custom_fields"] = custom_fields
 
     # Add ip_namespace to update_data if present (service expects it there)
     if "ip_namespace" in row and row["ip_namespace"].strip():
