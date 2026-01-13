@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { InterfaceMappingTable } from '@/components/features/checkmk/sync/interface-mapping-table'
+import { InterfaceMappingTable } from './interface-mapping-table'
 import { parseInterfacesFromInventory } from '@/lib/checkmk/interface-mapping-utils'
 import type { CheckMKHost, NautobotMetadata } from '@/types/checkmk/types'
 
