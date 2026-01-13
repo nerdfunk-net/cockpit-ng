@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import type { Device, FilterOptions } from '@/types/features/checkmk/live-update'
 
 export function useDeviceFilters(devices: Device[]) {
@@ -8,7 +8,6 @@ export function useDeviceFilters(devices: Device[]) {
   const [statusFilter, setStatusFilter] = useState('')
   const [sortColumn, setSortColumn] = useState('')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'none'>('none')
-  const prevDevicesLengthRef = useRef(0)
 
   // Extract filter options from devices using useMemo
   const filterOptions = useMemo(() => {
@@ -27,20 +26,18 @@ export function useDeviceFilters(devices: Device[]) {
     return newFilterOptions
   }, [devices])
 
-  // Initialize role filters when devices change - run only on mount and when devices change
-  useEffect(() => {
-    // Only initialize if devices list changed (different length)
-    if (devices.length !== prevDevicesLengthRef.current && devices.length > 0) {
-      prevDevicesLengthRef.current = devices.length
-
-      const initialRoleFilters: Record<string, boolean> = {}
+  // Compute effective role filters - if empty, treat all roles as selected
+  const effectiveRoleFilters = useMemo(() => {
+    if (Object.keys(roleFilters).length === 0 && filterOptions.roles.size > 0) {
+      // Initialize with all roles selected
+      const initialFilters: Record<string, boolean> = {}
       filterOptions.roles.forEach(role => {
-        initialRoleFilters[role] = true
+        initialFilters[role] = true
       })
-      // eslint-disable-next-line react-compiler/react-compiler
-      setRoleFilters(initialRoleFilters)
+      return initialFilters
     }
-  }, [devices.length, filterOptions.roles])
+    return roleFilters
+  }, [roleFilters, filterOptions.roles])
 
   // Apply filters and sorting
   const filteredDevices = useMemo(() => {
@@ -54,12 +51,12 @@ export function useDeviceFilters(devices: Device[]) {
       }
 
       // Multi-select role filter (checkbox-based)
-      if (Object.keys(roleFilters).length > 0) {
+      if (Object.keys(effectiveRoleFilters).length > 0) {
         const deviceRole = device.role?.name || ''
         // If the device's role isn't in our filter list, show it (backward compatibility)
-        if (!(deviceRole in roleFilters)) return true
+        if (!(deviceRole in effectiveRoleFilters)) return true
         // Otherwise, check if this role is selected
-        if (!roleFilters[deviceRole]) return false
+        if (!effectiveRoleFilters[deviceRole]) return false
       }
 
       // Location search filter (text-based searchable dropdown)
@@ -95,7 +92,7 @@ export function useDeviceFilters(devices: Device[]) {
     }
 
     return filtered
-  }, [devices, deviceNameFilter, roleFilters, selectedLocation, statusFilter, sortColumn, sortOrder])
+  }, [devices, deviceNameFilter, effectiveRoleFilters, selectedLocation, statusFilter, sortColumn, sortOrder])
 
   const handleSort = useCallback((column: string) => {
     if (column === sortColumn) {
@@ -134,13 +131,13 @@ export function useDeviceFilters(devices: Device[]) {
       selectedLocation
     ].filter(Boolean).length +
     // Add count for role filters (if any are deselected)
-    (Object.keys(roleFilters).length > 0 && Object.values(roleFilters).filter(Boolean).length < filterOptions.roles.size ? 1 : 0)
-  }, [deviceNameFilter, statusFilter, selectedLocation, roleFilters, filterOptions.roles.size])
+    (Object.keys(effectiveRoleFilters).length > 0 && Object.values(effectiveRoleFilters).filter(Boolean).length < filterOptions.roles.size ? 1 : 0)
+  }, [deviceNameFilter, statusFilter, selectedLocation, effectiveRoleFilters, filterOptions.roles.size])
 
   return {
     filteredDevices,
     deviceNameFilter,
-    roleFilters,
+    roleFilters: effectiveRoleFilters,
     selectedLocation,
     statusFilter,
     sortColumn,
