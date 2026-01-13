@@ -6,13 +6,13 @@ import { Card, CardContent } from '@/components/ui/card'
 import type { Device } from '@/types/features/checkmk/live-update'
 
 // Custom hooks
-import { useStatusMessages } from '@/hooks/features/checkmk/live-update/use-status-messages'
-import { useDeviceLoader } from '@/hooks/features/checkmk/live-update/use-device-loader'
-import { useDeviceFilters } from '@/hooks/features/checkmk/live-update/use-device-filters'
-import { useDeviceSelection } from '@/hooks/features/checkmk/live-update/use-device-selection'
-import { useTaskTracking } from '@/hooks/features/checkmk/live-update/use-task-tracking'
-import { useDiffComparison } from '@/hooks/features/checkmk/live-update/use-diff-comparison'
-import { useDeviceOperations } from '@/hooks/features/checkmk/live-update/use-device-operations'
+import { useStatusMessages } from './hooks/use-status-messages'
+import { useDeviceLoader } from './hooks/use-device-loader'
+import { useDeviceFilters } from './hooks/use-device-filters'
+import { useDeviceSelection } from './hooks/use-device-selection'
+import { useTaskTracking } from './hooks/use-task-tracking'
+import { useDiffComparison } from './hooks/use-diff-comparison'
+import { useDeviceOperations } from './hooks/use-device-operations'
 
 // Components
 import { StatusMessageCard } from './components/status-message-card'
