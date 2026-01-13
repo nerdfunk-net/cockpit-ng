@@ -18,8 +18,10 @@ else:
 
 def get_env_bool(key: str, default: bool = False) -> bool:
     """Get boolean environment variable."""
-    value = os.getenv(key, str(default)).lower()
-    return value in ("true", "1", "yes", "on")
+    value = os.getenv(key)
+    if value is None:
+        return default
+    return value.lower() in ("true", "1", "yes", "on")
 
 
 def get_env_list(key: str, default: list = None) -> list:
