@@ -104,7 +104,7 @@ export function useNautobotSync({
       }
       
       // Map device types to use 'display' field as 'name'
-      const mappedDeviceTypes = extractResults(deviceTypes).map((dt: any) => ({
+      const mappedDeviceTypes = extractResults(deviceTypes).map((dt: { id: string; display?: string; model?: string; name?: string }) => ({
         id: dt.id,
         name: dt.display || dt.model || dt.name
       }))
