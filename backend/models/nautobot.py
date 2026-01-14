@@ -103,3 +103,30 @@ class AddDeviceRequest(BaseModel):
     default_prefix_length: str = "/24"
     # Interfaces array
     interfaces: list[InterfaceData] = []
+
+
+class UpdateDeviceRequest(BaseModel):
+    """Request model for updating an existing device with interfaces.
+    
+    All fields are optional - only provided fields will be updated.
+    """
+
+    # Device fields (all optional for updates)
+    name: Optional[str] = None
+    role: Optional[str] = None
+    status: Optional[str] = None
+    location: Optional[str] = None
+    device_type: Optional[str] = None
+    platform: Optional[str] = None
+    software_version: Optional[str] = None
+    serial: Optional[str] = None
+    asset_tag: Optional[str] = None
+    # Tags (list of tag IDs)
+    tags: Optional[list[str]] = None
+    # Custom fields (key-value pairs)
+    custom_fields: Optional[dict[str, str]] = None
+    # Prefix configuration
+    add_prefix: bool = True
+    default_prefix_length: str = "/24"
+    # Interfaces array
+    interfaces: Optional[list[InterfaceData]] = None

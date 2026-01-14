@@ -13,10 +13,12 @@ from models.nautobot import (
     DeviceOnboardRequest,
     SyncNetworkDataRequest,
     AddDeviceRequest,
+    UpdateDeviceRequest,
 )
 from services.nautobot import nautobot_service
 from services.nautobot.devices.creation import device_creation_service
 from services.nautobot.devices.query import device_query_service
+from services.nautobot.devices.update import DeviceUpdateService
 from services.nautobot_helpers.cache_helpers import (
     cache_device,
     get_cached_device,
@@ -370,6 +372,70 @@ async def add_device(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to add device: {str(e)}",
+        )
+
+
+@router.patch("/devices/{device_id}", summary="🔶 REST: Update Device with Interfaces")
+async def update_device(
+    device_id: str,
+    request: UpdateDeviceRequest,
+    current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+):
+    """
+    Update an existing device in Nautobot.
+
+    **🔶 This endpoint uses REST API** to update devices via Nautobot's REST endpoints.
+
+    Workflow:
+    1. Validate and resolve update data (names → UUIDs)
+    2. Update device properties via PATCH
+    3. Update/create interfaces if provided
+    4. Verify updates applied successfully
+
+    Args:
+        device_id: UUID of the device to update
+        request: Update data (only provided fields will be updated)
+
+    Returns:
+        Update result with success status, updated fields, and warnings
+    """
+    try:
+        # Initialize the update service
+        update_service = DeviceUpdateService(nautobot_service)
+
+        # Convert request to dict and filter out None values and empty interfaces
+        update_data = request.model_dump(exclude_none=True, exclude_unset=True)
+        
+        # Extract interfaces separately
+        interfaces = update_data.pop("interfaces", None)
+        
+        # Extract prefix configuration
+        add_prefix = update_data.pop("add_prefix", True)
+        default_prefix_length = update_data.pop("default_prefix_length", "/24")
+
+        # Prepare device identifier
+        device_identifier = {"id": device_id}
+
+        # Call the update service
+        result = await update_service.update_device(
+            device_identifier=device_identifier,
+            update_data=update_data,
+            interfaces=interfaces,
+        )
+
+        return result
+
+    except ValueError as e:
+        logger.error(f"Validation error updating device: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.error(f"Failed to update device: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update device: {str(e)}",
         )
 
 

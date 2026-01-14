@@ -106,7 +106,7 @@ export function useNautobotSync({
       // Map device types to use 'display' field as 'name'
       const mappedDeviceTypes = extractResults(deviceTypes).map((dt: { id: string; display?: string; model?: string; name?: string }) => ({
         id: dt.id,
-        name: dt.display || dt.model || dt.name
+        name: dt.display || dt.model || dt.name || 'Unknown'
       }))
       
       setNautobotMetadata({
@@ -237,37 +237,55 @@ export function useNautobotSync({
       // Build the device payload from mappings using utility function
       const { devicePayload } = buildDevicePayload(propertyMappings, nautobotMetadata, interfaceMappings)
       
-      // Validate required fields
-      if (!devicePayload.name) {
-        throw new Error('Device name is required')
-      }
-      if (!devicePayload.role) {
-        throw new Error('Device role is required')
-      }
-      if (!devicePayload.status) {
-        throw new Error('Device status is required')
-      }
-      if (!devicePayload.location) {
-        throw new Error('Device location is required')
-      }
-      if (!devicePayload.device_type) {
-        throw new Error('Device type is required')
+      // Check if device exists in Nautobot
+      if (nautobotDevice) {
+        // Device exists - use PATCH to update
+        const deviceId = nautobotDevice.id as string
+        
+        onMessage(`Updating existing device in Nautobot...`, 'info')
+        
+        await apiCall(`nautobot/devices/${deviceId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(devicePayload)
+        })
+        
+        onMessage(`Successfully updated ${selectedHostForSync.host_name} in Nautobot`, 'success')
+      } else {
+        // Device doesn't exist - use POST to create
+        // Validate required fields for creation
+        if (!devicePayload.name) {
+          throw new Error('Device name is required')
+        }
+        if (!devicePayload.role) {
+          throw new Error('Device role is required')
+        }
+        if (!devicePayload.status) {
+          throw new Error('Device status is required')
+        }
+        if (!devicePayload.location) {
+          throw new Error('Device location is required')
+        }
+        if (!devicePayload.device_type) {
+          throw new Error('Device type is required')
+        }
+        
+        onMessage(`Creating new device in Nautobot...`, 'info')
+        
+        await apiCall('nautobot/add-device', {
+          method: 'POST',
+          body: JSON.stringify(devicePayload)
+        })
+        
+        onMessage(`Successfully created ${selectedHostForSync.host_name} in Nautobot`, 'success')
       }
       
-      // Call the add-device endpoint
-      await apiCall('nautobot/add-device', {
-        method: 'POST',
-        body: JSON.stringify(devicePayload)
-      })
-      
-      onMessage(`Successfully synced ${selectedHostForSync.host_name} to Nautobot`, 'success')
       setIsSyncModalOpen(false)
       
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to sync to Nautobot'
       onMessage(`Failed to sync ${selectedHostForSync.host_name}: ${message}`, 'error')
     }
-  }, [selectedHostForSync, propertyMappings, nautobotMetadata, interfaceMappings, apiCall, onMessage])
+  }, [selectedHostForSync, propertyMappings, nautobotMetadata, interfaceMappings, nautobotDevice, apiCall, onMessage])
 
   /**
    * Close sync modal
