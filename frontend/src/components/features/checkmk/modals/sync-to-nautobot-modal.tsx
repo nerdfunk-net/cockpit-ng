@@ -31,6 +31,7 @@ interface SyncToNautobotModalProps {
   onSync: () => void
   onUpdateMapping: (checkMkKey: string, nautobotField: string) => void
   onUpdatePropertyMappings: (mappings: Record<string, PropertyMapping>) => void
+  onUpdateInterfaceMappings: (mappings: Record<string, { enabled: boolean; ipRole: string; status: string; ipAddress: string; interfaceName: string; isPrimary: boolean }>) => void
 }
 
 export function SyncToNautobotModal({
@@ -49,6 +50,7 @@ export function SyncToNautobotModal({
   onSync,
   onUpdateMapping,
   onUpdatePropertyMappings,
+  onUpdateInterfaceMappings,
 }: SyncToNautobotModalProps) {
   // Parse interfaces from inventory data
   const interfaces = useMemo(() => {
@@ -159,7 +161,7 @@ export function SyncToNautobotModal({
                                         <code className="text-[11px] bg-blue-100/60 px-1.5 py-0.5 rounded font-mono text-blue-900">
                                           {displayKey}
                                         </code>
-                                        {mapping.nautobotField === 'role' && (
+                                        {(mapping.nautobotField === 'role' || mapping.nautobotField === 'device_type') && (
                                           <Badge className="bg-orange-500 text-white text-[10px] h-4 px-1">Required</Badge>
                                         )}
                                       </div>
@@ -196,6 +198,37 @@ export function SyncToNautobotModal({
                                             )}
                                           </SelectContent>
                                         </Select>
+                                      ) : mapping.nautobotField === 'device_type' ? (
+                                        <Select
+                                          value={String(mapping.value)}
+                                          onValueChange={(value) => {
+                                            onUpdatePropertyMappings({
+                                              ...propertyMappings,
+                                              [checkMkKey]: {
+                                                nautobotField: mapping.nautobotField,
+                                                value,
+                                                isCore: mapping.isCore
+                                              }
+                                            })
+                                          }}
+                                        >
+                                          <SelectTrigger className={`w-48 h-7 text-xs ${!mapping.value ? 'border-orange-300' : 'border-gray-300'}`}>
+                                            <SelectValue placeholder="Select device type..." />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {nautobotMetadata?.deviceTypes && nautobotMetadata.deviceTypes.length > 0 ? (
+                                              nautobotMetadata.deviceTypes.map((deviceType) => (
+                                                <SelectItem key={deviceType.id} value={deviceType.name}>
+                                                  {deviceType.name}
+                                                </SelectItem>
+                                              ))
+                                            ) : (
+                                              <SelectItem value="loading" disabled>
+                                                Loading device types...
+                                              </SelectItem>
+                                            )}
+                                          </SelectContent>
+                                        </Select>
                                       ) : (
                                         <span className="text-xs text-gray-900 font-medium">
                                           {String(mapping.value)}
@@ -209,6 +242,7 @@ export function SyncToNautobotModal({
                                         {mapping.nautobotField === 'location' && 'Location'}
                                         {mapping.nautobotField === 'status' && 'Status'}
                                         {mapping.nautobotField === 'role' && 'Role'}
+                                        {mapping.nautobotField === 'device_type' && 'Device Type'}
                                       </Badge>
                                     </td>
                                   </tr>
@@ -352,6 +386,7 @@ export function SyncToNautobotModal({
                   <InterfaceMappingTable
                     interfaces={interfaces}
                     ipAddressStatuses={ipAddressStatuses}
+                    onInterfaceMappingsChange={onUpdateInterfaceMappings}
                     ipAddressRoles={ipAddressRoles}
                   />
                 ) : (

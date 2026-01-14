@@ -65,6 +65,7 @@ class InterfaceData(BaseModel):
     ip_address: Optional[str] = None
     namespace: Optional[str] = None  # Required if ip_address is provided
     is_primary_ipv4: Optional[bool] = None  # Set this interface's IP as device primary
+    ip_role: Optional[str] = None  # IP address role (e.g., 'Secondary', 'Anycast')
     # Optional properties
     enabled: Optional[bool] = None
     mgmt_only: Optional[bool] = None

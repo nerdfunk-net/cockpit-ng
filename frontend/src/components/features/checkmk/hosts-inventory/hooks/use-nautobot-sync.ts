@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useApi } from '@/hooks/use-api'
 import type { CheckMKHost, CheckMKConfig, NautobotMetadata, PropertyMapping } from '@/types/checkmk/types'
-import { initializePropertyMappings, buildDevicePayload } from '@/lib/checkmk/property-mapping-utils'
+import { initializePropertyMappings, buildDevicePayload, type InterfaceMappingData } from '@/lib/checkmk/property-mapping-utils'
 
 interface UseNautobotSyncProps {
   checkmkConfig: CheckMKConfig | null
@@ -23,6 +23,7 @@ interface UseNautobotSyncReturn {
   handleSyncToNautobot: (host: CheckMKHost) => Promise<void>
   updatePropertyMapping: (checkMkKey: string, nautobotField: string) => void
   updatePropertyMappings: (mappings: Record<string, PropertyMapping>) => void
+  updateInterfaceMappings: (mappings: Record<string, InterfaceMappingData>) => void
   executeSyncToNautobot: () => Promise<void>
   closeSyncModal: () => void
 }
@@ -56,6 +57,9 @@ export function useNautobotSync({
   // IP address roles
   const [ipAddressRoles, setIpAddressRoles] = useState<Array<{ id: string; name: string }> | null>(null)
 
+  // Interface mappings
+  const [interfaceMappings, setInterfaceMappings] = useState<Record<string, InterfaceMappingData>>({})
+
   /**
    * Load CheckMK inventory data for interface mapping
    */
@@ -85,7 +89,7 @@ export function useNautobotSync({
         apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/locations'),
         apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/roles/devices'),
         apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/statuses/device'),
-        apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/device-types'),
+        apiCall<Array<{ id: string; display: string; model: string }>>('nautobot/device-types'),
         apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/platforms'),
         apiCall<{ results: Array<{ id: string; name: string; key: string }> }>('nautobot/custom-fields/devices'),
         apiCall<{ results: Array<{ id: string; name: string }> }>('nautobot/statuses/ipaddress'),
@@ -99,11 +103,17 @@ export function useNautobotSync({
         return response.results || []
       }
       
+      // Map device types to use 'display' field as 'name'
+      const mappedDeviceTypes = extractResults(deviceTypes).map((dt: any) => ({
+        id: dt.id,
+        name: dt.display || dt.model || dt.name
+      }))
+      
       setNautobotMetadata({
         locations: extractResults(locations),
         roles: extractResults(roles),
         statuses: extractResults(statuses),
-        deviceTypes: extractResults(deviceTypes),
+        deviceTypes: mappedDeviceTypes,
         platforms: extractResults(platforms),
         customFields: extractResults(customFields),
       })
@@ -209,6 +219,13 @@ export function useNautobotSync({
   }, [])
 
   /**
+   * Update interface mappings from the interface table
+   */
+  const updateInterfaceMappings = useCallback((mappings: Record<string, InterfaceMappingData>) => {
+    setInterfaceMappings(mappings)
+  }, [])
+
+  /**
    * Execute sync to Nautobot
    */
   const executeSyncToNautobot = useCallback(async () => {
@@ -218,7 +235,7 @@ export function useNautobotSync({
       onMessage(`Syncing ${selectedHostForSync.host_name} to Nautobot...`, 'info')
       
       // Build the device payload from mappings using utility function
-      const { devicePayload } = buildDevicePayload(propertyMappings, nautobotMetadata)
+      const { devicePayload } = buildDevicePayload(propertyMappings, nautobotMetadata, interfaceMappings)
       
       // Validate required fields
       if (!devicePayload.name) {
@@ -250,7 +267,7 @@ export function useNautobotSync({
       const message = err instanceof Error ? err.message : 'Failed to sync to Nautobot'
       onMessage(`Failed to sync ${selectedHostForSync.host_name}: ${message}`, 'error')
     }
-  }, [selectedHostForSync, propertyMappings, nautobotMetadata, apiCall, onMessage])
+  }, [selectedHostForSync, propertyMappings, nautobotMetadata, interfaceMappings, apiCall, onMessage])
 
   /**
    * Close sync modal
@@ -263,6 +280,7 @@ export function useNautobotSync({
     setInventoryData(null)
     setIpAddressStatuses(null)
     setIpAddressRoles(null)
+    setInterfaceMappings({})
   }, [])
 
   // Re-initialize mappings when checkmkConfig or nautobotMetadata changes
@@ -287,6 +305,7 @@ export function useNautobotSync({
     handleSyncToNautobot,
     updatePropertyMapping,
     updatePropertyMappings,
+    updateInterfaceMappings,
     executeSyncToNautobot,
     closeSyncModal
   }), [
@@ -304,6 +323,7 @@ export function useNautobotSync({
     handleSyncToNautobot,
     updatePropertyMapping,
     updatePropertyMappings,
+    updateInterfaceMappings,
     executeSyncToNautobot,
     closeSyncModal
   ])

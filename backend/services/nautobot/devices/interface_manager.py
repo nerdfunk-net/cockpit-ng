@@ -175,6 +175,8 @@ class InterfaceManagerService:
             namespace = interface.get("namespace", "Global")
             status = interface.get("status", "active")
             ip_role = interface.get("ip_role")
+            
+            logger.info(f"[DEBUG] Processing IP for interface {interface['name']}: ip={ip_address}, ip_role={ip_role}")
 
             if not namespace:
                 warnings.append(
@@ -197,7 +199,11 @@ class InterfaceManagerService:
                 # Add role if specified
                 if ip_role:
                     ip_payload["role"] = ip_role
-                    logger.info(f"Added role '{ip_role}' to IP payload for {ip_address}")
+                    logger.info(f"[DEBUG] Added role '{ip_role}' to IP payload for {ip_address}")
+                else:
+                    logger.info(f"[DEBUG] No ip_role specified for {ip_address} (primary or default)")
+                
+                logger.info(f"[DEBUG] Final IP payload for {ip_address}: {ip_payload}")
 
                 try:
                     logger.info(f"Creating IP address {ip_address} for interface {interface['name']}")
@@ -209,7 +215,8 @@ class InterfaceManagerService:
                     if ip_response and "id" in ip_response:
                         map_key = f"{interface['name']}:{ip_address}"
                         ip_address_map[map_key] = ip_response["id"]
-                        logger.info(f"Created IP address {ip_address} with ID: {ip_response['id']}")
+                        logger.info(f"[DEBUG] Created IP address {ip_address} with ID: {ip_response['id']}")
+                        logger.info(f"[DEBUG] IP response details: role={ip_response.get('role', 'NOT_IN_RESPONSE')}, status={ip_response.get('status', 'NOT_IN_RESPONSE')}")
 
                 except Exception as create_error:
                     # If IP already exists, look it up

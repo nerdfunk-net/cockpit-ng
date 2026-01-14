@@ -125,7 +125,7 @@ class DeviceCreationService:
         for i, iface in enumerate(request.interfaces):
             logger.info(
                 f"  Interface {i + 1}: name={iface.name}, type={iface.type}, "
-                f"ip={iface.ip_address}, is_primary={iface.is_primary_ipv4}"
+                f"ip={iface.ip_address}, is_primary={iface.is_primary_ipv4}, ip_role={getattr(iface, 'ip_role', 'NOT_SET')}"
             )
 
     async def _step1_create_device(
@@ -319,6 +319,15 @@ class DeviceCreationService:
                     "status": interface.status,
                     "namespace": interface.namespace,
                 }
+                
+                # Add role if specified
+                if interface.ip_role:
+                    ip_payload["role"] = interface.ip_role
+                    logger.info(f"[DEBUG] Adding role '{interface.ip_role}' to IP payload for {interface.ip_address}")
+                else:
+                    logger.info(f"[DEBUG] No ip_role specified for {interface.ip_address}")
+                
+                logger.info(f"[DEBUG] IP payload for creation: {ip_payload}")
 
                 try:
                     ip_response = await nautobot_service.rest_request(
@@ -326,7 +335,9 @@ class DeviceCreationService:
                     )
 
                     if ip_response and "id" in ip_response:
-                        ip_address_map[interface.name] = ip_response["id"]
+                        # Use interface name + IP address as key to support multiple IPs per interface
+                        map_key = f"{interface.name}:{interface.ip_address}"
+                        ip_address_map[map_key] = ip_response["id"]
                         workflow_status["step2_ip_addresses"]["data"].append(
                             {
                                 "interface": interface.name,
@@ -336,7 +347,7 @@ class DeviceCreationService:
                             }
                         )
                         logger.info(
-                            f"Created IP address {interface.ip_address} with ID: {ip_response['id']}"
+                            f"Created IP address {interface.ip_address} with ID: {ip_response['id']} (map_key: {map_key})"
                         )
                     else:
                         workflow_status["step2_ip_addresses"]["errors"].append(
@@ -389,7 +400,8 @@ class DeviceCreationService:
                                 if ip_addresses and len(ip_addresses) > 0:
                                     existing_ip = ip_addresses[0]
                                     ip_id = existing_ip["id"]
-                                    ip_address_map[interface.name] = ip_id
+                                    map_key = f"{interface.name}:{interface.ip_address}"
+                                    ip_address_map[map_key] = ip_id
                                     workflow_status["step2_ip_addresses"][
                                         "data"
                                     ].append(
@@ -401,7 +413,7 @@ class DeviceCreationService:
                                         }
                                     )
                                     logger.info(
-                                        f"Found existing IP address {interface.ip_address} with ID: {ip_id}"
+                                        f"Found existing IP address {interface.ip_address} with ID: {ip_id} (map_key: {map_key})"
                                     )
                                     continue  # Skip error handling below
                                 else:
@@ -548,15 +560,66 @@ class DeviceCreationService:
                 if interface.tags:
                     interface_payload["tags"] = interface.tags
 
-                interface_response = await nautobot_service.rest_request(
-                    endpoint="dcim/interfaces/", method="POST", data=interface_payload
-                )
+                # Try to create the interface
+                interface_id = None
+                interface_response = None
+                
+                try:
+                    interface_response = await nautobot_service.rest_request(
+                        endpoint="dcim/interfaces/", method="POST", data=interface_payload
+                    )
+
+                    if interface_response and "id" in interface_response:
+                        interface_id = interface_response["id"]
+                        logger.info(
+                            f"Created interface {interface.name} with ID: {interface_id}"
+                        )
+                except Exception as create_error:
+                    # Check if interface already exists (e.g., when processing multiple IPs for same interface)
+                    if "must make a unique set" in str(create_error).lower():
+                        logger.info(f"Interface {interface.name} already exists, looking it up...")
+                        
+                        # Look up existing interface using GraphQL
+                        try:
+                            query = """
+                            query GetInterface($device: [String], $name: [String]) {
+                              interfaces(device_id: $device, name: $name) {
+                                id
+                                name
+                              }
+                            }
+                            """
+                            variables = {
+                                "device": [device_id],
+                                "name": [interface.name],
+                            }
+
+                            result = await nautobot_service.graphql_query(query, variables)
+
+                            if result and "data" in result and "interfaces" in result["data"]:
+                                interfaces_list = result["data"]["interfaces"]
+                                if interfaces_list and len(interfaces_list) > 0:
+                                    existing_interface = interfaces_list[0]
+                                    interface_id = existing_interface["id"]
+                                    logger.info(f"Found existing interface {interface.name} with ID: {interface_id}")
+                                    # Set interface_response to a dict with the ID so the rest of the code works
+                                    interface_response = {"id": interface_id}
+                                else:
+                                    logger.error(f"Interface {interface.name} reported as existing but could not be found via GraphQL")
+                                    raise Exception("Interface exists but could not be found")
+                            else:
+                                logger.error(f"GraphQL query failed to find existing interface {interface.name}")
+                                raise Exception("Failed to lookup existing interface")
+
+                        except Exception as lookup_error:
+                            logger.error(f"Failed to lookup existing interface {interface.name}: {lookup_error}")
+                            raise
+                    else:
+                        # Re-raise if it's not a duplicate error
+                        raise
 
                 if interface_response and "id" in interface_response:
                     interface_id = interface_response["id"]
-                    logger.info(
-                        f"Created interface {interface.name} with ID: {interface_id}"
-                    )
 
                     # Store mapping for LAG references
                     if interface.id:
@@ -574,8 +637,10 @@ class DeviceCreationService:
                     }
 
                     # Assign IP address to interface
-                    if interface.name in ip_address_map:
-                        ip_id = ip_address_map[interface.name]
+                    map_key = f"{interface.name}:{interface.ip_address}"
+                    if map_key in ip_address_map:
+                        ip_id = ip_address_map[map_key]
+                        logger.info(f"[DEBUG] Looking up IP for interface {interface.name} with key '{map_key}' -> found IP ID: {ip_id}")
                         try:
                             assignment_payload = {
                                 "ip_address": ip_id,
@@ -588,7 +653,7 @@ class DeviceCreationService:
                             )
                             interface_result["ip_assigned"] = True
                             logger.info(
-                                f"Assigned IP {interface.ip_address} to interface {interface.name}"
+                                f"Assigned IP {interface.ip_address} (ID: {ip_id}) to interface {interface.name}"
                             )
 
                             # Determine primary IPv4
@@ -612,6 +677,8 @@ class DeviceCreationService:
                         except Exception as e:
                             interface_result["ip_assignment_error"] = str(e)
                             logger.error(f"Failed to assign IP to interface: {str(e)}")
+                    else:
+                        logger.warning(f"[DEBUG] IP address key '{map_key}' not found in ip_address_map. Available keys: {list(ip_address_map.keys())}")
 
                     workflow_status["step3_interfaces"]["data"].append(interface_result)
                     created_interfaces.append(interface_response)

@@ -80,6 +80,23 @@ export function initializePropertyMappings(
     }
   }
   
+  // Check for device_type attribute (tag_device_type or device_type)
+  const deviceTypeKey = Object.keys(attrs).find(key => key.toLowerCase() === 'device_type' || key === 'tag_device_type')
+  if (deviceTypeKey && attrs[deviceTypeKey]) {
+    mappings[deviceTypeKey] = {
+      nautobotField: 'device_type',
+      value: attrs[deviceTypeKey],
+      isCore: true
+    }
+  } else {
+    // Device type is mandatory - add empty mapping to be filled by user
+    mappings['device_type'] = {
+      nautobotField: 'device_type',
+      value: '',
+      isCore: true
+    }
+  }
+  
   // Reverse mapping from CheckMK config
   // The config has attr2htg (nautobot_attr: checkmk_htg) and cf2htg (nautobot_cf: checkmk_htg)
   // We need to reverse these: checkmk_htg → nautobot field
@@ -218,16 +235,43 @@ export function resolveNautobotId(
 }
 
 /**
+ * Interface for interface mapping data
+ */
+export interface InterfaceMappingData {
+  enabled: boolean
+  ipRole: string
+  status: string
+  ipAddress: string
+  interfaceName: string
+  isPrimary: boolean
+}
+
+/**
+ * Interface data for add device request (matches backend InterfaceData model)
+ */
+export interface InterfaceDataPayload {
+  name: string
+  type: string
+  status: string
+  ip_address?: string
+  namespace?: string
+  is_primary_ipv4?: boolean
+  ip_role?: string  // IP address role (e.g., "Secondary", "Anycast")
+  enabled?: boolean
+  mgmt_only?: boolean
+  description?: string
+}
+
+/**
  * Build device payload from property mappings for Nautobot sync
  * Pure function that transforms mappings to API payload
  */
 export function buildDevicePayload(
   propertyMappings: Record<string, PropertyMapping>,
-  nautobotMetadata: NautobotMetadata | null
+  nautobotMetadata: NautobotMetadata | null,
+  interfaceMappings?: Record<string, InterfaceMappingData>
 ): { devicePayload: Record<string, unknown>; customFields: Record<string, string> } {
-  const devicePayload: Record<string, unknown> = {
-    interfaces: [] // Empty for now, can be extended later
-  }
+  const devicePayload: Record<string, unknown> = {}
   
   const customFields: Record<string, string> = {}
   
@@ -257,6 +301,43 @@ export function buildDevicePayload(
   if (Object.keys(customFields).length > 0) {
     devicePayload.custom_fields = customFields
   }
+
+  // Build interfaces array from interface mappings
+  const interfaces: InterfaceDataPayload[] = []
+  if (interfaceMappings) {
+    Object.entries(interfaceMappings).forEach(([_rowKey, mapping]) => {
+      if (mapping.enabled && mapping.interfaceName && mapping.ipAddress) {
+        // Parse IP address to separate address and CIDR
+        const ipParts = mapping.ipAddress.split('/')
+        const ipAddr = ipParts[0]
+        
+        // Determine IP role: only set if not 'none'
+        const ipRole = mapping.ipRole && mapping.ipRole !== 'none' ? mapping.ipRole : undefined
+        
+        console.log(`[DEBUG] Building interface payload: name=${mapping.interfaceName}, ip=${ipAddr}, isPrimary=${mapping.isPrimary}, ipRole=${mapping.ipRole}, sending_ip_role=${ipRole}`)
+        
+        interfaces.push({
+          name: mapping.interfaceName,
+          type: 'other', // Default type, can be enhanced later
+          status: mapping.status || 'Active',
+          ip_address: ipAddr,
+          namespace: 'Global', // Default namespace, could be made configurable
+          is_primary_ipv4: mapping.isPrimary, // Use the user-selected primary flag
+          ip_role: ipRole, // Only set if not 'none'
+          enabled: true,
+          mgmt_only: false,
+        })
+      }
+    })
+  }
+  
+  console.log(`[DEBUG] Total interfaces in payload: ${interfaces.length}`)
+  if (interfaces.length > 0) {
+    console.log('[DEBUG] Interface payload details:', JSON.stringify(interfaces, null, 2))
+  }
+  
+  // Add interfaces to payload
+  devicePayload.interfaces = interfaces
   
   return { devicePayload, customFields }
 }

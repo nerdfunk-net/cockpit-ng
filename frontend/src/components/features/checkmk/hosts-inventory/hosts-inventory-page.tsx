@@ -137,6 +137,7 @@ export default function HostsInventoryPage() {
     handleSyncToNautobot,
     updatePropertyMapping,
     updatePropertyMappings,
+    updateInterfaceMappings,
     executeSyncToNautobot,
     closeSyncModal
   } = useNautobotSync({ checkmkConfig, onMessage: showMessage })
@@ -600,6 +601,7 @@ export default function HostsInventoryPage() {
         onSync={executeSyncToNautobot}
         onUpdateMapping={updatePropertyMapping}
         onUpdatePropertyMappings={updatePropertyMappings}
+        onUpdateInterfaceMappings={updateInterfaceMappings}
       />
     </div>
   )
