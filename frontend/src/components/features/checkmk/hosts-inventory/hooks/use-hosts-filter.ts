@@ -18,8 +18,6 @@ interface UseHostsFilterReturn {
   resetFilters: () => void
 }
 
-const EMPTY_FILTERS: Record<string, boolean> = {}
-
 export function useHostsFilter(
   hosts: CheckMKHost[],
   filterOptions: FilterOptions,
@@ -27,7 +25,14 @@ export function useHostsFilter(
 ): UseHostsFilterReturn {
   const [hostNameFilter, setHostNameFilter] = useState('')
   const [folderFilter, setFolderFilter] = useState('')
-  const [folderFilters, setFolderFilters] = useState<Record<string, boolean>>(EMPTY_FILTERS)
+  const [folderFilters, setFolderFilters] = useState<Record<string, boolean>>(() => {
+    // Initialize with all folders selected by default
+    const initialFilters: Record<string, boolean> = {}
+    filterOptions.folders.forEach(folder => {
+      initialFilters[folder] = true
+    })
+    return initialFilters
+  })
   const [sortColumn, setSortColumn] = useState('')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'none'>('none')
 

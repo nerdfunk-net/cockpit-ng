@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import { Search, X, ChevronLeft, ChevronRight, RotateCcw, Server, Eye, RefreshCw, ChevronDown } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -82,41 +82,8 @@ export default function HostsInventoryPage() {
     return options
   }, [hosts])
 
-  // Track user's explicit folder filter changes (overrides default "all selected")
-  const [folderFilterOverrides, setFolderFilterOverrides] = useState<Record<string, boolean>>({})
-
-  // Derive folderFilters from filterOptions + user overrides
-  // All folders are selected by default, unless user has explicitly changed them
-  const folderFilters = useMemo<Record<string, boolean>>(() => {
-    const filters: Record<string, boolean> = {}
-    filterOptions.folders.forEach(folder => {
-      // Use user override if exists, otherwise default to true (selected)
-      filters[folder] = folderFilterOverrides[folder] ?? true
-    })
-    return filters
-  }, [filterOptions.folders, folderFilterOverrides])
-
-  // Wrapper to update folder filters (stores user override)
-  const setFolderFilters = useCallback((updater: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => {
-    if (typeof updater === 'function') {
-      setFolderFilterOverrides(() => {
-        const currentFilters = { ...folderFilters }
-        const newFilters = updater(currentFilters)
-        // Store as overrides
-        return newFilters
-      })
-    } else {
-      setFolderFilterOverrides(updater)
-    }
-  }, [folderFilters])
-
   // Convert query error to string for backward compatibility
   const error = queryError instanceof Error ? queryError.message : null
-
-  // Reload hosts function for backward compatibility
-  const reloadHosts = useCallback(() => {
-    void refetch()
-  }, [refetch])
 
   const { selectedHosts, handleSelectHost, handleSelectAll } = useHostsSelection()
   const { checkmkConfig, loadCheckmkConfig } = useCheckmkConfig()
@@ -145,11 +112,12 @@ export default function HostsInventoryPage() {
   const {
     filteredHosts,
     hostNameFilter,
+    folderFilters,
     sortColumn,
     sortOrder,
     activeFiltersCount,
     setHostNameFilter,
-    setFolderFilters: setFolderFiltersFromHook,
+    setFolderFilters,
     resetFilters,
   } = useHostsFilter(hosts, filterOptions, undefined)
 
@@ -161,20 +129,6 @@ export default function HostsInventoryPage() {
     handlePageChange,
     setPageSize,
   } = useHostsPagination(filteredHosts)
-
-  // Sync folderFilters to filter hook
-  useEffect(() => {
-    setFolderFiltersFromHook(folderFilters)
-  }, [folderFilters, setFolderFiltersFromHook])
-
-  // Actions - now using modal hook functions
-  const handleViewHost = useCallback((host: CheckMKHost) => {
-    openHostModal(host)
-  }, [openHostModal])
-
-  const handleViewInventory = useCallback((host: CheckMKHost) => {
-    openInventoryModal(host)
-  }, [openInventoryModal])
 
   // Load CheckMK config on mount
   useEffect(() => {
@@ -294,7 +248,7 @@ export default function HostsInventoryPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={reloadHosts}
+                onClick={() => void refetch()}
                 className="text-white hover:bg-white/20 text-xs h-7"
                 disabled={isLoading}
                 title="Reload hosts from CheckMK"
@@ -452,7 +406,7 @@ export default function HostsInventoryPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleViewHost(host)}
+                              onClick={() => openHostModal(host)}
                               title="View Host in CheckMK"
                             >
                               <Eye className="h-3 w-3 mr-1" />
@@ -462,7 +416,7 @@ export default function HostsInventoryPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleViewInventory(host)}
+                              onClick={() => openInventoryModal(host)}
                               title="View Inventory"
                             >
                               <Server className="h-3 w-3 mr-1" />
