@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Folder, FolderOpen, ChevronRight, ChevronDown } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,9 +11,10 @@ interface FileTreeProps {
   tree: GitTreeNode | null
   selectedPath: string
   onDirectorySelect: (path: string) => void
+  highlightedDirectories?: Set<string>
 }
 
-export function FileTree({ tree, selectedPath, onDirectorySelect }: FileTreeProps) {
+export function FileTree({ tree, selectedPath, onDirectorySelect, highlightedDirectories }: FileTreeProps) {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set(['']))
 
   const toggleExpand = useCallback((path: string) => {
@@ -48,6 +49,7 @@ export function FileTree({ tree, selectedPath, onDirectorySelect }: FileTreeProp
           level={0}
           expandedPaths={expandedPaths}
           selectedPath={selectedPath}
+          highlightedDirectories={highlightedDirectories}
           onToggleExpand={toggleExpand}
           onDirectoryClick={handleDirectoryClick}
         />
@@ -61,6 +63,7 @@ interface TreeNodeProps {
   level: number
   expandedPaths: Set<string>
   selectedPath: string
+  highlightedDirectories?: Set<string>
   onToggleExpand: (path: string) => void
   onDirectoryClick: (path: string) => void
 }
@@ -70,11 +73,13 @@ const TreeNode = ({
   level,
   expandedPaths,
   selectedPath,
+  highlightedDirectories,
   onToggleExpand,
   onDirectoryClick,
 }: TreeNodeProps) => {
   const isExpanded = expandedPaths.has(node.path)
   const isSelected = selectedPath === node.path
+  const isHighlighted = highlightedDirectories?.has(node.path)
   const hasChildren = node.children && node.children.length > 0
 
   const handleToggle = useCallback(() => {
@@ -91,7 +96,7 @@ const TreeNode = ({
     <div>
       <div
         className={`flex items-center gap-1 py-1 px-2 rounded cursor-pointer hover:bg-gray-100 transition-colors ${
-          isSelected ? 'bg-gray-200' : ''
+          isSelected ? 'bg-gray-200' : isHighlighted ? 'bg-yellow-100' : ''
         }`}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onClick={handleClick}
@@ -145,6 +150,7 @@ const TreeNode = ({
               level={level + 1}
               expandedPaths={expandedPaths}
               selectedPath={selectedPath}
+              highlightedDirectories={highlightedDirectories}
               onToggleExpand={onToggleExpand}
               onDirectoryClick={onDirectoryClick}
             />

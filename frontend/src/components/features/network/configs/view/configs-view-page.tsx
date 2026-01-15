@@ -26,6 +26,9 @@ export default function ConfigsViewPage() {
   const [selectedRepository, setSelectedRepository] = useState<number | null>(null)
   const [selectedDirectoryPath, setSelectedDirectoryPath] = useState<string>('')
   const [filterText, setFilterText] = useState<string>('')
+  const [globalSearchText, setGlobalSearchText] = useState<string>('')
+  const [searchResults, setSearchResults] = useState<{directories: Set<string>, files: Array<{name: string, path: string, directory: string}>} | null>(null)
+  const [isSearching, setIsSearching] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -97,6 +100,64 @@ export default function ConfigsViewPage() {
   const handleDirectorySelect = useCallback((path: string) => {
     setSelectedDirectoryPath(path)
   }, [])
+
+  // Handle global search
+  const handleGlobalSearch = useCallback(async (searchText: string) => {
+    setGlobalSearchText(searchText)
+    
+    if (!selectedRepository || !searchText.trim()) {
+      setSearchResults(null)
+      return
+    }
+
+    try {
+      setIsSearching(true)
+      const response = await apiCall<{
+        success: boolean
+        data: {
+          files: Array<{name: string, path: string, directory: string}>
+          filtered_count: number
+        }
+      }>(`git/${selectedRepository}/files/search?query=${encodeURIComponent(searchText)}&limit=1000`)
+      
+      if (response?.data?.files) {
+        // Extract unique directories from search results
+        const directories = new Set<string>()
+        response.data.files.forEach(file => {
+          if (file.directory) {
+            directories.add(file.directory)
+            // Also add parent directories
+            const parts = file.directory.split('/')
+            let currentPath = ''
+            parts.forEach(part => {
+              currentPath = currentPath ? `${currentPath}/${part}` : part
+              directories.add(currentPath)
+            })
+          } else {
+            directories.add('') // Root directory
+          }
+        })
+        
+        setSearchResults({
+          directories,
+          files: response.data.files
+        })
+      }
+    } catch (err) {
+      console.error('Search failed:', err)
+      setSearchResults(null)
+    } finally {
+      setIsSearching(false)
+    }
+  }, [selectedRepository, apiCall])
+
+  // Debounce global search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleGlobalSearch(globalSearchText)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [globalSearchText, handleGlobalSearch])
 
   const handleShowHistory = useCallback((file: FileWithCommit) => {
     setFileHistoryDialog({
@@ -210,12 +271,38 @@ export default function ConfigsViewPage() {
                 ))}
               </SelectContent>
             </Select>
+            {selectedRepository && (
+              <div className="relative w-80">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search files in repository..."
+                  value={globalSearchText}
+                  onChange={(e) => setGlobalSearchText(e.target.value)}
+                  className="pl-9 border-2 border-gray-300 focus:border-blue-400"
+                />
+                {isSearching && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                  </div>
+                )}
+              </div>
+            )}
             {repositories.length === 0 && (
               <p className="text-sm text-muted-foreground">
                 No config repositories found. Configure repositories in Settings → Git Management.
               </p>
             )}
           </div>
+          {searchResults && searchResults.files.length > 0 && (
+            <div className="mt-3 text-sm text-muted-foreground">
+              Found {searchResults.files.length} matching file{searchResults.files.length !== 1 ? 's' : ''} in {searchResults.directories.size} director{searchResults.directories.size !== 1 ? 'ies' : 'y'}
+            </div>
+          )}
+          {globalSearchText && searchResults && searchResults.files.length === 0 && (
+            <div className="mt-3 text-sm text-amber-600">
+              No files found matching "{globalSearchText}"
+            </div>
+          )}
         </div>
       </div>
 
@@ -265,6 +352,7 @@ export default function ConfigsViewPage() {
                         tree={treeData || null}
                         selectedPath={selectedDirectoryPath}
                         onDirectorySelect={handleDirectorySelect}
+                        highlightedDirectories={searchResults?.directories}
                       />
                     )}
                   </div>
