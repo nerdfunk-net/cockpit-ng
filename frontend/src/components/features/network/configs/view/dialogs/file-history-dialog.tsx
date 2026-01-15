@@ -100,7 +100,7 @@ export function FileHistoryDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-[90vw] w-[90vw] max-h-[90vh] flex flex-col">
+      <DialogContent className="!max-w-[85vw] !w-[85vw] max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <GitCommit className="h-5 w-5" />
@@ -115,7 +115,7 @@ export function FileHistoryDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0 overflow-x-auto">
           {isLoading && (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
@@ -146,14 +146,14 @@ export function FileHistoryDialog({
               </div>
 
               <ScrollArea className="flex-1">
-                <table className="w-full">
+                <table className="w-full min-w-[900px]">
                   <thead className="border-b sticky top-0 bg-background z-10">
                     <tr>
                       <th className="text-left p-3 font-semibold text-sm w-12">Select</th>
                       <th className="text-left p-3 font-semibold text-sm w-32">Commit</th>
                       <th className="text-left p-3 font-semibold text-sm w-24">Type</th>
-                      <th className="text-left p-3 font-semibold text-sm">Message</th>
-                      <th className="text-left p-3 font-semibold text-sm w-48">Author</th>
+                      <th className="text-left p-3 font-semibold text-sm max-w-xs">Message</th>
+                      <th className="text-left p-3 font-semibold text-sm w-44">Author</th>
                       <th className="text-left p-3 font-semibold text-sm w-48">Date</th>
                     </tr>
                   </thead>
