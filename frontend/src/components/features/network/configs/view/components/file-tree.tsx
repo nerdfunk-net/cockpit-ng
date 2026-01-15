@@ -17,6 +17,13 @@ interface FileTreeProps {
 export function FileTree({ tree, selectedPath, onDirectorySelect, highlightedDirectories }: FileTreeProps) {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set(['']))
 
+  // Auto-expand highlighted directories when search is active
+  useEffect(() => {
+    if (highlightedDirectories && highlightedDirectories.size > 0) {
+      setExpandedPaths(new Set(highlightedDirectories))
+    }
+  }, [highlightedDirectories])
+
   const toggleExpand = useCallback((path: string) => {
     setExpandedPaths(prev => {
       const next = new Set(prev)
