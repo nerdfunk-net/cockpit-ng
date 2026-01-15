@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useToast } from '@/hooks/use-toast'
 
 // Shared form components from add-device
 import {
@@ -71,6 +72,7 @@ export function DeviceSyncModal({
   onClose,
   isSyncing,
 }: DeviceSyncModalProps) {
+  const { toast } = useToast()
   
   // Fetch all dropdown data from Nautobot (for interface types, namespaces, IP roles, etc.)
   const { data: fullDropdownData } = useNautobotDropdownsQuery({
@@ -190,6 +192,50 @@ export function DeviceSyncModal({
     [deviceId, onSync]
   )
 
+  // Handle form errors - show toast when validation fails
+  const onError = React.useCallback(
+    (errors: any) => {
+      console.error('Form validation errors:', errors)
+      
+      // Collect all error messages
+      const errorMessages: string[] = []
+      
+      // Check device info errors
+      if (errors.deviceName) errorMessages.push(`Device Name: ${errors.deviceName.message}`)
+      if (errors.selectedRole) errorMessages.push(`Role: ${errors.selectedRole.message}`)
+      if (errors.selectedStatus) errorMessages.push(`Status: ${errors.selectedStatus.message}`)
+      if (errors.selectedLocation) errorMessages.push(`Location: ${errors.selectedLocation.message}`)
+      if (errors.selectedDeviceType) errorMessages.push(`Device Type: ${errors.selectedDeviceType.message}`)
+      
+      // Check interface errors
+      if (errors.interfaces) {
+        errors.interfaces.forEach((iface: any, idx: number) => {
+          if (iface?.name) errorMessages.push(`Interface ${idx + 1} Name: ${iface.name.message}`)
+          if (iface?.type) errorMessages.push(`Interface ${idx + 1} Type: ${iface.type.message}`)
+          if (iface?.status) errorMessages.push(`Interface ${idx + 1} Status: ${iface.status.message}`)
+          
+          // Check IP address errors
+          if (iface?.ip_addresses) {
+            iface.ip_addresses.forEach((ip: any, ipIdx: number) => {
+              if (ip?.address) errorMessages.push(`Interface ${idx + 1}, IP ${ipIdx + 1} Address: ${ip.address.message}`)
+              if (ip?.namespace) errorMessages.push(`Interface ${idx + 1}, IP ${ipIdx + 1} Namespace: ${ip.namespace.message}`)
+            })
+          }
+        })
+      }
+      
+      // Show toast with all errors
+      toast({
+        title: 'Validation Errors',
+        description: errorMessages.length > 0 
+          ? errorMessages.slice(0, 5).join('\n') + (errorMessages.length > 5 ? '\n...' : '')
+          : 'Please check the form for errors',
+        variant: 'destructive',
+      })
+    },
+    [toast]
+  )
+
   // Determine if device exists
   const isUpdate = Boolean(deviceId)
 
@@ -226,7 +272,7 @@ export function DeviceSyncModal({
               </div>
             </div>
           ) : (
-            <form onSubmit={formHandleSubmit(onSubmit)} className="p-6 space-y-6">
+            <form onSubmit={formHandleSubmit(onSubmit, onError)} className="p-6 space-y-6">
               {/* Device Status */}
               {isUpdate && (
                 <Card className="border-blue-200/60 bg-blue-50/50">

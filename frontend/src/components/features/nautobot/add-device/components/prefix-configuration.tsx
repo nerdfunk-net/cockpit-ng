@@ -37,29 +37,27 @@ export function PrefixConfiguration({ form, isLoading }: PrefixConfigurationProp
             </Label>
           </div>
 
-          {watch('addPrefix') && (
-            <div className="flex items-center gap-2">
-              <Label htmlFor="defaultPrefixLength" className="text-xs font-medium">
-                Prefix Length:
-              </Label>
-              <Select
-                value={watch('defaultPrefixLength')}
-                onValueChange={(value) => setValue('defaultPrefixLength', value)}
-                disabled={isLoading}
-              >
-                <SelectTrigger id="defaultPrefixLength" className="w-24 h-8 border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PREFIX_LENGTH_OPTIONS.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <Label htmlFor="defaultPrefixLength" className="text-xs font-medium">
+              Prefix Length:
+            </Label>
+            <Select
+              value={watch('defaultPrefixLength')}
+              onValueChange={(value) => setValue('defaultPrefixLength', value)}
+              disabled={isLoading || !watch('addPrefix')}
+            >
+              <SelectTrigger id="defaultPrefixLength" className="w-24 h-8 border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PREFIX_LENGTH_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
     </div>
