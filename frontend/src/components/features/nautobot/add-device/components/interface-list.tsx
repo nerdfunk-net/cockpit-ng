@@ -10,11 +10,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, Trash2, Settings } from 'lucide-react'
+import { Plus, Trash2, Settings, X } from 'lucide-react'
 import { UseFormReturn, useFieldArray } from 'react-hook-form'
 import type { DeviceFormValues } from '../validation'
 import type { NautobotDropdownsResponse } from '../types'
-import { DEFAULT_INTERFACE } from '../constants'
+import { DEFAULT_INTERFACE, DEFAULT_IP_ADDRESS } from '../constants'
 
 interface InterfaceListProps {
   form: UseFormReturn<DeviceFormValues>
@@ -38,11 +38,20 @@ export function InterfaceList({
 
   const handleAddInterface = () => {
     const newId = Date.now().toString()
+    // Auto-select namespace if only one is available
+    const defaultNamespace = dropdownData.nautobotDefaults?.namespace ||
+      (dropdownData.namespaces.length === 1 ? dropdownData.namespaces[0]?.id : '') || ''
+    
     append({
       id: newId,
       ...DEFAULT_INTERFACE,
       status: dropdownData.nautobotDefaults?.interface_status || '',
-      namespace: dropdownData.nautobotDefaults?.namespace || '',
+      ip_addresses: [{
+        id: '1',
+        ...DEFAULT_IP_ADDRESS,
+        namespace: defaultNamespace,
+        ip_role: 'none',
+      }],
     })
   }
 
@@ -68,7 +77,7 @@ export function InterfaceList({
         {fields.map((field, index) => {
           const interfaceErrors = errors.interfaces?.[index]
           return (
-            <div key={field.id} className="p-4 border rounded-lg space-y-3 bg-muted/20">
+            <div key={field.id} className="p-3 border rounded-lg space-y-2 bg-muted/20">
               <div className="flex items-center justify-between">
                 <Badge variant="outline">Interface {index + 1}</Badge>
                 <div className="flex items-center gap-2">
@@ -97,8 +106,8 @@ export function InterfaceList({
                 </div>
               </div>
 
-              {/* Row 1: Interface Name, Type, Status */}
-              <div className="grid grid-cols-3 gap-3">
+              {/* Interface Fields - All in one row */}
+              <div className="grid grid-cols-3 gap-4">
                 {/* Interface Name */}
                 <div className="space-y-1">
                   <Label className="text-xs font-medium">
@@ -168,62 +177,149 @@ export function InterfaceList({
                 </div>
               </div>
 
-              {/* Row 2: IP Address, Namespace, Primary IPv4 */}
-              <div className="grid grid-cols-3 gap-3">
-                {/* IP Address */}
-                <div className="space-y-1">
-                  <Label className="text-xs font-medium">IP Address</Label>
-                  <Input
-                    {...register(`interfaces.${index}.ip_address`)}
-                    placeholder="e.g., 192.168.1.10/24"
+              {/* IP Addresses Section */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium">IP Addresses</Label>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const currentIps = watch(`interfaces.${index}.ip_addresses`) || []
+                      // Auto-select namespace if only one is available
+                      const defaultNamespace = dropdownData.nautobotDefaults?.namespace ||
+                        (dropdownData.namespaces.length === 1 ? dropdownData.namespaces[0]?.id : '') || ''
+                      
+                      setValue(`interfaces.${index}.ip_addresses`, [
+                        ...currentIps,
+                        {
+                          id: Date.now().toString(),
+                          ...DEFAULT_IP_ADDRESS,
+                          namespace: defaultNamespace,
+                          ip_role: 'none',
+                        },
+                      ])
+                    }}
                     disabled={isLoading}
-                    className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
-                  />
-                  {interfaceErrors?.ip_address && (
-                    <p className="text-xs text-destructive">{interfaceErrors.ip_address.message}</p>
-                  )}
-                </div>
-
-                {/* Namespace */}
-                <div className="space-y-1">
-                  <Label className="text-xs font-medium">Namespace</Label>
-                  <Select
-                    value={watch(`interfaces.${index}.namespace`) || ''}
-                    onValueChange={(value) => setValue(`interfaces.${index}.namespace`, value)}
-                    disabled={isLoading}
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
                   >
-                    <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
-                      <SelectValue placeholder="Select namespace..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {dropdownData.namespaces.map((ns) => (
-                        <SelectItem key={ns.id} value={ns.id}>
-                          {ns.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {interfaceErrors?.namespace && (
-                    <p className="text-xs text-destructive">{interfaceErrors.namespace.message}</p>
-                  )}
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add IP
+                  </Button>
                 </div>
 
-                {/* Primary IPv4 Checkbox */}
-                <div className="space-y-1">
-                  <Label className="text-xs font-medium">Primary IP</Label>
-                  <div className="flex items-center h-9 px-3 rounded-md border border-input bg-background">
-                    <Checkbox
-                      checked={watch(`interfaces.${index}.is_primary_ipv4`) || false}
-                      onCheckedChange={(checked) =>
-                        setValue(`interfaces.${index}.is_primary_ipv4`, checked as boolean)
-                      }
-                      disabled={isLoading}
-                    />
-                    <label className="ml-2 text-xs font-normal cursor-pointer">
-                      Set as Primary IPv4
-                    </label>
-                  </div>
-                </div>
+                {(watch(`interfaces.${index}.ip_addresses`) || []).map((_, ipIndex) => {
+                  const ipErrors = interfaceErrors?.ip_addresses?.[ipIndex]
+                  const ipAddresses = watch(`interfaces.${index}.ip_addresses`) || []
+                  
+                  return (
+                    <div key={ipIndex} className="p-3 border rounded bg-slate-50 space-y-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge variant="secondary" className="text-xs">IP {ipIndex + 1}</Badge>
+                        {ipAddresses.length > 1 && (
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              const updated = ipAddresses.filter((_, i) => i !== ipIndex)
+                              setValue(`interfaces.${index}.ip_addresses`, updated)
+                            }}
+                            disabled={isLoading}
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0"
+                          >
+                            <X className="h-3 w-3 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* All IP fields in one row */}
+                      <div className="grid grid-cols-4 gap-3">
+                        {/* IP Address */}
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium">
+                            Address <span className="text-destructive">*</span>
+                          </Label>
+                          <Input
+                            {...register(`interfaces.${index}.ip_addresses.${ipIndex}.address`)}
+                            placeholder="192.168.1.10/24"
+                            disabled={isLoading}
+                            className="border-2 border-slate-300 bg-white text-xs h-8"
+                          />
+                          {ipErrors?.address && (
+                            <p className="text-xs text-destructive">{ipErrors.address.message}</p>
+                          )}
+                        </div>
+
+                        {/* Namespace */}
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium">
+                            Namespace <span className="text-destructive">*</span>
+                          </Label>
+                          <Select
+                            value={watch(`interfaces.${index}.ip_addresses.${ipIndex}.namespace`)}
+                            onValueChange={(value) => setValue(`interfaces.${index}.ip_addresses.${ipIndex}.namespace`, value)}
+                            disabled={isLoading}
+                          >
+                            <SelectTrigger className="border-2 border-slate-300 bg-white text-xs h-8">
+                              <SelectValue placeholder="Select..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {dropdownData.namespaces.map((ns) => (
+                                <SelectItem key={ns.id} value={ns.id}>
+                                  {ns.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {ipErrors?.namespace && (
+                            <p className="text-xs text-destructive">{ipErrors.namespace.message}</p>
+                          )}
+                        </div>
+
+                        {/* IP Role */}
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium">IP Role</Label>
+                          <Select
+                            value={watch(`interfaces.${index}.ip_addresses.${ipIndex}.ip_role`) || 'none'}
+                            onValueChange={(value) => setValue(`interfaces.${index}.ip_addresses.${ipIndex}.ip_role`, value)}
+                            disabled={isLoading}
+                          >
+                            <SelectTrigger className="border-2 border-slate-300 bg-white text-xs h-8">
+                              <SelectValue placeholder="Select..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">None</SelectItem>
+                              {dropdownData.ipRoles.map((role) => (
+                                <SelectItem key={role.id} value={role.id}>
+                                  {role.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Primary Checkbox */}
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium">Primary</Label>
+                          <div className="flex items-center h-8 px-2 rounded-md border border-input bg-background">
+                            <Checkbox
+                              checked={watch(`interfaces.${index}.ip_addresses.${ipIndex}.is_primary`) || false}
+                              onCheckedChange={(checked) =>
+                                setValue(`interfaces.${index}.ip_addresses.${ipIndex}.is_primary`, checked as boolean)
+                              }
+                              disabled={isLoading}
+                            />
+                            <label className="ml-2 text-xs font-normal cursor-pointer">
+                              Primary
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )

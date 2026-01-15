@@ -34,6 +34,16 @@ export const EMPTY_OBJECT: Record<string, string> = {}
 // ============================================================================
 
 /**
+ * Default IP address template
+ */
+export const DEFAULT_IP_ADDRESS = {
+  address: '',
+  namespace: '',
+  ip_role: 'none',
+  is_primary: false,
+}
+
+/**
  * Default interface template
  * Used when creating new interfaces
  */
@@ -41,11 +51,9 @@ export const DEFAULT_INTERFACE: Omit<InterfaceData, 'id'> = {
   name: '',
   type: '',
   status: '',
-  ip_address: '',
-  namespace: '',
+  ip_addresses: [],
   enabled: true,
   mgmt_only: false,
-  is_primary_ipv4: false,
 } as const
 
 // ============================================================================

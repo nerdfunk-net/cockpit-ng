@@ -22,7 +22,7 @@ import { useAuthStore } from '@/lib/auth-store'
 
 import { HostDetailsModal } from '../modals/host-details-modal'
 import { InventoryModal } from '../modals/inventory-modal'
-import { SyncToNautobotModal } from '../modals/sync-to-nautobot-modal'
+import { DeviceSyncModal } from '../modals/device-sync-modal'
 
 import { useCheckmkHostsQuery } from './queries/use-checkmk-hosts-query'
 import { useHostsFilter } from './hooks/use-hosts-filter'
@@ -91,22 +91,16 @@ export default function HostsInventoryPage() {
   // Nautobot sync hook
   const {
     isSyncModalOpen,
-    selectedHostForSync,
     nautobotDevice,
-    checkingNautobot,
     nautobotMetadata,
     propertyMappings,
     loadingMetadata,
-    inventoryData,
-    loadingInventory,
     ipAddressStatuses,
-    ipAddressRoles,
+    interfaceMappings,
     handleSyncToNautobot,
-    updatePropertyMapping,
-    updatePropertyMappings,
-    updateInterfaceMappings,
     executeSyncToNautobot,
-    closeSyncModal
+    closeSyncModal,
+    isSyncing,
   } = useNautobotSync({ checkmkConfig, onMessage: showMessage })
   
   const {
@@ -539,23 +533,17 @@ export default function HostsInventoryPage() {
       />
 
       {/* Sync to Nautobot Modal */}
-      <SyncToNautobotModal
+      <DeviceSyncModal
         open={isSyncModalOpen}
-        onOpenChange={closeSyncModal}
-        host={selectedHostForSync}
-        nautobotDevice={nautobotDevice}
-        checkingNautobot={checkingNautobot}
-        nautobotMetadata={nautobotMetadata}
+        deviceId={nautobotDevice?.id as string | undefined}
         propertyMappings={propertyMappings}
+        nautobotMetadata={nautobotMetadata}
         loadingMetadata={loadingMetadata}
-        inventoryData={inventoryData}
-        loadingInventory={loadingInventory}
+        interfaceMappings={interfaceMappings}
         ipAddressStatuses={ipAddressStatuses}
-        ipAddressRoles={ipAddressRoles}
         onSync={executeSyncToNautobot}
-        onUpdateMapping={updatePropertyMapping}
-        onUpdatePropertyMappings={updatePropertyMappings}
-        onUpdateInterfaceMappings={updateInterfaceMappings}
+        onClose={closeSyncModal}
+        isSyncing={isSyncing}
       />
     </div>
   )

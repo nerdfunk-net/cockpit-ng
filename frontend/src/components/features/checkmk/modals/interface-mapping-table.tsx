@@ -53,16 +53,25 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
     const defaultStatus = ipAddressStatuses?.[0]?.name || 'Active'
     const defaultIpRole = 'none' // Default to 'none' - no role assigned
 
-    ipAddressRows.forEach((row, index) => {
+    // Track first IP per interface for isPrimary
+    const firstIpPerInterface = new Map<number, boolean>()
+
+    ipAddressRows.forEach((row) => {
+      const isFirstIpOnInterface = !firstIpPerInterface.has(row.interface.index)
+      if (isFirstIpOnInterface) {
+        firstIpPerInterface.set(row.interface.index, true)
+      }
+
       initial[row.rowKey] = {
         enabled: row.interface.oper_status === 1, // Enable only if interface is operationally up
         ipRole: defaultIpRole,
         status: defaultStatus,
         ipAddress: `${row.ipAddress.address}/${row.ipAddress.cidr}`, // Default value from inventory
         interfaceName: row.interface.name, // Default interface name from inventory
-        isPrimary: index === 0 && row.interface.oper_status === 1, // First enabled interface is primary by default
+        isPrimary: isFirstIpOnInterface && row.interface.oper_status === 1, // First IP on each interface is primary
       }
     })
+    
     return initial
   })
 

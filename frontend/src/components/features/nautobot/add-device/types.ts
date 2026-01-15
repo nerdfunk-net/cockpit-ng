@@ -93,9 +93,13 @@ export interface InterfaceData {
   name: string
   type: string
   status: string
-  ip_address: string
-  namespace?: string
-  is_primary_ipv4?: boolean
+  ip_addresses: Array<{
+    id: string
+    address: string
+    namespace: string
+    ip_role: string
+    is_primary?: boolean
+  }>
   // Optional properties
   enabled?: boolean
   mgmt_only?: boolean
@@ -159,6 +163,7 @@ export interface NautobotDropdownsResponse {
   interfaceTypes: InterfaceTypeOption[]
   interfaceStatuses: DropdownOption[]
   namespaces: DropdownOption[]
+  ipRoles: DropdownOption[]
   nautobotDefaults: NautobotDefaults | null
 }
 

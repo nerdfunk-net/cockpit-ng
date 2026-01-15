@@ -1,7 +1,10 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useApi } from '@/hooks/use-api'
 import type { CheckMKHost, CheckMKConfig, NautobotMetadata, PropertyMapping } from '@/types/checkmk/types'
-import { initializePropertyMappings, buildDevicePayload, type InterfaceMappingData } from '@/lib/checkmk/property-mapping-utils'
+import { initializePropertyMappings, type InterfaceMappingData } from '@/lib/checkmk/property-mapping-utils'
+import { formatDeviceSubmissionData } from '@/components/features/nautobot/add-device/utils'
+import type { DeviceFormValues } from '@/components/shared/device-form'
+import { parseInterfacesFromInventory, type CheckMKInterface } from '@/lib/checkmk/interface-mapping-utils'
 
 interface UseNautobotSyncProps {
   checkmkConfig: CheckMKConfig | null
@@ -20,12 +23,12 @@ interface UseNautobotSyncReturn {
   loadingInventory: boolean
   ipAddressStatuses: Array<{ id: string; name: string }> | null
   ipAddressRoles: Array<{ id: string; name: string }> | null
+  interfaceMappings: Record<string, InterfaceMappingData>
   handleSyncToNautobot: (host: CheckMKHost) => Promise<void>
   updatePropertyMapping: (checkMkKey: string, nautobotField: string) => void
-  updatePropertyMappings: (mappings: Record<string, PropertyMapping>) => void
-  updateInterfaceMappings: (mappings: Record<string, InterfaceMappingData>) => void
-  executeSyncToNautobot: () => Promise<void>
+  executeSyncToNautobot: (formData: DeviceFormValues, deviceId?: string) => Promise<void>
   closeSyncModal: () => void
+  isSyncing: boolean
 }
 
 const EMPTY_MAPPINGS: Record<string, PropertyMapping> = {}
@@ -58,6 +61,9 @@ export function useNautobotSync({
   const [ipAddressRoles, setIpAddressRoles] = useState<Array<{ id: string; name: string }> | null>(null)
 
   // Interface mappings
+
+  // Syncing state
+  const [isSyncing, setIsSyncing] = useState(false)
   const [interfaceMappings, setInterfaceMappings] = useState<Record<string, InterfaceMappingData>>({})
 
   /**
@@ -69,10 +75,39 @@ export function useNautobotSync({
       const response = await apiCall<{ success: boolean; message: string; data: Record<string, unknown> }>(
         `checkmk/inventory/${hostName}`
       )
-      setInventoryData(response?.data || null)
+      const inventoryData = response?.data || null
+      setInventoryData(inventoryData)
+      
+      // Parse interfaces from inventory and create interface mappings
+      if (inventoryData) {
+        const interfaces = parseInterfacesFromInventory(inventoryData)
+        const mappings: Record<string, InterfaceMappingData> = {}
+        let mappingCounter = 0
+        
+        interfaces.forEach((iface: CheckMKInterface) => {
+          // Create a mapping for EACH IP address on the interface
+          if (iface.ipAddresses.length > 0) {
+            iface.ipAddresses.forEach((ipAddr, ipIndex) => {
+              const ipAddress = `${ipAddr.address}/${ipAddr.cidr}`
+              
+              mappings[`interface_${mappingCounter++}`] = {
+                enabled: iface.oper_status === 1, // Enable only if interface is operationally up
+                ipRole: ipIndex === 0 ? 'primary' : 'secondary', // First IP on interface is primary, others are secondary
+                status: 'Active',
+                ipAddress,
+                interfaceName: iface.name,
+                isPrimary: ipIndex === 0, // First IP on each interface is primary
+              }
+            })
+          }
+        })
+        
+        setInterfaceMappings(mappings)
+      }
     } catch (err) {
       console.error('Failed to load inventory:', err)
       setInventoryData(null)
+      setInterfaceMappings({})
     } finally {
       setLoadingInventory(false)
     }
@@ -212,68 +247,39 @@ export function useNautobotSync({
   }, [])
 
   /**
-   * Update all property mappings at once (used by modal for role selection)
-   */
-  const updatePropertyMappings = useCallback((mappings: Record<string, PropertyMapping>) => {
-    setPropertyMappings(mappings)
-  }, [])
-
-  /**
-   * Update interface mappings from the interface table
-   */
-  const updateInterfaceMappings = useCallback((mappings: Record<string, InterfaceMappingData>) => {
-    setInterfaceMappings(mappings)
-  }, [])
-
-  /**
    * Execute sync to Nautobot
+   * Now accepts form data directly from the shared form
    */
-  const executeSyncToNautobot = useCallback(async () => {
+  const executeSyncToNautobot = useCallback(async (formData: DeviceFormValues, deviceId?: string) => {
     if (!selectedHostForSync) return
     
     try {
+      setIsSyncing(true)
       onMessage(`Syncing ${selectedHostForSync.host_name} to Nautobot...`, 'info')
       
-      // Build the device payload from mappings using utility function
-      const { devicePayload } = buildDevicePayload(propertyMappings, nautobotMetadata, interfaceMappings)
+      // Format form data for submission (same as add-device)
+      const submissionData = formatDeviceSubmissionData(formData)
       
-      // Check if device exists in Nautobot
-      if (nautobotDevice) {
+      // Check if device exists (use provided deviceId or nautobotDevice)
+      const existingDeviceId = deviceId || (nautobotDevice?.id as string | undefined)
+      
+      if (existingDeviceId) {
         // Device exists - use PATCH to update
-        const deviceId = nautobotDevice.id as string
-        
         onMessage(`Updating existing device in Nautobot...`, 'info')
         
-        await apiCall(`nautobot/devices/${deviceId}`, {
+        await apiCall(`nautobot/devices/${existingDeviceId}`, {
           method: 'PATCH',
-          body: JSON.stringify(devicePayload)
+          body: JSON.stringify(submissionData)
         })
         
         onMessage(`Successfully updated ${selectedHostForSync.host_name} in Nautobot`, 'success')
       } else {
         // Device doesn't exist - use POST to create
-        // Validate required fields for creation
-        if (!devicePayload.name) {
-          throw new Error('Device name is required')
-        }
-        if (!devicePayload.role) {
-          throw new Error('Device role is required')
-        }
-        if (!devicePayload.status) {
-          throw new Error('Device status is required')
-        }
-        if (!devicePayload.location) {
-          throw new Error('Device location is required')
-        }
-        if (!devicePayload.device_type) {
-          throw new Error('Device type is required')
-        }
-        
         onMessage(`Creating new device in Nautobot...`, 'info')
         
         await apiCall('nautobot/add-device', {
           method: 'POST',
-          body: JSON.stringify(devicePayload)
+          body: JSON.stringify(submissionData)
         })
         
         onMessage(`Successfully created ${selectedHostForSync.host_name} in Nautobot`, 'success')
@@ -284,8 +290,10 @@ export function useNautobotSync({
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to sync to Nautobot'
       onMessage(`Failed to sync ${selectedHostForSync.host_name}: ${message}`, 'error')
+    } finally {
+      setIsSyncing(false)
     }
-  }, [selectedHostForSync, propertyMappings, nautobotMetadata, interfaceMappings, nautobotDevice, apiCall, onMessage])
+  }, [selectedHostForSync, nautobotDevice, apiCall, onMessage])
 
   /**
    * Close sync modal
@@ -320,12 +328,12 @@ export function useNautobotSync({
     loadingInventory,
     ipAddressStatuses,
     ipAddressRoles,
+    interfaceMappings,
     handleSyncToNautobot,
     updatePropertyMapping,
-    updatePropertyMappings,
-    updateInterfaceMappings,
     executeSyncToNautobot,
-    closeSyncModal
+    closeSyncModal,
+    isSyncing,
   }), [
     isSyncModalOpen,
     selectedHostForSync,
@@ -338,11 +346,11 @@ export function useNautobotSync({
     loadingInventory,
     ipAddressStatuses,
     ipAddressRoles,
+    interfaceMappings,
     handleSyncToNautobot,
     updatePropertyMapping,
-    updatePropertyMappings,
-    updateInterfaceMappings,
     executeSyncToNautobot,
-    closeSyncModal
+    closeSyncModal,
+    isSyncing,
   ])
 }

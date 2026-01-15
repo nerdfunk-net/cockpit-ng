@@ -55,6 +55,7 @@ export function AddDevicePage() {
       interfaceTypes: EMPTY_INTERFACE_TYPES,
       interfaceStatuses: EMPTY_DROPDOWN_OPTIONS,
       namespaces: EMPTY_DROPDOWN_OPTIONS,
+      ipRoles: EMPTY_DROPDOWN_OPTIONS,
       nautobotDefaults: null,
     },
     isLoading: isLoadingDropdowns,

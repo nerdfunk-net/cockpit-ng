@@ -125,8 +125,13 @@ class DeviceCreationService:
         for i, iface in enumerate(request.interfaces):
             logger.info(
                 f"  Interface {i + 1}: name={iface.name}, type={iface.type}, "
-                f"ip={iface.ip_address}, is_primary={iface.is_primary_ipv4}, ip_role={getattr(iface, 'ip_role', 'NOT_SET')}"
+                f"ip_addresses_count={len(iface.ip_addresses)}"
             )
+            for j, ip_data in enumerate(iface.ip_addresses):
+                logger.info(
+                    f"    IP {j + 1}: address={ip_data.address}, namespace={ip_data.namespace}, "
+                    f"role={ip_data.ip_role}, is_primary={ip_data.is_primary}"
+                )
 
     async def _step1_create_device(
         self, request: AddDeviceRequest, workflow_status: dict
@@ -204,20 +209,22 @@ class DeviceCreationService:
         """
         logger.info("Step 1.5: Creating parent prefixes for IP addresses")
 
-        interfaces_with_ips = [
-            iface for iface in request.interfaces if iface.ip_address
-        ]
+        # Collect all IP addresses from all interfaces
+        ip_address_list = []
+        for interface in request.interfaces:
+            for ip_data in interface.ip_addresses:
+                ip_address_list.append((interface.name, ip_data))
 
-        if not interfaces_with_ips:
+        if not ip_address_list:
             logger.info("No IP addresses to create prefixes for")
             return
 
         prefixes_created = set()  # Track created prefixes to avoid duplicates
 
-        for interface in interfaces_with_ips:
+        for interface_name, ip_data in ip_address_list:
             try:
-                ip_str = interface.ip_address.strip()
-                namespace = interface.namespace or "Global"
+                ip_str = ip_data.address.strip()
+                namespace = ip_data.namespace or "Global"
 
                 # Determine if IP has CIDR notation
                 if "/" in ip_str:
@@ -265,7 +272,7 @@ class DeviceCreationService:
 
             except Exception as e:
                 logger.error(
-                    f"Error creating prefix for interface {interface.name} with IP {interface.ip_address}: {e}"
+                    f"Error creating prefix for interface {interface_name} with IP {ip_data.address}: {e}"
                 )
                 # Continue with other interfaces - prefix creation failures shouldn't stop device creation
                 continue
@@ -281,51 +288,60 @@ class DeviceCreationService:
         Step 2: Create IP addresses for all interfaces.
 
         Returns:
-            dict mapping interface name to IP address ID
+            dict mapping "interface_name:ip_address" to IP address ID
         """
         logger.info("Step 2: Creating IP addresses")
         workflow_status["step2_ip_addresses"]["status"] = "in_progress"
         ip_address_map = {}
 
-        interfaces_with_ips = [
-            iface for iface in request.interfaces if iface.ip_address
-        ]
+        # Collect all IP addresses from all interfaces
+        ip_address_list = []
+        for interface in request.interfaces:
+            for ip_data in interface.ip_addresses:
+                ip_address_list.append((interface.name, ip_data))
 
-        if not interfaces_with_ips:
+        if not ip_address_list:
             workflow_status["step2_ip_addresses"]["status"] = "skipped"
             workflow_status["step2_ip_addresses"]["message"] = (
                 "No IP addresses to create"
             )
             return ip_address_map
 
-        for interface in interfaces_with_ips:
+        for interface_name, ip_data in ip_address_list:
             try:
-                if not interface.namespace:
+                if not ip_data.namespace:
                     workflow_status["step2_ip_addresses"]["errors"].append(
                         {
-                            "interface": interface.name,
-                            "ip_address": interface.ip_address,
+                            "interface": interface_name,
+                            "ip_address": ip_data.address,
                             "error": "Namespace is required for all IP addresses",
                         }
                     )
                     logger.error(
-                        f"Missing namespace for IP address {interface.ip_address} "
-                        f"on interface {interface.name}"
+                        f"Missing namespace for IP address {ip_data.address} "
+                        f"on interface {interface_name}"
                     )
                     continue
 
+                # Find interface status (use first interface match)
+                interface_status = "active"
+                for iface in request.interfaces:
+                    if iface.name == interface_name:
+                        interface_status = iface.status
+                        break
+
                 ip_payload = {
-                    "address": interface.ip_address,
-                    "status": interface.status,
-                    "namespace": interface.namespace,
+                    "address": ip_data.address,
+                    "status": interface_status,
+                    "namespace": ip_data.namespace,
                 }
                 
-                # Add role if specified
-                if interface.ip_role:
-                    ip_payload["role"] = interface.ip_role
-                    logger.info(f"[DEBUG] Adding role '{interface.ip_role}' to IP payload for {interface.ip_address}")
+                # Add role if specified (skip if 'none')
+                if ip_data.ip_role and ip_data.ip_role != 'none':
+                    ip_payload["role"] = ip_data.ip_role
+                    logger.info(f"[DEBUG] Adding role '{ip_data.ip_role}' to IP payload for {ip_data.address}")
                 else:
-                    logger.info(f"[DEBUG] No ip_role specified for {interface.ip_address}")
+                    logger.info(f"[DEBUG] No ip_role specified for {ip_data.address}")
                 
                 logger.info(f"[DEBUG] IP payload for creation: {ip_payload}")
 
@@ -336,30 +352,30 @@ class DeviceCreationService:
 
                     if ip_response and "id" in ip_response:
                         # Use interface name + IP address as key to support multiple IPs per interface
-                        map_key = f"{interface.name}:{interface.ip_address}"
+                        map_key = f"{interface_name}:{ip_data.address}"
                         ip_address_map[map_key] = ip_response["id"]
                         workflow_status["step2_ip_addresses"]["data"].append(
                             {
-                                "interface": interface.name,
-                                "ip_address": interface.ip_address,
+                                "interface": interface_name,
+                                "ip_address": ip_data.address,
                                 "id": ip_response["id"],
                                 "status": "success",
                             }
                         )
                         logger.info(
-                            f"Created IP address {interface.ip_address} with ID: {ip_response['id']} (map_key: {map_key})"
+                            f"Created IP address {ip_data.address} with ID: {ip_response['id']} (map_key: {map_key})"
                         )
                     else:
                         workflow_status["step2_ip_addresses"]["errors"].append(
                             {
-                                "interface": interface.name,
-                                "ip_address": interface.ip_address,
+                                "interface": interface_name,
+                                "ip_address": ip_data.address,
                                 "error": "No IP ID returned from Nautobot",
                             }
                         )
                         logger.warning(
-                            f"Failed to create IP address {interface.ip_address} "
-                            f"for interface {interface.name}"
+                            f"Failed to create IP address {ip_data.address} "
+                            f"for interface {interface_name}"
                         )
 
                 except Exception as create_error:
@@ -368,7 +384,7 @@ class DeviceCreationService:
                     # Check if this is an "already exists" error
                     if "already exists" in error_msg.lower():
                         logger.info(
-                            f"IP address {interface.ip_address} already exists in IPAM, looking it up..."
+                            f"IP address {ip_data.address} already exists in IPAM, looking it up..."
                         )
 
                         # Try to find the existing IP address using GraphQL
@@ -383,8 +399,8 @@ class DeviceCreationService:
                             """
 
                             variables = {
-                                "filter": [interface.ip_address],
-                                "namespace": [interface.namespace],
+                                "filter": [ip_data.address],
+                                "namespace": [ip_data.namespace],
                             }
 
                             result = await nautobot_service.graphql_query(
@@ -400,47 +416,47 @@ class DeviceCreationService:
                                 if ip_addresses and len(ip_addresses) > 0:
                                     existing_ip = ip_addresses[0]
                                     ip_id = existing_ip["id"]
-                                    map_key = f"{interface.name}:{interface.ip_address}"
+                                    map_key = f"{interface_name}:{ip_data.address}"
                                     ip_address_map[map_key] = ip_id
                                     workflow_status["step2_ip_addresses"][
                                         "data"
                                     ].append(
                                         {
-                                            "interface": interface.name,
-                                            "ip_address": interface.ip_address,
+                                            "interface": interface_name,
+                                            "ip_address": ip_data.address,
                                             "id": ip_id,
                                             "status": "existing",
                                         }
                                     )
                                     logger.info(
-                                        f"Found existing IP address {interface.ip_address} with ID: {ip_id} (map_key: {map_key})"
+                                        f"Found existing IP address {ip_data.address} with ID: {ip_id} (map_key: {map_key})"
                                     )
                                     continue  # Skip error handling below
                                 else:
                                     logger.warning(
-                                        f"IP address {interface.ip_address} reported as existing but lookup returned no results"
+                                        f"IP address {ip_data.address} reported as existing but lookup returned no results"
                                     )
                             else:
                                 logger.warning(
-                                    f"Failed to query existing IP address {interface.ip_address}"
+                                    f"Failed to query existing IP address {ip_data.address}"
                                 )
 
                         except Exception as lookup_error:
                             logger.error(
-                                f"Error looking up existing IP address {interface.ip_address}: {str(lookup_error)}"
+                                f"Error looking up existing IP address {ip_data.address}: {str(lookup_error)}"
                             )
 
                     # If we get here, either it wasn't an "already exists" error,
                     # or the lookup failed - record the original error
                     workflow_status["step2_ip_addresses"]["errors"].append(
                         {
-                            "interface": interface.name,
-                            "ip_address": interface.ip_address,
+                            "interface": interface_name,
+                            "ip_address": ip_data.address,
                             "error": error_msg,
                         }
                     )
                     logger.error(
-                        f"Error creating IP address {interface.ip_address}: {error_msg}"
+                        f"Error creating IP address {ip_data.address}: {error_msg}"
                     )
 
             except Exception as e:
@@ -448,13 +464,13 @@ class DeviceCreationService:
                 error_msg = str(e)
                 workflow_status["step2_ip_addresses"]["errors"].append(
                     {
-                        "interface": interface.name,
-                        "ip_address": interface.ip_address,
+                        "interface": interface_name,
+                        "ip_address": ip_data.address,
                         "error": error_msg,
                     }
                 )
                 logger.error(
-                    f"Unexpected error processing IP address {interface.ip_address}: {error_msg}"
+                    f"Unexpected error processing IP address {ip_data.address}: {error_msg}"
                 )
 
         # Update status based on results
@@ -634,51 +650,62 @@ class DeviceCreationService:
                         "status": "success",
                         "ip_assigned": False,
                         "ip_assignment_error": None,
+                        "ip_addresses_assigned": [],
                     }
 
-                    # Assign IP address to interface
-                    map_key = f"{interface.name}:{interface.ip_address}"
-                    if map_key in ip_address_map:
-                        ip_id = ip_address_map[map_key]
-                        logger.info(f"[DEBUG] Looking up IP for interface {interface.name} with key '{map_key}' -> found IP ID: {ip_id}")
-                        try:
-                            assignment_payload = {
-                                "ip_address": ip_id,
-                                "interface": interface_id,
-                            }
-                            await nautobot_service.rest_request(
-                                endpoint="ipam/ip-address-to-interface/",
-                                method="POST",
-                                data=assignment_payload,
-                            )
-                            interface_result["ip_assigned"] = True
-                            logger.info(
-                                f"Assigned IP {interface.ip_address} (ID: {ip_id}) to interface {interface.name}"
-                            )
+                    # Assign all IP addresses to this interface
+                    for ip_data in interface.ip_addresses:
+                        map_key = f"{interface.name}:{ip_data.address}"
+                        if map_key in ip_address_map:
+                            ip_id = ip_address_map[map_key]
+                            logger.info(f"[DEBUG] Looking up IP for interface {interface.name} with key '{map_key}' -> found IP ID: {ip_id}")
+                            try:
+                                assignment_payload = {
+                                    "ip_address": ip_id,
+                                    "interface": interface_id,
+                                }
+                                await nautobot_service.rest_request(
+                                    endpoint="ipam/ip-address-to-interface/",
+                                    method="POST",
+                                    data=assignment_payload,
+                                )
+                                interface_result["ip_assigned"] = True
+                                interface_result["ip_addresses_assigned"].append({
+                                    "address": ip_data.address,
+                                    "id": ip_id,
+                                    "is_primary": ip_data.is_primary or False,
+                                })
+                                logger.info(
+                                    f"Assigned IP {ip_data.address} (ID: {ip_id}) to interface {interface.name}"
+                                )
 
-                            # Determine primary IPv4
-                            # Check if this is an IPv4 address (not IPv6)
-                            is_ipv4 = (
-                                interface.ip_address and ":" not in interface.ip_address
-                            )
+                                # Determine primary IPv4
+                                # Check if this is an IPv4 address (not IPv6)
+                                is_ipv4 = (
+                                    ip_data.address and ":" not in ip_data.address
+                                )
 
-                            if is_ipv4:
-                                if interface.is_primary_ipv4:
-                                    primary_ipv4_id = ip_id
-                                    logger.info(
-                                        f"Interface {interface.name} marked as primary IPv4 (explicit)"
-                                    )
-                                elif primary_ipv4_id is None:
-                                    primary_ipv4_id = ip_id
-                                    logger.info(
-                                        f"Interface {interface.name} set as primary IPv4 (first IPv4 found)"
-                                    )
+                                if is_ipv4:
+                                    if ip_data.is_primary:
+                                        primary_ipv4_id = ip_id
+                                        logger.info(
+                                            f"Interface {interface.name} IP {ip_data.address} marked as primary IPv4 (explicit)"
+                                        )
+                                    elif primary_ipv4_id is None:
+                                        primary_ipv4_id = ip_id
+                                        logger.info(
+                                            f"Interface {interface.name} IP {ip_data.address} set as primary IPv4 (first IPv4 found)"
+                                        )
 
-                        except Exception as e:
-                            interface_result["ip_assignment_error"] = str(e)
-                            logger.error(f"Failed to assign IP to interface: {str(e)}")
-                    else:
-                        logger.warning(f"[DEBUG] IP address key '{map_key}' not found in ip_address_map. Available keys: {list(ip_address_map.keys())}")
+                            except Exception as e:
+                                error_msg = str(e)
+                                if interface_result["ip_assignment_error"]:
+                                    interface_result["ip_assignment_error"] += f"; {error_msg}"
+                                else:
+                                    interface_result["ip_assignment_error"] = error_msg
+                                logger.error(f"Failed to assign IP {ip_data.address} to interface: {error_msg}")
+                        else:
+                            logger.warning(f"[DEBUG] IP address key '{map_key}' not found in ip_address_map. Available keys: {list(ip_address_map.keys())}")
 
                     workflow_status["step3_interfaces"]["data"].append(interface_result)
                     created_interfaces.append(interface_response)

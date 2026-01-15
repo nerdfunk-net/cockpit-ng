@@ -482,3 +482,286 @@ async def get_file_content(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error reading file content: {str(e)}",
         )
+
+
+@router.get("/tree")
+async def get_directory_tree(
+    repo_id: int,
+    path: str = "",
+    current_user: dict = Depends(require_permission("git.repositories", "read")),
+):
+    """Get hierarchical directory structure of a Git repository.
+
+    Args:
+        repo_id: Git repository ID
+        path: Optional path to get subtree (default: root)
+        current_user: Current authenticated user
+
+    Returns:
+        Hierarchical tree structure with directories and file counts
+    """
+    try:
+        # Get repository details
+        repository = git_repo_manager.get_repository(repo_id)
+        if not repository:
+            raise HTTPException(status_code=404, detail="Repository not found")
+
+        # Resolve repository working directory
+        repo_path = str(git_repo_path(repository))
+
+        if not os.path.exists(repo_path):
+            return {
+                "name": "root",
+                "path": "",
+                "type": "directory",
+                "children": [],
+                "repository_name": repository["name"],
+            }
+
+        # Resolve the target path
+        target_path = os.path.join(repo_path, path) if path else repo_path
+
+        # Security check: ensure the path is within the repository
+        target_path_resolved = os.path.realpath(target_path)
+        repo_path_resolved = os.path.realpath(repo_path)
+
+        if not target_path_resolved.startswith(repo_path_resolved):
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied: path is outside repository",
+            )
+
+        if not os.path.exists(target_path_resolved):
+            raise HTTPException(
+                status_code=404,
+                detail=f"Path not found: {path}",
+            )
+
+        if not os.path.isdir(target_path_resolved):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Path is not a directory: {path}",
+            )
+
+        def build_tree(dir_path: str, rel_path: str = "") -> dict:
+            """Recursively build directory tree structure."""
+            children = []
+
+            try:
+                items = os.listdir(dir_path)
+            except PermissionError:
+                logger.warning(f"Permission denied accessing directory: {dir_path}")
+                return None
+
+            # Separate directories and files
+            dirs = []
+            files = []
+
+            for item in items:
+                # Skip hidden files and .git directory
+                if item.startswith("."):
+                    continue
+
+                item_path = os.path.join(dir_path, item)
+                item_rel_path = os.path.join(rel_path, item) if rel_path else item
+
+                if os.path.isdir(item_path):
+                    dirs.append((item, item_path, item_rel_path))
+                elif os.path.isfile(item_path):
+                    files.append(item)
+
+            # Sort directories alphabetically
+            dirs.sort(key=lambda x: x[0].lower())
+
+            # Process directories recursively
+            for dir_name, dir_full_path, dir_rel_path in dirs:
+                subtree = build_tree(dir_full_path, dir_rel_path)
+                if subtree:  # Only add if we had permission to read it
+                    children.append(subtree)
+
+            # Build the current node
+            node_name = os.path.basename(dir_path) if rel_path else "root"
+
+            return {
+                "name": node_name,
+                "path": rel_path,
+                "type": "directory",
+                "file_count": len(files),
+                "children": children,
+            }
+
+        # Build tree starting from target path
+        tree = build_tree(target_path_resolved, path)
+
+        if tree is None:
+            raise HTTPException(
+                status_code=403,
+                detail="Permission denied accessing directory",
+            )
+
+        # Add repository name to root node
+        tree["repository_name"] = repository["name"]
+
+        return tree
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error building directory tree: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error building directory tree: {str(e)}",
+        )
+
+
+@router.get("/directory")
+async def get_directory_files(
+    repo_id: int,
+    path: str = "",
+    current_user: dict = Depends(require_permission("git.repositories", "read")),
+):
+    """Get files in a specific directory with last commit metadata.
+
+    Args:
+        repo_id: Git repository ID
+        path: Directory path (default: root)
+        current_user: Current authenticated user
+
+    Returns:
+        List of files with last commit information
+    """
+    try:
+        # Get repository details
+        repository = git_repo_manager.get_repository(repo_id)
+        if not repository:
+            raise HTTPException(status_code=404, detail="Repository not found")
+
+        # Get Git repository
+        repo = get_git_repo_by_id(repo_id)
+
+        # Resolve repository working directory
+        repo_path = str(git_repo_path(repository))
+
+        if not os.path.exists(repo_path):
+            return {
+                "path": path,
+                "files": [],
+                "directory_exists": False,
+            }
+
+        # Resolve the target path
+        target_path = os.path.join(repo_path, path) if path else repo_path
+
+        # Security check: ensure the path is within the repository
+        target_path_resolved = os.path.realpath(target_path)
+        repo_path_resolved = os.path.realpath(repo_path)
+
+        if not target_path_resolved.startswith(repo_path_resolved):
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied: path is outside repository",
+            )
+
+        if not os.path.exists(target_path_resolved):
+            return {
+                "path": path,
+                "files": [],
+                "directory_exists": False,
+            }
+
+        if not os.path.isdir(target_path_resolved):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Path is not a directory: {path}",
+            )
+
+        # List files in directory (not subdirectories)
+        files_data = []
+
+        try:
+            items = os.listdir(target_path_resolved)
+        except PermissionError:
+            raise HTTPException(
+                status_code=403,
+                detail="Permission denied accessing directory",
+            )
+
+        for item in items:
+            # Skip hidden files
+            if item.startswith("."):
+                continue
+
+            item_path = os.path.join(target_path_resolved, item)
+
+            # Only process files, not directories
+            if not os.path.isfile(item_path):
+                continue
+
+            # Get file stats
+            file_size = os.path.getsize(item_path)
+
+            # Calculate relative path from repository root
+            file_rel_path = os.path.join(path, item) if path else item
+
+            # Get last commit for this file
+            try:
+                commits = list(repo.iter_commits(paths=file_rel_path, max_count=1))
+
+                if commits:
+                    last_commit = commits[0]
+                    commit_info = {
+                        "hash": last_commit.hexsha,
+                        "short_hash": last_commit.hexsha[:8],
+                        "message": last_commit.message.strip(),
+                        "author": {
+                            "name": last_commit.author.name,
+                            "email": last_commit.author.email,
+                        },
+                        "date": last_commit.committed_datetime.isoformat(),
+                        "timestamp": int(last_commit.committed_datetime.timestamp()),
+                    }
+                else:
+                    # File exists but no commit history (shouldn't happen in a proper git repo)
+                    commit_info = {
+                        "hash": "",
+                        "short_hash": "",
+                        "message": "No commit history",
+                        "author": {"name": "", "email": ""},
+                        "date": "",
+                        "timestamp": 0,
+                    }
+            except Exception as e:
+                logger.warning(f"Failed to get commit info for {file_rel_path}: {e}")
+                commit_info = {
+                    "hash": "",
+                    "short_hash": "",
+                    "message": "Error fetching commit",
+                    "author": {"name": "", "email": ""},
+                    "date": "",
+                    "timestamp": 0,
+                }
+
+            files_data.append({
+                "name": item,
+                "path": file_rel_path,
+                "size": file_size,
+                "last_commit": commit_info,
+            })
+
+        # Sort files alphabetically
+        files_data.sort(key=lambda x: x["name"].lower())
+
+        return {
+            "path": path,
+            "files": files_data,
+            "directory_exists": True,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error listing directory files: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error listing directory files: {str(e)}",
+        )

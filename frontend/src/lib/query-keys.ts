@@ -19,6 +19,14 @@ export const queryKeys = {
     repositories: () => [...queryKeys.git.all, 'repositories'] as const,
     repository: (id: number) => [...queryKeys.git.all, 'repository', id] as const,
     status: (id: number) => [...queryKeys.git.repository(id), 'status'] as const,
+    tree: (repoId: number | null) =>
+      [...queryKeys.git.all, 'tree', repoId] as const,
+    directoryFiles: (repoId: number | null, path: string) =>
+      [...queryKeys.git.all, 'directoryFiles', repoId, path] as const,
+    fileHistory: (repoId: number | null, filePath: string | null) =>
+      [...queryKeys.git.all, 'fileHistory', repoId, filePath] as const,
+    fileDiff: (repoId: number | null, commit1: string | null, commit2: string | null, filePath: string | null) =>
+      [...queryKeys.git.all, 'fileDiff', repoId, commit1, commit2, filePath] as const,
   },
 
   // Celery Jobs

@@ -55,6 +55,16 @@ class OffboardDeviceRequest(BaseModel):
     nautobot_integration_mode: Literal["remove", "set-offboarding"] = "remove"
 
 
+class IpAddressData(BaseModel):
+    """IP address data model for interface IP addresses."""
+
+    id: Optional[str] = None  # Frontend ID for tracking
+    address: str
+    namespace: str
+    ip_role: Optional[str] = None  # IP address role (e.g., 'Secondary', 'Anycast')
+    is_primary: Optional[bool] = None  # Mark as primary IPv4 for the device
+
+
 class InterfaceData(BaseModel):
     """Interface data model for add device request."""
 
@@ -62,10 +72,7 @@ class InterfaceData(BaseModel):
     name: str
     type: str
     status: str
-    ip_address: Optional[str] = None
-    namespace: Optional[str] = None  # Required if ip_address is provided
-    is_primary_ipv4: Optional[bool] = None  # Set this interface's IP as device primary
-    ip_role: Optional[str] = None  # IP address role (e.g., 'Secondary', 'Anycast')
+    ip_addresses: list[IpAddressData] = []  # Multiple IP addresses per interface
     # Optional properties
     enabled: Optional[bool] = None
     mgmt_only: Optional[bool] = None

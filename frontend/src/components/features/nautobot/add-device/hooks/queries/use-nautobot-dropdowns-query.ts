@@ -36,6 +36,7 @@ export function useNautobotDropdownsQuery(
         interfaceTypes,
         interfaceStatuses,
         namespaces,
+        ipRoles,
         nautobotDefaults,
       ] = await Promise.all([
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,6 +58,8 @@ export function useNautobotDropdownsQuery(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         apiCall<any>('nautobot/namespaces', { method: 'GET' }),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        apiCall<any>('nautobot/roles/ipaddress', { method: 'GET' }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         apiCall<any>('settings/nautobot/defaults', { method: 'GET' }).catch(() => null),
       ])
 
@@ -70,6 +73,7 @@ export function useNautobotDropdownsQuery(
         interfaceTypes: Array.isArray(interfaceTypes) ? interfaceTypes : [],
         interfaceStatuses: Array.isArray(interfaceStatuses) ? interfaceStatuses : [],
         namespaces: Array.isArray(namespaces) ? namespaces : [],
+        ipRoles: Array.isArray(ipRoles) ? ipRoles : [],
         nautobotDefaults,
       }
     },
