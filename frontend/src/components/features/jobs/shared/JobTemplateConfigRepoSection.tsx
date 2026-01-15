@@ -34,7 +34,7 @@ export function JobTemplateConfigRepoSection({
           value={formConfigRepoId?.toString() || "none"}
           onValueChange={(v) => setFormConfigRepoId(v === "none" ? null : parseInt(v))}
         >
-          <SelectTrigger id="config-repo" className="h-9 bg-white border-slate-200">
+          <SelectTrigger id="config-repo" className="h-9 bg-white border-2 border-gray-400 shadow-sm">
             <SelectValue placeholder="Select config repository (optional)" />
           </SelectTrigger>
           <SelectContent>

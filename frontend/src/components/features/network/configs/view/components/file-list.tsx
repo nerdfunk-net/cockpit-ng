@@ -11,10 +11,11 @@ import type { FileWithCommit } from '../types'
 interface FileListProps {
   repoId: number | null
   directoryPath: string
+  filterText?: string
   onShowHistory: (file: FileWithCommit) => void
 }
 
-export function FileList({ repoId, directoryPath, onShowHistory }: FileListProps) {
+export function FileList({ repoId, directoryPath, filterText = '', onShowHistory }: FileListProps) {
   const { data, isLoading, error } = useDirectoryFilesQuery(repoId, {
     path: directoryPath,
     enabled: !!repoId,
@@ -43,6 +44,16 @@ export function FileList({ repoId, directoryPath, onShowHistory }: FileListProps
       return `${Math.floor(diffInSeconds / 31536000)} years ago`
     }
   }, [])
+
+  const filteredFiles = useMemo(() => {
+    if (!data?.files) return []
+    if (!filterText.trim()) return data.files
+    
+    const searchTerm = filterText.toLowerCase()
+    return data.files.filter(file => 
+      file.name.toLowerCase().includes(searchTerm)
+    )
+  }, [data?.files, filterText])
 
   if (isLoading) {
     return (
@@ -84,6 +95,16 @@ export function FileList({ repoId, directoryPath, onShowHistory }: FileListProps
     )
   }
 
+  if (filteredFiles.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-sm text-muted-foreground">
+          No files match "{filterText}"
+        </p>
+      </div>
+    )
+  }
+
   return (
     <ScrollArea className="h-full w-full">
       <div className="p-4 min-w-0">
@@ -98,7 +119,7 @@ export function FileList({ repoId, directoryPath, onShowHistory }: FileListProps
             </tr>
           </thead>
           <tbody className="divide-y">
-            {data.files.map((file) => (
+            {filteredFiles.map((file) => (
               <tr
                 key={file.path}
                 className="hover:bg-muted/50 transition-colors"

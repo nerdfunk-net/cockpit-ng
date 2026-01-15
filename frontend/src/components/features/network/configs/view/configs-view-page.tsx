@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { Eye, RotateCcw, FolderTree } from 'lucide-react'
+import { Eye, RotateCcw, FolderTree, Search } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import { useApi } from '@/hooks/use-api'
 import { useGitTreeQuery } from '@/hooks/queries/use-git-tree-query'
 import { FileTree } from './components/file-tree'
@@ -24,6 +25,7 @@ export default function ConfigsViewPage() {
   const [repositories, setRepositories] = useState<Repository[]>(EMPTY_ARRAY)
   const [selectedRepository, setSelectedRepository] = useState<number | null>(null)
   const [selectedDirectoryPath, setSelectedDirectoryPath] = useState<string>('')
+  const [filterText, setFilterText] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -197,7 +199,7 @@ export default function ConfigsViewPage() {
               value={selectedRepository?.toString() || ""}
               onValueChange={handleRepositoryChange}
             >
-              <SelectTrigger className="w-96" id="repository-select">
+              <SelectTrigger className="w-96 border-2 border-gray-400 shadow-sm" id="repository-select">
                 <SelectValue placeholder="Select a config repository..." />
               </SelectTrigger>
               <SelectContent>
@@ -271,14 +273,26 @@ export default function ConfigsViewPage() {
               rightPanel={
                 <div className="flex flex-col h-full overflow-hidden">
                   <div className="bg-gray-100 px-4 py-2 border-b flex-shrink-0">
-                    <h3 className="text-sm font-medium text-gray-700">
-                      Files in: {selectedDirectoryPath || '/'}
-                    </h3>
+                    <div className="flex items-center justify-between gap-4">
+                      <h3 className="text-sm font-medium text-gray-700">
+                        Files in: {selectedDirectoryPath || '/'}
+                      </h3>
+                      <div className="relative w-64">
+                        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          placeholder="Filter files..."
+                          value={filterText}
+                          onChange={(e) => setFilterText(e.target.value)}
+                          className="pl-8 h-8 text-sm"
+                        />
+                      </div>
+                    </div>
                   </div>
                   <div className="flex-1 overflow-hidden">
                     <FileList
                       repoId={selectedRepository}
                       directoryPath={selectedDirectoryPath}
+                      filterText={filterText}
                       onShowHistory={handleShowHistory}
                     />
                   </div>

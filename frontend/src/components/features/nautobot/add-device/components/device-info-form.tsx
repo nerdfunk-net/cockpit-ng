@@ -28,6 +28,7 @@ interface DeviceInfoFormProps {
   isLoading: boolean
   onOpenTags: () => void
   onOpenCustomFields: () => void
+  onUseDefaultValues?: () => void
   selectedTagsCount: number
 }
 
@@ -40,6 +41,7 @@ export function DeviceInfoForm({
   isLoading,
   onOpenTags,
   onOpenCustomFields,
+  onUseDefaultValues,
   selectedTagsCount,
 }: DeviceInfoFormProps) {
   const {
@@ -56,6 +58,17 @@ export function DeviceInfoForm({
           <span className="text-sm font-medium">Device Information</span>
         </div>
         <div className="flex gap-2">
+          {onUseDefaultValues && (
+            <Button
+              type="button"
+              size="sm"
+              onClick={onUseDefaultValues}
+              disabled={isLoading}
+              className="bg-white/20 border-white/30 text-white hover:bg-white/30 h-7 text-xs"
+            >
+              Use Default Values
+            </Button>
+          )}
           <Button
             type="button"
             size="sm"

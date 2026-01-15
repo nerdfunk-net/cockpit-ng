@@ -3,14 +3,14 @@
  * Uses shared form components from add-device for consistent UX
  */
 
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useCallback } from 'react'
 import { RefreshCw, Loader2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
+import { useApi } from '@/hooks/use-api'
 
 // Shared form components from add-device
 import {
@@ -73,6 +73,7 @@ export function DeviceSyncModal({
   isSyncing,
 }: DeviceSyncModalProps) {
   const { toast } = useToast()
+  const { apiCall } = useApi()
   
   // Fetch all dropdown data from Nautobot (for interface types, namespaces, IP roles, etc.)
   const { data: fullDropdownData } = useNautobotDropdownsQuery({
@@ -236,6 +237,78 @@ export function DeviceSyncModal({
     [toast]
   )
 
+  // Load and apply default values from Nautobot settings
+  const handleUseDefaultValues = useCallback(async () => {
+    try {
+      const response = await apiCall<{
+        success: boolean
+        data: {
+          device_role?: string
+          device_status?: string
+          location?: string
+          platform?: string
+          interface_status?: string
+          namespace?: string
+        }
+      }>('settings/nautobot/defaults')
+      
+      console.log('[DeviceSyncModal] Default values received:', response)
+      
+      if (response?.data) {
+        const defaults = response.data
+        
+        // Apply defaults to form
+        if (defaults.device_role) {
+          console.log('[DeviceSyncModal] Setting device_role to:', defaults.device_role)
+          form.setValue('selectedRole', defaults.device_role)
+        }
+        if (defaults.device_status) {
+          console.log('[DeviceSyncModal] Setting device_status to:', defaults.device_status)
+          form.setValue('selectedStatus', defaults.device_status)
+        }
+        if (defaults.location) {
+          console.log('[DeviceSyncModal] Setting location to:', defaults.location)
+          form.setValue('selectedLocation', defaults.location)
+        }
+        if (defaults.platform) {
+          console.log('[DeviceSyncModal] Setting platform to:', defaults.platform)
+          form.setValue('selectedPlatform', defaults.platform)
+        }
+        
+        // Apply interface status to all interfaces
+        if (defaults.interface_status) {
+          console.log('[DeviceSyncModal] Setting interface_status to:', defaults.interface_status)
+          const currentInterfaces = form.getValues('interfaces')
+          if (currentInterfaces && currentInterfaces.length > 0) {
+            currentInterfaces.forEach((_, index) => {
+              form.setValue(`interfaces.${index}.status`, defaults.interface_status!)
+            })
+            console.log('[DeviceSyncModal] Updated interface statuses for', currentInterfaces.length, 'interfaces')
+          }
+        }
+        
+        console.log('[DeviceSyncModal] Form values after setting:', {
+          selectedRole: form.getValues('selectedRole'),
+          selectedStatus: form.getValues('selectedStatus'),
+          selectedLocation: form.getValues('selectedLocation'),
+          selectedPlatform: form.getValues('selectedPlatform'),
+        })
+        
+        toast({
+          title: 'Default Values Applied',
+          description: 'Nautobot default values have been applied to the form',
+        })
+      }
+    } catch (error) {
+      console.error('Failed to load default values:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load default values from settings',
+        variant: 'destructive',
+      })
+    }
+  }, [apiCall, form, toast])
+
   // Determine if device exists
   const isUpdate = Boolean(deviceId)
 
@@ -250,15 +323,17 @@ export function DeviceSyncModal({
         {/* Compact Header */}
         <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 px-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold">Sync Device to Nautobot</h2>
-              <p className="text-blue-100 text-sm">{form.watch('deviceName') || 'CheckMK Device'}</p>
+            <div className="flex items-center gap-4">
+              <div>
+                <h2 className="text-lg font-semibold">Sync Device to Nautobot</h2>
+                <p className="text-blue-100 text-sm">{form.watch('deviceName') || 'CheckMK Device'}</p>
+              </div>
+              {isUpdate && (
+                <Badge className="bg-red-600 text-white border-red-700 font-semibold px-3 py-1 shadow-lg">
+                  Update Existing Device
+                </Badge>
+              )}
             </div>
-            {isUpdate && (
-              <Badge className="bg-white/20 text-white border-white/30">
-                Update Existing Device
-              </Badge>
-            )}
           </div>
         </div>
 
@@ -273,22 +348,6 @@ export function DeviceSyncModal({
             </div>
           ) : (
             <form onSubmit={formHandleSubmit(onSubmit, onError)} className="p-6 space-y-6">
-              {/* Device Status */}
-              {isUpdate && (
-                <Card className="border-blue-200/60 bg-blue-50/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <Badge className="bg-blue-500">Exists in Nautobot</Badge>
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-700 mb-2">
-                          This device exists in Nautobot. Review the form and click &ldquo;Sync&rdquo; to update.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
               {!isUpdate && (
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertDescription className="text-sm text-amber-800">
@@ -307,6 +366,7 @@ export function DeviceSyncModal({
                 isLoading={isSyncing}
                 onOpenTags={tagsManager.openModal}
                 onOpenCustomFields={customFieldsManager.openModal}
+                onUseDefaultValues={handleUseDefaultValues}
                 selectedTagsCount={tagsManager.selectedTags.length}
               />
 
