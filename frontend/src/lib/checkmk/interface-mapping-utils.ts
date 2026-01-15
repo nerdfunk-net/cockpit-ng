@@ -132,14 +132,17 @@ export function parseInterfacesFromInventory(inventoryData: Record<string, unkno
 
     // Map interfaces and join with addresses
     return interfacesRows.map((iface) => {
-      const ifaceName = String(iface.description || '')
+      const ifaceDescription = String(iface.description || '')
       const ifaceAlias = String(iface.alias || '')
+      
+      // Use alias as interface name, fall back to description if alias is empty
+      const ifaceName = ifaceAlias || ifaceDescription
 
       // Find matching addresses using smart matching
       // Handles abbreviated names like "Et0/0" -> "Ethernet0/0"
       const matchingAddresses = addressesRows.filter((addr) => {
         const device = String(addr.device || '')
-        return matchesInterface(device, ifaceName, ifaceAlias)
+        return matchesInterface(device, ifaceDescription, ifaceAlias)
       })
 
       return {
