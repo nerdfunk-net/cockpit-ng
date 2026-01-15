@@ -209,12 +209,12 @@ export function InterfaceList({
                   </Button>
                 </div>
 
-                {(watch(`interfaces.${index}.ip_addresses`) || []).map((_, ipIndex) => {
+                {(watch(`interfaces.${index}.ip_addresses`) || []).map((ipAddr, ipIndex) => {
                   const ipErrors = interfaceErrors?.ip_addresses?.[ipIndex]
                   const ipAddresses = watch(`interfaces.${index}.ip_addresses`) || []
                   
                   return (
-                    <div key={ipIndex} className="p-3 border rounded bg-slate-50 space-y-2">
+                    <div key={`ip-${field.id}-${ipAddr?.id || ipAddr?.address || `temp-${ipIndex}`}`} className="p-3 border rounded bg-slate-50 space-y-2">
                       <div className="flex items-center justify-between mb-2">
                         <Badge variant="secondary" className="text-xs">IP {ipIndex + 1}</Badge>
                         {ipAddresses.length > 1 && (

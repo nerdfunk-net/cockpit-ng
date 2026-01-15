@@ -90,8 +90,8 @@ const TreeNode = ({
   return (
     <div>
       <div
-        className={`flex items-center gap-1 py-1 px-2 rounded cursor-pointer hover:bg-accent transition-colors ${
-          isSelected ? 'bg-accent' : ''
+        className={`flex items-center gap-1 py-1 px-2 rounded cursor-pointer hover:bg-gray-100 transition-colors ${
+          isSelected ? 'bg-gray-200' : ''
         }`}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onClick={handleClick}

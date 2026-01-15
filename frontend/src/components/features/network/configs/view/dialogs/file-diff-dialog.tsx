@@ -338,9 +338,9 @@ export function FileDiffDialog({
             {viewMode === 'unified' && (
               <ScrollArea className="flex-1 h-[60vh]">
                 <div className="font-mono text-xs">
-                  {displayLines.map((line, idx) => (
+                  {displayLines.map((line) => (
                     <div
-                      key={`unified-${idx}`}
+                      key={`unified-${line.leftLineNumber ?? 'none'}-${line.rightLineNumber ?? 'none'}-${line.type}-${line.content.substring(0, 20)}`}
                       className={`flex ${getLineClassName(line.type)}`}
                     >
                       <span className="px-2 py-1 text-muted-foreground select-none w-12 text-right flex-shrink-0 border-r">

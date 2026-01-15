@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { Eye, RotateCcw, FolderTree } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
@@ -178,23 +178,26 @@ export default function ConfigsViewPage() {
       </div>
 
       {/* Repository Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FolderTree className="h-5 w-5" />
-            Repository Selection
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+          <div className="flex items-center space-x-2">
+            <FolderTree className="h-4 w-4" />
+            <span className="text-sm font-medium">Repository Selection</span>
+          </div>
+          <div className="text-xs text-blue-100">
+            Select a Git repository to browse device configuration files
+          </div>
+        </div>
+        <div className="p-6 bg-gradient-to-b from-white to-gray-50">
           <div className="flex items-center gap-4">
-            <Label htmlFor="repository-select" className="text-sm font-medium">
+            <Label htmlFor="repository-select" className="text-sm font-medium whitespace-nowrap">
               Select Repository:
             </Label>
             <Select
               value={selectedRepository?.toString() || ""}
               onValueChange={handleRepositoryChange}
             >
-              <SelectTrigger className="w-64">
+              <SelectTrigger className="w-96" id="repository-select">
                 <SelectValue placeholder="Select a config repository..." />
               </SelectTrigger>
               <SelectContent>
@@ -211,8 +214,8 @@ export default function ConfigsViewPage() {
               </p>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Error Display */}
       {(error || treeError) && (
@@ -227,16 +230,25 @@ export default function ConfigsViewPage() {
 
       {/* File Browser */}
       {selectedRepository && (
-        <Card className="h-[calc(100vh-400px)] min-h-[600px]">
-          <CardContent className="p-0 h-full">
+        <div className="shadow-lg border-0 p-0 bg-white rounded-lg h-[calc(100vh-400px)] min-h-[600px] flex flex-col">
+          <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg flex-shrink-0">
+            <div className="flex items-center space-x-2">
+              <FolderTree className="h-4 w-4" />
+              <span className="text-sm font-medium">Configuration File Browser</span>
+            </div>
+            <div className="text-xs text-blue-100">
+              Browse directory structure and view configuration files
+            </div>
+          </div>
+          <div className="flex-1 overflow-hidden">
             <ResizableLayout
               defaultLeftWidth={300}
               minLeftWidth={200}
               maxLeftWidth={600}
               leftPanel={
                 <div className="flex flex-col h-full overflow-hidden border-r">
-                  <div className="bg-muted/50 px-4 py-2 border-b flex-shrink-0">
-                    <h3 className="text-sm font-semibold">Directory Structure</h3>
+                  <div className="bg-gray-100 px-4 py-2 border-b flex-shrink-0">
+                    <h3 className="text-sm font-medium text-gray-700">Directory Structure</h3>
                   </div>
                   <div className="flex-1 overflow-hidden">
                     {treeLoading ? (
@@ -258,8 +270,8 @@ export default function ConfigsViewPage() {
               }
               rightPanel={
                 <div className="flex flex-col h-full overflow-hidden">
-                  <div className="bg-muted/50 px-4 py-2 border-b flex-shrink-0">
-                    <h3 className="text-sm font-semibold">
+                  <div className="bg-gray-100 px-4 py-2 border-b flex-shrink-0">
+                    <h3 className="text-sm font-medium text-gray-700">
                       Files in: {selectedDirectoryPath || '/'}
                     </h3>
                   </div>
@@ -273,8 +285,8 @@ export default function ConfigsViewPage() {
                 </div>
               }
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* File History Dialog */}
