@@ -8,18 +8,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { useApi } from '@/hooks/use-api'
+import { useAuthStore } from '@/lib/auth-store'
 import { useGitTreeQuery } from '@/hooks/queries/use-git-tree-query'
 import { FileTree } from './components/file-tree'
 import { FileList } from './components/file-list'
 import { ResizableLayout } from './components/resizable-layout'
 import { FileHistoryDialog } from './dialogs/file-history-dialog'
 import { FileDiffDialog } from './dialogs/file-diff-dialog'
+import { FileViewDialog } from './dialogs/file-view-dialog'
 import type { Repository, FileWithCommit } from './types'
 
 const EMPTY_ARRAY: Repository[] = []
 
 export default function ConfigsViewPage() {
   const { apiCall } = useApi()
+  const { token } = useAuthStore()
 
   // State
   const [repositories, setRepositories] = useState<Repository[]>(EMPTY_ARRAY)
@@ -34,6 +37,15 @@ export default function ConfigsViewPage() {
 
   // File history dialog state
   const [fileHistoryDialog, setFileHistoryDialog] = useState<{
+    isOpen: boolean
+    filePath: string | null
+  }>({
+    isOpen: false,
+    filePath: null,
+  })
+
+  // File view dialog state
+  const [fileViewDialog, setFileViewDialog] = useState<{
     isOpen: boolean
     filePath: string | null
   }>({
@@ -166,8 +178,59 @@ export default function ConfigsViewPage() {
     })
   }, [])
 
+  const handleViewFile = useCallback((file: FileWithCommit) => {
+    setFileViewDialog({
+      isOpen: true,
+      filePath: file.path,
+    })
+  }, [])
+
+  const handleDownloadFile = useCallback(async (file: FileWithCommit) => {
+    if (!selectedRepository || !file.path) return
+
+    try {
+      const headers: Record<string, string> = {
+        'Accept': 'text/plain',
+      }
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+      
+      const response = await fetch(`/api/proxy/git/${selectedRepository}/file-content?path=${encodeURIComponent(file.path)}`, {
+        headers,
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to download file')
+      }
+      
+      // The proxy returns JSON-encoded text, so parse it first
+      const content = await response.json()
+      const blob = new Blob([content], { type: 'text/plain' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = file.name
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err) {
+      console.error('Download failed:', err)
+      alert('Failed to download file')
+    }
+  }, [selectedRepository, token])
+
   const handleCloseHistory = useCallback(() => {
     setFileHistoryDialog({
+      isOpen: false,
+      filePath: null,
+    })
+  }, [])
+
+  const handleCloseViewFile = useCallback(() => {
+    setFileViewDialog({
       isOpen: false,
       filePath: null,
     })
@@ -382,6 +445,8 @@ export default function ConfigsViewPage() {
                       directoryPath={selectedDirectoryPath}
                       filterText={filterText}
                       onShowHistory={handleShowHistory}
+                      onViewFile={handleViewFile}
+                      onDownloadFile={handleDownloadFile}
                     />
                   </div>
                 </div>
@@ -398,6 +463,19 @@ export default function ConfigsViewPage() {
         repoId={selectedRepository}
         filePath={fileHistoryDialog.filePath}
         onCompare={handleCompare}
+      />
+
+      {/* File View Dialog */}
+      <FileViewDialog
+        isOpen={fileViewDialog.isOpen}
+        onClose={handleCloseViewFile}
+        repoId={selectedRepository}
+        filePath={fileViewDialog.filePath}
+        onDownload={() => {
+          if (fileViewDialog.filePath) {
+            handleDownloadFile({ path: fileViewDialog.filePath, name: fileViewDialog.filePath.split('/').pop() || '' } as FileWithCommit)
+          }
+        }}
       />
 
       {/* File Diff Dialog */}

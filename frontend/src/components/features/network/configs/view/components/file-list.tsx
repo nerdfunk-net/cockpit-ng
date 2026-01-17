@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { FileText, History, Clock } from 'lucide-react'
+import { FileText, History, Clock, Eye, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -13,9 +13,11 @@ interface FileListProps {
   directoryPath: string
   filterText?: string
   onShowHistory: (file: FileWithCommit) => void
+  onViewFile: (file: FileWithCommit) => void
+  onDownloadFile: (file: FileWithCommit) => void
 }
 
-export function FileList({ repoId, directoryPath, filterText = '', onShowHistory }: FileListProps) {
+export function FileList({ repoId, directoryPath, filterText = '', onShowHistory, onViewFile, onDownloadFile }: FileListProps) {
   const { data, isLoading, error } = useDirectoryFilesQuery(repoId, {
     path: directoryPath,
     enabled: !!repoId,
@@ -115,7 +117,7 @@ export function FileList({ repoId, directoryPath, filterText = '', onShowHistory
               <th className="text-left p-3 font-semibold text-sm w-24">Size</th>
               <th className="text-left p-3 font-semibold text-sm">Last Commit</th>
               <th className="text-left p-3 font-semibold text-sm w-40">Date</th>
-              <th className="text-left p-3 font-semibold text-sm w-24">Actions</th>
+              <th className="text-left p-3 font-semibold text-sm w-40">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -160,15 +162,33 @@ export function FileList({ repoId, directoryPath, filterText = '', onShowHistory
                   </div>
                 </td>
                 <td className="p-3">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onShowHistory(file)}
-                    disabled={!file.last_commit.hash}
-                    title="View file history"
-                  >
-                    <History className="h-3 w-3" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onViewFile(file)}
+                      title="View file content"
+                    >
+                      <Eye className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onShowHistory(file)}
+                      disabled={!file.last_commit.hash}
+                      title="View file history"
+                    >
+                      <History className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onDownloadFile(file)}
+                      title="Download file"
+                    >
+                      <Download className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}

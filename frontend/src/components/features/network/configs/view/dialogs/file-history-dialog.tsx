@@ -47,12 +47,22 @@ export function FileHistoryDialog({
   }, [])
 
   const handleCompare = useCallback(() => {
-    if (selectedCommits.length === 2 && filePath) {
-      onCompare(selectedCommits[0]!, selectedCommits[1]!, filePath)
+    if (selectedCommits.length === 2 && filePath && data) {
+      // Sort commits by their position in history (newest to oldest)
+      // Find the indices of selected commits in the history
+      const commit1Index = data.commits.findIndex(c => c.hash === selectedCommits[0])
+      const commit2Index = data.commits.findIndex(c => c.hash === selectedCommits[1])
+      
+      // The commit with the higher index is older (further in history)
+      // We want to compare older -> newer, so older should be commit1
+      const olderCommit = commit1Index > commit2Index ? selectedCommits[0]! : selectedCommits[1]!
+      const newerCommit = commit1Index > commit2Index ? selectedCommits[1]! : selectedCommits[0]!
+      
+      onCompare(olderCommit, newerCommit, filePath)
       onClose()
       setSelectedCommits(EMPTY_ARRAY)
     }
-  }, [selectedCommits, filePath, onCompare, onClose])
+  }, [selectedCommits, filePath, data, onCompare, onClose])
 
   const handleClose = useCallback(() => {
     setSelectedCommits(EMPTY_ARRAY)
