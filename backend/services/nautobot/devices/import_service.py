@@ -6,6 +6,7 @@ with validation, interface creation, and IP assignment.
 
 Based on the workflow from device_creation_service.py but redesigned to:
 - Use DeviceCommonService for all shared utilities
+- Use InterfaceManagerService for interface and IP address management
 - Support flexible input formats (not just Pydantic models)
 - Handle "already exists" gracefully with skip_if_exists flag
 - Return detailed results for caller inspection
@@ -15,6 +16,7 @@ import logging
 from typing import Optional, Dict, Any, List
 from services.nautobot import NautobotService
 from services.nautobot.devices.common import DeviceCommonService
+from services.nautobot.devices.interface_manager import InterfaceManagerService
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +29,7 @@ class DeviceImportService:
     1. Validate import data
     2. Resolve all resource names to UUIDs
     3. Create device in Nautobot
-    4. Create interfaces and IP addresses
+    4. Create interfaces and IP addresses (via InterfaceManagerService)
     5. Assign primary IP to device
     """
 
@@ -40,6 +42,7 @@ class DeviceImportService:
         """
         self.nautobot = nautobot_service
         self.common = DeviceCommonService(nautobot_service)
+        self.interface_manager = InterfaceManagerService(nautobot_service)
 
     async def import_device(
         self,
@@ -388,7 +391,7 @@ class DeviceImportService:
         device_name: str,
     ) -> tuple[List[Dict[str, Any]], Optional[str]]:
         """
-        Create interfaces and IP addresses for device.
+        Create interfaces and IP addresses for device using InterfaceManagerService.
 
         Args:
             device_id: Device UUID
@@ -404,196 +407,93 @@ class DeviceImportService:
             f"Creating {len(interface_config)} interface(s) for device '{device_name}'"
         )
 
-        created_interfaces = []
-        primary_ipv4_id = None
+        # Normalize interface config for InterfaceManagerService
+        # The service expects ip_addresses array, but import format may use ip_address string
+        normalized_interfaces = self._normalize_interface_config(interface_config)
 
-        # Separate LAG interfaces (must be created first for dependencies)
-        lag_interfaces = [
-            iface for iface in interface_config if iface.get("type") == "lag"
-        ]
-        other_interfaces = [
-            iface for iface in interface_config if iface.get("type") != "lag"
-        ]
-
-        # Map frontend interface IDs to Nautobot interface IDs (for LAG dependencies)
-        interface_id_map = {}
-
-        sorted_interfaces = lag_interfaces + other_interfaces
-        logger.debug(
-            f"Creating {len(lag_interfaces)} LAG interface(s) first, "
-            f"then {len(other_interfaces)} other interface(s)"
+        # Use InterfaceManagerService for interface creation
+        result = await self.interface_manager.update_device_interfaces(
+            device_id=device_id,
+            interfaces=normalized_interfaces,
         )
 
-        for iface_data in sorted_interfaces:
-            try:
-                interface_name = iface_data.get("name")
-                if not interface_name:
-                    logger.warning("Interface config missing 'name', skipping")
-                    created_interfaces.append(
-                        {
-                            "name": None,
-                            "success": False,
-                            "error": "Missing interface name",
-                        }
-                    )
-                    continue
+        # Convert InterfaceUpdateResult to the format expected by callers
+        created_interfaces = []
 
-                logger.info(f"Creating interface '{interface_name}'")
+        # Track successful interfaces
+        for _ in range(result.interfaces_created + result.interfaces_updated):
+            created_interfaces.append({
+                "name": "interface",
+                "success": True,
+                "ip_assigned": result.ip_addresses_created > 0,
+            })
 
-                # Build interface payload
-                interface_payload = {
-                    "name": interface_name,
-                    "device": device_id,
-                    "type": iface_data.get("type", "other"),
-                    "status": await self.common.resolve_status_id(
-                        iface_data.get("status", "active"), "dcim.interface"
-                    ),
-                }
+        # Track failed interfaces
+        for warning in result.warnings:
+            if "Interface" in warning and "Failed" in warning:
+                created_interfaces.append({
+                    "name": "unknown",
+                    "success": False,
+                    "error": warning,
+                })
 
-                # Add optional properties
-                optional_fields = [
-                    "enabled",
-                    "mgmt_only",
-                    "description",
-                    "mac_address",
-                    "mtu",
-                    "mode",
-                    "parent_interface",
-                    "bridge",
-                ]
-                for field in optional_fields:
-                    if field in iface_data and iface_data[field] is not None:
-                        interface_payload[field] = iface_data[field]
-
-                # Handle LAG dependency (map frontend ID to Nautobot ID)
-                if "lag" in iface_data and iface_data["lag"]:
-                    lag_nautobot_id = interface_id_map.get(iface_data["lag"])
-                    if lag_nautobot_id:
-                        interface_payload["lag"] = lag_nautobot_id
-                        logger.debug(
-                            f"Mapped LAG {iface_data['lag']} → {lag_nautobot_id}"
-                        )
-                    else:
-                        logger.warning(
-                            f"LAG interface {iface_data['lag']} not found in map"
-                        )
-
-                # Handle VLAN fields (convert comma-separated strings to lists)
-                if "tagged_vlans" in iface_data and iface_data["tagged_vlans"]:
-                    tagged_vlans = iface_data["tagged_vlans"]
-                    if isinstance(tagged_vlans, str):
-                        interface_payload["tagged_vlans"] = [
-                            v.strip() for v in tagged_vlans.split(",") if v.strip()
-                        ]
-                    else:
-                        interface_payload["tagged_vlans"] = tagged_vlans
-
-                if "untagged_vlan" in iface_data and iface_data["untagged_vlan"]:
-                    interface_payload["untagged_vlan"] = iface_data["untagged_vlan"]
-
-                # Handle tags
-                if "tags" in iface_data and iface_data["tags"]:
-                    interface_payload["tags"] = self.common.normalize_tags(
-                        iface_data["tags"]
-                    )
-
-                # Create interface
-                interface_response = await self.nautobot.rest_request(
-                    endpoint="dcim/interfaces/",
-                    method="POST",
-                    data=interface_payload,
-                )
-
-                if not interface_response or "id" not in interface_response:
-                    raise Exception("No interface ID returned from Nautobot")
-
-                interface_id = interface_response["id"]
-                logger.info(
-                    f"Created interface '{interface_name}' with ID: {interface_id}"
-                )
-
-                # Store mapping for LAG references
-                if "id" in iface_data:
-                    interface_id_map[iface_data["id"]] = interface_id
-                    logger.debug(
-                        f"Mapped frontend ID {iface_data['id']} → {interface_id}"
-                    )
-
-                interface_result = {
-                    "name": interface_name,
-                    "id": interface_id,
-                    "success": True,
-                    "ip_assigned": False,
-                }
-
-                # Assign IP address if provided
-                if "ip_address" in iface_data and iface_data["ip_address"]:
-                    ip_address = iface_data["ip_address"]
-                    namespace = iface_data.get("namespace", "Global")
-
-                    try:
-                        logger.info(
-                            f"Assigning IP {ip_address} to interface '{interface_name}'"
-                        )
-
-                        # Resolve namespace
-                        namespace_id = await self.common.resolve_namespace_id(namespace)
-
-                        # Ensure IP exists
-                        ip_id = await self.common.ensure_ip_address_exists(
-                            ip_address=ip_address,
-                            namespace_id=namespace_id,
-                            status_name="active",
-                        )
-
-                        # Assign IP to interface
-                        await self.common.assign_ip_to_interface(
-                            ip_id=ip_id,
-                            interface_id=interface_id,
-                            is_primary=iface_data.get("is_primary_ipv4", False),
-                        )
-
-                        interface_result["ip_assigned"] = True
-                        interface_result["ip_id"] = ip_id
-                        logger.info(
-                            f"Successfully assigned IP {ip_address} to interface '{interface_name}'"
-                        )
-
-                        # Track primary IPv4
-                        is_ipv4 = ":" not in ip_address  # Simple IPv4 check
-                        if is_ipv4:
-                            if iface_data.get("is_primary_ipv4"):
-                                primary_ipv4_id = ip_id
-                                logger.info(
-                                    f"Interface '{interface_name}' marked as primary IPv4 (explicit)"
-                                )
-                            elif primary_ipv4_id is None:
-                                primary_ipv4_id = ip_id
-                                logger.info(
-                                    f"Interface '{interface_name}' set as primary IPv4 (first IPv4 found)"
-                                )
-
-                    except Exception as ip_error:
-                        error_msg = f"Failed to assign IP to interface: {str(ip_error)}"
-                        logger.error(error_msg)
-                        interface_result["warning"] = error_msg
-
-                created_interfaces.append(interface_result)
-
-            except Exception as e:
-                error_msg = f"Failed to create interface '{iface_data.get('name', 'unknown')}': {str(e)}"
-                logger.error(error_msg)
-                created_interfaces.append(
-                    {
-                        "name": iface_data.get("name", "unknown"),
-                        "success": False,
-                        "error": error_msg,
-                    }
-                )
+        # Log any warnings
+        for warning in result.warnings:
+            logger.warning(f"Interface creation warning: {warning}")
 
         logger.info(
-            f"Interface creation complete: {sum(1 for i in created_interfaces if i.get('success'))} succeeded, "
-            f"{sum(1 for i in created_interfaces if not i.get('success'))} failed"
+            f"Interface creation complete: {result.interfaces_created + result.interfaces_updated} succeeded, "
+            f"{result.interfaces_failed} failed"
         )
 
-        return created_interfaces, primary_ipv4_id
+        return created_interfaces, result.primary_ip4_id
+
+    def _normalize_interface_config(
+        self, interface_config: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Normalize interface configuration for InterfaceManagerService.
+
+        Converts from import format (ip_address string) to InterfaceManagerService
+        format (ip_addresses array).
+
+        Args:
+            interface_config: List of interface configuration dicts in import format
+
+        Returns:
+            List of interface dicts in InterfaceManagerService format
+        """
+        normalized = []
+
+        for iface in interface_config:
+            normalized_iface = iface.copy()
+
+            # Convert ip_address (string) to ip_addresses (array) format
+            if "ip_address" in normalized_iface and normalized_iface["ip_address"]:
+                ip_address = normalized_iface.pop("ip_address")
+                namespace = normalized_iface.get("namespace", "Global")
+                is_primary = normalized_iface.pop("is_primary_ipv4", False)
+
+                normalized_iface["ip_addresses"] = [{
+                    "address": ip_address,
+                    "namespace": namespace,
+                    "is_primary": is_primary,
+                }]
+
+            # Handle VLAN fields (convert comma-separated strings to lists)
+            if "tagged_vlans" in normalized_iface and normalized_iface["tagged_vlans"]:
+                tagged_vlans = normalized_iface["tagged_vlans"]
+                if isinstance(tagged_vlans, str):
+                    normalized_iface["tagged_vlans"] = [
+                        v.strip() for v in tagged_vlans.split(",") if v.strip()
+                    ]
+
+            # Handle tags
+            if "tags" in normalized_iface and normalized_iface["tags"]:
+                normalized_iface["tags"] = self.common.normalize_tags(
+                    normalized_iface["tags"]
+                )
+
+            normalized.append(normalized_iface)
+
+        return normalized

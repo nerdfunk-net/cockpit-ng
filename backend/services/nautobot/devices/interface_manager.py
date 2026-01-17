@@ -251,8 +251,8 @@ class InterfaceManagerService:
 
                 try:
                     # Resolve status and namespace to UUIDs
-                    status_id = await self._resolve_status_id(status, "ipam.ipaddress")
-                    namespace_id = await self._resolve_namespace_id(namespace)
+                    status_id = await self.common.resolve_status_id(status, "ipam.ipaddress")
+                    namespace_id = await self.common.resolve_namespace_id(namespace)
 
                     # Create or get existing IP address
                     ip_payload = {
@@ -297,13 +297,12 @@ class InterfaceManagerService:
                         # If IP already exists, look it up
                         if "already exists" in str(create_error).lower():
                             logger.info(f"  IP {ip_address} already exists, looking it up...")
-                            ip_id = await self._lookup_existing_ip(
+                            ip_id = await self.common.resolve_ip_address(
                                 ip_address=ip_address,
                                 namespace_id=namespace_id,
-                                interface_name=interface["name"],
-                                warnings=warnings,
                             )
                             if ip_id:
+                                logger.info(f"Found existing IP address {ip_address} with ID: {ip_id}")
                                 map_key = f"{interface['name']}:{ip_address}"
                                 ip_address_map[map_key] = ip_id
                                 logger.info(f"  ✓ Found existing IP with ID: {ip_id}, map_key: {map_key}")
@@ -328,6 +327,9 @@ class InterfaceManagerService:
                                     logger.info(f"  No role update needed (ip_role is None, empty, or 'none')")
                             else:
                                 logger.error(f"  ✗ Failed to lookup existing IP {ip_address}")
+                                warnings.append(
+                                    f"Interface {interface['name']}: IP {ip_address} exists but could not be found"
+                                )
                         else:
                             logger.error(f"  ✗ Create error is NOT about existing IP")
                             warnings.append(
@@ -366,7 +368,7 @@ class InterfaceManagerService:
         """
         # Resolve status to UUID
         interface_status = interface.get("status", "active")
-        interface_status_id = await self._resolve_status_id(interface_status, "dcim.interface")
+        interface_status_id = await self.common.resolve_status_id(interface_status, "dcim.interface")
 
         interface_payload = {
             "name": interface["name"],
@@ -397,14 +399,17 @@ class InterfaceManagerService:
         except Exception as create_error:
             # Check if interface already exists
             if "must make a unique set" in str(create_error).lower():
-                interface_id = await self._lookup_existing_interface(
+                interface_id = await self.common.resolve_interface_by_name(
                     device_id=device_id,
                     interface_name=interface["name"],
-                    warnings=warnings,
                 )
                 if interface_id:
                     logger.info(f"Found existing interface {interface['name']} with ID: {interface_id}")
                     return interface_id
+                else:
+                    warnings.append(
+                        f"Interface {interface['name']}: Interface exists but could not be found"
+                    )
             else:
                 warnings.append(
                     f"Interface {interface['name']}: Failed to create interface: {str(create_error)}"
@@ -553,142 +558,3 @@ class InterfaceManagerService:
             logger.info(f"Set primary IPv4 to {primary_ipv4_id}")
         except Exception as e:
             warnings.append(f"Failed to set primary IPv4: {str(e)}")
-
-    async def _lookup_existing_ip(
-        self,
-        ip_address: str,
-        namespace_id: str,
-        interface_name: str,
-        warnings: List[str],
-    ) -> Optional[str]:
-        """
-        Look up an existing IP address by address and namespace.
-
-        Args:
-            ip_address: IP address string
-            namespace_id: Namespace UUID
-            interface_name: Interface name (for logging)
-            warnings: List to append warnings to
-
-        Returns:
-            IP UUID if found, None otherwise
-        """
-        logger.info(f"IP address {ip_address} already exists, looking it up...")
-
-        try:
-            query = """
-            query GetIPAddress($filter: [String], $namespace: [String]) {
-              ip_addresses(address: $filter, namespace: $namespace) {
-                id
-                address
-              }
-            }
-            """
-            variables = {
-                "filter": [ip_address],
-                "namespace": [namespace_id],
-            }
-
-            result = await self.nautobot.graphql_query(query, variables)
-
-            if result and "data" in result and "ip_addresses" in result["data"]:
-                ip_addresses = result["data"]["ip_addresses"]
-                if ip_addresses and len(ip_addresses) > 0:
-                    existing_ip = ip_addresses[0]
-                    ip_id = existing_ip["id"]
-                    logger.info(f"Found existing IP address {ip_address} with ID: {ip_id}")
-                    return ip_id
-                else:
-                    warnings.append(
-                        f"Interface {interface_name}: IP {ip_address} exists but could not be found"
-                    )
-            return None
-
-        except Exception as lookup_error:
-            warnings.append(
-                f"Interface {interface_name}: Failed to lookup existing IP {ip_address}: {str(lookup_error)}"
-            )
-            return None
-
-    async def _lookup_existing_interface(
-        self,
-        device_id: str,
-        interface_name: str,
-        warnings: List[str],
-    ) -> Optional[str]:
-        """
-        Look up an existing interface by device and name.
-
-        Args:
-            device_id: Device UUID
-            interface_name: Interface name
-            warnings: List to append warnings to
-
-        Returns:
-            Interface UUID if found, None otherwise
-        """
-        logger.info(f"Interface {interface_name} already exists, looking it up...")
-
-        try:
-            query = """
-            query GetInterface($device: [String], $name: [String]) {
-              interfaces(device_id: $device, name: $name) {
-                id
-                name
-              }
-            }
-            """
-            variables = {
-                "device": [device_id],
-                "name": [interface_name],
-            }
-
-            result = await self.nautobot.graphql_query(query, variables)
-
-            if result and "data" in result and "interfaces" in result["data"]:
-                interfaces_list = result["data"]["interfaces"]
-                if interfaces_list and len(interfaces_list) > 0:
-                    existing_interface = interfaces_list[0]
-                    interface_id = existing_interface["id"]
-                    logger.info(f"Found existing interface {interface_name} with ID: {interface_id}")
-                    return interface_id
-                else:
-                    warnings.append(
-                        f"Interface {interface_name}: Interface exists but could not be found via GraphQL"
-                    )
-            return None
-
-        except Exception as lookup_error:
-            warnings.append(
-                f"Interface {interface_name}: Failed to lookup existing interface: {str(lookup_error)}"
-            )
-            return None
-
-    async def _resolve_status_id(self, status: str, content_type: str) -> str:
-        """
-        Resolve a status name to UUID if needed.
-
-        Args:
-            status: Status name or UUID
-            content_type: Content type for status resolution
-
-        Returns:
-            Status UUID
-        """
-        if not self.common._is_valid_uuid(status):
-            return await self.common.resolve_status_id(status, content_type)
-        return status
-
-    async def _resolve_namespace_id(self, namespace: str) -> str:
-        """
-        Resolve a namespace name to UUID if needed.
-
-        Args:
-            namespace: Namespace name or UUID
-
-        Returns:
-            Namespace UUID
-        """
-        if not self.common._is_valid_uuid(namespace):
-            return await self.common.resolve_namespace_id(namespace)
-        return namespace

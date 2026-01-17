@@ -279,8 +279,10 @@ class DeviceCommonService:
         """
         Resolve a status name to its UUID using REST API.
 
+        If status_name is already a valid UUID, returns it directly.
+
         Args:
-            status_name: Name of the status (e.g., "active", "planned")
+            status_name: Name of the status (e.g., "active", "planned") or UUID
             content_type: Content type for the status
                          (e.g., "dcim.device", "dcim.interface", "ipam.ipaddress")
 
@@ -290,6 +292,11 @@ class DeviceCommonService:
         Raises:
             ValueError: If status not found
         """
+        # If already a UUID, return directly
+        if self._is_valid_uuid(status_name):
+            logger.debug(f"Status is already a UUID: {status_name}")
+            return status_name
+
         logger.info(
             f"Resolving status '{status_name}' for content type '{content_type}'"
         )
@@ -314,8 +321,10 @@ class DeviceCommonService:
         """
         Resolve a namespace name to its UUID using GraphQL.
 
+        If namespace_name is already a valid UUID, returns it directly.
+
         Args:
-            namespace_name: Name of the namespace (e.g., "Global")
+            namespace_name: Name of the namespace (e.g., "Global") or UUID
 
         Returns:
             Namespace UUID
@@ -323,6 +332,11 @@ class DeviceCommonService:
         Raises:
             ValueError: If namespace not found
         """
+        # If already a UUID, return directly
+        if self._is_valid_uuid(namespace_name):
+            logger.debug(f"Namespace is already a UUID: {namespace_name}")
+            return namespace_name
+
         logger.info(f"Resolving namespace '{namespace_name}'")
 
         query = f"""
@@ -543,6 +557,104 @@ class DeviceCommonService:
 
         except Exception as e:
             logger.error(f"Error resolving device type: {e}", exc_info=True)
+            return None
+
+    async def resolve_interface_by_name(
+        self, device_id: str, interface_name: str
+    ) -> Optional[str]:
+        """
+        Resolve interface UUID from device ID and interface name using GraphQL.
+
+        Args:
+            device_id: Device UUID
+            interface_name: Name of the interface
+
+        Returns:
+            Interface UUID if found, None otherwise
+        """
+        try:
+            logger.debug(
+                f"Resolving interface '{interface_name}' on device {device_id}"
+            )
+
+            query = """
+            query GetInterface($device: [String], $name: [String]) {
+              interfaces(device_id: $device, name: $name) {
+                id
+                name
+              }
+            }
+            """
+            variables = {"device": [device_id], "name": [interface_name]}
+            result = await self.nautobot.graphql_query(query, variables)
+
+            if "errors" in result:
+                logger.error(
+                    f"GraphQL error resolving interface: {result['errors']}"
+                )
+                return None
+
+            interfaces = result.get("data", {}).get("interfaces", [])
+            if interfaces and len(interfaces) > 0:
+                interface_id = interfaces[0]["id"]
+                logger.debug(
+                    f"Resolved interface '{interface_name}' to UUID {interface_id}"
+                )
+                return interface_id
+
+            logger.debug(f"Interface not found: {interface_name}")
+            return None
+
+        except Exception as e:
+            logger.error(f"Error resolving interface: {e}", exc_info=True)
+            return None
+
+    async def resolve_ip_address(
+        self, ip_address: str, namespace_id: str
+    ) -> Optional[str]:
+        """
+        Resolve IP address UUID from address and namespace using GraphQL.
+
+        Args:
+            ip_address: IP address string (e.g., "192.168.1.1/24")
+            namespace_id: Namespace UUID
+
+        Returns:
+            IP address UUID if found, None otherwise
+        """
+        try:
+            logger.debug(
+                f"Resolving IP address '{ip_address}' in namespace {namespace_id}"
+            )
+
+            query = """
+            query GetIPAddress($filter: [String], $namespace: [String]) {
+              ip_addresses(address: $filter, namespace: $namespace) {
+                id
+                address
+              }
+            }
+            """
+            variables = {"filter": [ip_address], "namespace": [namespace_id]}
+            result = await self.nautobot.graphql_query(query, variables)
+
+            if "errors" in result:
+                logger.error(
+                    f"GraphQL error resolving IP address: {result['errors']}"
+                )
+                return None
+
+            ip_addresses = result.get("data", {}).get("ip_addresses", [])
+            if ip_addresses and len(ip_addresses) > 0:
+                ip_id = ip_addresses[0]["id"]
+                logger.debug(f"Resolved IP address '{ip_address}' to UUID {ip_id}")
+                return ip_id
+
+            logger.debug(f"IP address not found: {ip_address}")
+            return None
+
+        except Exception as e:
+            logger.error(f"Error resolving IP address: {e}", exc_info=True)
             return None
 
     # ========================================================================
