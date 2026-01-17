@@ -24,7 +24,7 @@ export function useFileHistoryQuery(
         throw new Error('Missing required parameters')
       }
       return apiCall<FileHistoryResponse>(
-        `git/${repoId}/files/${encodeURIComponent(filePath)}/complete-history`
+        `git/${repoId}/files/${filePath}/complete-history`
       )
     },
     enabled: enabled && !!repoId && !!filePath,
