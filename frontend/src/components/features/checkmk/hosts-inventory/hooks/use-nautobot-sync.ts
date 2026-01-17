@@ -6,6 +6,29 @@ import { formatDeviceSubmissionData } from '@/components/features/nautobot/add-d
 import type { DeviceFormValues } from '@/components/shared/device-form'
 import { parseInterfacesFromInventory, type CheckMKInterface } from '@/lib/checkmk/interface-mapping-utils'
 
+/**
+ * Convert netmask (e.g., "255.255.255.0") to CIDR notation (e.g., 24)
+ */
+function netmaskToCIDR(netmask: string): number {
+  if (!netmask) return 0
+  
+  try {
+    const octets = netmask.split('.').map(Number)
+    if (octets.length !== 4) return 0
+    
+    let cidr = 0
+    for (const octet of octets) {
+      if (octet < 0 || octet > 255) return 0
+      // Count the number of 1 bits in this octet
+      cidr += octet.toString(2).split('1').length - 1
+    }
+    
+    return cidr
+  } catch {
+    return 0
+  }
+}
+
 interface UseNautobotSyncProps {
   checkmkConfig: CheckMKConfig | null
   onMessage: (text: string, type: 'success' | 'error' | 'info') => void
@@ -88,7 +111,9 @@ export function useNautobotSync({
           // Create a mapping for EACH IP address on the interface
           if (iface.ipAddresses.length > 0) {
             iface.ipAddresses.forEach((ipAddr, ipIndex) => {
-              const ipAddress = `${ipAddr.address}/${ipAddr.cidr}`
+              // Use CIDR if available, otherwise convert netmask to CIDR
+              const cidr = ipAddr.cidr || netmaskToCIDR(ipAddr.netmask)
+              const ipAddress = `${ipAddr.address}/${cidr}`
               
               mappings[`interface_${mappingCounter++}`] = {
                 enabled: iface.oper_status === 1, // Enable only if interface is operationally up
@@ -182,24 +207,28 @@ export function useNautobotSync({
       setIsSyncModalOpen(true)
       setNautobotDevice(null)
       
-      // Search for device in Nautobot by name
+      // Search for device in Nautobot by name (use reload=true to bypass cache)
       onMessage(`Searching for ${host.host_name} in Nautobot...`, 'info')
       
       try {
         const searchResult = await apiCall<{ devices: unknown[] }>(
-          `nautobot/devices?filter_type=name&filter_value=${encodeURIComponent(host.host_name)}`
+          `nautobot/devices?filter_type=name&filter_value=${encodeURIComponent(host.host_name)}&reload=true`
         )
+
+        console.log('[useNautobotSync] Search result for', host.host_name, ':', searchResult)
 
         if (searchResult?.devices && searchResult.devices.length > 0) {
           const deviceBasic = searchResult.devices[0] as Record<string, unknown>
 
           // Get detailed device information
           const deviceId = deviceBasic.id as string
+          console.log('[useNautobotSync] Found device with ID:', deviceId)
           const deviceDetails = await apiCall<Record<string, unknown>>(`nautobot/devices/${deviceId}`)
 
           setNautobotDevice(deviceDetails || null)
           onMessage(`Device found in Nautobot`, 'success')
         } else {
+          console.log('[useNautobotSync] Device not found in Nautobot')
           setNautobotDevice(null)
           onMessage(`Device not found in Nautobot - will create new`, 'info')
         }
@@ -277,12 +306,37 @@ export function useNautobotSync({
         // Device doesn't exist - use POST to create
         onMessage(`Creating new device in Nautobot...`, 'info')
         
-        await apiCall('nautobot/add-device', {
+        const createResponse = await apiCall<{ id?: string }>('nautobot/add-device', {
           method: 'POST',
           body: JSON.stringify(submissionData)
         })
         
         onMessage(`Successfully created ${selectedHostForSync.host_name} in Nautobot`, 'success')
+        
+        // After creating, refresh the device info to get the device ID
+        if (createResponse?.id) {
+          try {
+            const deviceDetails = await apiCall<Record<string, unknown>>(`nautobot/devices/${createResponse.id}`)
+            setNautobotDevice(deviceDetails || null)
+          } catch (err) {
+            console.error('Failed to fetch created device details:', err)
+          }
+        } else {
+          // Fallback: search for the device by name
+          try {
+            const searchResult = await apiCall<{ devices: unknown[] }>(
+              `nautobot/devices?filter_type=name&filter_value=${encodeURIComponent(selectedHostForSync.host_name)}`
+            )
+            if (searchResult?.devices && searchResult.devices.length > 0) {
+              const deviceBasic = searchResult.devices[0] as Record<string, unknown>
+              const deviceId = deviceBasic.id as string
+              const deviceDetails = await apiCall<Record<string, unknown>>(`nautobot/devices/${deviceId}`)
+              setNautobotDevice(deviceDetails || null)
+            }
+          } catch (err) {
+            console.error('Failed to refresh device info after creation:', err)
+          }
+        }
       }
       
       setIsSyncModalOpen(false)

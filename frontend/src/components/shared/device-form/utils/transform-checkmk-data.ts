@@ -199,6 +199,37 @@ export function transformCheckMKToFormData(
 
   // Ensure at least one interface (form validation requirement)
   if (interfaces.length > 0) {
+    // Apply primary IP logic:
+    // 1. If device has interface starting with "Management" or "Mgmt", use first IP of that interface
+    // 2. Otherwise, use first IP of first interface
+    // 3. All other IPs are not primary
+    
+    let primarySet = false
+    
+    // First, reset all IPs to not primary
+    interfaces.forEach(iface => {
+      iface.ip_addresses.forEach(ip => {
+        ip.is_primary = false
+      })
+    })
+    
+    // Look for Management/Mgmt interface
+    const mgmtInterface = interfaces.find(iface => {
+      const name = iface.name.toLowerCase()
+      return name.startsWith('management') || name.startsWith('mgmt')
+    })
+    
+    if (mgmtInterface && mgmtInterface.ip_addresses.length > 0) {
+      // Set first IP of management interface as primary
+      mgmtInterface.ip_addresses[0]!.is_primary = true
+      primarySet = true
+    }
+    
+    // If no management interface found, use first IP of first interface
+    if (!primarySet && interfaces.length > 0 && interfaces[0]!.ip_addresses.length > 0) {
+      interfaces[0]!.ip_addresses[0]!.is_primary = true
+    }
+    
     formData.interfaces = interfaces
   }
 

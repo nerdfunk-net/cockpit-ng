@@ -3,8 +3,8 @@
  * Uses shared form components from add-device for consistent UX
  */
 
-import React, { useEffect, useMemo, useCallback } from 'react'
-import { RefreshCw, Loader2 } from 'lucide-react'
+import React, { useEffect, useMemo, useCallback, useState } from 'react'
+import { RefreshCw, Loader2, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -15,7 +15,7 @@ import { useApi } from '@/hooks/use-api'
 // Shared form components from add-device
 import {
   DeviceInfoForm,
-  InterfaceList,
+  InterfaceTable,
   PrefixConfiguration,
 } from '@/components/features/nautobot/add-device/components'
 
@@ -126,7 +126,31 @@ export function DeviceSyncModal({
     mode: 'update',
   })
 
-  const { watch, reset, handleSubmit: formHandleSubmit } = form
+  const { watch, reset } = form
+
+  // Validation modal state
+  const [showValidationModal, setShowValidationModal] = useState(false)
+  const [validationResults, setValidationResults] = useState<{
+    isValid: boolean
+    deviceRole: boolean
+    deviceStatus: boolean
+    deviceType: boolean
+    location: boolean
+    interfaceStatus: boolean
+    interfaceIssues: number
+    ipAddresses: boolean
+    ipAddressIssues: number
+  }>({
+    isValid: true,
+    deviceRole: true,
+    deviceStatus: true,
+    deviceType: true,
+    location: true,
+    interfaceStatus: true,
+    interfaceIssues: 0,
+    ipAddresses: true,
+    ipAddressIssues: 0,
+  })
 
   // Reset form when initial data changes
   useEffect(() => {
@@ -185,56 +209,143 @@ export function DeviceSyncModal({
   const tagsManager = useTagsManager()
   const customFieldsManager = useCustomFieldsManager()
 
-  // Handle form submission
-  const onSubmit = React.useCallback(
-    async (data: DeviceFormValues) => {
-      await onSync(data, deviceId)
-    },
-    [deviceId, onSync]
-  )
-
-  // Handle form errors - show toast when validation fails
-  const onError = React.useCallback(
-    (errors: any) => {
-      console.error('Form validation errors:', errors)
+  // Handle form submission with validation
+  const handleSync = React.useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
       
-      // Collect all error messages
+      // Get current form values
+      const values = form.getValues()
+      
+      // Run validation
+      const deviceRole = !!values.selectedRole
+      const deviceStatus = !!values.selectedStatus
+      const deviceType = !!values.selectedDeviceType
+      const location = !!values.selectedLocation
+      
+      // Check interface statuses and IP addresses
+      const interfaces = values.interfaces || []
+      let interfaceIssues = 0
+      let allInterfacesHaveStatus = true
+      let ipAddressIssues = 0
+      let allIpAddressesValid = true
+      
+      // IP address validation regex: xxx.xxx.xxx.xxx/yy or xxxx:xxxx::/yy
+      const ipv4CidrRegex = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/
+      const ipv6CidrRegex = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\/\d{1,3}$/
+      
       const errorMessages: string[] = []
       
-      // Check device info errors
-      if (errors.deviceName) errorMessages.push(`Device Name: ${errors.deviceName.message}`)
-      if (errors.selectedRole) errorMessages.push(`Role: ${errors.selectedRole.message}`)
-      if (errors.selectedStatus) errorMessages.push(`Status: ${errors.selectedStatus.message}`)
-      if (errors.selectedLocation) errorMessages.push(`Location: ${errors.selectedLocation.message}`)
-      if (errors.selectedDeviceType) errorMessages.push(`Device Type: ${errors.selectedDeviceType.message}`)
+      if (!deviceRole) errorMessages.push('Device Role is required')
+      if (!deviceStatus) errorMessages.push('Device Status is required')
+      if (!deviceType) errorMessages.push('Device Type is required')
+      if (!location) errorMessages.push('Location is required')
       
-      // Check interface errors
-      if (errors.interfaces) {
-        errors.interfaces.forEach((iface: any, idx: number) => {
-          if (iface?.name) errorMessages.push(`Interface ${idx + 1} Name: ${iface.name.message}`)
-          if (iface?.type) errorMessages.push(`Interface ${idx + 1} Type: ${iface.type.message}`)
-          if (iface?.status) errorMessages.push(`Interface ${idx + 1} Status: ${iface.status.message}`)
-          
-          // Check IP address errors
-          if (iface?.ip_addresses) {
-            iface.ip_addresses.forEach((ip: any, ipIdx: number) => {
-              if (ip?.address) errorMessages.push(`Interface ${idx + 1}, IP ${ipIdx + 1} Address: ${ip.address.message}`)
-              if (ip?.namespace) errorMessages.push(`Interface ${idx + 1}, IP ${ipIdx + 1} Namespace: ${ip.namespace.message}`)
-            })
+      interfaces.forEach((iface, idx) => {
+        if (!iface.status) {
+          allInterfacesHaveStatus = false
+          interfaceIssues++
+          errorMessages.push(`Interface ${idx + 1} (${iface.name || 'unnamed'}) is missing status`)
+        }
+        
+        // Check IP addresses
+        const ipAddresses = iface.ip_addresses || []
+        ipAddresses.forEach((ip, ipIdx) => {
+          if (ip.address) {
+            const isValidCidr = ipv4CidrRegex.test(ip.address) || ipv6CidrRegex.test(ip.address)
+            if (!isValidCidr) {
+              allIpAddressesValid = false
+              ipAddressIssues++
+              errorMessages.push(`Interface ${idx + 1}, IP ${ipIdx + 1}: Invalid CIDR format (${ip.address})`)
+            }
+          } else {
+            allIpAddressesValid = false
+            ipAddressIssues++
+            errorMessages.push(`Interface ${idx + 1}, IP ${ipIdx + 1}: IP address is required`)
           }
         })
+      })
+      
+      const isValid = deviceRole && deviceStatus && deviceType && location && allInterfacesHaveStatus && allIpAddressesValid
+      
+      if (!isValid) {
+        toast({
+          title: 'Validation Failed',
+          description: errorMessages.slice(0, 5).join('\n') + (errorMessages.length > 5 ? `\n...and ${errorMessages.length - 5} more` : ''),
+          variant: 'destructive',
+        })
+        return
       }
       
-      // Show toast with all errors
-      toast({
-        title: 'Validation Errors',
-        description: errorMessages.length > 0 
-          ? errorMessages.slice(0, 5).join('\n') + (errorMessages.length > 5 ? '\n...' : '')
-          : 'Please check the form for errors',
-        variant: 'destructive',
-      })
+      // If validation passes, proceed with sync
+      await onSync(values, deviceId)
     },
-    [toast]
+    [form, deviceId, onSync, toast]
+  )
+
+  // Handle manual validation
+  const handleValidate = React.useCallback(
+    async () => {
+      // Get current form values
+      const values = form.getValues()
+      
+      // Check required fields
+      const deviceRole = !!values.selectedRole
+      const deviceStatus = !!values.selectedStatus
+      const deviceType = !!values.selectedDeviceType
+      const location = !!values.selectedLocation
+      
+      // Check interface statuses and IP addresses
+      const interfaces = values.interfaces || []
+      let interfaceIssues = 0
+      let allInterfacesHaveStatus = true
+      let ipAddressIssues = 0
+      let allIpAddressesValid = true
+      
+      // IP address validation regex: xxx.xxx.xxx.xxx/yy or xxxx:xxxx::/yy
+      const ipv4CidrRegex = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/
+      const ipv6CidrRegex = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\/\d{1,3}$/
+      
+      interfaces.forEach(iface => {
+        if (!iface.status) {
+          allInterfacesHaveStatus = false
+          interfaceIssues++
+        }
+        
+        // Check IP addresses
+        const ipAddresses = iface.ip_addresses || []
+        ipAddresses.forEach(ip => {
+          if (ip.address) {
+            const isValidCidr = ipv4CidrRegex.test(ip.address) || ipv6CidrRegex.test(ip.address)
+            if (!isValidCidr) {
+              allIpAddressesValid = false
+              ipAddressIssues++
+            }
+          } else {
+            // Empty IP address is also invalid
+            allIpAddressesValid = false
+            ipAddressIssues++
+          }
+        })
+      })
+      
+      const isValid = deviceRole && deviceStatus && deviceType && location && allInterfacesHaveStatus && allIpAddressesValid
+      
+      setValidationResults({
+        isValid,
+        deviceRole,
+        deviceStatus,
+        deviceType,
+        location,
+        interfaceStatus: allInterfacesHaveStatus,
+        interfaceIssues,
+        ipAddresses: allIpAddressesValid,
+        ipAddressIssues,
+      })
+      
+      setShowValidationModal(true)
+    },
+    [form]
   )
 
   // Load and apply default values from Nautobot settings
@@ -347,7 +458,7 @@ export function DeviceSyncModal({
               </div>
             </div>
           ) : (
-            <form onSubmit={formHandleSubmit(onSubmit, onError)} className="p-6 space-y-6">
+            <form onSubmit={handleSync} className="p-6 space-y-6">
               {!isUpdate && (
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertDescription className="text-sm text-amber-800">
@@ -374,7 +485,7 @@ export function DeviceSyncModal({
               <PrefixConfiguration form={form} isLoading={isSyncing} />
 
               {/* Network Interfaces */}
-              <InterfaceList
+              <InterfaceTable
                 form={form}
                 dropdownData={dropdownData}
                 onOpenProperties={(id) => {
@@ -395,6 +506,15 @@ export function DeviceSyncModal({
                   disabled={isSyncing}
                 >
                   Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleValidate}
+                  className="min-w-[120px] hover:bg-blue-100 hover:border-blue-400 active:scale-95 transition-all cursor-pointer"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Validate
                 </Button>
                 <Button
                   type="submit"
@@ -447,6 +567,134 @@ export function DeviceSyncModal({
           isLoadingVlans={propertiesModal.isLoadingVlans}
         />
       </DialogContent>
+
+      {/* Validation Results Modal */}
+      <Dialog open={showValidationModal} onOpenChange={setShowValidationModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {validationResults.isValid ? (
+                <>
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <span>Validation Passed</span>
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-5 w-5 text-red-600" />
+                  <span>Validation Failed</span>
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {validationResults.isValid 
+                ? 'All required fields are properly configured.'
+                : 'Some required fields are missing or invalid.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-4">
+            {/* Device Role */}
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+              <div className="flex items-center gap-2">
+                {validationResults.deviceRole ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-600" />
+                )}
+                <span className="text-sm font-medium">Device Role</span>
+              </div>
+              <Badge variant={validationResults.deviceRole ? "default" : "destructive"}>
+                {validationResults.deviceRole ? 'Valid' : 'Required'}
+              </Badge>
+            </div>
+
+            {/* Device Status */}
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+              <div className="flex items-center gap-2">
+                {validationResults.deviceStatus ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-600" />
+                )}
+                <span className="text-sm font-medium">Device Status</span>
+              </div>
+              <Badge variant={validationResults.deviceStatus ? "default" : "destructive"}>
+                {validationResults.deviceStatus ? 'Valid' : 'Required'}
+              </Badge>
+            </div>
+
+            {/* Device Type */}
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+              <div className="flex items-center gap-2">
+                {validationResults.deviceType ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-600" />
+                )}
+                <span className="text-sm font-medium">Device Type</span>
+              </div>
+              <Badge variant={validationResults.deviceType ? "default" : "destructive"}>
+                {validationResults.deviceType ? 'Valid' : 'Required'}
+              </Badge>
+            </div>
+
+            {/* Location */}
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+              <div className="flex items-center gap-2">
+                {validationResults.location ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-600" />
+                )}
+                <span className="text-sm font-medium">Location</span>
+              </div>
+              <Badge variant={validationResults.location ? "default" : "destructive"}>
+                {validationResults.location ? 'Valid' : 'Required'}
+              </Badge>
+            </div>
+
+            {/* Interface Status */}
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+              <div className="flex items-center gap-2">
+                {validationResults.interfaceStatus ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                )}
+                <span className="text-sm font-medium">Interface Status</span>
+              </div>
+              <Badge variant={validationResults.interfaceStatus ? "default" : "destructive"}>
+                {validationResults.interfaceStatus 
+                  ? 'All Valid' 
+                  : `${validationResults.interfaceIssues} Missing`}
+              </Badge>
+            </div>
+
+            {/* IP Addresses */}
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+              <div className="flex items-center gap-2">
+                {validationResults.ipAddresses ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                )}
+                <span className="text-sm font-medium">IP Addresses (CIDR)</span>
+              </div>
+              <Badge variant={validationResults.ipAddresses ? "default" : "destructive"}>
+                {validationResults.ipAddresses 
+                  ? 'All Valid' 
+                  : `${validationResults.ipAddressIssues} Invalid`}
+              </Badge>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button onClick={() => setShowValidationModal(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   )
 }
