@@ -94,7 +94,7 @@ export function DeviceSyncModal({
         ipRoles: fullDropdownData?.ipRoles,
       }
     )
-  }, [propertyMappings, nautobotMetadata, interfaceMappings, open, loadingMetadata, fullDropdownData])
+  }, [propertyMappings, nautobotMetadata, interfaceMappings, open, loadingMetadata, fullDropdownData, deviceId])
 
   // Merge CheckMK metadata with full dropdown data
   const dropdownData: NautobotDropdownsResponse = useMemo(() => ({
@@ -152,12 +152,25 @@ export function DeviceSyncModal({
     ipAddressIssues: 0,
   })
 
-  // Reset form when initial data changes
+  // Reset form when initial data changes or device changes
   useEffect(() => {
     if (initialFormData && open) {
-      reset(initialFormData as DeviceFormValues)
+      // First reset to empty to clear any stale data from previous device
+      reset({} as DeviceFormValues)
+      // Then populate with the new device data in the next tick
+      setTimeout(() => {
+        reset(initialFormData as DeviceFormValues)
+      }, 0)
     }
-  }, [initialFormData, open, reset])
+  }, [initialFormData, open, reset, deviceId])
+
+  // Clear form completely when modal closes to prevent data from persisting
+  useEffect(() => {
+    if (!open) {
+      // Reset to empty values when closing
+      reset({} as DeviceFormValues)
+    }
+  }, [open, reset])
 
   // Searchable dropdowns
   const locationFilterPredicate = React.useCallback(

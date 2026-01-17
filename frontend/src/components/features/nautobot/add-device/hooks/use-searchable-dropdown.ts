@@ -73,6 +73,22 @@ export function useSearchableDropdown<T extends { id: string }>(
     return selectedItem ? getDisplayText(selectedItem) : ''
   }, [searchQuery, selectedItem, getDisplayText])
 
+  // Clear search query when selectedId changes externally (e.g., form reset)
+  // but NOT when user actively selects (selectItem already handles that)
+  useEffect(() => {
+    if (selectedItem) {
+      const expectedText = getDisplayText(selectedItem)
+      // Only clear if search query doesn't match the selected item
+      // This means it's a stale value from a previous selection
+      if (searchQuery !== '' && searchQuery !== expectedText) {
+        setSearchQuery('')
+      }
+    } else if (searchQuery !== '') {
+      // No selected item but we have a search query - clear it
+      setSearchQuery('')
+    }
+  }, [selectedId, selectedItem, searchQuery, getDisplayText])
+
   // Clear selection when user clears the search
   useEffect(() => {
     if (searchQuery === '' && selectedItem) {

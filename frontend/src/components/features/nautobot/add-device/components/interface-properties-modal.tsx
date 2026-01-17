@@ -50,9 +50,9 @@ export function InterfacePropertiesModal({
   const interfaceIndex = interfaceId ? parseInt(interfaceId, 10) : -1
   const interfaces = watch('interfaces')
 
-  console.log('[InterfacePropertiesModal] Interface index:', interfaceIndex, 'total interfaces:', interfaces.length)
+  console.log('[InterfacePropertiesModal] Interface index:', interfaceIndex, 'total interfaces:', interfaces?.length ?? 0)
 
-  if (interfaceIndex === -1 || !show || isNaN(interfaceIndex)) return null
+  if (interfaceIndex === -1 || !show || isNaN(interfaceIndex) || !interfaces || interfaceIndex >= interfaces.length) return null
 
   const currentInterface = interfaces[interfaceIndex]
   if (!currentInterface) return null
