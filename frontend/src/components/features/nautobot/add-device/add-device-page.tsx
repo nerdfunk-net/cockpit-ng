@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { Server, Plus, X, FileSpreadsheet, Loader2 } from 'lucide-react'
+import { FieldErrors } from 'react-hook-form'
+import { Server, Plus, X, FileSpreadsheet, Loader2, AlertCircle, CheckCircle, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 
 // TanStack Query Hooks
 import { useNautobotDropdownsQuery, useDeviceMutations } from './hooks/queries'
@@ -42,6 +45,34 @@ import type { DeviceFormValues } from './validation'
 
 export function AddDevicePage() {
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null)
+  const [showValidationModal, setShowValidationModal] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
+  
+  // Validation summary modal state
+  const [showValidationSummary, setShowValidationSummary] = useState(false)
+  const [validationResults, setValidationResults] = useState<{
+    isValid: boolean
+    deviceName: boolean
+    deviceRole: boolean
+    deviceStatus: boolean
+    deviceType: boolean
+    location: boolean
+    interfaceStatus: boolean
+    interfaceIssues: number
+    ipAddresses: boolean
+    ipAddressIssues: number
+  }>({
+    isValid: true,
+    deviceName: true,
+    deviceRole: true,
+    deviceStatus: true,
+    deviceType: true,
+    location: true,
+    interfaceStatus: true,
+    interfaceIssues: 0,
+    ipAddresses: true,
+    ipAddressIssues: 0,
+  })
 
   // Fetch all dropdown data with TanStack Query
   const {
@@ -131,6 +162,179 @@ export function AddDevicePage() {
     },
   })
 
+  // Handle form validation errors
+  const onInvalid = useCallback((validationErrors: FieldErrors<DeviceFormValues>) => {
+    console.error('Form validation failed. All errors:', validationErrors)
+    console.error('Interfaces errors:', validationErrors.interfaces)
+    console.error('Is interfaces array?', Array.isArray(validationErrors.interfaces))
+    
+    const errors: string[] = []
+    
+    // Collect all validation errors
+    if (validationErrors.deviceName) {
+      errors.push(`Device Name: ${validationErrors.deviceName.message}`)
+    }
+    if (validationErrors.selectedRole) {
+      errors.push(`Device Role: ${validationErrors.selectedRole.message}`)
+    }
+    if (validationErrors.selectedStatus) {
+      errors.push(`Device Status: ${validationErrors.selectedStatus.message}`)
+    }
+    if (validationErrors.selectedLocation) {
+      errors.push(`Location: ${validationErrors.selectedLocation.message}`)
+    }
+    if (validationErrors.selectedDeviceType) {
+      errors.push(`Device Type: ${validationErrors.selectedDeviceType.message}`)
+    }
+    
+    // Check interface errors
+    if (validationErrors.interfaces) {
+      console.error('Processing interface errors...')
+      if (Array.isArray(validationErrors.interfaces)) {
+        console.error('Interface errors is an array with length:', validationErrors.interfaces.length)
+        validationErrors.interfaces.forEach((interfaceError, index) => {
+          console.error(`Interface ${index} error:`, interfaceError)
+          
+          if (!interfaceError) return
+          
+          // Iterate through all error fields in the interface
+          Object.keys(interfaceError).forEach((fieldName) => {
+            const fieldError = interfaceError[fieldName as keyof typeof interfaceError]
+            console.error(`Interface ${index} field '${fieldName}' error:`, fieldError)
+            
+            // Handle ip_addresses specially since it's an array
+            if (fieldName === 'ip_addresses') {
+              // Check if it's a root-level array error
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              if ((fieldError as any)?.message) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                console.error(`Interface ${index} has root ip_addresses message:`, (fieldError as any).message)
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                errors.push(`Interface ${index + 1} IP Addresses: ${(fieldError as any).message}`)
+              }
+              // Check individual IP address errors
+              else if (Array.isArray(fieldError)) {
+                console.error(`Interface ${index} ip_addresses is array with length:`, fieldError.length)
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                fieldError.forEach((ipError: any, ipIndex: number) => {
+                  console.error(`Interface ${index}, IP ${ipIndex} error:`, ipError)
+                  if (ipError?.address) {
+                    console.error(`Interface ${index}, IP ${ipIndex} address error:`, ipError.address.message)
+                    errors.push(`Interface ${index + 1}, IP ${ipIndex + 1} Address: ${ipError.address.message}`)
+                  }
+                  if (ipError?.namespace) {
+                    console.error(`Interface ${index}, IP ${ipIndex} namespace error:`, ipError.namespace.message)
+                    errors.push(`Interface ${index + 1}, IP ${ipIndex + 1} Namespace: ${ipError.namespace.message}`)
+                  }
+                })
+              }
+            } else {
+              // Handle all other field errors
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const message = (fieldError as any)?.message
+              if (message) {
+                const fieldLabel = fieldName.charAt(0).toUpperCase() + fieldName.slice(1).replace(/_/g, ' ')
+                errors.push(`Interface ${index + 1} ${fieldLabel}: ${message}`)
+              }
+            }
+          })
+        })
+      } else if (validationErrors.interfaces.message) {
+        console.error('Interfaces has a message:', validationErrors.interfaces.message)
+        errors.push(`Interfaces: ${validationErrors.interfaces.message}`)
+      }
+    }
+    
+    console.error('Collected errors:', errors)
+    
+    // Only show modal if there are actual errors
+    if (errors.length > 0) {
+      setValidationErrors(errors)
+      setShowValidationModal(true)
+    }
+  }, [])
+
+  // Handle manual validation
+  const handleValidate = useCallback(() => {
+    // Get current form values
+    const values = form.getValues()
+    
+    // Check required fields
+    const deviceName = !!values.deviceName?.trim()
+    const deviceRole = !!values.selectedRole
+    const deviceStatus = !!values.selectedStatus
+    const deviceType = !!values.selectedDeviceType
+    const location = !!values.selectedLocation
+    
+    // Check interface statuses and IP addresses
+    const interfaces = values.interfaces || []
+    let interfaceIssues = 0
+    let allInterfacesValid = true
+    let ipAddressIssues = 0
+    let allIpAddressesValid = true
+    
+    // IP address validation regex: xxx.xxx.xxx.xxx/yy or xxxx:xxxx::/yy
+    const ipv4CidrRegex = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/
+    const ipv6CidrRegex = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\/\d{1,3}$/
+    
+    interfaces.forEach(iface => {
+      // Check required interface fields
+      if (!iface.name || !iface.name.trim()) {
+        allInterfacesValid = false
+        interfaceIssues++
+      }
+      if (!iface.type) {
+        allInterfacesValid = false
+        interfaceIssues++
+      }
+      if (!iface.status) {
+        allInterfacesValid = false
+        interfaceIssues++
+      }
+      
+      // Check IP addresses
+      const ipAddresses = iface.ip_addresses || []
+      ipAddresses.forEach(ip => {
+        // Check if IP address is filled
+        if (!ip.address || !ip.address.trim()) {
+          allIpAddressesValid = false
+          ipAddressIssues++
+          return
+        }
+        
+        // Check if IP address is in valid CIDR format
+        const isValidCidr = ipv4CidrRegex.test(ip.address) || ipv6CidrRegex.test(ip.address)
+        if (!isValidCidr) {
+          allIpAddressesValid = false
+          ipAddressIssues++
+        }
+        
+        // Check if namespace is filled (required by Zod schema)
+        if (!ip.namespace || !ip.namespace.trim()) {
+          allIpAddressesValid = false
+          ipAddressIssues++
+        }
+      })
+    })
+    
+    const isValid = deviceName && deviceRole && deviceStatus && deviceType && location && allInterfacesValid && allIpAddressesValid
+    
+    setValidationResults({
+      isValid,
+      deviceName,
+      deviceRole,
+      deviceStatus,
+      deviceType,
+      location,
+      interfaceStatus: allInterfacesValid,
+      interfaceIssues,
+      ipAddresses: allIpAddressesValid,
+      ipAddressIssues,
+    })
+    
+    setShowValidationSummary(true)
+  }, [form])
+
   // Form submission
   const onSubmit = useCallback(
     async (data: DeviceFormValues) => {
@@ -181,7 +385,7 @@ export function AddDevicePage() {
 
   return (
     <div>
-      <form onSubmit={formHandleSubmit(onSubmit)} className="container mx-auto py-6 space-y-6">
+      <form onSubmit={formHandleSubmit(onSubmit, onInvalid)} className="container mx-auto py-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -256,6 +460,16 @@ export function AddDevicePage() {
             <X className="h-4 w-4 mr-2" />
             Clear Form
           </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleValidate}
+            disabled={createDevice.isPending}
+            size="lg"
+          >
+            <CheckCircle className="h-4 w-4 mr-2" />
+            Validate
+          </Button>
           <Button type="submit" disabled={createDevice.isPending} size="lg">
             {createDevice.isPending ? (
               <>
@@ -327,6 +541,183 @@ export function AddDevicePage() {
           }}
         />
       </form>
+
+      {/* Validation Error Modal */}
+      <Dialog open={showValidationModal} onOpenChange={setShowValidationModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              Form Validation Failed
+            </DialogTitle>
+            <DialogDescription>
+              Please correct the following errors before submitting the form:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-96 overflow-y-auto">
+            <div className="space-y-2 p-4 bg-destructive/5 rounded-lg border border-destructive/20">
+              {validationErrors.map((error) => (
+                <div key={error} className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowValidationModal(false)}
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Validation Summary Modal */}
+      <Dialog open={showValidationSummary} onOpenChange={setShowValidationSummary}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {validationResults.isValid ? (
+                <>
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <span>Validation Passed</span>
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-5 w-5 text-red-600" />
+                  <span>Validation Failed</span>
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {validationResults.isValid 
+                ? 'All required fields are properly configured.'
+                : 'Some required fields are missing or invalid.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-4">
+            {/* Device Name */}
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+              <div className="flex items-center gap-2">
+                {validationResults.deviceName ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-600" />
+                )}
+                <span className="text-sm font-medium">Device Name</span>
+              </div>
+              <Badge variant={validationResults.deviceName ? "default" : "destructive"}>
+                {validationResults.deviceName ? 'Valid' : 'Required'}
+              </Badge>
+            </div>
+
+            {/* Device Role */}
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+              <div className="flex items-center gap-2">
+                {validationResults.deviceRole ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-600" />
+                )}
+                <span className="text-sm font-medium">Device Role</span>
+              </div>
+              <Badge variant={validationResults.deviceRole ? "default" : "destructive"}>
+                {validationResults.deviceRole ? 'Valid' : 'Required'}
+              </Badge>
+            </div>
+
+            {/* Device Status */}
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+              <div className="flex items-center gap-2">
+                {validationResults.deviceStatus ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-600" />
+                )}
+                <span className="text-sm font-medium">Device Status</span>
+              </div>
+              <Badge variant={validationResults.deviceStatus ? "default" : "destructive"}>
+                {validationResults.deviceStatus ? 'Valid' : 'Required'}
+              </Badge>
+            </div>
+
+            {/* Device Type */}
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+              <div className="flex items-center gap-2">
+                {validationResults.deviceType ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-600" />
+                )}
+                <span className="text-sm font-medium">Device Type</span>
+              </div>
+              <Badge variant={validationResults.deviceType ? "default" : "destructive"}>
+                {validationResults.deviceType ? 'Valid' : 'Required'}
+              </Badge>
+            </div>
+
+            {/* Location */}
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+              <div className="flex items-center gap-2">
+                {validationResults.location ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-600" />
+                )}
+                <span className="text-sm font-medium">Location</span>
+              </div>
+              <Badge variant={validationResults.location ? "default" : "destructive"}>
+                {validationResults.location ? 'Valid' : 'Required'}
+              </Badge>
+            </div>
+
+            {/* Interface Status */}
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+              <div className="flex items-center gap-2">
+                {validationResults.interfaceStatus ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                )}
+                <span className="text-sm font-medium">Interfaces (Name, Type, Status)</span>
+              </div>
+              <Badge variant={validationResults.interfaceStatus ? "default" : "destructive"}>
+                {validationResults.interfaceStatus 
+                  ? 'All Valid' 
+                  : `${validationResults.interfaceIssues} Issue${validationResults.interfaceIssues !== 1 ? 's' : ''}`}
+              </Badge>
+            </div>
+
+            {/* IP Addresses */}
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+              <div className="flex items-center gap-2">
+                {validationResults.ipAddresses ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                )}
+                <span className="text-sm font-medium">IP Addresses (Address & Namespace)</span>
+              </div>
+              <Badge variant={validationResults.ipAddresses ? "default" : "destructive"}>
+                {validationResults.ipAddresses 
+                  ? 'All Valid' 
+                  : `${validationResults.ipAddressIssues} Issue${validationResults.ipAddressIssues !== 1 ? 's' : ''}`}
+              </Badge>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button onClick={() => setShowValidationSummary(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

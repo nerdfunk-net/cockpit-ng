@@ -36,7 +36,24 @@ export const interfaceSchema = z.object({
   mgmt_only: z.boolean().optional(),
   description: z.string().optional(),
   mac_address: z.string().optional(),
-  mtu: z.number().optional(),
+  mtu: z.preprocess(
+    (val) => {
+      // Convert empty string, null, undefined, or NaN to undefined
+      if (val === '' || val === null || val === undefined || Number.isNaN(val)) return undefined
+      // If it's already a valid number, return it
+      if (typeof val === 'number' && !Number.isNaN(val)) return val
+      // Convert string numbers to actual numbers
+      if (typeof val === 'string') {
+        const trimmed = val.trim()
+        if (trimmed === '') return undefined
+        const num = Number(trimmed)
+        return Number.isNaN(num) ? undefined : num
+      }
+      // For any other type, return undefined
+      return undefined
+    },
+    z.number().optional()
+  ),
   mode: z.string().optional(),
   untagged_vlan: z.string().optional(),
   tagged_vlans: z.array(z.string()).optional(),
