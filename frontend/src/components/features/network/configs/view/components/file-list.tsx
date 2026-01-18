@@ -48,14 +48,15 @@ export function FileList({ repoId, directoryPath, filterText = '', onShowHistory
   }, [])
 
   const filteredFiles = useMemo(() => {
-    if (!data?.files) return []
-    if (!filterText.trim()) return data.files
-    
+    const files = data?.files
+    if (!files) return []
+    if (!filterText.trim()) return files
+
     const searchTerm = filterText.toLowerCase()
-    return data.files.filter(file => 
+    return files.filter(file =>
       file.name.toLowerCase().includes(searchTerm)
     )
-  }, [data?.files, filterText])
+  }, [data, filterText])
 
   if (isLoading) {
     return (
@@ -101,7 +102,7 @@ export function FileList({ repoId, directoryPath, filterText = '', onShowHistory
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-sm text-muted-foreground">
-          No files match "{filterText}"
+          No files match &quot;{filterText}&quot;
         </p>
       </div>
     )

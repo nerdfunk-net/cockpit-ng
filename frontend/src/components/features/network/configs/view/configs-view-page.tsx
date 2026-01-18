@@ -363,7 +363,7 @@ export default function ConfigsViewPage() {
           )}
           {globalSearchText && searchResults && searchResults.files.length === 0 && (
             <div className="mt-3 text-sm text-amber-600">
-              No files found matching "{globalSearchText}"
+              No files found matching &quot;{globalSearchText}&quot;
             </div>
           )}
         </div>

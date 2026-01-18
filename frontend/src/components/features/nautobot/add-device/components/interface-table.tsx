@@ -197,7 +197,10 @@ export function InterfaceTable({
 
   const handleSetValues = () => {
     // Get default values from Nautobot defaults - handle both direct and nested data structures
-    const defaults = (dropdownData.nautobotDefaults as any)?.data || dropdownData.nautobotDefaults
+    const rawDefaults = dropdownData.nautobotDefaults
+    const defaults = rawDefaults && 'data' in rawDefaults
+      ? (rawDefaults as { data: typeof rawDefaults }).data
+      : rawDefaults
     const defaultStatus = defaults?.interface_status || ''
     const defaultNamespace = defaults?.namespace ||
       (dropdownData.namespaces.length === 1 ? dropdownData.namespaces[0]?.id : '') || ''

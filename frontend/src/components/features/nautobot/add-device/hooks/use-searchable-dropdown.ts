@@ -75,19 +75,23 @@ export function useSearchableDropdown<T extends { id: string }>(
 
   // Clear search query when selectedId changes externally (e.g., form reset)
   // but NOT when user actively selects (selectItem already handles that)
+  // Using requestAnimationFrame to defer setState and avoid React Compiler cascade warning
   useEffect(() => {
-    if (selectedItem) {
-      const expectedText = getDisplayText(selectedItem)
-      // Only clear if search query doesn't match the selected item
-      // This means it's a stale value from a previous selection
-      if (searchQuery !== '' && searchQuery !== expectedText) {
-        setSearchQuery('')
+    const frameId = requestAnimationFrame(() => {
+      if (selectedItem) {
+        const expectedText = getDisplayText(selectedItem)
+        // Only clear if search query doesn't match the selected item
+        setSearchQuery(prev => {
+          if (prev !== '' && prev !== expectedText) return ''
+          return prev
+        })
+      } else {
+        // No selected item - clear search query if it exists
+        setSearchQuery(prev => prev !== '' ? '' : prev)
       }
-    } else if (searchQuery !== '') {
-      // No selected item but we have a search query - clear it
-      setSearchQuery('')
-    }
-  }, [selectedId, selectedItem, searchQuery, getDisplayText])
+    })
+    return () => cancelAnimationFrame(frameId)
+  }, [selectedId, selectedItem, getDisplayText])
 
   // Clear selection when user clears the search
   useEffect(() => {

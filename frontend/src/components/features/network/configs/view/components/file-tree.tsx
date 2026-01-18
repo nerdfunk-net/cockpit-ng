@@ -18,10 +18,24 @@ export function FileTree({ tree, selectedPath, onDirectorySelect, highlightedDir
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set(['']))
 
   // Auto-expand highlighted directories when search is active
+  // Using requestAnimationFrame to defer setState and avoid React Compiler cascade warning
   useEffect(() => {
-    if (highlightedDirectories && highlightedDirectories.size > 0) {
-      setExpandedPaths(new Set(highlightedDirectories))
+    if (!highlightedDirectories || highlightedDirectories.size === 0) {
+      return
     }
+    const frameId = requestAnimationFrame(() => {
+      setExpandedPaths(prev => {
+        // Check if the sets are actually different before updating
+        if (prev.size !== highlightedDirectories.size) {
+          return new Set(highlightedDirectories)
+        }
+        for (const dir of highlightedDirectories) {
+          if (!prev.has(dir)) return new Set(highlightedDirectories)
+        }
+        return prev // No change needed
+      })
+    })
+    return () => cancelAnimationFrame(frameId)
   }, [highlightedDirectories])
 
   const toggleExpand = useCallback((path: string) => {

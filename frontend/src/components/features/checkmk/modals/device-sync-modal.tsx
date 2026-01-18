@@ -94,7 +94,7 @@ export function DeviceSyncModal({
         ipRoles: fullDropdownData?.ipRoles,
       }
     )
-  }, [propertyMappings, nautobotMetadata, interfaceMappings, open, loadingMetadata, fullDropdownData, deviceId])
+  }, [propertyMappings, nautobotMetadata, interfaceMappings, open, loadingMetadata, fullDropdownData])
 
   // Merge CheckMK metadata with full dropdown data
   const dropdownData: NautobotDropdownsResponse = useMemo(() => ({
@@ -235,32 +235,29 @@ export function DeviceSyncModal({
       const deviceStatus = !!values.selectedStatus
       const deviceType = !!values.selectedDeviceType
       const location = !!values.selectedLocation
-      
+
       // Check interface statuses and IP addresses
       const interfaces = values.interfaces || []
-      let interfaceIssues = 0
       let allInterfacesHaveStatus = true
-      let ipAddressIssues = 0
       let allIpAddressesValid = true
-      
+
       // IP address validation regex: xxx.xxx.xxx.xxx/yy or xxxx:xxxx::/yy
       const ipv4CidrRegex = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/
       const ipv6CidrRegex = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\/\d{1,3}$/
-      
+
       const errorMessages: string[] = []
-      
+
       if (!deviceRole) errorMessages.push('Device Role is required')
       if (!deviceStatus) errorMessages.push('Device Status is required')
       if (!deviceType) errorMessages.push('Device Type is required')
       if (!location) errorMessages.push('Location is required')
-      
+
       interfaces.forEach((iface, idx) => {
         if (!iface.status) {
           allInterfacesHaveStatus = false
-          interfaceIssues++
           errorMessages.push(`Interface ${idx + 1} (${iface.name || 'unnamed'}) is missing status`)
         }
-        
+
         // Check IP addresses
         const ipAddresses = iface.ip_addresses || []
         ipAddresses.forEach((ip, ipIdx) => {
@@ -268,12 +265,10 @@ export function DeviceSyncModal({
             const isValidCidr = ipv4CidrRegex.test(ip.address) || ipv6CidrRegex.test(ip.address)
             if (!isValidCidr) {
               allIpAddressesValid = false
-              ipAddressIssues++
               errorMessages.push(`Interface ${idx + 1}, IP ${ipIdx + 1}: Invalid CIDR format (${ip.address})`)
             }
           } else {
             allIpAddressesValid = false
-            ipAddressIssues++
             errorMessages.push(`Interface ${idx + 1}, IP ${ipIdx + 1}: IP address is required`)
           }
         })
