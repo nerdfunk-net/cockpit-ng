@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { Eye, RotateCcw, FolderTree, Search } from 'lucide-react'
+import { Eye, RotateCcw, FolderTree, Search, GitCompare } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -20,6 +20,8 @@ import type { Repository, FileWithCommit } from './types'
 
 const EMPTY_ARRAY: Repository[] = []
 
+const EMPTY_SELECTED_FILES = new Set<string>()
+
 export default function ConfigsViewPage() {
   const { apiCall } = useApi()
   const { token } = useAuthStore()
@@ -34,6 +36,7 @@ export default function ConfigsViewPage() {
   const [isSearching, setIsSearching] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(EMPTY_SELECTED_FILES)
 
   // File history dialog state
   const [fileHistoryDialog, setFileHistoryDialog] = useState<{
@@ -111,7 +114,42 @@ export default function ConfigsViewPage() {
 
   const handleDirectorySelect = useCallback((path: string) => {
     setSelectedDirectoryPath(path)
+    setSelectedFiles(new Set()) // Clear selection when changing directory
   }, [])
+
+  const handleFileSelect = useCallback((filePath: string, selected: boolean) => {
+    setSelectedFiles(prev => {
+      const newSet = new Set(prev)
+      if (selected) {
+        // Only allow selecting 2 files maximum
+        if (newSet.size >= 2) {
+          // Remove the oldest selection
+          const firstItem = newSet.values().next().value
+          if (firstItem) {
+            newSet.delete(firstItem)
+          }
+        }
+        newSet.add(filePath)
+      } else {
+        newSet.delete(filePath)
+      }
+      return newSet
+    })
+  }, [])
+
+  const handleCompareFiles = useCallback(() => {
+    if (selectedFiles.size !== 2) return
+
+    const [file1, file2] = Array.from(selectedFiles)
+    if (!file1 || !file2) return
+
+    setFileDiffDialog({
+      isOpen: true,
+      commit1: null,
+      commit2: null,
+      filePath: JSON.stringify({ file1, file2 }), // Pass both file paths as JSON
+    })
+  }, [selectedFiles])
 
   // Handle global search
   const handleGlobalSearch = useCallback(async (searchText: string) => {
@@ -428,14 +466,32 @@ export default function ConfigsViewPage() {
                       <h3 className="text-sm font-medium text-gray-700">
                         Files in: {selectedDirectoryPath || '/'}
                       </h3>
-                      <div className="relative w-64">
-                        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <Input
-                          placeholder="Filter files..."
-                          value={filterText}
-                          onChange={(e) => setFilterText(e.target.value)}
-                          className="pl-8 h-8 text-sm"
-                        />
+                      <div className="flex items-center gap-2">
+                        {selectedFiles.size > 0 && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              {selectedFiles.size} file{selectedFiles.size !== 1 ? 's' : ''} selected
+                            </span>
+                            <Button
+                              size="sm"
+                              onClick={handleCompareFiles}
+                              disabled={selectedFiles.size !== 2}
+                              variant={selectedFiles.size === 2 ? "default" : "outline"}
+                            >
+                              <GitCompare className="h-3 w-3 mr-1" />
+                              Compare Files
+                            </Button>
+                          </div>
+                        )}
+                        <div className="relative w-64">
+                          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <Input
+                            placeholder="Filter files..."
+                            value={filterText}
+                            onChange={(e) => setFilterText(e.target.value)}
+                            className="pl-8 h-8 text-sm"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -444,6 +500,8 @@ export default function ConfigsViewPage() {
                       repoId={selectedRepository}
                       directoryPath={selectedDirectoryPath}
                       filterText={filterText}
+                      selectedFiles={selectedFiles}
+                      onFileSelect={handleFileSelect}
                       onShowHistory={handleShowHistory}
                       onViewFile={handleViewFile}
                       onDownloadFile={handleDownloadFile}

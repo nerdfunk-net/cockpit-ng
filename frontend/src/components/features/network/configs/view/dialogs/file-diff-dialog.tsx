@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useFileDiffQuery } from '@/hooks/queries/use-file-diff-query'
+import { useFileCompareQuery } from '@/hooks/queries/use-file-compare-query'
 import { getLeftLineClass, getRightLineClass } from '@/lib/compare-utils'
 
 interface FileDiffDialogProps {
@@ -19,6 +20,7 @@ interface FileDiffDialogProps {
 }
 
 interface UnifiedLine {
+  id: string
   leftLineNumber: number | null
   rightLineNumber: number | null
   content: string
@@ -37,13 +39,96 @@ export function FileDiffDialog({
   const [viewMode, setViewMode] = useState<'unified' | 'side-by-side'>('unified')
   const [showChangesOnly, setShowChangesOnly] = useState(false)
 
-  const { data, isLoading, error } = useFileDiffQuery(
+  // Detect if we're comparing two different files
+  const isFileComparison = useMemo(() => {
+    if (!filePath) return false
+    try {
+      const parsed = JSON.parse(filePath)
+      return !!(parsed.file1 && parsed.file2)
+    } catch {
+      return false
+    }
+  }, [filePath])
+
+  // Parse file paths for file comparison
+  const { file1, file2 } = useMemo(() => {
+    if (!isFileComparison || !filePath) return { file1: null, file2: null }
+    try {
+      const parsed = JSON.parse(filePath)
+      return { file1: parsed.file1 as string, file2: parsed.file2 as string }
+    } catch {
+      return { file1: null, file2: null }
+    }
+  }, [isFileComparison, filePath])
+
+  // Use file compare query for different files
+  const fileCompareResult = useFileCompareQuery(
+    repoId,
+    file1,
+    file2,
+    { enabled: isOpen && isFileComparison }
+  )
+
+  // Use file diff query for same file at different commits
+  const fileDiffResult = useFileDiffQuery(
     repoId,
     commit1,
     commit2,
     filePath,
-    { enabled: isOpen }
+    { enabled: isOpen && !isFileComparison }
   )
+
+  // Use the appropriate result based on comparison type
+  const { data: rawData, isLoading, error } = isFileComparison ? fileCompareResult : fileDiffResult
+
+  // Normalize data structure to match expected format
+  const data: {
+    commit1: string
+    commit2: string
+    left_file: string
+    right_file: string
+    left_lines: Array<{
+      line_number: number | null
+      content: string
+      type: string
+    }>
+    right_lines: Array<{
+      line_number: number | null
+      content: string
+      type: string
+    }>
+    stats: {
+      additions: number
+      deletions: number
+      changes: number
+    }
+  } | null = useMemo(() => {
+    if (!rawData) return null
+
+    // File comparison response doesn't have commit1/commit2/stats in the same format
+    if (isFileComparison && 'left_lines' in rawData) {
+      return {
+        commit1: 'HEAD',
+        commit2: 'HEAD',
+        left_file: rawData.left_file || '',
+        right_file: rawData.right_file || '',
+        left_lines: rawData.left_lines || [],
+        right_lines: rawData.right_lines || [],
+        stats: {
+          additions: rawData.left_lines?.filter((l) => l.type === 'insert').length || 0,
+          deletions: rawData.left_lines?.filter((l) => l.type === 'delete').length || 0,
+          changes: rawData.left_lines?.filter((l) => l.type === 'replace').length || 0,
+        }
+      }
+    }
+
+    // Type guard ensures this is FileDiffResponse
+    if ('commit1' in rawData && 'commit2' in rawData) {
+      return rawData
+    }
+
+    return null
+  }, [rawData, isFileComparison])
 
   // Convert side-by-side diff to unified view
   const unifiedLines = useMemo(() => {
@@ -52,6 +137,9 @@ export function FileDiffDialog({
     const unified: UnifiedLine[] = []
     let leftIdx = 0
     let rightIdx = 0
+    let lineId = 0
+
+    const createId = () => `line-${lineId++}`
 
     while (leftIdx < data.left_lines.length || rightIdx < data.right_lines.length) {
       const leftLine = data.left_lines[leftIdx]
@@ -60,6 +148,7 @@ export function FileDiffDialog({
       if (!leftLine && rightLine) {
         // Only right line exists (insertion)
         unified.push({
+          id: createId(),
           leftLineNumber: null,
           rightLineNumber: rightLine.line_number,
           content: rightLine.content,
@@ -70,6 +159,7 @@ export function FileDiffDialog({
       } else if (leftLine && !rightLine) {
         // Only left line exists (deletion)
         unified.push({
+          id: createId(),
           leftLineNumber: leftLine.line_number,
           rightLineNumber: null,
           content: leftLine.content,
@@ -81,6 +171,7 @@ export function FileDiffDialog({
         if (leftLine.type === 'equal' && rightLine.type === 'equal') {
           // Both lines are equal
           unified.push({
+            id: createId(),
             leftLineNumber: leftLine.line_number,
             rightLineNumber: rightLine.line_number,
             content: leftLine.content,
@@ -92,6 +183,7 @@ export function FileDiffDialog({
         } else if (leftLine.type === 'delete' && rightLine.type === 'insert') {
           // Replacement: show deletion then insertion
           unified.push({
+            id: createId(),
             leftLineNumber: leftLine.line_number,
             rightLineNumber: null,
             content: leftLine.content,
@@ -99,6 +191,7 @@ export function FileDiffDialog({
             isChange: true,
           })
           unified.push({
+            id: createId(),
             leftLineNumber: null,
             rightLineNumber: rightLine.line_number,
             content: rightLine.content,
@@ -110,6 +203,7 @@ export function FileDiffDialog({
         } else if (leftLine.type === 'replace' && rightLine.type === 'replace') {
           // Both marked as replace
           unified.push({
+            id: createId(),
             leftLineNumber: leftLine.line_number,
             rightLineNumber: null,
             content: leftLine.content,
@@ -117,6 +211,7 @@ export function FileDiffDialog({
             isChange: true,
           })
           unified.push({
+            id: createId(),
             leftLineNumber: null,
             rightLineNumber: rightLine.line_number,
             content: rightLine.content,
@@ -127,6 +222,7 @@ export function FileDiffDialog({
           rightIdx++
         } else if (leftLine.type === 'delete') {
           unified.push({
+            id: createId(),
             leftLineNumber: leftLine.line_number,
             rightLineNumber: null,
             content: leftLine.content,
@@ -136,6 +232,7 @@ export function FileDiffDialog({
           leftIdx++
         } else if (rightLine.type === 'insert') {
           unified.push({
+            id: createId(),
             leftLineNumber: null,
             rightLineNumber: rightLine.line_number,
             content: rightLine.content,
@@ -143,9 +240,34 @@ export function FileDiffDialog({
             isChange: true,
           })
           rightIdx++
-        } else {
-          // Fallback: treat as equal
+        } else if (leftLine.type === 'empty' && rightLine.type !== 'empty') {
+          // Empty line on left (file comparison specific)
           unified.push({
+            id: createId(),
+            leftLineNumber: null,
+            rightLineNumber: rightLine.line_number,
+            content: rightLine.content,
+            type: 'insert',
+            isChange: true,
+          })
+          leftIdx++
+          rightIdx++
+        } else if (rightLine.type === 'empty' && leftLine.type !== 'empty') {
+          // Empty line on right (file comparison specific)
+          unified.push({
+            id: createId(),
+            leftLineNumber: leftLine.line_number,
+            rightLineNumber: null,
+            content: leftLine.content,
+            type: 'delete',
+            isChange: true,
+          })
+          leftIdx++
+          rightIdx++
+        } else {
+          // Fallback: treat as equal (or both empty)
+          unified.push({
+            id: createId(),
             leftLineNumber: leftLine.line_number,
             rightLineNumber: rightLine.line_number,
             content: leftLine.content,
@@ -340,7 +462,7 @@ export function FileDiffDialog({
                 <div className="font-mono text-xs">
                   {displayLines.map((line) => (
                     <div
-                      key={`unified-${line.leftLineNumber ?? 'none'}-${line.rightLineNumber ?? 'none'}-${line.type}-${line.content.substring(0, 20)}`}
+                      key={line.id}
                       className={`flex ${getLineClassName(line.type)}`}
                     >
                       <span className="px-2 py-1 text-muted-foreground select-none w-12 text-right flex-shrink-0 border-r">

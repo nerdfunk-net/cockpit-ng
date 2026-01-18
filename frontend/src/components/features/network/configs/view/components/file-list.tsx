@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { FileText, History, Clock, Eye, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useDirectoryFilesQuery } from '@/hooks/queries/use-directory-files-query'
 import type { FileWithCommit } from '../types'
@@ -12,12 +13,25 @@ interface FileListProps {
   repoId: number | null
   directoryPath: string
   filterText?: string
+  selectedFiles?: Set<string>
+  onFileSelect?: (filePath: string, selected: boolean) => void
   onShowHistory: (file: FileWithCommit) => void
   onViewFile: (file: FileWithCommit) => void
   onDownloadFile: (file: FileWithCommit) => void
 }
 
-export function FileList({ repoId, directoryPath, filterText = '', onShowHistory, onViewFile, onDownloadFile }: FileListProps) {
+const EMPTY_SET = new Set<string>()
+
+export function FileList({
+  repoId,
+  directoryPath,
+  filterText = '',
+  selectedFiles = EMPTY_SET,
+  onFileSelect,
+  onShowHistory,
+  onViewFile,
+  onDownloadFile
+}: FileListProps) {
   const { data, isLoading, error } = useDirectoryFilesQuery(repoId, {
     path: directoryPath,
     enabled: !!repoId,
@@ -114,6 +128,7 @@ export function FileList({ repoId, directoryPath, filterText = '', onShowHistory
         <table className="w-full">
           <thead className="border-b sticky top-0 bg-background z-10">
             <tr>
+              {onFileSelect && <th className="text-left p-3 font-semibold text-sm w-12">Select</th>}
               <th className="text-left p-3 font-semibold text-sm">File Name</th>
               <th className="text-left p-3 font-semibold text-sm w-24">Size</th>
               <th className="text-left p-3 font-semibold text-sm">Last Commit</th>
@@ -127,6 +142,14 @@ export function FileList({ repoId, directoryPath, filterText = '', onShowHistory
                 key={file.path}
                 className="hover:bg-muted/50 transition-colors"
               >
+                {onFileSelect && (
+                  <td className="p-3">
+                    <Checkbox
+                      checked={selectedFiles.has(file.path)}
+                      onCheckedChange={(checked) => onFileSelect(file.path, !!checked)}
+                    />
+                  </td>
+                )}
                 <td className="p-3">
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4 text-blue-500 flex-shrink-0" />

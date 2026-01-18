@@ -27,6 +27,8 @@ export const queryKeys = {
       [...queryKeys.git.all, 'fileHistory', repoId, filePath] as const,
     fileDiff: (repoId: number | null, commit1: string | null, commit2: string | null, filePath: string | null) =>
       [...queryKeys.git.all, 'fileDiff', repoId, commit1, commit2, filePath] as const,
+    fileCompare: (repoId: number | null, filePath1: string | null, filePath2: string | null) =>
+      [...queryKeys.git.all, 'fileCompare', repoId, filePath1, filePath2] as const,
     fileContent: (repoId: number | null, filePath: string | null) =>
       [...queryKeys.git.all, 'fileContent', repoId, filePath] as const,
   },

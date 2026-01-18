@@ -8,11 +8,12 @@ import type { DiffLine, ComparisonResult } from '@/types/git'
 /**
  * Get CSS class for left-side diff lines based on line type
  */
-export function getLeftLineClass(type: DiffLine['type']): string {
+export function getLeftLineClass(type: DiffLine['type'] | string): string {
   switch (type) {
     case 'delete': return 'bg-red-50 text-red-900'
     case 'replace': return 'bg-yellow-50 text-yellow-900'
     case 'equal': return 'bg-white'
+    case 'empty': return 'bg-gray-50'
     default: return 'bg-white'
   }
 }
@@ -20,11 +21,12 @@ export function getLeftLineClass(type: DiffLine['type']): string {
 /**
  * Get CSS class for right-side diff lines based on line type
  */
-export function getRightLineClass(type: DiffLine['type']): string {
+export function getRightLineClass(type: DiffLine['type'] | string): string {
   switch (type) {
     case 'insert': return 'bg-green-50 text-green-900'
     case 'replace': return 'bg-yellow-50 text-yellow-900'
     case 'equal': return 'bg-white'
+    case 'empty': return 'bg-gray-50'
     default: return 'bg-white'
   }
 }

@@ -377,3 +377,158 @@ async def compare_commits(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to compare commits: {str(e)}",
         )
+
+
+@router.post("/compare-files")
+async def compare_different_files(
+    repo_id: int,
+    request: dict,
+    current_user: dict = Depends(require_permission("git.operations", "execute")),
+):
+    """Compare two different files at specified commits (defaults to HEAD)."""
+    try:
+        file_path1 = request.get("file_path1")
+        file_path2 = request.get("file_path2")
+        commit1 = request.get("commit1", "HEAD")
+        commit2 = request.get("commit2", "HEAD")
+
+        if not all([file_path1, file_path2]):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Missing required parameters: file_path1, file_path2",
+            )
+
+        repo = get_git_repo_by_id(repo_id)
+
+        # Get the commits
+        commit_obj1 = repo.commit(commit1)
+        commit_obj2 = repo.commit(commit2)
+
+        # Get file content from both commits
+        try:
+            file_content1 = (
+                (commit_obj1.tree / file_path1).data_stream.read().decode("utf-8")
+            )
+        except KeyError:
+            file_content1 = ""
+
+        try:
+            file_content2 = (
+                (commit_obj2.tree / file_path2).data_stream.read().decode("utf-8")
+            )
+        except KeyError:
+            file_content2 = ""
+
+        # Generate diff
+        diff_lines = []
+
+        lines1 = file_content1.splitlines(keepends=True)
+        lines2 = file_content2.splitlines(keepends=True)
+
+        for line in difflib.unified_diff(lines1, lines2, n=3):
+            diff_lines.append(line.rstrip("\n"))
+
+        # Calculate stats
+        additions = sum(
+            1
+            for line in diff_lines
+            if line.startswith("+") and not line.startswith("+++")
+        )
+        deletions = sum(
+            1
+            for line in diff_lines
+            if line.startswith("-") and not line.startswith("---")
+        )
+
+        # Prepare full file content for comparison display
+        file1_lines = []
+        file2_lines = []
+
+        lines1_list = file_content1.splitlines()
+        lines2_list = file_content2.splitlines()
+
+        # Use difflib.SequenceMatcher to get line-by-line comparison
+        matcher = difflib.SequenceMatcher(None, lines1_list, lines2_list)
+
+        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            if tag == "equal":
+                for i in range(i1, i2):
+                    file1_lines.append(
+                        {
+                            "line_number": i + 1,
+                            "content": lines1_list[i],
+                            "type": "equal",
+                        }
+                    )
+                for j in range(j1, j2):
+                    file2_lines.append(
+                        {
+                            "line_number": j + 1,
+                            "content": lines2_list[j],
+                            "type": "equal",
+                        }
+                    )
+            elif tag == "delete":
+                for i in range(i1, i2):
+                    file1_lines.append(
+                        {
+                            "line_number": i + 1,
+                            "content": lines1_list[i],
+                            "type": "delete",
+                        }
+                    )
+            elif tag == "insert":
+                for j in range(j1, j2):
+                    file2_lines.append(
+                        {
+                            "line_number": j + 1,
+                            "content": lines2_list[j],
+                            "type": "insert",
+                        }
+                    )
+            elif tag == "replace":
+                for i in range(i1, i2):
+                    file1_lines.append(
+                        {
+                            "line_number": i + 1,
+                            "content": lines1_list[i],
+                            "type": "replace",
+                        }
+                    )
+                for j in range(j1, j2):
+                    file2_lines.append(
+                        {
+                            "line_number": j + 1,
+                            "content": lines2_list[j],
+                            "type": "replace",
+                        }
+                    )
+
+        # Determine commit hash display (show first 8 chars or "HEAD")
+        commit1_display = commit1[:8] if commit1 != "HEAD" else "HEAD"
+        commit2_display = commit2[:8] if commit2 != "HEAD" else "HEAD"
+
+        return {
+            "commit1": commit1_display,
+            "commit2": commit2_display,
+            "file_path": None,  # Not applicable for different files
+            "diff_lines": diff_lines,
+            "left_file": f"{file_path1} ({commit1_display})",
+            "right_file": f"{file_path2} ({commit2_display})",
+            "left_lines": file1_lines,
+            "right_lines": file2_lines,
+            "stats": {
+                "additions": additions,
+                "deletions": deletions,
+                "changes": additions + deletions,
+                "total_lines": len(diff_lines),
+            },
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to compare files: {str(e)}",
+        )
