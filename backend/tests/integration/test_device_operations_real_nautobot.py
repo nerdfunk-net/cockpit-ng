@@ -488,11 +488,11 @@ class TestAddDevice:
         self, real_nautobot_service, device_creation_service, test_device_ids
     ):
         """
-        Test that adding a device without automatic prefix creation fails
+        Test that adding a device without automatic prefix creation raises an exception
         when the parent prefix doesn't exist.
 
         This tests that add_prefix=False prevents automatic prefix creation,
-        and the IP address creation fails due to missing parent prefix.
+        and an exception is raised when trying to create an IP without a parent prefix.
 
         Uses a non-existent prefix (10.98.98.0/24) to ensure failure.
         """
@@ -511,15 +511,39 @@ class TestAddDevice:
         prefixes = prefix_result["data"]["prefixes"]
         assert len(prefixes) == 0, "Test requires non-existent prefix"
 
+        # Generate unique device name using timestamp to avoid collisions
+        import time
+        unique_suffix = int(time.time() * 1000) % 1000000  # Use milliseconds for uniqueness
+        device_name = f"test-device-no-prefix-{unique_suffix}"
+
+        # Clean up any existing device with this name (from failed previous runs)
+        try:
+            cleanup_query = f"""
+            query {{
+              devices(name: "{device_name}") {{
+                id
+              }}
+            }}
+            """
+            cleanup_result = await real_nautobot_service.graphql_query(cleanup_query)
+            existing_devices = cleanup_result.get("data", {}).get("devices", [])
+            for device in existing_devices:
+                logger.info(f"Cleaning up existing device {device['id']} from previous test run")
+                await real_nautobot_service.rest_request(
+                    endpoint=f"dcim/devices/{device['id']}/", method="DELETE"
+                )
+        except Exception as e:
+            logger.warning(f"Could not cleanup existing device: {e}")
+
         # Create device request with IP in non-existent prefix
         request = AddDeviceRequest(
-            name="test-device-no-prefix",
+            name=device_name,
             role=ids["role_id"],
             status=ids["status_id"],
             location=ids["location_id"],
             device_type=ids["device_type_id"],
             platform=ids["platform_id"],
-            serial="TEST-NO-PREFIX-001",
+            serial=f"TEST-NO-PREFIX-{unique_suffix}",
             add_prefix=False,  # Disable automatic prefix creation
             default_prefix_length="/24",
             interfaces=[
@@ -538,35 +562,21 @@ class TestAddDevice:
             ],
         )
 
-        # Create the device - should fail at IP creation step
-        result = await device_creation_service.create_device_with_interfaces(request)
+        # Device creation should raise an exception when IP creation fails due to missing prefix
+        with pytest.raises(Exception) as exc_info:
+            await device_creation_service.create_device_with_interfaces(request)
 
-        # Track device for cleanup (it may be created even if IP fails)
-        if result.get("device_id"):
-            test_device_ids.append(result["device_id"])
+        # Verify the exception message mentions the missing prefix
+        error_message = str(exc_info.value).lower()
+        assert any(
+            keyword in error_message for keyword in ["prefix", "parent", "network"]
+        ), f"Error should mention missing prefix. Got: {exc_info.value}"
 
-        # Verify the workflow status
-        workflow_status = result["workflow_status"]
-
-        # Device should be created successfully
-        assert workflow_status["step1_device"]["status"] == "success"
-
-        # IP address creation should fail
-        assert workflow_status["step2_ip_addresses"]["status"] in [
-            "failed",
-            "partial",
-        ], "IP creation should fail without parent prefix"
-
-        # Check that error mentions missing prefix
-        if workflow_status["step2_ip_addresses"]["errors"]:
-            error_messages = [
-                err["error"] for err in workflow_status["step2_ip_addresses"]["errors"]
-            ]
-            error_str = " ".join(error_messages).lower()
-            # Nautobot typically returns error about missing parent prefix
-            assert any(
-                keyword in error_str for keyword in ["prefix", "parent", "network"]
-            ), "Error should mention missing prefix"
+        # Verify the exception mentions that automatic prefix creation is disabled
+        assert any(
+            keyword in error_message
+            for keyword in ["create the parent prefix manually", "enable automatic prefix creation"]
+        ), f"Error should mention manual prefix creation or enabling automatic creation. Got: {exc_info.value}"
 
         # Verify prefix was NOT created
         prefix_result = await real_nautobot_service.graphql_query(prefix_query)
@@ -575,8 +585,27 @@ class TestAddDevice:
             "Prefix should not have been created when add_prefix=False"
         )
 
+        # Note: The device may have been created before the IP creation failed.
+        # We need to find and clean it up manually since the normal fixture won't track it.
+        try:
+            device_query = f"""
+            query {{
+              devices(name: "{device_name}") {{
+                id
+              }}
+            }}
+            """
+            device_result = await real_nautobot_service.graphql_query(device_query)
+            devices = device_result.get("data", {}).get("devices", [])
+            if devices:
+                device_id = devices[0]["id"]
+                test_device_ids.append(device_id)  # Track for cleanup
+                logger.info(f"Device {device_id} was created before IP failure, will be cleaned up")
+        except Exception as e:
+            logger.warning(f"Could not check for orphaned device: {e}")
+
         logger.info(
-            "✓ Device creation correctly failed without prefix when add_prefix=False"
+            "✓ Device creation correctly raised exception when add_prefix=False and parent prefix missing"
         )
 
 

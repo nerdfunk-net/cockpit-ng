@@ -16,13 +16,17 @@ Run with:
 import pytest
 import asyncio
 from typing import List, Dict, Any
+from urllib.parse import urlparse
 
 from services.checkmk.sync.base import NautobotToCheckMKService
 from services.checkmk.config import ConfigService
 from services.nautobot import nautobot_service
 from checkmk.client import CheckMKClient, CheckMKAPIError
 from settings_manager import settings_manager
-from urllib.parse import urlparse
+
+# Suppress InsecureRequestWarning for self-signed certificates in test environment
+# This is expected when testing against CheckMK instances with self-signed certificates
+pytestmark = pytest.mark.filterwarnings("ignore::urllib3.exceptions.InsecureRequestWarning")
 
 
 # =============================================================================

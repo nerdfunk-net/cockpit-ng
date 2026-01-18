@@ -38,6 +38,10 @@ from tests.fixtures.snmp_fixtures import (
     create_device_with_snmp,
 )
 
+# Suppress InsecureRequestWarning for self-signed certificates in test environment
+# This is expected when testing against CheckMK instances with self-signed certificates
+pytestmark = pytest.mark.filterwarnings("ignore::urllib3.exceptions.InsecureRequestWarning")
+
 
 # ==============================================================================
 # Test Fixtures
@@ -92,6 +96,153 @@ def mock_checkmk_client():
     client = Mock()
     client.get_host = Mock()
     return client
+
+
+@pytest.fixture(scope="module")
+def real_checkmk_client():
+    """Create real CheckMK client for integration tests."""
+    from checkmk.client import CheckMKClient
+    from settings_manager import settings_manager
+    from urllib.parse import urlparse
+
+    db_settings = settings_manager.get_checkmk_settings()
+    if not db_settings or not all(
+        key in db_settings for key in ["url", "site", "username", "password"]
+    ):
+        pytest.skip("CheckMK settings not configured")
+
+    # Parse URL
+    url = db_settings["url"].rstrip("/")
+    if url.startswith(("http://", "https://")):
+        parsed_url = urlparse(url)
+        protocol = parsed_url.scheme
+        host = parsed_url.netloc
+    else:
+        protocol = "https"
+        host = url
+
+    return CheckMKClient(
+        host=host,
+        site_name=db_settings["site"],
+        username=db_settings["username"],
+        password=db_settings["password"],
+        protocol=protocol,
+        verify_ssl=db_settings.get("verify_ssl", True),
+        timeout=30,
+    )
+
+
+@pytest.fixture(scope="module")
+def checkmk_test_devices(real_checkmk_client):
+    """
+    Create test devices in CheckMK for SNMP mapping tests.
+
+    Creates:
+    - test-device-01: SNMPv2 device
+    - test-device-02: SNMPv3 device with auth + privacy
+    - test-device-03: Agent-only device (no SNMP)
+
+    Yields the list of created device names, then cleans them up.
+    """
+    from checkmk.client import CheckMKAPIError
+
+    # Define test devices
+    test_devices = [
+        {
+            "host_name": "test-device-01",
+            "folder": "/",
+            "attributes": {
+                "ipaddress": "10.0.1.10",
+                "alias": "Test Device 01 - SNMPv2",
+                "tag_agent": "no-agent",
+                "tag_snmp_ds": "snmp-v2",
+                "snmp_community": {
+                    "type": "v1_v2_community",
+                    "community": "test_community",
+                },
+            },
+        },
+        {
+            "host_name": "test-device-02",
+            "folder": "/",
+            "attributes": {
+                "ipaddress": "10.0.1.11",
+                "alias": "Test Device 02 - SNMPv3",
+                "tag_agent": "no-agent",
+                "tag_snmp_ds": "snmp-v2",  # CheckMK uses snmp-v2 for both v2 and v3
+                "snmp_community": {
+                    "type": "v3_auth_privacy",
+                    "auth_protocol": "SHA-2-256",
+                    "auth_password": "test_auth_pass",
+                    "privacy_protocol": "AES-256",
+                    "privacy_password": "test_priv_pass",
+                    "security_name": "test_user",
+                },
+            },
+        },
+        {
+            "host_name": "test-device-03",
+            "folder": "/",
+            "attributes": {
+                "ipaddress": "10.0.1.12",
+                "alias": "Test Device 03 - No SNMP",
+                "tag_agent": "cmk-agent",
+                "tag_snmp_ds": "no-snmp",
+            },
+        },
+    ]
+
+    created_devices = []
+
+    # Create devices
+    for device in test_devices:
+        try:
+            # Check if device already exists
+            try:
+                real_checkmk_client.get_host(device["host_name"])
+                print(f"  ℹ️  Device {device['host_name']} already exists, skipping creation")
+                created_devices.append(device["host_name"])
+            except CheckMKAPIError as e:
+                if "404" in str(e):
+                    # Device doesn't exist, create it
+                    real_checkmk_client.create_host(
+                        hostname=device["host_name"],
+                        folder=device["folder"],
+                        attributes=device["attributes"],
+                    )
+                    print(f"  ✅ Created test device: {device['host_name']}")
+                    created_devices.append(device["host_name"])
+                else:
+                    raise
+        except Exception as e:
+            print(f"  ⚠️  Failed to create {device['host_name']}: {e}")
+
+    # Activate changes
+    if created_devices:
+        try:
+            real_checkmk_client.activate_changes()
+            print(f"  ✅ Activated changes for {len(created_devices)} device(s)")
+        except Exception as e:
+            print(f"  ⚠️  Failed to activate changes: {e}")
+
+    yield created_devices
+
+    # Cleanup: Delete created devices
+    print("\n🧹 Cleaning up test devices from CheckMK...")
+    for hostname in created_devices:
+        try:
+            real_checkmk_client.delete_host(hostname)
+            print(f"  ✅ Deleted {hostname}")
+        except Exception as e:
+            print(f"  ⚠️ Failed to delete {hostname}: {e}")
+
+    # Activate changes after cleanup
+    if created_devices:
+        try:
+            real_checkmk_client.activate_changes()
+            print("  ✅ Activated changes after cleanup")
+        except Exception as e:
+            print(f"  ⚠️  Failed to activate changes after cleanup: {e}")
 
 
 # ==============================================================================
@@ -227,30 +378,27 @@ class TestDeviceComparisonLiveUpdate:
     """Test device comparison via direct API calls (live update)."""
 
     @pytest.fixture(autouse=True)
-    def setup(self, mock_config_service):
-        """Set up test instance."""
+    def setup(self, mock_config_service, checkmk_test_devices):
+        """Set up test instance and ensure test devices exist."""
         self.service = NautobotToCheckMKService()
         self.config_service = mock_config_service
+        self.test_devices = checkmk_test_devices
 
-    async def test_compare_device_with_matching_snmp_v3(self):
+    async def test_compare_device_with_matching_snmp_v3(self, real_checkmk_client):
         """
         Test comparison with real CheckMK SNMPv3 device.
 
-        This test uses test-device-02 created by test_checkmk_device_lifecycle.py.
+        This test uses test-device-02 created by the checkmk_test_devices fixture.
         It verifies that the normalization service correctly processes SNMPv3 devices.
         """
-        from checkmk.client import CheckMKClient
         from services.checkmk.config import config_service
 
-        # Use the test device created by device lifecycle tests
+        # Use the test device created by checkmk_test_devices fixture
         test_hostname = "test-device-02"
 
         try:
-            # Initialize CheckMK client
-            checkmk_client = CheckMKClient()
-
             # Get the device from CheckMK
-            host_data = checkmk_client.get_host(test_hostname)
+            host_data = real_checkmk_client.get_host(test_hostname)
 
             # Verify it has SNMPv3 configuration
             assert "extensions" in host_data
@@ -276,26 +424,21 @@ class TestDeviceComparisonLiveUpdate:
             print(f"   Privacy protocol: {snmp_config.get('privacy_protocol')}")
 
         except Exception as e:
-            pytest.skip(f"Test device {test_hostname} not found in CheckMK. Run test_checkmk_device_lifecycle.py first. Error: {e}")
+            pytest.skip(f"Test device {test_hostname} not found in CheckMK. Error: {e}")
 
-    async def test_compare_device_with_snmp_v2(self):
+    async def test_compare_device_with_snmp_v2(self, real_checkmk_client):
         """
         Test comparison with real CheckMK SNMPv2 device.
 
-        This test uses test-device-01 created by test_checkmk_device_lifecycle.py.
+        This test uses test-device-01 created by the checkmk_test_devices fixture.
         It verifies that the normalization service correctly processes SNMPv2c devices.
         """
-        from checkmk.client import CheckMKClient
-
-        # Use the test device created by device lifecycle tests
+        # Use the test device created by checkmk_test_devices fixture
         test_hostname = "test-device-01"
 
         try:
-            # Initialize CheckMK client
-            checkmk_client = CheckMKClient()
-
             # Get the device from CheckMK
-            host_data = checkmk_client.get_host(test_hostname)
+            host_data = real_checkmk_client.get_host(test_hostname)
 
             # Verify it has SNMPv2 configuration
             assert "extensions" in host_data
@@ -317,26 +460,21 @@ class TestDeviceComparisonLiveUpdate:
             print(f"   Community: {snmp_config.get('community')}")
 
         except Exception as e:
-            pytest.skip(f"Test device {test_hostname} not found in CheckMK. Run test_checkmk_device_lifecycle.py first. Error: {e}")
+            pytest.skip(f"Test device {test_hostname} not found in CheckMK. Error: {e}")
 
-    async def test_verify_no_snmp_device(self):
+    async def test_verify_no_snmp_device(self, real_checkmk_client):
         """
         Test device without SNMP configuration.
 
-        This test uses test-device-03 created by test_checkmk_device_lifecycle.py.
+        This test uses test-device-03 created by the checkmk_test_devices fixture.
         It verifies devices without SNMP are handled correctly.
         """
-        from checkmk.client import CheckMKClient
-
-        # Use the test device created by device lifecycle tests
+        # Use the test device created by checkmk_test_devices fixture
         test_hostname = "test-device-03"
 
         try:
-            # Initialize CheckMK client
-            checkmk_client = CheckMKClient()
-
             # Get the device from CheckMK
-            host_data = checkmk_client.get_host(test_hostname)
+            host_data = real_checkmk_client.get_host(test_hostname)
 
             # Verify it has no SNMP configuration
             assert "extensions" in host_data
@@ -355,7 +493,7 @@ class TestDeviceComparisonLiveUpdate:
             print(f"   Tag Agent: {attributes['tag_agent']}")
 
         except Exception as e:
-            pytest.skip(f"Test device {test_hostname} not found in CheckMK. Run test_checkmk_device_lifecycle.py first. Error: {e}")
+            pytest.skip(f"Test device {test_hostname} not found in CheckMK. Error: {e}")
 
 
 # ==============================================================================
