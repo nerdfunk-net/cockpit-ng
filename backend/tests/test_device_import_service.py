@@ -7,8 +7,10 @@ Tests device import workflow including validation, creation, and interface handl
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from services.nautobot.devices.import_service import DeviceImportService
+from services.nautobot.devices.types import InterfaceUpdateResult
 from services.nautobot import NautobotService
 from services.nautobot.devices.common import DeviceCommonService
+from services.nautobot.devices.interface_manager import InterfaceManagerService
 
 
 @pytest.fixture
@@ -47,10 +49,28 @@ def mock_common_service():
 
 
 @pytest.fixture
-def import_service(mock_nautobot_service, mock_common_service):
+def mock_interface_manager():
+    """Create a mock InterfaceManagerService for testing."""
+    service = MagicMock(spec=InterfaceManagerService)
+    service.update_device_interfaces = AsyncMock(
+        return_value=InterfaceUpdateResult(
+            interfaces_created=1,
+            interfaces_updated=0,
+            interfaces_failed=0,
+            ip_addresses_created=1,
+            primary_ip4_id="ip-uuid-123",
+            warnings=[],
+        )
+    )
+    return service
+
+
+@pytest.fixture
+def import_service(mock_nautobot_service, mock_common_service, mock_interface_manager):
     """Create DeviceImportService instance with mocked dependencies."""
     service = DeviceImportService(mock_nautobot_service)
     service.common = mock_common_service  # Override with mock
+    service.interface_manager = mock_interface_manager  # Override with mock
     return service
 
 
@@ -292,9 +312,9 @@ class TestInterfaceCreation:
 
     @pytest.mark.asyncio
     async def test_create_interfaces_success(
-        self, import_service, mock_nautobot_service, mock_common_service
+        self, import_service, mock_interface_manager
     ):
-        """Test successful interface creation."""
+        """Test successful interface creation via InterfaceManagerService."""
         interface_config = [
             {
                 "name": "Loopback0",
@@ -306,10 +326,7 @@ class TestInterfaceCreation:
             }
         ]
 
-        mock_nautobot_service.rest_request.return_value = {
-            "id": "interface-uuid-123",
-            "name": "Loopback0",
-        }
+        # Mock is already configured in fixture with 1 interface created, 1 IP, primary_ip4_id
 
         created_interfaces, primary_ip = await import_service._create_device_interfaces(
             device_id="device-uuid-1",
@@ -317,17 +334,25 @@ class TestInterfaceCreation:
             device_name="test-device",
         )
 
+        # Verify InterfaceManagerService was called with normalized config
+        mock_interface_manager.update_device_interfaces.assert_called_once()
+        call_kwargs = mock_interface_manager.update_device_interfaces.call_args[1]
+        assert call_kwargs["device_id"] == "device-uuid-1"
+        assert len(call_kwargs["interfaces"]) == 1
+        # Verify ip_address was converted to ip_addresses array
+        assert "ip_addresses" in call_kwargs["interfaces"][0]
+
+        # Verify return values match InterfaceUpdateResult
         assert len(created_interfaces) == 1
-        assert created_interfaces[0]["name"] == "Loopback0"
         assert created_interfaces[0]["success"] is True
         assert created_interfaces[0]["ip_assigned"] is True
         assert primary_ip == "ip-uuid-123"
 
     @pytest.mark.asyncio
     async def test_create_interfaces_with_lag(
-        self, import_service, mock_nautobot_service, mock_common_service
+        self, import_service, mock_interface_manager
     ):
-        """Test interface creation with LAG dependency."""
+        """Test interface creation with LAG dependency passes config to InterfaceManagerService."""
         interface_config = [
             {
                 "id": "lag-1",  # Frontend ID
@@ -343,12 +368,15 @@ class TestInterfaceCreation:
             },
         ]
 
-        # First call: create LAG
-        # Second call: create member interface
-        mock_nautobot_service.rest_request.side_effect = [
-            {"id": "lag-nautobot-uuid", "name": "Port-Channel1"},
-            {"id": "member-nautobot-uuid", "name": "GigabitEthernet1"},
-        ]
+        # Configure mock to return 2 interfaces created
+        mock_interface_manager.update_device_interfaces.return_value = InterfaceUpdateResult(
+            interfaces_created=2,
+            interfaces_updated=0,
+            interfaces_failed=0,
+            ip_addresses_created=0,
+            primary_ip4_id=None,
+            warnings=[],
+        )
 
         created_interfaces, primary_ip = await import_service._create_device_interfaces(
             device_id="device-uuid-1",
@@ -356,19 +384,22 @@ class TestInterfaceCreation:
             device_name="test-device",
         )
 
-        assert len(created_interfaces) == 2
-        assert created_interfaces[0]["name"] == "Port-Channel1"
-        assert created_interfaces[1]["name"] == "GigabitEthernet1"
+        # Verify InterfaceManagerService was called with both interfaces
+        mock_interface_manager.update_device_interfaces.assert_called_once()
+        call_kwargs = mock_interface_manager.update_device_interfaces.call_args[1]
+        assert len(call_kwargs["interfaces"]) == 2
+        # LAG reference should be preserved for InterfaceManagerService to handle
+        assert call_kwargs["interfaces"][1].get("lag") == "lag-1"
 
-        # Second interface should reference LAG by Nautobot UUID
-        second_call_args = mock_nautobot_service.rest_request.call_args_list[1]
-        assert second_call_args[1]["data"]["lag"] == "lag-nautobot-uuid"
+        # Verify result reflects 2 successful interfaces
+        assert len(created_interfaces) == 2
+        assert all(iface["success"] is True for iface in created_interfaces)
 
     @pytest.mark.asyncio
     async def test_create_interfaces_missing_name(
-        self, import_service, mock_nautobot_service
+        self, import_service, mock_interface_manager
     ):
-        """Test interface creation with missing name."""
+        """Test interface creation with missing name reports failure from InterfaceManagerService."""
         interface_config = [
             {
                 # Missing "name"
@@ -377,19 +408,30 @@ class TestInterfaceCreation:
             }
         ]
 
+        # Mock InterfaceManagerService returning a failure with warning
+        mock_interface_manager.update_device_interfaces.return_value = InterfaceUpdateResult(
+            interfaces_created=0,
+            interfaces_updated=0,
+            interfaces_failed=1,
+            ip_addresses_created=0,
+            primary_ip4_id=None,
+            warnings=["Interface creation Failed: Missing interface name"],
+        )
+
         created_interfaces, primary_ip = await import_service._create_device_interfaces(
             device_id="device-uuid-1",
             interface_config=interface_config,
             device_name="test-device",
         )
 
+        # Verify failure is reported
         assert len(created_interfaces) == 1
         assert created_interfaces[0]["success"] is False
-        assert "Missing interface name" in created_interfaces[0]["error"]
+        assert "Failed" in created_interfaces[0]["error"]
 
     @pytest.mark.asyncio
     async def test_create_interfaces_ip_assignment_fails(
-        self, import_service, mock_nautobot_service, mock_common_service
+        self, import_service, mock_interface_manager
     ):
         """Test interface creation succeeds but IP assignment fails."""
         interface_config = [
@@ -402,14 +444,14 @@ class TestInterfaceCreation:
             }
         ]
 
-        mock_nautobot_service.rest_request.return_value = {
-            "id": "interface-uuid-123",
-            "name": "Loopback0",
-        }
-
-        # IP assignment fails
-        mock_common_service.assign_ip_to_interface.side_effect = Exception(
-            "IP assignment failed"
+        # Mock InterfaceManagerService: interface created but IP assignment failed
+        mock_interface_manager.update_device_interfaces.return_value = InterfaceUpdateResult(
+            interfaces_created=1,
+            interfaces_updated=0,
+            interfaces_failed=0,
+            ip_addresses_created=0,  # IP creation failed
+            primary_ip4_id=None,
+            warnings=["IP assignment failed for Loopback0"],
         )
 
         created_interfaces, primary_ip = await import_service._create_device_interfaces(
@@ -421,13 +463,13 @@ class TestInterfaceCreation:
         assert len(created_interfaces) == 1
         assert created_interfaces[0]["success"] is True  # Interface created
         assert created_interfaces[0]["ip_assigned"] is False  # But IP not assigned
-        assert "warning" in created_interfaces[0]
+        assert primary_ip is None
 
     @pytest.mark.asyncio
     async def test_create_interfaces_primary_ipv4_selection(
-        self, import_service, mock_nautobot_service, mock_common_service
+        self, import_service, mock_interface_manager
     ):
-        """Test primary IPv4 selection logic."""
+        """Test primary IPv4 selection is returned from InterfaceManagerService."""
         interface_config = [
             {
                 "name": "Loopback0",
@@ -447,21 +489,27 @@ class TestInterfaceCreation:
             },
         ]
 
-        mock_nautobot_service.rest_request.side_effect = [
-            {"id": "interface-uuid-1", "name": "Loopback0"},
-            {"id": "interface-uuid-2", "name": "Loopback1"},
-        ]
-
-        mock_common_service.ensure_ip_address_exists.side_effect = [
-            "ip-uuid-1",
-            "ip-uuid-2",
-        ]
+        # Mock InterfaceManagerService returning the primary IP from marked interface
+        mock_interface_manager.update_device_interfaces.return_value = InterfaceUpdateResult(
+            interfaces_created=2,
+            interfaces_updated=0,
+            interfaces_failed=0,
+            ip_addresses_created=2,
+            primary_ip4_id="ip-uuid-2",  # The marked primary IP
+            warnings=[],
+        )
 
         created_interfaces, primary_ip = await import_service._create_device_interfaces(
             device_id="device-uuid-1",
             interface_config=interface_config,
             device_name="test-device",
         )
+
+        # Verify is_primary flag is converted and passed to InterfaceManagerService
+        call_kwargs = mock_interface_manager.update_device_interfaces.call_args[1]
+        # Second interface should have is_primary in its ip_addresses
+        loopback1_config = call_kwargs["interfaces"][1]
+        assert loopback1_config["ip_addresses"][0]["is_primary"] is True
 
         # Second IP should be primary (explicitly marked)
         assert primary_ip == "ip-uuid-2"
@@ -477,7 +525,7 @@ class TestImportDeviceIntegration:
 
     @pytest.mark.asyncio
     async def test_import_device_full_workflow(
-        self, import_service, mock_nautobot_service, mock_common_service
+        self, import_service, mock_nautobot_service, mock_interface_manager
     ):
         """Test complete device import workflow."""
         device_data = {
@@ -500,10 +548,10 @@ class TestImportDeviceIntegration:
             }
         ]
 
-        # Mock device creation
+        # Mock device creation and primary IP assignment via rest_request
+        # Interface creation is handled by mock_interface_manager (from fixture)
         mock_nautobot_service.rest_request.side_effect = [
             {"id": "device-uuid-123", "name": "test-device"},  # Device creation
-            {"id": "interface-uuid-123", "name": "Loopback0"},  # Interface creation
             {
                 "id": "device-uuid-123",
                 "primary_ip4": "ip-uuid-123",
@@ -522,6 +570,9 @@ class TestImportDeviceIntegration:
         assert result["created"] is True
         assert len(result["warnings"]) == 0
         assert result["details"]["primary_ip"] == "ip-uuid-123"
+
+        # Verify InterfaceManagerService was called
+        mock_interface_manager.update_device_interfaces.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_import_device_already_exists_skip(

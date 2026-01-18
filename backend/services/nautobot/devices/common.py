@@ -1028,58 +1028,66 @@ class DeviceCommonService:
                     ) from lookup_error
 
             # Check if error is due to missing prefix
-            elif (
-                "No suitable parent Prefix" in error_message
-                and add_prefixes_automatically
-            ):
-                logger.warning(
-                    "IP creation failed due to missing prefix. "
-                    "Attempting to create prefix automatically..."
-                )
-
-                # Extract the network prefix from the IP address (e.g., "192.168.1.1/24" -> "192.168.1.0/24")
-                import ipaddress
-
-                try:
-                    ip_obj = ipaddress.ip_interface(ip_address)
-                    network_prefix = str(ip_obj.network)
-
-                    logger.info(f"Creating missing prefix: {network_prefix}")
-
-                    # Create the prefix using ensure_prefix_exists
-                    # Use the namespace_id directly since we already have it as UUID
-                    await self.ensure_prefix_exists(
-                        prefix=network_prefix,
-                        namespace=namespace_id,  # Pass UUID directly
-                        status="active",
-                        prefix_type="network",
-                        description=f"Auto-created for IP {ip_address}",
+            elif "No suitable parent Prefix" in error_message:
+                if add_prefixes_automatically:
+                    logger.warning(
+                        "IP creation failed due to missing prefix. "
+                        "Attempting to create prefix automatically..."
                     )
 
-                    logger.info(
-                        f"Successfully created prefix {network_prefix}, retrying IP creation..."
-                    )
+                    # Extract the network prefix from the IP address (e.g., "192.168.1.1/24" -> "192.168.1.0/24")
+                    import ipaddress
 
-                    # Retry IP creation
-                    ip_create_result = await self.nautobot.rest_request(
-                        endpoint="ipam/ip-addresses/?format=json",
-                        method="POST",
-                        data=ip_create_data,
-                    )
+                    try:
+                        ip_obj = ipaddress.ip_interface(ip_address)
+                        network_prefix = str(ip_obj.network)
 
-                    ip_id = ip_create_result["id"]
-                    logger.info(f"Created IP address after prefix creation: {ip_id}")
-                    return ip_id
+                        logger.info(f"Creating missing prefix: {network_prefix}")
 
-                except Exception as prefix_error:
+                        # Create the prefix using ensure_prefix_exists
+                        # Use the namespace_id directly since we already have it as UUID
+                        await self.ensure_prefix_exists(
+                            prefix=network_prefix,
+                            namespace=namespace_id,  # Pass UUID directly
+                            status="active",
+                            prefix_type="network",
+                            description=f"Auto-created for IP {ip_address}",
+                        )
+
+                        logger.info(
+                            f"Successfully created prefix {network_prefix}, retrying IP creation..."
+                        )
+
+                        # Retry IP creation
+                        ip_create_result = await self.nautobot.rest_request(
+                            endpoint="ipam/ip-addresses/?format=json",
+                            method="POST",
+                            data=ip_create_data,
+                        )
+
+                        ip_id = ip_create_result["id"]
+                        logger.info(f"Created IP address after prefix creation: {ip_id}")
+                        return ip_id
+
+                    except Exception as prefix_error:
+                        logger.error(
+                            f"Failed to auto-create prefix for {ip_address}: {prefix_error}"
+                        )
+                        raise Exception(
+                            f"Failed to create IP {ip_address} and could not auto-create prefix: {prefix_error}"
+                        ) from prefix_error
+                else:
+                    # User has disabled automatic prefix creation - stop and raise clear error
                     logger.error(
-                        f"Failed to auto-create prefix for {ip_address}: {prefix_error}"
+                        f"IP creation failed: No suitable parent prefix exists for {ip_address}. "
+                        f"Automatic prefix creation is disabled. Error: {error_message}"
                     )
                     raise Exception(
-                        f"Failed to create IP {ip_address} and could not auto-create prefix: {prefix_error}"
-                    ) from prefix_error
+                        f"Cannot create IP address {ip_address}: No suitable parent prefix exists. "
+                        f"Please either create the parent prefix manually or enable automatic prefix creation in the form."
+                    ) from e
             else:
-                # Re-raise the original error if not a handled error type or auto-features are disabled
+                # Re-raise the original error if not a handled error type
                 raise
 
     async def ensure_prefix_exists(

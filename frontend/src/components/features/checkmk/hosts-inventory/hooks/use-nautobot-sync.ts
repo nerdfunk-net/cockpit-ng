@@ -52,6 +52,9 @@ interface UseNautobotSyncReturn {
   executeSyncToNautobot: (formData: DeviceFormValues, deviceId?: string) => Promise<void>
   closeSyncModal: () => void
   isSyncing: boolean
+  showErrorModal: boolean
+  errorModalMessage: string
+  closeErrorModal: () => void
 }
 
 const EMPTY_MAPPINGS: Record<string, PropertyMapping> = {}
@@ -88,6 +91,10 @@ export function useNautobotSync({
   // Syncing state
   const [isSyncing, setIsSyncing] = useState(false)
   const [interfaceMappings, setInterfaceMappings] = useState<Record<string, InterfaceMappingData>>({})
+
+  // Error modal state
+  const [showErrorModal, setShowErrorModal] = useState(false)
+  const [errorModalMessage, setErrorModalMessage] = useState<string>('')
 
   /**
    * Load CheckMK inventory data for interface mapping
@@ -343,7 +350,9 @@ export function useNautobotSync({
       
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to sync to Nautobot'
-      onMessage(`Failed to sync ${selectedHostForSync.host_name}: ${message}`, 'error')
+      setErrorModalMessage(message)
+      setShowErrorModal(true)
+      setIsSyncModalOpen(false) // Close sync modal so error modal is visible
     } finally {
       setIsSyncing(false)
     }
@@ -361,6 +370,14 @@ export function useNautobotSync({
     setIpAddressStatuses(null)
     setIpAddressRoles(null)
     setInterfaceMappings({})
+  }, [])
+
+  /**
+   * Close error modal
+   */
+  const closeErrorModal = useCallback(() => {
+    setShowErrorModal(false)
+    setErrorModalMessage('')
   }, [])
 
   // Re-initialize mappings when checkmkConfig or nautobotMetadata changes
@@ -388,6 +405,9 @@ export function useNautobotSync({
     executeSyncToNautobot,
     closeSyncModal,
     isSyncing,
+    showErrorModal,
+    errorModalMessage,
+    closeErrorModal,
   }), [
     isSyncModalOpen,
     selectedHostForSync,
@@ -406,5 +426,8 @@ export function useNautobotSync({
     executeSyncToNautobot,
     closeSyncModal,
     isSyncing,
+    showErrorModal,
+    errorModalMessage,
+    closeErrorModal,
   ])
 }

@@ -19,7 +19,7 @@ from typing import Dict
 from services.nautobot import NautobotService
 from services.nautobot.devices.creation import DeviceCreationService
 from services.nautobot.devices.update import DeviceUpdateService
-from models.nautobot import AddDeviceRequest, InterfaceData
+from models.nautobot import AddDeviceRequest, InterfaceData, IpAddressData
 
 logger = logging.getLogger(__name__)
 
@@ -299,9 +299,13 @@ class TestAddDevice:
                     name="GigabitEthernet0/0",
                     type="1000base-t",
                     status=ids["status_id"],
-                    ip_address="192.168.178.128/24",
-                    namespace=ids["namespace_id"],
-                    is_primary_ipv4=True,
+                    ip_addresses=[
+                        IpAddressData(
+                            address="192.168.178.128/24",
+                            namespace=ids["namespace_id"],
+                            is_primary=True,
+                        )
+                    ],
                     description="Management interface",
                 ),
             ],
@@ -403,9 +407,13 @@ class TestAddDevice:
                     name="GigabitEthernet0/0",
                     type="1000base-t",
                     status=ids["status_id"],
-                    ip_address="10.99.99.10/24",  # IP in non-existent prefix
-                    namespace=ids["namespace_id"],
-                    is_primary_ipv4=True,
+                    ip_addresses=[
+                        IpAddressData(
+                            address="10.99.99.10/24",  # IP in non-existent prefix
+                            namespace=ids["namespace_id"],
+                            is_primary=True,
+                        )
+                    ],
                 ),
             ],
         )
@@ -519,9 +527,13 @@ class TestAddDevice:
                     name="GigabitEthernet0/0",
                     type="1000base-t",
                     status=ids["status_id"],
-                    ip_address="10.98.98.10/24",  # IP in non-existent prefix
-                    namespace=ids["namespace_id"],
-                    is_primary_ipv4=True,
+                    ip_addresses=[
+                        IpAddressData(
+                            address="10.98.98.10/24",  # IP in non-existent prefix
+                            namespace=ids["namespace_id"],
+                            is_primary=True,
+                        )
+                    ],
                 ),
             ],
         )
@@ -1075,9 +1087,13 @@ class TestAddDeviceWithTagsAndCustomFields:
                     name="GigabitEthernet0/0",
                     type="1000base-t",
                     status=ids["status_id"],
-                    ip_address="192.168.178.140/24",
-                    namespace=ids["namespace_id"],
-                    is_primary_ipv4=True,
+                    ip_addresses=[
+                        IpAddressData(
+                            address="192.168.178.140/24",
+                            namespace=ids["namespace_id"],
+                            is_primary=True,
+                        )
+                    ],
                 ),
             ],
         )
@@ -1148,9 +1164,13 @@ class TestAddDeviceWithTagsAndCustomFields:
                     name="GigabitEthernet0/0",
                     type="1000base-t",
                     status=ids["status_id"],
-                    ip_address="192.168.178.141/24",
-                    namespace=ids["namespace_id"],
-                    is_primary_ipv4=True,
+                    ip_addresses=[
+                        IpAddressData(
+                            address="192.168.178.141/24",
+                            namespace=ids["namespace_id"],
+                            is_primary=True,
+                        )
+                    ],
                 ),
             ],
         )
@@ -1229,9 +1249,13 @@ class TestAddDeviceWithTagsAndCustomFields:
                     name="GigabitEthernet0/0",
                     type="1000base-t",
                     status=ids["status_id"],
-                    ip_address="192.168.178.142/24",
-                    namespace=ids["namespace_id"],
-                    is_primary_ipv4=True,
+                    ip_addresses=[
+                        IpAddressData(
+                            address="192.168.178.142/24",
+                            namespace=ids["namespace_id"],
+                            is_primary=True,
+                        )
+                    ],
                     description="Production management interface",
                 ),
             ],
@@ -1321,9 +1345,13 @@ class TestAddDeviceWithMultipleInterfaces:
                     name="GigabitEthernet0/0",
                     type="1000base-t",
                     status=ids["status_id"],
-                    ip_address="192.168.178.150/24",
-                    namespace=ids["namespace_id"],
-                    is_primary_ipv4=True,
+                    ip_addresses=[
+                        IpAddressData(
+                            address="192.168.178.150/24",
+                            namespace=ids["namespace_id"],
+                            is_primary=True,
+                        )
+                    ],
                     description="Management interface",
                     mgmt_only=True,
                 ),
@@ -1331,16 +1359,24 @@ class TestAddDeviceWithMultipleInterfaces:
                     name="GigabitEthernet0/1",
                     type="1000base-t",
                     status=ids["status_id"],
-                    ip_address="192.168.178.151/24",
-                    namespace=ids["namespace_id"],
+                    ip_addresses=[
+                        IpAddressData(
+                            address="192.168.178.151/24",
+                            namespace=ids["namespace_id"],
+                        )
+                    ],
                     description="Data interface",
                 ),
                 InterfaceData(
                     name="Loopback0",
                     type="virtual",
                     status=ids["status_id"],
-                    ip_address="10.255.255.1/32",
-                    namespace=ids["namespace_id"],
+                    ip_addresses=[
+                        IpAddressData(
+                            address="10.255.255.1/32",
+                            namespace=ids["namespace_id"],
+                        )
+                    ],
                     description="Loopback interface",
                 ),
             ],
@@ -1435,9 +1471,13 @@ class TestAddDeviceWithMultipleInterfaces:
                     name="GigabitEthernet0/0",
                     type="1000base-t",
                     status=ids["status_id"],
-                    ip_address="192.168.178.160/24",
-                    namespace=ids["namespace_id"],
-                    is_primary_ipv4=True,
+                    ip_addresses=[
+                        IpAddressData(
+                            address="192.168.178.160/24",
+                            namespace=ids["namespace_id"],
+                            is_primary=True,
+                        )
+                    ],
                     description="Management with custom MAC and MTU",
                     mac_address="00:1A:2B:3C:4D:5E",
                     mtu=9000,  # Jumbo frames
@@ -1533,9 +1573,13 @@ class TestAddDeviceWithDifferentLocationsAndRoles:
                     name="GigabitEthernet0/0",
                     type="1000base-t",
                     status=ids["status_id"],
-                    ip_address="192.168.178.170/24",
-                    namespace=ids["namespace_id"],
-                    is_primary_ipv4=True,
+                    ip_addresses=[
+                        IpAddressData(
+                            address="192.168.178.170/24",
+                            namespace=ids["namespace_id"],
+                            is_primary=True,
+                        )
+                    ],
                 ),
             ],
         )
@@ -1611,9 +1655,13 @@ class TestAddDeviceWithDifferentLocationsAndRoles:
                     name="eth0",
                     type="1000base-t",
                     status=ids["status_id"],
-                    ip_address="192.168.178.180/24",
-                    namespace=ids["namespace_id"],
-                    is_primary_ipv4=True,
+                    ip_addresses=[
+                        IpAddressData(
+                            address="192.168.178.180/24",
+                            namespace=ids["namespace_id"],
+                            is_primary=True,
+                        )
+                    ],
                     description="Primary network interface",
                 ),
             ],

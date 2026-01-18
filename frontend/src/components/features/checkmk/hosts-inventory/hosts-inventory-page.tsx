@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useEffect } from 'react'
-import { Search, X, ChevronLeft, ChevronRight, RotateCcw, Server, Eye, RefreshCw, ChevronDown } from 'lucide-react'
+import { Search, X, ChevronLeft, ChevronRight, RotateCcw, Server, Eye, RefreshCw, ChevronDown, AlertCircle } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 
 import {
   DropdownMenu,
@@ -101,6 +102,9 @@ export default function HostsInventoryPage() {
     executeSyncToNautobot,
     closeSyncModal,
     isSyncing,
+    showErrorModal,
+    errorModalMessage,
+    closeErrorModal,
   } = useNautobotSync({ checkmkConfig, onMessage: showMessage })
   
   const {
@@ -545,6 +549,34 @@ export default function HostsInventoryPage() {
         onClose={closeSyncModal}
         isSyncing={isSyncing}
       />
+
+      {/* Error Modal */}
+      <Dialog open={showErrorModal} onOpenChange={closeErrorModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              Sync Failed
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Error details for device sync failure
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-800 whitespace-pre-wrap">{errorModalMessage}</p>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                onClick={closeErrorModal}
+                variant="default"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

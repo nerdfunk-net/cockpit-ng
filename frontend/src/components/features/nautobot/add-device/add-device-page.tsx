@@ -45,6 +45,8 @@ import type { DeviceFormValues } from './validation'
 
 export function AddDevicePage() {
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null)
+  const [showErrorModal, setShowErrorModal] = useState(false)
+  const [errorModalMessage, setErrorModalMessage] = useState<string>('')
   const [showValidationModal, setShowValidationModal] = useState(false)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   
@@ -351,14 +353,21 @@ export function AddDevicePage() {
       })
       const result = await createDevice.mutateAsync(submissionData)
 
-      setStatusMessage({
-        type: result.messageType,
-        message: result.message,
-      })
+      if (result.messageType === 'error') {
+        // Show error in modal for visibility
+        setErrorModalMessage(result.message)
+        setShowErrorModal(true)
+      } else {
+        // Show success/info messages at top
+        setStatusMessage({
+          type: result.messageType,
+          message: result.message,
+        })
 
-      if (result.success) {
-        // Don't reset form - allow user to add similar devices
-        setTimeout(() => setStatusMessage(null), 3000)
+        if (result.success) {
+          // Don't reset form - allow user to add similar devices
+          setTimeout(() => setStatusMessage(null), 3000)
+        }
       }
     },
     [createDevice, form, tagsManager, customFieldsManager]
@@ -410,14 +419,42 @@ export function AddDevicePage() {
           </Button>
         </div>
 
-        {/* Status Messages */}
-        {statusMessage && (
+        {/* Status Messages (non-errors only) */}
+        {statusMessage && statusMessage.type !== 'error' && (
           <Alert
-            className={`border-${statusMessage.type === 'error' ? 'red' : statusMessage.type === 'success' ? 'green' : 'blue'}-500`}
+            className={`border-${statusMessage.type === 'success' ? 'green' : 'blue'}-500`}
           >
             <AlertDescription>{statusMessage.message}</AlertDescription>
           </Alert>
         )}
+
+        {/* Error Modal */}
+        <Dialog open={showErrorModal} onOpenChange={setShowErrorModal}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <AlertCircle className="h-5 w-5" />
+                Device Creation Failed
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                Error details for device creation failure
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm text-red-800 whitespace-pre-wrap">{errorModalMessage}</p>
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => setShowErrorModal(false)}
+                  variant="default"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Device Information */}
         <DeviceInfoForm

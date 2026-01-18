@@ -111,6 +111,9 @@ export function useDeviceForm(
           interfaces: initialData.interfaces && initialData.interfaces.length > 0 
             ? initialData.interfaces 
             : baseValues.interfaces,
+          // Preserve defaults for prefix configuration if not provided
+          addPrefix: initialData.addPrefix !== undefined ? initialData.addPrefix : baseValues.addPrefix,
+          defaultPrefixLength: initialData.defaultPrefixLength || baseValues.defaultPrefixLength,
         }
       }
 

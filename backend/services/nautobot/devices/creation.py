@@ -392,6 +392,7 @@ class DeviceCreationService:
         result = await self.interface_manager.update_device_interfaces(
             device_id=device_id,
             interfaces=interface_dicts,
+            add_prefixes_automatically=request.add_prefix,
         )
 
         # Update workflow_status from InterfaceUpdateResult

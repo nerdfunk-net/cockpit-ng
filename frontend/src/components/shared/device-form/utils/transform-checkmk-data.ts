@@ -83,6 +83,8 @@ export function transformCheckMKToFormData(
     selectedTags: [],
     customFieldValues: {},
     interfaces: [],
+    addPrefix: true,
+    defaultPrefixLength: '/24',
   }
 
   // Extract custom fields from property mappings

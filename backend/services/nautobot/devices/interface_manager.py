@@ -44,6 +44,7 @@ class InterfaceManagerService:
         self,
         device_id: str,
         interfaces: List[Dict[str, Any]],
+        add_prefixes_automatically: bool = False,
     ) -> InterfaceUpdateResult:
         """
         Create or update multiple interfaces for a device.
@@ -57,6 +58,7 @@ class InterfaceManagerService:
         Args:
             device_id: Device UUID
             interfaces: List of interface dicts (can be InterfaceSpec or plain dicts)
+            add_prefixes_automatically: Auto-create missing prefix if IP creation fails (default: False)
 
         Returns:
             InterfaceUpdateResult with operation statistics and warnings
@@ -75,6 +77,7 @@ class InterfaceManagerService:
         ip_address_map = await self._create_ip_addresses(
             interfaces=interfaces,
             warnings=warnings,
+            add_prefixes_automatically=add_prefixes_automatically,
         )
 
         # Step 2: Create or update interfaces
@@ -190,13 +193,18 @@ class InterfaceManagerService:
         self,
         interfaces: List[Dict[str, Any]],
         warnings: List[str],
+        add_prefixes_automatically: bool = False,
     ) -> Dict[str, str]:
         """
         Create IP addresses for all interfaces that need them.
 
+        Uses common.ensure_ip_address_exists() to handle IP creation with proper
+        error checking for missing prefixes.
+
         Args:
             interfaces: List of interface specifications
             warnings: List to append warnings to
+            add_prefixes_automatically: Auto-create missing prefix if IP creation fails (default: False)
 
         Returns:
             Dictionary mapping "interface_name:ip_address" to IP UUID
@@ -250,97 +258,40 @@ class InterfaceManagerService:
                     continue
 
                 try:
-                    # Resolve status and namespace to UUIDs
-                    status_id = await self.common.resolve_status_id(status, "ipam.ipaddress")
+                    # Resolve namespace to UUID
                     namespace_id = await self.common.resolve_namespace_id(namespace)
-
-                    # Create or get existing IP address
-                    ip_payload = {
-                        "address": ip_address,
-                        "status": status_id,
-                        "namespace": namespace_id,
-                    }
-                    logger.info(f"  Base IP payload created: {ip_payload}")
-
-                    # Add role if specified (skip if 'none')
-                    logger.info(f"  Checking ip_role: value='{ip_role}', type={type(ip_role)}")
-                    if ip_role and ip_role != 'none':
-                        ip_payload["role"] = ip_role
-                        logger.info(f"  ✓ Role '{ip_role}' ADDED to IP payload for {ip_address}")
-                    else:
-                        logger.info(f"  ✗ Role NOT added (ip_role is None, empty, or 'none')")
                     
-                    logger.info(f"  Final IP payload: {ip_payload}")
-
-                    try:
-                        logger.info(f"  Sending POST request to create IP address {ip_address}")
-                        ip_response = await self.nautobot.rest_request(
-                            endpoint="ipam/ip-addresses/",
-                            method="POST",
-                            data=ip_payload,
-                        )
-                        logger.info(f"  Raw response from Nautobot: {ip_response}")
-                        
-                        if ip_response and "id" in ip_response:
-                            map_key = f"{interface['name']}:{ip_address}"
-                            ip_address_map[map_key] = ip_response["id"]
-                            logger.info(f"  ✓ SUCCESS: Created IP address {ip_address}")
-                            logger.info(f"    - IP ID: {ip_response['id']}")
-                            logger.info(f"    - Map key: {map_key}")
-                            logger.info(f"    - Role in response: {ip_response.get('role', 'NOT_IN_RESPONSE')}")
-                            logger.info(f"    - Status in response: {ip_response.get('status', 'NOT_IN_RESPONSE')}")
-                        else:
-                            logger.error(f"  ✗ FAILED: No IP ID in response for {ip_address}")
-
-                    except Exception as create_error:
-                        logger.error(f"  ✗ Exception during IP creation: {str(create_error)}")
-                        # If IP already exists, look it up
-                        if "already exists" in str(create_error).lower():
-                            logger.info(f"  IP {ip_address} already exists, looking it up...")
-                            ip_id = await self.common.resolve_ip_address(
-                                ip_address=ip_address,
-                                namespace_id=namespace_id,
-                            )
-                            if ip_id:
-                                logger.info(f"Found existing IP address {ip_address} with ID: {ip_id}")
-                                map_key = f"{interface['name']}:{ip_address}"
-                                ip_address_map[map_key] = ip_id
-                                logger.info(f"  ✓ Found existing IP with ID: {ip_id}, map_key: {map_key}")
-                                
-                                # Update the existing IP with the role if specified
-                                if ip_role and ip_role != 'none':
-                                    logger.info(f"  Updating existing IP {ip_address} with role '{ip_role}'")
-                                    try:
-                                        update_payload = {"role": ip_role}
-                                        update_response = await self.nautobot.rest_request(
-                                            endpoint=f"ipam/ip-addresses/{ip_id}/",
-                                            method="PATCH",
-                                            data=update_payload,
-                                        )
-                                        logger.info(f"  ✓ Updated existing IP role: {update_response.get('role', 'NOT_IN_RESPONSE')}")
-                                    except Exception as update_error:
-                                        logger.error(f"  ✗ Failed to update IP role: {str(update_error)}")
-                                        warnings.append(
-                                            f"Interface {interface['name']}: Failed to update role for existing IP {ip_address}: {str(update_error)}"
-                                        )
-                                else:
-                                    logger.info(f"  No role update needed (ip_role is None, empty, or 'none')")
-                            else:
-                                logger.error(f"  ✗ Failed to lookup existing IP {ip_address}")
-                                warnings.append(
-                                    f"Interface {interface['name']}: IP {ip_address} exists but could not be found"
-                                )
-                        else:
-                            logger.error(f"  ✗ Create error is NOT about existing IP")
-                            warnings.append(
-                                f"Interface {interface['name']}: Failed to create IP {ip_address}: {str(create_error)}"
-                            )
+                    # Build kwargs for additional IP fields
+                    ip_kwargs = {}
+                    if ip_role and ip_role != 'none':
+                        ip_kwargs["role"] = ip_role
+                        logger.info(f"  Adding role '{ip_role}' to IP creation")
+                    
+                    # Use common service to ensure IP exists (handles all error cases)
+                    logger.info(f"  Calling ensure_ip_address_exists for {ip_address}")
+                    ip_id = await self.common.ensure_ip_address_exists(
+                        ip_address=ip_address,
+                        namespace_id=namespace_id,
+                        status_name=status,
+                        add_prefixes_automatically=add_prefixes_automatically,
+                        **ip_kwargs,
+                    )
+                    
+                    map_key = f"{interface['name']}:{ip_address}"
+                    ip_address_map[map_key] = ip_id
+                    logger.info(f"  ✓ SUCCESS: IP address {ip_address} ready")
+                    logger.info(f"    - IP ID: {ip_id}")
+                    logger.info(f"    - Map key: {map_key}")
 
                 except Exception as e:
-                    logger.error(f"  ✗ Outer exception for IP {ip_address}: {str(e)}")
+                    logger.error(f"  ✗ Error ensuring IP {ip_address}: {str(e)}")
                     warnings.append(
-                        f"Interface {interface['name']}: Error processing IP address {ip_address}: {str(e)}"
+                        f"Interface {interface['name']}: Failed to ensure IP address {ip_address}: {str(e)}"
                     )
+                    # If this is a missing prefix error and add_prefixes_automatically is False,
+                    # the exception should propagate to stop the device creation
+                    if "No suitable parent prefix" in str(e) and not add_prefixes_automatically:
+                        raise
 
         logger.info("\n" + "="*80)
         logger.info(f"==== STEP 1 COMPLETE: IP ADDRESS MAP ====")
