@@ -125,7 +125,7 @@ Common Cisco interface types map to Nautobot types:
 
 | Cisco Interface | Nautobot Type |
 |----------------|---------------|
-| Ethernet*, GigabitEthernet* | 1000base-t |
+| Ethernet*, GigabitEthernet*, em* | 1000base-t |
 | FastEthernet* | 100base-tx |
 | TenGigabitEthernet* | 10gbase-x-sfpp |
 | Loopback* | virtual |

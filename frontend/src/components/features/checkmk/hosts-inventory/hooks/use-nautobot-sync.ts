@@ -349,7 +349,30 @@ export function useNautobotSync({
       setIsSyncModalOpen(false)
       
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to sync to Nautobot'
+      // Extract detailed error message from API response
+      let message = 'Failed to sync to Nautobot'
+      
+      if (err instanceof Error) {
+        message = err.message
+        
+        // Try to parse JSON error response for more details
+        try {
+          // Check if message contains JSON
+          const jsonMatch = message.match(/\{.*\}/s)
+          if (jsonMatch) {
+            const errorData = JSON.parse(jsonMatch[0])
+            if (errorData.detail) {
+              message = errorData.detail
+            } else if (errorData.message) {
+              message = errorData.message
+            }
+          }
+        } catch {
+          // If parsing fails, use the original message
+        }
+      }
+      
+      console.error('Sync error:', err)
       setErrorModalMessage(message)
       setShowErrorModal(true)
       setIsSyncModalOpen(false) // Close sync modal so error modal is visible

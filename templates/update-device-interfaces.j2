@@ -42,7 +42,7 @@
 {%- set prefix = interface.prefix_length[ip_index] if ip_index < interface.prefix_length|length else '24' %}
     {
       "name": "{{ interface.interface }}",
-      "type": "{% if 'Ethernet' in interface.interface or 'GigabitEthernet' in interface.interface %}1000base-t{% elif 'FastEthernet' in interface.interface %}100base-tx{% elif 'TenGigabit' in interface.interface %}10gbase-x-sfpp{% elif 'Loopback' in interface.interface %}virtual{% else %}{{ user_variables.default_interface_type|default('other') }}{% endif %}",
+      "type": "{% if 'Ethernet' in interface.interface or 'GigabitEthernet' in interface.interface or interface.interface.lower().startswith('em') %}1000base-t{% elif 'FastEthernet' in interface.interface %}100base-tx{% elif 'TenGigabit' in interface.interface %}10gbase-x-sfpp{% elif 'Loopback' in interface.interface %}virtual{% else %}{{ user_variables.default_interface_type|default('other') }}{% endif %}",
       "status": "{% if interface.link_status == 'up' %}active{% elif interface.link_status == 'administratively down' %}planned{% else %}failed{% endif %}",
       "enabled": {% if interface.link_status != 'administratively down' %}true{% else %}false{% endif %},
       "ip_address": "{{ ip }}/{{ prefix }}",

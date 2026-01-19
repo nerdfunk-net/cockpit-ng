@@ -52,6 +52,8 @@ class DeviceUpdateService:
         interface_config: Optional[Dict[str, str]] = None,
         interfaces: Optional[List[Dict[str, Any]]] = None,
         create_if_missing: bool = False,
+        add_prefix: bool = True,
+        default_prefix_length: str = "/24",
     ) -> Dict[str, Any]:
         """
         Update a single device.
@@ -208,9 +210,11 @@ class DeviceUpdateService:
             interfaces_failed = 0
             if interfaces:
                 logger.info(f"Step 3.5: Creating/updating {len(interfaces)} interface(s)")
+                logger.info(f"Prefix auto-creation enabled: {add_prefix}")
                 interface_result = await self.interface_manager.update_device_interfaces(
                     device_id=device_id,
                     interfaces=interfaces,
+                    add_prefixes_automatically=add_prefix,
                 )
                 interfaces_created = interface_result.interfaces_created
                 interfaces_updated = interface_result.interfaces_updated

@@ -73,33 +73,29 @@ export function useSearchableDropdown<T extends { id: string }>(
     return selectedItem ? getDisplayText(selectedItem) : ''
   }, [searchQuery, selectedItem, getDisplayText])
 
-  // Clear search query when selectedId changes externally (e.g., form reset)
-  // but NOT when user actively selects (selectItem already handles that)
-  // Using requestAnimationFrame to defer setState and avoid React Compiler cascade warning
+  // Sync search query with selected item when selection changes externally
+  // This handles form reset and external selection changes
   useEffect(() => {
-    const frameId = requestAnimationFrame(() => {
-      if (selectedItem) {
-        const expectedText = getDisplayText(selectedItem)
-        // Only clear if search query doesn't match the selected item
-        setSearchQuery(prev => {
-          if (prev !== '' && prev !== expectedText) return ''
-          return prev
-        })
-      } else {
-        // No selected item - clear search query if it exists
-        setSearchQuery(prev => prev !== '' ? '' : prev)
-      }
-    })
-    return () => cancelAnimationFrame(frameId)
-  }, [selectedId, selectedItem, getDisplayText])
+    // If there's a selected item, update the search query to match it (but only if currently empty)
+    if (selectedItem && searchQuery === '') {
+      const expectedText = getDisplayText(selectedItem)
+      setSearchQuery(expectedText)
+    }
+    // If there's no selected item and search query doesn't match any ongoing user input
+    // (this happens on form reset), clear it
+    else if (!selectedItem && searchQuery !== '' && !showDropdown) {
+      // Only clear if dropdown is not shown (user is not actively typing)
+      setSearchQuery('')
+    }
+  }, [selectedItem, getDisplayText, showDropdown])
 
-  // Clear selection when user clears the search
+  // Clear selection when user manually clears the input field completely
   useEffect(() => {
-    if (searchQuery === '' && selectedItem) {
-      // User cleared the input, so clear the selection
+    if (searchQuery === '' && selectedItem && showDropdown) {
+      // User is actively clearing the field, so clear the selection
       onSelect('')
     }
-  }, [searchQuery, selectedItem, onSelect])
+  }, [searchQuery, selectedItem, onSelect, showDropdown])
 
   // CRITICAL: Memoize return object to prevent infinite loops
   return useMemo(

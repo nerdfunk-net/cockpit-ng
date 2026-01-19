@@ -421,6 +421,8 @@ async def update_device(
             device_identifier=device_identifier,
             update_data=update_data,
             interfaces=interfaces,
+            add_prefix=add_prefix,
+            default_prefix_length=default_prefix_length,
         )
 
         return result

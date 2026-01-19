@@ -213,7 +213,8 @@ export function InterfaceTable({
       let interfaceType = iface.type
       if (ifaceName.startsWith('ethernet') || ifaceName.startsWith('fastethernet')) {
         interfaceType = '100base-tx'
-      } else if (ifaceName.startsWith('gigabit')) {
+      } else if (ifaceName.startsWith('gigabit') || ifaceName.startsWith('em')) {
+        // Both "gigabit" and "em" (e.g., em0, em1) are 1000BASE-T (1GE)
         interfaceType = '1000base-t'
       } else if (ifaceName.startsWith('tengigabitethernet')) {
         interfaceType = '10gbase-t'
