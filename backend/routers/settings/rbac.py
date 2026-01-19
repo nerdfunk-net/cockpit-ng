@@ -133,7 +133,12 @@ async def get_role(role_id: int, current_user: dict = Depends(verify_token)):
 
     permissions = rbac.get_role_permissions(role_id)
 
-    return {"permissions": permissions, **role}
+    # Add granted and source fields to match PermissionWithGrant model
+    permissions_with_grant = [
+        {**perm, "granted": True, "source": "role"} for perm in permissions
+    ]
+
+    return {"permissions": permissions_with_grant, **role}
 
 
 @router.put("/roles/{role_id}", response_model=Role)
