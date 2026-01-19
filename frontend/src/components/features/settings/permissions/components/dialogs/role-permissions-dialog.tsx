@@ -26,10 +26,8 @@ export function RolePermissionsDialog({
     [allPermissions]
   )
 
-  if (!role) return null
-
   const isPermissionGranted = (permissionId: number) => {
-    return role.permissions?.some(p => p.id === permissionId) || false
+    return role?.permissions?.some(p => p.id === permissionId) || false
   }
 
   return (
@@ -38,47 +36,53 @@ export function RolePermissionsDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Manage Permissions for {role.name}
+            {role ? `Manage Permissions for ${role.name}` : 'Loading...'}
           </DialogTitle>
           <DialogDescription>
             Select which permissions this role should have. Changes are applied immediately.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {Object.entries(groupedPermissions).map(([resource, permissions]) => (
-            <div key={resource} className="space-y-3">
-              <h4 className="font-semibold text-sm uppercase text-muted-foreground">
-                {resource}
-              </h4>
-              <div className="grid grid-cols-1 gap-3 pl-4">
-                {permissions.map((permission) => {
-                  const granted = isPermissionGranted(permission.id)
-                  return (
-                    <div key={permission.id} className="flex items-start space-x-3">
-                      <Checkbox
-                        id={`perm-${permission.id}`}
-                        checked={granted}
-                        onCheckedChange={() => onTogglePermission(permission.id, granted)}
-                      />
-                      <div className="flex-1 space-y-1">
-                        <label
-                          htmlFor={`perm-${permission.id}`}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
-                        >
-                          <span>{permission.description}</span>
-                          <Badge className={getActionColor(permission.action)} variant="secondary">
-                            {permission.action}
-                          </Badge>
-                        </label>
+        {!role ? (
+          <div className="py-8 text-center text-muted-foreground">
+            Loading role permissions...
+          </div>
+        ) : (
+          <div className="space-y-6 py-4">
+            {Object.entries(groupedPermissions).map(([resource, permissions]) => (
+              <div key={resource} className="space-y-3">
+                <h4 className="font-semibold text-sm uppercase text-muted-foreground">
+                  {resource}
+                </h4>
+                <div className="grid grid-cols-1 gap-3 pl-4">
+                  {permissions.map((permission) => {
+                    const granted = isPermissionGranted(permission.id)
+                    return (
+                      <div key={permission.id} className="flex items-start space-x-3">
+                        <Checkbox
+                          id={`perm-${permission.id}`}
+                          checked={granted}
+                          onCheckedChange={() => onTogglePermission(permission.id, granted)}
+                        />
+                        <div className="flex-1 space-y-1">
+                          <label
+                            htmlFor={`perm-${permission.id}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
+                          >
+                            <span>{permission.description}</span>
+                            <Badge className={getActionColor(permission.action)} variant="secondary">
+                              {permission.action}
+                            </Badge>
+                          </label>
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   )
