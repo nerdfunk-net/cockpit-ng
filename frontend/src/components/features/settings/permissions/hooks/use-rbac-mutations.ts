@@ -140,7 +140,7 @@ export function useRbacMutations() {
     mutationFn: async ({ userId, roleId }: { userId: number; roleId: number }) => {
       return apiCall(`rbac/users/${userId}/roles`, {
         method: 'POST',
-        body: JSON.stringify({ role_id: roleId })
+        body: JSON.stringify({ user_id: userId, role_id: roleId })
       })
     },
     onSuccess: () => {
@@ -202,9 +202,9 @@ export function useRbacMutations() {
 
   const setUserPermissionOverride = useMutation({
     mutationFn: async ({ userId, permissionId, granted }: { userId: number; permissionId: number; granted: boolean }) => {
-      return apiCall(`rbac/users/${userId}/permissions/overrides`, {
+      return apiCall(`rbac/users/${userId}/permissions`, {
         method: 'POST',
-        body: JSON.stringify({ permission_id: permissionId, granted })
+        body: JSON.stringify({ user_id: userId, permission_id: permissionId, granted })
       })
     },
     onSuccess: (_, variables) => {
