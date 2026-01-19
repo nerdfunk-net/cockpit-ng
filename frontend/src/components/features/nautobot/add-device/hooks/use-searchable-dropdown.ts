@@ -79,15 +79,26 @@ export function useSearchableDropdown<T extends { id: string }>(
     // If there's a selected item, update the search query to match it (but only if currently empty)
     if (selectedItem && searchQuery === '') {
       const expectedText = getDisplayText(selectedItem)
-      setSearchQuery(expectedText)
+      // Use setTimeout to avoid cascading renders
+      const timer = setTimeout(() => {
+        setSearchQuery(expectedText)
+      }, 0)
+      return () => clearTimeout(timer)
     }
     // If there's no selected item and search query doesn't match any ongoing user input
     // (this happens on form reset), clear it
     else if (!selectedItem && searchQuery !== '' && !showDropdown) {
       // Only clear if dropdown is not shown (user is not actively typing)
-      setSearchQuery('')
+      // Use setTimeout to avoid cascading renders
+      const timer = setTimeout(() => {
+        setSearchQuery('')
+      }, 0)
+      return () => clearTimeout(timer)
     }
-  }, [selectedItem, getDisplayText, showDropdown])
+    
+    // Return undefined for other cases to satisfy TypeScript
+    return undefined
+  }, [selectedItem, getDisplayText, showDropdown, searchQuery])
 
   // Clear selection when user manually clears the input field completely
   useEffect(() => {

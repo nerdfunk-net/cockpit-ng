@@ -357,8 +357,8 @@ export function useNautobotSync({
         
         // Try to parse JSON error response for more details
         try {
-          // Check if message contains JSON
-          const jsonMatch = message.match(/\{.*\}/s)
+          // Check if message contains JSON (using [\s\S] instead of . with s flag for compatibility)
+          const jsonMatch = message.match(/\{[\s\S]*\}/)
           if (jsonMatch) {
             const errorData = JSON.parse(jsonMatch[0])
             if (errorData.detail) {
