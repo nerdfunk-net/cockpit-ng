@@ -133,4 +133,23 @@ export const queryKeys = {
     task: (taskId: string) => [...queryKeys.checkIp.all, 'task', taskId] as const,
     settings: () => [...queryKeys.checkIp.all, 'settings'] as const,
   },
+
+  // RBAC (Role-Based Access Control)
+  rbac: {
+    all: ['rbac'] as const,
+
+    // Users
+    users: () => [...queryKeys.rbac.all, 'users'] as const,
+    user: (id: number) => [...queryKeys.rbac.all, 'user', id] as const,
+    userRoles: (userId: number) => [...queryKeys.rbac.all, 'user', userId, 'roles'] as const,
+    userPermissions: (userId: number) => [...queryKeys.rbac.all, 'user', userId, 'permissions'] as const,
+
+    // Roles
+    roles: () => [...queryKeys.rbac.all, 'roles'] as const,
+    role: (id: number) => [...queryKeys.rbac.all, 'role', id] as const,
+    rolePermissions: (roleId: number) => [...queryKeys.rbac.all, 'role', roleId, 'permissions'] as const,
+
+    // Permissions
+    permissions: () => [...queryKeys.rbac.all, 'permissions'] as const,
+  },
 }

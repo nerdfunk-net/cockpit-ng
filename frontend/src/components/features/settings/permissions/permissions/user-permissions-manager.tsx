@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -27,153 +27,65 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { UserPlus, X, ShieldAlert, ShieldCheck } from 'lucide-react'
-import { useApi } from '@/hooks/use-api'
-import { useToast } from '@/hooks/use-toast'
-
-interface User {
-  id: number
-  username: string
-  realname: string
-}
-
-interface Permission {
-  id: number
-  resource: string
-  action: string
-  description: string
-  granted?: boolean
-  source?: string
-}
+import { useRbacUsers, useRbacPermissions, useUserPermissionOverrides } from '../hooks/use-rbac-queries'
+import { useRbacMutations } from '../hooks/use-rbac-mutations'
+import { RBACLoading } from '../components/rbac-loading'
+import { groupPermissionsByResource } from '../utils/rbac-utils'
+import { EMPTY_USERS, EMPTY_PERMISSIONS } from '../utils/constants'
+import type { User } from '../types'
 
 export function UserPermissionsManager() {
-  const [users, setUsers] = useState<User[]>([])
-  const [allPermissions, setAllPermissions] = useState<Permission[]>([])
+  // TanStack Query - no manual state management
+  const { data: users = EMPTY_USERS, isLoading: usersLoading } = useRbacUsers()
+  const { data: allPermissions = EMPTY_PERMISSIONS, isLoading: permissionsLoading } = useRbacPermissions()
+
+  // Client-side UI state only
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [userOverrides, setUserOverrides] = useState<Permission[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const { apiCall } = useApi()
-  const { toast } = useToast()
 
-  const loadUsers = useCallback(async () => {
-    try {
-      const response = await apiCall<{ users: User[] }>('rbac/users')
-      setUsers(response.users || [])
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to load users',
-        variant: 'destructive',
-      })
-    }
-  }, [apiCall, toast])
+  // Load overrides only when dialog is open and user is selected
+  const { data: userOverrides = EMPTY_PERMISSIONS } = useUserPermissionOverrides(
+    selectedUser?.id || null,
+    { enabled: isDialogOpen && !!selectedUser }
+  )
 
-  const loadAllPermissions = useCallback(async () => {
-    try {
-      const data = await apiCall<Permission[]>('rbac/permissions')
-      setAllPermissions(data)
-    } catch (error) {
-      console.error('Failed to load permissions:', error)
-    }
-  }, [apiCall])
+  const { setUserPermissionOverride, removeUserPermissionOverride } = useRbacMutations()
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true)
-      await Promise.all([loadUsers(), loadAllPermissions()])
-    } finally {
-      setLoading(false)
-    }
-  }, [loadUsers, loadAllPermissions])
+  // Derived state with useMemo
+  const groupedPermissions = useMemo(
+    () => groupPermissionsByResource(allPermissions),
+    [allPermissions]
+  )
 
-  useEffect(() => {
-    loadData()
-  }, [loadData])
-
-  const loadUserOverrides = async (userId: number) => {
-    try {
-      const data = await apiCall<Permission[]>(`rbac/users/${userId}/permissions/overrides`)
-      console.log('Loaded user overrides:', data)
-      setUserOverrides(data)
-    } catch (error) {
-      console.error('Failed to load user overrides:', error)
-      setUserOverrides([])
-    }
-  }
-
-  const openManageOverrides = async (user: User) => {
+  const handleOpenDialog = useCallback((user: User) => {
     setSelectedUser(user)
-    await loadUserOverrides(user.id)
     setIsDialogOpen(true)
-  }
+  }, [])
 
-  const setPermissionOverride = async (permissionId: number, granted: boolean) => {
+  const handleCloseDialog = useCallback(() => {
+    setIsDialogOpen(false)
+    setSelectedUser(null)
+  }, [])
+
+  const handleSetOverride = useCallback((permissionId: number, granted: boolean) => {
     if (!selectedUser) return
+    setUserPermissionOverride.mutate({
+      userId: selectedUser.id,
+      permissionId,
+      granted
+    })
+  }, [selectedUser, setUserPermissionOverride])
 
-    try {
-      console.log('Setting permission override:', { userId: selectedUser.id, permissionId, granted })
-      await apiCall(`rbac/users/${selectedUser.id}/permissions`, {
-        method: 'POST',
-        body: JSON.stringify({
-          user_id: selectedUser.id,
-          permission_id: permissionId,
-          granted: granted,
-        }),
-      })
+  const handleRemoveOverride = useCallback((permissionId: number) => {
+    if (!selectedUser) return
+    removeUserPermissionOverride.mutate({
+      userId: selectedUser.id,
+      permissionId
+    })
+  }, [selectedUser, removeUserPermissionOverride])
 
-      console.log('Permission override set successfully, reloading...')
-      // Reload overrides
-      await loadUserOverrides(selectedUser.id)
-
-      toast({
-        title: 'Success',
-        description: `Permission ${granted ? 'granted' : 'denied'} for user`,
-      })
-    } catch (error) {
-      console.error('Error setting permission override:', error)
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update permission',
-        variant: 'destructive',
-      })
-    }
-  }
-
-  const removeOverride = async (userId: number, permissionId: number) => {
-    try {
-      await apiCall(`rbac/users/${userId}/permissions/${permissionId}`, {
-        method: 'DELETE',
-      })
-
-      toast({
-        title: 'Success',
-        description: 'Override removed',
-      })
-
-      // Reload if viewing this user
-      if (selectedUser?.id === userId) {
-        await loadUserOverrides(userId)
-      }
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to remove override',
-        variant: 'destructive',
-      })
-    }
-  }
-
-  // Group permissions by resource
-  const groupedPermissions = allPermissions.reduce((acc, perm) => {
-    if (!acc[perm.resource]) {
-      acc[perm.resource] = []
-    }
-    acc[perm.resource]!.push(perm)
-    return acc
-  }, {} as Record<string, Permission[]>)
-
-  if (loading) {
-    return <div className="text-center py-8">Loading...</div>
+  if (usersLoading || permissionsLoading) {
+    return <RBACLoading message="Loading users and permissions..." />
   }
 
   return (
@@ -181,7 +93,7 @@ export function UserPermissionsManager() {
       {/* Header */}
       <div>
         <h3 className="text-lg font-semibold">User Permission Overrides</h3>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-muted-foreground">
           Grant or deny specific permissions to individual users
         </p>
       </div>
@@ -213,11 +125,11 @@ export function UserPermissionsManager() {
                 <TableCell>
                   <div>
                     <div className="font-medium">{user.realname}</div>
-                    <div className="text-sm text-slate-500">@{user.username}</div>
+                    <div className="text-sm text-muted-foreground">@{user.username}</div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm text-slate-500">
+                  <span className="text-sm text-muted-foreground">
                     Click &quot;Manage&quot; to view and edit
                   </span>
                 </TableCell>
@@ -225,7 +137,7 @@ export function UserPermissionsManager() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => openManageOverrides(user)}
+                    onClick={() => handleOpenDialog(user)}
                     className="flex items-center gap-2"
                   >
                     <UserPlus className="h-4 w-4" />
@@ -239,7 +151,7 @@ export function UserPermissionsManager() {
       </div>
 
       {/* Manage Overrides Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -254,7 +166,7 @@ export function UserPermissionsManager() {
             <div className="space-y-6">
               {/* Current Overrides */}
               {userOverrides.length > 0 && (
-                <div className="border rounded-lg p-4 bg-slate-50">
+                <div className="border rounded-lg p-4 bg-muted">
                   <h4 className="font-semibold mb-3 flex items-center gap-2">
                     <ShieldCheck className="h-4 w-4 text-blue-600" />
                     Current Overrides ({userOverrides.length})
@@ -269,7 +181,7 @@ export function UserPermissionsManager() {
                         {override.resource}:{override.action}
                         {override.granted ? ' (granted)' : ' (denied)'}
                         <button
-                          onClick={() => removeOverride(selectedUser.id, override.id)}
+                          onClick={() => handleRemoveOverride(override.id)}
                           className="ml-1 hover:bg-white/20 rounded-full p-0.5"
                         >
                           <X className="h-3 w-3" />
@@ -294,11 +206,11 @@ export function UserPermissionsManager() {
                         const currentValue = !hasOverride ? 'none' : (isGranted ? 'grant' : 'deny')
 
                         return (
-                          <div key={perm.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50">
+                          <div key={perm.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted">
                             <div className="flex-1">
                               <div className="font-medium text-sm">{perm.action}</div>
                               {perm.description && (
-                                <p className="text-xs text-slate-500 mt-0.5">{perm.description}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">{perm.description}</p>
                               )}
                             </div>
                             <div className="flex items-center gap-2">
@@ -307,9 +219,9 @@ export function UserPermissionsManager() {
                                 value={currentValue}
                                 onValueChange={(value) => {
                                   if (value === 'none') {
-                                    removeOverride(selectedUser.id, perm.id)
+                                    handleRemoveOverride(perm.id)
                                   } else {
-                                    setPermissionOverride(perm.id, value === 'grant')
+                                    handleSetOverride(perm.id, value === 'grant')
                                   }
                                 }}
                               >
@@ -334,7 +246,7 @@ export function UserPermissionsManager() {
           )}
 
           <DialogFooter>
-            <Button onClick={() => setIsDialogOpen(false)}>Done</Button>
+            <Button onClick={handleCloseDialog}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

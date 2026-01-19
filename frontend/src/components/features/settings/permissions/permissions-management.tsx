@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Shield, Users, Key, UserCog, UserPlus } from 'lucide-react'
@@ -12,6 +12,10 @@ import { UsersManager } from './permissions/users-manager'
 
 export function PermissionsManagement() {
   const [activeTab, setActiveTab] = useState('users')
+
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value)
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -28,7 +32,7 @@ export function PermissionsManagement() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <UserPlus className="h-4 w-4" />
