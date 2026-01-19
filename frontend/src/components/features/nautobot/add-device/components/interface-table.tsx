@@ -205,6 +205,10 @@ export function InterfaceTable({
     const defaultNamespace = defaults?.namespace ||
       (dropdownData.namespaces.length === 1 ? dropdownData.namespaces[0]?.id : '') || ''
     
+    // Find "Global" namespace ID
+    const globalNamespace = dropdownData.namespaces.find(ns => ns.name === 'Global')
+    const globalNamespaceId = globalNamespace?.id || defaultNamespace
+    
     // Update all interfaces at once (same as updateInterfaceField approach)
     const updatedInterfaces = interfaces.map(iface => {
       const ifaceName = (iface.name || '').toLowerCase()
@@ -227,10 +231,10 @@ export function InterfaceTable({
       // Set status to default if we have one - ALWAYS set if default exists
       const interfaceStatus = defaultStatus ? defaultStatus : iface.status
       
-      // Update IP addresses: set Namespace to default if empty
+      // Update IP addresses: ALWAYS set Namespace to "Global" when button is pressed
       const updatedIpAddresses = (iface.ip_addresses || []).map(ip => ({
         ...ip,
-        namespace: ip.namespace || defaultNamespace,
+        namespace: globalNamespaceId,
       }))
       
       return {
