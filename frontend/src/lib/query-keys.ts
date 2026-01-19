@@ -126,4 +126,11 @@ export const queryKeys = {
         ? ([...queryKeys.credentials.all, 'list', filters] as const)
         : ([...queryKeys.credentials.all, 'list'] as const),
   },
+
+  // Check IP Tool
+  checkIp: {
+    all: ['checkIp'] as const,
+    task: (taskId: string) => [...queryKeys.checkIp.all, 'task', taskId] as const,
+    settings: () => [...queryKeys.checkIp.all, 'settings'] as const,
+  },
 }
