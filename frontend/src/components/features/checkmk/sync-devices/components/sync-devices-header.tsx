@@ -1,15 +1,15 @@
 import { RefreshCw, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-interface LiveUpdateHeaderProps {
+interface SyncDevicesHeaderProps {
   loading: boolean
   onReloadDevices: () => void
 }
 
-export function LiveUpdateHeader({
+export function SyncDevicesHeader({
   loading,
   onReloadDevices
-}: LiveUpdateHeaderProps) {
+}: SyncDevicesHeaderProps) {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center space-x-3">
@@ -17,8 +17,8 @@ export function LiveUpdateHeader({
           <RefreshCw className="h-6 w-6 text-green-600" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Live Update</h1>
-          <p className="text-gray-600 mt-1">Monitor and sync device configurations in real-time</p>
+          <h1 className="text-3xl font-bold text-gray-900">CheckMK Sync Devices</h1>
+          <p className="text-gray-600 mt-1">Compare and synchronize devices between Nautobot and CheckMK</p>
         </div>
       </div>
 

@@ -115,7 +115,7 @@ function transformDeviceResult(result: DeviceResult, index: number): Device {
       result.result_data?.status
     ),
     normalized_config: result.normalized_config || result.result_data?.data?.normalized_config || result.result_data?.normalized_config,
-    checkmk_config: result.checkmk_config || result.result_data?.data?.checkmk_config || result.result_data?.checkmk_config,
+    checkmk_config: (result.checkmk_config || result.result_data?.data?.checkmk_config || result.result_data?.checkmk_config) as Device['checkmk_config'],
     diff: result.diff || result.result_data?.data?.diff || result.result_data?.diff,
     error_message: result.error_message
   }
@@ -177,7 +177,7 @@ export function useJobManagement(
 
       // Extract device results and transform to Device format
       const deviceResults = data.job?.device_results || []
-      const devices = deviceResults.map((result, index) => transformDeviceResult(result, index))
+      const devices = deviceResults.map((result: DeviceResult, index: number) => transformDeviceResult(result, index))
 
       if (onJobsLoaded) {
         onJobsLoaded(devices)
