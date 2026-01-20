@@ -1,5 +1,5 @@
 /**
- * API layer for CheckMK Live Update feature
+ * API layer for CheckMK Sync Devices feature
  */
 
 export interface Job {

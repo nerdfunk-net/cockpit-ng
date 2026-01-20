@@ -204,6 +204,30 @@ export function useTaskTracking({ onTaskSuccess, showMessage }: UseTaskTrackingP
     })
   }, [])
 
+  // Dismiss a failed task
+  const dismissTask = useCallback((taskId: string) => {
+    // Stop polling if still active
+    const interval = pollingIntervalsRef.current.get(taskId)
+    if (interval) {
+      clearInterval(interval)
+      pollingIntervalsRef.current.delete(taskId)
+    }
+
+    // Remove task from active tasks
+    setActiveTasks(prev => {
+      const updated = new Map(prev)
+      updated.delete(taskId)
+      return updated
+    })
+
+    // Also remove from expanded errors if present
+    setExpandedErrorTasks(prev => {
+      const newSet = new Set(prev)
+      newSet.delete(taskId)
+      return newSet
+    })
+  }, [])
+
   // Cleanup all polling intervals on unmount
   useEffect(() => {
     const intervals = pollingIntervalsRef.current
@@ -218,6 +242,7 @@ export function useTaskTracking({ onTaskSuccess, showMessage }: UseTaskTrackingP
     expandedErrorTasks,
     trackTask,
     cancelTask,
+    dismissTask,
     toggleErrorDetails
   }
 }

@@ -286,21 +286,6 @@ export default function HelpPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <RefreshCw className="h-5 w-5 text-green-600" />
-                Live Update
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-slate-700">
-                View real-time synchronization status and progress. Monitor which devices are being
-                processed and track any issues during the sync process.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
                 <Server className="h-5 w-5 text-orange-600" />
                 Hosts & Inventory
               </CardTitle>

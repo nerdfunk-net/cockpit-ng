@@ -54,7 +54,7 @@ export default function SyncDevicesPage() {
   const { selectedDevices, handleSelectDevice, handleSelectAll, clearSelection } = useDeviceSelection()
 
   // Task tracking
-  const { activeTasks, expandedErrorTasks, trackTask, cancelTask, toggleErrorDetails } = useTaskTracking({
+  const { activeTasks, expandedErrorTasks, trackTask, cancelTask, dismissTask, toggleErrorDetails } = useTaskTracking({
     showMessage,
     onTaskSuccess: () => setHasDevicesSynced(true)
   })
@@ -239,6 +239,7 @@ export default function SyncDevicesPage() {
         activeTasks={activeTasks}
         expandedErrorTasks={expandedErrorTasks}
         onCancelTask={cancelTask}
+        onDismissTask={dismissTask}
         onToggleErrorDetails={toggleErrorDetails}
       />
 

@@ -9,6 +9,7 @@ interface ActiveTasksPanelProps {
   activeTasks: Map<string, DeviceTask>
   expandedErrorTasks: Set<string>
   onCancelTask: (taskId: string) => void
+  onDismissTask: (taskId: string) => void
   onToggleErrorDetails: (taskId: string) => void
 }
 
@@ -16,6 +17,7 @@ export function ActiveTasksPanel({
   activeTasks,
   expandedErrorTasks,
   onCancelTask,
+  onDismissTask,
   onToggleErrorDetails
 }: ActiveTasksPanelProps) {
   if (activeTasks.size === 0) {
@@ -223,10 +225,7 @@ export function ActiveTasksPanel({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          // Remove task from active tasks
-                          // This should be handled by parent component
-                        }}
+                        onClick={() => onDismissTask(task.taskId)}
                         className="h-7 text-xs text-red-700 hover:text-red-900 hover:bg-red-100"
                       >
                         Dismiss
