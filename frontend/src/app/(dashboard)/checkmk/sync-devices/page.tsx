@@ -1,8 +1,5 @@
-import { Suspense } from 'react'
-import { CheckMKSyncDevicesPage } from '@/components/features/checkmk/sync-devices/sync-devices-page'
+import SyncDevicesPage from '@/components/features/checkmk/sync-devices/sync-devices-page'
 
-export default function CheckMKSyncDevicesRoute() {
-  return <Suspense fallback={<div className="p-4">Loading CheckMK sync devices...</div>}>
-        <CheckMKSyncDevicesPage />
-      </Suspense>
+export default function Page() {
+  return <SyncDevicesPage />
 }

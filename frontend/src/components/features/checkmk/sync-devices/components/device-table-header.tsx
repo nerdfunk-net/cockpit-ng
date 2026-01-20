@@ -14,7 +14,7 @@ import {
   DropdownMenuItem
 } from '@/components/ui/dropdown-menu'
 import { SearchableDropdown } from '@/components/shared/searchable-dropdown'
-import type { FilterOptions } from '@/types/features/checkmk/live-update'
+import type { FilterOptions } from '@/types/features/checkmk/sync-devices'
 
 interface DeviceTableHeaderProps {
   hasSelectedDevices: boolean
@@ -108,7 +108,7 @@ export function DeviceTableHeader({
                   <DropdownMenuSeparator />
                   {Array.from(filterOptions.roles).sort().map((role) => (
                     <DropdownMenuCheckboxItem
-                      key={`live-update-role-${role}`}
+                      key={`sync-devices-role-${role}`}
                       checked={roleFilters[role] || false}
                       onCheckedChange={(checked) =>
                         onRoleFiltersChange({ ...roleFilters, [role]: !!checked })
@@ -148,7 +148,7 @@ export function DeviceTableHeader({
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
                   {Array.from(filterOptions.statuses).sort().map(status => (
-                    <SelectItem key={`live-update-status-${status}`} value={status}>{status}</SelectItem>
+                    <SelectItem key={`sync-devices-status-${status}`} value={status}>{status}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

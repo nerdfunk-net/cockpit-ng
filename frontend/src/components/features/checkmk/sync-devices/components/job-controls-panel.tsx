@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Play, RefreshCw, Download, Trash2 } from 'lucide-react'
-import type { Job } from '../api/live-update.api'
+import type { Job } from '../api/sync-devices.api'
 
 interface JobControlsPanelProps {
   selectedJobId: string

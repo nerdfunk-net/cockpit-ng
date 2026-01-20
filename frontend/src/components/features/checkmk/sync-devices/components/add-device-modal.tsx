@@ -1,17 +1,23 @@
 import { RefreshCw } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import type { Device } from '../types/sync-devices.types'
+import type { Device } from '@/types/features/checkmk/live-update'
 
 interface AddDeviceModalProps {
-  device: Device | null
   isOpen: boolean
+  device: Device | null
   isAdding: boolean
   onConfirm: (device: Device) => void
   onCancel: () => void
 }
 
-export function AddDeviceModal({ device, isOpen, isAdding, onConfirm, onCancel }: AddDeviceModalProps) {
+export function AddDeviceModal({
+  isOpen,
+  device,
+  isAdding,
+  onConfirm,
+  onCancel
+}: AddDeviceModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className="max-w-md">

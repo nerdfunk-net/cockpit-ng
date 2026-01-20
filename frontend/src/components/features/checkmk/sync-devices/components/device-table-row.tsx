@@ -10,10 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuItem
 } from '@/components/ui/dropdown-menu'
-import type { Device } from '@/types/features/checkmk/live-update'
-import { getStatusBadgeVariant } from '@/utils/features/checkmk/live-update/ui-helpers'
-import { getRowColorClass } from '@/utils/features/checkmk/live-update/diff-helpers'
-import { getCheckMKStatusBadge } from '@/utils/features/checkmk/live-update/badge-helpers'
+import type { Device } from '@/types/features/checkmk/sync-devices'
+import { getStatusBadgeVariant } from '@/utils/features/checkmk/sync-devices/ui-helpers'
+import { getRowColorClass } from '@/utils/features/checkmk/sync-devices/diff-helpers'
+import { getCheckMKStatusBadge } from '@/utils/features/checkmk/sync-devices/badge-helpers'
 
 interface DeviceTableRowProps {
   device: Device

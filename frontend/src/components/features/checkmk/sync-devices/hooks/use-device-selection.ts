@@ -1,36 +1,27 @@
 import { useState, useCallback } from 'react'
-import type { Device } from '../types/sync-devices.types'
+import type { Device } from '@/types/features/checkmk/live-update'
 
-/**
- * Hook for managing device selection state
- */
 export function useDeviceSelection() {
   const [selectedDevices, setSelectedDevices] = useState<Set<string>>(new Set())
 
-  const handleSelectAll = useCallback((checked: boolean, currentDevices: Device[]) => {
-    if (checked) {
-      // Only select devices on the current page
-      setSelectedDevices(new Set(currentDevices.map(device => device.id)))
-    } else {
-      // Deselect all devices (not just current page)
-      setSelectedDevices(new Set())
-    }
-  }, [])
-
-  const handleSelectAllFiltered = useCallback((filteredDevices: Device[]) => {
-    setSelectedDevices(new Set(filteredDevices.map(device => device.id)))
-  }, [])
-
   const handleSelectDevice = useCallback((deviceId: string, checked: boolean) => {
     setSelectedDevices(prev => {
-      const newSelected = new Set(prev)
+      const newSet = new Set(prev)
       if (checked) {
-        newSelected.add(deviceId)
+        newSet.add(deviceId)
       } else {
-        newSelected.delete(deviceId)
+        newSet.delete(deviceId)
       }
-      return newSelected
+      return newSet
     })
+  }, [])
+
+  const handleSelectAll = useCallback((devices: Device[], checked: boolean) => {
+    if (checked) {
+      setSelectedDevices(new Set(devices.map(device => device.id)))
+    } else {
+      setSelectedDevices(new Set())
+    }
   }, [])
 
   const clearSelection = useCallback(() => {
@@ -39,9 +30,8 @@ export function useDeviceSelection() {
 
   return {
     selectedDevices,
-    handleSelectAll,
-    handleSelectAllFiltered,
     handleSelectDevice,
+    handleSelectAll,
     clearSelection
   }
 }
