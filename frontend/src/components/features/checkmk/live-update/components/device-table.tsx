@@ -166,18 +166,19 @@ export function DeviceTable({
               onLocationChange={onLocationChange}
               onStatusFilterChange={onStatusFilterChange}
             />
-            <tbody>
+            <tbody className="divide-y divide-gray-200">
               {paginatedDevices.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center p-8 text-muted-foreground">
+                  <td colSpan={8} className="text-center p-8 text-muted-foreground">
                     No devices found
                   </td>
                 </tr>
               ) : (
-                paginatedDevices.map((device) => (
+                paginatedDevices.map((device, index) => (
                   <DeviceTableRow
                     key={`live-update-device-${device.id}`}
                     device={device}
+                    index={index}
                     isSelected={selectedDevices.has(device.id)}
                     diffResults={diffResults}
                     onSelect={onSelectDevice}

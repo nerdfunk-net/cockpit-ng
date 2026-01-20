@@ -46,16 +46,16 @@ export function DeviceTableHeader({
   onStatusFilterChange
 }: DeviceTableHeaderProps) {
   return (
-    <thead>
-      <tr className="border-b">
-        <th className="text-left p-2 font-medium w-12">
+    <thead className="bg-gray-100 border-b">
+      <tr>
+        <th className="pl-4 pr-2 py-3 w-8 text-left">
           <Checkbox
             checked={allSelected}
             onCheckedChange={onSelectAll}
             aria-label="Select all devices"
           />
         </th>
-        <th className="text-left p-2 font-medium">
+        <th className="pl-4 pr-2 py-3 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
             <div>Device Name</div>
             <div>
@@ -68,13 +68,13 @@ export function DeviceTableHeader({
             </div>
           </div>
         </th>
-        <th className="text-left p-2 font-medium">
+        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
             <div>IP Address</div>
             <div className="h-8" />
           </div>
         </th>
-        <th className="text-left p-2 font-medium">
+        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
             <div>Role</div>
             <div>
@@ -122,7 +122,7 @@ export function DeviceTableHeader({
             </div>
           </div>
         </th>
-        <th className="text-left p-2 font-medium">
+        <th className="pl-12 pr-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
             <div>Location</div>
             <div>
@@ -137,7 +137,7 @@ export function DeviceTableHeader({
             </div>
           </div>
         </th>
-        <th className="text-left p-2 font-medium">
+        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
             <div>Status</div>
             <div>
@@ -155,7 +155,13 @@ export function DeviceTableHeader({
             </div>
           </div>
         </th>
-        <th className="text-left p-2 font-medium">
+        <th className="pl-12 pr-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
+          <div className="space-y-1">
+            <div>CheckMK</div>
+            <div className="h-8" />
+          </div>
+        </th>
+        <th className="pl-16 pr-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
             <div>Actions</div>
             <div className="h-8" />

@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import { X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import type { Device } from '@/types/features/checkmk/live-update'
+import { useAuthStore } from '@/lib/auth-store'
 
 // Custom hooks
 import { useStatusMessages } from './hooks/use-status-messages'
@@ -13,6 +14,7 @@ import { useDeviceSelection } from './hooks/use-device-selection'
 import { useTaskTracking } from './hooks/use-task-tracking'
 import { useDiffComparison } from './hooks/use-diff-comparison'
 import { useDeviceOperations } from './hooks/use-device-operations'
+import { useJobManagement } from './hooks/use-job-management'
 
 // Components
 import { StatusMessageCard } from './components/status-message-card'
@@ -21,13 +23,16 @@ import { LiveUpdateHeader } from './components/live-update-header'
 import { DeviceTable } from './components/device-table'
 import { DiffModal } from './components/diff-modal'
 import { AddDeviceModal } from './components/add-device-modal'
+import { JobControlsPanel } from './components/job-controls-panel'
 
 export default function LiveUpdatePage() {
+  const { token } = useAuthStore()
+
   // Status messages
   const { statusMessage, showMessage, clearMessage } = useStatusMessages()
 
   // Device loader
-  const { devices, loading, error, authReady, reloadDevices } = useDeviceLoader()
+  const { devices, loading, error, authReady, reloadDevices, setDevices } = useDeviceLoader()
 
   // Device filters
   const {
@@ -96,6 +101,58 @@ export default function LiveUpdatePage() {
     showMessage,
     onAddDeviceConfirmation: handleAddDeviceConfirmation
   })
+
+  // Merge devices helper - preserves IP addresses from existing devices
+  const mergeDevicesWithExisting = useCallback((loadedDevices: Device[], currentDevices: Device[]) => {
+    return loadedDevices.map(newDevice => {
+      const existingDevice = currentDevices.find(d => d.id === newDevice.id)
+
+      // If device exists and has IP address, preserve it (unless new device has one)
+      if (existingDevice?.primary_ip4?.address && existingDevice.primary_ip4.address !== 'N/A') {
+        return {
+          ...newDevice,
+          primary_ip4: newDevice.primary_ip4?.address && newDevice.primary_ip4.address !== 'N/A'
+            ? newDevice.primary_ip4
+            : existingDevice.primary_ip4
+        }
+      }
+
+      return newDevice
+    })
+  }, [])
+
+  // Job management
+  const jobManagement = useJobManagement(
+    token,
+    (loadedDevices) => {
+      // Use functional update to access current state
+      setDevices(currentDevices => mergeDevicesWithExisting(loadedDevices, currentDevices))
+      clearSelection()
+    },
+    (message) => showMessage(message),
+    (message) => showMessage(message)
+  )
+
+  // Handle start new comparison job
+  const handleStartNewJob = useCallback(async () => {
+    const result = await jobManagement.startNewJob()
+    if (result) {
+      showMessage('Comparison job started. Refresh jobs to see progress.')
+    }
+  }, [jobManagement, showMessage])
+
+  // Handle clear results
+  const handleClearResults = useCallback(async () => {
+    if (!confirm('Are you sure you want to delete all comparison results? This action cannot be undone.')) {
+      return
+    }
+
+    const success = await jobManagement.clearResults()
+    if (success) {
+      setDevices([])
+      clearSelection()
+    }
+  }, [jobManagement, setDevices, clearSelection])
 
   // Handle add device
   const handleAddDevice = useCallback(async (device: Device) => {
@@ -231,6 +288,18 @@ export default function LiveUpdatePage() {
         onClearSelection={clearSelection}
         onSyncSelected={handleSyncSelectedDevices}
         onActivate={handleActivate}
+      />
+
+      {/* Job Controls Panel */}
+      <JobControlsPanel
+        selectedJobId={jobManagement.selectedJobId}
+        availableJobs={jobManagement.availableJobs}
+        loadingResults={jobManagement.loadingResults}
+        onStartNewJob={handleStartNewJob}
+        onSelectJob={jobManagement.setSelectedJobId}
+        onLoadResults={() => jobManagement.loadJobResults()}
+        onRefreshJobs={jobManagement.fetchAvailableJobs}
+        onClearResults={handleClearResults}
       />
 
       {/* Diff Modal */}

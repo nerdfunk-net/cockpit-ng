@@ -13,9 +13,11 @@ import {
 import type { Device } from '@/types/features/checkmk/live-update'
 import { getStatusBadgeVariant } from '@/utils/features/checkmk/live-update/ui-helpers'
 import { getRowColorClass } from '@/utils/features/checkmk/live-update/diff-helpers'
+import { getCheckMKStatusBadge } from '@/utils/features/checkmk/live-update/badge-helpers'
 
 interface DeviceTableRowProps {
   device: Device
+  index: number
   isSelected: boolean
   diffResult?: 'equal' | 'diff' | 'host_not_found'
   diffResults: Record<string, 'equal' | 'diff' | 'host_not_found'>
@@ -27,6 +29,7 @@ interface DeviceTableRowProps {
 
 export function DeviceTableRow({
   device,
+  index,
   isSelected,
   diffResults,
   onSelect,
@@ -34,55 +37,65 @@ export function DeviceTableRow({
   onSync,
   onStartDiscovery
 }: DeviceTableRowProps) {
+  const baseRowClass = getRowColorClass(device.id, diffResults)
+  const alternatingRowClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+
   return (
     <tr
-      className={`border-b transition-colors ${getRowColorClass(device.id, diffResults) || 'hover:bg-muted/50'}`}
+      className={baseRowClass || alternatingRowClass}
     >
-      <td className="p-2 w-12">
+      <td className="pl-4 pr-2 py-3 w-8 text-left">
         <Checkbox
           checked={isSelected}
           onCheckedChange={(checked) => onSelect(device.id, !!checked)}
           aria-label={`Select ${device.name}`}
         />
       </td>
-      <td className="p-2 font-medium">{device.name}</td>
-      <td className="p-2">{device.primary_ip4?.address || 'N/A'}</td>
-      <td className="p-2">{device.role?.name || 'Unknown'}</td>
-      <td className="p-2">{device.location?.name || 'Unknown'}</td>
-      <td className="p-2">
+      <td className="pl-4 pr-2 py-3 text-sm font-medium text-gray-900">{device.name}</td>
+      <td className="px-4 py-3 text-sm text-gray-600">{device.primary_ip4?.address || 'N/A'}</td>
+      <td className="px-4 py-3 text-sm text-gray-600">{device.role?.name || 'Unknown'}</td>
+      <td className="pl-12 pr-4 py-3 text-sm text-gray-600">{device.location?.name || 'Unknown'}</td>
+      <td className="px-4 py-3">
         <Badge variant={getStatusBadgeVariant(device.status?.name || '')}>
           {device.status?.name || 'Unknown'}
         </Badge>
       </td>
-      <td className="p-2">
-        <div className="flex gap-1">
+      <td className="pl-12 pr-4 py-3">
+        <div className="flex items-center gap-1">
+          {getCheckMKStatusBadge(device.checkmk_status)}
+        </div>
+      </td>
+      <td className="pl-16 pr-4 py-3">
+        <div className="flex items-center gap-1">
           <Button
             size="sm"
-            variant="outline"
+            variant="ghost"
             onClick={() => onGetDiff(device)}
             title="Get Diff"
+            className="h-8 w-8 p-0"
           >
-            <GitCompare className="h-3 w-3" />
+            <GitCompare className="h-4 w-4" />
           </Button>
 
           <Button
             size="sm"
-            variant="outline"
+            variant="ghost"
             onClick={() => onSync(device)}
             title="Sync Device"
+            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700"
           >
-            <RefreshCw className="h-3 w-3" />
+            <RefreshCw className="h-4 w-4" />
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 size="sm"
-                variant="outline"
+                variant="ghost"
                 title="Start Discovery"
+                className="h-8 w-8 p-0"
               >
-                <Radar className="h-3 w-3" />
-                <ChevronDown className="h-2 w-2 ml-1" />
+                <Radar className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

@@ -7,6 +7,26 @@ export interface Device {
   location?: { name: string }
   device_type?: { model: string }
   status?: { name: string }
+  checkmk_status?: string
+  normalized_config?: {
+    internal?: {
+      hostname?: string
+      role?: string
+      status?: string
+      location?: string
+    }
+    attributes?: Record<string, unknown>
+  }
+  checkmk_config?: {
+    folder?: string
+    attributes?: Record<string, unknown>
+    effective_attributes?: Record<string, unknown> | null
+    is_cluster?: boolean
+    is_offline?: boolean
+    cluster_nodes?: unknown[] | null
+  }
+  diff?: string
+  error_message?: string
 }
 
 // Celery task types

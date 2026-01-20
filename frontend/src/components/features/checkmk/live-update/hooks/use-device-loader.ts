@@ -96,6 +96,7 @@ export function useDeviceLoader() {
 
   return {
     devices,
+    setDevices,
     loading,
     error,
     authReady,
