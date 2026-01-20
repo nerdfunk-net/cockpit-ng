@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { GitCommit, GitCompare } from 'lucide-react'
+import { GitCommit, GitCompare, Eye, Download } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useFileHistoryQuery } from '@/hooks/queries/use-file-history-query'
+import { useAuthStore } from '@/lib/auth-store'
 
 interface FileHistoryDialogProps {
   isOpen: boolean
@@ -27,6 +28,9 @@ export function FileHistoryDialog({
   onCompare,
 }: FileHistoryDialogProps) {
   const [selectedCommits, setSelectedCommits] = useState<string[]>(EMPTY_ARRAY)
+  const [viewCommit, setViewCommit] = useState<{ hash: string; content: string } | null>(null)
+  const [isLoadingView, setIsLoadingView] = useState(false)
+  const { token } = useAuthStore()
 
   const { data, isLoading, error } = useFileHistoryQuery(repoId, filePath, {
     enabled: isOpen && !!repoId && !!filePath,
@@ -66,8 +70,79 @@ export function FileHistoryDialog({
 
   const handleClose = useCallback(() => {
     setSelectedCommits(EMPTY_ARRAY)
+    setViewCommit(null)
     onClose()
   }, [onClose])
+
+  const handleViewFile = useCallback(async (commitHash: string) => {
+    if (!repoId || !filePath) return
+
+    setIsLoadingView(true)
+    try {
+      const headers: Record<string, string> = {
+        'Accept': 'application/json',
+      }
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+      
+      const response = await fetch(
+        `/api/proxy/git/${repoId}/files/${commitHash}/commit?file_path=${encodeURIComponent(filePath)}`,
+        { headers }
+      )
+      
+      if (!response.ok) {
+        throw new Error('Failed to load file content')
+      }
+      
+      const data = await response.json()
+      setViewCommit({ hash: commitHash, content: data.content })
+    } catch (err) {
+      console.error('View failed:', err)
+      alert('Failed to view file')
+    } finally {
+      setIsLoadingView(false)
+    }
+  }, [repoId, filePath, token])
+
+  const handleDownloadFile = useCallback(async (commitHash: string) => {
+    if (!repoId || !filePath) return
+
+    try {
+      const headers: Record<string, string> = {
+        'Accept': 'application/json',
+      }
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+      
+      const response = await fetch(
+        `/api/proxy/git/${repoId}/files/${commitHash}/commit?file_path=${encodeURIComponent(filePath)}`,
+        { headers }
+      )
+      
+      if (!response.ok) {
+        throw new Error('Failed to download file')
+      }
+      
+      const data = await response.json()
+      const blob = new Blob([data.content], { type: 'text/plain' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const fileName = filePath.split('/').pop() || 'file'
+      a.download = `${fileName}_${commitHash.substring(0, 7)}`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err) {
+      console.error('Download failed:', err)
+      alert('Failed to download file')
+    }
+  }, [repoId, filePath, token])
 
   const formatDate = useMemo(() => {
     return (isoDate: string): string => {
@@ -156,64 +231,113 @@ export function FileHistoryDialog({
               </div>
 
               <ScrollArea className="flex-1">
-                <table className="w-full min-w-[900px]">
-                  <thead className="border-b sticky top-0 bg-background z-10">
-                    <tr>
-                      <th className="text-left p-3 font-semibold text-sm w-12">Select</th>
-                      <th className="text-left p-3 font-semibold text-sm w-32">Commit</th>
-                      <th className="text-left p-3 font-semibold text-sm w-24">Type</th>
-                      <th className="text-left p-3 font-semibold text-sm max-w-xs">Message</th>
-                      <th className="text-left p-3 font-semibold text-sm w-44">Author</th>
-                      <th className="text-left p-3 font-semibold text-sm w-48">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {data.commits.map((commit) => (
-                      <tr
-                        key={commit.hash}
-                        className="hover:bg-muted/50 transition-colors"
+                {viewCommit ? (
+                  <div className="p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {viewCommit.hash.substring(0, 7)}
+                        </Badge>
+                        <span className="text-sm font-medium">File Content</span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setViewCommit(null)}
                       >
-                        <td className="p-3">
-                          <Checkbox
-                            checked={selectedCommits.includes(commit.hash)}
-                            onCheckedChange={(checked) =>
-                              handleCheckboxChange(commit.hash, checked as boolean)
-                            }
-                            disabled={
-                              selectedCommits.length >= 2 &&
-                              !selectedCommits.includes(commit.hash)
-                            }
-                          />
-                        </td>
-                        <td className="p-3">
-                          <Badge variant="outline" className="font-mono text-xs">
-                            {commit.short_hash}
-                          </Badge>
-                        </td>
-                        <td className="p-3">
-                          <Badge variant={getChangeTypeVariant(commit.change_type)} className="text-xs">
-                            {getChangeTypeLabel(commit.change_type)}
-                          </Badge>
-                        </td>
-                        <td className="p-3">
-                          <span className="text-sm truncate max-w-md block" title={commit.message}>
-                            {commit.message}
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <span className="text-sm text-muted-foreground">
-                            {commit.author.name}
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <span className="text-sm text-muted-foreground">
-                            {formatDate(commit.date)}
-                          </span>
-                        </td>
+                        Back to History
+                      </Button>
+                    </div>
+                    <div className="border rounded-lg bg-slate-50">
+                      <pre className="p-4 text-xs overflow-x-auto">
+                        <code>{viewCommit.content}</code>
+                      </pre>
+                    </div>
+                  </div>
+                ) : (
+                  <table className="w-full min-w-[900px]">
+                    <thead className="border-b sticky top-0 bg-background z-10">
+                      <tr>
+                        <th className="text-left p-3 font-semibold text-sm w-12">Select</th>
+                        <th className="text-left p-3 font-semibold text-sm w-32">Commit</th>
+                        <th className="text-left p-3 font-semibold text-sm w-24">Type</th>
+                        <th className="text-left p-3 font-semibold text-sm max-w-xs">Message</th>
+                        <th className="text-left p-3 font-semibold text-sm w-44">Author</th>
+                        <th className="text-left p-3 font-semibold text-sm w-48">Date</th>
+                        <th className="text-left p-3 font-semibold text-sm w-24">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y">
+                      {data.commits.map((commit) => (
+                        <tr
+                          key={commit.hash}
+                          className="hover:bg-muted/50 transition-colors"
+                        >
+                          <td className="p-3">
+                            <Checkbox
+                              checked={selectedCommits.includes(commit.hash)}
+                              onCheckedChange={(checked) =>
+                                handleCheckboxChange(commit.hash, checked as boolean)
+                              }
+                              disabled={
+                                selectedCommits.length >= 2 &&
+                                !selectedCommits.includes(commit.hash)
+                              }
+                            />
+                          </td>
+                          <td className="p-3">
+                            <Badge variant="outline" className="font-mono text-xs">
+                              {commit.short_hash}
+                            </Badge>
+                          </td>
+                          <td className="p-3">
+                            <Badge variant={getChangeTypeVariant(commit.change_type)} className="text-xs">
+                              {getChangeTypeLabel(commit.change_type)}
+                            </Badge>
+                          </td>
+                          <td className="p-3">
+                            <span className="text-sm truncate max-w-md block" title={commit.message}>
+                              {commit.message}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <span className="text-sm text-muted-foreground">
+                              {commit.author.name}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <span className="text-sm text-muted-foreground">
+                              {formatDate(commit.date)}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                onClick={() => handleViewFile(commit.hash)}
+                                disabled={isLoadingView}
+                                title="View file"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                onClick={() => handleDownloadFile(commit.hash)}
+                                title="Download file"
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </ScrollArea>
             </>
           )}
