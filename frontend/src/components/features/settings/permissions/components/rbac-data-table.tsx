@@ -25,8 +25,8 @@ export function RBACDataTable<T extends { id: number }>({
       <Table>
         <TableHeader>
           <TableRow>
-            {columns.map((col, idx) => (
-              <TableHead key={idx} className={col.className}>
+            {columns.map((col) => (
+              <TableHead key={col.header} className={col.className}>
                 {col.header}
               </TableHead>
             ))}
@@ -43,8 +43,8 @@ export function RBACDataTable<T extends { id: number }>({
           ) : (
             data.map((item) => (
               <TableRow key={item.id}>
-                {columns.map((col, idx) => (
-                  <TableCell key={idx} className={col.className}>
+                {columns.map((col) => (
+                  <TableCell key={col.header} className={col.className}>
                     {typeof col.accessor === 'function'
                       ? col.accessor(item)
                       : String(item[col.accessor])}

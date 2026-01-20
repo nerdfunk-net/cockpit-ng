@@ -17,7 +17,7 @@ export function CheckIPPage() {
   // Client-side UI state only
   const [showAll, setShowAll] = useState(false)
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
-  const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null)
+  const [uploadStatusMessage, setUploadStatusMessage] = useState<StatusMessage | null>(null)
 
   // Server state managed by TanStack Query
   const { data: taskStatus, isLoading: isPolling } = useCheckIpTaskQuery({
@@ -43,47 +43,51 @@ export function CheckIPPage() {
   // Check if task completed with results
   const hasResults = results.length > 0
 
-  // Check task status and update messages
-  useMemo(() => {
-    if (!taskStatus) return
+  // Derive status message from taskStatus - no side effects
+  const taskStatusMessage = useMemo<StatusMessage | null>(() => {
+    if (!taskStatus) return null
 
     if (taskStatus.status === 'SUCCESS') {
       if (taskStatus.result?.success === false) {
-        setStatusMessage({
+        return {
           type: 'error',
           message: taskStatus.result?.error || 'Task completed with error'
-        })
+        }
       } else if (taskStatus.result?.results && taskStatus.result.results.length > 0) {
-        setStatusMessage({
+        return {
           type: 'success',
           message: `Check completed! Found ${taskStatus.result.results.length} devices.`
-        })
+        }
       }
     } else if (taskStatus.status === 'FAILURE') {
-      setStatusMessage({
+      return {
         type: 'error',
         message: `Task failed: ${taskStatus.result?.error || 'Unknown error'}`
-      })
+      }
     } else if (taskStatus.status === 'PROGRESS') {
-      setStatusMessage({
+      return {
         type: 'info',
         message: 'Processing devices...'
-      })
+      }
     }
+    return null
   }, [taskStatus])
+
+  // Use upload message if present, otherwise use task message
+  const statusMessage = uploadStatusMessage || taskStatusMessage
 
   // Callbacks with useCallback for stability
   const handleSubmit = useCallback((data: UploadFormData) => {
-    setStatusMessage({ type: 'info', message: 'Uploading CSV file and starting check...' })
+    setUploadStatusMessage({ type: 'info', message: 'Uploading CSV file and starting check...' })
 
     uploadCsv.mutate(data, {
       onSuccess: (response) => {
         setCurrentTaskId(response.task_id)
-        setStatusMessage({ type: 'success', message: 'Check started! Processing devices...' })
+        setUploadStatusMessage({ type: 'success', message: 'Check started! Processing devices...' })
       },
       onError: () => {
         // Error already handled by mutation hook with toast
-        setStatusMessage(null)
+        setUploadStatusMessage(null)
       }
     })
   }, [uploadCsv])

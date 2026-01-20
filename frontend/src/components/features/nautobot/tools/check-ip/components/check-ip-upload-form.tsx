@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useCallback } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
@@ -40,7 +40,7 @@ export function CheckIPUploadForm({
     }
   })
 
-  const selectedFile = form.watch('file')
+  const selectedFile = useWatch({ control: form.control, name: 'file' })
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
