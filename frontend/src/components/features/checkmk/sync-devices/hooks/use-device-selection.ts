@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { Device } from '@/types/features/checkmk/live-update'
+import type { Device } from '@/types/features/checkmk/sync-devices'
 
 export function useDeviceSelection() {
   const [selectedDevices, setSelectedDevices] = useState<Set<string>>(new Set())

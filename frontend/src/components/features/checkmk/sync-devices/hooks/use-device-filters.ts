@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import type { Device, FilterOptions } from '@/types/features/checkmk/live-update'
+import type { Device, FilterOptions } from '@/types/features/checkmk/sync-devices'
 
 export function useDeviceFilters(devices: Device[]) {
   const [deviceNameFilter, setDeviceNameFilter] = useState('')

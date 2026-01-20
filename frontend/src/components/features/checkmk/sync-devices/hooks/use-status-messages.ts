@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { StatusMessage } from '@/types/features/checkmk/live-update'
+import type { StatusMessage } from '@/types/features/checkmk/sync-devices'
 
 export function useStatusMessages() {
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null)

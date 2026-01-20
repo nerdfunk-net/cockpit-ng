@@ -1,7 +1,7 @@
 import { RefreshCw } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import type { Device } from '@/types/features/checkmk/live-update'
+import type { Device } from '@/types/features/checkmk/sync-devices'
 
 interface AddDeviceModalProps {
   isOpen: boolean

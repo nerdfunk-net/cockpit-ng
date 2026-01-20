@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useApi } from '@/hooks/use-api'
-import type { Device, DiffResult } from '@/types/features/checkmk/live-update'
-import { renderConfigComparison } from '@/utils/features/checkmk/live-update/diff-helpers'
+import type { Device, DiffResult } from '@/types/features/checkmk/sync-devices'
+import { renderConfigComparison } from '@/utils/features/checkmk/sync-devices/diff-helpers'
 
 interface UseDiffComparisonProps {
   showMessage: (text: string, type: 'success' | 'error' | 'info') => void

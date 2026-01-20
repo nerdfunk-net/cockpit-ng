@@ -3,7 +3,7 @@ import { X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import type { DeviceTask } from '@/types/features/checkmk/live-update'
+import type { DeviceTask } from '@/types/features/checkmk/sync-devices'
 
 interface ActiveTasksPanelProps {
   activeTasks: Map<string, DeviceTask>

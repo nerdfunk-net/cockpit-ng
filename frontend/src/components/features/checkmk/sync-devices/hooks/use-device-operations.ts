@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useApi } from '@/hooks/use-api'
-import type { Device, CeleryTaskResponse } from '@/types/features/checkmk/live-update'
+import type { Device, CeleryTaskResponse } from '@/types/features/checkmk/sync-devices'
 
 interface UseDeviceOperationsProps {
   trackTask: (taskId: string, deviceId: string | string[], deviceName: string, operation: 'add' | 'update' | 'sync') => void
