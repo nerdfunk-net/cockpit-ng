@@ -413,3 +413,24 @@ class RBACRepository(BaseRepository):
             return None
         finally:
             db.close()
+
+    def get_user_permission_overrides_with_status(
+        self, user_id: int
+    ) -> List[tuple[Permission, bool]]:
+        """Get all permission overrides for a user with their granted status.
+        
+        Returns:
+            List of tuples (Permission, granted) for all user permission overrides
+        """
+        db = get_db_session()
+        try:
+            # Join UserPermission with Permission to get both the permission and granted status
+            results = (
+                db.query(Permission, UserPermission.granted)
+                .join(UserPermission, UserPermission.permission_id == Permission.id)
+                .filter(UserPermission.user_id == user_id)
+                .all()
+            )
+            return results
+        finally:
+            db.close()

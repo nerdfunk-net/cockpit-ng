@@ -454,7 +454,7 @@ async def cleanup_old_runs(
     days: int = Query(
         30, ge=1, le=365, description="Delete runs older than this many days"
     ),
-    current_user: dict = Depends(require_permission("jobs", "admin")),
+    current_user: dict = Depends(require_permission("jobs", "delete")),
 ):
     """
     Clean up old job runs (admin only).

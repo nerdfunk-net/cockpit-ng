@@ -258,8 +258,14 @@ def remove_permission_from_user(user_id: int, permission_id: int) -> None:
 
 def get_user_permission_overrides(user_id: int) -> List[Dict[str, Any]]:
     """Get all permission overrides for a user."""
-    permissions = _rbac_repo.get_user_permissions(user_id)
-    return [_permission_to_dict(p) for p in permissions]
+    overrides = _rbac_repo.get_user_permission_overrides_with_status(user_id)
+    result = []
+    for permission, granted in overrides:
+        perm_dict = _permission_to_dict(permission)
+        perm_dict["granted"] = granted
+        perm_dict["source"] = "override"
+        result.append(perm_dict)
+    return result
 
 
 # ============================================================================

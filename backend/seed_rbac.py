@@ -175,6 +175,11 @@ def seed_permissions(verbose: bool = True):
         ("users", "delete", "Delete users"),
         ("users.roles", "write", "Assign roles to users"),
         ("users.permissions", "write", "Assign permissions to users"),
+        # RBAC management permissions
+        ("rbac.roles", "read", "View roles"),
+        ("rbac.roles", "write", "Create/modify roles"),
+        ("rbac.roles", "delete", "Delete roles"),
+        ("rbac.permissions", "read", "View all permissions"),
         # Jobs permissions
         ("jobs", "read", "View scheduled jobs"),
         ("jobs", "write", "Create/modify scheduled jobs"),
