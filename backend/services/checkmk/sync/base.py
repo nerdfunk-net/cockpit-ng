@@ -753,9 +753,25 @@ class NautobotToCheckMKService:
 
             except CheckMKAPIError as e:
                 logger.error(f"CheckMK API error creating host {hostname}: {e}")
+
+                # Preserve CheckMK error details for better error reporting
+                error_detail = {
+                    "error": str(e),
+                    "status_code": e.status_code,
+                }
+
+                # Include detailed error fields if available
+                if e.response_data:
+                    if "detail" in e.response_data:
+                        error_detail["detail"] = e.response_data["detail"]
+                    if "fields" in e.response_data:
+                        error_detail["fields"] = e.response_data["fields"]
+                    if "title" in e.response_data:
+                        error_detail["title"] = e.response_data["title"]
+
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"CheckMK API error: {e}",
+                    detail=json.dumps(error_detail),
                 )
 
             logger.info(

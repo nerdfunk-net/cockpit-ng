@@ -152,10 +152,61 @@ export function SyncJobResultView({ result }: SyncJobResultProps) {
                     <TableCell className="text-xs text-gray-600 max-w-[200px] truncate">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="cursor-help">{deviceResult.message || deviceResult.error || '-'}</span>
+                          <span className="cursor-help">
+                            {(() => {
+                              if (deviceResult.message) return deviceResult.message
+                              if (typeof deviceResult.error === 'object' && deviceResult.error) {
+                                return deviceResult.error.detail || deviceResult.error.error || 'Error occurred'
+                              }
+                              if (typeof deviceResult.error === 'string') return deviceResult.error
+                              return '-'
+                            })()}
+                          </span>
                         </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-sm">
-                          <p className="text-xs">{deviceResult.message || deviceResult.error || '-'}</p>
+                        <TooltipContent side="left" className="max-w-md">
+                          {deviceResult.message ? (
+                            <p className="text-xs">{deviceResult.message}</p>
+                          ) : typeof deviceResult.error === 'object' && deviceResult.error ? (
+                            <div className="text-xs space-y-2">
+                              {deviceResult.error.detail && (
+                                <p className="font-semibold">{deviceResult.error.detail}</p>
+                              )}
+                              {deviceResult.error.fields && (
+                                <div className="space-y-1">
+                                  <p className="font-semibold">Field Problems:</p>
+                                  {Object.entries(deviceResult.error.fields).map(([field, errors]) => (
+                                    <div key={field} className="ml-2">
+                                      <p className="font-medium">{field}:</p>
+                                      {typeof errors === 'object' && errors !== null ? (
+                                        <ul className="ml-2 list-disc list-inside">
+                                          {Object.entries(errors as Record<string, unknown>).map(([subField, subErrors]) => (
+                                            <li key={subField}>
+                                              <span className="font-medium">{subField}:</span>
+                                              {Array.isArray(subErrors) ? (
+                                                <ul className="ml-4 list-disc list-inside">
+                                                  {subErrors.map((err, i) => (
+                                                    <li key={i}>{String(err)}</li>
+                                                  ))}
+                                                </ul>
+                                              ) : (
+                                                <span> {String(subErrors)}</span>
+                                              )}
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      ) : (
+                                        <p className="ml-2">{String(errors)}</p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : typeof deviceResult.error === 'string' ? (
+                            <p className="text-xs">{deviceResult.error}</p>
+                          ) : (
+                            <p className="text-xs">-</p>
+                          )}
                         </TooltipContent>
                       </Tooltip>
                     </TableCell>

@@ -102,7 +102,13 @@ export interface SyncJobDeviceResult {
   operation: string
   success: boolean
   message?: string
-  error?: string
+  error?: string | {
+    error?: string
+    status_code?: number
+    detail?: string
+    title?: string
+    fields?: Record<string, unknown>
+  }
 }
 
 export interface SyncJobResult {

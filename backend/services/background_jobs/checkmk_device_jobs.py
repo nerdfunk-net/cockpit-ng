@@ -8,6 +8,7 @@ import json
 import logging
 from typing import Dict, Any
 from celery import shared_task
+from fastapi import HTTPException
 
 from services.checkmk.sync.database import (
     nb2cmk_db_service,
@@ -369,6 +370,31 @@ def sync_devices_to_checkmk_task(
             except Exception as e:
                 failed_count += 1
                 logger.error(f"Failed to sync device {device_id}: {e}")
+                
+                # Debug: Log the exception type and attributes
+                logger.info(f"Exception type: {type(e).__name__}")
+                if isinstance(e, HTTPException):
+                    logger.info(f"HTTPException status_code: {e.status_code}")
+                    logger.info(f"HTTPException detail type: {type(e.detail)}")
+                    logger.info(f"HTTPException detail: {e.detail}")
+                if isinstance(e, CheckMKAPIError):
+                    logger.info(f"CheckMKAPIError response_data: {e.response_data}")
+
+                # Try to get device name even when error occurs
+                device_name = device_id  # Default fallback to UUID
+                try:
+                    # Attempt to fetch device name from Nautobot
+                    normalized_data = asyncio.run(
+                        nb2cmk_service.get_device_normalized(device_id)
+                    )
+                    internal_data = normalized_data.get("internal", {})
+                    hostname = internal_data.get("hostname")
+                    if hostname:
+                        device_name = hostname
+                except Exception as name_error:
+                    logger.warning(
+                        f"Could not fetch device name for {device_id}: {name_error}"
+                    )
 
                 # Extract detailed error information if available
                 error_detail = str(e)
@@ -389,37 +415,52 @@ def sync_devices_to_checkmk_task(
                     if "title" in e.response_data:
                         error_info["title"] = e.response_data["title"]
 
-                    # Convert to JSON string for storage
-                    error_detail = json.dumps(error_info, indent=2)
-                else:
-                    # Try to parse error message as JSON (from HTTPException.detail)
-                    error_str = str(e)
-                    # Extract the part after "500: " or similar status codes
-                    if ": " in error_str:
-                        # Split on first occurrence of ": " to get the detail part
-                        parts = error_str.split(": ", 1)
-                        if len(parts) > 1:
-                            potential_json = parts[1]
-                            try:
-                                # Try to parse as JSON
-                                json.loads(potential_json)
-                                # If successful, use it directly (it's already JSON string)
-                                error_detail = potential_json
-                            except (json.JSONDecodeError, ValueError):
-                                # Not JSON, keep the original string
-                                error_detail = error_str
-                        else:
-                            error_detail = error_str
+                    # Keep as dict - will be properly serialized when results are returned
+                    error_detail = error_info
+                elif isinstance(e, HTTPException):
+                    # HTTPException - the detail field may already be properly formatted JSON
+                    detail = e.detail
+                    if isinstance(detail, str):
+                        try:
+                            # Try to parse as JSON - if it's already a properly formatted error dict, use it
+                            detail_dict = json.loads(detail)
+                            # Check if it already has structured error information (from base.py)
+                            if any(key in detail_dict for key in ["fields", "title", "error"]):
+                                # Already properly structured, use it directly as dict
+                                error_detail = detail_dict
+                            else:
+                                # Not structured, wrap it
+                                error_detail = {
+                                    "error": f"HTTP {e.status_code}",
+                                    "status_code": e.status_code,
+                                    "detail": detail
+                                }
+                        except (json.JSONDecodeError, ValueError):
+                            # Not JSON, wrap it in a structure
+                            error_detail = {
+                                "error": f"HTTP {e.status_code}",
+                                "status_code": e.status_code,
+                                "detail": detail
+                            }
                     else:
-                        error_detail = error_str
+                        # detail is not a string, wrap it
+                        error_detail = {
+                            "error": f"HTTP {e.status_code}",
+                            "status_code": e.status_code,
+                            "detail": detail
+                        }
+                else:
+                    # Generic exception - keep as string
+                    error_detail = str(e)
 
                 # Store failure result in database with detailed error
+                # Convert to JSON string for database storage
                 nb2cmk_db_service.add_device_result(
                     job_id=job_id,
                     device_id=device_id,
-                    device_name=device_id,  # Use ID as fallback
+                    device_name=device_name,  # Use fetched name or UUID as fallback
                     checkmk_status="error",
-                    diff=error_detail,  # Store detailed error as diff
+                    diff=json.dumps(error_detail, indent=2) if isinstance(error_detail, dict) else error_detail,  # Store as JSON string in DB
                     normalized_config={},
                     checkmk_config=None,
                     ignored_attributes=[],
@@ -428,9 +469,10 @@ def sync_devices_to_checkmk_task(
                 results.append(
                     {
                         "device_id": device_id,
+                        "hostname": device_name,  # Include device name in error result
                         "operation": "sync",
                         "success": False,
-                        "error": error_detail,
+                        "error": error_detail,  # Keep as dict for proper serialization in API response
                     }
                 )
 

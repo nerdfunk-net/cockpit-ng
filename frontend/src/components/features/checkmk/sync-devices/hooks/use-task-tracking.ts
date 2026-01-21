@@ -88,9 +88,12 @@ export function useTaskTracking({ onTaskSuccess, showMessage }: UseTaskTrackingP
 
               // If there are failed results, extract the first error for display
               if (response.result?.results && Array.isArray(response.result.results)) {
-                const failedResult = response.result.results.find((r: { success: boolean; error?: string }) => r.success === false)
+                const failedResult = response.result.results.find((r: { success: boolean; error?: string | object }) => r.success === false)
                 if (failedResult?.error) {
-                  errorMessage = failedResult.error
+                  // Convert error to string if it's an object (for proper display)
+                  errorMessage = typeof failedResult.error === 'object' 
+                    ? JSON.stringify(failedResult.error, null, 2)
+                    : failedResult.error
                 }
               }
 
