@@ -118,6 +118,26 @@ export const queryKeys = {
     celery: () => [...queryKeys.settings.all, 'celery'] as const,
   },
 
+  // Celery
+  celery: {
+    all: ['celery'] as const,
+
+    // Status
+    status: () => [...queryKeys.celery.all, 'status'] as const,
+
+    // Settings
+    settings: () => [...queryKeys.celery.all, 'settings'] as const,
+
+    // Workers
+    workers: () => [...queryKeys.celery.all, 'workers'] as const,
+
+    // Schedules
+    schedules: () => [...queryKeys.celery.all, 'schedules'] as const,
+
+    // Task status
+    task: (taskId: string) => [...queryKeys.celery.all, 'task', taskId] as const,
+  },
+
   // Cache
   cache: {
     all: ['cache'] as const,
