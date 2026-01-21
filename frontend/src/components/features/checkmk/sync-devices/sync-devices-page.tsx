@@ -41,12 +41,14 @@ export default function SyncDevicesPage() {
     roleFilters,
     selectedLocation,
     statusFilter,
+    checkmkFilter,
     filterOptions,
     activeFiltersCount,
     setDeviceNameFilter,
     setRoleFilters,
     setSelectedLocation,
     setStatusFilter,
+    setCheckmkFilter,
     resetFilters
   } = useDeviceFilters(devices)
 
@@ -265,6 +267,7 @@ export default function SyncDevicesPage() {
         roleFilters={roleFilters}
         selectedLocation={selectedLocation}
         statusFilter={statusFilter}
+        checkmkFilter={checkmkFilter}
         filterOptions={filterOptions}
         activeFiltersCount={activeFiltersCount}
         currentPage={currentPage}
@@ -282,6 +285,7 @@ export default function SyncDevicesPage() {
         onRoleFiltersChange={setRoleFilters}
         onLocationChange={setSelectedLocation}
         onStatusFilterChange={setStatusFilter}
+        onCheckmkFilterChange={setCheckmkFilter}
         onPageChange={handlePageChange}
         onPageSizeChange={setPageSize}
         onReloadDevices={reloadDevices}

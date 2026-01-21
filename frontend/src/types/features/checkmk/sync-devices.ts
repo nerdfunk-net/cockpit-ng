@@ -94,6 +94,7 @@ export interface FilterOptions {
   roles: Set<string>
   locations: Set<string>
   statuses: Set<string>
+  checkmkStatuses: Set<string>
 }
 
 export interface StatusMessage {

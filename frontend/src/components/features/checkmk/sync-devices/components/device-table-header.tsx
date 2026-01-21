@@ -23,12 +23,14 @@ interface DeviceTableHeaderProps {
   roleFilters: Record<string, boolean>
   selectedLocation: string
   statusFilter: string
+  checkmkFilter: string
   filterOptions: FilterOptions
   onSelectAll: (checked: boolean) => void
   onDeviceNameFilterChange: (value: string) => void
   onRoleFiltersChange: (filters: Record<string, boolean>) => void
   onLocationChange: (location: string) => void
   onStatusFilterChange: (status: string) => void
+  onCheckmkFilterChange: (status: string) => void
   onSort?: (column: string) => void
 }
 
@@ -38,12 +40,14 @@ export function DeviceTableHeader({
   roleFilters,
   selectedLocation,
   statusFilter,
+  checkmkFilter,
   filterOptions,
   onSelectAll,
   onDeviceNameFilterChange,
   onRoleFiltersChange,
   onLocationChange,
-  onStatusFilterChange
+  onStatusFilterChange,
+  onCheckmkFilterChange
 }: DeviceTableHeaderProps) {
   return (
     <thead className="bg-gray-100 border-b">
@@ -158,7 +162,19 @@ export function DeviceTableHeader({
         <th className="pl-12 pr-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
             <div>CheckMK</div>
-            <div className="h-8" />
+            <div>
+              <Select value={checkmkFilter || "all"} onValueChange={(value) => onCheckmkFilterChange(value === "all" ? "" : value)}>
+                <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                  <SelectValue placeholder="All CheckMK" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All CheckMK</SelectItem>
+                  {Array.from(filterOptions.checkmkStatuses).sort().map(status => (
+                    <SelectItem key={`sync-devices-checkmk-${status}`} value={status}>{status}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </th>
         <th className="pl-16 pr-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">

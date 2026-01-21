@@ -17,10 +17,12 @@ interface DeviceTableProps {
   roleFilters: Record<string, boolean>
   selectedLocation: string
   statusFilter: string
+  checkmkFilter: string
   filterOptions: {
     roles: Set<string>
     locations: Set<string>
     statuses: Set<string>
+    checkmkStatuses: Set<string>
   }
   activeFiltersCount: number
   currentPage: number
@@ -38,6 +40,7 @@ interface DeviceTableProps {
   onRoleFiltersChange: (filters: Record<string, boolean>) => void
   onLocationChange: (location: string) => void
   onStatusFilterChange: (status: string) => void
+  onCheckmkFilterChange: (status: string) => void
   onPageChange: (page: number) => void
   onPageSizeChange: (size: number) => void
   onReloadDevices: () => void
@@ -56,6 +59,7 @@ export function DeviceTable({
   roleFilters,
   selectedLocation,
   statusFilter,
+  checkmkFilter,
   filterOptions,
   activeFiltersCount,
   currentPage,
@@ -73,6 +77,7 @@ export function DeviceTable({
   onRoleFiltersChange,
   onLocationChange,
   onStatusFilterChange,
+  onCheckmkFilterChange,
   onPageChange,
   onPageSizeChange,
   onReloadDevices,
@@ -159,12 +164,14 @@ export function DeviceTable({
               roleFilters={roleFilters}
               selectedLocation={selectedLocation}
               statusFilter={statusFilter}
+              checkmkFilter={checkmkFilter}
               filterOptions={filterOptions}
               onSelectAll={(checked) => onSelectAll(checked)}
               onDeviceNameFilterChange={onDeviceNameFilterChange}
               onRoleFiltersChange={onRoleFiltersChange}
               onLocationChange={onLocationChange}
               onStatusFilterChange={onStatusFilterChange}
+              onCheckmkFilterChange={onCheckmkFilterChange}
             />
             <tbody className="divide-y divide-gray-200">
               {paginatedDevices.length === 0 ? (

@@ -1,11 +1,32 @@
 import { useState, useCallback, useMemo } from 'react'
 import type { Device, FilterOptions } from '@/types/features/checkmk/sync-devices'
 
+// Map CheckMK status values to display values
+const getCheckmkDisplayValue = (status: string | undefined): string => {
+  if (!status) return 'Unknown'
+  switch (status.toLowerCase()) {
+    case 'equal':
+      return 'Synced'
+    case 'diff':
+      return 'Different'
+    case 'host_not_found':
+    case 'missing':
+      return 'Missing'
+    case 'error':
+      return 'Error'
+    case 'unknown':
+      return 'Unknown'
+    default:
+      return status
+  }
+}
+
 export function useDeviceFilters(devices: Device[]) {
   const [deviceNameFilter, setDeviceNameFilter] = useState('')
   const [roleFilters, setRoleFilters] = useState<Record<string, boolean>>({})
   const [selectedLocation, setSelectedLocation] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [checkmkFilter, setCheckmkFilter] = useState('')
   const [sortColumn, setSortColumn] = useState('')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'none'>('none')
 
@@ -15,12 +36,14 @@ export function useDeviceFilters(devices: Device[]) {
       roles: new Set(),
       locations: new Set(),
       statuses: new Set(),
+      checkmkStatuses: new Set(),
     }
 
     devices.forEach((device: Device) => {
       if (device.role?.name) newFilterOptions.roles.add(device.role.name)
       if (device.location?.name) newFilterOptions.locations.add(device.location.name)
       if (device.status?.name) newFilterOptions.statuses.add(device.status.name)
+      if (device.checkmk_status) newFilterOptions.checkmkStatuses.add(getCheckmkDisplayValue(device.checkmk_status))
     })
 
     return newFilterOptions
@@ -68,6 +91,9 @@ export function useDeviceFilters(devices: Device[]) {
       // Status filter (keeping status filter as simple select)
       if (statusFilter && device.status?.name !== statusFilter) return false
 
+      // CheckMK filter (same pattern as status filter)
+      if (checkmkFilter && getCheckmkDisplayValue(device.checkmk_status) !== checkmkFilter) return false
+
       return true
     })
 
@@ -92,7 +118,7 @@ export function useDeviceFilters(devices: Device[]) {
     }
 
     return filtered
-  }, [devices, deviceNameFilter, effectiveRoleFilters, selectedLocation, statusFilter, sortColumn, sortOrder])
+  }, [devices, deviceNameFilter, effectiveRoleFilters, selectedLocation, statusFilter, checkmkFilter, sortColumn, sortOrder])
 
   const handleSort = useCallback((column: string) => {
     if (column === sortColumn) {
@@ -110,6 +136,7 @@ export function useDeviceFilters(devices: Device[]) {
   const resetFilters = useCallback(() => {
     setDeviceNameFilter('')
     setStatusFilter('')
+    setCheckmkFilter('')
     setSortColumn('')
     setSortOrder('none')
 
@@ -128,11 +155,12 @@ export function useDeviceFilters(devices: Device[]) {
     return [
       deviceNameFilter,
       statusFilter,
+      checkmkFilter,
       selectedLocation
     ].filter(Boolean).length +
     // Add count for role filters (if any are deselected)
     (Object.keys(effectiveRoleFilters).length > 0 && Object.values(effectiveRoleFilters).filter(Boolean).length < filterOptions.roles.size ? 1 : 0)
-  }, [deviceNameFilter, statusFilter, selectedLocation, effectiveRoleFilters, filterOptions.roles.size])
+  }, [deviceNameFilter, statusFilter, checkmkFilter, selectedLocation, effectiveRoleFilters, filterOptions.roles.size])
 
   return {
     filteredDevices,
@@ -140,6 +168,7 @@ export function useDeviceFilters(devices: Device[]) {
     roleFilters: effectiveRoleFilters,
     selectedLocation,
     statusFilter,
+    checkmkFilter,
     sortColumn,
     sortOrder,
     filterOptions,
@@ -148,6 +177,7 @@ export function useDeviceFilters(devices: Device[]) {
     setRoleFilters,
     setSelectedLocation,
     setStatusFilter,
+    setCheckmkFilter,
     handleSort,
     resetFilters
   }
