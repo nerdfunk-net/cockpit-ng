@@ -271,7 +271,9 @@ async def get_latest_scan_prefix_result(
 
             # Use actual prefixes list from parent for accurate count
             prefixes_list = result.get("prefixes", [])
-            total_prefixes = len(prefixes_list) if prefixes_list else result.get("total_prefixes", 0)
+            total_prefixes = (
+                len(prefixes_list) if prefixes_list else result.get("total_prefixes", 0)
+            )
 
         # Case 2: Regular job (not split)
         else:

@@ -243,7 +243,9 @@ class CheckMKClient:
         # DEBUG: Log complete CheckMK response for test fixture creation
         logger.debug(f"[CHECKMK API] get_host({hostname}) full response:")
         logger.debug(f"[CHECKMK API] Response type: {type(result)}")
-        logger.debug(f"[CHECKMK API] Response keys: {list(result.keys()) if isinstance(result, dict) else 'N/A'}")
+        logger.debug(
+            f"[CHECKMK API] Response keys: {list(result.keys()) if isinstance(result, dict) else 'N/A'}"
+        )
         logger.debug(f"[CHECKMK API] Full response data: {result}")
 
         return result

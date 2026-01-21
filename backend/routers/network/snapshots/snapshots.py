@@ -3,7 +3,7 @@ Router for snapshot execution and comparison.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List, Optional
+from typing import List
 from core.auth import require_permission
 from services.network.snapshots import (
     SnapshotExecutionService,
@@ -132,5 +132,6 @@ async def delete_snapshot_with_files(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to delete snapshot: {str(e)}")
-
+        raise HTTPException(
+            status_code=500, detail=f"Failed to delete snapshot: {str(e)}"
+        )

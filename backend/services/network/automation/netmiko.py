@@ -182,6 +182,7 @@ class NetmikoService:
                         if isinstance(cmd_output, list):
                             # TextFSM returns list of dicts, convert to readable string
                             import json
+
                             output += json.dumps(cmd_output, indent=2)
                         else:
                             output += cmd_output

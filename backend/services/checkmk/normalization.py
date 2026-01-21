@@ -37,23 +37,36 @@ class DeviceNormalizationService:
                 logger.error(f"[NORMALIZATION ERROR] {error_msg}")
                 raise ValueError(error_msg)
 
-            logger.info(f"[NORMALIZATION] Starting normalization for device: {device_name}")
-            logger.debug(f"[NORMALIZATION] Device data keys: {list(device_data.keys())}")
+            logger.info(
+                f"[NORMALIZATION] Starting normalization for device: {device_name}"
+            )
+            logger.debug(
+                f"[NORMALIZATION] Device data keys: {list(device_data.keys())}"
+            )
 
             # Force load the configuration on service initialization
             try:
                 config_service.load_checkmk_config(force_reload=True)
-                logger.debug(f"[NORMALIZATION] CheckMK config loaded successfully for {device_name}")
+                logger.debug(
+                    f"[NORMALIZATION] CheckMK config loaded successfully for {device_name}"
+                )
             except Exception as config_error:
-                logger.error(f"[NORMALIZATION ERROR] Failed to load CheckMK config for {device_name}: {config_error}", exc_info=True)
-                raise ValueError(f"Failed to load CheckMK configuration: {str(config_error)}")
+                logger.error(
+                    f"[NORMALIZATION ERROR] Failed to load CheckMK config for {device_name}: {config_error}",
+                    exc_info=True,
+                )
+                raise ValueError(
+                    f"Failed to load CheckMK configuration: {str(config_error)}"
+                )
 
             # Create the root extension dictionary
             extensions = DeviceExtensions(folder="", attributes={}, internal={})
 
             # Set hostname in internal dict (needed for CheckMK queries but not for comparison)
             extensions.internal["hostname"] = device_data.get("name", "")
-            logger.debug(f"[NORMALIZATION] Set hostname: {extensions.internal['hostname']}")
+            logger.debug(
+                f"[NORMALIZATION] Set hostname: {extensions.internal['hostname']}"
+            )
 
             # Store device metadata in internal dict (for UI display, not for comparison)
             # Extract role name
@@ -65,9 +78,13 @@ class DeviceNormalizationService:
                     extensions.internal["role"] = role
                 else:
                     extensions.internal["role"] = ""
-                logger.debug(f"[NORMALIZATION] Device {device_name} role: {extensions.internal['role']}")
+                logger.debug(
+                    f"[NORMALIZATION] Device {device_name} role: {extensions.internal['role']}"
+                )
             except Exception as e:
-                logger.warning(f"[NORMALIZATION] Failed to extract role for {device_name}: {e}")
+                logger.warning(
+                    f"[NORMALIZATION] Failed to extract role for {device_name}: {e}"
+                )
                 extensions.internal["role"] = ""
 
             # Extract status name
@@ -79,9 +96,13 @@ class DeviceNormalizationService:
                     extensions.internal["status"] = status
                 else:
                     extensions.internal["status"] = ""
-                logger.debug(f"[NORMALIZATION] Device {device_name} status: {extensions.internal['status']}")
+                logger.debug(
+                    f"[NORMALIZATION] Device {device_name} status: {extensions.internal['status']}"
+                )
             except Exception as e:
-                logger.warning(f"[NORMALIZATION] Failed to extract status for {device_name}: {e}")
+                logger.warning(
+                    f"[NORMALIZATION] Failed to extract status for {device_name}: {e}"
+                )
                 extensions.internal["status"] = ""
 
             # Extract location name
@@ -93,9 +114,13 @@ class DeviceNormalizationService:
                     extensions.internal["location"] = location
                 else:
                     extensions.internal["location"] = ""
-                logger.debug(f"[NORMALIZATION] Device {device_name} location: {extensions.internal['location']}")
+                logger.debug(
+                    f"[NORMALIZATION] Device {device_name} location: {extensions.internal['location']}"
+                )
             except Exception as e:
-                logger.warning(f"[NORMALIZATION] Failed to extract location for {device_name}: {e}")
+                logger.warning(
+                    f"[NORMALIZATION] Failed to extract location for {device_name}: {e}"
+                )
                 extensions.internal["location"] = ""
 
             # Set site using utility function
@@ -105,24 +130,43 @@ class DeviceNormalizationService:
                     f"[NORMALIZATION] Determined site for device {device_name}: {extensions.attributes['site']}"
                 )
             except Exception as e:
-                logger.error(f"[NORMALIZATION ERROR] Failed to determine site for {device_name}: {e}", exc_info=True)
-                raise ValueError(f"Failed to determine CheckMK site for device {device_name}: {str(e)}")
+                logger.error(
+                    f"[NORMALIZATION ERROR] Failed to determine site for {device_name}: {e}",
+                    exc_info=True,
+                )
+                raise ValueError(
+                    f"Failed to determine CheckMK site for device {device_name}: {str(e)}"
+                )
 
             # Set folder using utility function
             try:
                 extensions.folder = get_device_folder(device_data, None)
-                logger.info(f"[NORMALIZATION] Determined folder for device {device_name}: {extensions.folder}")
+                logger.info(
+                    f"[NORMALIZATION] Determined folder for device {device_name}: {extensions.folder}"
+                )
             except Exception as e:
-                logger.error(f"[NORMALIZATION ERROR] Failed to determine folder for {device_name}: {e}", exc_info=True)
-                raise ValueError(f"Failed to determine CheckMK folder for device {device_name}: {str(e)}")
+                logger.error(
+                    f"[NORMALIZATION ERROR] Failed to determine folder for {device_name}: {e}",
+                    exc_info=True,
+                )
+                raise ValueError(
+                    f"Failed to determine CheckMK folder for device {device_name}: {str(e)}"
+                )
 
             # Set IP address from primary_ip4 (remove CIDR netmask for CheckMK compatibility)
             try:
                 self._process_ip_address(device_data, extensions)
-                logger.debug(f"[NORMALIZATION] Device {device_name} IP address: {extensions.attributes.get('ipaddress', 'N/A')}")
+                logger.debug(
+                    f"[NORMALIZATION] Device {device_name} IP address: {extensions.attributes.get('ipaddress', 'N/A')}"
+                )
             except Exception as e:
-                logger.error(f"[NORMALIZATION ERROR] Failed to process IP address for {device_name}: {e}", exc_info=True)
-                raise ValueError(f"Failed to process IP address for device {device_name}: {str(e)}")
+                logger.error(
+                    f"[NORMALIZATION ERROR] Failed to process IP address for {device_name}: {e}",
+                    exc_info=True,
+                )
+                raise ValueError(
+                    f"Failed to process IP address for device {device_name}: {str(e)}"
+                )
 
             # Process various configuration mappings
             try:
@@ -133,12 +177,23 @@ class DeviceNormalizationService:
                 self._process_attr2htg_mappings(device_data, extensions)
                 self._process_field_mappings(device_data, extensions)
 
-                logger.info(f"[NORMALIZATION] Successfully normalized device {device_name}")
-                logger.debug(f"[NORMALIZATION] Final attributes for {device_name}: {list(extensions.attributes.keys())}")
-                logger.debug(f"[NORMALIZATION] Final folder for {device_name}: {extensions.folder}")
+                logger.info(
+                    f"[NORMALIZATION] Successfully normalized device {device_name}"
+                )
+                logger.debug(
+                    f"[NORMALIZATION] Final attributes for {device_name}: {list(extensions.attributes.keys())}"
+                )
+                logger.debug(
+                    f"[NORMALIZATION] Final folder for {device_name}: {extensions.folder}"
+                )
             except Exception as e:
-                logger.error(f"[NORMALIZATION ERROR] Failed to process configuration mappings for {device_name}: {e}", exc_info=True)
-                raise ValueError(f"Failed to process configuration mappings for device {device_name}: {str(e)}")
+                logger.error(
+                    f"[NORMALIZATION ERROR] Failed to process configuration mappings for {device_name}: {e}",
+                    exc_info=True,
+                )
+                raise ValueError(
+                    f"Failed to process configuration mappings for device {device_name}: {str(e)}"
+                )
 
             return extensions
 
@@ -192,7 +247,9 @@ class DeviceNormalizationService:
                 snmp_version = snmp_config.get("version")
 
                 # Convert version to string for comparison (YAML may parse unquoted numbers as int)
-                snmp_version_str = str(snmp_version) if snmp_version is not None else None
+                snmp_version_str = (
+                    str(snmp_version) if snmp_version is not None else None
+                )
 
                 # Handle SNMPv2/v1 (community-based)
                 if snmp_version_str in ["v1", "v2", "1", "2"]:
@@ -215,7 +272,9 @@ class DeviceNormalizationService:
                         "auth_protocol": snmp_config.get("auth_protocol_long", ""),
                         "security_name": snmp_config.get("username", ""),
                         "auth_password": snmp_config.get("auth_password", ""),
-                        "privacy_protocol": snmp_config.get("privacy_protocol_long", ""),
+                        "privacy_protocol": snmp_config.get(
+                            "privacy_protocol_long", ""
+                        ),
                         "privacy_password": snmp_config.get("privacy_password", ""),
                     }
 

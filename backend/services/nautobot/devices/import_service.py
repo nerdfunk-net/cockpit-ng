@@ -422,20 +422,24 @@ class DeviceImportService:
 
         # Track successful interfaces
         for _ in range(result.interfaces_created + result.interfaces_updated):
-            created_interfaces.append({
-                "name": "interface",
-                "success": True,
-                "ip_assigned": result.ip_addresses_created > 0,
-            })
+            created_interfaces.append(
+                {
+                    "name": "interface",
+                    "success": True,
+                    "ip_assigned": result.ip_addresses_created > 0,
+                }
+            )
 
         # Track failed interfaces
         for warning in result.warnings:
             if "Interface" in warning and "Failed" in warning:
-                created_interfaces.append({
-                    "name": "unknown",
-                    "success": False,
-                    "error": warning,
-                })
+                created_interfaces.append(
+                    {
+                        "name": "unknown",
+                        "success": False,
+                        "error": warning,
+                    }
+                )
 
         # Log any warnings
         for warning in result.warnings:
@@ -474,11 +478,13 @@ class DeviceImportService:
                 namespace = normalized_iface.get("namespace", "Global")
                 is_primary = normalized_iface.pop("is_primary_ipv4", False)
 
-                normalized_iface["ip_addresses"] = [{
-                    "address": ip_address,
-                    "namespace": namespace,
-                    "is_primary": is_primary,
-                }]
+                normalized_iface["ip_addresses"] = [
+                    {
+                        "address": ip_address,
+                        "namespace": namespace,
+                        "is_primary": is_primary,
+                    }
+                ]
 
             # Handle VLAN fields (convert comma-separated strings to lists)
             if "tagged_vlans" in normalized_iface and normalized_iface["tagged_vlans"]:

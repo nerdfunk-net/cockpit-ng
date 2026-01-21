@@ -208,44 +208,52 @@ class InventoryService:
 
         # Execute nested operations
         for i, nested_op in enumerate(operation.nested_operations):
-            logger.info(f"  Executing nested operation {i}: type={nested_op.operation_type}")
+            logger.info(
+                f"  Executing nested operation {i}: type={nested_op.operation_type}"
+            )
             nested_result, nested_count, nested_data = await self._execute_operation(
                 nested_op
             )
             operations_count += nested_count
             all_devices_data.update(nested_data)
-            logger.info(f"  Nested operation {i} result: {len(nested_result)} devices, type={nested_op.operation_type}")
-            
+            logger.info(
+                f"  Nested operation {i} result: {len(nested_result)} devices, type={nested_op.operation_type}"
+            )
+
             # Separate NOT operations from regular operations
             if nested_op.operation_type.upper() == "NOT":
                 not_results.append(nested_result)
-                logger.info(f"  Added to NOT results for subtraction")
+                logger.info("  Added to NOT results for subtraction")
             else:
                 condition_results.append(nested_result)
-                logger.info(f"  Added to regular results for combination")
+                logger.info("  Added to regular results for combination")
 
         # Combine results based on operation type
         if operation.operation_type.upper() == "AND":
             result = self._intersect_sets(condition_results)
             logger.info(f"  AND operation result (before NOT): {len(result)} devices")
-            
+
             # Subtract all NOT results
             for i, not_set in enumerate(not_results):
                 old_count = len(result)
                 result = result.difference(not_set)
-                logger.info(f"  Subtracted NOT operation {i}: {old_count} - {len(not_set)} = {len(result)} devices")
-            
+                logger.info(
+                    f"  Subtracted NOT operation {i}: {old_count} - {len(not_set)} = {len(result)} devices"
+                )
+
             logger.info(f"  AND operation final result: {len(result)} devices")
         elif operation.operation_type.upper() == "OR":
             result = self._union_sets(condition_results)
             logger.info(f"  OR operation result (before NOT): {len(result)} devices")
-            
+
             # Subtract all NOT results
             for i, not_set in enumerate(not_results):
                 old_count = len(result)
                 result = result.difference(not_set)
-                logger.info(f"  Subtracted NOT operation {i}: {old_count} - {len(not_set)} = {len(result)} devices")
-            
+                logger.info(
+                    f"  Subtracted NOT operation {i}: {old_count} - {len(not_set)} = {len(result)} devices"
+                )
+
             logger.info(f"  OR operation final result: {len(result)} devices")
         elif operation.operation_type.upper() == "NOT":
             # For NOT operations, return the devices that match the conditions
@@ -524,7 +532,10 @@ class InventoryService:
         return self._parse_device_data(devices_data)
 
     async def _query_devices_by_location(
-        self, location_filter: str, use_contains: bool = False, use_negation: bool = False
+        self,
+        location_filter: str,
+        use_contains: bool = False,
+        use_negation: bool = False,
     ) -> List[DeviceInfo]:
         """Query devices by location using GraphQL.
 
@@ -533,7 +544,7 @@ class InventoryService:
 
         For example, querying location="Europe" will return devices from all child
         locations like "Germany", "Berlin", etc.
-        
+
         Args:
             location_filter: Location name or ID to filter by
             use_contains: Use case-insensitive contains matching

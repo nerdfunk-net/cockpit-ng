@@ -16,9 +16,7 @@ class SnapshotCommandBase(BaseModel):
     """Base model for snapshot commands."""
 
     command: str = Field(..., description="Command to execute on device")
-    use_textfsm: bool = Field(
-        True, description="Whether to parse output with TextFSM"
-    )
+    use_textfsm: bool = Field(True, description="Whether to parse output with TextFSM")
     order: int = Field(0, description="Order of command execution")
 
 
@@ -49,9 +47,7 @@ class SnapshotCommandTemplateBase(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=255, description="Template name")
     description: Optional[str] = Field(None, description="Template description")
-    scope: str = Field(
-        "global", description="Template scope: 'global' or 'private'"
-    )
+    scope: str = Field("global", description="Template scope: 'global' or 'private'")
 
 
 class SnapshotCommandTemplateCreate(SnapshotCommandTemplateBase):
@@ -98,7 +94,9 @@ class SnapshotExecuteRequest(BaseModel):
     )
     description: Optional[str] = Field(None, description="Snapshot description")
     commands: List[SnapshotCommandCreate] = Field(
-        ..., description="List of commands to execute with use_textfsm flags", min_items=1
+        ...,
+        description="List of commands to execute with use_textfsm flags",
+        min_items=1,
     )
     git_repository_id: int = Field(..., description="Git repository to store results")
     snapshot_path: str = Field(

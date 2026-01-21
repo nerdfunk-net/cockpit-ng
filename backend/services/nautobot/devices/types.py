@@ -145,9 +145,7 @@ class InterfaceUpdateResult(BaseModel):
     ip_addresses_created: int = Field(
         default=0, description="Number of IP addresses created"
     )
-    primary_ip4_id: Optional[str] = Field(
-        None, description="Primary IPv4 ID if set"
-    )
+    primary_ip4_id: Optional[str] = Field(None, description="Primary IPv4 ID if set")
     warnings: list[str] = Field(
         default_factory=list, description="List of warning messages"
     )

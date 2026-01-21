@@ -11,57 +11,67 @@ import rbac_manager as rbac
 
 def migrate_inventory_permissions(verbose: bool = True):
     """Migrate network.inventory permissions to general.inventory.
-    
+
     This function handles migration for existing systems that have
     network.inventory permissions assigned to roles or users.
     """
     if verbose:
-        print("\nMigrating inventory permissions from network.inventory to general.inventory...")
-    
+        print(
+            "\nMigrating inventory permissions from network.inventory to general.inventory..."
+        )
+
     # Get all permissions
     all_permissions = rbac.list_permissions()
-    
+
     # Find old network.inventory permissions
     old_perms = {
-        p['id']: p for p in all_permissions 
-        if p['resource'] == 'network.inventory'
+        p["id"]: p for p in all_permissions if p["resource"] == "network.inventory"
     }
-    
+
     if not old_perms and verbose:
         print("  - No network.inventory permissions found to migrate")
         return
-    
+
     # Get all roles
     all_roles = rbac.list_roles()
-    
+
     # For each role, check if it has network.inventory permissions
     migrated_count = 0
     for role in all_roles:
-        role_perms = rbac.get_role_permissions(role['id'])
-        
+        role_perms = rbac.get_role_permissions(role["id"])
+
         for old_perm_id, old_perm in old_perms.items():
             # Check if this role has the old permission
-            if any(p['id'] == old_perm_id for p in role_perms):
+            if any(p["id"] == old_perm_id for p in role_perms):
                 # Find or create the corresponding general.inventory permission
-                action = old_perm['action']
+                action = old_perm["action"]
                 try:
                     # Create the new permission if it doesn't exist
                     new_perm_id = None
                     for p in all_permissions:
-                        if p['resource'] == 'general.inventory' and p['action'] == action:
-                            new_perm_id = p['id']
+                        if (
+                            p["resource"] == "general.inventory"
+                            and p["action"] == action
+                        ):
+                            new_perm_id = p["id"]
                             break
-                    
+
                     if new_perm_id:
                         # Assign the new permission to the role
-                        rbac.assign_permission_to_role(role['id'], new_perm_id, granted=True)
+                        rbac.assign_permission_to_role(
+                            role["id"], new_perm_id, granted=True
+                        )
                         migrated_count += 1
                         if verbose:
-                            print(f"  ✓ Migrated {old_perm['resource']}:{action} -> general.inventory:{action} for role '{role['name']}'")
+                            print(
+                                f"  ✓ Migrated {old_perm['resource']}:{action} -> general.inventory:{action} for role '{role['name']}'"
+                            )
                 except Exception as e:
                     if verbose:
-                        print(f"  ✗ Error migrating permission for role '{role['name']}': {e}")
-    
+                        print(
+                            f"  ✗ Error migrating permission for role '{role['name']}': {e}"
+                        )
+
     if verbose:
         if migrated_count > 0:
             print(f"\n  ✅ Migrated {migrated_count} permission assignments")
@@ -71,31 +81,35 @@ def migrate_inventory_permissions(verbose: bool = True):
 
 def cleanup_obsolete_permissions(verbose: bool = True):
     """Remove obsolete permissions that are no longer used.
-    
+
     This removes old permissions like network.inventory that have been
     replaced by newer permissions (e.g., general.inventory).
     """
     if verbose:
         print("\nCleaning up obsolete permissions...")
-    
+
     obsolete_resources = [
         "network.inventory",  # Replaced by general.inventory
     ]
-    
+
     all_permissions = rbac.list_permissions()
     removed_count = 0
-    
+
     for perm in all_permissions:
-        if perm['resource'] in obsolete_resources:
+        if perm["resource"] in obsolete_resources:
             try:
-                rbac.delete_permission(perm['id'])
+                rbac.delete_permission(perm["id"])
                 removed_count += 1
                 if verbose:
-                    print(f"  ✓ Removed obsolete permission: {perm['resource']}:{perm['action']}")
+                    print(
+                        f"  ✓ Removed obsolete permission: {perm['resource']}:{perm['action']}"
+                    )
             except Exception as e:
                 if verbose:
-                    print(f"  ✗ Error removing permission {perm['resource']}:{perm['action']}: {e}")
-    
+                    print(
+                        f"  ✗ Error removing permission {perm['resource']}:{perm['action']}: {e}"
+                    )
+
     if verbose:
         if removed_count > 0:
             print(f"\n  ✅ Removed {removed_count} obsolete permissions")
@@ -420,10 +434,10 @@ def main(verbose: bool = True):
 
     # Assign permissions to roles
     assign_permissions_to_roles(roles, verbose=verbose)
-    
+
     # Run migration for existing systems
     migrate_inventory_permissions(verbose=verbose)
-    
+
     # Cleanup obsolete permissions (after migration is complete)
     cleanup_obsolete_permissions(verbose=verbose)
 

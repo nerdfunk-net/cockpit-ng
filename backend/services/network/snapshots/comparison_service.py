@@ -4,7 +4,7 @@ Service for comparing snapshots.
 
 import json
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional
 from repositories.snapshots import SnapshotRepository
 from models.snapshots import (
     SnapshotCompareRequest,
@@ -37,7 +37,7 @@ class SnapshotComparisonService:
         Returns:
             Diff dictionary or None if identical
         """
-        if type(data1) != type(data2):
+        if not isinstance(data1, type(data2)):
             return {
                 "type": "type_change",
                 "path": path,
@@ -114,7 +114,11 @@ class SnapshotComparisonService:
             Device comparison result
         """
         device_name = (
-            result1.device_name if result1 else result2.device_name if result2 else "unknown"
+            result1.device_name
+            if result1
+            else result2.device_name
+            if result2
+            else "unknown"
         )
 
         # Handle missing results

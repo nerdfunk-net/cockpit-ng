@@ -373,9 +373,7 @@ def migrate_templates_table():
             logger.debug("templates table doesn't exist yet, skipping migration")
             return
 
-        existing_columns = {
-            col["name"] for col in inspector.get_columns("templates")
-        }
+        existing_columns = {col["name"] for col in inspector.get_columns("templates")}
 
         with engine.connect() as conn:
             for column_name, column_def in columns_to_add:
@@ -389,9 +387,7 @@ def migrate_templates_table():
                     conn.commit()
                     logger.info(f"Successfully added column {column_name}")
                 else:
-                    logger.debug(
-                        f"Column {column_name} already exists in templates"
-                    )
+                    logger.debug(f"Column {column_name} already exists in templates")
 
     except Exception as e:
         logger.warning(f"Could not migrate templates table: {e}")

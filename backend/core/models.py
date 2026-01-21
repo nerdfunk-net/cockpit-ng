@@ -1172,7 +1172,9 @@ class SnapshotCommand(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     template_id = Column(
-        Integer, ForeignKey("snapshot_command_templates.id", ondelete="CASCADE"), nullable=False
+        Integer,
+        ForeignKey("snapshot_command_templates.id", ondelete="CASCADE"),
+        nullable=False,
     )
     command = Column(Text, nullable=False)
     use_textfsm = Column(Boolean, nullable=False, default=True)
@@ -1195,12 +1197,20 @@ class Snapshot(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False, index=True)
     description = Column(Text)
-    template_id = Column(Integer, ForeignKey("snapshot_command_templates.id", ondelete="SET NULL"))
+    template_id = Column(
+        Integer, ForeignKey("snapshot_command_templates.id", ondelete="SET NULL")
+    )
     template_name = Column(String(255))  # Snapshot of template name at execution time
-    git_repository_id = Column(Integer, ForeignKey("git_repositories.id", ondelete="SET NULL"))
-    snapshot_path = Column(String(500), nullable=False)  # Path template with placeholders
+    git_repository_id = Column(
+        Integer, ForeignKey("git_repositories.id", ondelete="SET NULL")
+    )
+    snapshot_path = Column(
+        String(500), nullable=False
+    )  # Path template with placeholders
     executed_by = Column(String(255), nullable=False, index=True)
-    status = Column(String(50), nullable=False, default="pending")  # pending, running, completed, failed
+    status = Column(
+        String(50), nullable=False, default="pending"
+    )  # pending, running, completed, failed
     device_count = Column(Integer, nullable=False, default=0)
     success_count = Column(Integer, nullable=False, default=0)
     failed_count = Column(Integer, nullable=False, default=0)
@@ -1239,7 +1249,9 @@ class SnapshotResult(Base):
     )
     device_name = Column(String(255), nullable=False, index=True)
     device_ip = Column(String(45))
-    status = Column(String(50), nullable=False, default="pending")  # pending, running, success, failed
+    status = Column(
+        String(50), nullable=False, default="pending"
+    )  # pending, running, success, failed
     git_file_path = Column(String(1000))  # Path to JSON file in Git
     git_commit_hash = Column(String(255))  # Git commit SHA
     parsed_data = Column(Text)  # JSON string of all parsed command outputs

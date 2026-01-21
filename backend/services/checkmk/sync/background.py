@@ -263,12 +263,14 @@ class NB2CMKBackgroundService:
                             device_info["normalized_config"] = {}
                             device_info["checkmk_config"] = None
                         else:
-                            error_detail = getattr(http_exc, 'detail', str(http_exc))
+                            error_detail = getattr(http_exc, "detail", str(http_exc))
                             logger.error(
                                 f"[BACKGROUND JOB {job_id}] HTTP {http_exc.status_code} error comparing device {device_name}: {error_detail}"
                             )
                             device_info["checkmk_status"] = "error"
-                            device_info["diff"] = f"HTTP {http_exc.status_code} Error: {error_detail}"
+                            device_info["diff"] = (
+                                f"HTTP {http_exc.status_code} Error: {error_detail}"
+                            )
                             device_info["normalized_config"] = {}
                             device_info["checkmk_config"] = None
 
@@ -276,7 +278,7 @@ class NB2CMKBackgroundService:
                         # Catch normalization/comparison errors with detailed messages
                         logger.error(
                             f"[BACKGROUND JOB {job_id}] Validation error for device {device_name}: {str(val_err)}",
-                            exc_info=True
+                            exc_info=True,
                         )
                         device_info["checkmk_status"] = "error"
                         device_info["diff"] = f"Validation Error: {str(val_err)}"
@@ -286,7 +288,7 @@ class NB2CMKBackgroundService:
                     except Exception as e:
                         logger.error(
                             f"[BACKGROUND JOB {job_id}] Unexpected error comparing device {device_name}: {str(e)}",
-                            exc_info=True
+                            exc_info=True,
                         )
                         device_info["checkmk_status"] = "error"
                         device_info["diff"] = f"Comparison error: {str(e)}"

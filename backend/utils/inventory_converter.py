@@ -139,11 +139,11 @@ def _convert_item(item: Dict[str, Any]) -> LogicalOperation:
             if sub_item.get("type") == "group":
                 # Nested group - recursively convert it
                 converted_sub_group = _convert_item(sub_item)
-                
+
                 # Preserve the logic operator (AND/OR/NOT) from the group
                 if sub_item.get("logic") == "NOT":
                     converted_sub_group.operation_type = "NOT"
-                
+
                 nested_ops.append(converted_sub_group)
             else:
                 # Regular condition

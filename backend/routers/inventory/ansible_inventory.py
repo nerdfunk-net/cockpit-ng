@@ -3,14 +3,12 @@ Ansible Inventory - Generate and manage Ansible-specific inventory outputs
 """
 
 import logging
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from models.inventory import (
     InventoryGenerateRequest,
     InventoryGenerateResponse,
-    LogicalOperation,
 )
 from core.auth import require_permission
 from services.inventory.inventory import inventory_service

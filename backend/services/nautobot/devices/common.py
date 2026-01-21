@@ -589,9 +589,7 @@ class DeviceCommonService:
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error(
-                    f"GraphQL error resolving interface: {result['errors']}"
-                )
+                logger.error(f"GraphQL error resolving interface: {result['errors']}")
                 return None
 
             interfaces = result.get("data", {}).get("interfaces", [])
@@ -639,9 +637,7 @@ class DeviceCommonService:
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error(
-                    f"GraphQL error resolving IP address: {result['errors']}"
-                )
+                logger.error(f"GraphQL error resolving IP address: {result['errors']}")
                 return None
 
             ip_addresses = result.get("data", {}).get("ip_addresses", [])
@@ -1066,7 +1062,9 @@ class DeviceCommonService:
                         )
 
                         ip_id = ip_create_result["id"]
-                        logger.info(f"Created IP address after prefix creation: {ip_id}")
+                        logger.info(
+                            f"Created IP address after prefix creation: {ip_id}"
+                        )
                         return ip_id
 
                     except Exception as prefix_error:

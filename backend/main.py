@@ -44,12 +44,21 @@ from routers.network import (
 )
 
 # Snapshot routers (Network / Automation / Snapshots)
-from routers.network.snapshots import templates_router as snapshot_templates_router, snapshots_router
+from routers.network.snapshots import (
+    templates_router as snapshot_templates_router,
+    snapshots_router,
+)
 
 # Tools router kept in old location (depends on nautobot_service, now fixed)
 from routers.tools import router as tools_router
+
 # Inventory routers now use feature-based structure (Phase 3.7 migration)
-from routers.inventory import general_inventory_router, inventory_router, certificates_router, ansible_inventory_router
+from routers.inventory import (
+    general_inventory_router,
+    inventory_router,
+    certificates_router,
+    ansible_inventory_router,
+)
 
 # git_repositories_router is included via git_router - no need to import separately
 # Job routers now use feature-based structure (Phase 3.2 migration)

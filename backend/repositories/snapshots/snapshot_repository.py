@@ -4,7 +4,7 @@ Repository for snapshot executions and results.
 
 from typing import List, Optional
 from datetime import datetime
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import joinedload
 from core.models import Snapshot, SnapshotResult
 from core.database import get_db_session
 
@@ -262,9 +262,7 @@ class SnapshotRepository:
         db = get_db_session()
         try:
             return (
-                db.query(SnapshotResult)
-                .filter(SnapshotResult.id == result_id)
-                .first()
+                db.query(SnapshotResult).filter(SnapshotResult.id == result_id).first()
             )
         finally:
             db.close()

@@ -42,6 +42,7 @@ def add_device_to_checkmk_task(self, device_id: str) -> Dict[str, Any]:
         # Force reload configuration files to ensure we use the latest SNMP mapping
         # and other config changes without requiring Celery worker restart
         from services.checkmk.config import config_service
+
         config_service.reload_config()
         logger.info("Reloaded configuration files for add device task")
 
@@ -133,6 +134,7 @@ def update_device_in_checkmk_task(self, device_id: str) -> Dict[str, Any]:
         # Force reload configuration files to ensure we use the latest SNMP mapping
         # and other config changes without requiring Celery worker restart
         from services.checkmk.config import config_service
+
         config_service.reload_config()
         logger.info("Reloaded configuration files for update device task")
 
@@ -229,6 +231,7 @@ def sync_devices_to_checkmk_task(
         # Force reload configuration files to ensure we use the latest SNMP mapping
         # and other config changes without requiring Celery worker restart
         from services.checkmk.config import config_service
+
         config_service.reload_config()
         logger.info("Reloaded configuration files for sync devices task")
 
@@ -370,7 +373,7 @@ def sync_devices_to_checkmk_task(
             except Exception as e:
                 failed_count += 1
                 logger.error(f"Failed to sync device {device_id}: {e}")
-                
+
                 # Debug: Log the exception type and attributes
                 logger.info(f"Exception type: {type(e).__name__}")
                 if isinstance(e, HTTPException):
@@ -425,7 +428,10 @@ def sync_devices_to_checkmk_task(
                             # Try to parse as JSON - if it's already a properly formatted error dict, use it
                             detail_dict = json.loads(detail)
                             # Check if it already has structured error information (from base.py)
-                            if any(key in detail_dict for key in ["fields", "title", "error"]):
+                            if any(
+                                key in detail_dict
+                                for key in ["fields", "title", "error"]
+                            ):
                                 # Already properly structured, use it directly as dict
                                 error_detail = detail_dict
                             else:
@@ -433,21 +439,21 @@ def sync_devices_to_checkmk_task(
                                 error_detail = {
                                     "error": f"HTTP {e.status_code}",
                                     "status_code": e.status_code,
-                                    "detail": detail
+                                    "detail": detail,
                                 }
                         except (json.JSONDecodeError, ValueError):
                             # Not JSON, wrap it in a structure
                             error_detail = {
                                 "error": f"HTTP {e.status_code}",
                                 "status_code": e.status_code,
-                                "detail": detail
+                                "detail": detail,
                             }
                     else:
                         # detail is not a string, wrap it
                         error_detail = {
                             "error": f"HTTP {e.status_code}",
                             "status_code": e.status_code,
-                            "detail": detail
+                            "detail": detail,
                         }
                 else:
                     # Generic exception - keep as string
@@ -460,7 +466,9 @@ def sync_devices_to_checkmk_task(
                     device_id=device_id,
                     device_name=device_name,  # Use fetched name or UUID as fallback
                     checkmk_status="error",
-                    diff=json.dumps(error_detail, indent=2) if isinstance(error_detail, dict) else error_detail,  # Store as JSON string in DB
+                    diff=json.dumps(error_detail, indent=2)
+                    if isinstance(error_detail, dict)
+                    else error_detail,  # Store as JSON string in DB
                     normalized_config={},
                     checkmk_config=None,
                     ignored_attributes=[],

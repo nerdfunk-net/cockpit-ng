@@ -473,14 +473,28 @@ class TestComplexQueries:
             all_devices_response = {
                 "data": {
                     "devices": [
-                        {"id": "dev-1", "name": "device-1", "location": {"name": "DC1"}},
-                        {"id": "dev-2", "name": "device-2", "location": {"name": "DC2"}},
-                        {"id": "dev-3", "name": "device-3", "location": {"name": "DC3"}},
+                        {
+                            "id": "dev-1",
+                            "name": "device-1",
+                            "location": {"name": "DC1"},
+                        },
+                        {
+                            "id": "dev-2",
+                            "name": "device-2",
+                            "location": {"name": "DC2"},
+                        },
+                        {
+                            "id": "dev-3",
+                            "name": "device-3",
+                            "location": {"name": "DC3"},
+                        },
                     ]
                 }
             }
-            mock_nautobot_service.graphql_query = AsyncMock(return_value=all_devices_response)
-            
+            mock_nautobot_service.graphql_query = AsyncMock(
+                return_value=all_devices_response
+            )
+
             # Act
             result_devices, op_count = await self.service.preview_inventory([])
 

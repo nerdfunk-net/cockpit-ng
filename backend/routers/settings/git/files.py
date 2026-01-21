@@ -741,12 +741,14 @@ async def get_directory_files(
                     "timestamp": 0,
                 }
 
-            files_data.append({
-                "name": item,
-                "path": file_rel_path,
-                "size": file_size,
-                "last_commit": commit_info,
-            })
+            files_data.append(
+                {
+                    "name": item,
+                    "path": file_rel_path,
+                    "size": file_size,
+                    "last_commit": commit_info,
+                }
+            )
 
         # Sort files alphabetically
         files_data.sort(key=lambda x: x["name"].lower())

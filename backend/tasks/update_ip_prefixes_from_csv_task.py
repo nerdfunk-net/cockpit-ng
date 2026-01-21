@@ -141,7 +141,9 @@ def update_ip_prefixes_from_csv_task(
         if has_namespace:
             logger.info("✓ 'namespace__name' column found")
         else:
-            logger.info("⚠ 'namespace__name' column not found, will default to 'Global'")
+            logger.info(
+                "⚠ 'namespace__name' column not found, will default to 'Global'"
+            )
 
         # STEP 3: Initialize Nautobot service
         logger.info("-" * 80)
@@ -154,7 +156,9 @@ def update_ip_prefixes_from_csv_task(
         logger.info("-" * 80)
         logger.info(f"STEP 4: UPDATING {total_prefixes} IP PREFIXES")
         logger.info(f"Dry run mode: {dry_run}")
-        logger.info(f"Lookup strategy: {'prefix+namespace' if ignore_uuid else 'UUID from CSV'}")
+        logger.info(
+            f"Lookup strategy: {'prefix+namespace' if ignore_uuid else 'UUID from CSV'}"
+        )
         logger.info("-" * 80)
 
         successes = []
@@ -244,7 +248,9 @@ def update_ip_prefixes_from_csv_task(
                             _get_prefix_by_uuid(nautobot_service, prefix_uuid)
                         )
                         if not existing_prefix:
-                            logger.warning(f"Prefix with UUID '{prefix_uuid}' not found")
+                            logger.warning(
+                                f"Prefix with UUID '{prefix_uuid}' not found"
+                            )
                             failures.append(
                                 {
                                     "row": idx,
@@ -601,10 +607,10 @@ def _prepare_prefix_update_data(
                     logger.debug("Replace mode: clearing all tags (empty value in CSV)")
                 # For merge mode with empty value: skip (don't modify existing tags)
                 continue
-            
+
             # Non-empty tags value - process normally
             csv_tags = [tag.strip() for tag in value.split(",") if tag.strip()]
-            
+
             if tags_mode == "merge":
                 # Merge mode: combine CSV tags with existing tags
                 existing_tags = []
@@ -615,7 +621,7 @@ def _prepare_prefix_update_data(
                             existing_tags.append(tag["name"])
                         elif isinstance(tag, str):
                             existing_tags.append(tag)
-                
+
                 # Combine and deduplicate tags
                 merged_tags = list(set(existing_tags + csv_tags))
                 update_data[field] = merged_tags
@@ -626,7 +632,7 @@ def _prepare_prefix_update_data(
                 # Replace mode: use only CSV tags
                 update_data[field] = csv_tags
                 logger.debug(f"Replacing tags with: {csv_tags}")
-            
+
             continue
 
         # Skip empty values for all other fields
@@ -637,7 +643,7 @@ def _prepare_prefix_update_data(
         if field.startswith("cf_"):
             # Extract custom field name by removing "cf_" prefix
             custom_field_name = field[3:]  # Remove first 3 characters ("cf_")
-            
+
             # Handle special values for custom fields
             if value.upper() == "NULL" or value.upper() == "NOOBJECT":
                 custom_fields[custom_field_name] = None
@@ -645,7 +651,7 @@ def _prepare_prefix_update_data(
                 custom_fields[custom_field_name] = value.lower() == "true"
             else:
                 custom_fields[custom_field_name] = value
-            
+
             continue
 
         # Handle special values

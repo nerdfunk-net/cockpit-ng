@@ -174,7 +174,9 @@ class DeviceUpdateService:
 
             # Only return early if BOTH validated_data AND interfaces are empty
             if not validated_data and not interfaces:
-                logger.info(f"No fields to update and no interfaces for device {device_name}")
+                logger.info(
+                    f"No fields to update and no interfaces for device {device_name}"
+                )
                 return {
                     "success": True,
                     "device_id": device_id,
@@ -187,12 +189,16 @@ class DeviceUpdateService:
 
             # Log what we're going to process
             if not validated_data and interfaces:
-                logger.info(f"No device fields to update, but processing {len(interfaces)} interface(s)")
+                logger.info(
+                    f"No device fields to update, but processing {len(interfaces)} interface(s)"
+                )
 
             # Step 3: Update device properties (if any)
             updated_fields = []
             if validated_data:
-                logger.info(f"Step 3: Updating device {device_name} with {len(validated_data)} field(s)")
+                logger.info(
+                    f"Step 3: Updating device {device_name} with {len(validated_data)} field(s)"
+                )
                 updated_fields = await self._update_device_properties(
                     device_id=device_id,
                     validated_data=validated_data,
@@ -202,25 +208,33 @@ class DeviceUpdateService:
                     current_primary_ip4=current_primary_ip4,
                 )
             else:
-                logger.info(f"Step 3: Skipping device property updates (no fields to update)")
+                logger.info(
+                    "Step 3: Skipping device property updates (no fields to update)"
+                )
 
             # Step 3.5: Create/update interfaces if provided
             interfaces_created = 0
             interfaces_updated = 0
             interfaces_failed = 0
             if interfaces:
-                logger.info(f"Step 3.5: Creating/updating {len(interfaces)} interface(s)")
+                logger.info(
+                    f"Step 3.5: Creating/updating {len(interfaces)} interface(s)"
+                )
                 logger.info(f"Prefix auto-creation enabled: {add_prefix}")
-                interface_result = await self.interface_manager.update_device_interfaces(
-                    device_id=device_id,
-                    interfaces=interfaces,
-                    add_prefixes_automatically=add_prefix,
+                interface_result = (
+                    await self.interface_manager.update_device_interfaces(
+                        device_id=device_id,
+                        interfaces=interfaces,
+                        add_prefixes_automatically=add_prefix,
+                    )
                 )
                 interfaces_created = interface_result.interfaces_created
                 interfaces_updated = interface_result.interfaces_updated
                 interfaces_failed = interface_result.interfaces_failed
                 warnings.extend(interface_result.warnings)
-                logger.info(f"Interface update complete: {interfaces_created} created, {interfaces_updated} updated, {interfaces_failed} failed")
+                logger.info(
+                    f"Interface update complete: {interfaces_created} created, {interfaces_updated} updated, {interfaces_failed} failed"
+                )
 
             # Get device state after update
             details["after"] = await self.common.get_device_details(

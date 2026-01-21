@@ -3,7 +3,7 @@ Repository for snapshot command templates.
 """
 
 from typing import List, Optional
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import joinedload
 from core.models import SnapshotCommandTemplate, SnapshotCommand
 from core.database import get_db_session
 
@@ -115,7 +115,7 @@ class SnapshotTemplateRepository:
             elif scope:
                 query = query.filter(SnapshotCommandTemplate.scope == scope)
 
-            return query.filter(SnapshotCommandTemplate.is_active == True).all()
+            return query.filter(SnapshotCommandTemplate.is_active).all()
         finally:
             db.close()
 
@@ -227,7 +227,7 @@ class SnapshotTemplateRepository:
                 db.query(SnapshotCommandTemplate)
                 .options(joinedload(SnapshotCommandTemplate.commands))
                 .filter(SnapshotCommandTemplate.name == name)
-                .filter(SnapshotCommandTemplate.is_active == True)
+                .filter(SnapshotCommandTemplate.is_active)
             )
 
             if created_by:

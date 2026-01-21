@@ -229,9 +229,7 @@ class TemplateManager:
                 "execution_mode": template_data.get(
                     "execution_mode", current.get("execution_mode", "run_on_device")
                 ),
-                "file_path": template_data.get(
-                    "file_path", current.get("file_path")
-                ),
+                "file_path": template_data.get("file_path", current.get("file_path")),
                 "scope": new_scope,
             }
 

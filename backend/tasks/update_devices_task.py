@@ -172,16 +172,22 @@ def update_devices_task(
 
                 # Prepare data for service
                 logger.info(f"Raw device_data before prepare: {device_data}")
-                device_identifier, update_data, interface_config, interfaces = _prepare_device_data(
-                    device_data
+                device_identifier, update_data, interface_config, interfaces = (
+                    _prepare_device_data(device_data)
                 )
-                logger.info(f"After prepare - interfaces ({len(interfaces) if interfaces else 0} total):")
+                logger.info(
+                    f"After prepare - interfaces ({len(interfaces) if interfaces else 0} total):"
+                )
                 if interfaces:
                     for idx, iface in enumerate(interfaces):
-                        logger.info(f"  Interface {idx+1}: name={iface.get('name')}, ip={iface.get('ip_address')}, role={iface.get('ip_role', 'NOT SET')}")
+                        logger.info(
+                            f"  Interface {idx + 1}: name={iface.get('name')}, ip={iface.get('ip_address')}, role={iface.get('ip_role', 'NOT SET')}"
+                        )
 
                 if not update_data and not interfaces:
-                    logger.info(f"No update data or interfaces for device {identifier}, skipping")
+                    logger.info(
+                        f"No update data or interfaces for device {identifier}, skipping"
+                    )
                     skipped.append(
                         {
                             "device_identifier": device_identifier,
@@ -198,7 +204,9 @@ def update_devices_task(
                     if interface_config:
                         logger.info(f"[DRY RUN] Interface config: {interface_config}")
                     if interfaces:
-                        logger.info(f"[DRY RUN] Interfaces: {len(interfaces)} interface(s)")
+                        logger.info(
+                            f"[DRY RUN] Interfaces: {len(interfaces)} interface(s)"
+                        )
 
                     successes.append(
                         {
@@ -348,7 +356,12 @@ def update_devices_task(
 
 def _prepare_device_data(
     device_data: Dict[str, Any],
-) -> tuple[Dict[str, Any], Dict[str, Any], Optional[Dict[str, str]], Optional[List[Dict[str, Any]]]]:
+) -> tuple[
+    Dict[str, Any],
+    Dict[str, Any],
+    Optional[Dict[str, str]],
+    Optional[List[Dict[str, Any]]],
+]:
     """
     Prepare device data for DeviceUpdateService.
 

@@ -114,7 +114,7 @@ class AddDeviceRequest(BaseModel):
 
 class UpdateDeviceRequest(BaseModel):
     """Request model for updating an existing device with interfaces.
-    
+
     All fields are optional - only provided fields will be updated.
     """
 

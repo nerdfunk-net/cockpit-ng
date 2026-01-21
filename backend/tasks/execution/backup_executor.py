@@ -168,7 +168,9 @@ def execute_backup(
                     device_query_service.get_devices()
                 )
                 if devices_result and devices_result.get("devices"):
-                    device_ids = [device.get("id") for device in devices_result["devices"]]
+                    device_ids = [
+                        device.get("id") for device in devices_result["devices"]
+                    ]
                     logger.info(f"Fetched {len(device_ids)} devices from Nautobot")
                 else:
                     logger.warning("No devices found in Nautobot")
@@ -553,24 +555,33 @@ def execute_backup(
                 primary_ip = (
                     device.get("primary_ip4", {}).get("address", "").split("/")[0]
                 )
-                
+
                 # Get platform information from Nautobot
                 platform_obj = device.get("platform", {})
-                network_driver = platform_obj.get("network_driver") if platform_obj else None
-                platform_name = platform_obj.get("name", "unknown") if platform_obj else "unknown"
-                
+                network_driver = (
+                    platform_obj.get("network_driver") if platform_obj else None
+                )
+                platform_name = (
+                    platform_obj.get("name", "unknown") if platform_obj else "unknown"
+                )
+
                 # Determine device type for Netmiko
                 if network_driver:
                     # Use authoritative network_driver from Nautobot (already correct Netmiko format)
                     device_type = network_driver
                     platform = network_driver
-                    logger.info(f"[{idx}] Using network_driver from Nautobot: {network_driver}")
+                    logger.info(
+                        f"[{idx}] Using network_driver from Nautobot: {network_driver}"
+                    )
                 else:
                     # Fallback: map platform name to Netmiko device type (best guess)
                     platform = platform_name
                     from utils.netmiko_platform_mapper import map_platform_to_netmiko
+
                     device_type = map_platform_to_netmiko(platform)
-                    logger.info(f"[{idx}] No network_driver, mapped platform '{platform}' to: {device_type}")
+                    logger.info(
+                        f"[{idx}] No network_driver, mapped platform '{platform}' to: {device_type}"
+                    )
 
                 device_backup_info["device_name"] = device_name
                 device_backup_info["device_ip"] = primary_ip

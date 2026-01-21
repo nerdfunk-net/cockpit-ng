@@ -951,14 +951,16 @@ async def execute_template_and_sync_to_nautobot(
         from tasks.update_devices_task import update_devices_task
         import job_run_manager
 
-        logger.info(f"Execute-and-sync request for template {request.template_id} on {len(request.device_ids)} device(s)")
+        logger.info(
+            f"Execute-and-sync request for template {request.template_id} on {len(request.device_ids)} device(s)"
+        )
 
         # Get template
         template = template_manager.get_template(request.template_id)
         if not template:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Template with ID {request.template_id} not found"
+                detail=f"Template with ID {request.template_id} not found",
             )
 
         rendered_outputs = {}
@@ -971,7 +973,7 @@ async def execute_template_and_sync_to_nautobot(
         if not template_content:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Template content for ID {request.template_id} not found"
+                detail=f"Template content for ID {request.template_id} not found",
             )
 
         # Render template for each device
@@ -984,12 +986,12 @@ async def execute_template_and_sync_to_nautobot(
 
                 result = await render_service.render_template(
                     template_content=template_content,
-                    category=template['category'],
+                    category=template["category"],
                     device_id=device_id,
                     user_variables=request.user_variables or {},
-                    use_nautobot_context=template.get('use_nautobot_context', True),
-                    pre_run_command=template.get('pre_run_command'),
-                    credential_id=template.get('credential_id'),
+                    use_nautobot_context=template.get("use_nautobot_context", True),
+                    pre_run_command=template.get("pre_run_command"),
+                    credential_id=template.get("credential_id"),
                 )
 
                 rendered_content = result["rendered_content"]
@@ -1002,48 +1004,60 @@ async def execute_template_and_sync_to_nautobot(
 
                 # Parse the rendered output based on format
                 try:
-                    if request.output_format == 'json':
+                    if request.output_format == "json":
                         # Parse JSON output
                         parsed_data = json.loads(rendered_content)
                         if isinstance(parsed_data, dict):
                             # Add device_id if not present
-                            if 'id' not in parsed_data and 'name' not in parsed_data:
-                                parsed_data['id'] = device_id
-                            logger.info(f"Parsed JSON for device {device_id}: interfaces={parsed_data.get('interfaces', 'NOT_FOUND')}")
-                            if 'interfaces' in parsed_data:
-                                logger.info(f"  - Found {len(parsed_data['interfaces'])} interface(s) in parsed JSON")
+                            if "id" not in parsed_data and "name" not in parsed_data:
+                                parsed_data["id"] = device_id
+                            logger.info(
+                                f"Parsed JSON for device {device_id}: interfaces={parsed_data.get('interfaces', 'NOT_FOUND')}"
+                            )
+                            if "interfaces" in parsed_data:
+                                logger.info(
+                                    f"  - Found {len(parsed_data['interfaces'])} interface(s) in parsed JSON"
+                                )
                             parsed_updates.append(parsed_data)
                         else:
-                            errors.append(f"Device {device_id}: JSON output must be an object, got {type(parsed_data)}")
+                            errors.append(
+                                f"Device {device_id}: JSON output must be an object, got {type(parsed_data)}"
+                            )
 
-                    elif request.output_format == 'yaml':
+                    elif request.output_format == "yaml":
                         # Parse YAML output
                         parsed_data = yaml.safe_load(rendered_content)
                         if isinstance(parsed_data, dict):
                             # Add device_id if not present
-                            if 'id' not in parsed_data and 'name' not in parsed_data:
-                                parsed_data['id'] = device_id
+                            if "id" not in parsed_data and "name" not in parsed_data:
+                                parsed_data["id"] = device_id
                             parsed_updates.append(parsed_data)
                         else:
-                            errors.append(f"Device {device_id}: YAML output must be an object, got {type(parsed_data)}")
+                            errors.append(
+                                f"Device {device_id}: YAML output must be an object, got {type(parsed_data)}"
+                            )
 
-                    elif request.output_format == 'text':
+                    elif request.output_format == "text":
                         # Parse key-value pairs from text (simple format)
                         # Format: key=value (one per line)
-                        parsed_data = {'id': device_id}
-                        for line in rendered_content.strip().split('\n'):
+                        parsed_data = {"id": device_id}
+                        for line in rendered_content.strip().split("\n"):
                             line = line.strip()
-                            if '=' in line and not line.startswith('#'):
-                                key, value = line.split('=', 1)
+                            if "=" in line and not line.startswith("#"):
+                                key, value = line.split("=", 1)
                                 parsed_data[key.strip()] = value.strip()
 
                         if len(parsed_data) > 1:  # More than just the id
                             parsed_updates.append(parsed_data)
                         else:
-                            warnings.append(f"Device {device_id}: No key-value pairs found in text output")
+                            warnings.append(
+                                f"Device {device_id}: No key-value pairs found in text output"
+                            )
 
                     else:
-                        errors.append(f"Device {device_id}: Unsupported output format '{request.output_format}'")
+                        errors.append(
+                            f"Device {device_id}: Unsupported output format '{request.output_format}'"
+                        )
 
                 except json.JSONDecodeError as e:
                     errors.append(f"Device {device_id}: Failed to parse JSON: {str(e)}")
@@ -1053,7 +1067,9 @@ async def execute_template_and_sync_to_nautobot(
                     errors.append(f"Device {device_id}: Parse error: {str(e)}")
 
             except Exception as e:
-                errors.append(f"Device {device_id}: Template rendering failed: {str(e)}")
+                errors.append(
+                    f"Device {device_id}: Template rendering failed: {str(e)}"
+                )
                 logger.error(f"Error rendering template for device {device_id}: {e}")
 
         # If dry_run or errors occurred, return without triggering update task
@@ -1064,7 +1080,7 @@ async def execute_template_and_sync_to_nautobot(
                 rendered_outputs=rendered_outputs,
                 parsed_updates=parsed_updates,
                 errors=errors,
-                warnings=warnings
+                warnings=warnings,
             )
 
         if len(errors) > 0:
@@ -1074,7 +1090,7 @@ async def execute_template_and_sync_to_nautobot(
                 rendered_outputs=rendered_outputs,
                 parsed_updates=parsed_updates,
                 errors=errors,
-                warnings=warnings
+                warnings=warnings,
             )
 
         if len(parsed_updates) == 0:
@@ -1083,11 +1099,13 @@ async def execute_template_and_sync_to_nautobot(
                 message="No device updates to process",
                 rendered_outputs=rendered_outputs,
                 errors=["No valid device updates parsed from template output"],
-                warnings=warnings
+                warnings=warnings,
             )
 
         # Trigger the update-devices Celery task
-        logger.info(f"Triggering update-devices task for {len(parsed_updates)} device(s)")
+        logger.info(
+            f"Triggering update-devices task for {len(parsed_updates)} device(s)"
+        )
         task = update_devices_task.delay(
             devices=parsed_updates,
             dry_run=False,
@@ -1113,7 +1131,7 @@ async def execute_template_and_sync_to_nautobot(
             rendered_outputs=rendered_outputs,
             parsed_updates=parsed_updates,
             errors=errors,
-            warnings=warnings
+            warnings=warnings,
         )
 
     except HTTPException:
@@ -1122,5 +1140,5 @@ async def execute_template_and_sync_to_nautobot(
         logger.error(f"Error in execute-and-sync: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to execute template and sync: {str(e)}"
+            detail=f"Failed to execute template and sync: {str(e)}",
         )

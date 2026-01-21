@@ -10,8 +10,7 @@ Tests cover:
 """
 
 import pytest
-import asyncio
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
+from unittest.mock import AsyncMock, Mock, patch
 from pathlib import Path
 import yaml
 import tempfile
@@ -26,21 +25,19 @@ from tests.fixtures.snmp_fixtures import (
     SNMP_MAPPING_V3_AUTH_PRIVACY,
     SNMP_MAPPING_V3_AUTH_NO_PRIVACY,
     SNMP_MAPPING_V2_COMMUNITY,
-    NORMALIZED_SNMP_V3_AUTH_PRIVACY,
-    NORMALIZED_SNMP_V3_AUTH_NO_PRIVACY,
-    NORMALIZED_SNMP_V2_COMMUNITY,
     NAUTOBOT_DEVICE_WITH_SNMP_V3,
     NAUTOBOT_DEVICE_WITH_SNMP_V2,
     NAUTOBOT_DEVICE_WITHOUT_SNMP,
     CHECKMK_HOST_WITH_SNMP_V3_RESPONSE,
     CHECKMK_HOST_WITH_SNMP_V2_RESPONSE,
-    create_snmp_mapping_config,
     create_device_with_snmp,
 )
 
 # Suppress InsecureRequestWarning for self-signed certificates in test environment
 # This is expected when testing against CheckMK instances with self-signed certificates
-pytestmark = pytest.mark.filterwarnings("ignore::urllib3.exceptions.InsecureRequestWarning")
+pytestmark = pytest.mark.filterwarnings(
+    "ignore::urllib3.exceptions.InsecureRequestWarning"
+)
 
 
 # ==============================================================================
@@ -70,8 +67,6 @@ def mock_config_service(temp_snmp_mapping_file):
     config_service._config_dir = temp_snmp_mapping_file.parent
 
     # Mock the load_snmp_mapping to use our test data
-    original_load = config_service.load_snmp_mapping
-
     def load_snmp_mapping_mock(force_reload=False):
         if config_service._snmp_mapping is None or force_reload:
             config_service._snmp_mapping = SNMP_MAPPING_CONFIG.copy()
@@ -200,7 +195,9 @@ def checkmk_test_devices(real_checkmk_client):
             # Check if device already exists
             try:
                 real_checkmk_client.get_host(device["host_name"])
-                print(f"  ℹ️  Device {device['host_name']} already exists, skipping creation")
+                print(
+                    f"  ℹ️  Device {device['host_name']} already exists, skipping creation"
+                )
                 created_devices.append(device["host_name"])
             except CheckMKAPIError as e:
                 if "404" in str(e):
@@ -391,7 +388,6 @@ class TestDeviceComparisonLiveUpdate:
         This test uses test-device-02 created by the checkmk_test_devices fixture.
         It verifies that the normalization service correctly processes SNMPv3 devices.
         """
-        from services.checkmk.config import config_service
 
         # Use the test device created by checkmk_test_devices fixture
         test_hostname = "test-device-02"
@@ -409,13 +405,17 @@ class TestDeviceComparisonLiveUpdate:
             assert "snmp_community" in attributes, "Missing snmp_community attribute"
             snmp_config = attributes["snmp_community"]
 
-            assert snmp_config["type"] == "v3_auth_privacy", f"Expected v3_auth_privacy, got {snmp_config['type']}"
+            assert snmp_config["type"] == "v3_auth_privacy", (
+                f"Expected v3_auth_privacy, got {snmp_config['type']}"
+            )
             assert "security_name" in snmp_config, "Missing security_name"
             assert "auth_protocol" in snmp_config, "Missing auth_protocol"
             assert "privacy_protocol" in snmp_config, "Missing privacy_protocol"
 
             # Verify CheckMK's SNMP tag (uses snmp-v2 for both v2 and v3)
-            assert attributes["tag_snmp_ds"] == "snmp-v2", "Expected tag_snmp_ds to be snmp-v2"
+            assert attributes["tag_snmp_ds"] == "snmp-v2", (
+                "Expected tag_snmp_ds to be snmp-v2"
+            )
 
             print(f"✅ Successfully verified SNMPv3 device {test_hostname} in CheckMK")
             print(f"   SNMP type: {snmp_config['type']}")
@@ -449,11 +449,15 @@ class TestDeviceComparisonLiveUpdate:
             assert "snmp_community" in attributes, "Missing snmp_community attribute"
             snmp_config = attributes["snmp_community"]
 
-            assert snmp_config["type"] == "v1_v2_community", f"Expected v1_v2_community, got {snmp_config['type']}"
+            assert snmp_config["type"] == "v1_v2_community", (
+                f"Expected v1_v2_community, got {snmp_config['type']}"
+            )
             assert "community" in snmp_config, "Missing community string"
 
             # Verify CheckMK's SNMP tag
-            assert attributes["tag_snmp_ds"] == "snmp-v2", "Expected tag_snmp_ds to be snmp-v2"
+            assert attributes["tag_snmp_ds"] == "snmp-v2", (
+                "Expected tag_snmp_ds to be snmp-v2"
+            )
 
             print(f"✅ Successfully verified SNMPv2 device {test_hostname} in CheckMK")
             print(f"   SNMP type: {snmp_config['type']}")
@@ -482,13 +486,21 @@ class TestDeviceComparisonLiveUpdate:
             attributes = host_data["extensions"]["attributes"]
 
             # Verify no SNMP attributes
-            assert "snmp_community" not in attributes, "Device should not have snmp_community"
+            assert "snmp_community" not in attributes, (
+                "Device should not have snmp_community"
+            )
 
             # Verify SNMP tag is set to no-snmp
-            assert attributes["tag_snmp_ds"] == "no-snmp", "Expected tag_snmp_ds to be no-snmp"
-            assert attributes["tag_agent"] == "cmk-agent", "Expected tag_agent to be cmk-agent"
+            assert attributes["tag_snmp_ds"] == "no-snmp", (
+                "Expected tag_snmp_ds to be no-snmp"
+            )
+            assert attributes["tag_agent"] == "cmk-agent", (
+                "Expected tag_agent to be cmk-agent"
+            )
 
-            print(f"✅ Successfully verified non-SNMP device {test_hostname} in CheckMK")
+            print(
+                f"✅ Successfully verified non-SNMP device {test_hostname} in CheckMK"
+            )
             print(f"   Tag SNMP DS: {attributes['tag_snmp_ds']}")
             print(f"   Tag Agent: {attributes['tag_agent']}")
 
@@ -580,9 +592,7 @@ def mock_checkmk_service():
 # ==============================================================================
 
 
-@pytest.mark.skip(
-    reason="Waiting for actual CheckMK response data from debug logs"
-)
+@pytest.mark.skip(reason="Waiting for actual CheckMK response data from debug logs")
 @pytest.mark.integration
 class TestWithRealCheckMKResponseFormat:
     """

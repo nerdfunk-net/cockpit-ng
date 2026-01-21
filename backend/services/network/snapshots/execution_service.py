@@ -4,7 +4,6 @@ Service for executing snapshots on devices.
 
 import logging
 import json
-import os
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from pathlib import Path
@@ -29,7 +28,11 @@ class SnapshotExecutionService:
         self.git_manager = GitRepositoryManager()
 
     def _render_path(
-        self, path_template: str, device: Dict[str, Any], timestamp: str, template_name: Optional[str] = None
+        self,
+        path_template: str,
+        device: Dict[str, Any],
+        timestamp: str,
+        template_name: Optional[str] = None,
     ) -> str:
         """
         Render path template with placeholders.
@@ -44,7 +47,9 @@ class SnapshotExecutionService:
             Rendered path
         """
         # Start with device name and timestamp
-        device_name = device.get("name", "unknown") if isinstance(device, dict) else str(device)
+        device_name = (
+            device.get("name", "unknown") if isinstance(device, dict) else str(device)
+        )
         rendered = path_template.replace("{device_name}", device_name)
         rendered = rendered.replace("{timestamp}", timestamp)
 
@@ -53,7 +58,11 @@ class SnapshotExecutionService:
             rendered = rendered.replace("{template_name}", template_name)
 
         # Handle custom fields
-        if isinstance(device, dict) and "custom_fields" in device and device["custom_fields"]:
+        if (
+            isinstance(device, dict)
+            and "custom_fields" in device
+            and device["custom_fields"]
+        ):
             for key, value in device["custom_fields"].items():
                 placeholder = f"{{custom_field.{key}}}"
                 if placeholder in rendered:
@@ -92,6 +101,7 @@ class SnapshotExecutionService:
 
             # Get the repository path
             from services.settings.git.paths import repo_path
+
             local_repo_path = repo_path(repo_data)
 
             # Create full file path
@@ -101,7 +111,7 @@ class SnapshotExecutionService:
             full_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Write content to file
-            full_path.write_text(content, encoding='utf-8')
+            full_path.write_text(content, encoding="utf-8")
             logger.info(f"Wrote snapshot to {full_path}")
 
             # Commit and push the file
@@ -146,7 +156,9 @@ class SnapshotExecutionService:
 
         # Validate credentials
         if not request.credential_id and (not request.username or not request.password):
-            raise ValueError("Either credential_id or both username and password must be provided")
+            raise ValueError(
+                "Either credential_id or both username and password must be provided"
+            )
 
         # Get credentials
         if request.credential_id is not None:
@@ -159,9 +171,7 @@ class SnapshotExecutionService:
                 private_creds = cred_mgr.list_credentials(
                     include_expired=False, source="private"
                 )
-                user_private = [
-                    c for c in private_creds if c.get("owner") == username
-                ]
+                user_private = [c for c in private_creds if c.get("owner") == username]
                 credentials = general_creds + user_private
 
                 credential = next(
@@ -215,14 +225,22 @@ class SnapshotExecutionService:
         # Create result records for each device
         device_results = []
         for device in request.devices:
-            device_name = device.get("name", "unknown") if isinstance(device, dict) else str(device)
+            device_name = (
+                device.get("name", "unknown")
+                if isinstance(device, dict)
+                else str(device)
+            )
 
             # Extract IP safely
-            primary_ip4 = device.get("primary_ip4") if isinstance(device, dict) else None
+            primary_ip4 = (
+                device.get("primary_ip4") if isinstance(device, dict) else None
+            )
             if isinstance(primary_ip4, dict):
                 device_ip = primary_ip4.get("address", "").split("/")[0]
             elif isinstance(primary_ip4, str):
-                device_ip = primary_ip4.split("/")[0] if "/" in primary_ip4 else primary_ip4
+                device_ip = (
+                    primary_ip4.split("/")[0] if "/" in primary_ip4 else primary_ip4
+                )
             else:
                 device_ip = ""
 
@@ -231,12 +249,14 @@ class SnapshotExecutionService:
                 device_name=device_name,
                 device_ip=device_ip,
             )
-            device_results.append({
-                "result_id": result.id,
-                "device": device,
-                "device_name": device_name,
-                "device_ip": device_ip,
-            })
+            device_results.append(
+                {
+                    "result_id": result.id,
+                    "device": device,
+                    "device_name": device_name,
+                    "device_ip": device_ip,
+                }
+            )
 
         # Update snapshot to running
         self.snapshot_repo.update_snapshot_status(
@@ -268,11 +288,13 @@ class SnapshotExecutionService:
             else:
                 platform = "cisco_ios"
 
-            netmiko_devices.append({
-                "ip": dev_result["device_ip"],
-                "platform": platform,
-                "name": dev_result["device_name"],
-            })
+            netmiko_devices.append(
+                {
+                    "ip": dev_result["device_ip"],
+                    "platform": platform,
+                    "name": dev_result["device_name"],
+                }
+            )
 
         # Execute commands on all devices using netmiko service
         logger.info(
@@ -430,7 +452,9 @@ class SnapshotExecutionService:
         # Get all results with file paths
         results = snapshot.results
         if not results:
-            logger.warning(f"Snapshot {snapshot_id} has no results, deleting from DB only")
+            logger.warning(
+                f"Snapshot {snapshot_id} has no results, deleting from DB only"
+            )
             return self.snapshot_repo.delete_snapshot(snapshot_id)
 
         # Get git repository
@@ -465,21 +489,25 @@ class SnapshotExecutionService:
                     if full_path.exists():
                         full_path.unlink()
                         logger.info(f"Deleted file: {file_path}")
-                    
+
                     # Stage the deletion in git
                     try:
                         repo.index.remove([str(file_path)])
                     except Exception as e:
-                        logger.warning(f"Could not remove {file_path} from git index: {e}")
+                        logger.warning(
+                            f"Could not remove {file_path} from git index: {e}"
+                        )
 
                 # Commit and push (use add_all to catch any remaining changes)
-                commit_message = f"Delete snapshot: {snapshot.name} ({len(files_to_delete)} files)"
+                commit_message = (
+                    f"Delete snapshot: {snapshot.name} ({len(files_to_delete)} files)"
+                )
                 git_service.commit_and_push(
                     repository=repo_data,
                     message=commit_message,
                     files=None,  # Don't pass files since they're deleted
                     repo=repo,
-                    add_all=True  # Use add_all to stage deletions
+                    add_all=True,  # Use add_all to stage deletions
                 )
                 logger.info(f"Committed deletion of {len(files_to_delete)} files")
             except Exception as e:

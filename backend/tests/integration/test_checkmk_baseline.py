@@ -14,8 +14,6 @@ Run with:
 """
 
 import pytest
-import asyncio
-from typing import List, Dict, Any
 
 from services.checkmk.sync.base import NautobotToCheckMKService
 from services.checkmk.config import ConfigService
@@ -75,7 +73,8 @@ class TestCheckMKWithBaseline:
 
         # Filter for devices with credA
         devices = [
-            d for d in all_devices
+            d
+            for d in all_devices
             if d.get("_custom_field_data", {}).get("snmp_credentials") == "credA"
         ]
 
@@ -143,16 +142,20 @@ class TestCheckMKWithBaseline:
         try:
             normalized_config = await nb2cmk_service.get_device_normalized(device_id)
 
-            print(f"\nNormalized config for lab-001:")
+            print("\nNormalized config for lab-001:")
             print(f"Folder: {normalized_config.get('folder')}")
-            print(f"Attributes keys: {list(normalized_config.get('attributes', {}).keys())}")
+            print(
+                f"Attributes keys: {list(normalized_config.get('attributes', {}).keys())}"
+            )
 
             assert "folder" in normalized_config
             assert "attributes" in normalized_config
 
             # Check for SNMP configuration if credB is mapped
             if devices[0].get("_custom_field_data", {}).get("snmp_credentials"):
-                print(f"SNMP credentials: {devices[0]['_custom_field_data']['snmp_credentials']}")
+                print(
+                    f"SNMP credentials: {devices[0]['_custom_field_data']['snmp_credentials']}"
+                )
 
         except Exception as e:
             print(f"Normalization error: {e}")
@@ -182,7 +185,9 @@ class TestCheckMKWithBaseline:
             comparison_result = await nb2cmk_service.compare_device_config(device_id)
 
             print(f"Comparison result: {comparison_result.result}")
-            print(f"Differences: {comparison_result.diff if comparison_result.diff else 'None'}")
+            print(
+                f"Differences: {comparison_result.diff if comparison_result.diff else 'None'}"
+            )
 
             assert comparison_result is not None
             assert hasattr(comparison_result, "result")
@@ -248,17 +253,27 @@ class TestSNMPMappingWithBaseline:
         snmp_mapping = config_service.load_snmp_mapping()
 
         # Baseline uses: credA, credB, credC
-        baseline_creds = ["credA", "credB", "credC", "snmp-id-1", "snmp-id-2", "snmp-id-3"]
+        baseline_creds = [
+            "credA",
+            "credB",
+            "credC",
+            "snmp-id-1",
+            "snmp-id-2",
+            "snmp-id-3",
+        ]
 
         print(f"\nSNMP mapping keys: {list(snmp_mapping.keys())}")
         print(f"Baseline credential IDs: {baseline_creds}")
 
         # Check which baseline creds are mapped
-        mapped_baseline = [cred for cred in baseline_creds if cred in snmp_mapping]
-        unmapped_baseline = [cred for cred in baseline_creds if cred not in snmp_mapping]
+        unmapped_baseline = [
+            cred for cred in baseline_creds if cred not in snmp_mapping
+        ]
 
         if unmapped_baseline:
-            print(f"\nWARNING: Baseline credentials not in SNMP mapping: {unmapped_baseline}")
+            print(
+                f"\nWARNING: Baseline credentials not in SNMP mapping: {unmapped_baseline}"
+            )
             print("You may need to add these to config/snmp_mapping.yaml")
 
         # At least the snmp-id-* should be mapped

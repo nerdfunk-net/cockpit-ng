@@ -249,7 +249,7 @@ class ComplianceCheckService:
             priv_password = priv_password if priv_password else None
             auth_protocol = auth_protocol if auth_protocol else None
             priv_protocol = priv_protocol if priv_protocol else None
-            
+
             # Determine authentication and privacy levels
             # If no auth password, force noAuth regardless of protocol setting
             auth_proto = (

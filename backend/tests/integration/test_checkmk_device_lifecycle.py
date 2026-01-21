@@ -14,8 +14,6 @@ Run with:
 """
 
 import pytest
-import asyncio
-from typing import List, Dict, Any
 from urllib.parse import urlparse
 
 from services.checkmk.sync.base import NautobotToCheckMKService
@@ -26,7 +24,9 @@ from settings_manager import settings_manager
 
 # Suppress InsecureRequestWarning for self-signed certificates in test environment
 # This is expected when testing against CheckMK instances with self-signed certificates
-pytestmark = pytest.mark.filterwarnings("ignore::urllib3.exceptions.InsecureRequestWarning")
+pytestmark = pytest.mark.filterwarnings(
+    "ignore::urllib3.exceptions.InsecureRequestWarning"
+)
 
 
 # =============================================================================
@@ -207,7 +207,7 @@ class TestCheckMKDeviceLifecycle:
                         raise
 
                 # Create the device
-                result = checkmk_client.create_host(
+                checkmk_client.create_host(
                     hostname=device_config["host_name"],
                     folder=device_config["folder"],
                     attributes=device_config["attributes"],
@@ -243,20 +243,20 @@ class TestCheckMKDeviceLifecycle:
                 host_data = checkmk_client.get_host(hostname)
 
                 assert host_data["id"] == hostname
-                assert (
-                    host_data["extensions"]["folder"] == device_config["folder"]
-                ), f"Folder mismatch for {hostname}"
+                assert host_data["extensions"]["folder"] == device_config["folder"], (
+                    f"Folder mismatch for {hostname}"
+                )
 
                 # Verify key attributes
                 attributes = host_data["extensions"]["attributes"]
                 expected_attrs = device_config["attributes"]
 
-                assert (
-                    attributes["ipaddress"] == expected_attrs["ipaddress"]
-                ), f"IP mismatch for {hostname}"
-                assert (
-                    attributes["site"] == expected_attrs["site"]
-                ), f"Site mismatch for {hostname}"
+                assert attributes["ipaddress"] == expected_attrs["ipaddress"], (
+                    f"IP mismatch for {hostname}"
+                )
+                assert attributes["site"] == expected_attrs["site"], (
+                    f"Site mismatch for {hostname}"
+                )
 
                 print(f"  ✅ Verified {hostname}")
 
@@ -341,7 +341,7 @@ class TestCheckMKDeviceLifecycle:
 
         # Verify device exists in CheckMK first
         try:
-            host_data = checkmk_client.get_host(test_hostname)
+            checkmk_client.get_host(test_hostname)
             print(f"  Test device {test_hostname} confirmed in CheckMK")
         except CheckMKAPIError as e:
             if e.status_code == 404:
@@ -351,9 +351,7 @@ class TestCheckMKDeviceLifecycle:
         # Now test comparison using the service
         # Note: This requires the test device to exist in Nautobot too
         # For now, we'll test with baseline devices
-        print(
-            f"  ℹ️ Skipping comparison test - test devices not in Nautobot baseline"
-        )
+        print("  ℹ️ Skipping comparison test - test devices not in Nautobot baseline")
         print(
             "  (To test this, add test devices to Nautobot or modify test to use existing Nautobot devices)"
         )
@@ -392,7 +390,7 @@ class TestCheckMKDeviceLifecycle:
         new_attributes = {"alias": "Test Device 03 - UPDATED"}
 
         try:
-            result = checkmk_client.update_host(test_hostname, new_attributes)
+            checkmk_client.update_host(test_hostname, new_attributes)
             print(f"  ✅ Updated {test_hostname}")
 
             # Verify the update
@@ -400,9 +398,9 @@ class TestCheckMKDeviceLifecycle:
             assert (
                 host_data["extensions"]["attributes"]["alias"]
                 == "Test Device 03 - UPDATED"
-            ), f"Alias not updated correctly"
+            ), "Alias not updated correctly"
 
-            print(f"  ✅ Verified alias updated to 'Test Device 03 - UPDATED'")
+            print("  ✅ Verified alias updated to 'Test Device 03 - UPDATED'")
 
             # Activate changes
             checkmk_client.activate_changes()
@@ -428,9 +426,9 @@ class TestCheckMKDeviceLifecycle:
             # Verify our test devices are in the list
             hostnames = [h["id"] for h in hosts]
             for device_config in TEST_DEVICES:
-                assert (
-                    device_config["host_name"] in hostnames
-                ), f"Test device {device_config['host_name']} not found in host list"
+                assert device_config["host_name"] in hostnames, (
+                    f"Test device {device_config['host_name']} not found in host list"
+                )
 
             print(f"  ✅ All {len(TEST_DEVICES)} test devices found in host list")
 
@@ -455,9 +453,7 @@ class TestCheckMKDeviceLifecycle:
             assert "attributes" in host_data["extensions"]
 
             print(f"  Folder: {host_data['extensions']['folder']}")
-            print(
-                f"  Attributes: {list(host_data['extensions']['attributes'].keys())}"
-            )
+            print(f"  Attributes: {list(host_data['extensions']['attributes'].keys())}")
 
         except CheckMKAPIError as e:
             if e.status_code == 404:
@@ -486,9 +482,9 @@ class TestCheckMKDeviceLifecycle:
         reloaded_keys = set(reloaded_mapping.keys())
 
         # They should match (no changes were made to the file)
-        assert (
-            initial_keys == reloaded_keys
-        ), "SNMP mapping keys changed after reload (unexpected)"
+        assert initial_keys == reloaded_keys, (
+            "SNMP mapping keys changed after reload (unexpected)"
+        )
         print("  ✅ Config reload successful - keys match")
 
     # =========================================================================
@@ -510,20 +506,18 @@ class TestCheckMKDeviceLifecycle:
             assert "snmp_community" in attributes, "Missing snmp_community attribute"
             snmp_config = attributes["snmp_community"]
 
-            assert (
-                snmp_config["type"] == "v1_v2_community"
-            ), "Incorrect SNMP community type"
-            assert (
-                snmp_config["community"] == "test_community"
-            ), "Incorrect SNMP community string"
+            assert snmp_config["type"] == "v1_v2_community", (
+                "Incorrect SNMP community type"
+            )
+            assert snmp_config["community"] == "test_community", (
+                "Incorrect SNMP community string"
+            )
 
             # Verify tags
-            assert (
-                attributes["tag_snmp_ds"] == "snmp-v2"
-            ), "Incorrect SNMP version tag"
-            assert (
-                attributes["tag_agent"] == "no-agent"
-            ), "Incorrect agent tag for SNMP-only device"
+            assert attributes["tag_snmp_ds"] == "snmp-v2", "Incorrect SNMP version tag"
+            assert attributes["tag_agent"] == "no-agent", (
+                "Incorrect agent tag for SNMP-only device"
+            )
 
             print(f"  ✅ SNMPv2 attributes correct for {test_hostname}")
 
@@ -547,27 +541,25 @@ class TestCheckMKDeviceLifecycle:
             assert "snmp_community" in attributes, "Missing snmp_community attribute"
             snmp_config = attributes["snmp_community"]
 
-            assert (
-                snmp_config["type"] == "v3_auth_privacy"
-            ), "Incorrect SNMPv3 type"
-            assert (
-                "auth_protocol" in snmp_config
-            ), "Missing auth_protocol in SNMPv3 config"
-            assert (
-                "privacy_protocol" in snmp_config
-            ), "Missing privacy_protocol in SNMPv3 config"
-            assert (
-                "security_name" in snmp_config
-            ), "Missing security_name in SNMPv3 config"
+            assert snmp_config["type"] == "v3_auth_privacy", "Incorrect SNMPv3 type"
+            assert "auth_protocol" in snmp_config, (
+                "Missing auth_protocol in SNMPv3 config"
+            )
+            assert "privacy_protocol" in snmp_config, (
+                "Missing privacy_protocol in SNMPv3 config"
+            )
+            assert "security_name" in snmp_config, (
+                "Missing security_name in SNMPv3 config"
+            )
 
             # Verify tags
             # Note: CheckMK uses "snmp-v2" tag for both v2 and v3, differentiated by snmp_community type
-            assert (
-                attributes["tag_snmp_ds"] == "snmp-v2"
-            ), "Incorrect SNMP version tag (CheckMK uses snmp-v2 for both v2 and v3)"
-            assert (
-                attributes["tag_agent"] == "no-agent"
-            ), "Incorrect agent tag for SNMP-only device"
+            assert attributes["tag_snmp_ds"] == "snmp-v2", (
+                "Incorrect SNMP version tag (CheckMK uses snmp-v2 for both v2 and v3)"
+            )
+            assert attributes["tag_agent"] == "no-agent", (
+                "Incorrect agent tag for SNMP-only device"
+            )
 
             print(f"  ✅ SNMPv3 attributes correct for {test_hostname}")
             print(

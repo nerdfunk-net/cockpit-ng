@@ -369,13 +369,15 @@ class TestInterfaceCreation:
         ]
 
         # Configure mock to return 2 interfaces created
-        mock_interface_manager.update_device_interfaces.return_value = InterfaceUpdateResult(
-            interfaces_created=2,
-            interfaces_updated=0,
-            interfaces_failed=0,
-            ip_addresses_created=0,
-            primary_ip4_id=None,
-            warnings=[],
+        mock_interface_manager.update_device_interfaces.return_value = (
+            InterfaceUpdateResult(
+                interfaces_created=2,
+                interfaces_updated=0,
+                interfaces_failed=0,
+                ip_addresses_created=0,
+                primary_ip4_id=None,
+                warnings=[],
+            )
         )
 
         created_interfaces, primary_ip = await import_service._create_device_interfaces(
@@ -409,13 +411,15 @@ class TestInterfaceCreation:
         ]
 
         # Mock InterfaceManagerService returning a failure with warning
-        mock_interface_manager.update_device_interfaces.return_value = InterfaceUpdateResult(
-            interfaces_created=0,
-            interfaces_updated=0,
-            interfaces_failed=1,
-            ip_addresses_created=0,
-            primary_ip4_id=None,
-            warnings=["Interface creation Failed: Missing interface name"],
+        mock_interface_manager.update_device_interfaces.return_value = (
+            InterfaceUpdateResult(
+                interfaces_created=0,
+                interfaces_updated=0,
+                interfaces_failed=1,
+                ip_addresses_created=0,
+                primary_ip4_id=None,
+                warnings=["Interface creation Failed: Missing interface name"],
+            )
         )
 
         created_interfaces, primary_ip = await import_service._create_device_interfaces(
@@ -445,13 +449,15 @@ class TestInterfaceCreation:
         ]
 
         # Mock InterfaceManagerService: interface created but IP assignment failed
-        mock_interface_manager.update_device_interfaces.return_value = InterfaceUpdateResult(
-            interfaces_created=1,
-            interfaces_updated=0,
-            interfaces_failed=0,
-            ip_addresses_created=0,  # IP creation failed
-            primary_ip4_id=None,
-            warnings=["IP assignment failed for Loopback0"],
+        mock_interface_manager.update_device_interfaces.return_value = (
+            InterfaceUpdateResult(
+                interfaces_created=1,
+                interfaces_updated=0,
+                interfaces_failed=0,
+                ip_addresses_created=0,  # IP creation failed
+                primary_ip4_id=None,
+                warnings=["IP assignment failed for Loopback0"],
+            )
         )
 
         created_interfaces, primary_ip = await import_service._create_device_interfaces(
@@ -490,13 +496,15 @@ class TestInterfaceCreation:
         ]
 
         # Mock InterfaceManagerService returning the primary IP from marked interface
-        mock_interface_manager.update_device_interfaces.return_value = InterfaceUpdateResult(
-            interfaces_created=2,
-            interfaces_updated=0,
-            interfaces_failed=0,
-            ip_addresses_created=2,
-            primary_ip4_id="ip-uuid-2",  # The marked primary IP
-            warnings=[],
+        mock_interface_manager.update_device_interfaces.return_value = (
+            InterfaceUpdateResult(
+                interfaces_created=2,
+                interfaces_updated=0,
+                interfaces_failed=0,
+                ip_addresses_created=2,
+                primary_ip4_id="ip-uuid-2",  # The marked primary IP
+                warnings=[],
+            )
         )
 
         created_interfaces, primary_ip = await import_service._create_device_interfaces(

@@ -61,7 +61,6 @@ def update_devices_from_csv_task(
         logger.info("UPDATE DEVICES FROM CSV TASK STARTED")
         logger.info("=" * 80)
         logger.info(f"Dry run: {dry_run}")
-        logger.info(f"Tags mode: {tags_mode}")
         logger.info(f"CSV Options: {csv_options}")
 
         self.update_state(
@@ -407,7 +406,7 @@ def _prepare_row_data(
         if field.startswith("cf_"):
             # Extract custom field name by removing "cf_" prefix
             custom_field_name = field[3:]  # Remove first 3 characters ("cf_")
-            
+
             # Handle special values for custom fields
             if value.upper() == "NULL" or value.upper() == "NOOBJECT":
                 custom_fields[custom_field_name] = None
@@ -415,7 +414,7 @@ def _prepare_row_data(
                 custom_fields[custom_field_name] = value.lower() == "true"
             else:
                 custom_fields[custom_field_name] = value
-            
+
             continue
 
         # Handle tags field - convert comma-separated string to list

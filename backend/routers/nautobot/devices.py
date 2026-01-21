@@ -405,10 +405,10 @@ async def update_device(
 
         # Convert request to dict and filter out None values and empty interfaces
         update_data = request.model_dump(exclude_none=True, exclude_unset=True)
-        
+
         # Extract interfaces separately
         interfaces = update_data.pop("interfaces", None)
-        
+
         # Extract prefix configuration
         add_prefix = update_data.pop("add_prefix", True)
         default_prefix_length = update_data.pop("default_prefix_length", "/24")

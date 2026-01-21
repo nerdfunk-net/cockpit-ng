@@ -418,7 +418,7 @@ class RBACRepository(BaseRepository):
         self, user_id: int
     ) -> List[tuple[Permission, bool]]:
         """Get all permission overrides for a user with their granted status.
-        
+
         Returns:
             List of tuples (Permission, granted) for all user permission overrides
         """

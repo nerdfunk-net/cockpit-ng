@@ -5,7 +5,7 @@ These tests use the modern tree-based structure (version 2) for logical expressi
 
 Test Data Summary (from tests/baseline.yaml):
 - 120 total devices (100 network + 20 servers)
-- Locations: 
+- Locations:
   - City A (21), City B (20), City C (16)
   - Another City A (18), Another City B (20), Another City C (25)
   - State A contains: City A (21) + Another City A (18) = 39 devices
@@ -70,9 +70,9 @@ class TestBaselineBasicFiltering:
         )
 
         # Should find devices in City A
-        assert (
-            len(devices) == 21
-        ), f"Expected 21 devices in City A, found {len(devices)}"
+        assert len(devices) == 21, (
+            f"Expected 21 devices in City A, found {len(devices)}"
+        )
 
         # All devices should be in City A
         for device in devices:
@@ -106,9 +106,9 @@ class TestBaselineBasicFiltering:
             operations
         )
 
-        assert (
-            len(devices) == 100
-        ), f"Expected 100 network devices, found {len(devices)}"
+        assert len(devices) == 100, (
+            f"Expected 100 network devices, found {len(devices)}"
+        )
 
         # All should have Network role
         for device in devices:
@@ -171,9 +171,9 @@ class TestBaselineBasicFiltering:
             operations
         )
 
-        assert (
-            len(devices) == 100
-        ), f"Expected 100 Cisco IOS devices, found {len(devices)}"
+        assert len(devices) == 100, (
+            f"Expected 100 Cisco IOS devices, found {len(devices)}"
+        )
 
         for device in devices:
             assert device.platform == "Cisco IOS"
@@ -204,9 +204,9 @@ class TestBaselineBasicFiltering:
             operations
         )
 
-        assert (
-            len(devices) == 39
-        ), f"Expected 39 Production devices, found {len(devices)}"
+        assert len(devices) == 39, (
+            f"Expected 39 Production devices, found {len(devices)}"
+        )
 
         for device in devices:
             assert "Production" in device.tags
@@ -351,12 +351,12 @@ class TestBaselineBasicFiltering:
             operations
         )
 
-        assert (
-            len(devices) == 39
-        ), f"Expected 39 devices in State A, found {len(devices)}"
+        assert len(devices) == 39, (
+            f"Expected 39 devices in State A, found {len(devices)}"
+        )
 
         for device in devices:
-            assert (device.location == "City A" or device.location == "Another City A")
+            assert device.location == "City A" or device.location == "Another City A"
 
 
 # =============================================================================
@@ -500,9 +500,9 @@ class TestBaselineOrLogic:
         )
 
         # Should find devices in either City A or City B
-        assert (
-            len(devices) == 41
-        ), f"Expected 41 devices (City A + City B), found {len(devices)}"
+        assert len(devices) == 41, (
+            f"Expected 41 devices (City A + City B), found {len(devices)}"
+        )
 
         # All devices should be in City A or City B
         for device in devices:
@@ -554,9 +554,9 @@ class TestBaselineOrLogic:
             operations
         )
 
-        assert (
-            len(devices) == 57
-        ), f"Expected 57 devices (all locations), found {len(devices)}"
+        assert len(devices) == 57, (
+            f"Expected 57 devices (all locations), found {len(devices)}"
+        )
 
     @pytest.mark.asyncio
     async def test_filter_complex_or_logic(self, real_ansible_inventory_service):
@@ -632,9 +632,7 @@ class TestBaselineOrLogic:
             is_production_active = (
                 device.status == "Active" and "Production" in device.tags
             )
-            is_staging_offline = (
-                device.status == "Offline" and "Staging" in device.tags
-            )
+            is_staging_offline = device.status == "Offline" and "Staging" in device.tags
             assert is_production_active or is_staging_offline
 
 
@@ -676,16 +674,18 @@ class TestBaselineOperators:
         )
 
         # Should find all devices NOT in City A
-        assert (
-            len(devices) == 99
-        ), f"Expected 99 devices not in City A, found {len(devices)}"
+        assert len(devices) == 99, (
+            f"Expected 99 devices not in City A, found {len(devices)}"
+        )
 
         # None should be in City A
         for device in devices:
             assert device.location != "City A"
 
     @pytest.mark.asyncio
-    async def test_filter_using_equals_and_not_equals_operator(self, real_ansible_inventory_service):
+    async def test_filter_using_equals_and_not_equals_operator(
+        self, real_ansible_inventory_service
+    ):
         """
         Test equals and not_equals operator using tree structure.
 
@@ -718,14 +718,13 @@ class TestBaselineOperators:
         )
 
         # Should find all devices in State A except Another City A
-        assert (
-            len(devices) == 21
-        ), f"Expected 21 devices not in Another City A, found {len(devices)}"
+        assert len(devices) == 21, (
+            f"Expected 21 devices not in Another City A, found {len(devices)}"
+        )
 
         # None should be in City A
         for device in devices:
             assert device.location == "City A"
-
 
     @pytest.mark.asyncio
     async def test_filter_contains_operator(self, real_ansible_inventory_service):
@@ -750,9 +749,9 @@ class TestBaselineOperators:
         )
 
         # Should find devices with "lab-0" in name (lab-001 to lab-099)
-        assert (
-            len(devices) == 99
-        ), f"Expected 99 devices with 'lab-0' in name, found {len(devices)}"
+        assert len(devices) == 99, (
+            f"Expected 99 devices with 'lab-0' in name, found {len(devices)}"
+        )
 
         # All should contain "lab-0"
         for device in devices:
@@ -785,9 +784,9 @@ class TestBaselineOperators:
             operations
         )
 
-        assert (
-            len(devices) == 100
-        ), f"Expected 100 devices without 'server' in name, found {len(devices)}"
+        assert len(devices) == 100, (
+            f"Expected 100 devices without 'server' in name, found {len(devices)}"
+        )
 
         for device in devices:
             assert "server" not in device.name
@@ -905,9 +904,9 @@ class TestBaselineNotLogic:
         )
 
         # Should find devices in State A that are NOT in City A
-        assert (
-            len(devices) == 18
-        ), f"Expected 18 devices (State A - City A), found {len(devices)}"
+        assert len(devices) == 18, (
+            f"Expected 18 devices (State A - City A), found {len(devices)}"
+        )
 
         # All devices should be in State A but not City A
         for device in devices:
@@ -915,7 +914,9 @@ class TestBaselineNotLogic:
             assert device.location != "City A"
 
     @pytest.mark.asyncio
-    async def test_not_operator_multiple_exclusions(self, real_ansible_inventory_service):
+    async def test_not_operator_multiple_exclusions(
+        self, real_ansible_inventory_service
+    ):
         """
         Test NOT operator with multiple exclusions: State A NOT (City A OR Another City A).
 
@@ -968,9 +969,9 @@ class TestBaselineNotLogic:
         )
 
         # Should return 0 devices since all State A devices are in City A or Another City A
-        assert (
-            len(devices) == 0
-        ), f"Expected 0 devices (State A contains only City A and Another City A), found {len(devices)}"
+        assert len(devices) == 0, (
+            f"Expected 0 devices (State A contains only City A and Another City A), found {len(devices)}"
+        )
 
     @pytest.mark.asyncio
     async def test_not_operator_with_tag(self, real_ansible_inventory_service):
@@ -1024,7 +1025,10 @@ class TestBaselineNotLogic:
 
         # Verify all devices are in State A and don't have Production tag
         for device in devices:
-            assert device.location == "State A" or device.location in ["City A", "Another City A"]
+            assert device.location == "State A" or device.location in [
+                "City A",
+                "Another City A",
+            ]
             assert "Production" not in device.tags
 
     @pytest.mark.asyncio
@@ -1081,7 +1085,9 @@ class TestBaselineNotLogic:
         )
 
         # Should find active devices in State A that are not in City A
-        assert len(devices) >= 0, "Should find active devices in State A excluding City A"
+        assert len(devices) >= 0, (
+            "Should find active devices in State A excluding City A"
+        )
 
         # Verify all devices meet the criteria
         for device in devices:
@@ -1118,14 +1124,20 @@ class TestBaselineNotLogic:
         )
 
         # City A has 21 devices, so we should get 120 - 21 = 99 devices
-        assert len(devices) == 99, f"Expected 99 devices (all except City A), found {len(devices)}"
+        assert len(devices) == 99, (
+            f"Expected 99 devices (all except City A), found {len(devices)}"
+        )
 
         # Verify no device is from City A
         for device in devices:
-            assert device.location != "City A", f"Device {device.name} should not be in City A, found location: {device.location}"
+            assert device.location != "City A", (
+                f"Device {device.name} should not be in City A, found location: {device.location}"
+            )
 
     @pytest.mark.asyncio
-    async def test_complex_nested_not_with_role_and_status(self, real_ansible_inventory_service):
+    async def test_complex_nested_not_with_role_and_status(
+        self, real_ansible_inventory_service
+    ):
         """
         Test complex nested NOT logic with role and status filters.
 
@@ -1218,7 +1230,9 @@ class TestBaselineNotLogic:
             )
 
     @pytest.mark.asyncio
-    async def test_not_equals_operator_with_role_and_status(self, real_ansible_inventory_service):
+    async def test_not_equals_operator_with_role_and_status(
+        self, real_ansible_inventory_service
+    ):
         """
         Test not_equals operator with role and status filters (alternative to nested NOT logic).
 
@@ -1400,6 +1414,6 @@ class TestBaselineEmptyFilters:
         )
 
         # Should return all devices
-        assert (
-            len(devices) == 120
-        ), f"Expected 120 devices with empty filter, found {len(devices)}"
+        assert len(devices) == 120, (
+            f"Expected 120 devices with empty filter, found {len(devices)}"
+        )

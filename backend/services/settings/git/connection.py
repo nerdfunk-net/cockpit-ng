@@ -47,13 +47,13 @@ class GitConnectionService:
             >>> result.success
             True
         """
-        logger.info(f"=== Starting Git Connection Test ===")
+        logger.info("=== Starting Git Connection Test ===")
         logger.info(f"URL: {test_request.url}")
         logger.info(f"Branch: {test_request.branch}")
         logger.info(f"Auth Type: {test_request.auth_type}")
         logger.info(f"Credential Name: {test_request.credential_name}")
         logger.info(f"Verify SSL: {test_request.verify_ssl}")
-        
+
         try:
             # Create temporary directory for test
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -80,12 +80,18 @@ class GitConnectionService:
                 resolved_username, resolved_token, ssh_key_path = (
                     git_auth_service.resolve_credentials(temp_repo)
                 )
-                
+
                 # Log resolved credentials (without exposing secrets)
-                logger.info(f"Credential resolution results:")
-                logger.info(f"  - Username: {resolved_username if resolved_username else 'None'}")
-                logger.info(f"  - Token/Password: {'<present>' if resolved_token else 'None'}")
-                logger.info(f"  - SSH Key Path: {ssh_key_path if ssh_key_path else 'None'}")
+                logger.info("Credential resolution results:")
+                logger.info(
+                    f"  - Username: {resolved_username if resolved_username else 'None'}"
+                )
+                logger.info(
+                    f"  - Token/Password: {'<present>' if resolved_token else 'None'}"
+                )
+                logger.info(
+                    f"  - SSH Key Path: {ssh_key_path if ssh_key_path else 'None'}"
+                )
 
                 # Validate credential resolution
                 validation_result = self._validate_credentials(
@@ -209,9 +215,11 @@ class GitConnectionService:
             clone_url = git_auth_service.build_auth_url(
                 clone_url, resolved_username, resolved_token
             )
-            logger.debug(f"Authentication added to URL (credentials hidden)")
+            logger.debug("Authentication added to URL (credentials hidden)")
         else:
-            logger.info(f"No authentication added to URL (auth_type={auth_type}, has_username={bool(resolved_username)}, has_token={bool(resolved_token)})")
+            logger.info(
+                f"No authentication added to URL (auth_type={auth_type}, has_username={bool(resolved_username)}, has_token={bool(resolved_token)})"
+            )
 
         return clone_url
 
@@ -257,10 +265,14 @@ class GitConnectionService:
             clone_url,
             str(test_path),
         ]
-        
-        logger.info(f"Executing git clone command...")
-        logger.debug(f"Command: git clone --depth 1 --branch {branch} <url> {test_path}")
-        logger.debug(f"Environment SSH_COMMAND: {env.get('GIT_SSH_COMMAND', 'not set')}")
+
+        logger.info("Executing git clone command...")
+        logger.debug(
+            f"Command: git clone --depth 1 --branch {branch} <url> {test_path}"
+        )
+        logger.debug(
+            f"Environment SSH_COMMAND: {env.get('GIT_SSH_COMMAND', 'not set')}"
+        )
 
         # Execute clone with timeout
         result = subprocess.run(

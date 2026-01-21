@@ -343,7 +343,7 @@ class DeviceCreationService:
                     "namespace": ip_data.namespace,
                     "is_primary": ip_data.is_primary or False,
                 }
-                if ip_data.ip_role and ip_data.ip_role != 'none':
+                if ip_data.ip_role and ip_data.ip_role != "none":
                     ip_dict["ip_role"] = ip_data.ip_role
                 interface_dict["ip_addresses"].append(ip_dict)
 
@@ -378,7 +378,9 @@ class DeviceCreationService:
 
         if not request.interfaces:
             workflow_status["step2_ip_addresses"]["status"] = "skipped"
-            workflow_status["step2_ip_addresses"]["message"] = "No IP addresses to create"
+            workflow_status["step2_ip_addresses"]["message"] = (
+                "No IP addresses to create"
+            )
             workflow_status["step3_interfaces"]["status"] = "skipped"
             workflow_status["step3_interfaces"]["message"] = "No interfaces to create"
             workflow_status["step4_primary_ip"]["status"] = "skipped"
@@ -417,9 +419,7 @@ class DeviceCreationService:
                     {"error": warning}
                 )
             elif "Interface" in warning or "interface" in warning.lower():
-                workflow_status["step3_interfaces"]["errors"].append(
-                    {"error": warning}
-                )
+                workflow_status["step3_interfaces"]["errors"].append({"error": warning})
 
         # Step 3: Interfaces
         interfaces_created = result.interfaces_created + result.interfaces_updated
@@ -448,7 +448,9 @@ class DeviceCreationService:
             workflow_status["step4_primary_ip"]["message"] = (
                 "Primary IPv4 address assigned successfully"
             )
-            workflow_status["step4_primary_ip"]["data"] = {"ip_id": result.primary_ip4_id}
+            workflow_status["step4_primary_ip"]["data"] = {
+                "ip_id": result.primary_ip4_id
+            }
         else:
             workflow_status["step4_primary_ip"]["status"] = "skipped"
             workflow_status["step4_primary_ip"]["message"] = (

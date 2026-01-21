@@ -49,7 +49,7 @@ baseline = {
             "description": "City A",
             "status": "active",
         },
-                {
+        {
             "parent": "State A",
             "location_types": "City",
             "name": "Another City A",
@@ -78,7 +78,7 @@ baseline = {
             "description": "City B",
             "status": "active",
         },
-                {
+        {
             "parent": "State B",
             "location_types": "City",
             "name": "Another City B",
@@ -107,7 +107,7 @@ baseline = {
             "description": "City C",
             "status": "active",
         },
-                {
+        {
             "parent": "State C",
             "location_types": "City",
             "name": "Another City C",
@@ -239,7 +239,14 @@ baseline = {
 }
 
 # Generate 100 network devices
-cities = ["City A", "Another City A", "City B", "Another City B", "City C", "Another City C"]
+cities = [
+    "City A",
+    "Another City A",
+    "City B",
+    "Another City B",
+    "City C",
+    "Another City C",
+]
 tags = ["Production", "Staging", "lab"]
 net_values = ["netA", "netB", "lab"]
 sites = ["siteA", "siteB", "siteC"]

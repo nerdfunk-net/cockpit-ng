@@ -14,10 +14,9 @@ CheckMK Version: REST API v1.0
 """
 
 import pytest
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 from services.checkmk.sync.base import NautobotToCheckMKService
-from services.checkmk.config import ConfigService
 
 # Import real captured fixtures
 from tests.fixtures.checkmk_fixtures import CHECKMK_HOST_REAL_API_RESPONSE
@@ -93,10 +92,7 @@ class TestCheckMKAPIResponseStructure:
         assert set(normalized_attrs.keys()) == set(checkmk_attrs.keys())
 
         # Compare SNMP community structure
-        assert (
-            normalized_attrs["snmp_community"]
-            == checkmk_attrs["snmp_community"]
-        )
+        assert normalized_attrs["snmp_community"] == checkmk_attrs["snmp_community"]
 
     @pytest.mark.asyncio
     async def test_comparison_with_real_api_format(self):
@@ -122,10 +118,11 @@ class TestCheckMKAPIResponseStructure:
         # Create service instance
         service = NautobotToCheckMKService()
 
-        with patch("services.nautobot.nautobot_service") as mock_nb_service, \
-             patch("services.checkmk.config.config_service") as mock_config, \
-             patch("routers.checkmk.main.get_host") as mock_get_host:
-
+        with (
+            patch("services.nautobot.nautobot_service") as mock_nb_service,
+            patch("services.checkmk.config.config_service") as mock_config,
+            patch("routers.checkmk.main.get_host") as mock_get_host,
+        ):
             # Configure mocks
             mock_nb_service.graphql_query = AsyncMock(
                 return_value={"data": {"device": mock_nautobot_device}}
@@ -161,23 +158,19 @@ class TestCheckMKAPIResponseStructure:
         assert len(links) >= 3
 
         # Find the self link
-        self_link = next((l for l in links if l["rel"] == "self"), None)
+        self_link = next((link for link in links if link["rel"] == "self"), None)
         assert self_link is not None
         assert self_link["method"] == "GET"
         assert self_link["type"] == "application/json"
         assert "/objects/host_config/" in self_link["href"]
 
         # Find the update link
-        update_link = next(
-            (l for l in links if "update" in l["rel"]), None
-        )
+        update_link = next((link for link in links if "update" in link["rel"]), None)
         assert update_link is not None
         assert update_link["method"] == "PUT"
 
         # Find the delete link
-        delete_link = next(
-            (l for l in links if "delete" in l["rel"]), None
-        )
+        delete_link = next((link for link in links if "delete" in link["rel"]), None)
         assert delete_link is not None
         assert delete_link["method"] == "DELETE"
 
@@ -243,7 +236,16 @@ class TestComparisonLogicWithCapturedData:
         assert nb_attrs["snmp_community"] == cmk_attrs["snmp_community"]
 
         # All scalar values should match
-        scalar_keys = ["site", "ipaddress", "tag_agent", "tag_snmp_ds", "tag_status", "alias", "location", "city"]
+        scalar_keys = [
+            "site",
+            "ipaddress",
+            "tag_agent",
+            "tag_snmp_ds",
+            "tag_status",
+            "alias",
+            "location",
+            "city",
+        ]
         for key in scalar_keys:
             assert nb_attrs[key] == cmk_attrs[key], f"Mismatch in {key}"
 

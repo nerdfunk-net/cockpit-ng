@@ -53,7 +53,9 @@ class SnapshotTemplateService:
 
         return SnapshotCommandTemplateResponse.from_orm(template)
 
-    def get_template(self, template_id: int) -> Optional[SnapshotCommandTemplateResponse]:
+    def get_template(
+        self, template_id: int
+    ) -> Optional[SnapshotCommandTemplateResponse]:
         """
         Get a template by ID.
 
@@ -84,7 +86,10 @@ class SnapshotTemplateService:
         return [SnapshotCommandTemplateResponse.from_orm(t) for t in templates]
 
     def update_template(
-        self, template_id: int, template_data: SnapshotCommandTemplateUpdate, username: str
+        self,
+        template_id: int,
+        template_data: SnapshotCommandTemplateUpdate,
+        username: str,
     ) -> Optional[SnapshotCommandTemplateResponse]:
         """
         Update a template.

@@ -345,9 +345,7 @@ class TemplateExecuteAndSyncResponse(BaseModel):
     task_id: Optional[str] = Field(
         None, description="Celery task ID for tracking the update job"
     )
-    job_id: Optional[str] = Field(
-        None, description="Job ID for tracking in Jobs/Views"
-    )
+    job_id: Optional[str] = Field(None, description="Job ID for tracking in Jobs/Views")
     rendered_outputs: Optional[Dict[str, str]] = Field(
         None, description="Map of device_id to rendered template output"
     )
