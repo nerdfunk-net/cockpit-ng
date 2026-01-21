@@ -451,13 +451,7 @@ export function DeviceSyncModal({
           } | null
         }>
         count: number
-      }>('nautobot/devices', {
-        method: 'GET',
-        params: {
-          filter_type: 'name',
-          filter_value: deviceName,
-        },
-      })
+      }>(`nautobot/devices?filter_type=name&filter_value=${encodeURIComponent(deviceName)}`)
 
       if (!response?.devices || response.devices.length === 0) {
         toast({
