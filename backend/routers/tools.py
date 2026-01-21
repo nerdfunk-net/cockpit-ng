@@ -34,13 +34,17 @@ async def migrate_schema() -> Dict[str, Any]:
 
 
 @router.post("/rbac/seed", dependencies=[Depends(verify_token)])
-async def seed_rbac() -> Dict[str, Any]:
+async def seed_rbac(remove_existing: bool = False) -> Dict[str, Any]:
     """
     Seed the RBAC system with default permissions and roles.
     This should be run after database migrations that add new tables.
+
+    Args:
+        remove_existing: If True, remove all existing RBAC data before seeding.
+                        WARNING: This removes all roles, permissions, and assignments!
     """
     try:
-        import seed_rbac
+        from tools import seed_rbac
         from io import StringIO
         import sys
 
@@ -51,14 +55,15 @@ async def seed_rbac() -> Dict[str, Any]:
 
         try:
             # Run the seed script with verbose output
-            seed_rbac.main(verbose=True)
+            seed_rbac.main(verbose=True, remove_existing=remove_existing)
 
             # Get the captured output
             output = captured_output.getvalue()
 
             return {
                 "success": True,
-                "message": "RBAC system seeded successfully",
+                "message": "RBAC system seeded successfully" if not remove_existing
+                          else "RBAC system cleaned and reseeded successfully",
                 "output": output,
             }
         finally:

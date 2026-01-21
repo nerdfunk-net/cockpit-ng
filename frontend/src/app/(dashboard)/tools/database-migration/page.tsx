@@ -59,6 +59,7 @@ export default function DatabaseMigrationPage() {
     const [seedResult, setSeedResult] = useState<SeedRbacResponse | null>(null)
     const [showSeedOutputModal, setShowSeedOutputModal] = useState(false)
     const [seeding, setSeeding] = useState(false)
+    const [removeExisting, setRemoveExisting] = useState(false)
 
     const fetchStatus = useCallback(async () => {
         setLoading(true)
@@ -105,11 +106,16 @@ export default function DatabaseMigrationPage() {
         setSeedResult(null)
         setSeeding(true)
         try {
-            const data = await apiCall<SeedRbacResponse>('tools/rbac/seed', {
-                method: 'POST'
-            })
+            const data = await apiCall<SeedRbacResponse>(
+                `tools/rbac/seed?remove_existing=${removeExisting}`,
+                {
+                    method: 'POST'
+                }
+            )
             setSeedResult(data)
             setShowSeedOutputModal(true)
+            // Reset the checkbox after seeding
+            setRemoveExisting(false)
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to seed RBAC'
             setSeedResult({
@@ -118,6 +124,7 @@ export default function DatabaseMigrationPage() {
                 output: `Error: ${errorMessage}`
             })
             setShowSeedOutputModal(true)
+            setRemoveExisting(false)
         } finally {
             setSeeding(false)
         }
@@ -322,27 +329,61 @@ export default function DatabaseMigrationPage() {
                                 </AlertDescription>
                             </Alert>
 
-                            <div className="flex justify-between items-center pt-2">
-                                <div className="text-sm text-gray-600">
-                                    Run this after database changes or when adding new features that require permissions.
+                            <div className="space-y-4 pt-2">
+                                <div className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        id="remove-existing"
+                                        checked={removeExisting}
+                                        onChange={(e) => setRemoveExisting(e.target.checked)}
+                                        className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                                        disabled={seeding}
+                                    />
+                                    <label
+                                        htmlFor="remove-existing"
+                                        className="text-sm font-medium text-gray-700 cursor-pointer select-none"
+                                    >
+                                        Remove all existing RBAC data before seeding
+                                    </label>
                                 </div>
-                                <Button 
-                                    onClick={handleSeedRbac} 
-                                    disabled={seeding}
-                                    className="bg-green-600 hover:bg-green-700"
-                                >
-                                    {seeding ? (
-                                        <>
-                                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                                            Seeding RBAC...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckCircle className="w-4 h-4 mr-2" />
-                                            Seed RBAC System
-                                        </>
-                                    )}
-                                </Button>
+                                {removeExisting && (
+                                    <Alert className="border-red-200 bg-red-50">
+                                        <AlertTriangle className="h-4 w-4 text-red-600" />
+                                        <AlertTitle className="text-red-800">Warning: Destructive Operation</AlertTitle>
+                                        <AlertDescription className="text-red-700 space-y-1">
+                                            <p className="font-medium">This will permanently delete:</p>
+                                            <ul className="list-disc list-inside ml-2 text-sm">
+                                                <li>All user-role assignments</li>
+                                                <li>All user-permission overrides</li>
+                                                <li>All roles (including system roles)</li>
+                                                <li>All permissions</li>
+                                            </ul>
+                                            <p className="mt-2 font-medium">Users will need to be reassigned to roles after this operation.</p>
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+                                <div className="flex justify-between items-center">
+                                    <div className="text-sm text-gray-600">
+                                        Run this after database changes or when adding new features that require permissions.
+                                    </div>
+                                    <Button
+                                        onClick={handleSeedRbac}
+                                        disabled={seeding}
+                                        className={removeExisting ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}
+                                    >
+                                        {seeding ? (
+                                            <>
+                                                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                                {removeExisting ? 'Removing & Reseeding...' : 'Seeding RBAC...'}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CheckCircle className="w-4 h-4 mr-2" />
+                                                {removeExisting ? 'Remove & Reseed RBAC' : 'Seed RBAC System'}
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </CardContent>
