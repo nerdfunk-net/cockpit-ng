@@ -134,6 +134,9 @@ export function OnboardDevicePage() {
   // Network scan modal state
   const [showNetworkScanModal, setShowNetworkScanModal] = useState(false)
 
+  // Confirmation modal state
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false)
+
   // Track if we've initialized form defaults
   const hasInitialized = useRef(false)
 
@@ -163,19 +166,8 @@ export function OnboardDevicePage() {
     }
   }, [isLoadingData, nautobotDefaults, getDefaultLocationDisplay, getDefaultFormValues, updateFormData])
 
-  // Handle form submission
-  const handleSubmit = async () => {
-    // Clear previous messages
-    setStatusMessage(null)
-    resetTracking()
-
-    // Validate form
-    const validation = validateForm()
-    if (!validation.isValid) {
-      setStatusMessage({ type: 'error', message: validation.message || 'Form validation failed' })
-      return
-    }
-
+  // Perform the actual onboarding submission
+  const performOnboarding = async () => {
     setIsSubmittingOnboard(true)
 
     try {
@@ -219,6 +211,51 @@ export function OnboardDevicePage() {
     } finally {
       setIsSubmittingOnboard(false)
     }
+  }
+
+  // Handle form submission with confirmation check
+  const handleSubmit = async () => {
+    // Clear previous messages
+    setStatusMessage(null)
+    resetTracking()
+
+    // Validate form
+    const validation = validateForm()
+    if (!validation.isValid) {
+      setStatusMessage({ type: 'error', message: validation.message || 'Form validation failed' })
+      return
+    }
+
+    // Check if tags or custom fields are missing
+    const hasNoTags = selectedTags.length === 0
+    const hasNoCustomFields = Object.keys(customFieldValues).length === 0
+
+    if (hasNoTags && hasNoCustomFields) {
+      // Show confirmation modal
+      setShowConfirmationModal(true)
+    } else {
+      // Proceed with onboarding directly
+      await performOnboarding()
+    }
+  }
+
+  // Handle confirmation to start onboarding
+  const handleConfirmOnboarding = async () => {
+    setShowConfirmationModal(false)
+    await performOnboarding()
+  }
+
+  // Handle abort onboarding
+  const handleAbortOnboarding = () => {
+    setShowConfirmationModal(false)
+    setStatusMessage({
+      type: 'info',
+      message: 'Onboarding cancelled.'
+    })
+    // Clear message after 3 seconds
+    setTimeout(() => {
+      setStatusMessage(null)
+    }, 3000)
   }
 
   // Handle device search
@@ -650,6 +687,47 @@ export function OnboardDevicePage() {
           onCheckStatus={() => jobId && checkJob(jobId)}
         />
       )}
+
+      {/* Confirmation Modal for Missing Tags/Custom Fields */}
+      <Dialog open={showConfirmationModal} onOpenChange={setShowConfirmationModal}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <HelpCircle className="h-5 w-5 text-amber-500" />
+              No Tags or Custom Fields Added
+            </DialogTitle>
+            <DialogDescription>
+              You haven&apos;t added any tags or custom fields to this device.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Tags and custom fields help you organize and categorize your devices in Nautobot. 
+              While they are optional, adding them now can make it easier to find and manage this device later.
+            </p>
+            
+            <p className="text-sm font-medium text-foreground">
+              Do you want to proceed with onboarding without tags or custom fields?
+            </p>
+            
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={handleAbortOnboarding}
+              >
+                Abort Onboarding
+              </Button>
+              <Button
+                onClick={handleConfirmOnboarding}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Start Onboarding
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* CSV Upload Modal */}
       <CSVUploadModal
