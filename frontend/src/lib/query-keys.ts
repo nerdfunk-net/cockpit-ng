@@ -118,6 +118,26 @@ export const queryKeys = {
     celery: () => [...queryKeys.settings.all, 'celery'] as const,
   },
 
+  // Cache
+  cache: {
+    all: ['cache'] as const,
+
+    // Settings
+    settings: () => [...queryKeys.cache.all, 'settings'] as const,
+
+    // Statistics
+    stats: () => [...queryKeys.cache.all, 'stats'] as const,
+
+    // Entries
+    entries: (includeExpired?: boolean) =>
+      includeExpired
+        ? ([...queryKeys.cache.all, 'entries', { includeExpired }] as const)
+        : ([...queryKeys.cache.all, 'entries'] as const),
+
+    // Namespace
+    namespace: (namespace: string) => [...queryKeys.cache.all, 'namespace', namespace] as const,
+  },
+
   // Credentials
   credentials: {
     all: ['credentials'] as const,

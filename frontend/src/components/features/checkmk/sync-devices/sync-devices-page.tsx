@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import type { Device } from '@/types/features/checkmk/sync-devices'
@@ -78,6 +78,14 @@ export default function SyncDevicesPage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(0)
   const [pageSize, setPageSize] = useState(50)
+
+  // Reset pagination when filters change and current page is out of bounds
+  useEffect(() => {
+    const totalPages = Math.ceil(filteredDevices.length / pageSize)
+    if (currentPage >= totalPages && totalPages > 0) {
+      setCurrentPage(0)
+    }
+  }, [filteredDevices.length, pageSize, currentPage])
 
   // Handle add device confirmation
   const handleAddDeviceConfirmation = useCallback((device: Device) => {
