@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, Trash2, Settings } from 'lucide-react'
+import { Plus, Trash2, Settings, Download } from 'lucide-react'
 import { UseFormReturn } from 'react-hook-form'
 import { useMemo } from 'react'
 import type { DeviceFormValues } from '../validation'
@@ -26,6 +26,7 @@ interface InterfaceTableProps {
   dropdownData: NautobotDropdownsResponse
   onOpenProperties: (interfaceId: string) => void
   isLoading: boolean
+  onGetPrimaryIP?: () => Promise<void>
 }
 
 interface TableRow {
@@ -43,6 +44,7 @@ export function InterfaceTable({
   dropdownData,
   onOpenProperties,
   isLoading,
+  onGetPrimaryIP,
 }: InterfaceTableProps) {
   const { setValue, watch, formState: { errors } } = form
 
@@ -258,6 +260,19 @@ export function InterfaceTable({
           </Badge>
         </div>
         <div className="flex items-center gap-2">
+          {onGetPrimaryIP && (
+            <Button
+              type="button"
+              onClick={onGetPrimaryIP}
+              disabled={isLoading}
+              size="sm"
+              className="bg-white/20 border-white/30 text-white hover:bg-white/30 h-7 text-xs"
+              title="Fetch primary IP from Nautobot and populate interface"
+            >
+              <Download className="h-3 w-3 mr-1" />
+              Get Primary IP
+            </Button>
+          )}
           <Button
             type="button"
             onClick={handleSetValues}

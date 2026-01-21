@@ -428,6 +428,101 @@ export function DeviceSyncModal({
     }
   }, [apiCall, form, toast])
 
+  // Handle Get Primary IP
+  const handleGetPrimaryIP = useCallback(async () => {
+    try {
+      const deviceName = form.getValues('deviceName')
+      if (!deviceName) {
+        toast({
+          title: 'Error',
+          description: 'Device name is required to fetch primary IP',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Fetch device info from Nautobot
+      const response = await apiCall<{
+        devices: Array<{
+          id: string
+          name: string
+          primary_ip4: {
+            address: string
+          } | null
+        }>
+        count: number
+      }>('nautobot/devices', {
+        method: 'GET',
+        params: {
+          filter_type: 'name',
+          filter_value: deviceName,
+        },
+      })
+
+      if (!response?.devices || response.devices.length === 0) {
+        toast({
+          title: 'Device Not Found',
+          description: `No device named "${deviceName}" found in Nautobot`,
+          variant: 'destructive',
+        })
+        return
+      }
+
+      const device = response.devices[0]
+      const primaryIP = device?.primary_ip4?.address
+
+      if (!primaryIP) {
+        toast({
+          title: 'No Primary IP',
+          description: `Device "${deviceName}" has no primary IPv4 address in Nautobot`,
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Find the primary interface in the form
+      const interfaces = form.getValues('interfaces') || []
+      let primaryInterfaceIndex = -1
+      let primaryIpIndex = -1
+
+      interfaces.forEach((iface, ifaceIdx) => {
+        iface.ip_addresses?.forEach((ip, ipIdx) => {
+          if (ip.is_primary) {
+            primaryInterfaceIndex = ifaceIdx
+            primaryIpIndex = ipIdx
+          }
+        })
+      })
+
+      if (primaryInterfaceIndex === -1 || primaryIpIndex === -1) {
+        toast({
+          title: 'No Primary Interface',
+          description: 'Please select a primary interface first by checking the "Primary" checkbox',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Update the primary interface's IP address
+      form.setValue(
+        `interfaces.${primaryInterfaceIndex}.ip_addresses.${primaryIpIndex}.address`,
+        primaryIP
+      )
+
+      toast({
+        title: 'Primary IP Updated',
+        description: `Set primary interface IP to ${primaryIP}`,
+      })
+    } catch (error) {
+      console.error('Failed to fetch primary IP:', error)
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to fetch primary IP from Nautobot',
+        variant: 'destructive',
+      })
+    }
+  }, [apiCall, form, toast])
+
   // Determine if device exists
   const isUpdate = Boolean(deviceId)
 
@@ -503,6 +598,7 @@ export function DeviceSyncModal({
                   propertiesModal.openModal(id, location?.name)
                 }}
                 isLoading={isSyncing}
+                onGetPrimaryIP={isUpdate ? handleGetPrimaryIP : undefined}
               />
 
               {/* Footer Actions */}
