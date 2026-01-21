@@ -286,6 +286,7 @@ def execute_run_commands(
                         platform {
                           id
                           name
+                          network_driver
                           manufacturer {
                             id
                             name
@@ -356,11 +357,24 @@ def execute_run_commands(
                         if device.get("primary_ip4")
                         else None
                     )
-                    platform = (
-                        device.get("platform", {}).get("name", "unknown")
-                        if device.get("platform")
-                        else "unknown"
-                    )
+                    
+                    # Get platform information from Nautobot
+                    platform_obj = device.get("platform", {})
+                    network_driver = platform_obj.get("network_driver") if platform_obj else None
+                    platform_name = platform_obj.get("name", "unknown") if platform_obj else "unknown"
+                    
+                    # Determine device type for Netmiko
+                    if network_driver:
+                        # Use authoritative network_driver from Nautobot (already correct Netmiko format)
+                        device_type = network_driver
+                        platform = network_driver
+                        logger.info(f"[{idx}] Using network_driver from Nautobot: {network_driver}")
+                    else:
+                        # Fallback: map platform name to Netmiko device type (best guess)
+                        platform = platform_name
+                        from utils.netmiko_platform_mapper import map_platform_to_netmiko
+                        device_type = map_platform_to_netmiko(platform)
+                        logger.info(f"[{idx}] No network_driver, mapped platform '{platform}' to: {device_type}")
 
                     device_result["device_name"] = device_name
                     device_result["device_ip"] = primary_ip
@@ -370,6 +384,7 @@ def execute_run_commands(
                     logger.info(f"[{idx}]   - Name: {device_name}")
                     logger.info(f"[{idx}]   - IP: {primary_ip or 'NOT SET'}")
                     logger.info(f"[{idx}]   - Platform: {platform}")
+                    logger.info(f"[{idx}]   - Netmiko device type: {device_type}")
 
                     if not primary_ip:
                         logger.error(f"[{idx}] ✗ No primary IP")
@@ -408,13 +423,7 @@ def execute_run_commands(
                         for line in rendered_content.split("\n")
                         if line.strip()
                     ]
-
-                    if not commands:
-                        logger.warning(
-                            f"[{idx}] ⚠ No commands to execute after rendering"
-                        )
-                        device_result["error"] = (
-                            "No commands to execute after template rendering"
+      "No commands to execute after template rendering"
                         )
                         failed_devices.append(device_result)
                         continue
