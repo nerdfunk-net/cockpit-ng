@@ -184,8 +184,8 @@ export function SyncJobResultView({ result }: SyncJobResultProps) {
                                               <span className="font-medium">{subField}:</span>
                                               {Array.isArray(subErrors) ? (
                                                 <ul className="ml-4 list-disc list-inside">
-                                                  {subErrors.map((err, i) => (
-                                                    <li key={i}>{String(err)}</li>
+                                                  {subErrors.map((err) => (
+                                                    <li key={String(err)}>{String(err)}</li>
                                                   ))}
                                                 </ul>
                                               ) : (
