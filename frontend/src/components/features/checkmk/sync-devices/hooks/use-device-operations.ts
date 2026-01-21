@@ -164,7 +164,13 @@ export function useDeviceOperations({ trackTask, showMessage, onAddDeviceConfirm
       showMessage('Activating changes in CheckMK...', 'info')
 
       const response = await apiCall('checkmk/changes/activate', {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          force_foreign_changes: true
+        })
       })
 
       if (response) {

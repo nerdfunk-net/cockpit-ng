@@ -423,7 +423,13 @@ def execute_run_commands(
                         for line in rendered_content.split("\n")
                         if line.strip()
                     ]
-      "No commands to execute after template rendering"
+
+                    if not commands:
+                        logger.error(
+                            f"[{idx}] ✗ No commands to execute after template rendering"
+                        )
+                        device_result["error"] = (
+                            "No commands to execute after template rendering"
                         )
                         failed_devices.append(device_result)
                         continue
