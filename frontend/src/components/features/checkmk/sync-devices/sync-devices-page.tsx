@@ -57,8 +57,7 @@ export default function SyncDevicesPage() {
 
   // Task tracking
   const { activeTasks, expandedErrorTasks, trackTask, cancelTask, dismissTask, toggleErrorDetails } = useTaskTracking({
-    showMessage,
-    onTaskSuccess: () => setHasDevicesSynced(true)
+    showMessage
   })
 
   // Diff comparison
@@ -73,7 +72,6 @@ export default function SyncDevicesPage() {
   const [deviceToAdd, setDeviceToAdd] = useState<Device | null>(null)
   const [isAddingDevice, setIsAddingDevice] = useState(false)
   const [isSyncingSelected, setIsSyncingSelected] = useState(false)
-  const [hasDevicesSynced, setHasDevicesSynced] = useState(false)
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(0)
@@ -281,7 +279,7 @@ export default function SyncDevicesPage() {
         currentPage={currentPage}
         pageSize={pageSize}
         loading={loading}
-        hasDevicesSynced={hasDevicesSynced}
+        hasDevicesSynced={true}
         isActivating={isActivating}
         isSyncing={isSyncingSelected}
         onSelectDevice={handleSelectDevice}

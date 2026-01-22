@@ -740,11 +740,18 @@ class CheckMKClient:
         sites: List[str] = None,
         force_foreign_changes: bool = False,
         redirect: bool = False,
+        etag: str = "*",
     ) -> Dict:
         """
         Activate pending configuration changes
 
         Endpoint: POST /domain-types/activation_run/actions/activate-changes/invoke
+
+        Args:
+            sites: List of site names to activate changes on
+            force_foreign_changes: Force activation even if changes were made by other users
+            redirect: Whether to redirect after activation
+            etag: ETag from pending changes (use "*" to force activation without checking)
         """
         if sites is None:
             sites = [self.site_name]
@@ -759,7 +766,7 @@ class CheckMKClient:
             "POST",
             "domain-types/activation_run/actions/activate-changes/invoke",
             json_data=json_data,
-            etag="*",
+            etag=etag,
         )
         return self._handle_response(response)
 

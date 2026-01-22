@@ -279,6 +279,10 @@ class CheckMKActivateChangesRequest(BaseModel):
         default=True, description="Force foreign changes"
     )
     redirect: bool = Field(default=False, description="Redirect after activation")
+    etag: str = Field(
+        default="*",
+        description="ETag from pending changes response (use * to force activation)",
+    )
 
 
 class CheckMKPendingChange(BaseModel):

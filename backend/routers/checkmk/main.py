@@ -1279,8 +1279,21 @@ async def get_pending_changes(
 ):
     """Get pending configuration changes"""
     try:
+        logger.debug("Getting pending changes from CheckMK")
         client = _get_checkmk_client()
-        result = client.get_pending_changes()
+        
+        # Make the raw request to get both response and headers
+        response = client._make_request(
+            "GET", "domain-types/activation_run/collections/pending_changes"
+        )
+
+        if response.status_code == 200:
+            etag = response.headers.get("ETag", "*")
+            logger.debug(f"ETag for pending changes: {etag}")
+
+        # Parse the response
+        result = client._handle_response(response)
+        result['etag'] = etag.strip('"')  # Remove quotes from ETag if present
 
         return CheckMKOperationResponse(
             success=True, message="Retrieved pending changes successfully", data=result
@@ -1300,18 +1313,20 @@ async def activate_changes(
     request: CheckMKActivateChangesRequest = CheckMKActivateChangesRequest(),
     current_user: dict = Depends(require_permission("checkmk.devices", "write")),
 ):
-    """Activate pending configuration changes"""
+    """Activate ALL pending configuration changes using wildcard ETag"""
     try:
+        logger.debug("Activating all changes with wildcard ETag: *")
         client = _get_checkmk_client()
         result = client.activate_changes(
             sites=request.sites,
             force_foreign_changes=request.force_foreign_changes,
             redirect=request.redirect,
+            etag="*",  # Always use wildcard to activate all changes
         )
 
         return CheckMKOperationResponse(
             success=True,
-            message="Activated configuration changes successfully",
+            message="Activated all configuration changes successfully",
             data=result,
         )
     except HTTPException:
@@ -1321,6 +1336,38 @@ async def activate_changes(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to activate changes: {str(e)}",
+        )
+
+
+@router.post("/changes/activate/{etag}", response_model=CheckMKOperationResponse)
+async def activate_changes_with_etag(
+    etag: str,
+    request: CheckMKActivateChangesRequest = CheckMKActivateChangesRequest(),
+    current_user: dict = Depends(require_permission("checkmk.devices", "write")),
+):
+    """Activate pending configuration changes using specific ETag"""
+    try:
+        logger.debug(f"Activating changes with specific ETag: {etag}")
+        client = _get_checkmk_client()
+        result = client.activate_changes(
+            sites=request.sites,
+            force_foreign_changes=request.force_foreign_changes,
+            redirect=request.redirect,
+            etag=etag,
+        )
+
+        return CheckMKOperationResponse(
+            success=True,
+            message=f"Activated configuration changes with ETag {etag} successfully",
+            data=result,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error activating changes with ETag {etag}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to activate changes with ETag {etag}: {str(e)}",
         )
 
 
