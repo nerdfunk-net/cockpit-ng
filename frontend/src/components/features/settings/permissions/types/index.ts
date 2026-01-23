@@ -4,7 +4,6 @@ export interface User {
   realname: string
   email: string
   roles?: Role[]
-  debug: boolean
   is_active: boolean
   created_at: string
   updated_at?: string
@@ -54,7 +53,6 @@ export interface CreateUserData {
   email: string
   password: string
   is_active: boolean
-  debug: boolean
 }
 
 export interface UpdateUserData {
@@ -62,7 +60,6 @@ export interface UpdateUserData {
   email?: string
   password?: string
   is_active?: boolean
-  debug?: boolean
 }
 
 export interface CreateRoleData {

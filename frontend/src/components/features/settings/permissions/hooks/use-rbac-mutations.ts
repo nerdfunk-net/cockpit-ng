@@ -37,7 +37,7 @@ export function useRbacMutations() {
   const updateUser = useMutation({
     mutationFn: async ({ userId, data }: { userId: number; data: UpdateUserData }) => {
       return apiCall(`rbac/users/${userId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         body: JSON.stringify(data)
       })
     },
@@ -101,7 +101,7 @@ export function useRbacMutations() {
   const updateRole = useMutation({
     mutationFn: async ({ roleId, data }: { roleId: number; data: UpdateRoleData }) => {
       return apiCall(`rbac/roles/${roleId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         body: JSON.stringify(data)
       })
     },

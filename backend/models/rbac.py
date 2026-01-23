@@ -1,6 +1,6 @@
 """Pydantic models for RBAC system."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 
 
@@ -210,7 +210,6 @@ class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, description="Username")
     realname: str = Field(..., min_length=1, max_length=100, description="Real name")
     email: Optional[str] = Field(None, max_length=255, description="Email address")
-    debug: bool = Field(False, description="Enable debug mode for user")
     is_active: bool = Field(True, description="User account active status")
 
 
@@ -226,11 +225,18 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     """Model for updating a user."""
 
-    realname: Optional[str] = Field(None, min_length=1, max_length=100)
+    realname: Optional[str] = Field(None, max_length=100)
     email: Optional[str] = Field(None, max_length=255)
     password: Optional[str] = Field(None, min_length=8)
-    debug: Optional[bool] = Field(None, description="Enable/disable debug mode")
     is_active: Optional[bool] = Field(None, description="Enable/disable account")
+    
+    @field_validator('realname', 'email', 'password', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        """Convert empty strings to None."""
+        if v == '':
+            return None
+        return v
 
 
 class UserResponse(UserBase):

@@ -30,7 +30,6 @@ class ProfileResponse(BaseModel):
     username: str
     realname: str
     email: str
-    debug: bool
     api_key: Optional[str]
     personal_credentials: Optional[List[PersonalCredentialData]] = []
 
@@ -38,7 +37,6 @@ class ProfileResponse(BaseModel):
 class ProfileUpdateRequest(BaseModel):
     realname: Optional[str] = None
     email: Optional[str] = None
-    debug: Optional[bool] = None
     password: Optional[str] = None
     api_key: Optional[str] = None
     personal_credentials: Optional[List[PersonalCredentialData]] = []
@@ -98,7 +96,6 @@ async def get_profile(current_user: str = Depends(get_current_username)):
             username=user["username"],
             realname=user["realname"],
             email=user["email"] or "",
-            debug=user["debug"],
             api_key=profile.get("api_key"),
             personal_credentials=personal_credentials,
         )
@@ -143,7 +140,6 @@ async def update_profile(
             user_id=user["id"],
             realname=update_data.realname,
             email=update_data.email,
-            debug=update_data.debug,
             password=update_data.password,
         )
 
@@ -158,7 +154,6 @@ async def update_profile(
             username=current_user,
             realname=update_data.realname,
             email=update_data.email,
-            debug_mode=update_data.debug,
             api_key=update_data.api_key,
         )
 

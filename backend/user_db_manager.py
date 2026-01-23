@@ -151,6 +151,9 @@ def update_user(
         updates["email"] = email
 
     if password is not None:
+        # Ensure password meets minimum requirements if being changed
+        if len(password) < 8:
+            raise ValueError("Password must be at least 8 characters long")
         updates["password"] = get_password_hash(password)
 
     if permissions is not None:

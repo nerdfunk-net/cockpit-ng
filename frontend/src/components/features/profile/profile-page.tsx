@@ -5,13 +5,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthStore } from '@/lib/auth-store'
 import { useToast } from '@/hooks/use-toast'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { generateAvatarDataUrl } from '@/components/ui/local-avatar'
-import { Eye, EyeOff, Save, User, Mail, Lock, Bug, Key, RefreshCw, Plus, Trash2, ChevronDown, ChevronRight, Check } from 'lucide-react'
+import { Eye, EyeOff, Save, User, Mail, Lock, Key, RefreshCw, Plus, Trash2, ChevronDown, ChevronRight, Check } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 
@@ -37,7 +36,6 @@ interface ProfileData {
   username: string
   realname: string
   email: string
-  debug: boolean
   api_key: string
   personal_credentials: PersonalCredential[]
 }
@@ -54,7 +52,6 @@ export function ProfilePage() {
     username: '',
     realname: '',
     email: '',
-    debug: false,
     api_key: '',
     personal_credentials: []
   })
@@ -88,7 +85,6 @@ export function ProfilePage() {
             username: data.username || user.username,
             realname: data.realname || '',
             email: data.email || '',
-            debug: data.debug || false,
             api_key: data.api_key || '',
             personal_credentials: (data.personal_credentials || []).map((cred: {id: string, name: string, username: string, type: string, password?: string, has_ssh_key?: boolean}) => {
               // If ID is numeric, it's an existing credential with stored password
@@ -121,7 +117,6 @@ export function ProfilePage() {
             username: user.username,
             realname: '',
             email: '',
-            debug: false,
             api_key: '',
             personal_credentials: []
           })
@@ -133,7 +128,6 @@ export function ProfilePage() {
           username: user.username,
           realname: '',
           email: '',
-          debug: false,
           api_key: '',
           personal_credentials: []
         })
@@ -285,7 +279,6 @@ export function ProfilePage() {
       const updateData: {
         realname: string;
         email: string;
-        debug: boolean;
         api_key: string;
         personal_credentials: {
           id: string;
@@ -300,7 +293,6 @@ export function ProfilePage() {
       } = {
         realname: formData.realname,
         email: formData.email,
-        debug: formData.debug,
         api_key: formData.api_key,
         personal_credentials: formData.personal_credentials.map(cred => {
           const baseCredential = {
@@ -386,7 +378,6 @@ export function ProfilePage() {
         setPasswords({ newPassword: '', confirmPassword: '' })
         setPasswordError('')
         
-        // Refresh debug state if debug mode was changed
         // Personal credentials saved successfully
       } else {
         const errorData = await response.json().catch(() => ({ detail: 'Failed to update profile' }))
@@ -494,23 +485,6 @@ export function ProfilePage() {
                     value={formData.email}
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="Enter your email address"
-                  />
-                </div>
-
-                {/* Debug Mode */}
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="space-y-0.5">
-                    <Label className="flex items-center space-x-2 text-base">
-                      <Bug className="h-4 w-4" />
-                      <span>Debug Mode</span>
-                    </Label>
-                    <p className="text-sm text-slate-500">
-                      Enable enhanced logging and debugging features
-                    </p>
-                  </div>
-                  <Switch
-                    checked={formData.debug}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, debug: checked }))}
                   />
                 </div>
               </CardContent>

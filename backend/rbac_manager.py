@@ -456,7 +456,6 @@ def update_user_profile(
     realname: Optional[str] = None,
     email: Optional[str] = None,
     password: Optional[str] = None,
-    debug: Optional[bool] = None,
     is_active: Optional[bool] = None,
 ) -> Optional[Dict[str, Any]]:
     """Update user profile (delegates to user_db_manager).
@@ -466,7 +465,6 @@ def update_user_profile(
         realname: New real name
         email: New email address
         password: New password (will be hashed)
-        debug: Enable/disable debug mode
         is_active: Enable/disable account
 
     Returns:
@@ -478,7 +476,7 @@ def update_user_profile(
         email=email,
         password=password,
         permissions=None,  # Don't update legacy permissions field
-        debug=debug,
+        debug=None,  # Don't update debug field
         is_active=is_active,
     )
 

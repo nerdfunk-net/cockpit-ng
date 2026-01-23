@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { User } from '../../types'
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 
 const createUserSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters').max(50),
@@ -15,15 +15,13 @@ const createUserSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   is_active: z.boolean(),
-  debug: z.boolean(),
 })
 
 const updateUserSchema = z.object({
-  realname: z.string().min(1, 'Real name is required').max(100).optional(),
-  email: z.string().email('Invalid email address').optional(),
-  password: z.string().min(8, 'Password must be at least 8 characters').optional(),
+  realname: z.string().max(100).optional().or(z.literal('')),
+  email: z.string().email('Invalid email address').optional().or(z.literal('')),
+  password: z.string().min(8, 'Password must be at least 8 characters').optional().or(z.literal('')),
   is_active: z.boolean().optional(),
-  debug: z.boolean().optional(),
 })
 
 type CreateUserFormData = z.infer<typeof createUserSchema>
@@ -45,7 +43,6 @@ export function UserDialog({ open, onOpenChange, onSubmit, user, isEdit = false 
           realname: user.realname,
           email: user.email,
           is_active: user.is_active,
-          debug: user.debug,
         }
       : {
           username: '',
@@ -53,9 +50,29 @@ export function UserDialog({ open, onOpenChange, onSubmit, user, isEdit = false 
           email: '',
           password: '',
           is_active: true,
-          debug: false,
         }
   })
+
+  // Reset form when user changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      if (isEdit && user) {
+        form.reset({
+          realname: user.realname,
+          email: user.email,
+          is_active: user.is_active,
+        })
+      } else {
+        form.reset({
+          username: '',
+          realname: '',
+          email: '',
+          password: '',
+          is_active: true,
+        })
+      }
+    }
+  }, [open, user, isEdit, form])
 
   const handleSubmit = form.handleSubmit((data) => {
     onSubmit(data)
@@ -151,24 +168,6 @@ export function UserDialog({ open, onOpenChange, onSubmit, user, isEdit = false 
                   </FormControl>
                   <div className="space-y-1 leading-none">
                     <FormLabel>Active</FormLabel>
-                  </div>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="debug"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>Debug Mode</FormLabel>
                   </div>
                 </FormItem>
               )}

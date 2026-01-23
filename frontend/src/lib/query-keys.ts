@@ -193,4 +193,10 @@ export const queryKeys = {
     // Permissions
     permissions: () => [...queryKeys.rbac.all, 'permissions'] as const,
   },
+
+  // Common Settings
+  commonSettings: {
+    all: ['commonSettings'] as const,
+    snmpMapping: () => [...queryKeys.commonSettings.all, 'snmpMapping'] as const,
+  },
 }

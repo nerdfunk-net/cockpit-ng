@@ -505,7 +505,6 @@ async def create_user(
             password=user_data.password,
             email=user_data.email,
             role_ids=user_data.role_ids,
-            debug=user_data.debug,
             is_active=user_data.is_active,
         )
 
@@ -572,7 +571,6 @@ async def update_user(
             realname=user_data.realname,
             email=user_data.email,
             password=user_data.password,
-            debug=user_data.debug,
             is_active=user_data.is_active,
         )
 
@@ -581,8 +579,15 @@ async def update_user(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
 
-        # Get full user with roles and permissions
-        user_with_rbac = rbac.get_user_with_rbac(user_id)
+        # Get full user with roles and permissions (include inactive in case we just deactivated)
+        user_with_rbac = rbac.get_user_with_rbac(user_id, include_inactive=True)
+        
+        if not user_with_rbac:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail=f"User {user_id} not found after update"
+            )
+        
         return user_with_rbac
     except HTTPException:
         raise

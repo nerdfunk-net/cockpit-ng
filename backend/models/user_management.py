@@ -60,7 +60,6 @@ class UserCreate(BaseModel):
     email: Optional[str] = None
     password: str
     role: UserRole = UserRole.user
-    debug: bool = False
 
 
 class UserUpdate(BaseModel):
@@ -71,7 +70,6 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     role: Optional[UserRole] = None
     permissions: Optional[int] = None
-    debug: Optional[bool] = None
     is_active: Optional[bool] = None
 
 
@@ -84,7 +82,6 @@ class UserResponse(BaseModel):
     email: Optional[str]
     role: UserRole
     permissions: int
-    debug: bool
     is_active: bool
     created_at: str
     updated_at: str

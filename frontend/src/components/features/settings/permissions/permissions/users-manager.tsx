@@ -114,16 +114,9 @@ export function UsersManager() {
           {
             header: 'Status',
             accessor: (user) => (
-              <div className="flex gap-2">
-                <Badge variant={user.is_active ? 'default' : 'secondary'} className="text-xs">
-                  {user.is_active ? 'Active' : 'Inactive'}
-                </Badge>
-                {user.debug && (
-                  <Badge variant="outline" className="text-xs">
-                    Debug
-                  </Badge>
-                )}
-              </div>
+              <Badge variant={user.is_active ? 'default' : 'secondary'} className="text-xs">
+                {user.is_active ? 'Active' : 'Inactive'}
+              </Badge>
             )
           },
         ]}
