@@ -123,21 +123,27 @@ export function UpdateDevicesResultView({ result }: UpdateDevicesResultViewProps
           {showAllSuccesses && (
             <CardContent>
               <div className="space-y-3">
-                {result.successes.map((success) => (
+                {result.successes.map((success, index) => (
                   <div
-                    key={success.device_id || success.device_name}
+                    key={`success-${success.device_id || success.device_name || success.prefix || index}`}
                     className="border rounded-lg p-3 bg-green-50/50"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <p className="font-medium text-gray-900">
-                            {success.device_name || success.device_id}
+                            {success.device_name || success.device_id || success.prefix}
                           </p>
                           <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-300">
                             Updated
                           </Badge>
                         </div>
+                        {success.row && (
+                          <p className="text-xs text-gray-500 mb-2">Row: {success.row}</p>
+                        )}
+                        {success.namespace && (
+                          <p className="text-xs text-gray-500 mb-2">Namespace: {success.namespace}</p>
+                        )}
                         {success.device_id && success.device_name && (
                           <p className="text-xs text-gray-500 mb-2">ID: {success.device_id}</p>
                         )}
@@ -147,10 +153,10 @@ export function UpdateDevicesResultView({ result }: UpdateDevicesResultViewProps
                           <div className="mt-2">
                             <button
                               type="button"
-                              onClick={() => toggleSuccess(success.device_id || success.device_name || '')}
+                              onClick={() => toggleSuccess(success.device_id || success.device_name || success.prefix || '')}
                               className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
                             >
-                              {expandedSuccesses.has(success.device_id || success.device_name || '') ? (
+                              {expandedSuccesses.has(success.device_id || success.device_name || success.prefix || '') ? (
                                 <>
                                   <ChevronUp className="h-3 w-3" />
                                   Hide changes
@@ -163,10 +169,10 @@ export function UpdateDevicesResultView({ result }: UpdateDevicesResultViewProps
                               )}
                             </button>
                             
-                            {expandedSuccesses.has(success.device_id || success.device_name || '') && (
+                            {expandedSuccesses.has(success.device_id || success.device_name || success.prefix || '') && (
                               <div className="mt-2 space-y-2 pl-4 border-l-2 border-green-300">
                                 {Object.entries(success.updates || EMPTY_OBJECT).map(([field, value]) => (
-                                  <div key={field} className="text-sm">
+                                  <div key={`${success.device_id || success.device_name || success.prefix}-${field}`} className="text-sm">
                                     <span className="font-medium text-gray-700">{field}:</span>{' '}
                                     <span className="text-gray-900 font-mono text-xs">
                                       {formatValue(value)}
@@ -218,17 +224,23 @@ export function UpdateDevicesResultView({ result }: UpdateDevicesResultViewProps
           {showAllFailures && (
             <CardContent>
               <div className="space-y-3">
-                {result.failures.map((failure) => (
+                {result.failures.map((failure, index) => (
                   <div
-                    key={failure.device_id || failure.identifier}
+                    key={`failure-${failure.device_id || failure.identifier || failure.prefix || index}`}
                     className="border rounded-lg p-3 bg-red-50/50"
                   >
                     <div className="flex items-start gap-2">
                       <XCircle className="h-4 w-4 text-red-500 shrink-0 mt-1" />
                       <div className="flex-1">
                         <p className="font-medium text-gray-900">
-                          {failure.device_name || failure.device_id || failure.identifier}
+                          {failure.device_name || failure.device_id || failure.identifier || failure.prefix}
                         </p>
+                        {failure.row && (
+                          <p className="text-xs text-gray-500 mt-1">Row: {failure.row}</p>
+                        )}
+                        {failure.namespace && (
+                          <p className="text-xs text-gray-500 mt-1">Namespace: {failure.namespace}</p>
+                        )}
                         {failure.device_id && failure.device_name && (
                           <p className="text-xs text-gray-500 mt-1">ID: {failure.device_id}</p>
                         )}
@@ -276,17 +288,23 @@ export function UpdateDevicesResultView({ result }: UpdateDevicesResultViewProps
           {showAllSkipped && (
             <CardContent>
               <div className="space-y-3">
-                {result.skipped.map((skipped) => (
+                {result.skipped.map((skipped, index) => (
                   <div
-                    key={skipped.device_id || skipped.identifier}
+                    key={`skipped-${skipped.device_id || skipped.identifier || skipped.prefix || index}`}
                     className="border rounded-lg p-3 bg-yellow-50/50"
                   >
                     <div className="flex items-start gap-2">
                       <AlertCircle className="h-4 w-4 text-yellow-500 shrink-0 mt-1" />
                       <div className="flex-1">
                         <p className="font-medium text-gray-900">
-                          {skipped.device_name || skipped.device_id || skipped.identifier}
+                          {skipped.device_name || skipped.device_id || skipped.identifier || skipped.prefix}
                         </p>
+                        {skipped.row && (
+                          <p className="text-xs text-gray-500 mt-1">Row: {skipped.row}</p>
+                        )}
+                        {skipped.namespace && (
+                          <p className="text-xs text-gray-500 mt-1">Namespace: {skipped.namespace}</p>
+                        )}
                         {skipped.device_id && skipped.device_name && (
                           <p className="text-xs text-gray-500 mt-1">ID: {skipped.device_id}</p>
                         )}

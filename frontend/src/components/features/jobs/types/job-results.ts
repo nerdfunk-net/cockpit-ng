@@ -230,16 +230,24 @@ export interface GenericJobResult {
 // ============================================================================
 
 export interface UpdateDeviceSuccess {
-  device_id: string
-  device_name: string
+  device_id?: string
+  device_name?: string
   updates: Record<string, unknown>
   result: Record<string, unknown>
+  // IP Prefix specific fields
+  row?: number
+  prefix?: string
+  namespace?: string
 }
 
 export interface UpdateDeviceFailure {
   device_id?: string
   device_name?: string
-  identifier: string
+  identifier?: string
+  // IP Prefix specific fields
+  row?: number
+  prefix?: string
+  namespace?: string
   error: string
 }
 
