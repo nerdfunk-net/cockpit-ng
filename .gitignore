@@ -199,3 +199,5 @@ apscheduler_jobs.db
 /data/ssh_keys
 /backend/data
 /data/exports
+/agent-os
+/.claude
