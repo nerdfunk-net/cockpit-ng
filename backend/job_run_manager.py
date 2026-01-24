@@ -59,6 +59,12 @@ def get_job_run_by_celery_id(celery_task_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def get_job_runs_by_celery_ids(celery_task_ids: List[str]) -> List[Dict[str, Any]]:
+    """Get job runs by multiple Celery task IDs"""
+    job_runs = repo.get_by_celery_task_ids(celery_task_ids)
+    return [_model_to_dict(job_run) for job_run in job_runs]
+
+
 def list_job_runs(
     page: int = 1,
     page_size: int = 25,
@@ -95,6 +101,14 @@ def get_recent_runs(
 ) -> List[Dict[str, Any]]:
     """Get recent job runs"""
     runs = repo.get_recent_runs(limit=limit, status=status, job_type=job_type)
+    return [_model_to_dict(run) for run in runs]
+
+
+def get_runs_since(
+    since: datetime, status: Optional[str] = None, job_type: Optional[str] = None
+) -> List[Dict[str, Any]]:
+    """Get job runs since a specific datetime"""
+    runs = repo.get_runs_since(since=since, status=status, job_type=job_type)
     return [_model_to_dict(run) for run in runs]
 
 

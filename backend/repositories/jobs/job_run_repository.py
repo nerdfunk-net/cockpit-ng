@@ -80,6 +80,24 @@ class JobRunRepository(BaseRepository[JobRun]):
         finally:
             session.close()
 
+    def get_by_celery_task_ids(self, celery_task_ids: List[str]) -> List[Dict[str, Any]]:
+        """Get job runs by multiple Celery task IDs"""
+        from core.database import get_db_session
+
+        if not celery_task_ids:
+            return []
+
+        session = get_db_session()
+        try:
+            job_runs = (
+                session.query(self.model)
+                .filter(self.model.celery_task_id.in_(celery_task_ids))
+                .all()
+            )
+            return [_to_dict(job_run) for job_run in job_runs]
+        finally:
+            session.close()
+
     def get_by_schedule(
         self, schedule_id: int, limit: int = 50, status: Optional[str] = None
     ) -> List[Dict[str, Any]]:
@@ -122,6 +140,32 @@ class JobRunRepository(BaseRepository[JobRun]):
                 query = query.filter(self.model.triggered_by == triggered_by)
 
             items = query.order_by(desc(self.model.queued_at)).limit(limit).all()
+            return [_to_dict(item) for item in items]
+        finally:
+            session.close()
+
+    def get_runs_since(
+        self,
+        since: datetime,
+        status: Optional[str] = None,
+        job_type: Optional[str] = None,
+        triggered_by: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Get job runs since a specific datetime with optional filters"""
+        from core.database import get_db_session
+
+        session = get_db_session()
+        try:
+            query = session.query(self.model).filter(self.model.queued_at >= since)
+
+            if status:
+                query = query.filter(self.model.status == status)
+            if job_type:
+                query = query.filter(self.model.job_type == job_type)
+            if triggered_by:
+                query = query.filter(self.model.triggered_by == triggered_by)
+
+            items = query.order_by(desc(self.model.queued_at)).all()
             return [_to_dict(item) for item in items]
         finally:
             session.close()

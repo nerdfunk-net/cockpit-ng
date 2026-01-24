@@ -209,9 +209,16 @@ async def get_latest_scan_prefix_result(
     Handles both regular jobs and split jobs (parent + sub-tasks).
     """
     try:
-        # Get recent completed scan_prefixes jobs (need multiple to check for sub-tasks)
-        runs = job_run_manager.get_recent_runs(
-            limit=20, status="completed", job_type="scan_prefixes"
+        # Get all completed scan_prefixes jobs from today (starting at midnight)
+        from datetime import datetime, timezone
+        
+        # Get today's date at midnight in UTC
+        today_midnight = datetime.now(timezone.utc).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        
+        runs = job_run_manager.get_runs_since(
+            since=today_midnight, status="completed", job_type="scan_prefixes"
         )
 
         if not runs:
@@ -220,26 +227,38 @@ async def get_latest_scan_prefix_result(
                 "message": "No scan prefix job has been run yet",
             }
 
-        # Build a set of all sub-task celery IDs to identify which jobs are sub-tasks
-        all_sub_task_ids = set()
-        for run in runs:
-            result = run.get("result", {})
-            if result and "sub_task_ids" in result:
-                all_sub_task_ids.update(result.get("sub_task_ids", []))
-
-        # Find the most recent job that is NOT a sub-task
-        # (i.e., either a parent job or a standalone job)
+        # Find the most recent parent/main job
+        # A parent job has 'sub_task_ids' in its result (when split occurred)
+        # OR it's a standalone job without 'sub_task_ids'
+        # 
+        # Key distinction:
+        # - Main job: has 'sub_task_ids' OR prefixes is list of strings (CIDRs)
+        # - Sub-job: prefixes is list of objects with detailed results
         latest_parent_run = None
         for run in runs:
-            # Skip if this is a sub-task
-            if run.get("celery_task_id") in all_sub_task_ids:
-                continue
-
             result = run.get("result", {})
-            if result:
-                # This is either a parent job or standalone job
+            if not result:
+                continue
+            
+            # Check if this is a parent job
+            has_sub_task_ids = "sub_task_ids" in result
+            if has_sub_task_ids:
+                # Definitely a parent job that was split
                 latest_parent_run = run
                 break
+            
+            # Check if this is a standalone job (not split)
+            # Standalone jobs have prefixes as array of strings
+            # Sub-jobs have prefixes as array of objects
+            prefixes = result.get("prefixes", [])
+            if prefixes and isinstance(prefixes, list) and len(prefixes) > 0:
+                # Check first element - if it's a string, this is a main job
+                # If it's a dict/object, this is a sub-job
+                if isinstance(prefixes[0], str):
+                    # Main job with string prefixes
+                    latest_parent_run = run
+                    break
+                # Otherwise it's a sub-job with detailed prefix objects, skip it
 
         if not latest_parent_run:
             return {
@@ -259,10 +278,13 @@ async def get_latest_scan_prefix_result(
             total_unreachable = 0
             resolve_dns = False
 
-            # Find sub-tasks by their celery_task_id
-            for run in runs:
-                if run.get("celery_task_id") in sub_task_ids:
-                    sub_result = run.get("result", {})
+            # Fetch sub-tasks directly by their celery_task_ids
+            # This ensures we get all sub-tasks even if they're not in the recent runs
+            sub_task_runs = job_run_manager.get_job_runs_by_celery_ids(sub_task_ids)
+            
+            for sub_run in sub_task_runs:
+                sub_result = sub_run.get("result", {})
+                if sub_result:
                     total_ips_scanned += sub_result.get("total_ips_scanned", 0)
                     total_reachable += sub_result.get("total_reachable", 0)
                     total_unreachable += sub_result.get("total_unreachable", 0)
