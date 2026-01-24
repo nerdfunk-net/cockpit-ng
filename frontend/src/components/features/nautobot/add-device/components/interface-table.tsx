@@ -21,12 +21,17 @@ import type { DeviceFormValues } from '../validation'
 import type { NautobotDropdownsResponse } from '../types'
 import { DEFAULT_INTERFACE, DEFAULT_IP_ADDRESS } from '../constants'
 
+// Optional interface source prop (only used in CheckMK sync modal)
+type InterfaceSource = 'interfaces' | 'addresses'
+
 interface InterfaceTableProps {
   form: UseFormReturn<DeviceFormValues>
   dropdownData: NautobotDropdownsResponse
   onOpenProperties: (interfaceId: string) => void
   isLoading: boolean
   onGetPrimaryIP?: () => Promise<void>
+  interfaceSource?: InterfaceSource
+  onInterfaceSourceChange?: (source: InterfaceSource) => void
 }
 
 interface TableRow {
@@ -45,6 +50,8 @@ export function InterfaceTable({
   onOpenProperties,
   isLoading,
   onGetPrimaryIP,
+  interfaceSource,
+  onInterfaceSourceChange,
 }: InterfaceTableProps) {
   const { setValue, watch, formState: { errors } } = form
 
@@ -255,6 +262,21 @@ export function InterfaceTable({
       <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center space-x-2">
           <span className="text-sm font-medium">Network Interfaces</span>
+          {interfaceSource && onInterfaceSourceChange && (
+            <Select
+              value={interfaceSource}
+              onValueChange={(value) => onInterfaceSourceChange(value as InterfaceSource)}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="h-7 w-[140px] bg-white/20 border-white/30 text-white text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="interfaces">Source: Interfaces</SelectItem>
+                <SelectItem value="addresses">Source: Addresses</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
           <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
             {interfaces.length} interface{interfaces.length !== 1 ? 's' : ''}, {tableRows.length} IP{tableRows.length !== 1 ? 's' : ''}
           </Badge>

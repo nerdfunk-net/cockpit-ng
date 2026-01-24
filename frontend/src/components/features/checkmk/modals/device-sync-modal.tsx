@@ -46,6 +46,7 @@ import type {
   SoftwareVersion,
   NautobotDropdownsResponse,
 } from '@/components/features/nautobot/add-device/types'
+import type { InterfaceSource } from '@/components/features/checkmk/hosts-inventory/hooks/use-nautobot-sync'
 
 interface DeviceSyncModalProps {
   open: boolean
@@ -55,6 +56,8 @@ interface DeviceSyncModalProps {
   loadingMetadata: boolean
   interfaceMappings: Record<string, InterfaceMappingData>
   ipAddressStatuses: Array<{ id: string; name: string }> | null
+  interfaceSource: InterfaceSource
+  onInterfaceSourceChange: (source: InterfaceSource) => void
   onSync: (formData: DeviceFormValues, deviceId?: string) => Promise<void>
   onClose: () => void
   isSyncing: boolean
@@ -68,6 +71,8 @@ export function DeviceSyncModal({
   loadingMetadata,
   interfaceMappings,
   ipAddressStatuses,
+  interfaceSource,
+  onInterfaceSourceChange,
   onSync,
   onClose,
   isSyncing,
@@ -593,6 +598,8 @@ export function DeviceSyncModal({
                 }}
                 isLoading={isSyncing}
                 onGetPrimaryIP={isUpdate ? handleGetPrimaryIP : undefined}
+                interfaceSource={interfaceSource}
+                onInterfaceSourceChange={onInterfaceSourceChange}
               />
 
               {/* Footer Actions */}

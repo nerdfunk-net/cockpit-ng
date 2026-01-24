@@ -4,7 +4,9 @@ import type { CheckMKHost, CheckMKConfig, NautobotMetadata, PropertyMapping } fr
 import { initializePropertyMappings, type InterfaceMappingData } from '@/lib/checkmk/property-mapping-utils'
 import { formatDeviceSubmissionData } from '@/components/features/nautobot/add-device/utils'
 import type { DeviceFormValues } from '@/components/shared/device-form'
-import { parseInterfacesFromInventory, type CheckMKInterface } from '@/lib/checkmk/interface-mapping-utils'
+import { parseInterfacesFromInventory, parseInterfacesFromAddresses, type CheckMKInterface } from '@/lib/checkmk/interface-mapping-utils'
+
+export type InterfaceSource = 'interfaces' | 'addresses'
 
 /**
  * Convert netmask (e.g., "255.255.255.0") to CIDR notation (e.g., 24)
@@ -47,6 +49,8 @@ interface UseNautobotSyncReturn {
   ipAddressStatuses: Array<{ id: string; name: string }> | null
   ipAddressRoles: Array<{ id: string; name: string }> | null
   interfaceMappings: Record<string, InterfaceMappingData>
+  interfaceSource: InterfaceSource
+  setInterfaceSource: (source: InterfaceSource) => void
   handleSyncToNautobot: (host: CheckMKHost) => Promise<void>
   updatePropertyMapping: (checkMkKey: string, nautobotField: string) => void
   executeSyncToNautobot: (formData: DeviceFormValues, deviceId?: string) => Promise<void>
@@ -92,6 +96,9 @@ export function useNautobotSync({
   const [isSyncing, setIsSyncing] = useState(false)
   const [interfaceMappings, setInterfaceMappings] = useState<Record<string, InterfaceMappingData>>({})
 
+  // Interface source selection (interfaces or addresses table)
+  const [interfaceSource, setInterfaceSource] = useState<InterfaceSource>('interfaces')
+
   // Error modal state
   const [showErrorModal, setShowErrorModal] = useState(false)
   const [errorModalMessage, setErrorModalMessage] = useState<string>('')
@@ -99,7 +106,7 @@ export function useNautobotSync({
   /**
    * Load CheckMK inventory data for interface mapping
    */
-  const loadInventoryData = useCallback(async (hostName: string) => {
+  const loadInventoryData = useCallback(async (hostName: string, source: InterfaceSource) => {
     try {
       setLoadingInventory(true)
       const response = await apiCall<{ success: boolean; message: string; data: Record<string, unknown> }>(
@@ -107,13 +114,17 @@ export function useNautobotSync({
       )
       const inventoryData = response?.data || null
       setInventoryData(inventoryData)
-      
+
       // Parse interfaces from inventory and create interface mappings
       if (inventoryData) {
-        const interfaces = parseInterfacesFromInventory(inventoryData)
+        // Use appropriate parser based on source
+        const interfaces = source === 'addresses'
+          ? parseInterfacesFromAddresses(inventoryData)
+          : parseInterfacesFromInventory(inventoryData)
+
         const mappings: Record<string, InterfaceMappingData> = {}
         let mappingCounter = 0
-        
+
         interfaces.forEach((iface: CheckMKInterface) => {
           // Create a mapping for EACH IP address on the interface
           if (iface.ipAddresses.length > 0) {
@@ -121,10 +132,10 @@ export function useNautobotSync({
               // Use CIDR if available, otherwise convert netmask to CIDR
               const cidr = ipAddr.cidr || netmaskToCIDR(ipAddr.netmask)
               const ipAddress = `${ipAddr.address}/${cidr}`
-              
+
               mappings[`interface_${mappingCounter++}`] = {
-                enabled: iface.oper_status === 1, // Enable only if interface is operationally up
-                ipRole: ipIndex === 0 ? 'primary' : 'secondary', // First IP on interface is primary, others are secondary
+                enabled: source === 'addresses' ? true : iface.oper_status === 1, // For addresses source, default to enabled
+                ipRole: ipIndex === 0 ? 'none' : 'secondary', // First IP is 'none', others are 'secondary'
                 status: 'Active',
                 ipAddress,
                 interfaceName: iface.name,
@@ -133,7 +144,7 @@ export function useNautobotSync({
             })
           }
         })
-        
+
         setInterfaceMappings(mappings)
       }
     } catch (err) {
@@ -249,7 +260,7 @@ export function useNautobotSync({
       // Load Nautobot metadata (locations, roles, etc.) and inventory data in parallel
       await Promise.all([
         loadNautobotMetadata(),
-        loadInventoryData(host.host_name)
+        loadInventoryData(host.host_name, interfaceSource)
       ])
 
       // Initialize property mappings
@@ -393,6 +404,7 @@ export function useNautobotSync({
     setIpAddressStatuses(null)
     setIpAddressRoles(null)
     setInterfaceMappings({})
+    setInterfaceSource('interfaces') // Reset to default
   }, [])
 
   /**
@@ -410,6 +422,15 @@ export function useNautobotSync({
     }
   }, [checkmkConfig, nautobotMetadata, selectedHostForSync, isSyncModalOpen, initializeMappings])
 
+  // Reload inventory data when interface source changes (but not on initial load)
+  useEffect(() => {
+    if (selectedHostForSync && isSyncModalOpen) {
+      void loadInventoryData(selectedHostForSync.host_name, interfaceSource)
+    }
+    // Note: loadInventoryData is deliberately excluded from deps to avoid infinite loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interfaceSource])
+
   return useMemo(() => ({
     isSyncModalOpen,
     selectedHostForSync,
@@ -423,6 +444,8 @@ export function useNautobotSync({
     ipAddressStatuses,
     ipAddressRoles,
     interfaceMappings,
+    interfaceSource,
+    setInterfaceSource,
     handleSyncToNautobot,
     updatePropertyMapping,
     executeSyncToNautobot,
@@ -444,6 +467,7 @@ export function useNautobotSync({
     ipAddressStatuses,
     ipAddressRoles,
     interfaceMappings,
+    interfaceSource,
     handleSyncToNautobot,
     updatePropertyMapping,
     executeSyncToNautobot,

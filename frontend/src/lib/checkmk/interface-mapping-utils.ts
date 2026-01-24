@@ -213,3 +213,83 @@ export function formatSpeed(speed: number): string {
   }
   return `${speed} bps`
 }
+
+/**
+ * Parse interfaces from addresses table (alternative to interfaces table)
+ * Uses addresses.Rows[] to extract interface and IP information
+ * Default behavior: Interface status = Active, First IP role = None, Others = Secondary
+ */
+export function parseInterfacesFromAddresses(inventoryData: Record<string, unknown> | null): CheckMKInterface[] {
+  if (!inventoryData) return []
+
+  try {
+    const result = inventoryData.result as Record<string, unknown>
+    if (!result) return []
+
+    // Get the first hostname key (e.g., "LAB")
+    const hostname = Object.keys(result)[0]
+    if (!hostname) return []
+
+    const hostData = result[hostname] as Record<string, unknown>
+    const nodes = hostData?.Nodes as Record<string, unknown>
+    if (!nodes) return []
+
+    const networking = nodes.networking as Record<string, unknown>
+    if (!networking) return []
+
+    const networkingNodes = networking.Nodes as Record<string, unknown>
+    if (!networkingNodes) return []
+
+    // Extract addresses
+    const addressesNode = networkingNodes.addresses as Record<string, unknown>
+    const addressesTable = addressesNode?.Table as Record<string, unknown>
+    const addressesRows = (addressesTable?.Rows as Array<Record<string, unknown>>) || []
+
+    // Group addresses by interface name (device field)
+    const interfaceMap = new Map<string, CheckMKAddress[]>()
+
+    addressesRows.forEach((addr) => {
+      const device = String(addr.device || '')
+      if (!device) return
+
+      const address: CheckMKAddress = {
+        address: String(addr.address || ''),
+        broadcast: String(addr.broadcast || ''),
+        cidr: Number(addr.prefixlength || 0), // Use prefixlength from addresses table
+        device: device,
+        netmask: String(addr.netmask || ''),
+        network: String(addr.network || ''),
+        type: String(addr.type || 'ipv4'),
+      }
+
+      if (!interfaceMap.has(device)) {
+        interfaceMap.set(device, [])
+      }
+      interfaceMap.get(device)!.push(address)
+    })
+
+    // Convert grouped addresses to CheckMKInterface array
+    const interfaces: CheckMKInterface[] = []
+    let index = 0
+
+    interfaceMap.forEach((addresses, interfaceName) => {
+      interfaces.push({
+        index: ++index,
+        name: interfaceName,
+        alias: interfaceName,
+        admin_status: 1, // Default to Up
+        oper_status: 1,  // Default to Up
+        phys_address: '', // Not available from addresses table
+        port_type: 6,    // Default to Ethernet
+        speed: 0,        // Not available from addresses table
+        available: true, // Default to true
+        ipAddresses: addresses,
+      })
+    })
+
+    return interfaces
+  } catch (err) {
+    console.error('Failed to parse interfaces from addresses:', err)
+    return []
+  }
+}

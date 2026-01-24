@@ -98,6 +98,8 @@ export default function HostsInventoryPage() {
     loadingMetadata,
     ipAddressStatuses,
     interfaceMappings,
+    interfaceSource,
+    setInterfaceSource,
     handleSyncToNautobot,
     executeSyncToNautobot,
     closeSyncModal,
@@ -545,6 +547,8 @@ export default function HostsInventoryPage() {
         loadingMetadata={loadingMetadata}
         interfaceMappings={interfaceMappings}
         ipAddressStatuses={ipAddressStatuses}
+        interfaceSource={interfaceSource}
+        onInterfaceSourceChange={setInterfaceSource}
         onSync={executeSyncToNautobot}
         onClose={closeSyncModal}
         isSyncing={isSyncing}
