@@ -468,9 +468,9 @@ export function DeviceSyncModal({
       }
 
       const device = response.devices[0]
-      const primaryIP = device?.primary_ip4?.address
+      const primaryIPCIDR = device?.primary_ip4?.address
 
-      if (!primaryIP) {
+      if (!primaryIPCIDR) {
         toast({
           title: 'No Primary IP',
           description: `Device "${deviceName}" has no primary IPv4 address in Nautobot`,
@@ -479,38 +479,61 @@ export function DeviceSyncModal({
         return
       }
 
-      // Find the primary interface in the form
+      // Extract IP address without netmask from CIDR notation (e.g., "192.168.178.240/32" -> "192.168.178.240")
+      const primaryIPAddress = primaryIPCIDR.split('/')[0]
+
+      // Find the interface and IP address that matches the primary IP (without netmask)
       const interfaces = form.getValues('interfaces') || []
-      let primaryInterfaceIndex = -1
-      let primaryIpIndex = -1
+      let foundInterfaceIndex = -1
+      let foundIpIndex = -1
 
       interfaces.forEach((iface, ifaceIdx) => {
         iface.ip_addresses?.forEach((ip, ipIdx) => {
-          if (ip.is_primary) {
-            primaryInterfaceIndex = ifaceIdx
-            primaryIpIndex = ipIdx
+          // Extract IP address from current row (may have different netmask)
+          const currentIPAddress = ip.address?.split('/')[0]
+          if (currentIPAddress === primaryIPAddress) {
+            foundInterfaceIndex = ifaceIdx
+            foundIpIndex = ipIdx
           }
         })
       })
 
-      if (primaryInterfaceIndex === -1 || primaryIpIndex === -1) {
+      if (foundInterfaceIndex === -1 || foundIpIndex === -1) {
         toast({
-          title: 'No Primary Interface',
-          description: 'Please select a primary interface first by checking the "Primary" checkbox',
+          title: 'IP Address Not Found',
+          description: `No interface with IP address ${primaryIPAddress} found. Please add this IP address to an interface first.`,
           variant: 'destructive',
         })
         return
       }
 
-      // Update the primary interface's IP address
+      // First, uncheck all other primary checkboxes (only one primary IP allowed)
+      interfaces.forEach((iface, ifaceIdx) => {
+        iface.ip_addresses?.forEach((_, ipIdx) => {
+          if (ifaceIdx !== foundInterfaceIndex || ipIdx !== foundIpIndex) {
+            form.setValue(
+              `interfaces.${ifaceIdx}.ip_addresses.${ipIdx}.is_primary`,
+              false
+            )
+          }
+        })
+      })
+
+      // Update the found IP address with the CIDR notation from Nautobot
       form.setValue(
-        `interfaces.${primaryInterfaceIndex}.ip_addresses.${primaryIpIndex}.address`,
-        primaryIP
+        `interfaces.${foundInterfaceIndex}.ip_addresses.${foundIpIndex}.address`,
+        primaryIPCIDR
+      )
+
+      // Set the primary checkbox for this IP address
+      form.setValue(
+        `interfaces.${foundInterfaceIndex}.ip_addresses.${foundIpIndex}.is_primary`,
+        true
       )
 
       toast({
         title: 'Primary IP Updated',
-        description: `Set primary interface IP to ${primaryIP}`,
+        description: `Set ${primaryIPCIDR} as primary IP`,
       })
     } catch (error) {
       console.error('Failed to fetch primary IP:', error)

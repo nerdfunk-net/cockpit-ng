@@ -233,20 +233,20 @@ export function useNautobotSync({
           `nautobot/devices?filter_type=name&filter_value=${encodeURIComponent(host.host_name)}&reload=true`
         )
 
-        console.log('[useNautobotSync] Search result for', host.host_name, ':', searchResult)
+        console.error('[useNautobotSync] Search result for', host.host_name, ':', searchResult)
 
         if (searchResult?.devices && searchResult.devices.length > 0) {
           const deviceBasic = searchResult.devices[0] as Record<string, unknown>
 
           // Get detailed device information
           const deviceId = deviceBasic.id as string
-          console.log('[useNautobotSync] Found device with ID:', deviceId)
+          console.error('[useNautobotSync] Found device with ID:', deviceId)
           const deviceDetails = await apiCall<Record<string, unknown>>(`nautobot/devices/${deviceId}`)
 
           setNautobotDevice(deviceDetails || null)
           onMessage(`Device found in Nautobot`, 'success')
         } else {
-          console.log('[useNautobotSync] Device not found in Nautobot')
+          console.error('[useNautobotSync] Device not found in Nautobot')
           setNautobotDevice(null)
           onMessage(`Device not found in Nautobot - will create new`, 'info')
         }
@@ -272,7 +272,7 @@ export function useNautobotSync({
       setCheckingNautobot(false)
       setIsSyncModalOpen(false)
     }
-  }, [apiCall, onMessage, loadNautobotMetadata, loadInventoryData, initializeMappings])
+  }, [apiCall, onMessage, loadNautobotMetadata, loadInventoryData, initializeMappings, interfaceSource])
 
   /**
    * Update a single property mapping
