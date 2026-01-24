@@ -17,7 +17,7 @@ interface DeviceTableProps {
   roleFilters: Record<string, boolean>
   selectedLocation: string
   statusFilter: string
-  checkmkFilter: string
+  checkmkFilters: Record<string, boolean>
   filterOptions: {
     roles: Set<string>
     locations: Set<string>
@@ -40,7 +40,7 @@ interface DeviceTableProps {
   onRoleFiltersChange: (filters: Record<string, boolean>) => void
   onLocationChange: (location: string) => void
   onStatusFilterChange: (status: string) => void
-  onCheckmkFilterChange: (status: string) => void
+  onCheckmkFiltersChange: (filters: Record<string, boolean>) => void
   onPageChange: (page: number) => void
   onPageSizeChange: (size: number) => void
   onReloadDevices: () => void
@@ -59,7 +59,7 @@ export function DeviceTable({
   roleFilters,
   selectedLocation,
   statusFilter,
-  checkmkFilter,
+  checkmkFilters,
   filterOptions,
   activeFiltersCount,
   currentPage,
@@ -77,7 +77,7 @@ export function DeviceTable({
   onRoleFiltersChange,
   onLocationChange,
   onStatusFilterChange,
-  onCheckmkFilterChange,
+  onCheckmkFiltersChange,
   onPageChange,
   onPageSizeChange,
   onReloadDevices,
@@ -156,7 +156,7 @@ export function DeviceTable({
       {/* Table Content */}
       <div className="p-4 bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full table-fixed">
             <DeviceTableHeader
               hasSelectedDevices={selectedDevices.size > 0}
               allSelected={allSelected}
@@ -164,14 +164,14 @@ export function DeviceTable({
               roleFilters={roleFilters}
               selectedLocation={selectedLocation}
               statusFilter={statusFilter}
-              checkmkFilter={checkmkFilter}
+              checkmkFilters={checkmkFilters}
               filterOptions={filterOptions}
               onSelectAll={(checked) => onSelectAll(checked)}
               onDeviceNameFilterChange={onDeviceNameFilterChange}
               onRoleFiltersChange={onRoleFiltersChange}
               onLocationChange={onLocationChange}
               onStatusFilterChange={onStatusFilterChange}
-              onCheckmkFilterChange={onCheckmkFilterChange}
+              onCheckmkFiltersChange={onCheckmkFiltersChange}
             />
             <tbody className="divide-y divide-gray-200">
               {paginatedDevices.length === 0 ? (
@@ -284,14 +284,7 @@ export function DeviceTable({
       </div>
 
       {/* Action Buttons Footer */}
-      <div className="bg-gray-50 px-4 py-3 border-t flex items-center justify-between">
-        <div className="text-sm text-gray-600">
-          {hasDevicesSynced ? (
-            <span className="text-green-600">✓ Devices have been synced. Activate changes to apply them in CheckMK.</span>
-          ) : (
-            <span>Sync one or more devices to enable activation.</span>
-          )}
-        </div>
+      <div className="bg-gray-50 px-4 py-3 border-t flex items-center justify-end">
         <div className="flex items-center gap-2">
           {selectedDevices.size > 0 && (
             <Button

@@ -44,28 +44,27 @@ export function DeviceTableRow({
     <tr
       className={baseRowClass || alternatingRowClass}
     >
-      <td className="pl-4 pr-2 py-3 w-8 text-left">
+      <td className="pl-4 pr-2 py-3 w-12 text-left">
         <Checkbox
           checked={isSelected}
           onCheckedChange={(checked) => onSelect(device.id, !!checked)}
           aria-label={`Select ${device.name}`}
         />
       </td>
-      <td className="pl-4 pr-2 py-3 text-sm font-medium text-gray-900">{device.name}</td>
-      <td className="px-4 py-3 text-sm text-gray-600">{device.primary_ip4?.address || 'N/A'}</td>
-      <td className="px-4 py-3 text-sm text-gray-600">{device.role?.name || 'Unknown'}</td>
-      <td className="pl-12 pr-4 py-3 text-sm text-gray-600">{device.location?.name || 'Unknown'}</td>
-      <td className="px-4 py-3">
+      <td className="pl-4 pr-2 py-3 w-48 text-sm font-medium text-gray-900">{device.name}</td>
+      <td className="px-4 py-3 w-36 text-sm text-gray-600">{device.role?.name || 'Unknown'}</td>
+      <td className="pl-12 pr-4 py-3 w-56 text-sm text-gray-600">{device.location?.name || 'Unknown'}</td>
+      <td className="px-4 py-3 w-44">
         <Badge variant={getStatusBadgeVariant(device.status?.name || '')}>
           {device.status?.name || 'Unknown'}
         </Badge>
       </td>
-      <td className="pl-12 pr-4 py-3">
+      <td className="pl-12 pr-4 py-3 w-40">
         <div className="flex items-center gap-1">
           {getCheckMKStatusBadge(device.checkmk_status)}
         </div>
       </td>
-      <td className="pl-16 pr-4 py-3">
+      <td className="pl-16 pr-4 py-3 w-48">
         <div className="flex items-center gap-1">
           <Button
             size="sm"

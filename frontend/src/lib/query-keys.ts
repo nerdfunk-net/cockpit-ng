@@ -12,6 +12,7 @@ export const queryKeys = {
     host: (id: string) => [...queryKeys.checkmk.all, 'host', id] as const,
     syncStatus: () => [...queryKeys.checkmk.all, 'sync-status'] as const,
     pendingChanges: () => [...queryKeys.checkmk.all, 'pending-changes'] as const,
+    activationStatus: (activationId: string) => [...queryKeys.checkmk.all, 'activation-status', activationId] as const,
   },
 
   // Git Repositories

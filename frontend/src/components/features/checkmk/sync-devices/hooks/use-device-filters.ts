@@ -26,7 +26,7 @@ export function useDeviceFilters(devices: Device[]) {
   const [roleFilters, setRoleFilters] = useState<Record<string, boolean>>({})
   const [selectedLocation, setSelectedLocation] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState('')
-  const [checkmkFilter, setCheckmkFilter] = useState('')
+  const [checkmkFilters, setCheckmkFilters] = useState<Record<string, boolean>>({})
   const [sortColumn, setSortColumn] = useState('')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'none'>('none')
 
@@ -62,6 +62,19 @@ export function useDeviceFilters(devices: Device[]) {
     return roleFilters
   }, [roleFilters, filterOptions.roles])
 
+  // Compute effective CheckMK filters - if empty, treat all statuses as selected
+  const effectiveCheckmkFilters = useMemo(() => {
+    if (Object.keys(checkmkFilters).length === 0 && filterOptions.checkmkStatuses.size > 0) {
+      // Initialize with all CheckMK statuses selected
+      const initialFilters: Record<string, boolean> = {}
+      filterOptions.checkmkStatuses.forEach(status => {
+        initialFilters[status] = true
+      })
+      return initialFilters
+    }
+    return checkmkFilters
+  }, [checkmkFilters, filterOptions.checkmkStatuses])
+
   // Apply filters and sorting
   const filteredDevices = useMemo(() => {
     let filtered = devices.filter(device => {
@@ -91,8 +104,14 @@ export function useDeviceFilters(devices: Device[]) {
       // Status filter (keeping status filter as simple select)
       if (statusFilter && device.status?.name !== statusFilter) return false
 
-      // CheckMK filter (same pattern as status filter)
-      if (checkmkFilter && getCheckmkDisplayValue(device.checkmk_status) !== checkmkFilter) return false
+      // Multi-select CheckMK filter (checkbox-based)
+      if (Object.keys(effectiveCheckmkFilters).length > 0) {
+        const deviceCheckmkStatus = getCheckmkDisplayValue(device.checkmk_status)
+        // If the device's CheckMK status isn't in our filter list, show it (backward compatibility)
+        if (!(deviceCheckmkStatus in effectiveCheckmkFilters)) return true
+        // Otherwise, check if this status is selected
+        if (!effectiveCheckmkFilters[deviceCheckmkStatus]) return false
+      }
 
       return true
     })
@@ -118,7 +137,7 @@ export function useDeviceFilters(devices: Device[]) {
     }
 
     return filtered
-  }, [devices, deviceNameFilter, effectiveRoleFilters, selectedLocation, statusFilter, checkmkFilter, sortColumn, sortOrder])
+  }, [devices, deviceNameFilter, effectiveRoleFilters, selectedLocation, statusFilter, effectiveCheckmkFilters, sortColumn, sortOrder])
 
   const handleSort = useCallback((column: string) => {
     if (column === sortColumn) {
@@ -136,7 +155,6 @@ export function useDeviceFilters(devices: Device[]) {
   const resetFilters = useCallback(() => {
     setDeviceNameFilter('')
     setStatusFilter('')
-    setCheckmkFilter('')
     setSortColumn('')
     setSortOrder('none')
 
@@ -147,20 +165,28 @@ export function useDeviceFilters(devices: Device[]) {
     })
     setRoleFilters(resetRoleFilters)
 
+    // Reset CheckMK filters to all selected
+    const resetCheckmkFilters: Record<string, boolean> = {}
+    filterOptions.checkmkStatuses.forEach(status => {
+      resetCheckmkFilters[status] = true
+    })
+    setCheckmkFilters(resetCheckmkFilters)
+
     // Reset location search
     setSelectedLocation('')
-  }, [filterOptions.roles])
+  }, [filterOptions.roles, filterOptions.checkmkStatuses])
 
   const activeFiltersCount = useMemo(() => {
     return [
       deviceNameFilter,
       statusFilter,
-      checkmkFilter,
       selectedLocation
     ].filter(Boolean).length +
     // Add count for role filters (if any are deselected)
-    (Object.keys(effectiveRoleFilters).length > 0 && Object.values(effectiveRoleFilters).filter(Boolean).length < filterOptions.roles.size ? 1 : 0)
-  }, [deviceNameFilter, statusFilter, checkmkFilter, selectedLocation, effectiveRoleFilters, filterOptions.roles.size])
+    (Object.keys(effectiveRoleFilters).length > 0 && Object.values(effectiveRoleFilters).filter(Boolean).length < filterOptions.roles.size ? 1 : 0) +
+    // Add count for CheckMK filters (if any are deselected)
+    (Object.keys(effectiveCheckmkFilters).length > 0 && Object.values(effectiveCheckmkFilters).filter(Boolean).length < filterOptions.checkmkStatuses.size ? 1 : 0)
+  }, [deviceNameFilter, statusFilter, selectedLocation, effectiveRoleFilters, filterOptions.roles.size, effectiveCheckmkFilters, filterOptions.checkmkStatuses.size])
 
   return {
     filteredDevices,
@@ -168,7 +194,7 @@ export function useDeviceFilters(devices: Device[]) {
     roleFilters: effectiveRoleFilters,
     selectedLocation,
     statusFilter,
-    checkmkFilter,
+    checkmkFilters: effectiveCheckmkFilters,
     sortColumn,
     sortOrder,
     filterOptions,
@@ -177,7 +203,7 @@ export function useDeviceFilters(devices: Device[]) {
     setRoleFilters,
     setSelectedLocation,
     setStatusFilter,
-    setCheckmkFilter,
+    setCheckmkFilters,
     handleSort,
     resetFilters
   }

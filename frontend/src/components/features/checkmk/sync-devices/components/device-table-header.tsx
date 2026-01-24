@@ -23,14 +23,14 @@ interface DeviceTableHeaderProps {
   roleFilters: Record<string, boolean>
   selectedLocation: string
   statusFilter: string
-  checkmkFilter: string
+  checkmkFilters: Record<string, boolean>
   filterOptions: FilterOptions
   onSelectAll: (checked: boolean) => void
   onDeviceNameFilterChange: (value: string) => void
   onRoleFiltersChange: (filters: Record<string, boolean>) => void
   onLocationChange: (location: string) => void
   onStatusFilterChange: (status: string) => void
-  onCheckmkFilterChange: (status: string) => void
+  onCheckmkFiltersChange: (filters: Record<string, boolean>) => void
   onSort?: (column: string) => void
 }
 
@@ -40,26 +40,26 @@ export function DeviceTableHeader({
   roleFilters,
   selectedLocation,
   statusFilter,
-  checkmkFilter,
+  checkmkFilters,
   filterOptions,
   onSelectAll,
   onDeviceNameFilterChange,
   onRoleFiltersChange,
   onLocationChange,
   onStatusFilterChange,
-  onCheckmkFilterChange
+  onCheckmkFiltersChange
 }: DeviceTableHeaderProps) {
   return (
     <thead className="bg-gray-100 border-b">
       <tr>
-        <th className="pl-4 pr-2 py-3 w-8 text-left">
+        <th className="pl-4 pr-2 py-3 w-12 text-left">
           <Checkbox
             checked={allSelected}
             onCheckedChange={onSelectAll}
             aria-label="Select all devices"
           />
         </th>
-        <th className="pl-4 pr-2 py-3 text-left text-xs font-medium text-gray-600 uppercase">
+        <th className="pl-4 pr-2 py-3 w-48 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
             <div>Device Name</div>
             <div>
@@ -72,13 +72,7 @@ export function DeviceTableHeader({
             </div>
           </div>
         </th>
-        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-          <div className="space-y-1">
-            <div>IP Address</div>
-            <div className="h-8" />
-          </div>
-        </th>
-        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
+        <th className="px-4 py-3 w-36 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
             <div>Role</div>
             <div>
@@ -126,7 +120,7 @@ export function DeviceTableHeader({
             </div>
           </div>
         </th>
-        <th className="pl-12 pr-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
+        <th className="pl-12 pr-4 py-3 w-56 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
             <div>Location</div>
             <div>
@@ -141,7 +135,7 @@ export function DeviceTableHeader({
             </div>
           </div>
         </th>
-        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
+        <th className="px-4 py-3 w-44 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
             <div>Status</div>
             <div>
@@ -159,25 +153,55 @@ export function DeviceTableHeader({
             </div>
           </div>
         </th>
-        <th className="pl-12 pr-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
+        <th className="pl-12 pr-4 py-3 w-40 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
             <div>CheckMK</div>
             <div>
-              <Select value={checkmkFilter || "all"} onValueChange={(value) => onCheckmkFilterChange(value === "all" ? "" : value)}>
-                <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                  <SelectValue placeholder="All CheckMK" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All CheckMK</SelectItem>
-                  {Array.from(filterOptions.checkmkStatuses).sort().map(status => (
-                    <SelectItem key={`sync-devices-checkmk-${status}`} value={status}>{status}</SelectItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 text-xs justify-between w-full">
+                    CheckMK
+                    {Object.values(checkmkFilters).filter(Boolean).length < filterOptions.checkmkStatuses.size && Object.keys(checkmkFilters).length > 0 && (
+                      <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                        {Object.values(checkmkFilters).filter(Boolean).length}
+                      </Badge>
+                    )}
+                    <ChevronDown className="h-4 w-4 ml-auto" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-40">
+                  <DropdownMenuLabel className="text-xs">Filter by CheckMK Status</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="cursor-pointer text-red-600 hover:bg-red-50"
+                    onSelect={() => {
+                      const resetFilters: Record<string, boolean> = {}
+                      filterOptions.checkmkStatuses.forEach(status => {
+                        resetFilters[status] = false
+                      })
+                      onCheckmkFiltersChange(resetFilters)
+                    }}
+                  >
+                    Deselect all
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {Array.from(filterOptions.checkmkStatuses).sort().map((status) => (
+                    <DropdownMenuCheckboxItem
+                      key={`sync-devices-checkmk-${status}`}
+                      checked={checkmkFilters[status] || false}
+                      onCheckedChange={(checked) =>
+                        onCheckmkFiltersChange({ ...checkmkFilters, [status]: !!checked })
+                      }
+                    >
+                      {status}
+                    </DropdownMenuCheckboxItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </th>
-        <th className="pl-16 pr-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
+        <th className="pl-16 pr-4 py-3 w-48 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
             <div>Actions</div>
             <div className="h-8" />
