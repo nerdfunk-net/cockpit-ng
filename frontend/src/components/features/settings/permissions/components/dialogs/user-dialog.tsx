@@ -40,8 +40,9 @@ export function UserDialog({ open, onOpenChange, onSubmit, user, isEdit = false 
     resolver: zodResolver(isEdit ? updateUserSchema : createUserSchema),
     defaultValues: isEdit && user
       ? {
-          realname: user.realname,
-          email: user.email,
+          realname: user.realname || '',
+          email: user.email || '',
+          password: '',
           is_active: user.is_active,
         }
       : {
@@ -58,8 +59,9 @@ export function UserDialog({ open, onOpenChange, onSubmit, user, isEdit = false 
     if (open) {
       if (isEdit && user) {
         form.reset({
-          realname: user.realname,
-          email: user.email,
+          realname: user.realname || '',
+          email: user.email || '',
+          password: '',
           is_active: user.is_active,
         })
       } else {

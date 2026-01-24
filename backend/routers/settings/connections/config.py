@@ -27,7 +27,7 @@ class ConfigFileContent(BaseModel):
 @router.post("/validate")
 async def validate_yaml_content(
     file_content: ConfigFileContent,
-    current_user: dict = Depends(require_permission("configs.backup", "execute")),
+    current_user: dict = Depends(require_permission("settings.common", "read")),
 ):
     """Validate YAML content syntax.
 
@@ -83,7 +83,7 @@ async def validate_yaml_content(
 @router.get("/{filename}")
 async def read_config_file(
     filename: str,
-    current_user: dict = Depends(require_permission("configs.backup", "execute")),
+    current_user: dict = Depends(require_permission("settings.common", "read")),
 ):
     """Read a configuration file."""
     try:
@@ -138,7 +138,7 @@ async def read_config_file(
 async def write_config_file(
     filename: str,
     file_content: ConfigFileContent,
-    current_user: dict = Depends(require_permission("configs.backup", "execute")),
+    current_user: dict = Depends(require_permission("settings.common", "write")),
 ):
     """Write a configuration file."""
     try:

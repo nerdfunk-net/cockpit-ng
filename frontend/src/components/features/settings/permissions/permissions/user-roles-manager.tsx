@@ -91,7 +91,7 @@ export function UserRolesManager() {
               <TableHead>User</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Assigned Roles</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-right w-[360px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -110,13 +110,13 @@ export function UserRolesManager() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{user.email}</TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-col gap-2">
                       {currentRoles.length > 0 ? (
                         currentRoles.map((role) => (
                           <Badge
                             key={role.id}
                             variant={role.is_system ? 'default' : 'secondary'}
-                            className="flex items-center gap-1"
+                            className="flex items-center gap-1 w-fit"
                           >
                             <Shield className="h-3 w-3" />
                             {role.name}
@@ -133,7 +133,7 @@ export function UserRolesManager() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right w-[360px]">
                     {isExpanded ? (
                       <div className="flex items-center justify-end gap-2">
                         <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>

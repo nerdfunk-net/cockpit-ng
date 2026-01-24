@@ -199,4 +199,15 @@ export const queryKeys = {
     all: ['commonSettings'] as const,
     snmpMapping: () => [...queryKeys.commonSettings.all, 'snmpMapping'] as const,
   },
+
+  // Compliance Settings
+  complianceSettings: {
+    all: ['complianceSettings'] as const,
+    regexPatterns: () =>
+      [...queryKeys.complianceSettings.all, 'regexPatterns'] as const,
+    loginCredentials: () =>
+      [...queryKeys.complianceSettings.all, 'loginCredentials'] as const,
+    snmpMappings: () =>
+      [...queryKeys.complianceSettings.all, 'snmpMappings'] as const,
+  },
 }

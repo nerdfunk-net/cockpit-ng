@@ -9,6 +9,7 @@ This script initializes the RBAC system with:
 import argparse
 import sys
 import rbac_manager as rbac
+import user_db_manager as user_db
 
 
 def migrate_inventory_permissions(verbose: bool = True):
@@ -328,6 +329,8 @@ def seed_permissions(verbose: bool = True):
         ("settings.credentials", "read", "View credentials"),
         ("settings.credentials", "write", "Create/modify credentials"),
         ("settings.credentials", "delete", "Delete credentials"),
+        ("settings.common", "read", "View common settings (SNMP mapping with passwords)"),
+        ("settings.common", "write", "Modify common settings (SNMP mapping)"),
         ("settings.templates", "read", "View template settings"),
         ("settings.templates", "write", "Modify template settings"),
         # User management permissions
@@ -541,18 +544,19 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
     if verbose:
         print(f"    ✓ Assigned {network_count} permissions")
 
-    # Viewer: Read-only access to everything except user management
+    # Viewer: Read-only access to everything except user management and sensitive settings
     if verbose:
         print("\n  Assigning permissions to 'viewer' role...")
     viewer_count = 0
     for perm_key, perm_id in perm_map.items():
         # Grant all read permissions, skip write/delete/execute
-        if ":read" in perm_key or (
+        # Exclude sensitive permissions: users, settings.credentials, settings.common
+        if (":read" in perm_key or (
             ":execute" not in perm_key
             and ":write" not in perm_key
             and ":delete" not in perm_key
             and "users" not in perm_key
-        ):
+        )) and "settings.common" not in perm_key and "settings.credentials" not in perm_key:
             rbac.assign_permission_to_role(roles["viewer"]["id"], perm_id, granted=True)
             viewer_count += 1
     if verbose:
@@ -560,6 +564,43 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
 
     if verbose:
         print("\n✅ Permission assignment complete\n")
+
+
+def assign_admin_user_to_admin_role(verbose: bool = True):
+    """Assign the 'admin' user to the 'admin' role."""
+    if verbose:
+        print("Assigning admin user to admin role...")
+    
+    try:
+        # Get admin user
+        admin_user = user_db.get_user_by_username("admin")
+        if not admin_user:
+            if verbose:
+                print("  ⚠️  Admin user not found, skipping role assignment")
+            return
+        
+        # Get admin role
+        admin_role = rbac.get_role_by_name("admin")
+        if not admin_role:
+            if verbose:
+                print("  ⚠️  Admin role not found, skipping role assignment")
+            return
+        
+        # Check if assignment already exists
+        existing_roles = rbac.get_user_roles(admin_user["id"])
+        if any(role["id"] == admin_role["id"] for role in existing_roles):
+            if verbose:
+                print("  - Admin user already has admin role")
+            return
+        
+        # Assign admin role to admin user
+        rbac.assign_role_to_user(admin_user["id"], admin_role["id"])
+        if verbose:
+            print(f"  ✓ Assigned 'admin' role to user 'admin' (user_id={admin_user['id']})")
+    
+    except Exception as e:
+        if verbose:
+            print(f"  ⚠️  Error assigning admin role: {e}")
 
 
 def main(verbose: bool = True, remove_existing: bool = False):
@@ -586,6 +627,9 @@ def main(verbose: bool = True, remove_existing: bool = False):
 
     # Assign permissions to roles
     assign_permissions_to_roles(roles, verbose=verbose)
+
+    # Assign admin user to admin role
+    assign_admin_user_to_admin_role(verbose=verbose)
 
     # Run migration for existing systems (only if not removing all data)
     if not remove_existing:
