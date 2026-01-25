@@ -471,12 +471,17 @@ export function OnboardDevicePage() {
               <h3 className="font-semibold text-base mb-2">Onboarding Process</h3>
               <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
                 <li>Enter the device IP address(es) and select configuration options</li>
-                <li>The system triggers Nautobot&apos;s &quot;Sync Devices From Network&quot; job</li>
+                <li>Click &quot;Onboard Device&quot; to submit (you&apos;ll be prompted to confirm if no tags/custom fields are added)</li>
+                <li>A Celery background task is created and a progress modal appears showing real-time updates</li>
+                <li>The task triggers Nautobot&apos;s device onboarding job</li>
                 <li>Nautobot connects to the device via SSH using the specified credentials</li>
                 <li>Device information is discovered (hostname, platform, interfaces, etc.)</li>
-                <li>Tags and custom fields are applied to the new device</li>
-                <li>Network data sync retrieves additional information (VLANs, VRFs, cables, software)</li>
+                <li>After successful onboarding, tags and custom fields are applied to the device</li>
+                <li>If enabled, additional network data is synchronized (cables, software, VLANs, VRFs)</li>
               </ol>
+              <p className="text-muted-foreground text-sm mt-2">
+                Note: The progress modal displays each step in real-time, including job status and any errors encountered.
+              </p>
             </section>
 
             {/* Network Scanning */}
@@ -528,10 +533,11 @@ export function OnboardDevicePage() {
               <h3 className="font-semibold text-base mb-2">Optional Features</h3>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                 <li><strong>Platform</strong> — Auto-detect or specify device OS (Cisco IOS, Junos, etc.)</li>
-                <li><strong>Tags</strong> — Apply Nautobot tags to categorize devices</li>
-                <li><strong>Custom Fields</strong> — Set custom field values for additional metadata</li>
+                <li><strong>Tags</strong> — Apply Nautobot tags to categorize devices (opens modal to select tags)</li>
+                <li><strong>Custom Fields</strong> — Set custom field values for additional metadata (opens modal)</li>
                 <li><strong>SSH Port</strong> — Non-standard SSH port (default: 22)</li>
-                <li><strong>Timeout</strong> — Connection timeout in seconds (default: 30)</li>
+                <li><strong>Timeout</strong> — SSH connection timeout in seconds (default: 30)</li>
+                <li><strong>Onboarding Timeout</strong> — Maximum time to wait for onboarding job completion (default: 120s, increase for slower devices or when using auto-detect)</li>
               </ul>
             </section>
 
@@ -539,7 +545,8 @@ export function OnboardDevicePage() {
             <section>
               <h3 className="font-semibold text-base mb-2">Sync Options</h3>
               <p className="text-muted-foreground mb-2">
-                After onboarding, additional network data can be synchronized:
+                Select which additional network data to synchronize after device onboarding completes. 
+                All options are enabled by default:
               </p>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                 <li><strong>Cables</strong> — Discover cable connections via LLDP/CDP</li>
@@ -547,6 +554,9 @@ export function OnboardDevicePage() {
                 <li><strong>VLANs</strong> — Import VLAN configurations</li>
                 <li><strong>VRFs</strong> — Import VRF routing instances</li>
               </ul>
+              <p className="text-muted-foreground text-sm mt-2">
+                You can uncheck any options you don&apos;t need to speed up the onboarding process.
+              </p>
             </section>
 
             {/* Bulk Upload */}

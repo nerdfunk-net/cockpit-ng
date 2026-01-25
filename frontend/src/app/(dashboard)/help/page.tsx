@@ -6,7 +6,6 @@ import {
   Plus,
   RefreshCw,
   Save,
-  GitCompare,
   List,
   Database,
   FileText,
@@ -33,6 +32,8 @@ import {
   BookOpen,
   Target,
   Layers,
+  FileSpreadsheet,
+  Camera,
 } from 'lucide-react'
 
 export default function HelpPage() {
@@ -71,6 +72,12 @@ export default function HelpPage() {
               className="text-left px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors text-blue-700 font-medium"
             >
               📋 Overview
+            </button>
+            <button
+              onClick={() => scrollToSection('general')}
+              className="text-left px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors text-blue-700 font-medium"
+            >
+              📦 General
             </button>
             <button
               onClick={() => scrollToSection('nautobot')}
@@ -132,11 +139,11 @@ export default function HelpPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span><strong>Configuration Management:</strong> Backup, view, and compare device configurations</span>
+                  <span><strong>Configuration Management:</strong> Backup, view, compare, and track device configuration changes</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span><strong>Network Automation:</strong> Execute commands, manage Ansible inventories, and use templates</span>
+                  <span><strong>Network Automation:</strong> Execute commands, manage inventories, and use templates</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
@@ -152,6 +159,34 @@ export default function HelpPage() {
                 </li>
               </ul>
             </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* General Section */}
+      <section id="general" className="mb-12 scroll-mt-6">
+        <h2 className="text-3xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+          <List className="h-8 w-8 text-blue-600" />
+          General
+        </h2>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <List className="h-5 w-5 text-blue-600" />
+              Inventory
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-slate-700 mb-3">
+              Build and manage dynamic inventory for network automation and monitoring:
+            </p>
+            <ul className="space-y-1 text-sm text-slate-600">
+              <li>• Generate Ansible inventory files dynamically from Nautobot</li>
+              <li>• Create custom inventory groups using logical conditions</li>
+              <li>• Apply filters to select specific devices</li>
+              <li>• Export inventory to Git repositories</li>
+              <li>• Manage inventory templates and configurations</li>
+            </ul>
           </CardContent>
         </Card>
       </section>
@@ -240,6 +275,10 @@ export default function HelpPage() {
                   <Edit className="h-4 w-4 text-blue-600" />
                   <span><strong>Bulk Edit:</strong> Update multiple devices simultaneously</span>
                 </li>
+                <li className="flex items-center gap-2">
+                  <FileSpreadsheet className="h-4 w-4 text-blue-600" />
+                  <span><strong>CSV Updates:</strong> Bulk update device data using CSV files</span>
+                </li>
               </ul>
             </CardContent>
           </Card>
@@ -297,6 +336,21 @@ export default function HelpPage() {
               </p>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Wrench className="h-5 w-5 text-purple-600" />
+                Tools
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-slate-700">
+                Additional CheckMK utilities for managing monitoring infrastructure and troubleshooting
+                integration issues.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
@@ -323,10 +377,15 @@ export default function HelpPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-slate-700">
-                    Browse and view device configurations stored in Git repositories. Search and navigate
-                    through configuration files easily.
+                  <p className="text-slate-700 mb-3">
+                    Browse and view device configurations stored in Git repositories with powerful features:
                   </p>
+                  <ul className="space-y-1 text-sm text-slate-600">
+                    <li>• Search and navigate through configuration files</li>
+                    <li>• View file history and track changes over time</li>
+                    <li>• Compare configuration versions side-by-side</li>
+                    <li>• Identify differences between commits</li>
+                  </ul>
                 </CardContent>
               </Card>
 
@@ -341,21 +400,6 @@ export default function HelpPage() {
                   <p className="text-slate-700">
                     Automatically backup device configurations to Git repositories. Schedule regular backups
                     and maintain version history of all changes.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <GitCompare className="h-5 w-5 text-orange-600" />
-                    Compare Configs
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-slate-700">
-                    Compare configuration versions side-by-side, track changes over time, and identify
-                    differences between device configurations.
                   </p>
                 </CardContent>
               </Card>
@@ -387,21 +431,6 @@ export default function HelpPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <List className="h-5 w-5 text-green-600" />
-                    Ansible Inventory
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-slate-700">
-                    Generate and manage Ansible inventory files dynamically from Nautobot. Create custom
-                    inventory groups and filters.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5 text-orange-600" />
                     Templates
                   </CardTitle>
@@ -410,6 +439,21 @@ export default function HelpPage() {
                   <p className="text-slate-700">
                     Manage Jinja2 templates for configuration generation, TextFSM templates for parsing,
                     and other automation templates.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Camera className="h-5 w-5 text-purple-600" />
+                    Snapshots
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-slate-700">
+                    Capture and manage network device snapshots for configuration and state tracking.
+                    Compare snapshots to identify changes.
                   </p>
                 </CardContent>
               </Card>
