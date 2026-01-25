@@ -2,13 +2,13 @@
 Network automation and management routers.
 
 This package contains routers for:
-- Configuration management (backup, compare, view)
+- Configuration comparison (minimal - only compare endpoint for Config View)
 - Network automation (Netmiko, templates)
 - Compliance checking
 - Network utilities (ping, etc.)
 """
 
-# Import config routers
+# Import config routers (minimal - only compare endpoint)
 from .configs.compare import router as file_compare_router
 
 # Import automation routers

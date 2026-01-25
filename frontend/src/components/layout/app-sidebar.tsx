@@ -12,7 +12,6 @@ import {
   Plus,
   RefreshCw,
   Save,
-  GitCompare,
   List,
   Database,
   FileText,
