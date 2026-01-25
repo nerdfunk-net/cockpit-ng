@@ -40,7 +40,7 @@ export default function CheckMKSettingsForm() {
   // Local state for UI only (not server data)
   const [localCheckmkYaml, setLocalCheckmkYaml] = useState(checkmkYaml)
   const [localQueriesYaml, setLocalQueriesYaml] = useState(queriesYaml)
-  const [activeTab, setActiveTab] = useState(TAB_VALUES.CONNECTION)
+  const [activeTab, setActiveTab] = useState<string>(TAB_VALUES.CONNECTION)
   const [validationError, setValidationError] = useState<ValidationError | null>(null)
   const [showValidationDialog, setShowValidationDialog] = useState(false)
   const [showHelpDialog, setShowHelpDialog] = useState(false)
