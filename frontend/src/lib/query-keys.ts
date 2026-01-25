@@ -201,6 +201,15 @@ export const queryKeys = {
     snmpMapping: () => [...queryKeys.commonSettings.all, 'snmpMapping'] as const,
   },
 
+  // CheckMK Settings
+  checkmkSettings: {
+    all: ['checkmkSettings'] as const,
+    settings: () => [...queryKeys.checkmkSettings.all, 'settings'] as const,
+    yaml: () => [...queryKeys.checkmkSettings.all, 'yaml'] as const,
+    checkmkYaml: () => [...queryKeys.checkmkSettings.yaml(), 'checkmk'] as const,
+    queriesYaml: () => [...queryKeys.checkmkSettings.yaml(), 'queries'] as const,
+  },
+
   // Compliance Settings
   complianceSettings: {
     all: ['complianceSettings'] as const,
