@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast'
 import type {
   CheckMKSettings,
   ValidationResponse,
+  ValidationError,
   TestConnectionResponse,
   SaveYamlResponse,
   ApiResponse,
@@ -107,7 +108,7 @@ export function useCheckMKMutations() {
         description: `${variables.filename} is valid YAML`,
       })
     },
-    onError: (error: any) => {
+    onError: (error: ValidationError | Error) => {
       // Error will be handled by component (show dialog)
       console.error('YAML validation error:', error)
     },

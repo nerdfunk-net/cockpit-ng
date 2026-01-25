@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2, Settings, FileText, Shield } from 'lucide-react'
 import { useCheckMKSettingsQuery } from './hooks/use-checkmk-settings-query'
@@ -48,11 +48,11 @@ export default function CheckMKSettingsForm() {
   const [testMessage, setTestMessage] = useState('')
 
   // Update local content when query data changes
-  useMemo(() => {
+  useEffect(() => {
     setLocalCheckmkYaml(checkmkYaml)
   }, [checkmkYaml])
 
-  useMemo(() => {
+  useEffect(() => {
     setLocalQueriesYaml(queriesYaml)
   }, [queriesYaml])
 
@@ -100,7 +100,7 @@ export default function CheckMKSettingsForm() {
     validateYaml.mutate(
       { content: localCheckmkYaml, filename: YAML_FILES.CHECKMK },
       {
-        onError: (error: any) => {
+        onError: (error: ValidationError | Error) => {
           setValidationError(error)
           setShowValidationDialog(true)
         },
@@ -113,7 +113,7 @@ export default function CheckMKSettingsForm() {
     validateYaml.mutate(
       { content: localQueriesYaml, filename: YAML_FILES.QUERIES },
       {
-        onError: (error: any) => {
+        onError: (error: ValidationError | Error) => {
           setValidationError(error)
           setShowValidationDialog(true)
         },

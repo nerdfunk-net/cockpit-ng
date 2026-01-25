@@ -185,7 +185,7 @@ async function handleRequest(
         // Backend paths are like "/api/nautobot/devices" and "/auth/login"
         // We want them to be "/nautobot/devices" and "/auth/login"
         // Then Swagger UI will prepend /api server, resulting in "/api/nautobot/devices" and "/api/auth/login"
-        const rewrittenPaths: Record<string, any> = {}
+        const rewrittenPaths: Record<string, unknown> = {}
 
         for (const [path, pathItem] of Object.entries(openApiSpec.paths || {})) {
           // Remove leading /api/ if present
