@@ -41,16 +41,11 @@ export function InterfacePropertiesModal({
   show,
   onClose,
 }: InterfacePropertiesModalProps) {
-  console.log('[InterfacePropertiesModal] Component called!', { show, interfaceId })
   const { register, watch, setValue } = form
-
-  console.log('[InterfacePropertiesModal] Props:', { show, interfaceId })
 
   // interfaceId is now the index as a string
   const interfaceIndex = interfaceId ? parseInt(interfaceId, 10) : -1
   const interfaces = watch('interfaces')
-
-  console.log('[InterfacePropertiesModal] Interface index:', interfaceIndex, 'total interfaces:', interfaces?.length ?? 0)
 
   if (interfaceIndex === -1 || !show || isNaN(interfaceIndex) || !interfaces || interfaceIndex >= interfaces.length) return null
 

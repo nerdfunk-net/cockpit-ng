@@ -62,7 +62,7 @@ export function RepositoryForm({
             Category <span className="text-destructive">*</span>
           </Label>
           <Select
-            value={watch('category')}
+            value={watch('category') ?? ''}
             onValueChange={(value) => setValue('category', value as RepositoryFormValues['category'])}
             disabled={isSubmitting}
           >
@@ -152,7 +152,7 @@ export function RepositoryForm({
         <CredentialSelect
           authType={authType}
           credentials={credentials}
-          value={watch('credential_name')}
+          value={watch('credential_name') ?? ''}
           onChange={(value) => setValue('credential_name', value)}
           disabled={isSubmitting}
         />
@@ -179,7 +179,7 @@ export function RepositoryForm({
           <div className="flex items-center space-x-2 pt-6">
             <Checkbox
               id="verify-ssl"
-              checked={watch('verify_ssl')}
+              checked={watch('verify_ssl') ?? false}
               onCheckedChange={(checked) => setValue('verify_ssl', !!checked)}
               className="border-2 border-gray-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
               disabled={isSubmitting}

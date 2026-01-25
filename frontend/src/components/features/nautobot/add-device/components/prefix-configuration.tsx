@@ -28,7 +28,7 @@ export function PrefixConfiguration({ form, isLoading }: PrefixConfigurationProp
           <div className="flex items-center space-x-2">
             <Checkbox
               id="addPrefix"
-              checked={watch('addPrefix')}
+              checked={watch('addPrefix') ?? false}
               onCheckedChange={(checked) => setValue('addPrefix', checked as boolean)}
               disabled={isLoading}
             />
@@ -42,7 +42,7 @@ export function PrefixConfiguration({ form, isLoading }: PrefixConfigurationProp
               Prefix Length:
             </Label>
             <Select
-              value={watch('defaultPrefixLength')}
+              value={watch('defaultPrefixLength') ?? ''}
               onValueChange={(value) => setValue('defaultPrefixLength', value)}
               disabled={isLoading || !watch('addPrefix')}
             >

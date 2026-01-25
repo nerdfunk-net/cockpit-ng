@@ -130,7 +130,7 @@ export function InterfaceList({
                     Type <span className="text-destructive">*</span>
                   </Label>
                   <Select
-                    value={watch(`interfaces.${index}.type`)}
+                    value={watch(`interfaces.${index}.type`) ?? ''}
                     onValueChange={(value) => setValue(`interfaces.${index}.type`, value)}
                     disabled={isLoading}
                   >
@@ -156,7 +156,7 @@ export function InterfaceList({
                     Status <span className="text-destructive">*</span>
                   </Label>
                   <Select
-                    value={watch(`interfaces.${index}.status`)}
+                    value={watch(`interfaces.${index}.status`) ?? ''}
                     onValueChange={(value) => setValue(`interfaces.${index}.status`, value)}
                     disabled={isLoading}
                   >
@@ -258,7 +258,7 @@ export function InterfaceList({
                             Namespace <span className="text-destructive">*</span>
                           </Label>
                           <Select
-                            value={watch(`interfaces.${index}.ip_addresses.${ipIndex}.namespace`)}
+                            value={watch(`interfaces.${index}.ip_addresses.${ipIndex}.namespace`) ?? ''}
                             onValueChange={(value) => setValue(`interfaces.${index}.ip_addresses.${ipIndex}.namespace`, value)}
                             disabled={isLoading}
                           >

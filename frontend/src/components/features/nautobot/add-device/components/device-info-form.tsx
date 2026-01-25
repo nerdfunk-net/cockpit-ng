@@ -116,7 +116,7 @@ export function DeviceInfoForm({
             Device Role <span className="text-destructive">*</span>
           </Label>
           <Select
-            value={watch('selectedRole')}
+            value={watch('selectedRole') ?? ''}
             onValueChange={(value) => setValue('selectedRole', value)}
             disabled={isLoading}
           >
@@ -142,7 +142,7 @@ export function DeviceInfoForm({
             Device Status <span className="text-destructive">*</span>
           </Label>
           <Select
-            value={watch('selectedStatus')}
+            value={watch('selectedStatus') ?? ''}
             onValueChange={(value) => setValue('selectedStatus', value)}
             disabled={isLoading}
           >
@@ -206,7 +206,7 @@ export function DeviceInfoForm({
             Platform
           </Label>
           <Select
-            value={watch('selectedPlatform')}
+            value={watch('selectedPlatform') ?? ''}
             onValueChange={(value) => setValue('selectedPlatform', value)}
             disabled={isLoading}
           >

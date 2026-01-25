@@ -233,20 +233,20 @@ export function useNautobotSync({
           `nautobot/devices?filter_type=name&filter_value=${encodeURIComponent(host.host_name)}&reload=true`
         )
 
-        console.error('[useNautobotSync] Search result for', host.host_name, ':', searchResult)
+        console.log('[useNautobotSync] Search result for', host.host_name, ':', searchResult)
 
         if (searchResult?.devices && searchResult.devices.length > 0) {
           const deviceBasic = searchResult.devices[0] as Record<string, unknown>
 
           // Get detailed device information
           const deviceId = deviceBasic.id as string
-          console.error('[useNautobotSync] Found device with ID:', deviceId)
+          console.log('[useNautobotSync] Found device with ID:', deviceId)
           const deviceDetails = await apiCall<Record<string, unknown>>(`nautobot/devices/${deviceId}`)
 
           setNautobotDevice(deviceDetails || null)
           onMessage(`Device found in Nautobot`, 'success')
         } else {
-          console.error('[useNautobotSync] Device not found in Nautobot')
+          console.log('[useNautobotSync] Device not found in Nautobot')
           setNautobotDevice(null)
           onMessage(`Device not found in Nautobot - will create new`, 'info')
         }

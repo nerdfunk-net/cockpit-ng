@@ -161,7 +161,7 @@ export function ConnectionSettingsForm({
                     <FormLabel>SSL Verification</FormLabel>
                     <div className="flex items-center space-x-2 p-3 bg-white rounded-lg border border-gray-200">
                       <FormControl>
-                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                        <Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} />
                       </FormControl>
                       <label className="text-sm text-gray-700">Verify SSL certificates</label>
                     </div>

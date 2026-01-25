@@ -847,7 +847,7 @@ export default function NautobotSettingsForm() {
                   <Label htmlFor="default-platform" className="text-sm font-medium text-gray-700">
                     Platform
                   </Label>
-                  <Select value={defaults.platform} onValueChange={(value) => updateDefault('platform', value)}>
+                  <Select value={defaults.platform ?? ''} onValueChange={(value) => updateDefault('platform', value)}>
                     <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select a platform" />
                     </SelectTrigger>
@@ -872,7 +872,7 @@ export default function NautobotSettingsForm() {
                   <Label htmlFor="default-interface-status" className="text-sm font-medium text-gray-700">
                     Interface Status
                   </Label>
-                  <Select value={defaults.interface_status} onValueChange={(value) => updateDefault('interface_status', value)}>
+                  <Select value={defaults.interface_status ?? ''} onValueChange={(value) => updateDefault('interface_status', value)}>
                     <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select interface status" />
                     </SelectTrigger>
@@ -899,7 +899,7 @@ export default function NautobotSettingsForm() {
                   <Label htmlFor="default-device-status" className="text-sm font-medium text-gray-700">
                     Device Status
                   </Label>
-                  <Select value={defaults.device_status} onValueChange={(value) => updateDefault('device_status', value)}>
+                  <Select value={defaults.device_status ?? ''} onValueChange={(value) => updateDefault('device_status', value)}>
                     <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select device status" />
                     </SelectTrigger>
@@ -926,7 +926,7 @@ export default function NautobotSettingsForm() {
                   <Label htmlFor="default-ip-status" className="text-sm font-medium text-gray-700">
                     IP Address Status
                   </Label>
-                  <Select value={defaults.ip_address_status} onValueChange={(value) => updateDefault('ip_address_status', value)}>
+                  <Select value={defaults.ip_address_status ?? ''} onValueChange={(value) => updateDefault('ip_address_status', value)}>
                     <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select IP address status" />
                     </SelectTrigger>
@@ -953,7 +953,7 @@ export default function NautobotSettingsForm() {
                   <Label htmlFor="default-ip-prefix-status" className="text-sm font-medium text-gray-700">
                     IP Prefix Status
                   </Label>
-                  <Select value={defaults.ip_prefix_status} onValueChange={(value) => updateDefault('ip_prefix_status', value)}>
+                  <Select value={defaults.ip_prefix_status ?? ''} onValueChange={(value) => updateDefault('ip_prefix_status', value)}>
                     <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select IP prefix status" />
                     </SelectTrigger>
@@ -980,7 +980,7 @@ export default function NautobotSettingsForm() {
                   <Label htmlFor="default-namespace" className="text-sm font-medium text-gray-700">
                     Namespace
                   </Label>
-                  <Select value={defaults.namespace} onValueChange={(value) => updateDefault('namespace', value)}>
+                  <Select value={defaults.namespace ?? ''} onValueChange={(value) => updateDefault('namespace', value)}>
                     <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select a namespace" />
                     </SelectTrigger>
@@ -1002,7 +1002,7 @@ export default function NautobotSettingsForm() {
                   <Label htmlFor="default-device-role" className="text-sm font-medium text-gray-700">
                     Device Role
                   </Label>
-                  <Select value={defaults.device_role} onValueChange={(value) => updateDefault('device_role', value)}>
+                  <Select value={defaults.device_role ?? ''} onValueChange={(value) => updateDefault('device_role', value)}>
                     <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select a device role" />
                     </SelectTrigger>
@@ -1029,7 +1029,7 @@ export default function NautobotSettingsForm() {
                   <Label htmlFor="default-secret-group" className="text-sm font-medium text-gray-700">
                     Secret Group
                   </Label>
-                  <Select value={defaults.secret_group} onValueChange={(value) => updateDefault('secret_group', value)}>
+                  <Select value={defaults.secret_group ?? ''} onValueChange={(value) => updateDefault('secret_group', value)}>
                     <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select a secret group" />
                     </SelectTrigger>
@@ -1167,7 +1167,7 @@ export default function NautobotSettingsForm() {
                     <Label htmlFor="offboard_status" className="text-xs font-medium text-blue-800">
                       Status
                     </Label>
-                    <Select value={offboardingSettings.status_id} onValueChange={(value) =>
+                    <Select value={offboardingSettings.status_id ?? ''} onValueChange={(value) =>
                       setOffboardingSettings(prev => ({ ...prev, status_id: value }))
                     }>
                       <SelectTrigger className="w-full h-8 text-xs bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
@@ -1193,7 +1193,7 @@ export default function NautobotSettingsForm() {
                     <Label htmlFor="offboard_role" className="text-xs font-medium text-blue-800">
                       Role
                     </Label>
-                    <Select value={offboardingSettings.role_id} onValueChange={(value) =>
+                    <Select value={offboardingSettings.role_id ?? ''} onValueChange={(value) =>
                       setOffboardingSettings(prev => ({ ...prev, role_id: value }))
                     }>
                       <SelectTrigger className="w-full h-8 text-xs bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
