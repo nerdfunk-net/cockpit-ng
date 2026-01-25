@@ -101,7 +101,6 @@ const navigationSections: NavSection[] = [
         children: [
           { label: 'View', href: '/configs', icon: Eye },
           { label: 'Backup', href: '/backup', icon: Save },
-          { label: 'Compare', href: '/compare', icon: GitCompare },
         ],
       },
       {
