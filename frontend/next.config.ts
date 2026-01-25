@@ -47,8 +47,9 @@ const nextConfig: NextConfig = {
   // Security and caching headers
   async headers() {
     const securityHeaders = [
+      // Strict CSP for all routes (API docs excluded via middleware)
       {
-        source: '/(.*)',
+        source: '/:path((?!api/docs|api/redoc|api/openapi.json).*)*',
         headers: [
           // Prevent clickjacking attacks
           {
