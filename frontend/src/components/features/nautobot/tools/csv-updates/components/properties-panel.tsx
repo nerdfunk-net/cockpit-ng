@@ -242,33 +242,6 @@ export function PropertiesPanel({
               </div>
             </div>
           )}
-
-          {/* Info about ignored columns */}
-          {(alwaysIgnored.length > 0 || lookupColumns.length > 0) && (
-            <Alert className="bg-blue-50 border-blue-200">
-              <Info className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-xs">
-                <strong>Auto-ignored columns:</strong>
-                <div className="mt-1 space-y-1">
-                  {lookupColumns.length > 0 && (
-                    <div>
-                      <span className="font-medium">Lookup fields:</span>{' '}
-                      <span className="font-mono">{lookupColumns.join(', ')}</span>
-                    </div>
-                  )}
-                  {alwaysIgnored.length > 0 && (
-                    <div>
-                      <span className="font-medium">Read-only fields:</span>{' '}
-                      <span className="font-mono">
-                        {alwaysIgnored.slice(0, 5).join(', ')}
-                        {alwaysIgnored.length > 5 && ` +${alwaysIgnored.length - 5} more`}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
         </div>
       </div>
     </div>

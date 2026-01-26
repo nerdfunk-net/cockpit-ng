@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { FileSpreadsheet, Upload, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react'
+import { FileSpreadsheet, Upload, CheckCircle, AlertTriangle, Loader2, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -13,21 +13,49 @@ import { Badge } from '@/components/ui/badge'
 import type { ObjectType } from './types'
 import { useCsvUpload } from './hooks/use-csv-upload'
 import { useCsvUpdatesMutations } from '@/hooks/queries/use-csv-updates-mutations'
-import { PropertiesPanel } from './components'
+import { PropertiesPanel, MappingPanel } from './components'
+import { useToast } from '@/hooks/use-toast'
 
 const EMPTY_SET = new Set<string>()
+const EMPTY_MAPPING: Record<string, string> = {}
 
 export default function CsvUpdatesPage() {
   const [objectType, setObjectType] = useState<ObjectType>('devices')
   const [ignoreUuid, setIgnoreUuid] = useState(true) // Default: ignore UUID
   const [ignoredColumns, setIgnoredColumns] = useState<Set<string>>(EMPTY_SET)
   const [tagsMode, setTagsMode] = useState<'replace' | 'merge'>('replace') // Default: replace tags
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>(EMPTY_MAPPING)
+
+  // Auto-populate column mapping based on CSV headers
+  const autoPopulateColumnMapping = useCallback((headers: string[]) => {
+    if (objectType !== 'ip-prefixes') return
+
+    const newMapping: Record<string, string> = {}
+
+    // Map 'prefix' lookup field
+    if (headers.includes('prefix')) {
+      newMapping['prefix'] = 'prefix'
+    }
+
+    // Map 'namespace' lookup field
+    // Try 'namespace' first, then 'namespace__name' as fallback
+    if (headers.includes('namespace')) {
+      newMapping['namespace'] = 'namespace'
+    } else if (headers.includes('namespace__name')) {
+      // Map namespace__name column to namespace lookup field
+      newMapping['namespace'] = 'namespace__name'
+    }
+
+    setColumnMapping(newMapping)
+  }, [objectType])
 
   // Custom hook for CSV upload management
   const csvUpload = useCsvUpload({
     objectType,
-    onParseComplete: () => {
-      // CSV parsed successfully
+    onParseComplete: (data) => {
+      // CSV parsed successfully - auto-populate column mapping
+      // Use data.headers directly (not csvUpload.parsedData.headers which isn't updated yet)
+      autoPopulateColumnMapping(data.headers)
     },
     onParseError: (error) => {
       console.error('CSV parse error:', error)
@@ -36,12 +64,14 @@ export default function CsvUpdatesPage() {
 
   // TanStack Query mutation for processing updates
   const { processUpdates } = useCsvUpdatesMutations()
+  const { toast } = useToast()
 
   const handleObjectTypeChange = useCallback(
     (value: ObjectType) => {
       setObjectType(value)
       // Reset properties when changing object type
       setIgnoredColumns(EMPTY_SET)
+      setColumnMapping(EMPTY_MAPPING)
       // Re-validate with new object type if data is already parsed
       csvUpload.revalidate(value)
     },
@@ -69,8 +99,37 @@ export default function CsvUpdatesPage() {
     [csvUpload.parsedData.headers, csvUpload.validationSummary.hasErrors, objectType]
   )
 
-  const handleProcessUpdates = useCallback(() => {
+  // Show mapping panel for IP prefixes after successful parsing
+  const showMappingPanel = useMemo(
+    () =>
+      csvUpload.parsedData.headers.length > 0 &&
+      !csvUpload.validationSummary.hasErrors &&
+      (objectType === 'ip-prefixes'),
+    [csvUpload.parsedData.headers, csvUpload.validationSummary.hasErrors, objectType]
+  )
+
+  // Validate column mapping - check if all required fields are mapped
+  const validateColumnMapping = useCallback((): boolean => {
+    if (objectType !== 'ip-prefixes') return true
+
+    const requiredFields = ['prefix', 'namespace']
+    const missingFields = requiredFields.filter((field) => !columnMapping[field])
+
+    return missingFields.length === 0
+  }, [objectType, columnMapping])
+
+  const handleProcessUpdates = useCallback((dryRun: boolean = false) => {
     if (!csvUpload.parsedData || csvUpload.validationSummary.hasErrors) {
+      return
+    }
+
+    // Validate column mapping for IP prefixes
+    if (!validateColumnMapping()) {
+      toast({
+        title: 'Mapping Error',
+        description: 'Please map all required lookup fields before processing updates.',
+        variant: 'destructive',
+      })
       return
     }
 
@@ -101,11 +160,12 @@ export default function CsvUpdatesPage() {
         delimiter: csvUpload.csvConfig.delimiter,
         quoteChar: csvUpload.csvConfig.quoteChar,
       },
-      dryRun: false,
+      dryRun, // Pass the dryRun parameter
       ignoreUuid, // Pass the ignoreUuid option
       tagsMode, // Pass the tags mode (replace or merge)
+      columnMapping: objectType === 'ip-prefixes' ? columnMapping : undefined, // Pass column mapping for IP prefixes
     })
-  }, [objectType, csvUpload.parsedData, csvUpload.csvConfig, csvUpload.validationSummary, ignoredColumns, ignoreUuid, tagsMode, processUpdates])
+  }, [objectType, csvUpload.parsedData, csvUpload.csvConfig, csvUpload.validationSummary, ignoredColumns, ignoreUuid, tagsMode, columnMapping, validateColumnMapping, processUpdates, toast])
 
   return (
     <div className="space-y-6">
@@ -289,6 +349,16 @@ export default function CsvUpdatesPage() {
         </div>
       )}
 
+      {/* Mapping Panel - For IP prefixes */}
+      {showMappingPanel && (
+        <MappingPanel
+          objectType={objectType}
+          csvHeaders={csvUpload.parsedData.headers}
+          columnMapping={columnMapping}
+          onColumnMappingChange={setColumnMapping}
+        />
+      )}
+
       {/* Properties Panel - Conditional based on object type */}
       {showPropertiesPanel && (
         <PropertiesPanel
@@ -363,7 +433,25 @@ export default function CsvUpdatesPage() {
             Clear
           </Button>
           <Button
-            onClick={handleProcessUpdates}
+            variant="outline"
+            onClick={() => handleProcessUpdates(true)}
+            disabled={processUpdates.isPending}
+            className="border-2 border-blue-500 text-blue-600 hover:bg-blue-50"
+          >
+            {processUpdates.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Running Dry Run...
+              </>
+            ) : (
+              <>
+                <Eye className="h-4 w-4 mr-2" />
+                Dry Run
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={() => handleProcessUpdates(false)}
             disabled={processUpdates.isPending}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >

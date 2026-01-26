@@ -41,6 +41,7 @@ def update_ip_prefixes_from_csv_task(
     dry_run: bool = False,
     ignore_uuid: bool = True,
     tags_mode: str = "replace",
+    column_mapping: Optional[Dict[str, str]] = None,
 ) -> dict:
     """
     Task: Update Nautobot IP prefixes from CSV data.
@@ -62,6 +63,9 @@ def update_ip_prefixes_from_csv_task(
         dry_run: If True, validate without making changes (default: False)
         ignore_uuid: If True, use prefix+namespace lookup; if False, use UUID from CSV (default: True)
         tags_mode: How to handle tags - "replace" to overwrite or "merge" to add (default: "replace")
+        column_mapping: Maps lookup field names to CSV column names. Example:
+            {"prefix": "network", "namespace__name": "ns_name", "namespace": "namespace"}
+            If not provided, uses default column names (prefix, namespace__name, namespace)
 
     Returns:
         dict: Update results including success/failure counts and details
@@ -73,6 +77,7 @@ def update_ip_prefixes_from_csv_task(
         logger.info(f"Dry run: {dry_run}")
         logger.info(f"Ignore UUID: {ignore_uuid}")
         logger.info(f"Tags mode: {tags_mode}")
+        logger.info(f"Column mapping: {column_mapping}")
         logger.info(f"CSV Options: {csv_options}")
 
         self.update_state(
@@ -122,28 +127,47 @@ def update_ip_prefixes_from_csv_task(
         headers = list(rows[0].keys()) if rows else []
         logger.info(f"CSV columns: {headers}")
 
-        # STEP 2: Validate CSV structure
+        # STEP 2: Apply column mapping and validate CSV structure
         logger.info("-" * 80)
-        logger.info("STEP 2: VALIDATING CSV STRUCTURE")
+        logger.info("STEP 2: APPLYING COLUMN MAPPING & VALIDATING CSV STRUCTURE")
         logger.info("-" * 80)
+
+        # Initialize column mapping with defaults
+        mapping = column_mapping or {}
+
+        # Helper function to get actual CSV column name from lookup field name
+        def get_csv_column(lookup_field: str) -> str:
+            """Get the CSV column name for a lookup field, using mapping if provided."""
+            return mapping.get(lookup_field, lookup_field)
+
+        # Get mapped column names (only 2 lookup fields)
+        prefix_col = get_csv_column("prefix")
+        namespace_col = get_csv_column("namespace")
+        id_col = get_csv_column("id") if not ignore_uuid else None
+
+        logger.info("Column name mapping:")
+        logger.info(f"  - Lookup field 'prefix' → CSV column '{prefix_col}'")
+        logger.info(f"  - Lookup field 'namespace' → CSV column '{namespace_col}'")
+        if id_col:
+            logger.info(f"  - Lookup field 'id' → CSV column '{id_col}'")
 
         # Check for prefix column (required)
-        if "prefix" not in headers:
+        if prefix_col not in headers:
             return {
                 "success": False,
-                "error": "CSV is missing required 'prefix' column",
+                "error": f"CSV is missing required column '{prefix_col}' (mapped from 'prefix')",
             }
 
-        logger.info("✓ Required 'prefix' column found")
+        logger.info(f"✓ Required column '{prefix_col}' found")
 
-        # Check for namespace column (optional, defaults to "Global")
-        has_namespace = "namespace__name" in headers
-        if has_namespace:
-            logger.info("✓ 'namespace__name' column found")
-        else:
-            logger.info(
-                "⚠ 'namespace__name' column not found, will default to 'Global'"
-            )
+        # Check for namespace column (required)
+        if namespace_col not in headers:
+            return {
+                "success": False,
+                "error": f"CSV is missing required column '{namespace_col}' (mapped from 'namespace')",
+            }
+
+        logger.info(f"✓ Required column '{namespace_col}' found")
 
         # STEP 3: Initialize Nautobot service
         logger.info("-" * 80)
@@ -166,13 +190,27 @@ def update_ip_prefixes_from_csv_task(
         skipped = []
 
         for idx, row in enumerate(rows, 1):
-            prefix_value = row.get("prefix", "").strip()
-            namespace_name = row.get("namespace__name", "").strip() or "Global"
-            csv_uuid = row.get("id", "").strip() if not ignore_uuid else None
+            # Extract values using mapped column names
+            prefix_value = row.get(prefix_col, "").strip()
+            namespace_value = row.get(namespace_col, "").strip()
+            csv_uuid = row.get(id_col, "").strip() if (not ignore_uuid and id_col) else None
+
+            # Validate namespace value
+            if not namespace_value:
+                logger.warning(f"Row {idx}: Empty namespace value for prefix '{prefix_value}', skipping")
+                skipped.append(
+                    {
+                        "row": idx,
+                        "prefix": prefix_value,
+                        "namespace": "",
+                        "reason": "Empty namespace value",
+                    }
+                )
+                continue
 
             # Identifier for logging
             if ignore_uuid or not csv_uuid:
-                identifier = f"{prefix_value} (namespace: {namespace_name})"
+                identifier = f"{prefix_value} (namespace: {namespace_value})"
             else:
                 identifier = f"{prefix_value} (UUID: {csv_uuid})"
 
@@ -211,27 +249,27 @@ def update_ip_prefixes_from_csv_task(
                 existing_prefix = None
 
                 if ignore_uuid or not csv_uuid:
-                    # Use prefix + namespace lookup
+                    # Use prefix + namespace lookup via GraphQL
                     logger.info(
-                        f"Looking up prefix '{prefix_value}' in namespace '{namespace_name}'"
+                        f"Looking up prefix '{prefix_value}' in namespace '{namespace_value}'"
                     )
 
                     prefix_uuid, existing_prefix = asyncio.run(
-                        _find_prefix_by_prefix_and_namespace(
-                            nautobot_service, prefix_value, namespace_name
+                        _find_prefix_by_prefix_and_namespace_graphql(
+                            nautobot_service, prefix_value, namespace_value
                         )
                     )
 
                     if not prefix_uuid:
                         logger.warning(
-                            f"Prefix '{prefix_value}' not found in namespace '{namespace_name}'"
+                            f"Prefix '{prefix_value}' not found in namespace '{namespace_value}'"
                         )
                         failures.append(
                             {
                                 "row": idx,
                                 "prefix": prefix_value,
-                                "namespace": namespace_name,
-                                "error": f"Prefix not found in namespace '{namespace_name}'",
+                                "namespace": namespace_value,
+                                "error": f"Prefix not found in namespace '{namespace_value}'",
                             }
                         )
                         continue
@@ -284,7 +322,7 @@ def update_ip_prefixes_from_csv_task(
                         {
                             "row": idx,
                             "prefix": prefix_value,
-                            "namespace": namespace_name,
+                            "namespace": namespace_value,
                             "uuid": prefix_uuid,
                             "reason": "No fields to update",
                         }
@@ -301,16 +339,55 @@ def update_ip_prefixes_from_csv_task(
 
                 # Step 3: Update the prefix
                 if dry_run:
+                    # Fetch current prefix data for detailed comparison
+                    if not existing_prefix:
+                        existing_prefix = asyncio.run(
+                            _get_prefix_by_uuid(nautobot_service, prefix_uuid)
+                        )
+
+                    # Generate detailed comparison
+                    comparison = _generate_field_comparison(existing_prefix, update_data)
+
                     logger.info(
-                        f"[DRY RUN] Would update prefix {identifier} with: {update_data}"
+                        f"[DRY RUN] Would update prefix {identifier}"
                     )
+                    logger.info(f"  Changes to apply:")
+                    for field, diff in comparison["changes"].items():
+                        if field == "custom_fields":
+                            # Custom fields have nested structure
+                            logger.info(f"    • {field}:")
+                            for cf_key, cf_diff in diff.items():
+                                logger.info(f"        {cf_key}:")
+                                logger.info(f"          Current: {cf_diff['current']}")
+                                logger.info(f"          New:     {cf_diff['new']}")
+                        elif field == "tags":
+                            # Tags have special structure with added/removed
+                            logger.info(f"    • {field}:")
+                            logger.info(f"        Current: {diff.get('current', [])}")
+                            logger.info(f"        New:     {diff.get('new', [])}")
+                            if "added" in diff and diff["added"]:
+                                logger.info(f"        Added:   {diff['added']}")
+                            if "removed" in diff and diff["removed"]:
+                                logger.info(f"        Removed: {diff['removed']}")
+                        else:
+                            # Regular fields
+                            logger.info(f"    • {field}:")
+                            logger.info(f"        Current: {diff.get('current')}")
+                            logger.info(f"        New:     {diff.get('new')}")
+
+                    if comparison["unchanged"]:
+                        logger.info(f"  Unchanged fields: {', '.join(comparison['unchanged'])}")
+
+                    logger.info(f"  Summary: {comparison['summary']}")
+
                     successes.append(
                         {
                             "row": idx,
                             "prefix": prefix_value,
-                            "namespace": namespace_name,
+                            "namespace": namespace_value,
                             "uuid": prefix_uuid,
                             "updates": update_data,
+                            "comparison": comparison,  # Add detailed comparison
                             "dry_run": True,
                         }
                     )
@@ -327,7 +404,7 @@ def update_ip_prefixes_from_csv_task(
                             {
                                 "row": idx,
                                 "prefix": prefix_value,
-                                "namespace": namespace_name,
+                                "namespace": namespace_value,
                                 "uuid": prefix_uuid,
                                 "updated_fields": list(update_data.keys()),
                             }
@@ -341,7 +418,7 @@ def update_ip_prefixes_from_csv_task(
                             {
                                 "row": idx,
                                 "prefix": prefix_value,
-                                "namespace": namespace_name,
+                                "namespace": namespace_value,
                                 "uuid": prefix_uuid,
                                 "error": result["error"],
                             }
@@ -357,7 +434,7 @@ def update_ip_prefixes_from_csv_task(
                     {
                         "row": idx,
                         "prefix": prefix_value,
-                        "namespace": namespace_name,
+                        "namespace": namespace_value,
                         "error": error_msg,
                     }
                 )
@@ -459,51 +536,77 @@ async def _get_prefix_by_uuid(
         return None
 
 
-async def _find_prefix_by_prefix_and_namespace(
-    nautobot_service: NautobotService, prefix: str, namespace_name: str
+async def _find_prefix_by_prefix_and_namespace_graphql(
+    nautobot_service: NautobotService, prefix: str, namespace: str
 ) -> Tuple[Optional[str], Optional[Dict[str, Any]]]:
     """
-    Find a prefix in Nautobot by prefix value and namespace name.
+    Find a prefix in Nautobot by prefix value and namespace using GraphQL.
 
     Args:
         nautobot_service: NautobotService instance
         prefix: Prefix value (e.g., "192.168.178.0/24")
-        namespace_name: Namespace name (e.g., "Global")
+        namespace: Namespace name or UUID (e.g., "Global" or UUID)
 
     Returns:
         Tuple of (prefix_uuid, prefix_data) or (None, None) if not found
     """
     try:
-        # Query Nautobot for prefixes matching prefix + namespace
-        endpoint = f"ipam/prefixes/?prefix={prefix}&namespace={namespace_name}"
-        result = await nautobot_service.rest_request(endpoint, method="GET")
+        # GraphQL query to find prefix by prefix and namespace
+        query = """
+        query (
+          $ip_prefix: [String],
+          $namespace: [String]
+        ) {
+          prefixes(prefix: $ip_prefix, namespace: $namespace) {
+            id
+            prefix
+            prefix_length
+            namespace {
+              id
+              name
+            }
+          }
+        }
+        """
 
-        if not result or "results" not in result:
-            logger.warning(f"No results returned for prefix query: {prefix}")
+        variables = {
+            "ip_prefix": [prefix],
+            "namespace": [namespace],
+        }
+
+        logger.debug(f"GraphQL query variables: {variables}")
+
+        # Execute GraphQL query
+        result = await nautobot_service.graphql_query(query, variables)
+
+        if not result or "data" not in result:
+            logger.warning(f"No data returned from GraphQL query for prefix: {prefix}")
             return None, None
 
-        results = result["results"]
+        prefixes = result.get("data", {}).get("prefixes", [])
 
-        if not results:
+        if not prefixes:
             logger.warning(
-                f"Prefix '{prefix}' not found in namespace '{namespace_name}'"
+                f"Prefix '{prefix}' not found in namespace '{namespace}'"
             )
             return None, None
 
-        if len(results) > 1:
+        if len(prefixes) > 1:
             logger.warning(
-                f"Multiple prefixes found for '{prefix}' in namespace '{namespace_name}', "
+                f"Multiple prefixes found for '{prefix}' in namespace '{namespace}', "
                 f"using first one"
             )
 
         # Use the first result
-        prefix_data = results[0]
+        prefix_data = prefixes[0]
         prefix_uuid = prefix_data.get("id")
+
+        logger.debug(f"Found prefix: {prefix_data}")
 
         return prefix_uuid, prefix_data
 
     except Exception as e:
-        logger.error(f"Error finding prefix: {e}", exc_info=True)
+        logger.error(f"Error finding prefix via GraphQL: {e}", exc_info=True)
         return None, None
 
 
@@ -680,3 +783,119 @@ def _prepare_prefix_update_data(
         update_data["custom_fields"] = custom_fields
 
     return update_data
+
+
+def _generate_field_comparison(
+    existing_prefix: Optional[Dict[str, Any]], update_data: Dict[str, Any]
+) -> Dict[str, Any]:
+    """
+    Generate a detailed field-by-field comparison for dry run mode.
+
+    Compares the current values in Nautobot with the new values from CSV
+    and categorizes fields as changed or unchanged.
+
+    Args:
+        existing_prefix: Current prefix data from Nautobot
+        update_data: New data to apply from CSV
+
+    Returns:
+        Dictionary with:
+        - changes: Dict of field -> {current, new} for fields that will change
+        - unchanged: List of field names that will stay the same
+        - summary: Human-readable summary of changes
+    """
+    if not existing_prefix:
+        # No existing data to compare
+        return {
+            "changes": {
+                field: {"current": None, "new": value}
+                for field, value in update_data.items()
+            },
+            "unchanged": [],
+            "summary": f"{len(update_data)} fields will be updated (no current data available)",
+        }
+
+    changes = {}
+    unchanged = []
+
+    for field, new_value in update_data.items():
+        # Get current value
+        if field == "custom_fields":
+            # Handle custom fields specially - compare nested dict
+            current_custom_fields = existing_prefix.get("custom_fields", {})
+            changed_custom_fields = {}
+            unchanged_custom_fields = []
+
+            for cf_key, cf_new_value in new_value.items():
+                cf_current_value = current_custom_fields.get(cf_key)
+                if cf_current_value != cf_new_value:
+                    changed_custom_fields[cf_key] = {
+                        "current": cf_current_value,
+                        "new": cf_new_value,
+                    }
+                else:
+                    unchanged_custom_fields.append(cf_key)
+
+            if changed_custom_fields:
+                changes["custom_fields"] = changed_custom_fields
+            if unchanged_custom_fields:
+                unchanged.append(f"custom_fields.{','.join(unchanged_custom_fields)}")
+
+        elif field == "tags":
+            # Handle tags specially - compare as lists
+            current_tags = existing_prefix.get("tags", [])
+            # Convert tag objects to names if needed
+            if current_tags and isinstance(current_tags[0], dict):
+                current_tags = [tag.get("name", tag) for tag in current_tags]
+
+            new_tags = new_value if isinstance(new_value, list) else []
+
+            # Compare sets for tags
+            current_set = set(current_tags)
+            new_set = set(new_tags)
+
+            if current_set != new_set:
+                changes[field] = {
+                    "current": sorted(current_tags),
+                    "new": sorted(new_tags),
+                    "added": sorted(new_set - current_set),
+                    "removed": sorted(current_set - new_set),
+                }
+            else:
+                unchanged.append(field)
+
+        else:
+            # Regular field comparison
+            current_value = existing_prefix.get(field)
+
+            # Handle nested objects (e.g., status, location)
+            if isinstance(current_value, dict):
+                # Extract the relevant field (usually 'name' or 'id')
+                if "name" in current_value:
+                    current_value = current_value.get("name")
+                elif "id" in current_value:
+                    current_value = current_value.get("id")
+
+            # Compare values
+            if str(current_value) != str(new_value):
+                changes[field] = {
+                    "current": current_value,
+                    "new": new_value,
+                }
+            else:
+                unchanged.append(field)
+
+    # Generate summary
+    change_count = len(changes)
+    unchanged_count = len(unchanged)
+
+    if change_count == 0:
+        summary = "No changes (all values match current data)"
+    else:
+        summary = f"{change_count} field(s) will change, {unchanged_count} will remain unchanged"
+
+    return {
+        "changes": changes,
+        "unchanged": unchanged,
+        "summary": summary,
+    }

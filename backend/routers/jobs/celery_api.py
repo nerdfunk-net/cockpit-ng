@@ -861,6 +861,8 @@ class UpdateIPPrefixesRequest(BaseModel):
     csv_options: Optional[Dict[str, str]] = None
     dry_run: bool = False
     ignore_uuid: bool = True  # Default: use prefix+namespace lookup instead of UUID
+    tags_mode: str = "replace"  # How to handle tags: "replace" or "merge"
+    column_mapping: Optional[Dict[str, str]] = None  # Maps lookup fields to CSV column names
 
 
 class ImportDevicesRequest(BaseModel):
@@ -1314,19 +1316,31 @@ async def trigger_update_ip_prefixes_from_csv(
             - delimiter: Field delimiter (default: ",")
             - quoteChar: Quote character (default: '"')
         dry_run: If True, validate without making changes (default: False)
+        ignore_uuid: If True, use prefix+namespace lookup; if False, use UUID (default: True)
+        tags_mode: How to handle tags - "replace" or "merge" (default: "replace")
+        column_mapping: Maps lookup field names to CSV column names (optional)
+            - Example: {"prefix": "network", "namespace__name": "ns_name", "namespace": "namespace"}
+            - If not provided, uses default column names (prefix, namespace__name, namespace)
 
     Returns:
         TaskWithJobResponse with task_id (for Celery) and job_id (for Jobs/Views tracking)
 
-    Required CSV Columns:
+    Required CSV Columns (default names or mapped via column_mapping):
         - prefix: The IP prefix (e.g., "192.168.178.0/24") - REQUIRED
         - namespace__name: Namespace name (optional, defaults to "Global")
+        - namespace: Namespace (optional alternative to namespace__name)
         - Other fields: Any updatable prefix fields (description, status, etc.)
 
-    Example CSV:
+    Example CSV (default column names):
         prefix,namespace__name,description,status__name
         192.168.1.0/24,Global,Production Network,Active
         10.0.0.0/8,Internal,Internal Network,Reserved
+
+    Example CSV (custom column names with mapping):
+        network,ns_name,desc,status
+        192.168.1.0/24,Global,Production Network,Active
+
+        With column_mapping: {"prefix": "network", "namespace__name": "ns_name"}
     """
     from tasks.update_ip_prefixes_from_csv_task import update_ip_prefixes_from_csv_task
 
@@ -1350,6 +1364,8 @@ async def trigger_update_ip_prefixes_from_csv(
         csv_options=csv_options,
         dry_run=request.dry_run,
         ignore_uuid=request.ignore_uuid,
+        tags_mode=request.tags_mode,
+        column_mapping=request.column_mapping,
     )
 
     # Create job run record for tracking in Jobs/View
