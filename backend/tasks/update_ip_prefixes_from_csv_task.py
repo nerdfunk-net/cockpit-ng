@@ -42,6 +42,7 @@ def update_ip_prefixes_from_csv_task(
     ignore_uuid: bool = True,
     tags_mode: str = "replace",
     column_mapping: Optional[Dict[str, str]] = None,
+    selected_columns: Optional[list[str]] = None,
 ) -> dict:
     """
     Task: Update Nautobot IP prefixes from CSV data.
@@ -66,6 +67,8 @@ def update_ip_prefixes_from_csv_task(
         column_mapping: Maps lookup field names to CSV column names. Example:
             {"prefix": "network", "namespace__name": "ns_name", "namespace": "namespace"}
             If not provided, uses default column names (prefix, namespace__name, namespace)
+        selected_columns: List of CSV column names that should be updated. If not provided, all columns
+            (except excluded ones) will be updated. Example: ["description", "status", "cf_vlan_id"]
 
     Returns:
         dict: Update results including success/failure counts and details
@@ -78,6 +81,7 @@ def update_ip_prefixes_from_csv_task(
         logger.info(f"Ignore UUID: {ignore_uuid}")
         logger.info(f"Tags mode: {tags_mode}")
         logger.info(f"Column mapping: {column_mapping}")
+        logger.info(f"Selected columns for update: {selected_columns}")
         logger.info(f"CSV Options: {csv_options}")
 
         self.update_state(
@@ -313,7 +317,7 @@ def update_ip_prefixes_from_csv_task(
 
                 # Step 2: Prepare update data
                 update_data = _prepare_prefix_update_data(
-                    row, headers, existing_prefix, tags_mode
+                    row, headers, existing_prefix, tags_mode, selected_columns
                 )
 
                 if not update_data:
@@ -328,6 +332,11 @@ def update_ip_prefixes_from_csv_task(
                         }
                     )
                     continue
+
+                # Log the complete update data that will be sent to Nautobot
+                logger.info(f"Update data prepared for prefix {identifier}:")
+                logger.info(f"  - Fields to update: {list(update_data.keys())}")
+                logger.info(f"  - Complete update payload: {update_data}")
 
                 # Log custom fields if present
                 if "custom_fields" in update_data:
@@ -393,7 +402,10 @@ def update_ip_prefixes_from_csv_task(
                     )
                 else:
                     logger.info(f"Updating prefix {identifier}")
-                    logger.debug(f"Update data: {update_data}")
+                    logger.info(f"  - Sending to Nautobot API:")
+                    logger.info(f"    Endpoint: ipam/prefixes/{prefix_uuid}/")
+                    logger.info(f"    Method: PATCH")
+                    logger.info(f"    Payload: {update_data}")
 
                     result = asyncio.run(
                         _update_prefix(nautobot_service, prefix_uuid, update_data)
@@ -626,13 +638,21 @@ async def _update_prefix(
     """
     try:
         endpoint = f"ipam/prefixes/{prefix_uuid}/"
+
+        logger.info(f"[API CALL] Updating prefix via REST API")
+        logger.info(f"[API CALL]   - Endpoint: {endpoint}")
+        logger.info(f"[API CALL]   - Method: PATCH")
+        logger.info(f"[API CALL]   - Data: {update_data}")
+
         await nautobot_service.rest_request(endpoint, method="PATCH", data=update_data)
 
+        logger.info(f"[API CALL] ✓ Update successful for prefix {prefix_uuid}")
         return {"success": True}
 
     except Exception as e:
         error_msg = str(e)
-        logger.error(f"Failed to update prefix {prefix_uuid}: {error_msg}")
+        logger.error(f"[API CALL] ✗ Failed to update prefix {prefix_uuid}: {error_msg}")
+        logger.error(f"[API CALL]   - Update data that caused error: {update_data}")
         return {"success": False, "error": error_msg}
 
 
@@ -641,6 +661,7 @@ def _prepare_prefix_update_data(
     headers: list,
     existing_prefix: Dict[str, Any],
     tags_mode: str = "replace",
+    selected_columns: Optional[list[str]] = None,
 ) -> Dict[str, Any]:
     """
     Prepare update data for a prefix from CSV row.
@@ -668,6 +689,8 @@ def _prepare_prefix_update_data(
         headers: List of column headers
         existing_prefix: Existing prefix data from Nautobot
         tags_mode: How to handle tags - "replace" or "merge" (default: "replace")
+        selected_columns: List of column names to update. If None, all non-excluded columns are updated.
+            If provided, ONLY these columns will be included in the update.
 
     Returns:
         Dictionary of fields to update
@@ -691,10 +714,21 @@ def _prepare_prefix_update_data(
         "ip_version",
     }
 
+    # Start with empty dict - only add selected columns
     update_data = {}
     custom_fields = {}
 
-    for field in headers:
+    # Determine which columns to process
+    # If selected_columns is provided, ONLY process those columns
+    # Otherwise, process all headers except excluded ones
+    logger.info(f"[_prepare_prefix_update_data] selected_columns parameter: {selected_columns}")
+    logger.info(f"[_prepare_prefix_update_data] CSV headers: {headers}")
+
+    columns_to_process = selected_columns if selected_columns is not None else headers
+
+    logger.info(f"[_prepare_prefix_update_data] Columns to process for update: {columns_to_process}")
+
+    for field in columns_to_process:
         if field in excluded_fields:
             continue
 

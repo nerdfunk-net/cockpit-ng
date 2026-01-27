@@ -18,6 +18,7 @@ interface ProcessCSVUpdatesInput {
   ignoreUuid?: boolean  // For IP prefixes: use prefix+namespace lookup instead of UUID
   tagsMode?: 'replace' | 'merge'  // How to handle tags: replace all or merge with existing
   columnMapping?: Record<string, string>  // Maps lookup fields to CSV column names
+  selectedColumns?: string[]  // List of CSV columns to update (if not provided, all non-excluded columns are updated)
 }
 
 interface CeleryTaskResponse {
@@ -107,6 +108,7 @@ export function useCsvUpdatesMutations() {
           ignore_uuid: input.ignoreUuid !== undefined ? input.ignoreUuid : true, // Default: true
           tags_mode: input.tagsMode || 'replace', // Default: replace
           column_mapping: input.columnMapping, // Pass column mapping if provided
+          selected_columns: input.selectedColumns, // Pass selected columns if provided
         }),
       })
 

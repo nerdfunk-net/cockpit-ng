@@ -133,28 +133,78 @@ export default function CsvUpdatesPage() {
       return
     }
 
-    // Filter out ignored columns
+    // Define columns that should NEVER be used for updates (read-only or identifiers)
+    const ALWAYS_IGNORED_COLUMNS: Record<ObjectType, string[]> = {
+      'ip-prefixes': [
+        'display',
+        'id',
+        'object_type',
+        'natural_slug',
+        'ip_version',
+        'date_allocated',
+        'parent__namespace__name',
+        'parent__network',
+        'parent__prefix_length',
+        'created',
+        'last_updated',
+        'url',
+        'network',
+        'broadcast',
+        'prefix_length',
+      ],
+      'devices': ['display', 'id', 'object_type', 'natural_slug', 'created', 'last_updated', 'url'],
+      'ip-addresses': ['display', 'id', 'object_type', 'natural_slug', 'ip_version', 'created', 'last_updated', 'url'],
+      'locations': ['display', 'id', 'object_type', 'natural_slug', 'created', 'last_updated', 'url'],
+    }
+
+    // Define lookup columns (used for identifying objects, should not be updated)
+    const LOOKUP_COLUMNS: Record<ObjectType, string[]> = {
+      'ip-prefixes': ['prefix', 'namespace__name', 'namespace'],
+      'devices': ['name', 'ip_address'],
+      'ip-addresses': ['address', 'parent__namespace__name'],
+      'locations': ['name', 'parent__name'],
+    }
+
+    const alwaysIgnored = ALWAYS_IGNORED_COLUMNS[objectType] || []
+    const lookupColumns = LOOKUP_COLUMNS[objectType] || []
+
+    // Build two lists:
+    // 1. csvHeaders/csvRows - Include lookup columns (needed to find objects) but exclude always-ignored and user-ignored
+    // 2. selectedColumns - Only updateable columns (no lookup, no always-ignored, no user-ignored)
     const headers = csvUpload.parsedData.headers
-    const filteredHeaders: string[] = []
-    const headerIndexMap: number[] = []
+    const csvHeaders: string[] = []
+    const csvHeaderIndexMap: number[] = []
+    const selectedColumns: string[] = []
 
     headers.forEach((header, index) => {
-      if (!ignoredColumns.has(header)) {
-        filteredHeaders.push(header)
-        headerIndexMap.push(index)
+      const isUserIgnored = ignoredColumns.has(header)
+      const isAlwaysIgnored = alwaysIgnored.includes(header)
+      const isLookupColumn = lookupColumns.includes(header)
+
+      // Include in CSV if not always-ignored and not user-ignored
+      // (lookup columns MUST be in CSV for object identification)
+      if (!isAlwaysIgnored && !isUserIgnored) {
+        csvHeaders.push(header)
+        csvHeaderIndexMap.push(index)
+      }
+
+      // Include in selectedColumns only if it's an updateable column
+      // (exclude lookup columns, always-ignored, and user-ignored)
+      if (!isUserIgnored && !isAlwaysIgnored && !isLookupColumn) {
+        selectedColumns.push(header)
       }
     })
 
-    // Filter rows to only include non-ignored columns
-    const filteredRows = csvUpload.parsedData.rows.map((row) =>
-      headerIndexMap.map((index) => row[index] || '')
+    // Filter rows to only include columns in csvHeaders
+    const csvRows = csvUpload.parsedData.rows.map((row) =>
+      csvHeaderIndexMap.map((index) => row[index] || '')
     )
 
     processUpdates.mutate({
       objectType,
       csvData: {
-        headers: filteredHeaders,
-        rows: filteredRows,
+        headers: csvHeaders, // Include lookup columns for object identification
+        rows: csvRows,
       },
       csvOptions: {
         delimiter: csvUpload.csvConfig.delimiter,
@@ -164,6 +214,7 @@ export default function CsvUpdatesPage() {
       ignoreUuid, // Pass the ignoreUuid option
       tagsMode, // Pass the tags mode (replace or merge)
       columnMapping: objectType === 'ip-prefixes' ? columnMapping : undefined, // Pass column mapping for IP prefixes
+      selectedColumns, // Pass only the updateable columns (excludes lookup columns)
     })
   }, [objectType, csvUpload.parsedData, csvUpload.csvConfig, csvUpload.validationSummary, ignoredColumns, ignoreUuid, tagsMode, columnMapping, validateColumnMapping, processUpdates, toast])
 

@@ -863,6 +863,7 @@ class UpdateIPPrefixesRequest(BaseModel):
     ignore_uuid: bool = True  # Default: use prefix+namespace lookup instead of UUID
     tags_mode: str = "replace"  # How to handle tags: "replace" or "merge"
     column_mapping: Optional[Dict[str, str]] = None  # Maps lookup fields to CSV column names
+    selected_columns: Optional[List[str]] = None  # List of CSV columns to update (if None, all non-excluded columns are updated)
 
 
 class ImportDevicesRequest(BaseModel):
@@ -1343,6 +1344,18 @@ async def trigger_update_ip_prefixes_from_csv(
         With column_mapping: {"prefix": "network", "namespace__name": "ns_name"}
     """
     from tasks.update_ip_prefixes_from_csv_task import update_ip_prefixes_from_csv_task
+    import logging
+
+    logger = logging.getLogger(__name__)
+    logger.info("=" * 80)
+    logger.info("RECEIVED UPDATE IP PREFIXES REQUEST")
+    logger.info("=" * 80)
+    logger.info(f"  - dry_run: {request.dry_run}")
+    logger.info(f"  - ignore_uuid: {request.ignore_uuid}")
+    logger.info(f"  - tags_mode: {request.tags_mode}")
+    logger.info(f"  - column_mapping: {request.column_mapping}")
+    logger.info(f"  - selected_columns: {request.selected_columns}")
+    logger.info(f"  - csv_options: {request.csv_options}")
 
     if not request.csv_content:
         raise HTTPException(
@@ -1366,6 +1379,7 @@ async def trigger_update_ip_prefixes_from_csv(
         ignore_uuid=request.ignore_uuid,
         tags_mode=request.tags_mode,
         column_mapping=request.column_mapping,
+        selected_columns=request.selected_columns,
     )
 
     # Create job run record for tracking in Jobs/View
