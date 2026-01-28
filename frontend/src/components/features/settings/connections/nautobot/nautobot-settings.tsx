@@ -61,7 +61,7 @@ export default function NautobotSettingsForm() {
   const [localOffboarding, setLocalOffboarding] = useState<DeviceOffboardingSettings>(DEFAULT_OFFBOARDING)
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
 
-  // Initialize local state from server data when it loads
+  // Sync server data to local state (same pattern as CheckMK settings)
   useEffect(() => {
     if (settings) {
       setLocalSettings(settings)

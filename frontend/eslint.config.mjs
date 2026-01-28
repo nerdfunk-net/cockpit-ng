@@ -25,9 +25,12 @@ const eslintConfig = [
     rules: {
       // Enforce exhaustive dependencies in useEffect, useMemo, useCallback
       'react-hooks/exhaustive-deps': 'error',
-      
+
       // Warn about missing dependencies (should be error in production)
       'react-hooks/rules-of-hooks': 'error',
+
+      // Disable setState-in-effect rule - valid pattern for syncing server data to local form state
+      'react-hooks/set-state-in-effect': 'off',
 
       // Custom rule: Prevent inline default parameters
       'custom-rules/no-inline-defaults': 'error',

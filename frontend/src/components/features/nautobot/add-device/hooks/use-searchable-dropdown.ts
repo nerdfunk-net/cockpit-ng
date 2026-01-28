@@ -109,6 +109,9 @@ export function useSearchableDropdown<T extends { id: string }>(
   }, [searchQuery, selectedItem, onSelect, showDropdown])
 
   // CRITICAL: Memoize return object to prevent infinite loops
+  // containerRef is NOT included in deps because refs are stable references
+  // ESLint incorrectly flags the entire object as refs - this is a false positive
+  // Only containerRef is a ref; all other properties are state/memoized values
   return useMemo(
     () => ({
       searchQuery,
@@ -118,9 +121,11 @@ export function useSearchableDropdown<T extends { id: string }>(
       setShowDropdown,
       selectItem,
       selectedItem,
-      containerRef,
+      containerRef, // Stable ref, safe to include without dep
       displayValue,
     }),
+    // Intentionally excluding containerRef from deps - refs don't change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [searchQuery, filteredItems, showDropdown, selectItem, selectedItem, displayValue]
   )
 }

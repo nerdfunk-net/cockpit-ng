@@ -1,8 +1,9 @@
-import type { FilterOption, JobRun, JobTemplate } from '../types'
+import type { FilterOption, JobRun, JobTemplate, JobProgressResponse } from '../types'
 
 // React best practice: Extract default arrays to prevent re-render loops
 export const EMPTY_ARRAY: JobRun[] = []
 export const EMPTY_TEMPLATES: JobTemplate[] = []
+export const EMPTY_PROGRESS: Record<number, JobProgressResponse> = {}
 
 // Filter options
 export const STATUS_OPTIONS: readonly FilterOption[] = [

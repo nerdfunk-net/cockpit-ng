@@ -9,11 +9,10 @@ import { JobsTable } from './components/jobs-table'
 import { JobsPagination } from './components/jobs-pagination'
 import { ClearHistoryDialog } from './components/clear-history-dialog'
 import { useJobsQuery } from './hooks/use-jobs-query'
-import { useJobTemplatesQuery } from './hooks/use-job-templates-query'
 import { useJobDetailQuery } from './hooks/use-job-detail-query'
 import { useAllJobsProgress } from './hooks/use-job-progress-query'
 import { useJobMutations } from './hooks/use-job-mutations'
-import { DEFAULT_PAGE_SIZE, DEFAULT_PAGE, EMPTY_ARRAY, EMPTY_TEMPLATES } from './utils/constants'
+import { DEFAULT_PAGE_SIZE, DEFAULT_PAGE, EMPTY_ARRAY, EMPTY_PROGRESS } from './utils/constants'
 import type { JobSearchParams } from './types'
 
 export function JobsViewPage() {
@@ -44,9 +43,8 @@ export function JobsViewPage() {
 
   // TanStack Query hooks
   const { data: jobsData, isLoading, refetch } = useJobsQuery({ params: queryParams })
-  const { data: templates = EMPTY_TEMPLATES } = useJobTemplatesQuery()
   const { data: viewingJob } = useJobDetailQuery(viewingJobId)
-  const { data: jobProgress = {} } = useAllJobsProgress(jobsData?.items || EMPTY_ARRAY)
+  const { data: jobProgress = EMPTY_PROGRESS } = useAllJobsProgress(jobsData?.items || EMPTY_ARRAY)
 
   // Mutations
   const { cancelJob, deleteJob, clearFilteredHistory, clearAllHistory } = useJobMutations()
@@ -55,6 +53,21 @@ export function JobsViewPage() {
   const jobs = jobsData?.items || EMPTY_ARRAY
   const total = jobsData?.total || 0
   const totalPages = jobsData?.total_pages || 1
+
+  // Derive available templates from job runs data
+  const templates = useMemo(() => {
+    const templateMap = new Map<number, string>()
+
+    jobs.forEach(job => {
+      if (job.job_template_id && job.template_name) {
+        templateMap.set(job.job_template_id, job.template_name)
+      }
+    })
+
+    return Array.from(templateMap.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [jobs])
 
   // Filter helpers
   const hasActiveFilters = statusFilter.length > 0 || jobTypeFilter.length > 0 ||
@@ -189,7 +202,7 @@ export function JobsViewPage() {
 
       {/* View Result Dialog */}
       <JobResultDialog
-        jobRun={viewingJob}
+        jobRun={viewingJob || null}
         open={viewingJobId !== null}
         onOpenChange={(open) => !open && setViewingJobId(null)}
       />

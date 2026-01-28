@@ -1,5 +1,5 @@
-// Re-export from job-results.ts
-export * from './job-results'
+// Re-export from job-results.ts (one level up in jobs/types/)
+export * from '../../types/job-results'
 
 // Filter and API request types
 export interface JobSearchParams {

@@ -76,7 +76,7 @@ export function useAllJobsProgress(jobs: JobRun[]) {
             { method: 'GET' }
           )
           return { jobId: job.id, progress: response }
-        } catch (error) {
+        } catch {
           return { jobId: job.id, progress: null }
         }
       })

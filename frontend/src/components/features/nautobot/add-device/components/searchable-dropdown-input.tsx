@@ -3,19 +3,15 @@ import { Input } from '@/components/ui/input'
 import type { SearchableDropdownState } from '../hooks/use-searchable-dropdown'
 
 /**
- * IMPORTANT: DO NOT REMOVE THE ESLINT-DISABLE BELOW
- * 
- * The react-hooks/rules-of-hooks linter incorrectly flags dropdownState properties
- * (displayValue, showDropdown, filteredItems, etc.) as refs being accessed during render.
- * 
- * These are NOT refs - they are regular state values and memoized values that are
- * perfectly safe to use during render. Only containerRef is an actual ref, and it's
- * used correctly (passed to a div's ref prop).
- * 
- * This is a known false positive with memoized objects returned from custom hooks.
- * Removing this disable will cause 8+ linting errors.
+ * ESLint False Positive Suppression
+ *
+ * ESLint incorrectly flags dropdownState properties (displayValue, showDropdown, filteredItems)
+ * as refs because they're in the same object as containerRef.
+ *
+ * Reality: Only containerRef is a ref. All other properties are state values or memoized values
+ * that are perfectly safe to use during render. See use-searchable-dropdown.ts for implementation.
  */
-/* eslint-disable react-hooks/rules-of-hooks */
+/* eslint-disable react-hooks/refs */
 
 interface SearchableDropdownInputProps<T> {
   id: string
