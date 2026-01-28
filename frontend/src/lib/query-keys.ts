@@ -38,12 +38,30 @@ export const queryKeys = {
   // Celery Jobs
   jobs: {
     all: ['jobs'] as const,
-    list: (filters?: { status?: string }) =>
-      filters
-        ? ([...queryKeys.jobs.all, 'list', filters] as const)
+
+    // List with all filter combinations
+    list: (params?: {
+      page?: number
+      page_size?: number
+      status?: string | string[]
+      job_type?: string | string[]
+      triggered_by?: string | string[]
+      template_id?: string | string[]
+    }) =>
+      params
+        ? ([...queryKeys.jobs.all, 'list', params] as const)
         : ([...queryKeys.jobs.all, 'list'] as const),
-    detail: (id: string) => [...queryKeys.jobs.all, 'detail', id] as const,
+
+    // Individual job detail
+    detail: (id: number | string) => [...queryKeys.jobs.all, 'detail', id] as const,
+
+    // Progress endpoint (for backup jobs)
+    progress: (id: number) => [...queryKeys.jobs.all, 'progress', id] as const,
+
+    // Templates dropdown
     templates: () => [...queryKeys.jobs.all, 'templates'] as const,
+
+    // Schedules
     schedules: () => [...queryKeys.jobs.all, 'schedules'] as const,
   },
 
