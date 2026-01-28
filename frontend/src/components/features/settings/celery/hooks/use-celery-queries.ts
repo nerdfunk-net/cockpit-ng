@@ -7,10 +7,12 @@ import type {
   WorkersData,
   TaskStatus,
   Schedule,
+  QueueMetrics,
   CeleryStatusResponse,
   CelerySettingsResponse,
   CeleryWorkersResponse,
-  CelerySchedulesResponse
+  CelerySchedulesResponse,
+  CeleryQueuesResponse
 } from '../types'
 import { STALE_TIME, DEFAULT_CELERY_SETTINGS, EMPTY_SCHEDULES, TASK_POLL_INTERVAL } from '../utils/constants'
 import { isTaskActive } from '../utils/celery-utils'
@@ -110,6 +112,27 @@ export function useCelerySchedules(options: UseQueryOptions = DEFAULT_QUERY_OPTI
     },
     enabled,
     staleTime: STALE_TIME.SCHEDULES,
+  })
+}
+
+/**
+ * Fetch Celery queues with metrics and worker assignments
+ */
+export function useCeleryQueues(options: UseQueryOptions = DEFAULT_QUERY_OPTIONS) {
+  const { apiCall } = useApi()
+  const { enabled = true } = options
+
+  return useQuery<QueueMetrics[]>({
+    queryKey: queryKeys.celery.queues(),
+    queryFn: async () => {
+      const response = await apiCall<CeleryQueuesResponse>('/api/celery/queues', { method: 'GET' })
+      if (!response?.success) {
+        throw new Error('Failed to load Celery queues')
+      }
+      return response.queues || []
+    },
+    enabled,
+    staleTime: STALE_TIME.WORKERS, // Same freshness as workers
   })
 }
 

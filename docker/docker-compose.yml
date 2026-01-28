@@ -215,6 +215,69 @@ services:
       - cockpit-network
     command: ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord-beat.conf"]
 
+  # Celery Worker - Specialized for Backup Tasks
+  # This worker only processes tasks from the 'backup' queue
+  # Can be deployed on a dedicated node for resource isolation
+  cockpit-worker-backup:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.all-in-one
+    container_name: cockpit-worker-backup
+    environment:
+      # Backend Environment Variables
+      - NAUTOBOT_URL=${NAUTOBOT_URL:-http://localhost:8080}
+      - NAUTOBOT_TOKEN=${NAUTOBOT_TOKEN:-your_nautobot_token_here}
+      - NAUTOBOT_TIMEOUT=${NAUTOBOT_TIMEOUT:-30}
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this-in-production}
+      - DATA_DIR=/app/data
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+      # Database Configuration
+      - COCKPIT_DATABASE_HOST=postgres
+      - COCKPIT_DATABASE_PORT=5432
+      - COCKPIT_DATABASE_NAME=${POSTGRES_DB:-cockpit}
+      - COCKPIT_DATABASE_USERNAME=${POSTGRES_USER:-cockpit}
+      - COCKPIT_DATABASE_PASSWORD=${POSTGRES_PASSWORD:-cockpit123}
+      - COCKPIT_DATABASE_SSL=false
+
+      # Redis Configuration
+      - COCKPIT_REDIS_HOST=redis
+      - COCKPIT_REDIS_PORT=6379
+      - COCKPIT_REDIS_PASSWORD=${COCKPIT_REDIS_PASSWORD:-changeme}
+
+      # Celery Configuration
+      - CELERY_BROKER_URL=redis://:${COCKPIT_REDIS_PASSWORD:-changeme}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${COCKPIT_REDIS_PASSWORD:-changeme}@redis:6379/0
+
+      # Certificate Installation (for Docker environments)
+      - INSTALL_CERTIFICATE_FILES=true
+
+      # Supervisord Config
+      # Note: supervisord-worker-backup.conf is copied into the image during build
+      - SUPERVISORD_CONF=/etc/supervisor/conf.d/supervisord-worker-backup.conf
+    volumes:
+      # Persist data directory
+      - cockpit_data:/app/data
+      # Mount configuration directory
+      - ../config:/app/config
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      cockpit-web:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - cockpit-network
+    command: ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord-worker-backup.conf"]
+    # Optional: Uncomment to limit resources for this worker
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2'
+    #       memory: 2G
+
 volumes:
   cockpit_data:
     driver: local

@@ -407,12 +407,13 @@ async def list_workers(
     current_user: dict = Depends(require_permission("settings.celery", "read")),
 ):
     """
-    List active Celery workers and their status.
+    List active Celery workers and their status, including queue assignments.
     """
     inspect = celery_app.control.inspect()
     active = inspect.active()
     stats = inspect.stats()
     registered = inspect.registered()
+    active_queues = inspect.active_queues()
 
     return {
         "success": True,
@@ -420,8 +421,93 @@ async def list_workers(
             "active_tasks": active or {},
             "stats": stats or {},
             "registered_tasks": registered or {},
+            "active_queues": active_queues or {},
         },
     }
+
+
+@router.get("/queues")
+@handle_celery_errors("list queues")
+async def list_queues(
+    current_user: dict = Depends(require_permission("settings.celery", "read")),
+):
+    """
+    List all Celery queues with their metrics and worker assignments.
+
+    Returns information about:
+    - Queue names and configuration
+    - Pending tasks in each queue
+    - Active tasks per queue
+    - Which workers are consuming from each queue
+    - Task routing configuration
+    """
+    inspect = celery_app.control.inspect()
+    active_queues = inspect.active_queues()
+    active_tasks = inspect.active()
+
+    # Get queue configuration from celery_app
+    task_queues = celery_app.conf.task_queues or {}
+    task_routes = celery_app.conf.task_routes or {}
+
+    # Connect to Redis to get queue lengths
+    try:
+        redis_client = redis.Redis.from_url(settings.redis_url)
+
+        # Build queue metrics
+        queues = []
+        for queue_name in task_queues.keys():
+            # Get pending tasks count from Redis list
+            pending_count = redis_client.llen(queue_name)
+
+            # Count active tasks in this queue
+            active_count = 0
+            workers_consuming = []
+
+            if active_queues:
+                for worker_name, worker_queues in active_queues.items():
+                    for queue_info in worker_queues:
+                        if queue_info.get("name") == queue_name:
+                            workers_consuming.append(worker_name)
+
+            if active_tasks:
+                for worker_name, tasks in active_tasks.items():
+                    # Check if this worker consumes from this queue
+                    if worker_name in workers_consuming:
+                        active_count += len(tasks)
+
+            # Find tasks routed to this queue
+            routed_tasks = []
+            for task_pattern, route_config in task_routes.items():
+                if route_config.get("queue") == queue_name:
+                    routed_tasks.append(task_pattern)
+
+            queues.append({
+                "name": queue_name,
+                "pending_tasks": pending_count,
+                "active_tasks": active_count,
+                "workers_consuming": workers_consuming,
+                "worker_count": len(workers_consuming),
+                "routed_tasks": routed_tasks,
+                "exchange": task_queues[queue_name].get("exchange"),
+                "routing_key": task_queues[queue_name].get("routing_key"),
+            })
+
+        redis_client.close()
+
+        return {
+            "success": True,
+            "queues": queues,
+            "total_queues": len(queues),
+        }
+
+    except Exception as e:
+        logger.error(f"Error fetching queue metrics: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "queues": [],
+            "total_queues": 0,
+        }
 
 
 @router.get("/schedules")

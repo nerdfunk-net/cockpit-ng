@@ -154,6 +154,9 @@ export const queryKeys = {
     // Schedules
     schedules: () => [...queryKeys.celery.all, 'schedules'] as const,
 
+    // Queues
+    queues: () => [...queryKeys.celery.all, 'queues'] as const,
+
     // Task status
     task: (taskId: string) => [...queryKeys.celery.all, 'task', taskId] as const,
   },

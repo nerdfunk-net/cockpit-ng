@@ -34,6 +34,47 @@ celery_app.conf.update(
     beat_scheduler="redbeat.RedBeatScheduler",  # Use Redis-based scheduler
     redbeat_redis_url=settings.redis_url,  # Redis URL for beat schedule
     redbeat_key_prefix="cockpit-ng:beat:",  # Prefix for beat keys in Redis
+    # Queue Configuration - Define specialized queues for task routing
+    task_queues={
+        "default": {
+            "exchange": "default",
+            "routing_key": "default",
+        },
+        "backup": {
+            "exchange": "backup",
+            "routing_key": "backup",
+        },
+        "network": {
+            "exchange": "network",
+            "routing_key": "network",
+        },
+        "heavy": {
+            "exchange": "heavy",
+            "routing_key": "heavy",
+        },
+    },
+    # Task routing rules - route specific tasks to dedicated queues
+    task_routes={
+        # Backup tasks go to 'backup' queue
+        "tasks.backup_single_device_task": {"queue": "backup"},
+        "tasks.finalize_backup_task": {"queue": "backup"},
+        "tasks.backup_devices": {"queue": "backup"},
+        # Network scanning tasks go to 'network' queue
+        "tasks.ping_network_task": {"queue": "network"},
+        "tasks.scan_prefixes_task": {"queue": "network"},
+        "tasks.check_ip_task": {"queue": "network"},
+        # Heavy/bulk tasks go to 'heavy' queue
+        "tasks.bulk_onboard_devices_task": {"queue": "heavy"},
+        "tasks.update_devices_from_csv_task": {"queue": "heavy"},
+        "tasks.update_ip_prefixes_from_csv_task": {"queue": "heavy"},
+        "tasks.export_devices_task": {"queue": "heavy"},
+        # All other tasks go to default queue
+        "*": {"queue": "default"},
+    },
+    # Default queue for tasks without explicit routing
+    task_default_queue="default",
+    task_default_exchange="default",
+    task_default_routing_key="default",
 )
 
 # Import beat schedule (periodic tasks)

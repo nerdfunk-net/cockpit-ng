@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 """
-Start script for Celery worker.
+Start script for specialized Celery worker (backup tasks only).
 
-This script starts the Celery worker process with proper configuration.
-Equivalent to: celery -A celery_worker worker --loglevel=info
+This worker only processes tasks from the 'backup' queue.
+Designed to run on dedicated nodes for resource isolation.
 
 Environment Variables:
     INSTALL_CERTIFICATE_FILES: Set to 'true' to install certificates from
         config/certs/ to the system CA store on startup (for Docker environments).
 
 Usage:
-    python start_celery.py
+    python start_celery_backup_worker.py
 """
 
 import os
@@ -119,28 +119,27 @@ def install_certificates():
 
 
 def main():
-    """Start the Celery worker."""
+    """Start the specialized Celery worker for backup tasks."""
     # Install certificates if enabled (for Docker environments)
     install_certificates()
 
     print("=" * 70)
-    print("Starting Cockpit-NG Celery Worker - GENERAL QUEUES")
+    print("Starting Cockpit-NG Celery Worker - BACKUP QUEUE")
     print("=" * 70)
     print(f"Broker: {settings.celery_broker_url}")
     print(f"Backend: {settings.celery_result_backend}")
-    print(f"Queues: default,network,heavy (excludes: backup)")
+    print(f"Queues: backup (ONLY)")
     print(f"Max Workers: {settings.celery_max_workers}")
     print("Log Level: INFO")
     print("=" * 70)
     print()
 
-    # Start worker using argv
-    # Exclude 'backup' queue - handled by dedicated backup worker
+    # Start worker with specific queue
     argv = [
         "worker",
         "--loglevel=INFO",
-        "--queues=default,network,heavy",  # Exclude 'backup' queue
-        "--hostname=general-worker@%h",  # Unique hostname for identification
+        "--queues=backup",  # Only consume from 'backup' queue
+        "--hostname=backup-worker@%h",  # Unique hostname for identification
         f"--concurrency={settings.celery_max_workers}",
         "--prefetch-multiplier=1",
         "--max-tasks-per-child=100",
@@ -153,10 +152,10 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\nShutting down Celery worker...")
+        print("\nShutting down backup worker...")
         sys.exit(0)
     except Exception as e:
-        print(f"Error starting Celery worker: {e}")
+        print(f"Error starting backup worker: {e}")
         import traceback
 
         traceback.print_exc()

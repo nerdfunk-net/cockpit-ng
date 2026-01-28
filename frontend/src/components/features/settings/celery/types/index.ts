@@ -20,10 +20,16 @@ export interface TaskStatus {
   progress?: Record<string, unknown>
 }
 
+export interface QueueInfo {
+  name: string
+  routing_key: string
+}
+
 export interface WorkersData {
   active_tasks?: Record<string, unknown[]>
   stats?: Record<string, unknown>
   registered_tasks?: Record<string, string[]>
+  active_queues?: Record<string, QueueInfo[]>
 }
 
 export interface WorkerStats {
@@ -31,6 +37,17 @@ export interface WorkerStats {
     'max-concurrency'?: number | string
     implementation?: string
   }
+}
+
+export interface QueueMetrics {
+  name: string
+  pending_tasks: number
+  active_tasks: number
+  workers_consuming: string[]
+  worker_count: number
+  routed_tasks: string[]
+  exchange?: string
+  routing_key?: string
 }
 
 export interface CelerySettings {
@@ -66,4 +83,11 @@ export interface CeleryActionResponse {
   success: boolean
   message?: string
   task_id?: string
+}
+
+export interface CeleryQueuesResponse {
+  success: boolean
+  queues: QueueMetrics[]
+  total_queues: number
+  error?: string
 }

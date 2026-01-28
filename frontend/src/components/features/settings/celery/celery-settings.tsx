@@ -7,6 +7,7 @@ import { useCeleryStatus } from './hooks/use-celery-queries'
 import { CeleryStatusOverview } from './components/celery-status-overview'
 import { CelerySettingsForm } from './components/celery-settings-form'
 import { CeleryWorkersList } from './components/celery-workers-list'
+import { CeleryQueuesList } from './components/celery-queues-list'
 import { CelerySchedulesList } from './components/celery-schedules-list'
 import { CeleryTestPanel } from './components/celery-test-panel'
 
@@ -107,6 +108,7 @@ export function CelerySettingsPage() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="workers">Workers</TabsTrigger>
+          <TabsTrigger value="queues">Queues</TabsTrigger>
           <TabsTrigger value="schedules">Schedules</TabsTrigger>
           <TabsTrigger value="test">Test</TabsTrigger>
         </TabsList>
@@ -121,6 +123,10 @@ export function CelerySettingsPage() {
 
         <TabsContent value="workers">
           <CeleryWorkersList />
+        </TabsContent>
+
+        <TabsContent value="queues">
+          <CeleryQueuesList />
         </TabsContent>
 
         <TabsContent value="schedules">
