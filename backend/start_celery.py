@@ -3,14 +3,17 @@
 Start script for Celery worker.
 
 This script starts the Celery worker process with proper configuration.
-Equivalent to: celery -A celery_worker worker --loglevel=info
+Supports multiple queue configurations via environment variable.
 
 Environment Variables:
+    CELERY_WORKER_QUEUE: Comma-separated queue names (e.g., "backup" or "default,network")
+                         If not set, uses general queues: default,network,heavy
     INSTALL_CERTIFICATE_FILES: Set to 'true' to install certificates from
         config/certs/ to the system CA store on startup (for Docker environments).
 
 Usage:
     python start_celery.py
+    CELERY_WORKER_QUEUE=backup python start_celery.py
 """
 
 import os
@@ -123,24 +126,40 @@ def main():
     # Install certificates if enabled (for Docker environments)
     install_certificates()
 
+    # Determine which queues to process from environment variable
+    worker_queues = os.environ.get("CELERY_WORKER_QUEUE", "").strip()
+
+    if not worker_queues:
+        # Default: general worker (excludes backup queue)
+        worker_queues = "default,network,heavy"
+        worker_type = "GENERAL QUEUES"
+        hostname_prefix = "general-worker"
+    elif worker_queues == "backup":
+        # Specialized backup worker
+        worker_type = "BACKUP QUEUE"
+        hostname_prefix = "backup-worker"
+    else:
+        # Custom queue configuration
+        worker_type = f"CUSTOM QUEUES ({worker_queues})"
+        hostname_prefix = "worker"
+
     print("=" * 70)
-    print("Starting Cockpit-NG Celery Worker - GENERAL QUEUES")
+    print(f"Starting Cockpit-NG Celery Worker - {worker_type}")
     print("=" * 70)
     print(f"Broker: {settings.celery_broker_url}")
     print(f"Backend: {settings.celery_result_backend}")
-    print(f"Queues: default,network,heavy (excludes: backup)")
+    print(f"Queues: {worker_queues}")
     print(f"Max Workers: {settings.celery_max_workers}")
     print("Log Level: INFO")
     print("=" * 70)
     print()
 
-    # Start worker using argv
-    # Exclude 'backup' queue - handled by dedicated backup worker
+    # Start worker with configured queues
     argv = [
         "worker",
         "--loglevel=INFO",
-        "--queues=default,network,heavy",  # Exclude 'backup' queue
-        "--hostname=general-worker@%h",  # Unique hostname for identification
+        f"--queues={worker_queues}",
+        f"--hostname={hostname_prefix}@%h",
         f"--concurrency={settings.celery_max_workers}",
         "--prefetch-multiplier=1",
         "--max-tasks-per-child=100",

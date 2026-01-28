@@ -249,12 +249,14 @@ services:
       - CELERY_BROKER_URL=redis://:${COCKPIT_REDIS_PASSWORD:-changeme}@redis:6379/0
       - CELERY_RESULT_BACKEND=redis://:${COCKPIT_REDIS_PASSWORD:-changeme}@redis:6379/0
 
+      # Queue Configuration - Process only 'backup' queue
+      - CELERY_WORKER_QUEUE=backup
+
       # Certificate Installation (for Docker environments)
       - INSTALL_CERTIFICATE_FILES=true
 
-      # Supervisord Config
-      # Note: supervisord-worker-backup.conf is copied into the image during build
-      - SUPERVISORD_CONF=/etc/supervisor/conf.d/supervisord-worker-backup.conf
+      # Supervisord Config - Uses same config as general worker
+      - SUPERVISORD_CONF=/etc/supervisor/conf.d/supervisord-worker.conf
     volumes:
       # Persist data directory
       - cockpit_data:/app/data
@@ -270,7 +272,7 @@ services:
     restart: unless-stopped
     networks:
       - cockpit-network
-    command: ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord-worker-backup.conf"]
+    command: ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord-worker.conf"]
     # Optional: Uncomment to limit resources for this worker
     # deploy:
     #   resources:

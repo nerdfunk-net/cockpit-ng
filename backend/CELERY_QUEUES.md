@@ -55,8 +55,12 @@ Cockpit-NG uses a multi-queue Celery architecture to enable task isolation, reso
 
 ## Worker Configuration
 
+All workers use the same startup script (`start_celery.py`) with queue configuration via environment variable.
+
 ### General Worker
 **Command**: `python start_celery.py`
+
+**Environment**: `CELERY_WORKER_QUEUE` not set (uses default)
 
 **Queues**: `default`, `network`, `heavy`
 
@@ -65,7 +69,9 @@ Cockpit-NG uses a multi-queue Celery architecture to enable task isolation, reso
 Handles all tasks except those in the `backup` queue.
 
 ### Backup Worker (Specialized)
-**Command**: `python start_celery_backup_worker.py`
+**Command**: `python start_celery.py`
+
+**Environment**: `CELERY_WORKER_QUEUE=backup`
 
 **Queues**: `backup` (only)
 
@@ -102,10 +108,11 @@ export COCKPIT_DATABASE_HOST=main-host
 export COCKPIT_REDIS_HOST=main-host
 export CELERY_BROKER_URL=redis://:password@main-host:6379/0
 export CELERY_RESULT_BACKEND=redis://:password@main-host:6379/0
+export CELERY_WORKER_QUEUE=backup
 
 # Run backup worker
 cd backend
-python start_celery_backup_worker.py
+python start_celery.py
 ```
 
 **On Main Host**:
@@ -159,19 +166,30 @@ task_routes={
 }
 ```
 
-3. **Create worker script** (e.g., `start_celery_myqueue_worker.py`):
-```python
-argv = [
-    "worker",
-    "--loglevel=INFO",
-    "--queues=myqueue",
-    "--hostname=myqueue-worker@%h",
-]
+3. **Start worker with environment variable**:
+```bash
+export CELERY_WORKER_QUEUE=myqueue
+python start_celery.py
 ```
 
-4. **Add to Docker Compose** (similar to `cockpit-worker-backup`).
+Or for multiple queues:
+```bash
+export CELERY_WORKER_QUEUE=myqueue,anotherqueue
+python start_celery.py
+```
 
-5. **Update general worker** to exclude the new queue if needed.
+4. **Add to Docker Compose** (similar to `cockpit-worker-backup`):
+```yaml
+cockpit-worker-myqueue:
+  build:
+    context: .
+    dockerfile: docker/Dockerfile.worker
+  environment:
+    - CELERY_WORKER_QUEUE=myqueue
+  # ... other config
+```
+
+5. **Update general worker** to exclude the new queue if needed (modify default queues in `start_celery.py`).
 
 ## Monitoring
 
