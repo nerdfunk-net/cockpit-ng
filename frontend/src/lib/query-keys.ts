@@ -201,6 +201,18 @@ export const queryKeys = {
     snmpMapping: () => [...queryKeys.commonSettings.all, 'snmpMapping'] as const,
   },
 
+  // Nautobot Settings
+  nautobotSettings: {
+    all: ['nautobotSettings'] as const,
+    settings: () => [...queryKeys.nautobotSettings.all, 'settings'] as const,
+    defaults: () => [...queryKeys.nautobotSettings.all, 'defaults'] as const,
+    offboarding: () => [...queryKeys.nautobotSettings.all, 'offboarding'] as const,
+    options: () => [...queryKeys.nautobotSettings.all, 'options'] as const,
+    customFields: () => [...queryKeys.nautobotSettings.all, 'customFields'] as const,
+    customFieldChoices: (fieldName: string) =>
+      [...queryKeys.nautobotSettings.customFields(), 'choices', fieldName] as const,
+  },
+
   // CheckMK Settings
   checkmkSettings: {
     all: ['checkmkSettings'] as const,
