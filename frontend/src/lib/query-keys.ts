@@ -58,8 +58,22 @@ export const queryKeys = {
     // Progress endpoint (for backup jobs)
     progress: (id: number) => [...queryKeys.jobs.all, 'progress', id] as const,
 
-    // Templates dropdown
+    // Templates
     templates: () => [...queryKeys.jobs.all, 'templates'] as const,
+    template: (id: number) => [...queryKeys.jobs.templates(), id] as const,
+
+    // Template dependencies
+    jobTypes: () => [...queryKeys.jobs.all, 'job-types'] as const,
+    configRepos: (category?: string) =>
+      category
+        ? ([...queryKeys.jobs.all, 'config-repos', category] as const)
+        : ([...queryKeys.jobs.all, 'config-repos'] as const),
+    savedInventories: () => [...queryKeys.jobs.all, 'saved-inventories'] as const,
+    commandTemplates: () => [...queryKeys.jobs.all, 'command-templates'] as const,
+    customFields: (contentType?: string) =>
+      contentType
+        ? ([...queryKeys.jobs.all, 'custom-fields', contentType] as const)
+        : ([...queryKeys.jobs.all, 'custom-fields'] as const),
 
     // Schedules
     schedules: () => [...queryKeys.jobs.all, 'schedules'] as const,

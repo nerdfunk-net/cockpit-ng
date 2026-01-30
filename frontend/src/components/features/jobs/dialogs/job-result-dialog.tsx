@@ -23,16 +23,16 @@ import {
   isCheckIPJobResult,
   isScanPrefixJobResult,
   GenericJobResult,
-} from "./types/job-results"
-import { BackupJobResultView } from "./results/backup-job-result"
-import { SyncJobResultView } from "./results/sync-job-result"
-import { RunCommandsResultView } from "./results/run-commands-result"
-import { ExportDevicesResultView } from "./results/export-devices-result"
-import { BulkOnboardResultView } from "./results/bulk-onboard-result"
-import { UpdateDevicesResultView } from "./results/update-devices-result"
-import { CheckIPResultView } from "./results/check-ip-result"
-import { ScanPrefixResultView } from "./results/scan-prefix-result"
-import { GenericJobResultView } from "./results/generic-job-result"
+} from "../types/job-results"
+import { BackupJobResultView } from "../components/results/backup-job-result"
+import { SyncJobResultView } from "../components/results/sync-job-result"
+import { RunCommandsResultView } from "../components/results/run-commands-result"
+import { ExportDevicesResultView } from "../components/results/export-devices-result"
+import { BulkOnboardResultView } from "../components/results/bulk-onboard-result"
+import { UpdateDevicesResultView } from "../components/results/update-devices-result"
+import { CheckIPResultView } from "../components/results/check-ip-result"
+import { ScanPrefixResultView } from "../components/results/scan-prefix-result"
+import { GenericJobResultView } from "../components/results/generic-job-result"
 
 interface JobResultDialogProps {
   jobRun: JobRun | null

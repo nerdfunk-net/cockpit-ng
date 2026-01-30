@@ -4,7 +4,7 @@ import React, { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ScanPrefixJobResult, PrefixScanResult } from "../types/job-results"
+import { ScanPrefixJobResult, PrefixScanResult } from "../../types/job-results"
 import { Network, CheckCircle2, XCircle, Activity, ChevronDown, ChevronUp, Globe } from "lucide-react"
 
 interface ScanPrefixResultViewProps {

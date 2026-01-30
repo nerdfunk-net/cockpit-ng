@@ -18,7 +18,7 @@ import {
   CheckCircle2,
   XCircle as XCircleIcon,
 } from "lucide-react"
-import { GenericJobResult, GenericDeviceResult } from "../types/job-results"
+import { GenericJobResult, GenericDeviceResult } from "../../types/job-results"
 
 interface GenericJobResultProps {
   result: GenericJobResult

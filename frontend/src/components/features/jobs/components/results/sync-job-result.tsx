@@ -20,7 +20,7 @@ import {
   AlertCircle,
   RefreshCw,
 } from "lucide-react"
-import { SyncJobResult, SyncJobDeviceResult } from "../types/job-results"
+import { SyncJobResult, SyncJobDeviceResult } from "../../types/job-results"
 
 interface SyncJobResultProps {
   result: SyncJobResult

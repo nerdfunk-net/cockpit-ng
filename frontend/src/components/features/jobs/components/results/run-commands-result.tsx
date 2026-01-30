@@ -31,7 +31,7 @@ import {
   Eye,
   Terminal,
 } from "lucide-react"
-import { RunCommandsJobResult, RunCommandsDeviceResult } from "../types/job-results"
+import { RunCommandsJobResult, RunCommandsDeviceResult } from "../../types/job-results"
 
 interface RunCommandsResultProps {
   result: RunCommandsJobResult

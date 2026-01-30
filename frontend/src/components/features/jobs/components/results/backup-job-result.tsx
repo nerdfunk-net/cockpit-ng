@@ -26,7 +26,7 @@ import {
   Wifi,
   Download,
 } from "lucide-react"
-import { BackupJobResult, BackupDeviceResult, formatBytes } from "../types/job-results"
+import { BackupJobResult, BackupDeviceResult, formatBytes } from "../../types/job-results"
 
 interface BackupJobResultProps {
   result: BackupJobResult

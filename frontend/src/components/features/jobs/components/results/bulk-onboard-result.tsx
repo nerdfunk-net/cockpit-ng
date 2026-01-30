@@ -19,7 +19,7 @@ import {
     CheckCircle2,
     XCircle as XCircleIcon,
 } from "lucide-react"
-import { BulkOnboardJobResult } from "../types/job-results"
+import { BulkOnboardJobResult } from "../../types/job-results"
 
 interface BulkOnboardResultProps {
     result: BulkOnboardJobResult

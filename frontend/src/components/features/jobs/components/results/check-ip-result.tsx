@@ -4,7 +4,7 @@ import React, { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckIPJobResult } from "../types/job-results"
+import { CheckIPJobResult } from "../../types/job-results"
 import { CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react"
 
 interface CheckIPResultViewProps {

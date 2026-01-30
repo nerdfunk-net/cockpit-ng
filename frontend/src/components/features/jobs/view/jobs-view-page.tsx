@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import { History, RefreshCw } from 'lucide-react'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { JobResultDialog } from '../job-result-dialog'
+import { JobResultDialog } from '../dialogs/job-result-dialog'
 import { JobsFilter } from './components/jobs-filter'
 import { JobsTable } from './components/jobs-table'
 import { JobsPagination } from './components/jobs-pagination'

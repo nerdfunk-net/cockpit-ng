@@ -3,7 +3,7 @@
 import { CheckCircle2, XCircle, AlertCircle, Info, ChevronDown, ChevronUp } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { UpdateDevicesJobResult } from "../types/job-results"
+import { UpdateDevicesJobResult } from "../../types/job-results"
 import { useState } from "react"
 
 interface UpdateDevicesResultViewProps {

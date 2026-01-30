@@ -3,7 +3,7 @@
 import { Download, FileText, CheckCircle2, Database } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ExportDevicesJobResult, formatBytes } from "../types/job-results"
+import { ExportDevicesJobResult, formatBytes } from "../../types/job-results"
 import { useAuthStore } from "@/lib/auth-store"
 
 interface ExportDevicesResultViewProps {
