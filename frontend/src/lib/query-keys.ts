@@ -77,6 +77,10 @@ export const queryKeys = {
 
     // Schedules
     schedules: () => [...queryKeys.jobs.all, 'schedules'] as const,
+    schedule: (id: number) => [...queryKeys.jobs.schedules(), id] as const,
+
+    // Scheduler debug
+    schedulerDebug: () => [...queryKeys.jobs.all, 'scheduler-debug'] as const,
   },
 
   // Nautobot
