@@ -1,4 +1,4 @@
-import type { JobSchedule, JobTemplate, Credential, ScheduleFormData } from '../types'
+import type { JobSchedule, JobTemplate, Credential } from '../types'
 
 // React best practice: Extract default objects to prevent re-render loops
 export const EMPTY_SCHEDULES: JobSchedule[] = []

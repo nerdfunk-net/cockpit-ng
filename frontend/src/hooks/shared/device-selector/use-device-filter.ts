@@ -127,16 +127,18 @@ export function useDeviceFilter() {
     }, [updateOperatorOptions]) // Add updateOperatorOptions to dependencies
 
     const handleCustomFieldSelect = useCallback((customFieldName: string) => {
-        const customFieldValue = `cf_${customFieldName}`
-        setSelectedCustomField(customFieldName)
-        // Set the actual field to the cf_ prefixed value
-        setCurrentField(customFieldValue)
+        // customFieldName already has 'cf_' prefix from SelectItem value in condition-tree-builder.tsx
+        // Extract the actual custom field name without prefix for display
+        const actualFieldName = customFieldName.replace(/^cf_/, '')
+        setSelectedCustomField(actualFieldName)
+        // Use the value as-is (already has cf_ prefix)
+        setCurrentField(customFieldName)
         setCurrentValue('')
-        updateOperatorOptions(customFieldValue)
+        updateOperatorOptions(customFieldName)
 
         // Load field values - for 'select' type custom fields, this will return the available choices
-        if (customFieldValue) {
-            setFieldNameToLoad(customFieldValue)
+        if (customFieldName) {
+            setFieldNameToLoad(customFieldName)
         }
     }, [updateOperatorOptions]) // Add updateOperatorOptions to dependencies
 

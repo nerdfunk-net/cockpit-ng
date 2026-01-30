@@ -117,6 +117,19 @@ export const queryKeys = {
         : ([...queryKeys.nautobot.all, 'vlans'] as const),
   },
 
+  // Network
+  network: {
+    all: ['network'] as const,
+
+    // Backup
+    backupDevices: (filters?: any) =>
+      filters
+        ? ([...queryKeys.network.all, 'backup-devices', filters] as const)
+        : ([...queryKeys.network.all, 'backup-devices'] as const),
+    backupHistory: (deviceId: string) =>
+      [...queryKeys.network.all, 'backup-history', deviceId] as const,
+  },
+
   // CSV Updates (Nautobot tool)
   csvUpdates: {
     all: ['csv-updates'] as const,
