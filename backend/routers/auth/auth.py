@@ -84,6 +84,24 @@ async def login(user_data: UserLogin):
                 "debug": user_with_roles.get("debug", False),
             }
 
+            # Log successful login to audit log
+            from repositories.audit_log_repository import audit_log_repo
+            
+            audit_log_repo.create_log(
+                username=user["username"],
+                user_id=user["id"],
+                event_type="login",
+                message=f"User '{user['username']}' logged in",
+                resource_type="authentication",
+                resource_id=str(user["id"]),
+                resource_name=user["username"],
+                severity="info",
+                extra_data={
+                    "authentication_method": "password",
+                    "roles": role_names,
+                },
+            )
+
             return LoginResponse(
                 access_token=access_token,
                 token_type="bearer",
@@ -253,6 +271,23 @@ async def api_key_login(user_info: dict = Depends(get_api_key_user)):
             expires_delta=access_token_expires,
         )
 
+        # Log API key login to audit log
+        from repositories.audit_log_repository import audit_log_repo
+        
+        audit_log_repo.create_log(
+            username=user_info["username"],
+            user_id=user_info["user_id"],
+            event_type="login",
+            message=f"User '{user_info['username']}' logged in",
+            resource_type="authentication",
+            resource_id=str(user_info["user_id"]),
+            resource_name=user_info["username"],
+            severity="info",
+            extra_data={
+                "authentication_method": "api_key",
+            },
+        )
+
         return LoginResponse(
             access_token=access_token,
             token_type="bearer",
@@ -271,3 +306,53 @@ async def api_key_login(user_info: dict = Depends(get_api_key_user)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to generate access token",
         )
+
+
+@router.post("/logout")
+async def logout(request: Request):
+    """
+    Log user logout event.
+    
+    This endpoint is called by the frontend when a user logs out.
+    It logs the logout event to the audit log for tracking purposes.
+    The actual token invalidation happens client-side by removing the token.
+    """
+    from config import settings
+    import jwt as pyjwt
+    
+    # Try to get user info from token if available
+    try:
+        # Extract Authorization header
+        auth_header = request.headers.get("authorization") or request.headers.get(
+            "Authorization"
+        )
+        if auth_header and auth_header.lower().startswith("bearer "):
+            token = auth_header.split(" ", 1)[1].strip()
+            
+            # Decode token to get user info
+            payload = pyjwt.decode(
+                token,
+                settings.secret_key,
+                algorithms=[settings.algorithm],
+            )
+            username = payload.get("sub")
+            user_id = payload.get("user_id")
+            
+            if username:
+                from repositories.audit_log_repository import audit_log_repo
+                
+                audit_log_repo.create_log(
+                    username=username,
+                    user_id=user_id,
+                    event_type="logout",
+                    message=f"User '{username}' logged out",
+                    resource_type="authentication",
+                    resource_id=str(user_id),
+                    resource_name=username,
+                    severity="info",
+                )
+    except Exception as e:
+        # If we can't get user info, log generic logout
+        logger.warning(f"Logout called but could not extract user info: {e}")
+    
+    return {"success": True, "message": "Logged out successfully"}

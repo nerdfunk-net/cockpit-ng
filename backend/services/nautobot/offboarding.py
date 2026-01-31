@@ -322,6 +322,55 @@ class OffboardingService:
             device_id,
             results["summary"],
         )
+
+        # Log device offboarding to audit log
+        username = current_user.get("username")
+        user_id = current_user.get("user_id")
+        if username:
+            from repositories.audit_log_repository import audit_log_repo
+
+            # Prepare extra data for audit log
+            extra_data = {
+                "integration_mode": integration_mode,
+                "removed_items_count": removed_count,
+                "errors_count": error_count,
+            }
+
+            # Add device details if available
+            if device_details:
+                if "serial" in device_details and device_details["serial"]:
+                    extra_data["serial_number"] = device_details["serial"]
+                
+                # Get platform name if available
+                platform = device_details.get("platform")
+                if platform and isinstance(platform, dict):
+                    extra_data["platform"] = platform.get("name")
+                
+                # Get device type/model if available
+                device_type = device_details.get("device_type")
+                if device_type and isinstance(device_type, dict):
+                    extra_data["device_type"] = device_type.get("model")
+
+            # Add request properties
+            extra_data["remove_interface_ips"] = request.remove_interface_ips
+            extra_data["remove_primary_ip"] = request.remove_primary_ip
+            extra_data["remove_from_checkmk"] = request.remove_from_checkmk
+
+            # Log with appropriate severity based on success
+            severity = "info" if results["success"] else "warning"
+            
+            audit_log_repo.create_log(
+                username=username,
+                user_id=user_id,
+                event_type="offboard-device",
+                message=f"Device '{results['device_name']}' offboarded from Nautobot",
+                resource_type="device",
+                resource_id=device_id,
+                resource_name=results.get("device_name", device_id),
+                severity=severity,
+                extra_data=extra_data,
+            )
+
         return results
 
     async def _handle_device_removal(

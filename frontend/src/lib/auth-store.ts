@@ -86,6 +86,21 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
+    // Call backend logout endpoint to log the event (fire and forget)
+    const token = getCookieToken()
+    if (token) {
+      fetch('/api/proxy/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }).catch((error) => {
+        // Silently ignore errors - logout should always work client-side
+        console.warn('Failed to log logout event:', error)
+      })
+    }
+
     // Remove cookies
     removeCookies()
 
