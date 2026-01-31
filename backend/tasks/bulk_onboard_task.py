@@ -17,6 +17,8 @@ def bulk_onboard_devices_task(
     self,
     devices: List[Dict],
     default_config: Dict,
+    username: str = None,
+    user_id: int = None,
 ) -> dict:
     """
     Bulk onboard multiple devices from CSV data.
@@ -45,6 +47,8 @@ def bulk_onboard_devices_task(
             - location_id, namespace_id, role_id, status_id, etc.
             - onboarding_timeout: Max wait time for each onboarding job
             - sync_options: List of sync options
+        username: Username performing the onboarding (for audit logging)
+        user_id: User ID performing the onboarding (for audit logging)
 
     Returns:
         dict: Result with success status, message, and details for all devices
@@ -265,6 +269,8 @@ def bulk_onboard_devices_task(
                 custom_fields=merged_config.get("custom_fields"),
                 device_num=device_num,
                 device_count=device_count,
+                username=username,
+                user_id=user_id,
             )
 
             if device_result.get("success"):

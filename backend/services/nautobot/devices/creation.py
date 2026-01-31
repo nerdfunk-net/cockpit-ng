@@ -23,7 +23,12 @@ class DeviceCreationService:
         self.common_service = DeviceCommonService(nautobot_service)
         self.interface_manager = InterfaceManagerService(nautobot_service)
 
-    async def create_device_with_interfaces(self, request: AddDeviceRequest) -> dict:
+    async def create_device_with_interfaces(
+        self,
+        request: AddDeviceRequest,
+        username: Optional[str] = None,
+        user_id: Optional[int] = None,
+    ) -> dict:
         """
         Orchestrated workflow to add a device with interfaces to Nautobot.
 
@@ -35,6 +40,8 @@ class DeviceCreationService:
 
         Args:
             request: AddDeviceRequest with device and interface data
+            username: Username of the user creating the device (for audit logging)
+            user_id: User ID of the user creating the device (for audit logging)
 
         Returns:
             dict with success status, device_id, workflow_status, and summary
@@ -83,6 +90,77 @@ class DeviceCreationService:
             "success",
             "partial",
         ]
+
+        # Log device creation to audit log
+        if username:
+            from repositories.audit_log_repository import audit_log_repo
+            
+            device_created = workflow_status["step1_device"]["status"] == "success"
+            
+            # Prepare extra data for audit log
+            extra_data = {
+                "serial_number": request.serial,
+            }
+            
+            # Extract human-readable names using common service helper methods
+            if device_response:
+                # Get device_type display name from UUID
+                device_type_field = device_response.get("device_type")
+                if isinstance(device_type_field, dict) and "id" in device_type_field:
+                    device_type_name = await self.common_service.get_device_type_display(
+                        device_type_field["id"]
+                    )
+                    extra_data["device_type"] = device_type_name or request.device_type
+                else:
+                    extra_data["device_type"] = request.device_type
+                
+                # Get platform name from UUID
+                platform_field = device_response.get("platform")
+                if isinstance(platform_field, dict) and "id" in platform_field:
+                    platform_name = await self.common_service.get_platform_name(
+                        platform_field["id"]
+                    )
+                    extra_data["platform"] = platform_name or request.platform
+                elif request.platform:
+                    extra_data["platform"] = request.platform
+            else:
+                extra_data["device_type"] = request.device_type
+                if request.platform:
+                    extra_data["platform"] = request.platform
+            
+            # Add primary IP if available
+            if primary_ipv4_id:
+                # Find the primary IP address from the created IPs
+                for ip_data in workflow_status["step2_ip_addresses"]["data"]:
+                    if ip_data.get("id") == primary_ipv4_id:
+                        extra_data["primary_ip_address"] = ip_data.get("address")
+                        break
+            
+            if device_created:
+                audit_log_repo.create_log(
+                    username=username,
+                    user_id=user_id,
+                    event_type="add-device",
+                    message=f"Device '{request.name}' added to Nautobot",
+                    resource_type="device",
+                    resource_id=device_id,
+                    resource_name=request.name,
+                    severity="info",
+                    extra_data=extra_data,
+                )
+            else:
+                error_message = workflow_status["step1_device"].get("message", "Unknown error")
+                audit_log_repo.create_log(
+                    username=username,
+                    user_id=user_id,
+                    event_type="add-device",
+                    message=f"Failed to add device '{request.name}' - Error: {error_message}",
+                    resource_type="device",
+                    resource_id=None,
+                    resource_name=request.name,
+                    severity="error",
+                    extra_data=extra_data,
+                )
 
         return {
             "success": overall_success,

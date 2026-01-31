@@ -405,6 +405,68 @@ class DeviceCommonService:
             logger.error(f"Error resolving platform: {e}", exc_info=True)
             return None
 
+    async def get_platform_name(self, platform_id: str) -> Optional[str]:
+        """
+        Get platform display name from UUID using REST API.
+
+        Args:
+            platform_id: Platform UUID
+
+        Returns:
+            Platform name if found, None otherwise
+        """
+        try:
+            logger.debug(f"Fetching platform name for UUID: {platform_id}")
+
+            result = await self.nautobot.rest_request(
+                endpoint=f"dcim/platforms/{platform_id}/",
+                method="GET"
+            )
+
+            if result and "name" in result:
+                platform_name = result["name"]
+                logger.debug(f"Platform UUID {platform_id} -> name: {platform_name}")
+                return platform_name
+
+            logger.warning(f"Platform not found for UUID: {platform_id}")
+            return None
+
+        except Exception as e:
+            logger.error(f"Error fetching platform name: {e}", exc_info=True)
+            return None
+
+    async def get_device_type_display(self, device_type_id: str) -> Optional[str]:
+        """
+        Get device type display name from UUID using REST API.
+
+        Args:
+            device_type_id: Device type UUID
+
+        Returns:
+            Device type display name (e.g., "Cisco Catalyst 9300-48P") if found, None otherwise
+        """
+        try:
+            logger.debug(f"Fetching device type display for UUID: {device_type_id}")
+
+            result = await self.nautobot.rest_request(
+                endpoint=f"dcim/device-types/{device_type_id}/",
+                method="GET"
+            )
+
+            if result:
+                # Try display field first (most descriptive), fall back to model
+                display_name = result.get("display") or result.get("model")
+                if display_name:
+                    logger.debug(f"Device type UUID {device_type_id} -> display: {display_name}")
+                    return display_name
+
+            logger.warning(f"Device type not found for UUID: {device_type_id}")
+            return None
+
+        except Exception as e:
+            logger.error(f"Error fetching device type display: {e}", exc_info=True)
+            return None
+
     async def resolve_role_id(self, role_name: str) -> Optional[str]:
         """
         Resolve role name to UUID using GraphQL.

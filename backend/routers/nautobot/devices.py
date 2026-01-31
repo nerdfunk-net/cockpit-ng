@@ -365,7 +365,11 @@ async def add_device(
     4. Assign primary IPv4 address to device
     """
     try:
-        result = await device_creation_service.create_device_with_interfaces(request)
+        result = await device_creation_service.create_device_with_interfaces(
+            request,
+            username=current_user.get("username"),
+            user_id=current_user.get("user_id"),
+        )
         return result
     except Exception as e:
         logger.error(f"Failed to add device: {str(e)}", exc_info=True)

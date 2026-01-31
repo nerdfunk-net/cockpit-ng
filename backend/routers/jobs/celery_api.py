@@ -218,6 +218,8 @@ async def trigger_onboard_device(
         sync_options=request.sync_options,
         tags=request.tags,
         custom_fields=request.custom_fields,
+        username=current_user.get("username"),
+        user_id=current_user.get("user_id"),
     )
 
     return TaskResponse(
@@ -279,6 +281,8 @@ async def trigger_bulk_onboard_devices(
         task = bulk_onboard_devices_task.delay(
             devices=devices_data,
             default_config=request.default_config,
+            username=current_user.get("username"),
+            user_id=current_user.get("user_id"),
         )
 
         ip_addresses = [d.get("ip_address", "unknown") for d in devices_data]
@@ -322,6 +326,8 @@ async def trigger_bulk_onboard_devices(
         task = bulk_onboard_devices_task.delay(
             devices=batch_devices,
             default_config=request.default_config,
+            username=current_user.get("username"),
+            user_id=current_user.get("user_id"),
         )
         task_ids.append(task.id)
 

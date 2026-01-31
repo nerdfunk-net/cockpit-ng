@@ -6,8 +6,10 @@ from celery import shared_task
 import logging
 import time
 import asyncio
+import requests
 from typing import Dict, List, Optional
 from utils.task_progress import ProgressUpdater
+from utils.audit_logger import log_device_onboarding
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +33,8 @@ def onboard_device_task(
     sync_options: Optional[List[str]] = None,
     tags: Optional[List[str]] = None,
     custom_fields: Optional[Dict[str, str]] = None,
+    username: Optional[str] = None,
+    user_id: Optional[int] = None,
 ) -> dict:
     """
     Onboard one or more devices to Nautobot with tags and custom fields.
@@ -61,6 +65,8 @@ def onboard_device_task(
         sync_options: List of sync options (cables, software, vlans, vrfs)
         tags: List of tag IDs to apply
         custom_fields: Dict of custom field key-value pairs
+        username: Username of the user performing the onboarding (for audit logging)
+        user_id: User ID of the user performing the onboarding (for audit logging)
 
     Returns:
         dict: Result with success status, message, and details for all devices
@@ -74,6 +80,7 @@ def onboard_device_task(
         logger.info(
             f"Starting device onboarding for {device_count} IP(s): {', '.join(ip_list)}"
         )
+        logger.info(f"Audit logging info: username={username}, user_id={user_id}")
 
         # Initialize progress updater
         updater = ProgressUpdater(self)
@@ -168,6 +175,8 @@ def onboard_device_task(
                 custom_fields=custom_fields,
                 device_num=device_num,
                 device_count=device_count,
+                username=username,
+                user_id=user_id,
             )
 
             device_results.append(device_result)
@@ -234,6 +243,8 @@ def _process_single_device(
     custom_fields: Optional[Dict[str, str]],
     device_num: int,
     device_count: int,
+    username: Optional[str] = None,
+    user_id: Optional[int] = None,
 ) -> dict:
     """
     Process a single device after onboarding: lookup, update tags/custom fields, sync.
@@ -250,6 +261,8 @@ def _process_single_device(
         custom_fields: Dict of custom field values
         device_num: Current device number (1-based)
         device_count: Total number of devices
+        username: Username for audit logging
+        user_id: User ID for audit logging
 
     Returns:
         dict: Result for this device
@@ -265,6 +278,18 @@ def _process_single_device(
         if not device_id:
             error_msg = f"Failed to retrieve device ID for IP {ip_address}"
             logger.error(error_msg)
+            
+            # Log failed device lookup
+            if username:
+                log_device_onboarding(
+                    username=username or "unknown",
+                    device_name=ip_address,
+                    device_id=None,
+                    user_id=user_id,
+                    success=False,
+                    error_message=error_msg,
+                )
+            
             return {
                 "success": False,
                 "ip_address": ip_address,
@@ -311,6 +336,20 @@ def _process_single_device(
 
         logger.info(f"Device {device_name} ({ip_address}) processing complete")
 
+        # Log successful device onboarding
+        logger.info(f"Attempting to log audit entry: username={username}, device_name={device_name}")
+        if username:
+            log_device_onboarding(
+                username=username or "unknown",
+                device_name=device_name,
+                device_id=device_id,
+                user_id=user_id,
+                success=True,
+            )
+            logger.info(f"Audit log created for device {device_name}")
+        else:
+            logger.warning(f"No username provided, skipping audit log for device {device_name}")
+
         return {
             "success": True,
             "ip_address": ip_address,
@@ -324,6 +363,18 @@ def _process_single_device(
     except Exception as e:
         error_msg = f"Error processing device {ip_address}: {str(e)}"
         logger.error(error_msg, exc_info=True)
+        
+        # Log failed device onboarding
+        if username:
+            log_device_onboarding(
+                username=username or "unknown",
+                device_name=ip_address,
+                device_id=None,
+                user_id=user_id,
+                success=False,
+                error_message=error_msg,
+            )
+        
         return {
             "success": False,
             "ip_address": ip_address,
