@@ -27,6 +27,8 @@ def update_devices_task(
     self,
     devices: List[Dict[str, Any]],
     dry_run: bool = False,
+    username: Optional[str] = None,
+    user_id: Optional[int] = None,
 ) -> dict:
     """
     Task: Update Nautobot devices from list of JSON objects.
@@ -247,6 +249,35 @@ def update_devices_task(
                             f"Successfully updated device {result['device_name']}: "
                             f"{len(result['updated_fields'])} fields"
                         )
+                        
+                        # Log device update to audit log
+                        if username and not dry_run:
+                            try:
+                                from repositories.audit_log_repository import audit_log_repo
+                                
+                                # Prepare extra data with updated fields
+                                extra_data = {
+                                    "updated_fields": result["updated_fields"],
+                                    "fields_count": len(result["updated_fields"]),
+                                }
+                                
+                                # Add warnings if any
+                                if result["warnings"]:
+                                    extra_data["warnings"] = result["warnings"]
+                                
+                                audit_log_repo.create_log(
+                                    username=username,
+                                    user_id=user_id,
+                                    event_type="bulk-edit",
+                                    message=f"Device '{result['device_name']}' updated via bulk edit",
+                                    resource_type="device",
+                                    resource_id=result["device_id"],
+                                    resource_name=result["device_name"],
+                                    severity="info",
+                                    extra_data=extra_data,
+                                )
+                            except Exception as audit_error:
+                                logger.warning(f"Failed to create audit log: {audit_error}")
                     else:
                         # Service returned failure
                         failures.append(

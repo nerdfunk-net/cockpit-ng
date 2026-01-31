@@ -1556,6 +1556,8 @@ async def trigger_update_devices(
     task = update_devices_task.delay(
         devices=request.devices,
         dry_run=request.dry_run,
+        username=current_user.get("username"),
+        user_id=current_user.get("user_id"),
     )
 
     # Create job run record for tracking in Jobs/View
