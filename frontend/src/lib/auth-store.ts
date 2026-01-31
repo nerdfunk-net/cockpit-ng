@@ -58,7 +58,7 @@ const setCookieUser = (user: User) => {
     email: user.email,
     roles: user.roles,
     // Omit permissions array - too large for cookies
-    // Permissions can be fetched on demand if needed
+    // Permissions will be fetched via token refresh on hydration
   }
   Cookies.set('cockpit_user_info', JSON.stringify(minimalUser), COOKIE_CONFIG)
 }
@@ -74,23 +74,16 @@ const removeCookies = () => {
   }
 }
 
-export const useAuthStore = create<AuthState>((set, _get) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   token: null,
   user: null,
   isAuthenticated: false,
 
   login: (token: string, user: User) => {
-    // Debug logging
-    console.log('[AUTH] Login called with user:', user)
-    console.log('[AUTH] User roles:', user.roles)
-    console.log('[AUTH] User permissions count:', Array.isArray(user.permissions) ? user.permissions.length : 0)
-    console.log('[AUTH] Roles is array?', Array.isArray(user.roles))
-    console.log('[AUTH] Has admin in roles?', user.roles.includes('admin'))
-    
     // Set cookies with minimal user data (excluding permissions to avoid size limit)
     setCookieToken(token)
     setCookieUser(user)  // This now stores only essential fields
-    
+
     // Update state with full user object including permissions
     set({
       token,
@@ -102,7 +95,7 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
   logout: () => {
     // Remove cookies
     removeCookies()
-    
+
     // Clear state
     set({
       token: null,
@@ -112,29 +105,53 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
   },
 
   setUser: (user: User) => {
-    // Update user in cookies
+    // Update user in cookies (minimal data only)
     setCookieUser(user)
+    // Update state with full user object
     set({ user })
   },
 
-  hydrate: () => {
+  hydrate: async () => {
     // Load from cookies on app start
     const token = getCookieToken()
     const user = getCookieUser()
-    
-    console.log('[AUTH] Hydrate called')
-    console.log('[AUTH] Token from cookie:', token ? 'exists' : 'missing')
-    console.log('[AUTH] User from cookie:', user)
-    
+
     if (token && user) {
-      console.log('[AUTH] Hydrating with user roles:', user.roles)
-      console.log('[AUTH] Hydrating with user permissions:', user.permissions)
-      
+      // Set initial state with cookie data (no permissions)
       set({
         token,
         user,
         isAuthenticated: true,
       })
+
+      // Fetch fresh user data with permissions via token refresh
+      try {
+        // Use Next.js API proxy to call backend
+        const response = await fetch('/api/proxy/auth/refresh', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+
+          // Update state with fresh user data including permissions
+          set({
+            token: data.access_token,
+            user: data.user,
+            isAuthenticated: true,
+          })
+
+          // Update cookies with new token
+          setCookieToken(data.access_token)
+        }
+      } catch (error) {
+        // Silently continue with cookie data if refresh fails
+        console.error('Token refresh failed:', error)
+      }
     } else {
       // Clean up any partial data
       removeCookies()

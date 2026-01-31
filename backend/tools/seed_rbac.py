@@ -271,6 +271,8 @@ def seed_permissions(verbose: bool = True):
         print("Creating permissions...")
 
     permissions = [
+        # Dashboard permissions
+        ("dashboard.settings", "read", "Access to Settings menu and pages"),
         # Nautobot permissions
         ("nautobot.devices", "read", "View Nautobot devices"),
         ("nautobot.devices", "write", "Create/update Nautobot devices"),
@@ -486,6 +488,8 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
     if verbose:
         print("\n  Assigning permissions to 'network_engineer' role...")
     network_engineer_perms = [
+        # Dashboard
+        "dashboard.settings:read",
         # Nautobot
         "nautobot.devices:read",
         "nautobot.devices:write",

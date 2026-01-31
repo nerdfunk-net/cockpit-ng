@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/lib/auth-store'
+import { hasPermission } from '@/lib/permissions'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useSidebar } from './sidebar-context'
@@ -170,8 +171,8 @@ export function AppSidebar({ className }: AppSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
 
-  // Check if user is admin
-  const isAdmin = user?.roles?.includes('admin')
+  // Check if user has permission to view Settings
+  const canViewSettings = hasPermission(user, 'dashboard.settings', 'read')
 
   const toggleSection = (sectionTitle: string) => {
     setCollapsedSections(prev => {
@@ -199,10 +200,10 @@ export function AppSidebar({ className }: AppSidebarProps) {
 
   const sidebarWidth = isCollapsed ? 'w-16' : 'w-64'
 
-  // Filter navigation sections based on user role
+  // Filter navigation sections based on user permissions
   const visibleSections = navigationSections.filter(section => {
-    // Hide Settings section for non-admin users
-    if (section.title === 'Settings' && !isAdmin) {
+    // Hide Settings section for users without dashboard.settings:read permission
+    if (section.title === 'Settings' && !canViewSettings) {
       return false
     }
     return true
