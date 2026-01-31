@@ -122,7 +122,7 @@ export const queryKeys = {
     all: ['network'] as const,
 
     // Backup
-    backupDevices: (filters?: any) =>
+    backupDevices: (filters?: Record<string, unknown>) =>
       filters
         ? ([...queryKeys.network.all, 'backup-devices', filters] as const)
         : ([...queryKeys.network.all, 'backup-devices'] as const),
@@ -215,10 +215,11 @@ export const queryKeys = {
   // Credentials
   credentials: {
     all: ['credentials'] as const,
-    list: (filters?: { git?: boolean }) =>
+    list: (filters?: { source?: string; includeExpired?: boolean; git?: boolean }) =>
       filters
         ? ([...queryKeys.credentials.all, 'list', filters] as const)
         : ([...queryKeys.credentials.all, 'list'] as const),
+    detail: (id: number) => [...queryKeys.credentials.all, 'detail', id] as const,
   },
 
   // Check IP Tool

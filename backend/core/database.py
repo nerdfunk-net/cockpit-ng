@@ -66,28 +66,43 @@ def get_db_session() -> Session:
 
 def init_db():
     """
-    Initialize database - create all tables.
+    Initialize database - create all tables and run automatic migrations.
     This should be called on application startup.
     """
     try:
         logger.info("Initializing database tables...")
 
         # Import all models to ensure they're registered with Base.metadata
-        # This is required for the schema migration tool to work correctly
+        # This is required for the migration system to work correctly
+        from core import models  # noqa: F401
 
         logger.info(f"Loaded {len(Base.metadata.tables)} model definitions")
-        Base.metadata.create_all(bind=engine)
-        # Run migrations for existing tables
-        migrate_cache_settings_table()
-        migrate_job_templates_table()
-        migrate_nb2cmk_job_results_table()
-        migrate_git_repositories_table()
-        migrate_job_templates_parallel_tasks()
-        migrate_templates_table()
-        # Commit the DDL changes
-        engine.dispose()
+
+        # Run automatic migrations using the migration runner
+        from migrations.runner import MigrationRunner
+
+        runner = MigrationRunner(engine, Base)
+        migration_results = runner.run_migrations()
+
+        # Log migration results
+        total_changes = (
+            migration_results.get("tables_created", 0)
+            + migration_results.get("columns_added", 0)
+            + migration_results.get("indexes_created", 0)
+        )
+
+        if total_changes > 0:
+            logger.info(
+                f"Database migration completed: "
+                f"{migration_results['tables_created']} tables created, "
+                f"{migration_results['columns_added']} columns added, "
+                f"{migration_results['indexes_created']} indexes created"
+            )
+        else:
+            logger.info("Database schema is up to date - no migrations needed")
+
         logger.info(
-            f"Database tables initialized successfully ({len(Base.metadata.tables)} tables)"
+            f"Database initialized successfully ({len(Base.metadata.tables)} tables)"
         )
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
