@@ -1,11 +1,12 @@
 """
 Database migration system for Cockpit.
 
-Provides automatic schema migration by comparing SQLAlchemy models
-with the actual database schema.
+Provides versioned migrations that are automatically discovered and executed
+from the migrations/versions/ directory.
 """
 
 from .runner import MigrationRunner
+from .base import BaseMigration
 from .auto_schema import AutoSchemaMigration
 
-__all__ = ["MigrationRunner", "AutoSchemaMigration"]
+__all__ = ["MigrationRunner", "BaseMigration", "AutoSchemaMigration"]

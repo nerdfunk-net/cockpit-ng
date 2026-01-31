@@ -1,37 +1,42 @@
 # Database Migrations
 
-This directory contains the automatic database migration system for Cockpit.
+This directory contains the versioned database migration system for Cockpit.
 
 ## Overview
 
-The migration system automatically detects and applies schema changes by comparing SQLAlchemy models (defined in `/backend/core/models.py`) with the actual PostgreSQL database schema.
+The migration system uses numbered migration files that are automatically discovered and executed in order on application startup.
 
-## How It Works
-
-On every application startup, the migration system:
-
-1. **Loads all SQLAlchemy models** from `core/models.py`
-2. **Compares with database schema** using SQLAlchemy's inspector
-3. **Detects differences**:
-   - Missing tables
-   - Missing columns in existing tables
-   - Missing indexes
-4. **Applies changes automatically** (creates tables, adds columns, creates indexes)
-5. **Tracks applied migrations** in the `schema_migrations` table
-
-## Architecture
+## Directory Structure
 
 ```
 migrations/
-├── __init__.py          # Package initialization
-├── runner.py            # Migration runner (orchestrates migrations)
-├── auto_schema.py       # Automatic schema detection and migration
-└── README.md           # This file
+├── __init__.py              # Package exports
+├── runner.py                # Migration discovery and execution
+├── base.py                  # Base migration class
+├── auto_schema.py           # Automatic schema detection utilities
+├── versions/                # Migration files (numbered)
+│   ├── __init__.py
+│   ├── 001_audit_log.py
+│   ├── 002_next_feature.py
+│   └── ...
+├── README.md               # This file
+└── AUDIT_LOG_USAGE.md      # Audit logging guide
 ```
 
-### Migration Tracking
+## How It Works
 
-All migrations are tracked in the `schema_migrations` table:
+On every application startup:
+
+1. **Migration Runner** scans `migrations/versions/` directory
+2. **Discovers** all files matching pattern `NNN_*.py` (e.g., `001_audit_log.py`)
+3. **Sorts** migrations by numeric prefix
+4. **Checks** `schema_migrations` table to see which have been applied
+5. **Executes** pending migrations in order
+6. **Records** each migration in `schema_migrations` table
+
+## Migration Tracking
+
+Applied migrations are tracked in the `schema_migrations` table:
 
 ```sql
 CREATE TABLE schema_migrations (
@@ -39,131 +44,351 @@ CREATE TABLE schema_migrations (
     migration_name VARCHAR(255) UNIQUE NOT NULL,
     applied_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     description TEXT,
-    checksum VARCHAR(64)
+    execution_time_ms INTEGER
 );
 ```
 
-## Usage
+## Creating a New Migration
 
-The migration system runs automatically on application startup via `init_db()` in `/backend/core/database.py`.
+### Step 1: Create Migration File
 
-No manual intervention is required.
+Create a new file in `migrations/versions/` with the next number:
 
-## Adding New Database Changes
+```bash
+# Example: Next migration is 002
+touch migrations/versions/002_add_user_settings.py
+```
 
-To add new tables, columns, or indexes:
+**Naming convention:**
+- Three-digit prefix: `001`, `002`, `003`, etc.
+- Underscore separator: `_`
+- Descriptive name: `add_user_settings`, `create_index`, etc.
+- Extension: `.py`
 
-1. **Update the SQLAlchemy model** in `/backend/core/models.py`
-2. **Restart the application** - migrations run automatically
-3. **Check logs** to verify changes were applied
+### Step 2: Write Migration Class
 
-### Example: Adding a New Table
+```python
+"""
+Migration 002: Add user settings table
+
+Description of what this migration does.
+"""
+
+from migrations.base import BaseMigration
+from migrations.auto_schema import AutoSchemaMigration
+
+
+class Migration(BaseMigration):
+    """Brief description for logs."""
+
+    @property
+    def name(self) -> str:
+        return "002_add_user_settings"
+
+    @property
+    def description(self) -> str:
+        return "Add user_settings table for storing user preferences"
+
+    def upgrade(self) -> dict:
+        """
+        Apply the migration.
+
+        Returns:
+            dict: Statistics (tables_created, columns_added, indexes_created)
+        """
+        self.log_info("Adding user_settings table...")
+
+        # Option 1: Use automatic schema detection
+        auto_migration = AutoSchemaMigration(self.engine, self.base)
+        results = auto_migration.run()
+
+        # Option 2: Manual SQL (for complex migrations)
+        # from sqlalchemy import text
+        # with self.engine.connect() as conn:
+        #     conn.execute(text("CREATE TABLE ..."))
+        #     conn.commit()
+        # results = {"tables_created": 1, "columns_added": 0, "indexes_created": 0}
+
+        return results
+```
+
+### Step 3: Update SQLAlchemy Models
+
+Add your new table/columns to `/backend/core/models.py`:
 
 ```python
 # In /backend/core/models.py
 
-class MyNewTable(Base):
-    __tablename__ = "my_new_table"
+class UserSettings(Base):
+    __tablename__ = "user_settings"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    theme = Column(String(50), default="light")
+    language = Column(String(10), default="en")
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
     __table_args__ = (
-        Index("idx_my_new_table_name", "name"),
+        Index("idx_user_settings_user_id", "user_id"),
     )
 ```
 
-Restart the app → Table and index are created automatically.
+### Step 4: Restart Application
 
-### Example: Adding a Column
-
-```python
-# In existing model in /backend/core/models.py
-
-class AuditLog(Base):
-    __tablename__ = "audit_logs"
-
-    # ... existing columns ...
-
-    # Add new column
-    session_id = Column(String(255), index=True)  # NEW
+```bash
+python start.py
 ```
 
-Restart the app → Column is added automatically.
+The migration runs automatically!
 
-## What Gets Migrated
+## Migration Examples
 
-✅ **Supported:**
-- Creating new tables
-- Adding new columns to existing tables
-- Creating new indexes
-- Column defaults and nullability
+### Example 1: Simple Table Creation (Automatic)
 
-❌ **Not Supported (Manual SQL Required):**
-- Renaming columns
-- Changing column types
-- Removing columns
-- Complex constraints (check constraints, etc.)
-- Data migrations
+```python
+"""Migration 003: Add api_tokens table"""
+
+from migrations.base import BaseMigration
+from migrations.auto_schema import AutoSchemaMigration
+
+
+class Migration(BaseMigration):
+    @property
+    def name(self) -> str:
+        return "003_api_tokens"
+
+    @property
+    def description(self) -> str:
+        return "Add api_tokens table for API authentication"
+
+    def upgrade(self) -> dict:
+        # Automatic detection creates the table from models.py
+        auto_migration = AutoSchemaMigration(self.engine, self.base)
+        return auto_migration.run()
+```
+
+### Example 2: Adding Columns (Automatic)
+
+```python
+"""Migration 004: Add last_login to users"""
+
+from migrations.base import BaseMigration
+from migrations.auto_schema import AutoSchemaMigration
+
+
+class Migration(BaseMigration):
+    @property
+    def name(self) -> str:
+        return "004_user_last_login"
+
+    @property
+    def description(self) -> str:
+        return "Add last_login column to users table"
+
+    def upgrade(self) -> dict:
+        # First, add the column to User model in models.py
+        # Then this will auto-detect and add it
+        auto_migration = AutoSchemaMigration(self.engine, self.base)
+        return auto_migration.run()
+```
+
+### Example 3: Manual SQL Migration
+
+```python
+"""Migration 005: Custom data migration"""
+
+from migrations.base import BaseMigration
+from sqlalchemy import text
+
+
+class Migration(BaseMigration):
+    @property
+    def name(self) -> str:
+        return "005_populate_defaults"
+
+    @property
+    def description(self) -> str:
+        return "Populate default values for existing records"
+
+    def upgrade(self) -> dict:
+        self.log_info("Updating existing records...")
+
+        with self.engine.connect() as conn:
+            # Update existing records
+            conn.execute(
+                text("UPDATE users SET theme = 'dark' WHERE theme IS NULL")
+            )
+            conn.commit()
+
+        self.log_info("✓ Updated records successfully")
+
+        return {
+            "tables_created": 0,
+            "columns_added": 0,
+            "indexes_created": 0,
+        }
+```
+
+## Startup Logs
+
+When migrations run, you'll see:
+
+```
+============================================================
+Starting database migration process
+============================================================
+Creating schema_migrations tracking table
+✓ schema_migrations table created
+Discovered 1 migration file(s)
+▶ 001_audit_log: Add audit_logs table for tracking user activities and system events
+[001_audit_log] Creating audit_logs table...
+[001_audit_log] Creating missing table: audit_logs
+[001_audit_log] ✓ Created table: audit_logs
+[001_audit_log] Creating index idx_audit_logs_event_type_created_at on audit_logs
+[001_audit_log] ✓ Created index: idx_audit_logs_event_type_created_at
+✓ 001_audit_log: Completed in 45ms (tables: 1, columns: 0, indexes: 5)
+============================================================
+Migration summary: 1 migration(s) applied, 1 table(s) created, 0 column(s) added, 5 index(es) created
+============================================================
+```
+
+On subsequent startups (when all migrations are applied):
+
+```
+============================================================
+Starting database migration process
+============================================================
+Discovered 1 migration file(s)
+⊘ 001_audit_log: Already applied, skipping
+============================================================
+Database schema is up to date - no migrations needed
+============================================================
+```
+
+## Best Practices
+
+### ✅ DO:
+- **Always increment numbers** - Use next sequential number (001, 002, 003...)
+- **One logical change per migration** - Keep migrations focused
+- **Test migrations** - Verify they work on a test database first
+- **Use descriptive names** - `002_add_user_settings` not `002_changes`
+- **Document complex migrations** - Add comments explaining why
+- **Update models.py first** - Then let auto-schema detect changes
+
+### ❌ DON'T:
+- **Don't skip numbers** - Use sequential numbers
+- **Don't reuse numbers** - Once applied, never change/reuse
+- **Don't modify applied migrations** - Create a new migration instead
+- **Don't delete applied migrations** - They're in production DBs
+- **Don't use git merge conflict markers** - Resolve conflicts properly
 
 ## Safety Features
 
-The automatic migration system is **additive only**:
-- ✅ Creates new tables
-- ✅ Adds new columns
-- ✅ Creates new indexes
-- ❌ **Never removes** anything
-- ❌ **Never modifies** existing columns
-
-This ensures existing data is never destroyed.
-
-## Logs
-
-Migration activity is logged during startup:
-
-```
-INFO - Initializing database tables...
-INFO - Loaded 45 model definitions
-INFO - Starting database migration process...
-INFO - Creating missing table: audit_logs
-INFO - ✓ Created table: audit_logs
-INFO - Adding column users.last_login
-INFO - ✓ Added column: users.last_login
-INFO - Database migration completed: 1 tables created, 1 columns added, 2 indexes created
-INFO - Database initialized successfully (45 tables)
-```
+- ✅ **Idempotent** - Migrations track what's applied, safe to run multiple times
+- ✅ **Ordered** - Numeric prefix ensures correct execution order
+- ✅ **Tracked** - Every migration recorded in database
+- ✅ **Logged** - Full execution details in application logs
+- ✅ **Atomic** - Each migration runs in a transaction (PostgreSQL)
 
 ## Troubleshooting
 
 ### Migration fails on startup
 
-Check the error message in the logs. Common issues:
-- PostgreSQL connection failure
-- Permission issues (user needs CREATE TABLE rights)
-- Conflicting column definitions
+**Check the error message:**
+- PostgreSQL connection issues?
+- Syntax errors in migration file?
+- Missing model definitions?
+
+**Manual fix:**
+```sql
+-- Mark a migration as applied (if you applied it manually)
+INSERT INTO schema_migrations (migration_name, description)
+VALUES ('002_my_migration', 'Manual application');
+
+-- Remove a failed migration record
+DELETE FROM schema_migrations WHERE migration_name = '002_my_migration';
+```
 
 ### Need to rollback a migration
 
-Since migrations are additive only, rollback requires manual SQL:
+Migrations are forward-only. To rollback:
 
-```sql
--- To remove a column
-ALTER TABLE my_table DROP COLUMN my_column;
+1. Write a new migration that reverses the changes
+2. Or manually execute SQL to undo changes
 
--- To remove a table
-DROP TABLE my_table;
+```python
+# Example: 006_rollback_feature.py
+class Migration(BaseMigration):
+    def upgrade(self) -> dict:
+        with self.engine.connect() as conn:
+            conn.execute(text("DROP TABLE IF EXISTS feature_table"))
+            conn.commit()
+        return {"tables_created": 0, "columns_added": 0, "indexes_created": 0}
 ```
 
-Then remove or comment out the corresponding model definition.
+### Merge conflicts with migration numbers
+
+If two developers create migration `002`:
+1. One developer renames theirs to `003`
+2. Both migrations get applied in order
+
+## Advanced: Manual Migrations
+
+For complex operations (data migrations, stored procedures, etc.):
+
+```python
+from migrations.base import BaseMigration
+from sqlalchemy import text
+
+
+class Migration(BaseMigration):
+    @property
+    def name(self) -> str:
+        return "010_complex_migration"
+
+    @property
+    def description(self) -> str:
+        return "Complex data transformation"
+
+    def upgrade(self) -> dict:
+        self.log_info("Starting complex migration...")
+
+        with self.engine.connect() as conn:
+            # Multi-step operation
+            conn.execute(text("CREATE TEMP TABLE temp_data AS SELECT ..."))
+            conn.execute(text("UPDATE main_table SET ... FROM temp_data ..."))
+            conn.execute(text("DROP TABLE temp_data"))
+            conn.commit()
+
+        self.log_info("✓ Complex migration completed")
+
+        return {"tables_created": 0, "columns_added": 0, "indexes_created": 0}
+```
+
+## Migration Utilities
+
+Available utilities in migration classes:
+
+```python
+class Migration(BaseMigration):
+    def upgrade(self) -> dict:
+        # Logging with automatic prefix
+        self.log_info("Info message")      # [001_my_migration] Info message
+        self.log_debug("Debug message")    # [001_my_migration] Debug message
+        self.log_warning("Warning")        # [001_my_migration] Warning
+        self.log_error("Error")            # [001_my_migration] Error
+
+        # Access to engine and base
+        self.engine  # SQLAlchemy engine
+        self.base    # Declarative base with all models
+```
 
 ## Future Enhancements
 
 Potential improvements:
-- Support for data migrations (populate/transform data)
-- Migration versioning with explicit version files
-- Rollback support
+- Rollback support with `downgrade()` method
 - Migration dry-run mode
-- Schema validation warnings
+- Migration testing framework
+- Schema comparison tools

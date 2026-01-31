@@ -16,7 +16,7 @@ CREATE TABLE audit_logs (
     resource_id VARCHAR(255),                -- ID of affected resource
     resource_name VARCHAR(255),              -- Name of affected resource
     severity VARCHAR(20) DEFAULT 'info',     -- Severity: info, warning, error, critical
-    metadata TEXT,                           -- JSON for additional context
+    extra_data TEXT,                         -- JSON for additional context
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 ```
@@ -48,7 +48,7 @@ class AuditLogRepository:
         resource_id: Optional[str] = None,
         resource_name: Optional[str] = None,
         severity: str = "info",
-        metadata: Optional[dict] = None,
+        extra_data: Optional[dict] = None,
         db: Session = None
     ) -> AuditLog:
         """Create a new audit log entry."""
@@ -68,7 +68,7 @@ class AuditLogRepository:
                 resource_id=resource_id,
                 resource_name=resource_name,
                 severity=severity,
-                metadata=json.dumps(metadata) if metadata else None,
+                extra_data=json.dumps(extra_data) if extra_data else None,
             )
             db.add(log_entry)
             db.commit()
@@ -171,7 +171,7 @@ def log_system_event(
     message: str,
     event_type: str = "system",
     severity: str = "info",
-    metadata: Optional[dict] = None
+    extra_data: Optional[dict] = None
 ):
     """Log system events."""
     audit_log_repo.create_log(
@@ -179,7 +179,7 @@ def log_system_event(
         event_type=event_type,
         message=message,
         severity=severity,
-        metadata=metadata,
+        extra_data=extra_data,
     )
 ```
 
@@ -274,7 +274,7 @@ def backup_devices_task():
             message=f"Backup completed: {result['success_count']} devices backed up",
             event_type="backup",
             severity="info",
-            metadata={
+            extra_data={
                 "success_count": result["success_count"],
                 "failed_count": result["failed_count"],
                 "total_devices": result["total_devices"]
