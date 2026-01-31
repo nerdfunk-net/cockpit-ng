@@ -204,12 +204,15 @@ class CockpitAgent:
             self.pubsub.subscribe(command_channel)
             logger.info(f"Subscribed to channel: {command_channel}")
 
-            # Process messages
-            for message in self.pubsub.listen():
-                if not self.running:
-                    break
+            # Process messages with timeout to allow checking self.running
+            while self.running:
+                message = self.pubsub.get_message(timeout=1.0)
 
-                await self._handle_message(message)
+                if message:
+                    await self._handle_message(message)
+                else:
+                    # No message, just sleep briefly and check again
+                    await asyncio.sleep(0.1)
 
         except redis.ConnectionError as e:
             logger.error(f"Redis connection lost: {e}")
