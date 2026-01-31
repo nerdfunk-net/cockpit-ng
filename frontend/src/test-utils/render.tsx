@@ -2,14 +2,7 @@ import { ReactElement } from 'react'
 import { render as rtlRender, RenderOptions } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuthStore } from '@/lib/auth-store'
-
-interface User {
-  id: string
-  username: string
-  email?: string
-  roles: string[]
-  permissions?: number | Array<{ resource: string; action: string }>
-}
+import type { User } from '@/types/auth'
 
 interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
   authState?: {

@@ -5,22 +5,7 @@
  * (e.g., "nautobot.devices:read", "dashboard.settings:read")
  */
 
-interface Permission {
-  id: number
-  resource: string
-  action: string
-  description?: string
-  granted: boolean
-  source: 'role' | 'override'
-}
-
-interface User {
-  id: string
-  username: string
-  email?: string
-  roles: string[]
-  permissions?: number | Permission[]
-}
+import type { User } from '@/types/auth'
 
 /**
  * Check if a user has a specific permission.

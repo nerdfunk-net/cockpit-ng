@@ -1,13 +1,6 @@
 import { create } from 'zustand'
 import Cookies from 'js-cookie'
-
-interface User {
-  id: string
-  username: string
-  email?: string
-  roles: string[]  // RBAC roles array
-  permissions?: number | Array<{ resource: string; action: string }>
-}
+import type { User } from '@/types/auth'
 
 interface AuthState {
   token: string | null
@@ -74,7 +67,7 @@ const removeCookies = () => {
   }
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   user: null,
   isAuthenticated: false,
