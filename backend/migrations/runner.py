@@ -7,7 +7,6 @@ from sqlalchemy.engine import Engine
 import logging
 from typing import Dict, List
 import importlib
-import os
 import re
 from pathlib import Path
 
@@ -148,7 +147,11 @@ class MigrationRunner:
         pattern = re.compile(r"^\d{3}_.*\.py$")
 
         for file in self.migrations_dir.iterdir():
-            if file.is_file() and pattern.match(file.name) and file.name != "__init__.py":
+            if (
+                file.is_file()
+                and pattern.match(file.name)
+                and file.name != "__init__.py"
+            ):
                 migration_files.append(file.name)
 
         # Sort by numeric prefix
@@ -227,6 +230,7 @@ class MigrationRunner:
                 logger.info(f"▶ {migration.name}: {migration.description}")
 
                 import time
+
                 start_time = time.time()
 
                 results = migration.upgrade()

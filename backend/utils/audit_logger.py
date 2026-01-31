@@ -46,8 +46,10 @@ def log_device_onboarding(
     if not success and error_message:
         message += f" - Error: {error_message}"
 
-    logger.info(f"Creating audit log: username={username}, device={device_name}, device_id={device_id}")
-    
+    logger.info(
+        f"Creating audit log: username={username}, device={device_name}, device_id={device_id}"
+    )
+
     try:
         audit_log_repo.create_log(
             username=username,
@@ -61,7 +63,9 @@ def log_device_onboarding(
         )
         logger.info(f"Audit log created successfully for device {device_name}")
     except Exception as e:
-        logger.error(f"Failed to create device onboarding audit log: {e}", exc_info=True)
+        logger.error(
+            f"Failed to create device onboarding audit log: {e}", exc_info=True
+        )
 
 
 def log_system_event(

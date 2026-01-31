@@ -340,12 +340,12 @@ class OffboardingService:
             if device_details:
                 if "serial" in device_details and device_details["serial"]:
                     extra_data["serial_number"] = device_details["serial"]
-                
+
                 # Get platform name if available
                 platform = device_details.get("platform")
                 if platform and isinstance(platform, dict):
                     extra_data["platform"] = platform.get("name")
-                
+
                 # Get device type/model if available
                 device_type = device_details.get("device_type")
                 if device_type and isinstance(device_type, dict):
@@ -358,7 +358,7 @@ class OffboardingService:
 
             # Log with appropriate severity based on success
             severity = "info" if results["success"] else "warning"
-            
+
             audit_log_repo.create_log(
                 username=username,
                 user_id=user_id,

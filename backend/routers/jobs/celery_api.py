@@ -487,16 +487,18 @@ async def list_queues(
                 if route_config.get("queue") == queue_name:
                     routed_tasks.append(task_pattern)
 
-            queues.append({
-                "name": queue_name,
-                "pending_tasks": pending_count,
-                "active_tasks": active_count,
-                "workers_consuming": workers_consuming,
-                "worker_count": len(workers_consuming),
-                "routed_tasks": routed_tasks,
-                "exchange": task_queues[queue_name].get("exchange"),
-                "routing_key": task_queues[queue_name].get("routing_key"),
-            })
+            queues.append(
+                {
+                    "name": queue_name,
+                    "pending_tasks": pending_count,
+                    "active_tasks": active_count,
+                    "workers_consuming": workers_consuming,
+                    "worker_count": len(workers_consuming),
+                    "routed_tasks": routed_tasks,
+                    "exchange": task_queues[queue_name].get("exchange"),
+                    "routing_key": task_queues[queue_name].get("routing_key"),
+                }
+            )
 
         redis_client.close()
 
@@ -954,8 +956,12 @@ class UpdateIPPrefixesRequest(BaseModel):
     dry_run: bool = False
     ignore_uuid: bool = True  # Default: use prefix+namespace lookup instead of UUID
     tags_mode: str = "replace"  # How to handle tags: "replace" or "merge"
-    column_mapping: Optional[Dict[str, str]] = None  # Maps lookup fields to CSV column names
-    selected_columns: Optional[List[str]] = None  # List of CSV columns to update (if None, all non-excluded columns are updated)
+    column_mapping: Optional[Dict[str, str]] = (
+        None  # Maps lookup fields to CSV column names
+    )
+    selected_columns: Optional[List[str]] = (
+        None  # List of CSV columns to update (if None, all non-excluded columns are updated)
+    )
 
 
 class ImportDevicesRequest(BaseModel):

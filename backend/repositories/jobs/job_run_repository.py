@@ -80,7 +80,9 @@ class JobRunRepository(BaseRepository[JobRun]):
         finally:
             session.close()
 
-    def get_by_celery_task_ids(self, celery_task_ids: List[str]) -> List[Dict[str, Any]]:
+    def get_by_celery_task_ids(
+        self, celery_task_ids: List[str]
+    ) -> List[Dict[str, Any]]:
         """Get job runs by multiple Celery task IDs"""
         from core.database import get_db_session
 

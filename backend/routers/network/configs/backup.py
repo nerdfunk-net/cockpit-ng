@@ -20,32 +20,35 @@ backup_service = BackupService()
 
 class BackupTrigger(BaseModel):
     """Request model for triggering a backup."""
+
     device_id: str
 
 
 class BulkBackupTrigger(BaseModel):
     """Request model for triggering bulk backup."""
+
     device_ids: list[str]
 
 
-@router.get(
-    "/devices",
-    dependencies=[Depends(require_permission("network", "read"))]
-)
+@router.get("/devices", dependencies=[Depends(require_permission("network", "read"))])
 async def get_backup_devices(
     name: Optional[str] = Query(None, description="Filter by device name"),
     role: Optional[str] = Query(None, description="Filter by role"),
     location: Optional[str] = Query(None, description="Filter by location"),
     device_type: Optional[str] = Query(None, description="Filter by device type"),
     status: Optional[str] = Query(None, description="Filter by status"),
-    last_backup_date: Optional[str] = Query(None, description="Filter by last backup date"),
-    date_comparison: Optional[str] = Query(None, description="Date comparison operator (lte, lt)"),
+    last_backup_date: Optional[str] = Query(
+        None, description="Filter by last backup date"
+    ),
+    date_comparison: Optional[str] = Query(
+        None, description="Date comparison operator (lte, lt)"
+    ),
     sort_by: Optional[str] = Query(None, description="Column to sort by"),
-    sort_order: str = Query('asc', description="Sort order (asc, desc)"),
+    sort_order: str = Query("asc", description="Sort order (asc, desc)"),
     limit: int = Query(50, ge=1, le=200, description="Page size"),
     offset: int = Query(0, ge=0, description="Page offset"),
     db: Session = Depends(get_db),
-    user: dict = Depends(verify_token)
+    user: dict = Depends(verify_token),
 ):
     """
     Get devices with backup status, filtering, sorting, and pagination.
@@ -75,17 +78,17 @@ async def get_backup_devices(
     """
     try:
         filters = {
-            'name': name,
-            'role': role,
-            'location': location,
-            'device_type': device_type,
-            'status': status,
-            'last_backup_date': last_backup_date,
-            'date_comparison': date_comparison
+            "name": name,
+            "role": role,
+            "location": location,
+            "device_type": device_type,
+            "status": status,
+            "last_backup_date": last_backup_date,
+            "date_comparison": date_comparison,
         }
 
-        pagination = {'limit': limit, 'offset': offset}
-        sorting = {'column': sort_by, 'order': sort_order}
+        pagination = {"limit": limit, "offset": offset}
+        sorting = {"column": sort_by, "order": sort_order}
 
         result = await backup_service.get_devices_for_backup(
             db, filters, pagination, sorting
@@ -98,14 +101,11 @@ async def get_backup_devices(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post(
-    "/trigger",
-    dependencies=[Depends(require_permission("network", "write"))]
-)
+@router.post("/trigger", dependencies=[Depends(require_permission("network", "write"))])
 async def trigger_backup(
     payload: BackupTrigger,
     db: Session = Depends(get_db),
-    user: dict = Depends(verify_token)
+    user: dict = Depends(verify_token),
 ):
     """
     Trigger backup for a single device.
@@ -125,7 +125,7 @@ async def trigger_backup(
     """
     try:
         result = await backup_service.trigger_device_backup(
-            db, payload.device_id, user['user_id']
+            db, payload.device_id, user["user_id"]
         )
         return result
 
@@ -138,13 +138,12 @@ async def trigger_backup(
 
 
 @router.post(
-    "/trigger-bulk",
-    dependencies=[Depends(require_permission("network", "write"))]
+    "/trigger-bulk", dependencies=[Depends(require_permission("network", "write"))]
 )
 async def trigger_bulk_backup(
     payload: BulkBackupTrigger,
     db: Session = Depends(get_db),
-    user: dict = Depends(verify_token)
+    user: dict = Depends(verify_token),
 ):
     """
     Trigger backup for multiple devices.
@@ -166,7 +165,7 @@ async def trigger_bulk_backup(
             raise HTTPException(status_code=400, detail="No device IDs provided")
 
         result = await backup_service.trigger_bulk_backup(
-            db, payload.device_ids, user['user_id']
+            db, payload.device_ids, user["user_id"]
         )
         return result
 
@@ -180,13 +179,13 @@ async def trigger_bulk_backup(
 
 @router.get(
     "/history/{device_id}",
-    dependencies=[Depends(require_permission("network", "read"))]
+    dependencies=[Depends(require_permission("network", "read"))],
 )
 async def get_backup_history(
     device_id: str,
     limit: int = Query(50, ge=1, le=200, description="Maximum history entries"),
     db: Session = Depends(get_db),
-    user: dict = Depends(verify_token)
+    user: dict = Depends(verify_token),
 ):
     """
     Get backup history for a device.
@@ -220,13 +219,13 @@ async def get_backup_history(
 
 @router.get(
     "/download/{device_id}/{backup_id}",
-    dependencies=[Depends(require_permission("network", "read"))]
+    dependencies=[Depends(require_permission("network", "read"))],
 )
 async def download_backup(
     device_id: str,
     backup_id: str,
     db: Session = Depends(get_db),
-    user: dict = Depends(verify_token)
+    user: dict = Depends(verify_token),
 ):
     """
     Download a specific backup file.
@@ -250,7 +249,7 @@ async def download_backup(
             media_type="text/plain",
             headers={
                 "Content-Disposition": f"attachment; filename={device_id}_backup_{backup_id[:8]}.txt"
-            }
+            },
         )
 
     except ValueError as e:
@@ -263,13 +262,13 @@ async def download_backup(
 
 @router.post(
     "/restore/{device_id}/{backup_id}",
-    dependencies=[Depends(require_permission("network", "write"))]
+    dependencies=[Depends(require_permission("network", "write"))],
 )
 async def restore_backup(
     device_id: str,
     backup_id: str,
     db: Session = Depends(get_db),
-    user: dict = Depends(verify_token)
+    user: dict = Depends(verify_token),
 ):
     """
     Trigger restore job for a backup.
@@ -289,7 +288,7 @@ async def restore_backup(
     """
     try:
         result = await backup_service.restore_backup(
-            db, device_id, backup_id, user['user_id']
+            db, device_id, backup_id, user["user_id"]
         )
         return result
 

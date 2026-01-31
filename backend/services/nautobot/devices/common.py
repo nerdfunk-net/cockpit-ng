@@ -419,8 +419,7 @@ class DeviceCommonService:
             logger.debug(f"Fetching platform name for UUID: {platform_id}")
 
             result = await self.nautobot.rest_request(
-                endpoint=f"dcim/platforms/{platform_id}/",
-                method="GET"
+                endpoint=f"dcim/platforms/{platform_id}/", method="GET"
             )
 
             if result and "name" in result:
@@ -449,15 +448,16 @@ class DeviceCommonService:
             logger.debug(f"Fetching device type display for UUID: {device_type_id}")
 
             result = await self.nautobot.rest_request(
-                endpoint=f"dcim/device-types/{device_type_id}/",
-                method="GET"
+                endpoint=f"dcim/device-types/{device_type_id}/", method="GET"
             )
 
             if result:
                 # Try display field first (most descriptive), fall back to model
                 display_name = result.get("display") or result.get("model")
                 if display_name:
-                    logger.debug(f"Device type UUID {device_type_id} -> display: {display_name}")
+                    logger.debug(
+                        f"Device type UUID {device_type_id} -> display: {display_name}"
+                    )
                     return display_name
 
             logger.warning(f"Device type not found for UUID: {device_type_id}")

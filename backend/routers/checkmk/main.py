@@ -1281,7 +1281,7 @@ async def get_pending_changes(
     try:
         logger.debug("Getting pending changes from CheckMK")
         client = _get_checkmk_client()
-        
+
         # Make the raw request to get both response and headers
         response = client._make_request(
             "GET", "domain-types/activation_run/collections/pending_changes"
@@ -1293,7 +1293,7 @@ async def get_pending_changes(
 
         # Parse the response
         result = client._handle_response(response)
-        result['etag'] = etag.strip('"')  # Remove quotes from ETag if present
+        result["etag"] = etag.strip('"')  # Remove quotes from ETag if present
 
         return CheckMKOperationResponse(
             success=True, message="Retrieved pending changes successfully", data=result

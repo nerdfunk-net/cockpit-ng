@@ -4,10 +4,7 @@ Backup repository for device backup operations.
 
 from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
 from datetime import datetime
-
-from core.database import get_db_session
 
 
 class BackupRepository:
@@ -24,9 +21,9 @@ class BackupRepository:
         last_backup_before: Optional[str] = None,
         last_backup_comparison: Optional[str] = None,
         sort_by: Optional[str] = None,
-        sort_order: str = 'asc',
+        sort_order: str = "asc",
         limit: int = 50,
-        offset: int = 0
+        offset: int = 0,
     ) -> Tuple[List[dict], int]:
         """
         Get devices with backup filtering, sorting, and pagination.
@@ -41,20 +38,20 @@ class BackupRepository:
         # Build filters dict for Nautobot query
         filters = {}
         if name:
-            filters['name'] = name
+            filters["name"] = name
         if role:
-            filters['role'] = role
+            filters["role"] = role
         if location:
-            filters['location'] = location
+            filters["location"] = location
         if device_type:
-            filters['device_type'] = device_type
+            filters["device_type"] = device_type
         if status:
-            filters['status'] = status
+            filters["status"] = status
 
         # Get devices from Nautobot
         try:
             devices = get_devices_with_filters(filters)
-        except Exception as e:
+        except Exception:
             # Fallback to empty list if Nautobot unavailable
             devices = []
 
@@ -64,18 +61,18 @@ class BackupRepository:
             filter_date = datetime.fromisoformat(last_backup_before)
 
             for device in devices:
-                last_backup = device.get('cf_last_backup')
-                if not last_backup or last_backup == 'Never':
+                last_backup = device.get("cf_last_backup")
+                if not last_backup or last_backup == "Never":
                     # Include devices never backed up when filtering for old backups
-                    if last_backup_comparison in ['lte', 'lt']:
+                    if last_backup_comparison in ["lte", "lt"]:
                         filtered_devices.append(device)
                     continue
 
                 try:
                     device_date = datetime.fromisoformat(last_backup)
-                    if last_backup_comparison == 'lte' and device_date <= filter_date:
+                    if last_backup_comparison == "lte" and device_date <= filter_date:
                         filtered_devices.append(device)
-                    elif last_backup_comparison == 'lt' and device_date < filter_date:
+                    elif last_backup_comparison == "lt" and device_date < filter_date:
                         filtered_devices.append(device)
                 except Exception:
                     # If date parsing fails, skip
@@ -85,12 +82,12 @@ class BackupRepository:
 
         # Apply sorting
         if sort_by:
-            reverse = (sort_order == 'desc')
-            if sort_by == 'last_backup':
+            reverse = sort_order == "desc"
+            if sort_by == "last_backup":
                 # Sort by backup date, putting 'Never' at the end
                 def backup_sort_key(device):
-                    last_backup = device.get('cf_last_backup')
-                    if not last_backup or last_backup == 'Never':
+                    last_backup = device.get("cf_last_backup")
+                    if not last_backup or last_backup == "Never":
                         return datetime.min if not reverse else datetime.max
                     try:
                         return datetime.fromisoformat(last_backup)
@@ -98,26 +95,21 @@ class BackupRepository:
                         return datetime.min if not reverse else datetime.max
 
                 devices = sorted(devices, key=backup_sort_key, reverse=reverse)
-            elif sort_by == 'name':
+            elif sort_by == "name":
                 devices = sorted(
-                    devices,
-                    key=lambda d: d.get('name', '').lower(),
-                    reverse=reverse
+                    devices, key=lambda d: d.get("name", "").lower(), reverse=reverse
                 )
 
         # Get total count before pagination
         total_count = len(devices)
 
         # Apply pagination
-        paginated_devices = devices[offset:offset + limit]
+        paginated_devices = devices[offset : offset + limit]
 
         return paginated_devices, total_count
 
     def get_backup_history(
-        self,
-        db: Session,
-        device_id: str,
-        limit: int = 50
+        self, db: Session, device_id: str, limit: int = 50
     ) -> List[dict]:
         """
         Get backup history for a device from Git repository.
@@ -126,13 +118,11 @@ class BackupRepository:
         related to the device's configuration files.
         """
         # Import here to avoid circular dependency
-        from services.settings.git.shared_utils import (
-            get_git_repositories_by_category
-        )
+        from services.settings.git.shared_utils import get_git_repositories_by_category
 
         try:
             # Get device config repositories
-            repos = get_git_repositories_by_category('device_configs')
+            repos = get_git_repositories_by_category("device_configs")
 
             if not repos:
                 return []
@@ -145,7 +135,6 @@ class BackupRepository:
 
             # Try to find commits in the repo
             try:
-                from pathlib import Path
                 import git
 
                 git_repo = git.Repo(repo.working_dir)
@@ -161,14 +150,16 @@ class BackupRepository:
                             # Calculate size of changes
                             size_kb = sum(commit.stats.files.values()) / 1024
 
-                            history.append({
-                                'id': commit.hexsha,
-                                'date': commit.committed_datetime.isoformat(),
-                                'size': f'{size_kb:.1f} KB',
-                                'status': 'success',
-                                'commit_hash': commit.hexsha[:8],
-                                'message': commit.message.strip()
-                            })
+                            history.append(
+                                {
+                                    "id": commit.hexsha,
+                                    "date": commit.committed_datetime.isoformat(),
+                                    "size": f"{size_kb:.1f} KB",
+                                    "status": "success",
+                                    "commit_hash": commit.hexsha[:8],
+                                    "message": commit.message.strip(),
+                                }
+                            )
                             break
 
             except Exception:

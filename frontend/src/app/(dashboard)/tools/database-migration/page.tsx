@@ -27,10 +27,30 @@ interface MissingColumn {
     default: string | null
 }
 
+interface MigrationSystemInfo {
+    active: boolean
+    applied_migrations_count: number
+    last_migration: {
+        name: string
+        applied_at: string
+        description: string
+        execution_time_ms: number
+    } | null
+}
+
 interface SchemaStatus {
     is_up_to_date: boolean
     missing_tables: string[]
     missing_columns: MissingColumn[]
+    migration_system: MigrationSystemInfo
+    warnings: string[]
+}
+
+interface AppliedMigration {
+    name: string
+    applied_at: string
+    description: string
+    execution_time_ms: number
 }
 
 interface MigrationResponse {
@@ -38,6 +58,7 @@ interface MigrationResponse {
     message: string
     changes: string[]
     errors: string[]
+    warnings?: string[]
 }
 
 interface SeedRbacResponse {
@@ -49,6 +70,7 @@ interface SeedRbacResponse {
 export default function DatabaseMigrationPage() {
     const { apiCall } = useApi()
     const [status, setStatus] = useState<SchemaStatus | null>(null)
+    const [appliedMigrations, setAppliedMigrations] = useState<AppliedMigration[]>([])
     const [loading, setLoading] = useState(true)
     const [migrating, setMigrating] = useState(false)
     const [migrationResult, setMigrationResult] = useState<MigrationResponse | null>(null)
@@ -67,6 +89,12 @@ export default function DatabaseMigrationPage() {
         try {
             const data = await apiCall<SchemaStatus>('tools/schema/status')
             setStatus(data)
+            
+            // Fetch applied migrations if system is active
+            if (data.migration_system?.active) {
+                const migrationsData = await apiCall<{ migrations: AppliedMigration[] }>('tools/schema/migrations')
+                setAppliedMigrations(migrationsData.migrations)
+            }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'An error occurred fetching status'
             setError(errorMessage)
@@ -156,18 +184,122 @@ export default function DatabaseMigrationPage() {
                     </div>
                 </div>
 
+                {/* Migration System Info Card */}
+                {status?.migration_system && (
+                    <Card className="border-purple-200 bg-purple-50/50">
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="flex items-center gap-2">
+                                    <Database className="w-5 h-5 text-purple-600" />
+                                    Versioned Migration System
+                                </CardTitle>
+                                <Badge variant={status.migration_system.active ? "default" : "secondary"}>
+                                    {status.migration_system.active ? "Active" : "Not Initialized"}
+                                </Badge>
+                            </div>
+                            <CardDescription>
+                                Automatic migrations that run on application startup
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {status.migration_system.active ? (
+                                    <>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="bg-white rounded-lg p-3 border">
+                                                <div className="text-sm text-gray-500">Applied Migrations</div>
+                                                <div className="text-2xl font-bold text-purple-600">
+                                                    {status.migration_system.applied_migrations_count}
+                                                </div>
+                                            </div>
+                                            {status.migration_system.last_migration && (
+                                                <div className="bg-white rounded-lg p-3 border">
+                                                    <div className="text-sm text-gray-500">Last Migration</div>
+                                                    <div className="text-lg font-semibold text-gray-900">
+                                                        {status.migration_system.last_migration.name}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 mt-1">
+                                                        {new Date(status.migration_system.last_migration.applied_at).toLocaleString()}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {appliedMigrations.length > 0 && (
+                                            <div className="mt-4">
+                                                <h4 className="text-sm font-medium mb-2">Migration History</h4>
+                                                <div className="border rounded-lg overflow-hidden">
+                                                    <Table>
+                                                        <TableHeader>
+                                                            <TableRow className="bg-gray-50">
+                                                                <TableHead>Migration</TableHead>
+                                                                <TableHead>Description</TableHead>
+                                                                <TableHead>Applied</TableHead>
+                                                                <TableHead className="text-right">Time</TableHead>
+                                                            </TableRow>
+                                                        </TableHeader>
+                                                        <TableBody>
+                                                            {appliedMigrations.map((migration) => (
+                                                                <TableRow key={migration.name}>
+                                                                    <TableCell className="font-mono text-sm">{migration.name}</TableCell>
+                                                                    <TableCell className="text-sm">{migration.description}</TableCell>
+                                                                    <TableCell className="text-sm text-gray-500">
+                                                                        {new Date(migration.applied_at).toLocaleDateString()}
+                                                                    </TableCell>
+                                                                    <TableCell className="text-sm text-gray-500 text-right">
+                                                                        {migration.execution_time_ms}ms
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            ))}
+                                                        </TableBody>
+                                                    </Table>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <Alert className="border-amber-200 bg-amber-50">
+                                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                                        <AlertTitle>Migration System Not Initialized</AlertTitle>
+                                        <AlertDescription className="text-amber-800">
+                                            The versioned migration system hasn't been set up yet. 
+                                            It will be initialized on the next application restart.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Warnings */}
+                {status?.warnings && status.warnings.length > 0 && (
+                    <Alert className="border-amber-200 bg-amber-50">
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        <AlertTitle>Important Notes</AlertTitle>
+                        <AlertDescription className="text-amber-800 space-y-2">
+                            {status.warnings.map((warning, index) => (
+                                <p key={index} className="flex items-start gap-2">
+                                    <span className="mt-0.5">•</span>
+                                    <span>{warning}</span>
+                                </p>
+                            ))}
+                        </AlertDescription>
+                    </Alert>
+                )}
+
                 {/* Status Card */}
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">
-                            <CardTitle>Schema Status</CardTitle>
+                            <CardTitle>Manual Schema Migration</CardTitle>
                             <Button variant="outline" size="sm" onClick={fetchStatus} disabled={loading}>
                                 <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                                 Refresh
                             </Button>
                         </div>
                         <CardDescription>
-                            Comparison between define models and active database tables.
+                            Emergency tool for ad-hoc schema fixes. Prefer creating versioned migrations for production.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -277,6 +409,16 @@ export default function DatabaseMigrationPage() {
                                         <h3 className={`font-semibold mb-2 ${migrationResult.success ? 'text-blue-800' : 'text-red-800'}`}>
                                             {migrationResult.message}
                                         </h3>
+                                        {migrationResult.warnings && migrationResult.warnings.length > 0 && (
+                                            <div className="mb-3 bg-amber-50 border border-amber-200 rounded p-3">
+                                                <p className="text-xs font-bold uppercase text-amber-700 mb-1">⚠️ Warnings:</p>
+                                                <ul className="list-disc list-inside text-sm space-y-1 text-amber-800">
+                                                    {migrationResult.warnings.map((warning, index) => (
+                                                        <li key={index}>{warning}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
                                         {migrationResult.changes.length > 0 && (
                                             <div className="mb-2">
                                                 <p className="text-xs font-bold uppercase text-gray-500 mb-1">Changes Applied:</p>

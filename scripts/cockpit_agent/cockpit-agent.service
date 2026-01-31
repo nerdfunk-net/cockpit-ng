@@ -1,0 +1,24 @@
+[Unit]
+Description=Cockpit Agent for Cockpit
+After=network.target
+
+[Service]
+Type=simple
+User=cockpit-agent
+Group=docker
+WorkingDirectory=/opt/cockpit-agent
+ExecStart=/opt/cockpit-agent/venv/bin/python agent.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Environment
+EnvironmentFile=/opt/cockpit-agent/.env
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

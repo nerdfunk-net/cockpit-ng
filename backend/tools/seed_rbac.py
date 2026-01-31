@@ -146,6 +146,7 @@ def remove_all_rbac_data(verbose: bool = True):
     # Get all users and remove their permission overrides
     try:
         import user_db_manager
+
         all_users = user_db_manager.get_all_users(include_inactive=True)
         override_count = 0
 
@@ -220,6 +221,7 @@ def remove_all_rbac_data(verbose: bool = True):
                 # System roles can't be deleted normally, use repository directly
                 if "Cannot delete system role" in str(e):
                     from repositories.auth.rbac_repository import RBACRepository
+
                     repo = RBACRepository()
                     if repo.delete_role(role["id"]):
                         deleted_roles += 1
@@ -248,10 +250,14 @@ def remove_all_rbac_data(verbose: bool = True):
                 rbac.delete_permission(perm["id"])
                 deleted_perms += 1
                 if verbose:
-                    print(f"  ✓ Deleted permission: {perm['resource']}:{perm['action']}")
+                    print(
+                        f"  ✓ Deleted permission: {perm['resource']}:{perm['action']}"
+                    )
             except Exception as e:
                 if verbose:
-                    print(f"  ✗ Error deleting permission {perm['resource']}:{perm['action']}: {e}")
+                    print(
+                        f"  ✗ Error deleting permission {perm['resource']}:{perm['action']}: {e}"
+                    )
 
         if verbose:
             print(f"\n  ✓ Deleted {deleted_perms} permissions\n")
@@ -331,7 +337,11 @@ def seed_permissions(verbose: bool = True):
         ("settings.credentials", "read", "View credentials"),
         ("settings.credentials", "write", "Create/modify credentials"),
         ("settings.credentials", "delete", "Delete credentials"),
-        ("settings.common", "read", "View common settings (SNMP mapping with passwords)"),
+        (
+            "settings.common",
+            "read",
+            "View common settings (SNMP mapping with passwords)",
+        ),
         ("settings.common", "write", "Modify common settings (SNMP mapping)"),
         ("settings.templates", "read", "View template settings"),
         ("settings.templates", "write", "Modify template settings"),
@@ -555,12 +565,19 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
     for perm_key, perm_id in perm_map.items():
         # Grant all read permissions, skip write/delete/execute
         # Exclude sensitive permissions: users, settings.credentials, settings.common
-        if (":read" in perm_key or (
-            ":execute" not in perm_key
-            and ":write" not in perm_key
-            and ":delete" not in perm_key
-            and "users" not in perm_key
-        )) and "settings.common" not in perm_key and "settings.credentials" not in perm_key:
+        if (
+            (
+                ":read" in perm_key
+                or (
+                    ":execute" not in perm_key
+                    and ":write" not in perm_key
+                    and ":delete" not in perm_key
+                    and "users" not in perm_key
+                )
+            )
+            and "settings.common" not in perm_key
+            and "settings.credentials" not in perm_key
+        ):
             rbac.assign_permission_to_role(roles["viewer"]["id"], perm_id, granted=True)
             viewer_count += 1
     if verbose:
@@ -574,7 +591,7 @@ def assign_admin_user_to_admin_role(verbose: bool = True):
     """Assign the 'admin' user to the 'admin' role."""
     if verbose:
         print("Assigning admin user to admin role...")
-    
+
     try:
         # Get admin user
         admin_user = user_db.get_user_by_username("admin")
@@ -582,26 +599,28 @@ def assign_admin_user_to_admin_role(verbose: bool = True):
             if verbose:
                 print("  ⚠️  Admin user not found, skipping role assignment")
             return
-        
+
         # Get admin role
         admin_role = rbac.get_role_by_name("admin")
         if not admin_role:
             if verbose:
                 print("  ⚠️  Admin role not found, skipping role assignment")
             return
-        
+
         # Check if assignment already exists
         existing_roles = rbac.get_user_roles(admin_user["id"])
         if any(role["id"] == admin_role["id"] for role in existing_roles):
             if verbose:
                 print("  - Admin user already has admin role")
             return
-        
+
         # Assign admin role to admin user
         rbac.assign_role_to_user(admin_user["id"], admin_role["id"])
         if verbose:
-            print(f"  ✓ Assigned 'admin' role to user 'admin' (user_id={admin_user['id']})")
-    
+            print(
+                f"  ✓ Assigned 'admin' role to user 'admin' (user_id={admin_user['id']})"
+            )
+
     except Exception as e:
         if verbose:
             print(f"  ⚠️  Error assigning admin role: {e}")
@@ -685,7 +704,9 @@ if __name__ == "__main__":
         print("\n   The system will then be reseeded with default data.")
         print("\n   Users will need to be reassigned to roles after this operation.\n")
 
-        response = input("Are you sure you want to continue? (yes/no): ").strip().lower()
+        response = (
+            input("Are you sure you want to continue? (yes/no): ").strip().lower()
+        )
         if response != "yes":
             print("\n❌ Operation cancelled.")
             sys.exit(0)

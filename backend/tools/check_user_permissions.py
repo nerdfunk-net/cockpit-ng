@@ -21,7 +21,7 @@ def check_user(username: str):
         print(f"✗ User '{username}' not found")
         return
 
-    print(f"✓ User found:")
+    print("✓ User found:")
     print(f"  ID: {user['id']}")
     print(f"  Username: {user['username']}")
     print(f"  Real name: {user['realname']}")
@@ -29,8 +29,8 @@ def check_user(username: str):
     print(f"  Active: {user['is_active']}")
 
     # Get roles
-    print(f"\n📋 Roles:")
-    user_roles = rbac.get_user_roles(user['id'])
+    print("\n📋 Roles:")
+    user_roles = rbac.get_user_roles(user["id"])
     if user_roles:
         for role in user_roles:
             print(f"  - {role['name']} (ID: {role['id']})")
@@ -38,41 +38,42 @@ def check_user(username: str):
         print("  (No roles assigned)")
 
     # Get permissions
-    print(f"\n🔐 Effective Permissions:")
-    user_perms = rbac.get_user_permissions(user['id'])
+    print("\n🔐 Effective Permissions:")
+    user_perms = rbac.get_user_permissions(user["id"])
     print(f"  Total: {len(user_perms)} permissions")
 
     # Check for dashboard.settings:read specifically
     has_dashboard = any(
-        p['resource'] == 'dashboard.settings' and p['action'] == 'read'
+        p["resource"] == "dashboard.settings" and p["action"] == "read"
         for p in user_perms
     )
     print(f"\n  ✓ Has dashboard.settings:read: {has_dashboard}")
 
     if has_dashboard:
         dashboard_perm = next(
-            p for p in user_perms
-            if p['resource'] == 'dashboard.settings' and p['action'] == 'read'
+            p
+            for p in user_perms
+            if p["resource"] == "dashboard.settings" and p["action"] == "read"
         )
         print(f"    Source: {dashboard_perm.get('source', 'unknown')}")
 
     # List all permissions
-    print(f"\n  All permissions:")
+    print("\n  All permissions:")
     for perm in user_perms:
-        source = perm.get('source', 'unknown')
+        source = perm.get("source", "unknown")
         print(f"    - {perm['resource']}:{perm['action']} (from {source})")
 
     # Get user with full RBAC data (as returned by login)
-    print(f"\n📦 User object (as returned by login API):")
-    user_with_rbac = rbac.get_user_with_rbac(user['id'])
+    print("\n📦 User object (as returned by login API):")
+    user_with_rbac = rbac.get_user_with_rbac(user["id"])
     if user_with_rbac:
         print(f"  Roles: {[r['name'] for r in user_with_rbac.get('roles', [])]}")
         print(f"  Permissions: {len(user_with_rbac.get('permissions', []))} total")
 
         # Show first 10 permissions
-        perms = user_with_rbac.get('permissions', [])
+        perms = user_with_rbac.get("permissions", [])
         if perms:
-            print(f"\n  First 10 permissions in login response:")
+            print("\n  First 10 permissions in login response:")
             for p in perms[:10]:
                 print(f"    - {p['resource']}:{p['action']}")
 

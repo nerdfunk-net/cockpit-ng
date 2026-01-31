@@ -3,7 +3,7 @@ Backup service for managing device configuration backups.
 """
 
 import logging
-from typing import List, Optional
+from typing import List
 from sqlalchemy.orm import Session
 
 from repositories.backup_repository import BackupRepository
@@ -18,11 +18,7 @@ class BackupService:
         self.repository = BackupRepository()
 
     async def get_devices_for_backup(
-        self,
-        db: Session,
-        filters: dict,
-        pagination: dict,
-        sorting: dict
+        self, db: Session, filters: dict, pagination: dict, sorting: dict
     ) -> dict:
         """
         Get devices with backup status and filtering.
@@ -39,24 +35,24 @@ class BackupService:
         try:
             devices, total = self.repository.get_devices_for_backup(
                 db,
-                name=filters.get('name'),
-                role=filters.get('role'),
-                location=filters.get('location'),
-                device_type=filters.get('device_type'),
-                status=filters.get('status'),
-                last_backup_before=filters.get('last_backup_date'),
-                last_backup_comparison=filters.get('date_comparison'),
-                sort_by=sorting.get('column'),
-                sort_order=sorting.get('order', 'asc'),
-                limit=pagination.get('limit', 50),
-                offset=pagination.get('offset', 0)
+                name=filters.get("name"),
+                role=filters.get("role"),
+                location=filters.get("location"),
+                device_type=filters.get("device_type"),
+                status=filters.get("status"),
+                last_backup_before=filters.get("last_backup_date"),
+                last_backup_comparison=filters.get("date_comparison"),
+                sort_by=sorting.get("column"),
+                sort_order=sorting.get("order", "asc"),
+                limit=pagination.get("limit", 50),
+                offset=pagination.get("offset", 0),
             )
 
             return {
-                'devices': devices,
-                'total': total,
-                'limit': pagination.get('limit', 50),
-                'offset': pagination.get('offset', 0)
+                "devices": devices,
+                "total": total,
+                "limit": pagination.get("limit", 50),
+                "offset": pagination.get("offset", 0),
             }
 
         except Exception as e:
@@ -64,10 +60,7 @@ class BackupService:
             raise
 
     async def trigger_device_backup(
-        self,
-        db: Session,
-        device_id: str,
-        user_id: int
+        self, db: Session, device_id: str, user_id: int
     ) -> dict:
         """
         Trigger backup job for a single device.
@@ -89,48 +82,32 @@ class BackupService:
 
             # Get or create default backup job template
             # For now, use a simple backup task
-            task_func = get_task_for_job('backup')
+            task_func = get_task_for_job("backup")
 
             if not task_func:
                 raise ValueError("Backup task not found")
 
-            # Create job run record
-            job_data = {
-                'job_type': 'backup',
-                'triggered_by': 'manual',
-                'user_id': user_id,
-                'device_ids': [device_id]
-            }
-
             # Trigger the Celery task
             task = task_func.apply_async(
-                kwargs={'device_ids': [device_id]},
-                queue='default'
+                kwargs={"device_ids": [device_id]}, queue="default"
             )
 
             # Record the job run
             job_run_manager.create_job_run(
                 task_id=task.id,
-                job_type='backup',
-                triggered_by='manual',
-                user_id=user_id
+                job_type="backup",
+                triggered_by="manual",
+                user_id=user_id,
             )
 
-            return {
-                'task_id': task.id,
-                'status': 'queued',
-                'device_id': device_id
-            }
+            return {"task_id": task.id, "status": "queued", "device_id": device_id}
 
         except Exception as e:
             logger.error(f"Error triggering device backup: {e}", exc_info=True)
             raise
 
     async def trigger_bulk_backup(
-        self,
-        db: Session,
-        device_ids: List[str],
-        user_id: int
+        self, db: Session, device_ids: List[str], user_id: int
     ) -> dict:
         """
         Trigger backup job for multiple devices.
@@ -147,29 +124,28 @@ class BackupService:
             from tasks.job_tasks import get_task_for_job
             import job_run_manager
 
-            task_func = get_task_for_job('backup')
+            task_func = get_task_for_job("backup")
 
             if not task_func:
                 raise ValueError("Backup task not found")
 
             # Trigger the Celery task
             task = task_func.apply_async(
-                kwargs={'device_ids': device_ids},
-                queue='default'
+                kwargs={"device_ids": device_ids}, queue="default"
             )
 
             # Record the job run
             job_run_manager.create_job_run(
                 task_id=task.id,
-                job_type='backup',
-                triggered_by='manual',
-                user_id=user_id
+                job_type="backup",
+                triggered_by="manual",
+                user_id=user_id,
             )
 
             return {
-                'task_id': task.id,
-                'status': 'queued',
-                'device_count': len(device_ids)
+                "task_id": task.id,
+                "status": "queued",
+                "device_count": len(device_ids),
             }
 
         except Exception as e:
@@ -177,10 +153,7 @@ class BackupService:
             raise
 
     async def get_backup_history(
-        self,
-        db: Session,
-        device_id: str,
-        limit: int = 50
+        self, db: Session, device_id: str, limit: int = 50
     ) -> List[dict]:
         """
         Get backup history from Git repository.
@@ -200,10 +173,7 @@ class BackupService:
             return []
 
     async def download_backup(
-        self,
-        db: Session,
-        device_id: str,
-        backup_id: str
+        self, db: Session, device_id: str, backup_id: str
     ) -> bytes:
         """
         Download a specific backup file from Git repository.
@@ -218,12 +188,11 @@ class BackupService:
         """
         try:
             from services.settings.git.shared_utils import (
-                get_git_repositories_by_category
+                get_git_repositories_by_category,
             )
-            from pathlib import Path
             import git
 
-            repos = get_git_repositories_by_category('device_configs')
+            repos = get_git_repositories_by_category("device_configs")
             if not repos:
                 raise ValueError("No device config repository found")
 
@@ -235,7 +204,7 @@ class BackupService:
 
             # Find file for this device in the commit
             for item in commit.tree.traverse():
-                if device_id in item.path and item.type == 'blob':
+                if device_id in item.path and item.type == "blob":
                     return item.data_stream.read()
 
             raise ValueError(f"Backup not found for device {device_id}")
@@ -245,11 +214,7 @@ class BackupService:
             raise
 
     async def restore_backup(
-        self,
-        db: Session,
-        device_id: str,
-        backup_id: str,
-        user_id: int
+        self, db: Session, device_id: str, backup_id: str, user_id: int
     ) -> dict:
         """
         Trigger restore job for a backup.
@@ -267,9 +232,9 @@ class BackupService:
             # This would trigger a job to restore the configuration
             # For now, return a placeholder
             return {
-                'task_id': 'placeholder',
-                'status': 'not_implemented',
-                'message': 'Restore functionality not yet implemented'
+                "task_id": "placeholder",
+                "status": "not_implemented",
+                "message": "Restore functionality not yet implemented",
             }
 
         except Exception as e:

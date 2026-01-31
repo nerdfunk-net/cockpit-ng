@@ -278,7 +278,7 @@ def _process_single_device(
         if not device_id:
             error_msg = f"Failed to retrieve device ID for IP {ip_address}"
             logger.error(error_msg)
-            
+
             # Log failed device lookup
             if username:
                 log_device_onboarding(
@@ -289,7 +289,7 @@ def _process_single_device(
                     success=False,
                     error_message=error_msg,
                 )
-            
+
             return {
                 "success": False,
                 "ip_address": ip_address,
@@ -337,7 +337,9 @@ def _process_single_device(
         logger.info(f"Device {device_name} ({ip_address}) processing complete")
 
         # Log successful device onboarding
-        logger.info(f"Attempting to log audit entry: username={username}, device_name={device_name}")
+        logger.info(
+            f"Attempting to log audit entry: username={username}, device_name={device_name}"
+        )
         if username:
             log_device_onboarding(
                 username=username or "unknown",
@@ -348,7 +350,9 @@ def _process_single_device(
             )
             logger.info(f"Audit log created for device {device_name}")
         else:
-            logger.warning(f"No username provided, skipping audit log for device {device_name}")
+            logger.warning(
+                f"No username provided, skipping audit log for device {device_name}"
+            )
 
         return {
             "success": True,
@@ -363,7 +367,7 @@ def _process_single_device(
     except Exception as e:
         error_msg = f"Error processing device {ip_address}: {str(e)}"
         logger.error(error_msg, exc_info=True)
-        
+
         # Log failed device onboarding
         if username:
             log_device_onboarding(
@@ -374,7 +378,7 @@ def _process_single_device(
                 success=False,
                 error_message=error_msg,
             )
-        
+
         return {
             "success": False,
             "ip_address": ip_address,
@@ -402,7 +406,6 @@ def _trigger_nautobot_onboarding(
     Returns:
         tuple: (job_id, job_url)
     """
-    import requests
     from utils.nautobot_helpers import get_nautobot_config, get_nautobot_headers
 
     # Get Nautobot config
@@ -454,7 +457,6 @@ def _wait_for_job_completion(task_instance, job_id: str, max_wait: int = 90) -> 
     Returns:
         tuple: (success: bool, result: str)
     """
-    import requests
     from utils.nautobot_helpers import get_nautobot_config
 
     # Get Nautobot config
@@ -602,7 +604,6 @@ async def _async_get_device_id(ip_address: str) -> tuple:
 
 def _update_device_tags(device_id: str, tag_ids: List[str]) -> dict:
     """Update device tags in Nautobot."""
-    import requests
     from utils.nautobot_helpers import get_nautobot_config, get_nautobot_headers
 
     try:
@@ -633,7 +634,6 @@ def _update_device_tags(device_id: str, tag_ids: List[str]) -> dict:
 
 def _update_device_custom_fields(device_id: str, custom_fields: Dict[str, str]) -> dict:
     """Update device custom fields in Nautobot."""
-    import requests
     from utils.nautobot_helpers import get_nautobot_config, get_nautobot_headers
 
     try:
@@ -686,7 +686,6 @@ def _sync_network_data(
     Returns:
         dict: Result with success status, job_id, and message
     """
-    import requests
     from utils.nautobot_helpers import get_nautobot_config, get_nautobot_headers
 
     # Default sync options if none provided

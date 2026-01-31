@@ -197,11 +197,15 @@ def update_ip_prefixes_from_csv_task(
             # Extract values using mapped column names
             prefix_value = row.get(prefix_col, "").strip()
             namespace_value = row.get(namespace_col, "").strip()
-            csv_uuid = row.get(id_col, "").strip() if (not ignore_uuid and id_col) else None
+            csv_uuid = (
+                row.get(id_col, "").strip() if (not ignore_uuid and id_col) else None
+            )
 
             # Validate namespace value
             if not namespace_value:
-                logger.warning(f"Row {idx}: Empty namespace value for prefix '{prefix_value}', skipping")
+                logger.warning(
+                    f"Row {idx}: Empty namespace value for prefix '{prefix_value}', skipping"
+                )
                 skipped.append(
                     {
                         "row": idx,
@@ -242,7 +246,7 @@ def update_ip_prefixes_from_csv_task(
                         {
                             "row": idx,
                             "prefix": prefix_value,
-                            "namespace": namespace_name,
+                            "namespace": namespace_value,
                             "reason": "Empty prefix value",
                         }
                     )
@@ -355,12 +359,12 @@ def update_ip_prefixes_from_csv_task(
                         )
 
                     # Generate detailed comparison
-                    comparison = _generate_field_comparison(existing_prefix, update_data)
-
-                    logger.info(
-                        f"[DRY RUN] Would update prefix {identifier}"
+                    comparison = _generate_field_comparison(
+                        existing_prefix, update_data
                     )
-                    logger.info(f"  Changes to apply:")
+
+                    logger.info(f"[DRY RUN] Would update prefix {identifier}")
+                    logger.info("  Changes to apply:")
                     for field, diff in comparison["changes"].items():
                         if field == "custom_fields":
                             # Custom fields have nested structure
@@ -385,7 +389,9 @@ def update_ip_prefixes_from_csv_task(
                             logger.info(f"        New:     {diff.get('new')}")
 
                     if comparison["unchanged"]:
-                        logger.info(f"  Unchanged fields: {', '.join(comparison['unchanged'])}")
+                        logger.info(
+                            f"  Unchanged fields: {', '.join(comparison['unchanged'])}"
+                        )
 
                     logger.info(f"  Summary: {comparison['summary']}")
 
@@ -402,9 +408,9 @@ def update_ip_prefixes_from_csv_task(
                     )
                 else:
                     logger.info(f"Updating prefix {identifier}")
-                    logger.info(f"  - Sending to Nautobot API:")
+                    logger.info("  - Sending to Nautobot API:")
                     logger.info(f"    Endpoint: ipam/prefixes/{prefix_uuid}/")
-                    logger.info(f"    Method: PATCH")
+                    logger.info("    Method: PATCH")
                     logger.info(f"    Payload: {update_data}")
 
                     result = asyncio.run(
@@ -598,9 +604,7 @@ async def _find_prefix_by_prefix_and_namespace_graphql(
         prefixes = result.get("data", {}).get("prefixes", [])
 
         if not prefixes:
-            logger.warning(
-                f"Prefix '{prefix}' not found in namespace '{namespace}'"
-            )
+            logger.warning(f"Prefix '{prefix}' not found in namespace '{namespace}'")
             return None, None
 
         if len(prefixes) > 1:
@@ -639,9 +643,9 @@ async def _update_prefix(
     try:
         endpoint = f"ipam/prefixes/{prefix_uuid}/"
 
-        logger.info(f"[API CALL] Updating prefix via REST API")
+        logger.info("[API CALL] Updating prefix via REST API")
         logger.info(f"[API CALL]   - Endpoint: {endpoint}")
-        logger.info(f"[API CALL]   - Method: PATCH")
+        logger.info("[API CALL]   - Method: PATCH")
         logger.info(f"[API CALL]   - Data: {update_data}")
 
         await nautobot_service.rest_request(endpoint, method="PATCH", data=update_data)
@@ -721,12 +725,16 @@ def _prepare_prefix_update_data(
     # Determine which columns to process
     # If selected_columns is provided, ONLY process those columns
     # Otherwise, process all headers except excluded ones
-    logger.info(f"[_prepare_prefix_update_data] selected_columns parameter: {selected_columns}")
+    logger.info(
+        f"[_prepare_prefix_update_data] selected_columns parameter: {selected_columns}"
+    )
     logger.info(f"[_prepare_prefix_update_data] CSV headers: {headers}")
 
     columns_to_process = selected_columns if selected_columns is not None else headers
 
-    logger.info(f"[_prepare_prefix_update_data] Columns to process for update: {columns_to_process}")
+    logger.info(
+        f"[_prepare_prefix_update_data] Columns to process for update: {columns_to_process}"
+    )
 
     for field in columns_to_process:
         if field in excluded_fields:

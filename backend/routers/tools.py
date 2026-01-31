@@ -18,9 +18,24 @@ router = APIRouter(
 async def get_schema_status() -> Dict[str, Any]:
     """
     Get the status of the database schema compared to the defined models.
+    Also includes information about the versioned migration system.
     """
     manager = SchemaManager()
     return manager.get_schema_status()
+
+
+@router.get("/schema/migrations", dependencies=[Depends(verify_token)])
+async def get_applied_migrations() -> Dict[str, Any]:
+    """
+    Get list of all applied versioned migrations from the migration system.
+    Returns empty list if migration system hasn't been initialized.
+    """
+    manager = SchemaManager()
+    migrations = manager.get_applied_migrations()
+    return {
+        "migrations": migrations,
+        "count": len(migrations),
+    }
 
 
 @router.post("/schema/migrate", dependencies=[Depends(verify_token)])
@@ -28,6 +43,9 @@ async def migrate_schema() -> Dict[str, Any]:
     """
     Perform database migration to match the defined models.
     Only adds missing tables and columns.
+
+    WARNING: This is for emergency use only. For production, prefer creating
+    versioned migrations in backend/migrations/versions/
     """
     manager = SchemaManager()
     return manager.perform_migration()
@@ -62,8 +80,9 @@ async def seed_rbac(remove_existing: bool = False) -> Dict[str, Any]:
 
             return {
                 "success": True,
-                "message": "RBAC system seeded successfully" if not remove_existing
-                          else "RBAC system cleaned and reseeded successfully",
+                "message": "RBAC system seeded successfully"
+                if not remove_existing
+                else "RBAC system cleaned and reseeded successfully",
                 "output": output,
             }
         finally:

@@ -229,12 +229,12 @@ class UserUpdate(BaseModel):
     email: Optional[str] = Field(None, max_length=255)
     password: Optional[str] = Field(None, min_length=8)
     is_active: Optional[bool] = Field(None, description="Enable/disable account")
-    
-    @field_validator('realname', 'email', 'password', mode='before')
+
+    @field_validator("realname", "email", "password", mode="before")
     @classmethod
     def empty_str_to_none(cls, v):
         """Convert empty strings to None."""
-        if v == '':
+        if v == "":
             return None
         return v
 

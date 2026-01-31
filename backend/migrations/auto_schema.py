@@ -171,7 +171,9 @@ class AutoSchemaMigration:
                         continue
 
                     col_def = self.get_column_definition(column)
-                    alter_sql = f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_def}"
+                    alter_sql = (
+                        f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_def}"
+                    )
 
                     logger.info(f"Adding column {table_name}.{col_name}")
                     logger.debug(f"SQL: {alter_sql}")
@@ -184,9 +186,7 @@ class AutoSchemaMigration:
                     logger.info(f"✓ Added column: {table_name}.{col_name}")
 
                 except Exception as e:
-                    logger.error(
-                        f"✗ Failed to add column {table_name}.{col_name}: {e}"
-                    )
+                    logger.error(f"✗ Failed to add column {table_name}.{col_name}: {e}")
 
         return added_count
 

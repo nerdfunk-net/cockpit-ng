@@ -86,7 +86,7 @@ async def login(user_data: UserLogin):
 
             # Log successful login to audit log
             from repositories.audit_log_repository import audit_log_repo
-            
+
             audit_log_repo.create_log(
                 username=user["username"],
                 user_id=user["id"],
@@ -273,7 +273,7 @@ async def api_key_login(user_info: dict = Depends(get_api_key_user)):
 
         # Log API key login to audit log
         from repositories.audit_log_repository import audit_log_repo
-        
+
         audit_log_repo.create_log(
             username=user_info["username"],
             user_id=user_info["user_id"],
@@ -312,14 +312,14 @@ async def api_key_login(user_info: dict = Depends(get_api_key_user)):
 async def logout(request: Request):
     """
     Log user logout event.
-    
+
     This endpoint is called by the frontend when a user logs out.
     It logs the logout event to the audit log for tracking purposes.
     The actual token invalidation happens client-side by removing the token.
     """
     from config import settings
     import jwt as pyjwt
-    
+
     # Try to get user info from token if available
     try:
         # Extract Authorization header
@@ -328,7 +328,7 @@ async def logout(request: Request):
         )
         if auth_header and auth_header.lower().startswith("bearer "):
             token = auth_header.split(" ", 1)[1].strip()
-            
+
             # Decode token to get user info
             payload = pyjwt.decode(
                 token,
@@ -337,10 +337,10 @@ async def logout(request: Request):
             )
             username = payload.get("sub")
             user_id = payload.get("user_id")
-            
+
             if username:
                 from repositories.audit_log_repository import audit_log_repo
-                
+
                 audit_log_repo.create_log(
                     username=username,
                     user_id=user_id,
@@ -354,5 +354,5 @@ async def logout(request: Request):
     except Exception as e:
         # If we can't get user info, log generic logout
         logger.warning(f"Logout called but could not extract user info: {e}")
-    
+
     return {"success": True, "message": "Logged out successfully"}

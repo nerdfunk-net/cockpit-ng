@@ -581,13 +581,13 @@ async def update_user(
 
         # Get full user with roles and permissions (include inactive in case we just deactivated)
         user_with_rbac = rbac.get_user_with_rbac(user_id, include_inactive=True)
-        
+
         if not user_with_rbac:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, 
-                detail=f"User {user_id} not found after update"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User {user_id} not found after update",
             )
-        
+
         return user_with_rbac
     except HTTPException:
         raise

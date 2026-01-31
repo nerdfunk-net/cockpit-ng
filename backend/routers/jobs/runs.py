@@ -211,12 +211,12 @@ async def get_latest_scan_prefix_result(
     try:
         # Get all completed scan_prefixes jobs from today (starting at midnight)
         from datetime import datetime, timezone
-        
+
         # Get today's date at midnight in UTC
         today_midnight = datetime.now(timezone.utc).replace(
             hour=0, minute=0, second=0, microsecond=0
         )
-        
+
         runs = job_run_manager.get_runs_since(
             since=today_midnight, status="completed", job_type="scan_prefixes"
         )
@@ -230,7 +230,7 @@ async def get_latest_scan_prefix_result(
         # Find the most recent parent/main job
         # A parent job has 'sub_task_ids' in its result (when split occurred)
         # OR it's a standalone job without 'sub_task_ids'
-        # 
+        #
         # Key distinction:
         # - Main job: has 'sub_task_ids' OR prefixes is list of strings (CIDRs)
         # - Sub-job: prefixes is list of objects with detailed results
@@ -239,14 +239,14 @@ async def get_latest_scan_prefix_result(
             result = run.get("result", {})
             if not result:
                 continue
-            
+
             # Check if this is a parent job
             has_sub_task_ids = "sub_task_ids" in result
             if has_sub_task_ids:
                 # Definitely a parent job that was split
                 latest_parent_run = run
                 break
-            
+
             # Check if this is a standalone job (not split)
             # Standalone jobs have prefixes as array of strings
             # Sub-jobs have prefixes as array of objects
@@ -281,7 +281,7 @@ async def get_latest_scan_prefix_result(
             # Fetch sub-tasks directly by their celery_task_ids
             # This ensures we get all sub-tasks even if they're not in the recent runs
             sub_task_runs = job_run_manager.get_job_runs_by_celery_ids(sub_task_ids)
-            
+
             for sub_run in sub_task_runs:
                 sub_result = sub_run.get("result", {})
                 if sub_result:

@@ -2,6 +2,8 @@
 Database Schema Manager
 Handles comparison between defined SQLAlchemy models and actual database schema.
 Executes migrations to add missing tables and columns.
+
+Now coordinated with the versioned migration system to avoid conflicts.
 """
 
 from sqlalchemy import inspect, text, Table, Column
@@ -26,10 +28,46 @@ class SchemaManager:
             f"SchemaManager initialized with {len(self.metadata.tables)} model definitions"
         )
 
+    def _check_migration_system_exists(self) -> bool:
+        """Check if the migration system tracking table exists."""
+        return "schema_migrations" in self.inspector.get_table_names()
+
+    def get_applied_migrations(self) -> List[Dict[str, Any]]:
+        """
+        Get list of migrations that have been applied by the migration system.
+        Returns empty list if migration system hasn't been set up yet.
+        """
+        if not self._check_migration_system_exists():
+            return []
+
+        try:
+            query = text("""
+                SELECT migration_name, applied_at, description, execution_time_ms
+                FROM schema_migrations
+                ORDER BY migration_name
+            """)
+
+            with self.engine.connect() as conn:
+                result = conn.execute(query)
+                migrations = []
+                for row in result:
+                    migrations.append(
+                        {
+                            "name": row[0],
+                            "applied_at": row[1].isoformat() if row[1] else None,
+                            "description": row[2],
+                            "execution_time_ms": row[3],
+                        }
+                    )
+                return migrations
+        except Exception as e:
+            logger.error(f"Error fetching applied migrations: {e}")
+            return []
+
     def get_schema_status(self) -> Dict[str, Any]:
         """
         Compare defined models with actual database schema.
-        Returns a report of missing tables and columns.
+        Returns a report of missing tables and columns, along with migration system status.
         """
         missing_tables = []
         missing_columns = []
@@ -47,10 +85,38 @@ class SchemaManager:
 
         is_up_to_date = len(missing_tables) == 0 and len(missing_columns) == 0
 
+        # Check migration system status
+        migration_system_active = self._check_migration_system_exists()
+        applied_migrations = self.get_applied_migrations()
+
+        # Generate warnings
+        warnings = []
+        if not migration_system_active:
+            warnings.append(
+                "Migration system not initialized. Versioned migrations haven't run yet."
+            )
+        elif is_up_to_date and len(applied_migrations) == 0:
+            warnings.append(
+                "No versioned migrations have been applied, but schema appears current."
+            )
+        elif not is_up_to_date:
+            warnings.append(
+                "Schema differences detected. Consider creating a versioned migration instead of using this tool. "
+                "This ensures changes are tracked and reproducible."
+            )
+
         return {
             "is_up_to_date": is_up_to_date,
             "missing_tables": missing_tables,
             "missing_columns": missing_columns,
+            "migration_system": {
+                "active": migration_system_active,
+                "applied_migrations_count": len(applied_migrations),
+                "last_migration": applied_migrations[-1]
+                if applied_migrations
+                else None,
+            },
+            "warnings": warnings,
         }
 
     def _check_columns(
@@ -77,14 +143,26 @@ class SchemaManager:
     def perform_migration(self) -> Dict[str, Any]:
         """
         Execute migrations to fix missing tables and columns.
+
+        WARNING: This is for emergency fixes only. Prefer creating versioned migrations
+        in the migrations/versions/ directory for production use.
         """
         status = self.get_schema_status()
+
+        # Add warning if this is being used when migration system is active
+        warnings = status.get("warnings", [])
+        if status["migration_system"]["active"]:
+            warnings.append(
+                "You're using manual migration with the versioned migration system active. "
+                "Changes made here won't be tracked in schema_migrations table."
+            )
 
         if status["is_up_to_date"]:
             return {
                 "success": True,
                 "message": "Schema is already up to date.",
                 "changes": [],
+                "warnings": warnings,
             }
 
         changes_applied = []
@@ -157,6 +235,7 @@ class SchemaManager:
                 else "Migration completed with errors",
                 "changes": changes_applied,
                 "errors": errors,
+                "warnings": warnings,
             }
 
         except Exception as e:
@@ -166,6 +245,7 @@ class SchemaManager:
                 "message": f"Critical migration error: {str(e)}",
                 "changes": changes_applied,
                 "errors": [str(e)],
+                "warnings": warnings,
             }
 
     def _get_default_value_sql(self, column: Column) -> Any:
