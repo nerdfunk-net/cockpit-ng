@@ -213,7 +213,7 @@ export function useConditionTree() {
             for (const item of items) {
                 if ('type' in item && item.type === 'group') {
                     if (item.id === groupId) {
-                        return currentPath
+                        return [...currentPath, item.id]
                     }
 
                     const pathInGroup = findRecursive(item.items, [...currentPath, item.id])

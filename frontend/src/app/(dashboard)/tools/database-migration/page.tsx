@@ -262,7 +262,7 @@ export default function DatabaseMigrationPage() {
                                         <AlertTriangle className="h-4 w-4 text-amber-600" />
                                         <AlertTitle>Migration System Not Initialized</AlertTitle>
                                         <AlertDescription className="text-amber-800">
-                                            The versioned migration system hasn't been set up yet. 
+                                            The versioned migration system hasn&apos;t been set up yet. 
                                             It will be initialized on the next application restart.
                                         </AlertDescription>
                                     </Alert>
@@ -278,8 +278,8 @@ export default function DatabaseMigrationPage() {
                         <AlertTriangle className="h-4 w-4 text-amber-600" />
                         <AlertTitle>Important Notes</AlertTitle>
                         <AlertDescription className="text-amber-800 space-y-2">
-                            {status.warnings.map((warning, index) => (
-                                <p key={index} className="flex items-start gap-2">
+                            {status.warnings.map((warning) => (
+                                <p key={warning} className="flex items-start gap-2">
                                     <span className="mt-0.5">•</span>
                                     <span>{warning}</span>
                                 </p>
@@ -413,8 +413,8 @@ export default function DatabaseMigrationPage() {
                                             <div className="mb-3 bg-amber-50 border border-amber-200 rounded p-3">
                                                 <p className="text-xs font-bold uppercase text-amber-700 mb-1">⚠️ Warnings:</p>
                                                 <ul className="list-disc list-inside text-sm space-y-1 text-amber-800">
-                                                    {migrationResult.warnings.map((warning, index) => (
-                                                        <li key={index}>{warning}</li>
+                                                    {migrationResult.warnings.map((warning) => (
+                                                        <li key={warning}>{warning}</li>
                                                     ))}
                                                 </ul>
                                             </div>
