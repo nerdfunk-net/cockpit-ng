@@ -506,10 +506,143 @@ cd frontend && npm run dev
 # Backend: http://localhost:8000
 ```
 
+## Nautobot Services Architecture
+
+**IMPORTANT:** Nautobot services follow a specialized pattern for external API integration.
+
+### Architecture Overview
+Nautobot services wrap an **external API client** (not local database), so the traditional Repository pattern doesn't apply. Instead, use a modular service layer with dependency injection.
+
+### Directory Structure
+```
+backend/services/nautobot/
+├── client.py                  # NautobotService API client (GraphQL + REST)
+├── common/                    # Pure functions (no dependencies)
+│   ├── validators.py          # is_valid_uuid, validate_ip_address, etc.
+│   ├── utils.py               # flatten_nested_fields, normalize_tags, etc.
+│   └── exceptions.py          # Custom exception hierarchy
+│
+├── resolvers/                 # ID/UUID resolution (read-only)
+│   ├── base_resolver.py       # Shared GraphQL query logic
+│   ├── device_resolver.py     # Device & device-type resolution
+│   ├── metadata_resolver.py   # Status, role, platform, location
+│   └── network_resolver.py    # IP, interface, namespace, prefix
+│
+├── managers/                  # Resource lifecycle (create/update)
+│   ├── ip_manager.py          # IP address operations
+│   ├── interface_manager.py   # Interface operations
+│   ├── prefix_manager.py      # Prefix operations
+│   └── device_manager.py      # Device-specific operations
+│
+└── devices/
+    ├── common.py              # Facade (DEPRECATED - backward compat only)
+    ├── creation.py            # Device creation workflows
+    ├── update.py              # Device update workflows
+    └── import_service.py      # Bulk device import
+```
+
+### Usage Pattern
+
+**✅ CORRECT - Direct Injection (new code):**
+```python
+from services.nautobot import NautobotService
+from services.nautobot.resolvers import DeviceResolver, MetadataResolver
+from services.nautobot.managers import IPManager
+
+class MyDeviceService:
+    def __init__(self, nautobot_service: NautobotService):
+        self.nautobot = nautobot_service
+        self.device_resolver = DeviceResolver(nautobot_service)
+        self.metadata_resolver = MetadataResolver(nautobot_service)
+
+        # Managers need resolvers for status/namespace resolution
+        from services.nautobot.resolvers import NetworkResolver
+        network_resolver = NetworkResolver(nautobot_service)
+        self.ip_manager = IPManager(
+            nautobot_service,
+            network_resolver,
+            self.metadata_resolver
+        )
+
+    async def my_operation(self):
+        # Use resolvers for lookups
+        device_id = await self.device_resolver.resolve_device_by_name("router1")
+
+        # Use managers for create/update operations
+        ip_id = await self.ip_manager.ensure_ip_address_exists(
+            ip_address="10.0.0.1/24",
+            namespace_id="...",
+            status_name="active"
+        )
+```
+
+**❌ WRONG - Using Facade (legacy):**
+```python
+from services.nautobot.devices.common import DeviceCommonService  # DEPRECATED
+
+class MyService:
+    def __init__(self, nautobot_service):
+        self.common = DeviceCommonService(nautobot_service)  # DON'T USE
+```
+
+### Pure Functions vs. Services
+
+**Pure Functions** (no dependencies, stateless):
+```python
+from services.nautobot.common import is_valid_uuid, validate_ip_address, normalize_tags
+
+# Can be called directly - no service instance needed
+if is_valid_uuid(some_id):
+    tags = normalize_tags("tag1,tag2,tag3")
+```
+
+**Resolvers** (read-only, injected with NautobotService):
+```python
+from services.nautobot.resolvers import DeviceResolver
+
+resolver = DeviceResolver(nautobot_service)
+device_id = await resolver.resolve_device_by_name("router1")
+```
+
+**Managers** (create/update, injected with dependencies):
+```python
+from services.nautobot.managers import IPManager
+from services.nautobot.resolvers import NetworkResolver, MetadataResolver
+
+network_resolver = NetworkResolver(nautobot_service)
+metadata_resolver = MetadataResolver(nautobot_service)
+
+ip_manager = IPManager(nautobot_service, network_resolver, metadata_resolver)
+ip_id = await ip_manager.ensure_ip_address_exists(...)
+```
+
+### When to Create New Nautobot Services
+
+1. **Add to existing resolver** if it's a simple ID/name lookup
+2. **Add to existing manager** if it's CRUD for an existing resource type
+3. **Create new resolver** if you need a new domain of lookups (e.g., `VLANResolver`)
+4. **Create new manager** if you need lifecycle management for a new resource type
+5. **Never modify `devices/common.py`** - it's a deprecated facade
+
+### DO:
+- ✅ Use pure functions from `common/` for validation/transformation
+- ✅ Inject specific resolvers/managers you need
+- ✅ Follow Single Responsibility Principle (one resolver per domain)
+- ✅ Use BaseResolver for common GraphQL patterns
+- ✅ Add type hints to all functions
+
+### DON'T:
+- ❌ Use `DeviceCommonService` facade in new code
+- ❌ Put business logic in resolvers (read-only only)
+- ❌ Bypass managers for create/update operations
+- ❌ Create monolithic service classes
+- ❌ Mix validation logic with API calls
+
 ## Key Patterns Summary
 
 **Backend:**
-- Repository pattern for data access
+- Repository pattern for data access (local PostgreSQL)
+- Resolver + Manager pattern for external APIs (Nautobot, CheckMK)
 - Service layer for business logic
 - Thin routers that delegate to services
 - Dependency injection for auth/permissions
@@ -537,11 +670,18 @@ cd frontend && npm run dev
 - Frontend: Check `useAuthStore()` user role
 
 ## INCORRECT Practices (NEVER DO)
+
+**Backend:**
 - ❌ Creating SQLite databases
-- ❌ Placing components at `/components/` root without feature grouping
 - ❌ Writing raw SQL instead of SQLAlchemy ORM
-- ❌ Bypassing repository pattern
+- ❌ Bypassing repository pattern for local database
 - ❌ Business logic in routers
+- ❌ Using `DeviceCommonService` facade in new Nautobot code
+- ❌ Creating monolithic God Object services
+- ❌ Mixing validation/transformation logic with API calls
+
+**Frontend:**
+- ❌ Placing components at `/components/` root without feature grouping
 - ❌ Direct backend API calls from frontend
 - ❌ Inline GraphQL queries in components
 - ❌ Building UI from scratch instead of using Shadcn
