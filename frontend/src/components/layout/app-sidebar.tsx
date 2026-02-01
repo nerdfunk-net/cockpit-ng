@@ -140,7 +140,7 @@ const navigationSections: NavSection[] = [
         children: [
           { label: 'Nautobot', href: '/settings/nautobot', icon: Database },
           { label: 'CheckMK', href: '/settings/checkmk', icon: Shield },
-          { label: 'Grafana', href: '/settings/grafana', icon: BarChart3 },
+          { label: 'TIG-Stack', href: '/settings/tig-stack', icon: BarChart3 },
         ],
       },
       { label: 'Compliance', href: '/settings/compliance', icon: CheckCircle },

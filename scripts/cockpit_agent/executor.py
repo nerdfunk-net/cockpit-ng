@@ -89,11 +89,11 @@ class CommandExecutor:
                 "output": None,
             }
 
-        allowed_path = config.git_repo_path
-        if repo_path != allowed_path:
+        allowed_paths = config.git_repo_paths
+        if repo_path not in allowed_paths:
             return {
                 "status": "error",
-                "error": f"Repository path not allowed. Configured path: {allowed_path}",
+                "error": f"Repository path not allowed. Configured paths: {', '.join(allowed_paths)}",
                 "output": None,
             }
 
@@ -179,11 +179,11 @@ class CommandExecutor:
                 "output": None,
             }
 
-        allowed_name = config.docker_container_name
-        if container_name != allowed_name:
+        allowed_names = config.docker_container_names
+        if container_name not in allowed_names:
             return {
                 "status": "error",
-                "error": f"Container name not allowed. Configured name: {allowed_name}",
+                "error": f"Container name not allowed. Configured names: {', '.join(allowed_names)}",
                 "output": None,
             }
 

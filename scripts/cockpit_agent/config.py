@@ -27,9 +27,12 @@ class AgentConfig:
         # Agent identity
         self.agent_hostname = os.getenv("AGENT_HOSTNAME") or socket.gethostname()
 
-        # Command configuration
-        self.git_repo_path = os.getenv("GIT_REPO_PATH", "/opt/app/config")
-        self.docker_container_name = os.getenv("DOCKER_CONTAINER_NAME", "app")
+        # Command configuration (support comma-separated lists)
+        git_paths = os.getenv("GIT_REPO_PATH", "/opt/app/config")
+        self.git_repo_paths = [p.strip() for p in git_paths.split(",") if p.strip()]
+        
+        docker_names = os.getenv("DOCKER_CONTAINER_NAME", "app")
+        self.docker_container_names = [n.strip() for n in docker_names.split(",") if n.strip()]
 
         # Operational settings
         self.heartbeat_interval = int(os.getenv("HEARTBEAT_INTERVAL", "30"))
@@ -56,10 +59,10 @@ class AgentConfig:
         if not self.redis_host:
             return False, "REDIS_HOST is required"
 
-        if not self.git_repo_path:
+        if not self.git_repo_paths:
             return False, "GIT_REPO_PATH is required"
 
-        if not self.docker_container_name:
+        if not self.docker_container_names:
             return False, "DOCKER_CONTAINER_NAME is required"
 
         return True, None
