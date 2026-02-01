@@ -1,19 +1,42 @@
 """
-Device Common Service - Shared utilities for device import and update operations.
+Device Common Service - Facade for backward compatibility.
 
-This service provides reusable functions for:
-- Name-to-UUID resolution (devices, platforms, statuses, namespaces, etc.)
-- Data validation and normalization
-- Interface and IP address management
-- Error handling patterns
+DEPRECATED: This facade provides backward compatibility for existing code.
+New code should inject specific resolvers/managers directly.
 
-Used by both DeviceImportService and DeviceUpdateService.
+This service will be removed in a future version.
 """
 
 import logging
-import re
 from typing import Optional, List, Dict, Any, Tuple
 from services.nautobot import NautobotService
+from services.nautobot.resolvers import (
+    DeviceResolver,
+    MetadataResolver,
+    NetworkResolver,
+)
+from services.nautobot.managers import (
+    IPManager,
+    InterfaceManager,
+    PrefixManager,
+    DeviceManager,
+)
+from services.nautobot.common.validators import (
+    is_valid_uuid,
+    validate_ip_address,
+    validate_mac_address,
+    validate_required_fields,
+)
+from services.nautobot.common.utils import (
+    flatten_nested_fields,
+    extract_nested_value,
+    normalize_tags,
+    prepare_update_data,
+)
+from services.nautobot.common.exceptions import (
+    is_duplicate_error,
+    handle_already_exists_error,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +45,9 @@ class DeviceCommonService:
     """
     Common service providing shared utilities for device operations.
 
-    This service encapsulates all shared logic between import and update
-    workflows, ensuring DRY principles and consistent behavior.
+    DEPRECATED: This is a facade for backward compatibility.
+    New code should inject DeviceResolver, MetadataResolver, NetworkResolver,
+    IPManager, InterfaceManager, PrefixManager, or DeviceManager directly.
     """
 
     def __init__(self, nautobot_service: NautobotService):
@@ -35,125 +59,45 @@ class DeviceCommonService:
         """
         self.nautobot = nautobot_service
 
+        # Initialize resolvers
+        self.device_resolver = DeviceResolver(nautobot_service)
+        self.metadata_resolver = MetadataResolver(nautobot_service)
+        self.network_resolver = NetworkResolver(nautobot_service)
+
+        # Initialize managers
+        self.ip_manager = IPManager(
+            nautobot_service,
+            self.network_resolver,
+            self.metadata_resolver,
+        )
+        self.prefix_manager = PrefixManager(
+            nautobot_service,
+            self.network_resolver,
+            self.metadata_resolver,
+        )
+        self.interface_manager = InterfaceManager(
+            nautobot_service,
+            self.network_resolver,
+            self.metadata_resolver,
+            self.ip_manager,
+        )
+        self.device_manager = DeviceManager(
+            nautobot_service,
+            self.device_resolver,
+            self.network_resolver,
+        )
+
     # ========================================================================
-    # DEVICE RESOLUTION METHODS
+    # DEVICE RESOLUTION METHODS (delegated to DeviceResolver)
     # ========================================================================
 
     async def resolve_device_by_name(self, device_name: str) -> Optional[str]:
-        """
-        Resolve device UUID from device name using GraphQL.
-
-        Args:
-            device_name: Name of the device to look up
-
-        Returns:
-            Device UUID if found, None otherwise
-        """
-        try:
-            logger.info(f"Looking up device by name: {device_name}")
-
-            query = """
-            query GetDeviceByName($name: [String]) {
-              devices(name: $name) {
-                id
-                name
-              }
-            }
-            """
-            variables = {"name": [device_name]}
-            result = await self.nautobot.graphql_query(query, variables)
-
-            if "errors" in result:
-                logger.error(
-                    f"GraphQL error looking up device by name: {result['errors']}"
-                )
-                return None
-
-            devices = result.get("data", {}).get("devices", [])
-            if devices and len(devices) > 0:
-                device_id = devices[0].get("id")
-                logger.info(f"Found device by name '{device_name}': {device_id}")
-                return device_id
-
-            logger.warning(f"No device found with name: {device_name}")
-            return None
-
-        except Exception as e:
-            logger.error(f"Error resolving device by name: {e}", exc_info=True)
-            return None
+        """Delegate to DeviceResolver."""
+        return await self.device_resolver.resolve_device_by_name(device_name)
 
     async def resolve_device_by_ip(self, ip_address: str) -> Optional[str]:
-        """
-        Resolve device UUID from primary IPv4 address using GraphQL.
-
-        Looks up the IP address object and returns the device it's assigned
-        to as primary IP.
-
-        Args:
-            ip_address: Primary IPv4 address to search for
-
-        Returns:
-            Device UUID if found, None otherwise
-        """
-        try:
-            logger.info(f"Looking up device by primary IPv4: {ip_address}")
-
-            # Query for IP address and get the device it's assigned to as primary IP
-            query = """
-            query GetIPAddress($address: [String]) {
-              ip_addresses(address: $address) {
-                id
-                address
-                primary_ip4_for {
-                  id
-                  name
-                }
-              }
-            }
-            """
-            variables = {"address": [ip_address]}
-            result = await self.nautobot.graphql_query(query, variables)
-
-            if "errors" in result:
-                logger.error(f"GraphQL error looking up IP address: {result['errors']}")
-                return None
-
-            ip_addresses = result.get("data", {}).get("ip_addresses", [])
-            if not ip_addresses or len(ip_addresses) == 0:
-                logger.warning(f"No IP address found: {ip_address}")
-                return None
-
-            # Get the device from primary_ip4_for
-            ip_obj = ip_addresses[0]
-            devices = ip_obj.get("primary_ip4_for")
-
-            if not devices:
-                logger.warning(
-                    f"IP address {ip_address} is not set as primary IP for any device"
-                )
-                return None
-
-            # primary_ip4_for can be a list or a single device
-            if isinstance(devices, list):
-                if len(devices) == 0:
-                    logger.warning(
-                        f"IP address {ip_address} is not set as primary IP for any device"
-                    )
-                    return None
-                device = devices[0]
-            else:
-                device = devices
-
-            device_id = device.get("id")
-            device_name = device.get("name")
-            logger.info(
-                f"Found device by IP '{ip_address}': {device_name} ({device_id})"
-            )
-            return device_id
-
-        except Exception as e:
-            logger.error(f"Error resolving device by IP: {e}", exc_info=True)
-            return None
+        """Delegate to DeviceResolver."""
+        return await self.device_resolver.resolve_device_by_ip(ip_address)
 
     async def resolve_device_id(
         self,
@@ -161,717 +105,114 @@ class DeviceCommonService:
         device_name: Optional[str] = None,
         ip_address: Optional[str] = None,
     ) -> Optional[str]:
-        """
-        Resolve device UUID from any available identifier.
-
-        Tries in order: device_id (if valid), device_name, ip_address
-
-        Args:
-            device_id: Device UUID (if already known)
-            device_name: Device name to search for
-            ip_address: Primary IPv4 address to search for
-
-        Returns:
-            Device UUID if found, None otherwise
-        """
-        # If device_id is already provided, validate and return it
-        if device_id:
-            # Basic UUID validation
-            if self._is_valid_uuid(device_id):
-                logger.debug(f"Using provided device ID: {device_id}")
-                return device_id
-            else:
-                logger.warning(f"Invalid device ID format: {device_id}")
-
-        # Try resolving by name
-        if device_name:
-            device_id = await self.resolve_device_by_name(device_name)
-            if device_id:
-                return device_id
-
-        # Try resolving by IP address
-        if ip_address:
-            device_id = await self.resolve_device_by_ip(ip_address)
-            if device_id:
-                return device_id
-
-        logger.error("Could not resolve device ID from any identifier")
-        return None
+        """Delegate to DeviceResolver."""
+        return await self.device_resolver.resolve_device_id(
+            device_id, device_name, ip_address
+        )
 
     async def find_interface_with_ip(
         self, device_name: str, ip_address: str
     ) -> Optional[Tuple[str, str]]:
-        """
-        Find the interface that currently has a specific IP address on a device.
+        """Delegate to DeviceResolver."""
+        return await self.device_resolver.find_interface_with_ip(
+            device_name, ip_address
+        )
 
-        Args:
-            device_name: Name of the device
-            ip_address: IP address to search for (in CIDR notation, e.g., "10.0.0.1/24")
+    async def resolve_device_type_id(
+        self, model: str, manufacturer: Optional[str] = None
+    ) -> Optional[str]:
+        """Delegate to DeviceResolver."""
+        return await self.device_resolver.resolve_device_type_id(model, manufacturer)
 
-        Returns:
-            Tuple of (interface_id, interface_name) if found, None otherwise
-        """
-        try:
-            logger.info(
-                f"Finding interface with IP {ip_address} on device {device_name}"
-            )
-
-            query = """
-            query ($filter_device: [String], $filter_address: [String]) {
-              devices(name: $filter_device) {
-                id
-                name
-                interfaces(ip_addresses: $filter_address) {
-                  id
-                  name
-                }
-              }
-            }
-            """
-            variables = {
-                "filter_device": [device_name],
-                "filter_address": [ip_address],
-            }
-
-            result = await self.nautobot.graphql_query(query, variables)
-
-            if "errors" in result:
-                logger.error(
-                    f"GraphQL error finding interface with IP: {result['errors']}"
-                )
-                return None
-
-            devices = result.get("data", {}).get("devices", [])
-            if not devices or len(devices) == 0:
-                logger.warning(f"Device '{device_name}' not found")
-                return None
-
-            device = devices[0]
-            interfaces = device.get("interfaces", [])
-
-            if not interfaces or len(interfaces) == 0:
-                logger.info(
-                    f"No interface found with IP {ip_address} on device {device_name}"
-                )
-                return None
-
-            # Return the first interface with this IP
-            interface = interfaces[0]
-            interface_id = interface.get("id")
-            interface_name = interface.get("name")
-
-            logger.info(
-                f"Found interface '{interface_name}' (ID: {interface_id}) with IP {ip_address}"
-            )
-            return (interface_id, interface_name)
-
-        except Exception as e:
-            logger.error(f"Error finding interface with IP: {e}", exc_info=True)
-            return None
+    async def get_device_type_display(self, device_type_id: str) -> Optional[str]:
+        """Delegate to DeviceResolver."""
+        return await self.device_resolver.get_device_type_display(device_type_id)
 
     # ========================================================================
-    # RESOURCE RESOLUTION METHODS
+    # METADATA RESOLUTION METHODS (delegated to MetadataResolver)
     # ========================================================================
 
     async def resolve_status_id(
         self, status_name: str, content_type: str = "dcim.device"
     ) -> str:
-        """
-        Resolve a status name to its UUID using REST API.
-
-        If status_name is already a valid UUID, returns it directly.
-
-        Args:
-            status_name: Name of the status (e.g., "active", "planned") or UUID
-            content_type: Content type for the status
-                         (e.g., "dcim.device", "dcim.interface", "ipam.ipaddress")
-
-        Returns:
-            Status UUID
-
-        Raises:
-            ValueError: If status not found
-        """
-        # If already a UUID, return directly
-        if self._is_valid_uuid(status_name):
-            logger.debug(f"Status is already a UUID: {status_name}")
-            return status_name
-
-        logger.info(
-            f"Resolving status '{status_name}' for content type '{content_type}'"
-        )
-
-        # Query for statuses filtered by content type
-        endpoint = f"extras/statuses/?content_types={content_type}&format=json"
-        result = await self.nautobot.rest_request(endpoint=endpoint, method="GET")
-
-        if result and result.get("count", 0) > 0:
-            for status in result.get("results", []):
-                if status.get("name", "").lower() == status_name.lower():
-                    logger.info(
-                        f"Resolved status '{status_name}' to UUID {status['id']}"
-                    )
-                    return status["id"]
-
-        raise ValueError(
-            f"Status '{status_name}' not found for content type '{content_type}'"
-        )
-
-    async def resolve_namespace_id(self, namespace_name: str) -> str:
-        """
-        Resolve a namespace name to its UUID using GraphQL.
-
-        If namespace_name is already a valid UUID, returns it directly.
-
-        Args:
-            namespace_name: Name of the namespace (e.g., "Global") or UUID
-
-        Returns:
-            Namespace UUID
-
-        Raises:
-            ValueError: If namespace not found
-        """
-        # If already a UUID, return directly
-        if self._is_valid_uuid(namespace_name):
-            logger.debug(f"Namespace is already a UUID: {namespace_name}")
-            return namespace_name
-
-        logger.info(f"Resolving namespace '{namespace_name}'")
-
-        query = f"""
-        query {{
-            namespaces(name: "{namespace_name}") {{
-                id
-                name
-            }}
-        }}
-        """
-        result = await self.nautobot.graphql_query(query)
-
-        if "errors" in result:
-            raise ValueError(
-                f"GraphQL errors while resolving namespace: {result['errors']}"
-            )
-
-        namespaces = result.get("data", {}).get("namespaces", [])
-        if namespaces:
-            namespace_id = namespaces[0]["id"]
-            logger.info(f"Resolved namespace '{namespace_name}' to UUID {namespace_id}")
-            return namespace_id
-
-        raise ValueError(f"Namespace '{namespace_name}' not found")
-
-    async def resolve_platform_id(self, platform_name: str) -> Optional[str]:
-        """
-        Resolve platform name to UUID using GraphQL.
-
-        Args:
-            platform_name: Name of the platform
-
-        Returns:
-            Platform UUID if found, None otherwise
-        """
-        try:
-            logger.info(f"Resolving platform '{platform_name}'")
-
-            query = """
-            query GetPlatform($name: [String]) {
-              platforms(name: $name) {
-                id
-                name
-              }
-            }
-            """
-            variables = {"name": [platform_name]}
-            result = await self.nautobot.graphql_query(query, variables)
-
-            if "errors" in result:
-                logger.error(f"GraphQL error resolving platform: {result['errors']}")
-                return None
-
-            platforms = result.get("data", {}).get("platforms", [])
-            if platforms and len(platforms) > 0:
-                platform_id = platforms[0]["id"]
-                logger.info(
-                    f"Resolved platform '{platform_name}' to UUID {platform_id}"
-                )
-                return platform_id
-
-            logger.warning(f"Platform not found: {platform_name}")
-            return None
-
-        except Exception as e:
-            logger.error(f"Error resolving platform: {e}", exc_info=True)
-            return None
-
-    async def get_platform_name(self, platform_id: str) -> Optional[str]:
-        """
-        Get platform display name from UUID using REST API.
-
-        Args:
-            platform_id: Platform UUID
-
-        Returns:
-            Platform name if found, None otherwise
-        """
-        try:
-            logger.debug(f"Fetching platform name for UUID: {platform_id}")
-
-            result = await self.nautobot.rest_request(
-                endpoint=f"dcim/platforms/{platform_id}/", method="GET"
-            )
-
-            if result and "name" in result:
-                platform_name = result["name"]
-                logger.debug(f"Platform UUID {platform_id} -> name: {platform_name}")
-                return platform_name
-
-            logger.warning(f"Platform not found for UUID: {platform_id}")
-            return None
-
-        except Exception as e:
-            logger.error(f"Error fetching platform name: {e}", exc_info=True)
-            return None
-
-    async def get_device_type_display(self, device_type_id: str) -> Optional[str]:
-        """
-        Get device type display name from UUID using REST API.
-
-        Args:
-            device_type_id: Device type UUID
-
-        Returns:
-            Device type display name (e.g., "Cisco Catalyst 9300-48P") if found, None otherwise
-        """
-        try:
-            logger.debug(f"Fetching device type display for UUID: {device_type_id}")
-
-            result = await self.nautobot.rest_request(
-                endpoint=f"dcim/device-types/{device_type_id}/", method="GET"
-            )
-
-            if result:
-                # Try display field first (most descriptive), fall back to model
-                display_name = result.get("display") or result.get("model")
-                if display_name:
-                    logger.debug(
-                        f"Device type UUID {device_type_id} -> display: {display_name}"
-                    )
-                    return display_name
-
-            logger.warning(f"Device type not found for UUID: {device_type_id}")
-            return None
-
-        except Exception as e:
-            logger.error(f"Error fetching device type display: {e}", exc_info=True)
-            return None
+        """Delegate to MetadataResolver."""
+        return await self.metadata_resolver.resolve_status_id(status_name, content_type)
 
     async def resolve_role_id(self, role_name: str) -> Optional[str]:
-        """
-        Resolve role name to UUID using GraphQL.
+        """Delegate to MetadataResolver."""
+        return await self.metadata_resolver.resolve_role_id(role_name)
 
-        Args:
-            role_name: Name of the role
+    async def resolve_platform_id(self, platform_name: str) -> Optional[str]:
+        """Delegate to MetadataResolver."""
+        return await self.metadata_resolver.resolve_platform_id(platform_name)
 
-        Returns:
-            Role UUID if found, None otherwise
-        """
-        try:
-            logger.info(f"Resolving role '{role_name}'")
-
-            query = """
-            query GetRole($name: [String]) {
-              roles(name: $name) {
-                id
-                name
-              }
-            }
-            """
-            variables = {"name": [role_name]}
-            result = await self.nautobot.graphql_query(query, variables)
-
-            if "errors" in result:
-                logger.error(f"GraphQL error resolving role: {result['errors']}")
-                return None
-
-            roles = result.get("data", {}).get("roles", [])
-            if roles and len(roles) > 0:
-                role_id = roles[0]["id"]
-                logger.info(f"Resolved role '{role_name}' to UUID {role_id}")
-                return role_id
-
-            logger.warning(f"Role not found: {role_name}")
-            return None
-
-        except Exception as e:
-            logger.error(f"Error resolving role: {e}", exc_info=True)
-            return None
+    async def get_platform_name(self, platform_id: str) -> Optional[str]:
+        """Delegate to MetadataResolver."""
+        return await self.metadata_resolver.get_platform_name(platform_id)
 
     async def resolve_location_id(self, location_name: str) -> Optional[str]:
-        """
-        Resolve location name to UUID using GraphQL.
+        """Delegate to MetadataResolver."""
+        return await self.metadata_resolver.resolve_location_id(location_name)
 
-        Args:
-            location_name: Name of the location
+    # ========================================================================
+    # NETWORK RESOLUTION METHODS (delegated to NetworkResolver)
+    # ========================================================================
 
-        Returns:
-            Location UUID if found, None otherwise
-        """
-        try:
-            logger.info(f"Resolving location '{location_name}'")
-
-            query = """
-            query GetLocation($name: [String]) {
-              locations(name: $name) {
-                id
-                name
-              }
-            }
-            """
-            variables = {"name": [location_name]}
-            result = await self.nautobot.graphql_query(query, variables)
-
-            if "errors" in result:
-                logger.error(f"GraphQL error resolving location: {result['errors']}")
-                return None
-
-            locations = result.get("data", {}).get("locations", [])
-            if locations and len(locations) > 0:
-                location_id = locations[0]["id"]
-                logger.info(
-                    f"Resolved location '{location_name}' to UUID {location_id}"
-                )
-                return location_id
-
-            logger.warning(f"Location not found: {location_name}")
-            return None
-
-        except Exception as e:
-            logger.error(f"Error resolving location: {e}", exc_info=True)
-            return None
-
-    async def resolve_device_type_id(
-        self, model: str, manufacturer: Optional[str] = None
-    ) -> Optional[str]:
-        """
-        Resolve device type (model) to UUID using GraphQL.
-
-        Args:
-            model: Device type model name
-            manufacturer: Optional manufacturer name for disambiguation
-
-        Returns:
-            Device type UUID if found, None otherwise
-        """
-        try:
-            logger.info(
-                f"Resolving device type '{model}'"
-                + (f" from manufacturer '{manufacturer}'" if manufacturer else "")
-            )
-
-            # Build query with optional manufacturer filter
-            if manufacturer:
-                query = """
-                query GetDeviceType($model: [String], $manufacturer: [String]) {
-                  device_types(model: $model, manufacturer: $manufacturer) {
-                    id
-                    model
-                    manufacturer {
-                      name
-                    }
-                  }
-                }
-                """
-                variables = {"model": [model], "manufacturer": [manufacturer]}
-            else:
-                query = """
-                query GetDeviceType($model: [String]) {
-                  device_types(model: $model) {
-                    id
-                    model
-                    manufacturer {
-                      name
-                    }
-                  }
-                }
-                """
-                variables = {"model": [model]}
-
-            result = await self.nautobot.graphql_query(query, variables)
-
-            if "errors" in result:
-                logger.error(f"GraphQL error resolving device type: {result['errors']}")
-                return None
-
-            device_types = result.get("data", {}).get("device_types", [])
-            if device_types and len(device_types) > 0:
-                device_type = device_types[0]
-                device_type_id = device_type["id"]
-                mfr_name = device_type.get("manufacturer", {}).get("name", "unknown")
-                logger.info(
-                    f"Resolved device type '{model}' ({mfr_name}) to UUID {device_type_id}"
-                )
-                return device_type_id
-
-            logger.warning(f"Device type not found: {model}")
-            return None
-
-        except Exception as e:
-            logger.error(f"Error resolving device type: {e}", exc_info=True)
-            return None
-
-    async def resolve_interface_by_name(
-        self, device_id: str, interface_name: str
-    ) -> Optional[str]:
-        """
-        Resolve interface UUID from device ID and interface name using GraphQL.
-
-        Args:
-            device_id: Device UUID
-            interface_name: Name of the interface
-
-        Returns:
-            Interface UUID if found, None otherwise
-        """
-        try:
-            logger.debug(
-                f"Resolving interface '{interface_name}' on device {device_id}"
-            )
-
-            query = """
-            query GetInterface($device: [String], $name: [String]) {
-              interfaces(device_id: $device, name: $name) {
-                id
-                name
-              }
-            }
-            """
-            variables = {"device": [device_id], "name": [interface_name]}
-            result = await self.nautobot.graphql_query(query, variables)
-
-            if "errors" in result:
-                logger.error(f"GraphQL error resolving interface: {result['errors']}")
-                return None
-
-            interfaces = result.get("data", {}).get("interfaces", [])
-            if interfaces and len(interfaces) > 0:
-                interface_id = interfaces[0]["id"]
-                logger.debug(
-                    f"Resolved interface '{interface_name}' to UUID {interface_id}"
-                )
-                return interface_id
-
-            logger.debug(f"Interface not found: {interface_name}")
-            return None
-
-        except Exception as e:
-            logger.error(f"Error resolving interface: {e}", exc_info=True)
-            return None
+    async def resolve_namespace_id(self, namespace_name: str) -> str:
+        """Delegate to NetworkResolver."""
+        return await self.network_resolver.resolve_namespace_id(namespace_name)
 
     async def resolve_ip_address(
         self, ip_address: str, namespace_id: str
     ) -> Optional[str]:
-        """
-        Resolve IP address UUID from address and namespace using GraphQL.
+        """Delegate to NetworkResolver."""
+        return await self.network_resolver.resolve_ip_address(ip_address, namespace_id)
 
-        Args:
-            ip_address: IP address string (e.g., "192.168.1.1/24")
-            namespace_id: Namespace UUID
-
-        Returns:
-            IP address UUID if found, None otherwise
-        """
-        try:
-            logger.debug(
-                f"Resolving IP address '{ip_address}' in namespace {namespace_id}"
-            )
-
-            query = """
-            query GetIPAddress($filter: [String], $namespace: [String]) {
-              ip_addresses(address: $filter, namespace: $namespace) {
-                id
-                address
-              }
-            }
-            """
-            variables = {"filter": [ip_address], "namespace": [namespace_id]}
-            result = await self.nautobot.graphql_query(query, variables)
-
-            if "errors" in result:
-                logger.error(f"GraphQL error resolving IP address: {result['errors']}")
-                return None
-
-            ip_addresses = result.get("data", {}).get("ip_addresses", [])
-            if ip_addresses and len(ip_addresses) > 0:
-                ip_id = ip_addresses[0]["id"]
-                logger.debug(f"Resolved IP address '{ip_address}' to UUID {ip_id}")
-                return ip_id
-
-            logger.debug(f"IP address not found: {ip_address}")
-            return None
-
-        except Exception as e:
-            logger.error(f"Error resolving IP address: {e}", exc_info=True)
-            return None
+    async def resolve_interface_by_name(
+        self, device_id: str, interface_name: str
+    ) -> Optional[str]:
+        """Delegate to NetworkResolver."""
+        return await self.network_resolver.resolve_interface_by_name(
+            device_id, interface_name
+        )
 
     # ========================================================================
-    # VALIDATION METHODS
+    # VALIDATION METHODS (pure functions from common.validators)
     # ========================================================================
 
     def validate_required_fields(
         self, data: Dict[str, Any], required_fields: List[str]
     ) -> None:
-        """
-        Validate that all required fields are present in data.
-
-        Args:
-            data: Dictionary to validate
-            required_fields: List of required field names
-
-        Raises:
-            ValueError: If any required field is missing or empty
-        """
-        missing_fields = []
-        for field in required_fields:
-            if field not in data or not data[field]:
-                missing_fields.append(field)
-
-        if missing_fields:
-            raise ValueError(f"Missing required fields: {', '.join(missing_fields)}")
+        """Delegate to validators.validate_required_fields."""
+        return validate_required_fields(data, required_fields)
 
     def validate_ip_address(self, ip: str) -> bool:
-        """
-        Validate IP address format (IPv4 or IPv6, with or without CIDR).
-
-        Args:
-            ip: IP address string to validate
-
-        Returns:
-            True if valid, False otherwise
-        """
-        # Simple regex patterns for IPv4 and IPv6
-        ipv4_pattern = r"^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$"
-        ipv6_pattern = r"^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}(\/\d{1,3})?$"
-
-        if re.match(ipv4_pattern, ip) or re.match(ipv6_pattern, ip):
-            return True
-
-        logger.warning(f"Invalid IP address format: {ip}")
-        return False
+        """Delegate to validators.validate_ip_address."""
+        return validate_ip_address(ip)
 
     def validate_mac_address(self, mac: str) -> bool:
-        """
-        Validate MAC address format.
-
-        Args:
-            mac: MAC address string to validate
-
-        Returns:
-            True if valid, False otherwise
-        """
-        # Common MAC address formats: XX:XX:XX:XX:XX:XX or XX-XX-XX-XX-XX-XX
-        mac_pattern = r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$"
-
-        if re.match(mac_pattern, mac):
-            return True
-
-        logger.warning(f"Invalid MAC address format: {mac}")
-        return False
+        """Delegate to validators.validate_mac_address."""
+        return validate_mac_address(mac)
 
     def _is_valid_uuid(self, uuid_str: str) -> bool:
-        """
-        Validate UUID format.
-
-        Args:
-            uuid_str: UUID string to validate
-
-        Returns:
-            True if valid UUID format, False otherwise
-        """
-        uuid_pattern = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-        return bool(re.match(uuid_pattern, uuid_str.lower()))
+        """Delegate to validators.is_valid_uuid."""
+        return is_valid_uuid(uuid_str)
 
     # ========================================================================
-    # DATA PROCESSING METHODS
+    # DATA PROCESSING METHODS (pure functions from common.utils)
     # ========================================================================
 
     def flatten_nested_fields(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Flatten nested fields in data.
-
-        For example, converts {"platform.name": "ios"} to {"platform": "ios"}
-
-        Args:
-            data: Dictionary with potentially nested field names
-
-        Returns:
-            Dictionary with flattened field names
-        """
-        flattened = {}
-
-        for key, value in data.items():
-            if "." in key:
-                # Extract base field from nested notation
-                base_field = key.split(".")[0]
-                flattened[base_field] = value
-            else:
-                flattened[key] = value
-
-        return flattened
+        """Delegate to utils.flatten_nested_fields."""
+        return flatten_nested_fields(data)
 
     def extract_nested_value(self, data: Dict[str, Any], path: str) -> Any:
-        """
-        Extract value from nested dictionary using dot notation path.
-
-        Args:
-            data: Dictionary to extract from
-            path: Dot-notation path (e.g., "platform.name")
-
-        Returns:
-            Extracted value or None if not found
-        """
-        keys = path.split(".")
-        current = data
-
-        for key in keys:
-            if isinstance(current, dict) and key in current:
-                current = current[key]
-            else:
-                return None
-
-        return current
+        """Delegate to utils.extract_nested_value."""
+        return extract_nested_value(data, path)
 
     def normalize_tags(self, tags: Any) -> List[str]:
-        """
-        Normalize tags to a list of strings.
-
-        Handles:
-        - Comma-separated string: "tag1,tag2,tag3"
-        - List: ["tag1", "tag2", "tag3"]
-        - Single string: "tag1"
-
-        Args:
-            tags: Tags in various formats
-
-        Returns:
-            List of tag strings
-        """
-        if not tags:
-            return []
-
-        if isinstance(tags, list):
-            return [str(tag).strip() for tag in tags if str(tag).strip()]
-
-        if isinstance(tags, str):
-            # Check if comma-separated
-            if "," in tags:
-                return [tag.strip() for tag in tags.split(",") if tag.strip()]
-            else:
-                return [tags.strip()] if tags.strip() else []
-
-        # Fallback: convert to string
-        return [str(tags).strip()] if str(tags).strip() else []
+        """Delegate to utils.normalize_tags."""
+        return normalize_tags(tags)
 
     def prepare_update_data(
         self,
@@ -879,79 +220,11 @@ class DeviceCommonService:
         headers: List[str],
         excluded_fields: Optional[List[str]] = None,
     ) -> Tuple[Dict[str, Any], Optional[Dict[str, str]], Optional[str]]:
-        """
-        Prepare update data from CSV row.
-
-        Filters out empty values and excluded fields.
-        Handles special fields like tags (converts to list).
-        Handles nested fields like 'platform.name' by extracting just the nested value.
-        Extracts interface configuration if present.
-
-        Args:
-            row: CSV row as dictionary
-            headers: List of column headers
-            excluded_fields: Optional list of fields to exclude (default: id, name, ip_address)
-
-        Returns:
-            Tuple of (update_data dict, interface_config dict or None, ip_namespace str or None)
-        """
-        update_data = {}
-        interface_config = None
-        ip_namespace = None
-
-        # Default excluded fields (identifiers)
-        if excluded_fields is None:
-            excluded_fields = ["id", "name", "ip_address"]
-        excluded_set = set(excluded_fields)
-
-        # Interface configuration fields
-        interface_fields = {
-            "interface_name",
-            "interface_type",
-            "interface_status",
-            "ip_namespace",
-        }
-
-        # Extract interface configuration if present
-        if any(
-            f in headers
-            for f in ["interface_name", "interface_type", "interface_status"]
-        ):
-            interface_config = {
-                "name": row.get("interface_name", "").strip() or "Loopback",
-                "type": row.get("interface_type", "").strip() or "virtual",
-                "status": row.get("interface_status", "").strip() or "active",
-            }
-
-        # Extract IP namespace if present
-        if "ip_namespace" in headers:
-            ip_namespace = row.get("ip_namespace", "").strip() or "Global"
-
-        for field in headers:
-            if field in excluded_set or field in interface_fields:
-                continue
-
-            value = row.get(field, "").strip()
-
-            # Skip empty values
-            if not value:
-                continue
-
-            # Handle special fields
-            if field == "tags":
-                # Tags should be a list
-                update_data[field] = self.normalize_tags(value)
-            # Handle nested fields (e.g., "platform.name" -> extract just the name)
-            elif "." in field:
-                base_field, nested_field = field.rsplit(".", 1)
-                update_data[base_field] = value
-            else:
-                update_data[field] = value
-
-        return update_data, interface_config, ip_namespace
+        """Delegate to utils.prepare_update_data."""
+        return prepare_update_data(row, headers, excluded_fields)
 
     # ========================================================================
-    # INTERFACE AND IP ADDRESS HELPERS
+    # IP ADDRESS METHODS (delegated to IPManager)
     # ========================================================================
 
     async def ensure_ip_address_exists(
@@ -963,192 +236,27 @@ class DeviceCommonService:
         use_assigned_ip_if_exists: bool = False,
         **kwargs,
     ) -> str:
-        """
-        Ensure IP address exists in Nautobot.
-
-        If IP already exists, returns its UUID.
-        If not, creates it and returns the new UUID.
-        If creation fails due to missing prefix and add_prefixes_automatically is True,
-        creates the prefix and retries IP creation.
-        If creation fails due to duplicate IP with different netmask and use_assigned_ip_if_exists is True,
-        finds and returns the existing IP UUID.
-
-        Args:
-            ip_address: IP address in CIDR format (e.g., "192.168.1.1/24")
-            namespace_id: UUID of the namespace
-            status_name: Status name for the IP (default: "active")
-            add_prefixes_automatically: Auto-create missing prefix if IP creation fails (default: False)
-            use_assigned_ip_if_exists: Use existing IP if it exists with different netmask (default: False)
-            **kwargs: Additional fields for IP creation
-
-        Returns:
-            IP address UUID
-
-        Raises:
-            Exception: If creation fails and IP doesn't exist (or auto-features are disabled)
-        """
-        logger.info(f"Ensuring IP address exists: {ip_address}")
-
-        # Check if IP already exists
-        ip_search_endpoint = f"ipam/ip-addresses/?address={ip_address}&namespace={namespace_id}&format=json"
-        ip_result = await self.nautobot.rest_request(
-            endpoint=ip_search_endpoint, method="GET"
+        """Delegate to IPManager."""
+        return await self.ip_manager.ensure_ip_address_exists(
+            ip_address,
+            namespace_id,
+            status_name,
+            add_prefixes_automatically,
+            use_assigned_ip_if_exists,
+            **kwargs,
         )
 
-        if ip_result and ip_result.get("count", 0) > 0:
-            existing_ip = ip_result["results"][0]
-            logger.info(f"IP address already exists: {existing_ip['id']}")
-            return existing_ip["id"]
-
-        # IP doesn't exist, create it
-        logger.info(f"Creating new IP address: {ip_address}")
-
-        # Resolve status to UUID
-        status_id = await self.resolve_status_id(
-            status_name, content_type="ipam.ipaddress"
+    async def assign_ip_to_interface(
+        self, ip_id: str, interface_id: str, is_primary: bool = False
+    ) -> dict:
+        """Delegate to IPManager."""
+        return await self.ip_manager.assign_ip_to_interface(
+            ip_id, interface_id, is_primary
         )
 
-        ip_create_data = {
-            "address": ip_address,
-            "status": status_id,
-            "namespace": namespace_id,
-            **kwargs,  # Additional fields from caller
-        }
-
-        try:
-            ip_create_result = await self.nautobot.rest_request(
-                endpoint="ipam/ip-addresses/?format=json",
-                method="POST",
-                data=ip_create_data,
-            )
-
-            ip_id = ip_create_result["id"]
-            logger.info(f"Created IP address: {ip_id}")
-            return ip_id
-
-        except Exception as e:
-            error_message = str(e)
-
-            # Check if error is due to duplicate IP with different netmask
-            if (
-                "IP address with this Parent and Host already exists" in error_message
-                and use_assigned_ip_if_exists
-            ):
-                logger.warning(
-                    f"IP creation failed: IP {ip_address} already exists with different netmask. "
-                    f"Attempting to find existing IP..."
-                )
-
-                # Extract the host IP without netmask (e.g., "192.168.1.1/24" -> "192.168.1.1")
-                import ipaddress
-
-                try:
-                    ip_obj = ipaddress.ip_interface(ip_address)
-                    host_ip = str(ip_obj.ip)
-
-                    logger.info(
-                        f"Searching for existing IP with host address: {host_ip}"
-                    )
-
-                    # Search for IP by host address (without netmask) in the namespace
-                    # Nautobot's address filter accepts IP without netmask and returns all IPs with that host
-                    ip_search_endpoint = f"ipam/ip-addresses/?address={host_ip}&namespace={namespace_id}&format=json"
-                    existing_ip_result = await self.nautobot.rest_request(
-                        endpoint=ip_search_endpoint, method="GET"
-                    )
-
-                    if existing_ip_result and existing_ip_result.get("count", 0) > 0:
-                        # Found at least one IP with this host address
-                        existing_ip = existing_ip_result["results"][0]
-                        logger.info(
-                            f"Found existing IP: {existing_ip['address']} with UUID {existing_ip['id']}"
-                        )
-
-                        # If multiple IPs found with same host, log a warning
-                        if existing_ip_result.get("count", 0) > 1:
-                            logger.warning(
-                                f"Multiple IPs found with host {host_ip} ({existing_ip_result['count']} total), using first: {existing_ip['address']}"
-                            )
-
-                        return existing_ip["id"]
-                    else:
-                        logger.error(f"Could not find existing IP for host {host_ip}")
-                        raise Exception(
-                            f"IP {host_ip} reported as duplicate but not found in namespace"
-                        )
-
-                except Exception as lookup_error:
-                    logger.error(
-                        f"Failed to find existing IP for {ip_address}: {lookup_error}"
-                    )
-                    raise Exception(
-                        f"Failed to create IP {ip_address} and could not find existing IP: {lookup_error}"
-                    ) from lookup_error
-
-            # Check if error is due to missing prefix
-            elif "No suitable parent Prefix" in error_message:
-                if add_prefixes_automatically:
-                    logger.warning(
-                        "IP creation failed due to missing prefix. "
-                        "Attempting to create prefix automatically..."
-                    )
-
-                    # Extract the network prefix from the IP address (e.g., "192.168.1.1/24" -> "192.168.1.0/24")
-                    import ipaddress
-
-                    try:
-                        ip_obj = ipaddress.ip_interface(ip_address)
-                        network_prefix = str(ip_obj.network)
-
-                        logger.info(f"Creating missing prefix: {network_prefix}")
-
-                        # Create the prefix using ensure_prefix_exists
-                        # Use the namespace_id directly since we already have it as UUID
-                        await self.ensure_prefix_exists(
-                            prefix=network_prefix,
-                            namespace=namespace_id,  # Pass UUID directly
-                            status="active",
-                            prefix_type="network",
-                            description=f"Auto-created for IP {ip_address}",
-                        )
-
-                        logger.info(
-                            f"Successfully created prefix {network_prefix}, retrying IP creation..."
-                        )
-
-                        # Retry IP creation
-                        ip_create_result = await self.nautobot.rest_request(
-                            endpoint="ipam/ip-addresses/?format=json",
-                            method="POST",
-                            data=ip_create_data,
-                        )
-
-                        ip_id = ip_create_result["id"]
-                        logger.info(
-                            f"Created IP address after prefix creation: {ip_id}"
-                        )
-                        return ip_id
-
-                    except Exception as prefix_error:
-                        logger.error(
-                            f"Failed to auto-create prefix for {ip_address}: {prefix_error}"
-                        )
-                        raise Exception(
-                            f"Failed to create IP {ip_address} and could not auto-create prefix: {prefix_error}"
-                        ) from prefix_error
-                else:
-                    # User has disabled automatic prefix creation - stop and raise clear error
-                    logger.error(
-                        f"IP creation failed: No suitable parent prefix exists for {ip_address}. "
-                        f"Automatic prefix creation is disabled. Error: {error_message}"
-                    )
-                    raise Exception(
-                        f"Cannot create IP address {ip_address}: No suitable parent prefix exists. "
-                        f"Please either create the parent prefix manually or enable automatic prefix creation in the form."
-                    ) from e
-            else:
-                # Re-raise the original error if not a handled error type
-                raise
+    # ========================================================================
+    # PREFIX METHODS (delegated to PrefixManager)
+    # ========================================================================
 
     async def ensure_prefix_exists(
         self,
@@ -1160,109 +268,14 @@ class DeviceCommonService:
         description: Optional[str] = None,
         **kwargs,
     ) -> str:
-        """
-        Ensure IP prefix exists in Nautobot.
-
-        If prefix already exists in the namespace, returns its UUID.
-        If not, creates it and returns the new UUID.
-
-        Args:
-            prefix: IP prefix in CIDR format (e.g., "192.168.1.0/24")
-            namespace: Namespace name (default: "Global")
-            status: Status name for the prefix (default: "active")
-            prefix_type: Type of prefix - "network" or "container" (default: "network")
-            location: Location name or UUID (optional)
-            description: Description for the prefix (optional)
-            **kwargs: Additional fields for prefix creation (role, parent, tenant, vlan, rir, tags, custom_fields)
-
-        Returns:
-            Prefix UUID
-
-        Raises:
-            Exception: If creation fails and prefix doesn't exist
-        """
-        logger.info(f"Ensuring prefix exists: {prefix} in namespace {namespace}")
-
-        # Resolve namespace to UUID (or use directly if already UUID)
-        if self._is_valid_uuid(namespace):
-            logger.debug(f"Namespace is already a UUID: {namespace}")
-            namespace_id = namespace
-        else:
-            namespace_id = await self.resolve_namespace_id(namespace)
-
-        # Check if prefix already exists in this namespace
-        prefix_search_endpoint = (
-            f"ipam/prefixes/?prefix={prefix}&namespace={namespace_id}&format=json"
-        )
-        prefix_result = await self.nautobot.rest_request(
-            endpoint=prefix_search_endpoint, method="GET"
+        """Delegate to PrefixManager."""
+        return await self.prefix_manager.ensure_prefix_exists(
+            prefix, namespace, status, prefix_type, location, description, **kwargs
         )
 
-        if prefix_result and prefix_result.get("count", 0) > 0:
-            existing_prefix = prefix_result["results"][0]
-            logger.info(f"Prefix already exists: {existing_prefix['id']}")
-            return existing_prefix["id"]
-
-        # Prefix doesn't exist, create it
-        logger.info(f"Creating new prefix: {prefix}")
-
-        # Resolve status to UUID
-        status_id = await self.resolve_status_id(status, content_type="ipam.prefix")
-
-        # Build payload - Nautobot REST API expects UUID strings, not nested objects
-        prefix_data = {
-            "prefix": prefix,
-            "namespace": namespace_id,
-            "status": status_id,
-            "type": prefix_type,
-        }
-
-        # Add optional description
-        if description:
-            prefix_data["description"] = description
-
-        # Resolve location if provided
-        if location:
-            if self._is_valid_uuid(location):
-                prefix_data["location"] = location
-            else:
-                location_id = await self.resolve_location_id(location)
-                if location_id:
-                    prefix_data["location"] = location_id
-                else:
-                    logger.warning(
-                        f"Location '{location}' not found, prefix will be created without location"
-                    )
-
-        # Add optional fields from kwargs
-        optional_uuid_fields = ["role", "parent", "tenant", "vlan", "rir"]
-        for field in optional_uuid_fields:
-            if field in kwargs and kwargs[field]:
-                value = kwargs[field]
-                if self._is_valid_uuid(value):
-                    prefix_data[field] = value
-                else:
-                    logger.warning(f"Field '{field}' should be a UUID, got: {value}")
-
-        # Add tags if provided
-        if "tags" in kwargs and kwargs["tags"]:
-            prefix_data["tags"] = self.normalize_tags(kwargs["tags"])
-
-        # Add custom_fields if provided
-        if "custom_fields" in kwargs and kwargs["custom_fields"]:
-            prefix_data["custom_fields"] = kwargs["custom_fields"]
-
-        # Create the prefix
-        result = await self.nautobot.rest_request(
-            endpoint="ipam/prefixes/", method="POST", data=prefix_data
-        )
-
-        if not result or "id" not in result:
-            raise Exception(f"Failed to create prefix {prefix}: No ID returned")
-
-        prefix_id = result["id"]
-        logger.info(f"Created new prefix: {prefix} with ID: {prefix_id}")
-        return prefix_id
+    # ========================================================================
+    # INTERFACE METHODS (delegated to InterfaceManager)
+    # ========================================================================
 
     async def ensure_interface_exists(
         self,
@@ -1272,111 +285,10 @@ class DeviceCommonService:
         interface_status: str = "active",
         **kwargs,
     ) -> str:
-        """
-        Ensure interface exists on device.
-
-        If interface already exists, returns its UUID.
-        If not, creates it and returns the new UUID.
-
-        Args:
-            device_id: Device UUID
-            interface_name: Name of the interface
-            interface_type: Type of interface (default: "virtual")
-            interface_status: Status name for the interface (default: "active")
-            **kwargs: Additional fields for interface creation
-
-        Returns:
-            Interface UUID
-
-        Raises:
-            Exception: If creation fails and interface doesn't exist
-        """
-        logger.info(
-            f"Ensuring interface exists: {interface_name} on device {device_id}"
+        """Delegate to InterfaceManager."""
+        return await self.interface_manager.ensure_interface_exists(
+            device_id, interface_name, interface_type, interface_status, **kwargs
         )
-
-        # Check if interface already exists
-        interfaces_endpoint = (
-            f"dcim/interfaces/?device_id={device_id}&name={interface_name}&format=json"
-        )
-        interfaces_result = await self.nautobot.rest_request(
-            endpoint=interfaces_endpoint, method="GET"
-        )
-
-        if interfaces_result and interfaces_result.get("count", 0) > 0:
-            existing_interface = interfaces_result["results"][0]
-            logger.info(f"Interface already exists: {existing_interface['id']}")
-            return existing_interface["id"]
-
-        # Interface doesn't exist, create it
-        logger.info(f"Creating new interface: {interface_name}")
-
-        # Resolve status to UUID
-        status_id = await self.resolve_status_id(
-            interface_status, content_type="dcim.interface"
-        )
-
-        interface_data = {
-            "device": device_id,
-            "name": interface_name,
-            "type": interface_type,
-            "status": status_id,
-            **kwargs,  # Additional fields from caller
-        }
-
-        interface_result = await self.nautobot.rest_request(
-            endpoint="dcim/interfaces/?format=json", method="POST", data=interface_data
-        )
-
-        interface_id = interface_result["id"]
-        logger.info(f"Created interface: {interface_id}")
-        return interface_id
-
-    async def assign_ip_to_interface(
-        self, ip_id: str, interface_id: str, is_primary: bool = False
-    ) -> dict:
-        """
-        Assign IP address to interface using IP-to-Interface association.
-
-        Args:
-            ip_id: IP address UUID
-            interface_id: Interface UUID
-            is_primary: Whether this is the primary IP for the device
-
-        Returns:
-            Association result dict
-
-        Raises:
-            Exception: If assignment fails
-        """
-        logger.info(f"Assigning IP {ip_id} to interface {interface_id}")
-
-        # Check if association already exists
-        check_endpoint = f"ipam/ip-address-to-interface/?ip_address={ip_id}&interface={interface_id}&format=json"
-        existing_associations = await self.nautobot.rest_request(
-            endpoint=check_endpoint, method="GET"
-        )
-
-        if existing_associations and existing_associations.get("count", 0) > 0:
-            logger.info("IP-to-Interface association already exists")
-            return existing_associations["results"][0]
-
-        # Create new association
-        logger.info("Creating new IP-to-Interface association")
-        association_data = {
-            "ip_address": ip_id,
-            "interface": interface_id,
-            "is_primary": is_primary,
-        }
-
-        association_result = await self.nautobot.rest_request(
-            endpoint="ipam/ip-address-to-interface/?format=json",
-            method="POST",
-            data=association_data,
-        )
-
-        logger.info(f"Created IP-to-Interface association: {association_result['id']}")
-        return association_result
 
     async def ensure_interface_with_ip(
         self,
@@ -1389,58 +301,17 @@ class DeviceCommonService:
         add_prefixes_automatically: bool = False,
         use_assigned_ip_if_exists: bool = False,
     ) -> str:
-        """
-        Ensure an interface exists with the specified IP address.
-
-        High-level helper that combines multiple operations:
-        1. Ensures IP address exists in IPAM
-        2. Ensures interface exists on device
-        3. Assigns IP to interface
-
-        Args:
-            device_id: Device UUID
-            ip_address: IP address in CIDR format
-            interface_name: Interface name (default: "Loopback")
-            interface_type: Interface type (default: "virtual")
-            interface_status: Interface status (default: "active")
-            ip_namespace: IP namespace name (default: "Global")
-            add_prefixes_automatically: Automatically create missing prefix (default: False)
-            use_assigned_ip_if_exists: Use existing IP if it exists with different netmask (default: False)
-
-        Returns:
-            IP address UUID
-        """
-        logger.info(f"Ensuring interface with IP {ip_address} for device {device_id}")
-
-        # Resolve namespace
-        namespace_id = await self.resolve_namespace_id(ip_namespace)
-
-        # Ensure IP exists (with automatic prefix creation if enabled)
-        ip_id = await self.ensure_ip_address_exists(
-            ip_address=ip_address,
-            namespace_id=namespace_id,
-            status_name="active",
-            add_prefixes_automatically=add_prefixes_automatically,
-            use_assigned_ip_if_exists=use_assigned_ip_if_exists,
+        """Delegate to InterfaceManager."""
+        return await self.interface_manager.ensure_interface_with_ip(
+            device_id,
+            ip_address,
+            interface_name,
+            interface_type,
+            interface_status,
+            ip_namespace,
+            add_prefixes_automatically,
+            use_assigned_ip_if_exists,
         )
-
-        # Ensure interface exists
-        interface_id = await self.ensure_interface_exists(
-            device_id=device_id,
-            interface_name=interface_name,
-            interface_type=interface_type,
-            interface_status=interface_status,
-        )
-
-        # Assign IP to interface
-        await self.assign_ip_to_interface(
-            ip_id=ip_id, interface_id=interface_id, is_primary=True
-        )
-
-        logger.info(
-            f"Successfully ensured interface {interface_name} with IP {ip_address}"
-        )
-        return ip_id
 
     async def update_interface_ip(
         self,
@@ -1452,216 +323,40 @@ class DeviceCommonService:
         add_prefixes_automatically: bool = False,
         use_assigned_ip_if_exists: bool = False,
     ) -> str:
-        """
-        Update an existing interface's IP address (instead of creating a new interface).
-
-        This is a reusable utility that:
-        1. Finds the interface that currently has the old IP address
-        2. Creates/gets the new IP address in Nautobot
-        3. Assigns the new IP to the existing interface
-
-        This method can be used by both DeviceUpdateService and DeviceImportService.
-
-        Args:
-            device_id: Device UUID
-            device_name: Device name (for GraphQL lookup)
-            old_ip: Current IP address (to find the interface to update)
-            new_ip: New IP address to assign
-            namespace: IP namespace name (will be resolved to UUID)
-            add_prefixes_automatically: Automatically create missing prefix (default: False)
-            use_assigned_ip_if_exists: Use existing IP if it exists with different netmask (default: False)
-
-        Returns:
-            UUID of the new IP address
-
-        Note:
-            - If interface cannot be found, falls back to creating a new interface
-            - Old IP will remain on the interface (Nautobot allows multiple IPs)
-        """
-        logger.info(
-            f"Updating interface IP from {old_ip} to {new_ip} on device {device_name}"
+        """Delegate to InterfaceManager."""
+        return await self.interface_manager.update_interface_ip(
+            device_id,
+            device_name,
+            old_ip,
+            new_ip,
+            namespace,
+            add_prefixes_automatically,
+            use_assigned_ip_if_exists,
         )
-
-        # Step 1: Find the interface that currently has the old IP
-        if old_ip:
-            interface_info = await self.find_interface_with_ip(
-                device_name=device_name, ip_address=old_ip
-            )
-
-            if interface_info:
-                interface_id, interface_name = interface_info
-                logger.info(
-                    f"Found interface '{interface_name}' (ID: {interface_id}) with IP {old_ip}"
-                )
-            else:
-                logger.warning(
-                    f"Could not find interface with IP {old_ip}, creating new interface"
-                )
-                # Fallback: create new interface
-                return await self.ensure_interface_with_ip(
-                    device_id=device_id,
-                    ip_address=new_ip,
-                    interface_name="Loopback",
-                    interface_type="virtual",
-                    interface_status="active",
-                    ip_namespace=namespace,
-                    add_prefixes_automatically=add_prefixes_automatically,
-                    use_assigned_ip_if_exists=use_assigned_ip_if_exists,
-                )
-        else:
-            logger.warning("No old IP provided, creating new interface with new IP")
-            # Fallback: create new interface
-            return await self.ensure_interface_with_ip(
-                device_id=device_id,
-                ip_address=new_ip,
-                interface_name="Loopback",
-                interface_type="virtual",
-                interface_status="active",
-                ip_namespace=namespace,
-                add_prefixes_automatically=add_prefixes_automatically,
-                use_assigned_ip_if_exists=use_assigned_ip_if_exists,
-            )
-
-        # Step 2: Resolve namespace name to UUID
-        logger.info(f"Resolving namespace '{namespace}'")
-        namespace_id = await self.resolve_namespace_id(namespace)
-
-        # Step 3: Create or get the new IP address in Nautobot (with automatic prefix creation if enabled)
-        logger.info(f"Ensuring IP address {new_ip} exists in namespace {namespace}")
-        new_ip_id = await self.ensure_ip_address_exists(
-            ip_address=new_ip,
-            namespace_id=namespace_id,
-            add_prefixes_automatically=add_prefixes_automatically,
-            use_assigned_ip_if_exists=use_assigned_ip_if_exists,
-        )
-
-        # Step 4: Assign the new IP to the existing interface
-        logger.info(f"Assigning IP {new_ip} to interface {interface_name}")
-        await self.assign_ip_to_interface(ip_id=new_ip_id, interface_id=interface_id)
-
-        logger.info(
-            f"✓ Successfully updated interface {interface_name} from {old_ip} to {new_ip}"
-        )
-
-        return new_ip_id
 
     # ========================================================================
-    # DEVICE OPERATIONS
+    # DEVICE OPERATIONS (delegated to DeviceManager)
     # ========================================================================
 
     async def get_device_details(
         self, device_id: str, depth: int = 0
     ) -> Dict[str, Any]:
-        """
-        Fetch device details from Nautobot.
-
-        Args:
-            device_id: Device UUID
-            depth: API depth parameter (0 for UUIDs only, 1+ for nested objects)
-
-        Returns:
-            Device details dictionary
-
-        Raises:
-            Exception: If device fetch fails
-        """
-        logger.info(f"Fetching device details for {device_id} (depth={depth})")
-
-        endpoint = f"dcim/devices/{device_id}/"
-        if depth > 0:
-            endpoint += f"?depth={depth}"
-
-        device_data = await self.nautobot.rest_request(endpoint=endpoint, method="GET")
-
-        logger.debug(f"Retrieved device data: {device_data.get('name', device_id)}")
-        return device_data
+        """Delegate to DeviceManager."""
+        return await self.device_manager.get_device_details(device_id, depth)
 
     async def extract_primary_ip_address(
         self, device_data: Dict[str, Any]
     ) -> Optional[str]:
-        """
-        Extract primary IPv4 address from device data.
-
-        Handles both dict format (with 'address' field) and UUID string format
-        (by fetching the IP address details).
-
-        Args:
-            device_data: Device data dictionary (typically from REST API)
-
-        Returns:
-            Primary IPv4 address in CIDR notation (e.g., "10.0.0.1/24") or None
-
-        Note:
-            - If primary_ip4 is a dict, extracts the 'address' field
-            - If primary_ip4 is a UUID string, fetches IP details from Nautobot
-            - Returns None if no primary IP is set
-        """
-        primary_ip4_field = device_data.get("primary_ip4")
-        logger.debug(f"Device primary_ip4 field: {primary_ip4_field}")
-        logger.debug(f"Type: {type(primary_ip4_field)}")
-
-        if not primary_ip4_field:
-            logger.info("Device has no primary_ip4 set")
-            return None
-
-        # Case 1: primary_ip4 is a dict with 'address' field (depth=1+ API response)
-        if isinstance(primary_ip4_field, dict):
-            current_primary_ip4 = primary_ip4_field.get("address")
-            logger.info(f"Current primary_ip4 (from dict): {current_primary_ip4}")
-            return current_primary_ip4
-
-        # Case 2: primary_ip4 is a UUID string (depth=0 API response)
-        elif isinstance(primary_ip4_field, str):
-            logger.info(f"Primary IP field is a UUID: {primary_ip4_field}")
-            try:
-                ip_details = await self.nautobot.rest_request(
-                    endpoint=f"ipam/ip-addresses/{primary_ip4_field}/",
-                    method="GET",
-                )
-                current_primary_ip4 = ip_details.get("address")
-                logger.info(
-                    f"Current primary_ip4 (from UUID lookup): {current_primary_ip4}"
-                )
-                return current_primary_ip4
-            except Exception as e:
-                logger.warning(f"Could not fetch IP details: {e}")
-                return None
-
-        else:
-            logger.warning(f"Unexpected primary_ip4 type: {type(primary_ip4_field)}")
-            return None
+        """Delegate to DeviceManager."""
+        return await self.device_manager.extract_primary_ip_address(device_data)
 
     async def assign_primary_ip_to_device(
         self, device_id: str, ip_address_id: str
     ) -> bool:
-        """
-        Assign primary IPv4 address to a device.
-
-        Args:
-            device_id: Device UUID
-            ip_address_id: IP address UUID to set as primary
-
-        Returns:
-            True if successful, False otherwise
-        """
-        try:
-            logger.info(f"Assigning primary IPv4 {ip_address_id} to device {device_id}")
-
-            endpoint = f"dcim/devices/{device_id}/"
-            await self.nautobot.rest_request(
-                endpoint=endpoint,
-                method="PATCH",
-                data={"primary_ip4": ip_address_id},
-            )
-
-            logger.info(f"Successfully assigned primary IPv4 to device {device_id}")
-            return True
-
-        except Exception as e:
-            logger.error(
-                f"Failed to assign primary IPv4 to device {device_id}: {str(e)}"
-            )
-            return False
+        """Delegate to DeviceManager."""
+        return await self.device_manager.assign_primary_ip_to_device(
+            device_id, ip_address_id
+        )
 
     async def verify_device_updates(
         self,
@@ -1669,115 +364,21 @@ class DeviceCommonService:
         expected_updates: Dict[str, Any],
         actual_device: Dict[str, Any],
     ) -> Tuple[bool, List[Dict[str, Any]]]:
-        """
-        Verify that device updates were applied successfully.
-
-        Compares expected update values against actual device state.
-        Handles special cases:
-        - custom_fields: Compares each field individually
-        - tags: Skipped (different structure)
-        - nested objects: Extracts 'id' field for comparison
-
-        Args:
-            device_id: Device UUID
-            expected_updates: The data we sent in PATCH/POST
-            actual_device: The device object after update
-
-        Returns:
-            Tuple of (success: bool, mismatches: List[Dict])
-            - success: True if all updates verified, False if any mismatches
-            - mismatches: List of mismatch details
-        """
-        logger.debug(f"Verifying updates for device {device_id}")
-
-        mismatches = []
-
-        for field, expected_value in expected_updates.items():
-            actual_value = actual_device.get(field)
-
-            # Handle custom_fields specially - compare each field individually
-            if field == "custom_fields":
-                if isinstance(expected_value, dict) and isinstance(actual_value, dict):
-                    for cf_name, cf_expected in expected_value.items():
-                        cf_actual = actual_value.get(cf_name)
-                        if cf_actual != cf_expected:
-                            mismatches.append(
-                                {
-                                    "field": f"custom_fields.{cf_name}",
-                                    "expected": cf_expected,
-                                    "actual": cf_actual,
-                                }
-                            )
-                            logger.warning(
-                                f"Custom field '{cf_name}' mismatch: expected '{cf_expected}', "
-                                f"got '{cf_actual}'"
-                            )
-                continue
-
-            # Skip tags (different structure - tags are objects, not simple strings)
-            if field == "tags":
-                continue
-
-            # Handle nested objects (e.g., primary_ip4 is an object with 'id')
-            if isinstance(actual_value, dict) and "id" in actual_value:
-                actual_value = actual_value["id"]
-
-            if actual_value != expected_value:
-                mismatches.append(
-                    {
-                        "field": field,
-                        "expected": expected_value,
-                        "actual": actual_value,
-                    }
-                )
-                logger.warning(
-                    f"Field '{field}' mismatch: expected '{expected_value}', "
-                    f"got '{actual_value}'"
-                )
-
-        if mismatches:
-            logger.warning(f"Verification found {len(mismatches)} mismatch(es)")
-            return False, mismatches
-        else:
-            logger.debug("All updates verified successfully")
-            return True, []
+        """Delegate to DeviceManager."""
+        return await self.device_manager.verify_device_updates(
+            device_id, expected_updates, actual_device
+        )
 
     # ========================================================================
-    # ERROR HANDLING
+    # ERROR HANDLING (delegated to common.exceptions)
     # ========================================================================
 
     def is_duplicate_error(self, error: Exception) -> bool:
-        """
-        Check if error is a "duplicate" or "already exists" error.
-
-        Args:
-            error: Exception to check
-
-        Returns:
-            True if this is a duplicate error, False otherwise
-        """
-        error_msg = str(error).lower()
-        duplicate_keywords = ["already exists", "duplicate", "unique constraint"]
-        return any(keyword in error_msg for keyword in duplicate_keywords)
+        """Delegate to exceptions.is_duplicate_error."""
+        return is_duplicate_error(error)
 
     def handle_already_exists_error(
         self, error: Exception, resource_type: str
     ) -> Dict[str, Any]:
-        """
-        Handle "already exists" errors with appropriate logging and response.
-
-        Args:
-            error: The exception that occurred
-            resource_type: Type of resource (for logging)
-
-        Returns:
-            Dictionary with error info
-        """
-        error_msg = str(error)
-        logger.warning(f"{resource_type} already exists: {error_msg}")
-
-        return {
-            "error": "already_exists",
-            "message": f"{resource_type} already exists",
-            "detail": error_msg,
-        }
+        """Delegate to exceptions.handle_already_exists_error."""
+        return handle_already_exists_error(error, resource_type)

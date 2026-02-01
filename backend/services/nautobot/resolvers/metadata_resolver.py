@@ -1,0 +1,214 @@
+"""
+Metadata resolver for Status, Role, Platform, Location resolution.
+"""
+
+import logging
+from typing import Optional
+from .base_resolver import BaseResolver
+from ..common.validators import is_valid_uuid
+
+logger = logging.getLogger(__name__)
+
+
+class MetadataResolver(BaseResolver):
+    """Resolver for metadata entities (Status, Role, Platform, Location, etc.)."""
+
+    async def resolve_status_id(
+        self, status_name: str, content_type: str = "dcim.device"
+    ) -> str:
+        """
+        Resolve a status name to its UUID using REST API.
+
+        If status_name is already a valid UUID, returns it directly.
+
+        Args:
+            status_name: Name of the status (e.g., "active", "planned") or UUID
+            content_type: Content type for the status
+                         (e.g., "dcim.device", "dcim.interface", "ipam.ipaddress")
+
+        Returns:
+            Status UUID
+
+        Raises:
+            ValueError: If status not found
+        """
+        # If already a UUID, return directly
+        if is_valid_uuid(status_name):
+            logger.debug(f"Status is already a UUID: {status_name}")
+            return status_name
+
+        logger.info(
+            f"Resolving status '{status_name}' for content type '{content_type}'"
+        )
+
+        # Query for statuses filtered by content type
+        endpoint = f"extras/statuses/?content_types={content_type}&format=json"
+        result = await self.nautobot.rest_request(endpoint=endpoint, method="GET")
+
+        if result and result.get("count", 0) > 0:
+            for status in result.get("results", []):
+                if status.get("name", "").lower() == status_name.lower():
+                    logger.info(
+                        f"Resolved status '{status_name}' to UUID {status['id']}"
+                    )
+                    return status["id"]
+
+        raise ValueError(
+            f"Status '{status_name}' not found for content type '{content_type}'"
+        )
+
+    async def resolve_role_id(self, role_name: str) -> Optional[str]:
+        """
+        Resolve role name to UUID using GraphQL.
+
+        Args:
+            role_name: Name of the role
+
+        Returns:
+            Role UUID if found, None otherwise
+        """
+        try:
+            logger.info(f"Resolving role '{role_name}'")
+
+            query = """
+            query GetRole($name: [String]) {
+              roles(name: $name) {
+                id
+                name
+              }
+            }
+            """
+            variables = {"name": [role_name]}
+            result = await self.nautobot.graphql_query(query, variables)
+
+            if "errors" in result:
+                logger.error(f"GraphQL error resolving role: {result['errors']}")
+                return None
+
+            roles = result.get("data", {}).get("roles", [])
+            if roles and len(roles) > 0:
+                role_id = roles[0]["id"]
+                logger.info(f"Resolved role '{role_name}' to UUID {role_id}")
+                return role_id
+
+            logger.warning(f"Role not found: {role_name}")
+            return None
+
+        except Exception as e:
+            logger.error(f"Error resolving role: {e}", exc_info=True)
+            return None
+
+    async def resolve_platform_id(self, platform_name: str) -> Optional[str]:
+        """
+        Resolve platform name to UUID using GraphQL.
+
+        Args:
+            platform_name: Name of the platform
+
+        Returns:
+            Platform UUID if found, None otherwise
+        """
+        try:
+            logger.info(f"Resolving platform '{platform_name}'")
+
+            query = """
+            query GetPlatform($name: [String]) {
+              platforms(name: $name) {
+                id
+                name
+              }
+            }
+            """
+            variables = {"name": [platform_name]}
+            result = await self.nautobot.graphql_query(query, variables)
+
+            if "errors" in result:
+                logger.error(f"GraphQL error resolving platform: {result['errors']}")
+                return None
+
+            platforms = result.get("data", {}).get("platforms", [])
+            if platforms and len(platforms) > 0:
+                platform_id = platforms[0]["id"]
+                logger.info(
+                    f"Resolved platform '{platform_name}' to UUID {platform_id}"
+                )
+                return platform_id
+
+            logger.warning(f"Platform not found: {platform_name}")
+            return None
+
+        except Exception as e:
+            logger.error(f"Error resolving platform: {e}", exc_info=True)
+            return None
+
+    async def get_platform_name(self, platform_id: str) -> Optional[str]:
+        """
+        Get platform display name from UUID using REST API.
+
+        Args:
+            platform_id: Platform UUID
+
+        Returns:
+            Platform name if found, None otherwise
+        """
+        try:
+            logger.debug(f"Fetching platform name for UUID: {platform_id}")
+
+            result = await self.nautobot.rest_request(
+                endpoint=f"dcim/platforms/{platform_id}/", method="GET"
+            )
+
+            if result and "name" in result:
+                platform_name = result["name"]
+                logger.debug(f"Platform UUID {platform_id} -> name: {platform_name}")
+                return platform_name
+
+            logger.warning(f"Platform not found for UUID: {platform_id}")
+            return None
+
+        except Exception as e:
+            logger.error(f"Error fetching platform name: {e}", exc_info=True)
+            return None
+
+    async def resolve_location_id(self, location_name: str) -> Optional[str]:
+        """
+        Resolve location name to UUID using GraphQL.
+
+        Args:
+            location_name: Name of the location
+
+        Returns:
+            Location UUID if found, None otherwise
+        """
+        try:
+            logger.info(f"Resolving location '{location_name}'")
+
+            query = """
+            query GetLocation($name: [String]) {
+              locations(name: $name) {
+                id
+                name
+              }
+            }
+            """
+            variables = {"name": [location_name]}
+            result = await self.nautobot.graphql_query(query, variables)
+
+            if "errors" in result:
+                logger.error(f"GraphQL error resolving location: {result['errors']}")
+                return None
+
+            locations = result.get("data", {}).get("locations", [])
+            if locations and len(locations) > 0:
+                location_id = locations[0]["id"]
+                logger.info(
+                    f"Resolved location '{location_name}' to UUID {location_id}"
+                )
+                return location_id
+
+            logger.warning(f"Location not found: {location_name}")
+            return None
+
+        except Exception as e:
+            logger.error(f"Error resolving location: {e}", exc_info=True)
+            return None
