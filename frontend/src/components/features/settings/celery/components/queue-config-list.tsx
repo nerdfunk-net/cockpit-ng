@@ -127,7 +127,7 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
       <CardContent>
         <Alert className="mb-4 bg-blue-50 border-blue-200">
           <AlertDescription className="text-blue-800 text-sm">
-            <strong>Configure queues for job routing:</strong> Define queues to organize and route background jobs. Workers can listen to specific queues using the CELERY_WORKER_QUEUE environment variable (e.g., CELERY_WORKER_QUEUE=backup). The <strong>default</strong> queue is required and used when no specific queue is configured.
+            <strong>Configure queues for job routing:</strong> Queues organize and route background jobs to specific workers. Workers listen to queues using CELERY_WORKER_QUEUE environment variable (e.g., CELERY_WORKER_QUEUE=backup). The system includes pre-configured queues (default, backup, network, heavy) that match existing task routing rules.
           </AlertDescription>
         </Alert>
 

@@ -3,17 +3,31 @@
 Start script for Celery worker.
 
 This script starts the Celery worker process with proper configuration.
-Supports multiple queue configurations via environment variable.
+Supports dynamic queue configuration from database or environment variable.
 
 Environment Variables:
-    CELERY_WORKER_QUEUE: Comma-separated queue names (e.g., "backup" or "default,network")
-                         If not set, uses general queues: default,network,heavy
+    CELERY_WORKER_QUEUE: Comma-separated queue names to listen to.
+                         Examples:
+                         - "backup" (single queue)
+                         - "default,network,heavy" (multiple queues)
+                         - "" or not set (ALL queues from database - default behavior)
+
     INSTALL_CERTIFICATE_FILES: Set to 'true' to install certificates from
         config/certs/ to the system CA store on startup (for Docker environments).
 
+Behavior:
+    - If CELERY_WORKER_QUEUE is NOT set: Worker listens to ALL queues configured in database
+    - If CELERY_WORKER_QUEUE is set: Worker listens only to specified queues
+
 Usage:
+    # Listen to ALL queues from database
     python start_celery.py
+
+    # Listen to specific queue
     CELERY_WORKER_QUEUE=backup python start_celery.py
+
+    # Listen to multiple specific queues
+    CELERY_WORKER_QUEUE=default,network,heavy python start_celery.py
 """
 
 import os
@@ -121,27 +135,54 @@ def install_certificates():
         print(f"  WARNING: Failed to run update-ca-certificates: {e}")
 
 
+def load_all_queues_from_db():
+    """
+    Load all configured queue names from the database.
+
+    Returns a comma-separated string of all queue names.
+    Falls back to 'default' if database is unavailable or empty.
+    """
+    try:
+        from settings_manager import settings_manager
+        celery_settings = settings_manager.get_celery_settings()
+        configured_queues = celery_settings.get('queues', [])
+
+        if not configured_queues:
+            print("Warning: No queues found in database, using default queue")
+            return "default"
+
+        queue_names = [q['name'] for q in configured_queues]
+        return ",".join(queue_names)
+    except Exception as e:
+        print(f"Warning: Failed to load queues from database: {e}")
+        print("Falling back to default queue")
+        return "default"
+
+
 def main():
     """Start the Celery worker."""
     # Install certificates if enabled (for Docker environments)
     install_certificates()
 
     # Determine which queues to process from environment variable
-    worker_queues = os.environ.get("CELERY_WORKER_QUEUE", "").strip()
+    worker_queues_env = os.environ.get("CELERY_WORKER_QUEUE", "").strip()
 
-    if not worker_queues:
-        # Default: general worker (excludes backup queue)
-        worker_queues = "default,network,heavy"
-        worker_type = "GENERAL QUEUES"
-        hostname_prefix = "general-worker"
-    elif worker_queues == "backup":
-        # Specialized backup worker
-        worker_type = "BACKUP QUEUE"
-        hostname_prefix = "backup-worker"
-    else:
-        # Custom queue configuration
-        worker_type = f"CUSTOM QUEUES ({worker_queues})"
+    if not worker_queues_env:
+        # No environment variable set - load ALL queues from database
+        worker_queues = load_all_queues_from_db()
+        worker_type = "ALL QUEUES (from database)"
         hostname_prefix = "worker"
+        print(f"Loading all queues from database: {worker_queues}")
+    else:
+        # Environment variable set - use specified queues (comma-separated)
+        worker_queues = worker_queues_env
+        queue_list = worker_queues.split(",")
+        if len(queue_list) == 1:
+            worker_type = f"QUEUE: {worker_queues}"
+            hostname_prefix = f"{worker_queues}-worker"
+        else:
+            worker_type = f"QUEUES: {worker_queues}"
+            hostname_prefix = "worker"
 
     print("=" * 70)
     print(f"Starting Cockpit-NG Celery Worker - {worker_type}")

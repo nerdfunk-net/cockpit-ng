@@ -40,23 +40,28 @@ class Migration(BaseMigration):
                 )
                 conn.commit()
 
-                # Initialize existing records with default queue
-                self.log_info("Initializing existing records with default queue...")
-                default_queue = '[{"name": "default", "description": "Default queue for tasks when no specific queue is configured"}]'
+                # Initialize existing records with default queues
+                self.log_info("Initializing existing records with default queues...")
+                default_queues = '''[
+                    {"name": "default", "description": "Default queue for general tasks"},
+                    {"name": "backup", "description": "Queue for device backup operations"},
+                    {"name": "network", "description": "Queue for network scanning and discovery tasks"},
+                    {"name": "heavy", "description": "Queue for bulk operations and heavy processing tasks"}
+                ]'''
 
                 result = conn.execute(
                     text("""
                         UPDATE celery_settings
-                        SET queues = :default_queue
+                        SET queues = :default_queues
                         WHERE queues IS NULL
                     """),
-                    {"default_queue": default_queue}
+                    {"default_queues": default_queues}
                 )
                 conn.commit()
 
                 rows_updated = result.rowcount
 
-                self.log_info("Successfully added queues column and initialized default queue")
+                self.log_info("Successfully added queues column and initialized default queues")
 
                 return {
                     "columns_added": 1,

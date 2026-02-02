@@ -94,8 +94,20 @@ class CelerySettings:
         default_factory=lambda: [
             {
                 "name": "default",
-                "description": "Default queue for tasks when no specific queue is configured",
-            }
+                "description": "Default queue for general tasks",
+            },
+            {
+                "name": "backup",
+                "description": "Queue for device backup operations",
+            },
+            {
+                "name": "network",
+                "description": "Queue for network scanning and discovery tasks",
+            },
+            {
+                "name": "heavy",
+                "description": "Queue for bulk operations and heavy processing tasks",
+            },
         ]
     )  # Configured queues [{"name": "backup", "description": "..."}]
 
