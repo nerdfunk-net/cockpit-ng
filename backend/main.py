@@ -39,6 +39,7 @@ from routers.settings import (
 # Network routers now use feature-based structure (Phase 3.4 migration - partial)
 from routers.network import (
     file_compare_router,  # Minimal - only compare endpoint for Config View
+    backup_router,  # Configuration backup management
     netmiko_router,
     compliance_check_router,
 )
@@ -99,6 +100,7 @@ app.include_router(checkmk_router)
 app.include_router(nb2cmk_router)
 app.include_router(git_router)  # This includes git_repositories_router internally
 app.include_router(file_compare_router)  # Minimal - only compare endpoint
+app.include_router(backup_router)  # Configuration backup management
 app.include_router(config_router)
 app.include_router(settings_router)
 app.include_router(templates_router)

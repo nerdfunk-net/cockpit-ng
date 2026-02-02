@@ -41,12 +41,34 @@ export function CredentialFormDialog({
 
   const isSaving = createCredential.isPending || updateCredential.isPending
 
-  // Reset form when dialog opens/closes
+  // Reset form when dialog opens/closes or credential changes
   useEffect(() => {
     if (open) {
-      form.reset()
+      if (credential) {
+        // Reset with credential values for editing
+        form.reset({
+          name: credential.name,
+          username: credential.username,
+          type: credential.type as 'ssh' | 'ssh_key' | 'tacacs' | 'generic' | 'token',
+          password: '',
+          ssh_private_key: '',
+          ssh_passphrase: '',
+          valid_until: credential.valid_until || '',
+        })
+      } else {
+        // Reset to empty values for new credential
+        form.reset({
+          name: '',
+          username: '',
+          type: 'ssh',
+          password: '',
+          ssh_private_key: '',
+          ssh_passphrase: '',
+          valid_until: '',
+        })
+      }
     }
-  }, [open, form])
+  }, [open, credential, form])
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]

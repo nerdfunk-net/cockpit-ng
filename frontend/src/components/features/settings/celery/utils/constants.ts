@@ -1,4 +1,10 @@
-import type { CelerySettings, Schedule } from '../types'
+import type { CelerySettings, Schedule, CeleryQueue } from '../types'
+
+// Default queue that Celery uses when no queue is specified
+export const DEFAULT_QUEUE: CeleryQueue = {
+  name: 'default',
+  description: 'Default queue for tasks when no specific queue is configured'
+}
 
 // React best practice: Extract default objects to prevent re-render loops
 export const DEFAULT_CELERY_SETTINGS: CelerySettings = {
@@ -6,8 +12,9 @@ export const DEFAULT_CELERY_SETTINGS: CelerySettings = {
   cleanup_enabled: true,
   cleanup_interval_hours: 6,
   cleanup_age_hours: 24,
-  result_expires_hours: 24
-} as const
+  result_expires_hours: 24,
+  queues: [DEFAULT_QUEUE]
+}
 
 export const EMPTY_SCHEDULES: Schedule[] = []
 

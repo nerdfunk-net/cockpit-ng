@@ -90,6 +90,14 @@ class CelerySettings:
     cleanup_interval_hours: int = 6  # Run cleanup every 6 hours
     cleanup_age_hours: int = 24  # Remove data older than 24 hours
     result_expires_hours: int = 24  # Celery result expiry
+    queues: List[Dict[str, str]] = field(
+        default_factory=lambda: [
+            {
+                "name": "default",
+                "description": "Default queue for tasks when no specific queue is configured",
+            }
+        ]
+    )  # Configured queues [{"name": "backup", "description": "..."}]
 
 
 @dataclass
@@ -376,12 +384,22 @@ class SettingsManager:
             settings = repo.get_settings()
 
             if settings:
+                # Parse queues from JSON if present
+                queues = []
+                if settings.queues:
+                    try:
+                        queues = json.loads(settings.queues)
+                    except json.JSONDecodeError:
+                        logger.warning("Failed to parse queues JSON, using empty list")
+                        queues = []
+
                 return {
                     "max_workers": settings.max_workers,
                     "cleanup_enabled": settings.cleanup_enabled,
                     "cleanup_interval_hours": settings.cleanup_interval_hours,
                     "cleanup_age_hours": settings.cleanup_age_hours,
                     "result_expires_hours": settings.result_expires_hours,
+                    "queues": queues,
                 }
             return asdict(self.default_celery)
         except Exception as e:
@@ -393,6 +411,13 @@ class SettingsManager:
         try:
             repo = CelerySettingRepository()
             existing = repo.get_settings()
+
+            # Serialize queues to JSON if present
+            queues_json = None
+            if "queues" in settings:
+                queues = settings.get("queues", [])
+                if queues:
+                    queues_json = json.dumps(queues)
 
             update_kwargs = {
                 "max_workers": settings.get(
@@ -410,6 +435,7 @@ class SettingsManager:
                 "result_expires_hours": settings.get(
                     "result_expires_hours", self.default_celery.result_expires_hours
                 ),
+                "queues": queues_json,
             }
 
             if existing:

@@ -306,6 +306,9 @@ def seed_permissions(verbose: bool = True):
         ("configs", "read", "View device configurations"),
         ("configs.backup", "execute", "Execute configuration backups"),
         ("configs.compare", "execute", "Compare configurations"),
+        # Network backup permissions
+        ("network.backup", "read", "View device backup status and history"),
+        ("network.backup", "write", "Execute device configuration backups"),
         # General inventory permissions (moved from network.inventory)
         ("general.inventory", "read", "View device inventory"),
         ("general.inventory", "write", "Modify device inventory"),
@@ -463,6 +466,9 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "configs:read",
         "configs.backup:execute",
         "configs.compare:execute",
+        # Network Backup
+        "network.backup:read",
+        "network.backup:write",
         # Inventory
         "general.inventory:read",
         "general.inventory:write",
@@ -520,6 +526,9 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "configs:read",
         "configs.backup:execute",
         "configs.compare:execute",
+        # Network Backup (full access)
+        "network.backup:read",
+        "network.backup:write",
         # Inventory (full access)
         "general.inventory:read",
         "general.inventory:write",

@@ -13,7 +13,7 @@ from core.auth import verify_token, require_permission
 from services.network.configs.backup_service import BackupService
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/backup", tags=["network-backup"])
+router = APIRouter(prefix="/api/network/configs/backup", tags=["network-backup"])
 
 backup_service = BackupService()
 
@@ -30,7 +30,7 @@ class BulkBackupTrigger(BaseModel):
     device_ids: list[str]
 
 
-@router.get("/devices", dependencies=[Depends(require_permission("network", "read"))])
+@router.get("/devices", dependencies=[Depends(require_permission("network.backup", "read"))])
 async def get_backup_devices(
     name: Optional[str] = Query(None, description="Filter by device name"),
     role: Optional[str] = Query(None, description="Filter by role"),
@@ -101,7 +101,7 @@ async def get_backup_devices(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/trigger", dependencies=[Depends(require_permission("network", "write"))])
+@router.post("/trigger", dependencies=[Depends(require_permission("network.backup", "write"))])
 async def trigger_backup(
     payload: BackupTrigger,
     db: Session = Depends(get_db),
@@ -138,7 +138,7 @@ async def trigger_backup(
 
 
 @router.post(
-    "/trigger-bulk", dependencies=[Depends(require_permission("network", "write"))]
+    "/trigger-bulk", dependencies=[Depends(require_permission("network.backup", "write"))]
 )
 async def trigger_bulk_backup(
     payload: BulkBackupTrigger,
@@ -179,7 +179,7 @@ async def trigger_bulk_backup(
 
 @router.get(
     "/history/{device_id}",
-    dependencies=[Depends(require_permission("network", "read"))],
+    dependencies=[Depends(require_permission("network.backup", "read"))],
 )
 async def get_backup_history(
     device_id: str,
@@ -219,7 +219,7 @@ async def get_backup_history(
 
 @router.get(
     "/download/{device_id}/{backup_id}",
-    dependencies=[Depends(require_permission("network", "read"))],
+    dependencies=[Depends(require_permission("network.backup", "read"))],
 )
 async def download_backup(
     device_id: str,
@@ -262,7 +262,7 @@ async def download_backup(
 
 @router.post(
     "/restore/{device_id}/{backup_id}",
-    dependencies=[Depends(require_permission("network", "write"))],
+    dependencies=[Depends(require_permission("network.backup", "write"))],
 )
 async def restore_backup(
     device_id: str,

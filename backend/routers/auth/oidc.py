@@ -286,6 +286,26 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
             f"[OIDC Debug] User '{user['username']}' authenticated successfully via OIDC provider '{provider_id}'"
         )
 
+        # Log successful OIDC login to audit log
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=user["username"],
+            user_id=user["id"],
+            event_type="login",
+            message=f"User '{user['username']}' logged in via OIDC",
+            resource_type="authentication",
+            resource_id=str(user["id"]),
+            resource_name=user["username"],
+            severity="info",
+            extra_data={
+                "authentication_method": "oidc",
+                "oidc_provider": provider_id,
+                "roles": role_names,
+                "is_new_user": is_new_user,
+            },
+        )
+
         # Build response user object with RBAC roles
         response_user = {
             "id": user_with_roles["id"],

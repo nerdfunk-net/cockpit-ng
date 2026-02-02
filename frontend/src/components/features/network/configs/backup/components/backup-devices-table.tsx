@@ -77,10 +77,10 @@ export function BackupDevicesTable({
 
       <div className="p-4 bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left p-2 font-medium">
+          <table className="w-full table-fixed">
+            <thead className="bg-gray-100 border-b">
+              <tr>
+                <th className="pl-4 pr-2 py-3 w-48 text-left text-xs font-medium text-gray-600 uppercase">
                   <div className="space-y-1">
                     <div>Device Name</div>
                     <div>
@@ -93,8 +93,8 @@ export function BackupDevicesTable({
                     </div>
                   </div>
                 </th>
-                <th className="text-left p-2 font-medium">IP Address</th>
-                <th className="text-left p-2 font-medium">
+                <th className="px-4 py-3 w-32 text-left text-xs font-medium text-gray-600 uppercase">IP Address</th>
+                <th className="px-4 py-3 w-36 text-left text-xs font-medium text-gray-600 uppercase">
                   <div className="space-y-1">
                     <div>Role</div>
                     <div>
@@ -118,7 +118,7 @@ export function BackupDevicesTable({
                     </div>
                   </div>
                 </th>
-                <th className="text-left p-2 font-medium">
+                <th className="pl-12 pr-4 py-3 w-56 text-left text-xs font-medium text-gray-600 uppercase">
                   <div className="space-y-1">
                     <div>Location</div>
                     <div>
@@ -142,7 +142,7 @@ export function BackupDevicesTable({
                     </div>
                   </div>
                 </th>
-                <th className="text-left p-2 font-medium">
+                <th className="px-4 py-3 w-36 text-left text-xs font-medium text-gray-600 uppercase">
                   <div className="space-y-1">
                     <div>Device Type</div>
                     <div>
@@ -166,7 +166,7 @@ export function BackupDevicesTable({
                     </div>
                   </div>
                 </th>
-                <th className="text-left p-2 font-medium">
+                <th className="px-4 py-3 w-44 text-left text-xs font-medium text-gray-600 uppercase">
                   <div className="space-y-1">
                     <div>Status</div>
                     <div>
@@ -190,8 +190,8 @@ export function BackupDevicesTable({
                     </div>
                   </div>
                 </th>
-                <th className="text-left p-2 font-medium">Last Backup</th>
-                <th className="text-left p-2 font-medium">Actions</th>
+                <th className="pl-12 pr-4 py-3 w-40 text-left text-xs font-medium text-gray-600 uppercase">Last Backup</th>
+                <th className="pl-16 pr-4 py-3 w-32 text-left text-xs font-medium text-gray-600 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -208,18 +208,18 @@ export function BackupDevicesTable({
 
                   return (
                     <tr key={`backup-device-${device.id}`} className="border-b hover:bg-muted/50">
-                      <td className="p-2 font-medium">{device.name}</td>
-                      <td className="p-2">{device.primary_ip4?.address || 'N/A'}</td>
-                      <td className="p-2">{device.role?.name || 'Unknown'}</td>
-                      <td className="p-2">{device.location?.name || 'Unknown'}</td>
-                      <td className="p-2">{device.device_type?.model || 'Unknown'}</td>
-                      <td className="p-2">
+                      <td className="pl-4 pr-2 py-3 w-48 text-sm font-medium text-gray-900">{device.name}</td>
+                      <td className="px-4 py-3 w-32 text-sm text-gray-600">{device.primary_ip4?.address || 'N/A'}</td>
+                      <td className="px-4 py-3 w-36 text-sm text-gray-600">{device.role?.name || 'Unknown'}</td>
+                      <td className="pl-12 pr-4 py-3 w-56 text-sm text-gray-600">{device.location?.name || 'Unknown'}</td>
+                      <td className="px-4 py-3 w-36 text-sm text-gray-600">{device.device_type?.model || 'Unknown'}</td>
+                      <td className="px-4 py-3 w-44">
                         <Badge variant={getStatusBadgeVariant(device.status?.name || '')}>
                           {device.status?.name || 'Unknown'}
                         </Badge>
                       </td>
-                      <td className="p-2">{device.cf_last_backup || 'Never'}</td>
-                      <td className="p-2">
+                      <td className="pl-12 pr-4 py-3 w-40 text-sm text-gray-600">{device.cf_last_backup || 'Never'}</td>
+                      <td className="pl-16 pr-4 py-3 w-32">
                         <div className="flex gap-1">
                           <Button
                             size="sm"

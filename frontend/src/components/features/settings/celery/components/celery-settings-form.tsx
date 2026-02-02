@@ -14,6 +14,7 @@ import { useCelerySettings } from '../hooks/use-celery-queries'
 import { useCeleryMutations } from '../hooks/use-celery-mutations'
 import type { CelerySettings } from '../types'
 import { DEFAULT_CELERY_SETTINGS } from '../utils/constants'
+import { QueueConfigList } from './queue-config-list'
 
 const celerySettingsSchema = z.object({
   max_workers: z.number().min(1).max(32),
@@ -21,6 +22,12 @@ const celerySettingsSchema = z.object({
   cleanup_interval_hours: z.number().min(1).max(168),
   cleanup_age_hours: z.number().min(1).max(720),
   result_expires_hours: z.number().min(1).max(720),
+  queues: z.array(
+    z.object({
+      name: z.string().min(1),
+      description: z.string(),
+    })
+  ),
 })
 
 type CelerySettingsFormData = z.infer<typeof celerySettingsSchema>
@@ -204,6 +211,18 @@ export function CelerySettingsForm() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Queue Configuration */}
+      <FormField
+        control={form.control}
+        name="queues"
+        render={({ field }) => (
+          <QueueConfigList
+            queues={field.value || []}
+            onChange={(queues) => field.onChange(queues)}
+          />
+        )}
+      />
 
       {/* Save Button */}
       <div className="flex justify-end">

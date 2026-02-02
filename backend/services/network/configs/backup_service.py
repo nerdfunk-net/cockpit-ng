@@ -33,7 +33,7 @@ class BackupService:
             Dict with devices, total count, and pagination info
         """
         try:
-            devices, total = self.repository.get_devices_for_backup(
+            devices, total = await self.repository.get_devices_for_backup(
                 db,
                 name=filters.get("name"),
                 role=filters.get("role"),

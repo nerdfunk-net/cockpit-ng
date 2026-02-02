@@ -50,12 +50,18 @@ export interface QueueMetrics {
   routing_key?: string
 }
 
+export interface CeleryQueue {
+  name: string
+  description: string
+}
+
 export interface CelerySettings {
   max_workers: number
   cleanup_enabled: boolean
   cleanup_interval_hours: number
   cleanup_age_hours: number
   result_expires_hours: number
+  queues: CeleryQueue[]
 }
 
 // API Response types

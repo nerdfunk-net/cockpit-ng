@@ -1681,12 +1681,18 @@ async def trigger_import_devices_from_csv(
 # ============================================================================
 
 
+class CeleryQueue(BaseModel):
+    name: str
+    description: str = ""
+
+
 class CelerySettingsRequest(BaseModel):
     max_workers: Optional[int] = None
     cleanup_enabled: Optional[bool] = None
     cleanup_interval_hours: Optional[int] = None
     cleanup_age_hours: Optional[int] = None
     result_expires_hours: Optional[int] = None
+    queues: Optional[List[CeleryQueue]] = None
 
 
 @router.get("/settings")

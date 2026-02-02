@@ -1036,6 +1036,9 @@ class CelerySetting(Base):
     )  # Remove data older than 24 hours
     # Result expiry
     result_expires_hours = Column(Integer, nullable=False, default=24)
+    # Queue configuration - stores list of configured queues as JSON
+    # Format: [{"name": "backup", "description": "Backup queue for device configs"}, ...]
+    queues = Column(Text, nullable=True)  # JSON array of queue objects
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

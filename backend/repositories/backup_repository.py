@@ -10,7 +10,7 @@ from datetime import datetime
 class BackupRepository:
     """Repository for backup-related database operations."""
 
-    def get_devices_for_backup(
+    async def get_devices_for_backup(
         self,
         db: Session,
         name: Optional[str] = None,
@@ -29,28 +29,59 @@ class BackupRepository:
         Get devices with backup filtering, sorting, and pagination.
         Returns (devices, total_count).
 
-        This queries Nautobot API via the existing nautobot helper,
+        This queries Nautobot API via GraphQL,
         then filters and paginates the results.
         """
         # Import here to avoid circular dependency
-        from services.nautobot_helpers.device_service import get_devices_with_filters
+        from services.nautobot import nautobot_service
 
-        # Build filters dict for Nautobot query
-        filters = {}
+        # Build GraphQL query with filters
+        filter_parts = []
         if name:
-            filters["name"] = name
+            filter_parts.append(f'name__ic: "{name}"')
         if role:
-            filters["role"] = role
+            filter_parts.append(f'role: "{role}"')
         if location:
-            filters["location"] = location
+            filter_parts.append(f'location: "{location}"')
         if device_type:
-            filters["device_type"] = device_type
+            filter_parts.append(f'device_type: "{device_type}"')
         if status:
-            filters["status"] = status
+            filter_parts.append(f'status: "{status}"')
+
+        filter_string = ", ".join(filter_parts) if filter_parts else ""
+
+        # Build GraphQL query - only include parentheses if there are filters
+        devices_query = f"devices({filter_string})" if filter_string else "devices"
+        
+        query = f"""
+        query {{
+            {devices_query} {{
+                id
+                name
+                role {{
+                    name
+                }}
+                location {{
+                    name
+                }}
+                device_type {{
+                    model
+                }}
+                status {{
+                    name
+                }}
+                primary_ip4 {{
+                    address
+                }}
+                cf_last_backup
+            }}
+        }}
+        """
 
         # Get devices from Nautobot
         try:
-            devices = get_devices_with_filters(filters)
+            result = await nautobot_service.graphql_query(query)
+            devices = result.get("data", {}).get("devices", [])
         except Exception:
             # Fallback to empty list if Nautobot unavailable
             devices = []
