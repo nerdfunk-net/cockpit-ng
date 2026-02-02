@@ -42,8 +42,11 @@ import {
   Square,
   AlertCircle,
   CheckCircle,
-  Loader2
+  Loader2,
+  Play,
+  FolderOpen
 } from 'lucide-react'
+import { LoadInventoryDialog } from '@/components/features/general/inventory/dialogs/load-inventory-dialog'
 
 interface Template {
   id: number
@@ -139,6 +142,13 @@ export default function TemplateManagement() {
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null)
   const [activeTab, setActiveTab] = useState('list')
   const [showSourceChangeModal, setShowSourceChangeModal] = useState(false)
+
+  // Inventory selection state for TIG-Stack templates
+  const [selectedInventory, setSelectedInventory] = useState<{ id: number; name: string } | null>(null)
+  const [showInventoryDialog, setShowInventoryDialog] = useState(false)
+  const [inventories, setInventories] = useState<any[]>([])
+  const [isLoadingInventories, setIsLoadingInventories] = useState(false)
+  const [isRendering, setIsRendering] = useState(false)
 
   const showMessage = useCallback((msg: string, _type: 'success' | 'error') => {
     setMessage(msg)
@@ -375,6 +385,77 @@ export default function TemplateManagement() {
       reader.readAsText(file)
     })
   }
+
+  // Load inventories for TIG-Stack templates
+  const loadInventories = useCallback(async () => {
+    setIsLoadingInventories(true)
+    try {
+      const response = await apiCall<{ inventories: any[] }>('inventory')
+      setInventories(response.inventories || [])
+    } catch (error) {
+      console.error('Failed to load inventories:', error)
+      showMessage('Failed to load inventories', 'error')
+    } finally {
+      setIsLoadingInventories(false)
+    }
+  }, [apiCall, showMessage])
+
+  // Handle inventory selection
+  const handleInventorySelected = useCallback((inventory: any) => {
+    setSelectedInventory({ id: inventory.id, name: inventory.name })
+    setShowInventoryDialog(false)
+    showMessage(`Inventory "${inventory.name}" selected`, 'success')
+  }, [showMessage])
+
+  // Handle inventory deletion
+  const handleDeleteInventory = useCallback(async (inventoryId: number, inventoryName: string) => {
+    try {
+      await apiCall(`inventory/${inventoryId}`, { method: 'DELETE' })
+      showMessage(`Inventory "${inventoryName}" deleted`, 'success')
+      await loadInventories()
+    } catch (error) {
+      console.error('Failed to delete inventory:', error)
+      showMessage('Failed to delete inventory', 'error')
+    }
+  }, [apiCall, showMessage, loadInventories])
+
+  // Handle opening inventory dialog
+  const handleSelectInventory = useCallback(() => {
+    loadInventories()
+    setShowInventoryDialog(true)
+  }, [loadInventories])
+
+  // Handle template rendering (dry run)
+  const handleRenderTemplate = useCallback(async () => {
+    if (!formData.name) {
+      showMessage('Please provide a template name', 'error')
+      return
+    }
+
+    // For TIG-Stack templates, require inventory selection
+    if (formData.category === 'tig-stack' && !selectedInventory) {
+      showMessage('Please select an inventory for TIG-Stack templates', 'error')
+      return
+    }
+
+    setIsRendering(true)
+    try {
+      // TODO: Call backend API to render template
+      // For now, just show a placeholder message
+      showMessage('Template rendering will be implemented in backend', 'success')
+      console.log('Rendering template:', {
+        name: formData.name,
+        category: formData.category,
+        template_type: formData.template_type,
+        inventory: selectedInventory
+      })
+    } catch (error) {
+      console.error('Failed to render template:', error)
+      showMessage('Failed to render template', 'error')
+    } finally {
+      setIsRendering(false)
+    }
+  }, [formData, selectedInventory, showMessage])
 
   const handleCreateTemplate = async () => {
     if (!formData.name || !formData.source) {
@@ -972,8 +1053,8 @@ export default function TemplateManagement() {
                     <SelectContent>
                       <SelectItem value="__none__">No Category</SelectItem>
                       {/* Canonical categories only to avoid duplicates from the API */}
-                      {['ansible', 'onboarding', 'parser', 'netmiko'].map(cat => (
-                        <SelectItem key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</SelectItem>
+                      {['ansible', 'onboarding', 'parser', 'netmiko', 'tig-stack'].map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1).replace('-', ' ')}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -1139,29 +1220,62 @@ export default function TemplateManagement() {
               )}
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-between pt-6 border-t">
-                <Button
-                  variant="outline"
-                  onClick={resetForm}
-                  className="flex items-center space-x-2"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  <span>{editingTemplate ? 'Cancel Edit' : 'Reset'}</span>
-                </Button>
-                <Button
-                  onClick={editingTemplate ? handleUpdateTemplate : handleCreateTemplate}
-                  disabled={isCreating || !formData.name || !formData.source}
-                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white"
-                >
-                  {isCreating && <RefreshCw className="h-4 w-4 animate-spin" />}
-                  <Save className="h-4 w-4" />
-                  <span>
-                    {isCreating 
-                      ? (editingTemplate ? 'Updating...' : 'Creating...') 
-                      : (editingTemplate ? 'Update Template' : 'Create Template')
-                    }
-                  </span>
-                </Button>
+              <div className="flex items-center justify-between pt-6 border-t gap-3">
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={resetForm}
+                    className="flex items-center space-x-2"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    <span>{editingTemplate ? 'Cancel Edit' : 'Reset'}</span>
+                  </Button>
+
+                  {/* Select Inventory button - show only for TIG-Stack templates */}
+                  {formData.category === 'tig-stack' && (
+                    <Button
+                      variant="outline"
+                      onClick={handleSelectInventory}
+                      className="flex items-center space-x-2 border-purple-300 text-purple-700 hover:bg-purple-50"
+                    >
+                      <FolderOpen className="h-4 w-4" />
+                      <span>
+                        {selectedInventory ? `Inventory: ${selectedInventory.name}` : 'Select Inventory'}
+                      </span>
+                    </Button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {/* Render Template button - show only for Jinja2 templates */}
+                  {formData.template_type === 'jinja2' && (
+                    <Button
+                      variant="outline"
+                      onClick={handleRenderTemplate}
+                      disabled={isRendering || !formData.name || (formData.category === 'tig-stack' && !selectedInventory)}
+                      className="flex items-center space-x-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                    >
+                      {isRendering && <RefreshCw className="h-4 w-4 animate-spin" />}
+                      {!isRendering && <Play className="h-4 w-4" />}
+                      <span>{isRendering ? 'Rendering...' : 'Render Template'}</span>
+                    </Button>
+                  )}
+
+                  <Button
+                    onClick={editingTemplate ? handleUpdateTemplate : handleCreateTemplate}
+                    disabled={isCreating || !formData.name || !formData.source}
+                    className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {isCreating && <RefreshCw className="h-4 w-4 animate-spin" />}
+                    <Save className="h-4 w-4" />
+                    <span>
+                      {isCreating
+                        ? (editingTemplate ? 'Updating...' : 'Creating...')
+                        : (editingTemplate ? 'Update Template' : 'Create Template')
+                      }
+                    </span>
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1450,6 +1564,16 @@ export default function TemplateManagement() {
           </div>
         </div>
       )}
+
+      {/* Inventory Selection Dialog for TIG-Stack Templates */}
+      <LoadInventoryDialog
+        show={showInventoryDialog}
+        onClose={() => setShowInventoryDialog(false)}
+        onLoad={handleInventorySelected}
+        onDelete={handleDeleteInventory}
+        inventories={inventories}
+        isLoading={isLoadingInventories}
+      />
     </div>
   )
 }

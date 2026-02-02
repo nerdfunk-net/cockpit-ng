@@ -38,28 +38,6 @@ interface ApiResponse {
   message?: string
 }
 
-interface Credential {
-  id: number
-  name: string
-  username: string
-  type: string
-  valid_until: string | null
-  is_active: boolean
-  source: string
-  owner: string | null
-  created_at: string
-  updated_at: string
-  status: string
-  has_password: boolean
-  has_ssh_key: boolean
-  has_ssh_passphrase: boolean
-}
-
-interface CredentialsResponse {
-  success: boolean
-  data?: Credential[]
-}
-
 interface GitRepository {
   id: number
   name: string

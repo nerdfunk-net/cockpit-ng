@@ -42,6 +42,7 @@ import {
   HelpCircle,
   Camera,
   FileSpreadsheet,
+  GitCommit,
 } from 'lucide-react'
 
 interface NavItem {
@@ -90,6 +91,13 @@ const navigationSections: NavSection[] = [
       { label: 'Sync Devices', href: '/checkmk/sync-devices', icon: RefreshCw },
       { label: 'Hosts & Inventory', href: '/checkmk/hosts-inventory', icon: Server },
       { label: 'Tools', href: '/checkmk/tools', icon: Wrench },
+    ],
+  },
+  {
+    title: 'TIG-Stack',
+    items: [
+      { label: 'Deploy', href: '/tig-stack/deploy', icon: GitCommit },
+      { label: 'Templates', href: '/tig-stack/templates', icon: FileText },
     ],
   },
   {
