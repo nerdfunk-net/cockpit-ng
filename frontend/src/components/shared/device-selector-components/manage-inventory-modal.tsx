@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Pencil, Trash2, X, Check, Loader2 } from 'lucide-react'
-import { LogicalCondition } from '@/types/shared/device-selector'
+import { Pencil, Trash2, X, Check, Loader2, Download, Upload } from 'lucide-react'
+import { LogicalCondition, ConditionTree } from '@/types/shared/device-selector'
 
 interface ManageInventoryModalProps {
     isOpen: boolean
@@ -15,7 +15,7 @@ interface ManageInventoryModalProps {
         id: number
         name: string
         description?: string
-        conditions: LogicalCondition[]
+        conditions: LogicalCondition[] | Array<{ version: number; tree: ConditionTree }>
         scope: string
         created_by: string
         created_at?: string
@@ -23,6 +23,8 @@ interface ManageInventoryModalProps {
     isLoading: boolean
     onUpdate: (id: number, name: string, description: string) => Promise<void>
     onDelete: (id: number, name: string) => Promise<void>
+    onExport: (id: number) => Promise<void>
+    onImport: (file: File) => Promise<void>
 }
 
 export function ManageInventoryModal({
@@ -31,13 +33,17 @@ export function ManageInventoryModal({
     savedInventories,
     isLoading,
     onUpdate,
-    onDelete
+    onDelete,
+    onExport,
+    onImport
 }: ManageInventoryModalProps) {
     const [editingId, setEditingId] = useState<number | null>(null)
     const [editName, setEditName] = useState('')
     const [editDescription, setEditDescription] = useState('')
     const [isDeleting, setIsDeleting] = useState<number | null>(null)
     const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null)
+    const [isExporting, setIsExporting] = useState<number | null>(null)
+    const [isImporting, setIsImporting] = useState(false)
 
     const handleEditClick = (inventory: { id: number; name: string; description?: string }) => {
         setEditingId(inventory.id)
@@ -79,6 +85,33 @@ export function ManageInventoryModal({
             setIsDeleting(null)
             setDeleteConfirmId(null)
         }
+    }
+
+    const handleExport = async (id: number) => {
+        setIsExporting(id)
+        try {
+            await onExport(id)
+        } finally {
+            setIsExporting(null)
+        }
+    }
+
+    const handleImportClick = () => {
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.accept = '.json'
+        input.onchange = async (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0]
+            if (file) {
+                setIsImporting(true)
+                try {
+                    await onImport(file)
+                } finally {
+                    setIsImporting(false)
+                }
+            }
+        }
+        input.click()
     }
 
     return (
@@ -191,6 +224,20 @@ export function ManageInventoryModal({
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
+                                                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                                                            onClick={() => handleExport(inventory.id)}
+                                                            title="Export"
+                                                            disabled={isExporting === inventory.id}
+                                                        >
+                                                            {isExporting === inventory.id ? (
+                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                            ) : (
+                                                                <Download className="h-3.5 w-3.5" />
+                                                            )}
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
                                                             className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                                                             onClick={() => handleDeleteClick(inventory.id)}
                                                             title="Delete"
@@ -208,7 +255,22 @@ export function ManageInventoryModal({
                     </div>
                 )}
                 <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>Close</Button>
+                    <div className="flex items-center justify-between w-full">
+                        <Button
+                            variant="outline"
+                            onClick={handleImportClick}
+                            disabled={isImporting}
+                            className="flex items-center gap-2"
+                        >
+                            {isImporting ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Upload className="h-4 w-4" />
+                            )}
+                            Import Inventory
+                        </Button>
+                        <Button variant="outline" onClick={onClose}>Close</Button>
+                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

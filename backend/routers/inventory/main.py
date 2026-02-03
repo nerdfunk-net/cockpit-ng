@@ -439,3 +439,200 @@ async def search_inventories(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to search inventories: {str(e)}",
         )
+
+
+@router.get("/export/{inventory_id}")
+async def export_inventory(
+    inventory_id: int,
+    current_user: dict = Depends(require_permission("general.inventory", "read")),
+):
+    """
+    Export an inventory as a JSON file.
+
+    Returns the inventory in a structured JSON format that can be imported later.
+    Includes metadata and the complete condition tree structure.
+
+    Requires general.inventory:read permission.
+    """
+    try:
+        username = current_user.get("username")
+        if not username:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Username not found in token",
+            )
+
+        # Get the inventory
+        inventory = inventory_manager.get_inventory(inventory_id)
+        if not inventory:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Inventory with ID {inventory_id} not found",
+            )
+
+        # Check access permissions
+        if inventory["scope"] == "private" and inventory["created_by"] != username:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to access this inventory",
+            )
+
+        # Build export data structure
+        from datetime import datetime
+        
+        export_data = {
+            "version": 2,
+            "metadata": {
+                "name": inventory["name"],
+                "description": inventory.get("description", ""),
+                "scope": inventory["scope"],
+                "exportedAt": datetime.utcnow().isoformat() + "Z",
+                "exportedBy": username,
+                "originalId": inventory["id"],
+            },
+            "conditionTree": None
+        }
+
+        # Extract condition tree from conditions
+        conditions = inventory.get("conditions", [])
+        if conditions and len(conditions) > 0:
+            first_condition = conditions[0]
+            # Check if this is version 2 format (with tree)
+            if isinstance(first_condition, dict) and "version" in first_condition and first_condition["version"] == 2:
+                export_data["conditionTree"] = first_condition.get("tree")
+            else:
+                # Legacy flat format - convert to tree
+                # For simplicity, we'll wrap it in a basic root structure
+                export_data["conditionTree"] = {
+                    "type": "root",
+                    "internalLogic": "AND",
+                    "items": [
+                        {
+                            "id": f"item-{i}",
+                            "field": cond.get("field", ""),
+                            "operator": cond.get("operator", ""),
+                            "value": cond.get("value", "")
+                        }
+                        for i, cond in enumerate(conditions)
+                    ]
+                }
+
+        # Return as JSON response
+        from fastapi.responses import JSONResponse
+        
+        return JSONResponse(
+            content=export_data,
+            headers={
+                "Content-Disposition": f'attachment; filename="inventory-{inventory["name"]}.json"'
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting inventory {inventory_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to export inventory: {str(e)}",
+        )
+
+
+class ImportInventoryRequest(BaseModel):
+    """Request for importing an inventory from JSON."""
+
+    import_data: dict = Field(..., description="The JSON data to import")
+
+
+@router.post("/import", response_model=InventoryResponse, status_code=status.HTTP_201_CREATED)
+async def import_inventory(
+    request: ImportInventoryRequest,
+    current_user: dict = Depends(require_permission("general.inventory", "write")),
+) -> InventoryResponse:
+    """
+    Import an inventory from exported JSON data.
+
+    Validates the import data and creates a new inventory with an "(imported)" suffix.
+    The imported inventory will be owned by the current user.
+
+    Requires general.inventory:write permission.
+    """
+    try:
+        username = current_user.get("username")
+        if not username:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Username not found in token",
+            )
+
+        import_data = request.import_data
+
+        # Validate import data structure
+        if "version" not in import_data or import_data["version"] != 2:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid inventory file format. Expected version 2.",
+            )
+
+        if "conditionTree" not in import_data or not import_data["conditionTree"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid inventory file. Missing condition tree.",
+            )
+
+        if "metadata" not in import_data or not import_data["metadata"].get("name"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid inventory file. Missing metadata.",
+            )
+
+        # Create new inventory with imported data
+        metadata = import_data["metadata"]
+        new_name = f"{metadata['name']} (imported)"
+        description = metadata.get("description", "Imported inventory")
+
+        # Wrap the condition tree in version 2 format
+        tree_data = {
+            "version": 2,
+            "tree": import_data["conditionTree"]
+        }
+
+        inventory_data = {
+            "name": new_name,
+            "description": description,
+            "conditions": [tree_data],
+            "template_category": None,
+            "template_name": None,
+            "scope": "global",
+            "created_by": username,
+        }
+
+        inventory_id = inventory_manager.create_inventory(inventory_data)
+        if not inventory_id:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create imported inventory",
+            )
+
+        # Retrieve the created inventory
+        inventory = inventory_manager.get_inventory(inventory_id)
+        if not inventory:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Inventory created but could not be retrieved",
+            )
+
+        return InventoryResponse(**inventory)
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error importing inventory: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to import inventory: {str(e)}",
+        )

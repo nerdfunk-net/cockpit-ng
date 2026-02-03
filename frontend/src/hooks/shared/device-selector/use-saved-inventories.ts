@@ -156,6 +156,79 @@ export function useSavedInventories() {
         }
     }
 
+    const exportInventory = async (inventoryId: number) => {
+        try {
+            // Call the backend export endpoint
+            const response = await apiCall<{
+                version: number
+                metadata: {
+                    name: string
+                    description: string
+                    scope: string
+                    exportedAt: string
+                    exportedBy: string
+                    originalId: number
+                }
+                conditionTree: ConditionTree
+            }>(`inventory/export/${inventoryId}`)
+
+            if (!response) {
+                throw new Error('Failed to export inventory')
+            }
+
+            // Create a blob and download
+            const blob = new Blob([JSON.stringify(response, null, 2)], { type: 'application/json' })
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            const filename = `inventory-${response.metadata.name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${Date.now()}.json`
+            link.download = filename
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            URL.revokeObjectURL(url)
+        } catch (error) {
+            console.error('Error exporting inventory:', error)
+            throw error
+        }
+    }
+
+    const importInventory = async (file: File) => {
+        try {
+            // Read the file
+            const text = await file.text()
+            const importData = JSON.parse(text)
+
+            // Validate the import data
+            if (!importData.version || importData.version !== 2) {
+                throw new Error('Invalid inventory file format. Expected version 2.')
+            }
+
+            if (!importData.conditionTree) {
+                throw new Error('Invalid inventory file. Missing condition tree.')
+            }
+
+            if (!importData.metadata || !importData.metadata.name) {
+                throw new Error('Invalid inventory file. Missing metadata.')
+            }
+
+            // Call backend import endpoint
+            await apiCall('inventory/import', {
+                method: 'POST',
+                body: JSON.stringify({ import_data: importData }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            // Reload inventories to show the new one
+            await reloadInventories()
+        } catch (error) {
+            console.error('Error importing inventory:', error)
+            throw error
+        }
+    }
+
     return {
         savedInventories,
         isLoadingInventories,
@@ -164,6 +237,8 @@ export function useSavedInventories() {
         saveInventory,
         loadInventory,
         updateInventoryDetails,
-        deleteInventory
+        deleteInventory,
+        exportInventory,
+        importInventory
     }
 }

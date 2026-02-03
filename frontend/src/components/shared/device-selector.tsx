@@ -127,7 +127,9 @@ export function DeviceSelector({
     saveInventory,
     loadInventory,
     updateInventoryDetails,
-    deleteInventory
+    deleteInventory,
+    exportInventory,
+    importInventory
   } = useSavedInventories()
 
   // -- LOCAL UI STATE --
@@ -189,6 +191,25 @@ export function DeviceSelector({
       }
     } catch (error) {
       alert('Error loading inventory: ' + (error as Error).message)
+    }
+  }
+
+  const handleExportInventory = async (id: number) => {
+    try {
+      await exportInventory(id)
+    } catch (error) {
+      alert('Error exporting inventory: ' + (error as Error).message)
+    }
+  }
+
+  const handleImportInventory = async (file: File) => {
+    try {
+      await importInventory(file)
+      alert('Inventory imported successfully!')
+      // Reload the list
+      await loadSavedInventories()
+    } catch (error) {
+      alert('Error importing inventory: ' + (error as Error).message)
     }
   }
 
@@ -288,6 +309,8 @@ export function DeviceSelector({
         isLoading={isLoadingInventories}
         onUpdate={updateInventoryDetails}
         onDelete={deleteInventory}
+        onExport={handleExportInventory}
+        onImport={handleImportInventory}
       />
 
       <LogicalTreeModal
