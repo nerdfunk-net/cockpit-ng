@@ -10,7 +10,7 @@ import { BackupFilters } from './components/backup-filters'
 import { BackupDevicesTable } from './components/backup-devices-table'
 import { BackupHistoryDialog } from './components/backup-history-dialog'
 import { DEFAULT_PAGE_SIZE } from './utils/constants'
-import type { Device, DeviceFilters } from './types'
+import type { Device, DeviceFilters, BackupSorting } from './types'
 
 const EMPTY_FILTERS: DeviceFilters = {}
 
@@ -20,10 +20,11 @@ export default function BackupPage() {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
   const [backupInProgress] = useState<Set<string>>(new Set())
 
-  // Filter/pagination state
+  // Filter/pagination/sorting state
   const [filters, setFilters] = useState<DeviceFilters>(EMPTY_FILTERS)
   const [currentPage, setCurrentPage] = useState(0)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+  const [sorting, setSorting] = useState<BackupSorting>({ order: 'none' })
 
   // TanStack Query - replaces ALL manual state management
   const { data, isLoading, error } = useBackupDevices({
@@ -31,7 +32,8 @@ export default function BackupPage() {
     pagination: {
       limit: pageSize,
       offset: currentPage * pageSize
-    }
+    },
+    sorting
   })
 
   const { triggerBulkBackup } = useBackupMutations()
@@ -84,6 +86,19 @@ export default function BackupPage() {
 
   const handlePageSizeChange = useCallback((size: number) => {
     setPageSize(size)
+    setCurrentPage(0)
+  }, [])
+
+  const handleSortChange = useCallback((column: string) => {
+    setSorting((prev) => {
+      if (prev.column !== column) {
+        return { column, order: 'desc' }
+      }
+      if (prev.order === 'desc') {
+        return { column, order: 'asc' }
+      }
+      return { order: 'none' }
+    })
     setCurrentPage(0)
   }, [])
 
@@ -170,6 +185,8 @@ export default function BackupPage() {
         pageSize={pageSize}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
+        sorting={sorting}
+        onSortChange={handleSortChange}
       />
 
       {/* History Dialog */}

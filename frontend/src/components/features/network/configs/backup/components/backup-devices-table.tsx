@@ -5,9 +5,9 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
-import { Save, History, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Save, History, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { useBackupMutations } from '../hooks/use-backup-mutations'
-import type { Device, DeviceFilters, FilterOptions } from '../types'
+import type { Device, DeviceFilters, FilterOptions, BackupSorting } from '../types'
 
 interface BackupDevicesTableProps {
   devices: Device[]
@@ -21,6 +21,8 @@ interface BackupDevicesTableProps {
   pageSize: number
   onPageChange: (page: number) => void
   onPageSizeChange: (size: number) => void
+  sorting: BackupSorting
+  onSortChange: (column: string) => void
 }
 
 export function BackupDevicesTable({
@@ -34,7 +36,9 @@ export function BackupDevicesTable({
   currentPage,
   pageSize,
   onPageChange,
-  onPageSizeChange
+  onPageSizeChange,
+  sorting,
+  onSortChange
 }: BackupDevicesTableProps) {
   const { triggerBackup } = useBackupMutations()
 
@@ -60,6 +64,16 @@ export function BackupDevicesTable({
   }
 
   const totalPages = Math.ceil(total / pageSize)
+
+  const getSortIcon = (column: string) => {
+    if (sorting.column !== column || sorting.order === 'none') {
+      return <ArrowUpDown className="h-3 w-3 ml-1 text-gray-400" />
+    }
+    if (sorting.order === 'desc') {
+      return <ArrowDown className="h-3 w-3 ml-1 text-blue-600" />
+    }
+    return <ArrowUp className="h-3 w-3 ml-1 text-blue-600" />
+  }
 
   return (
     <div className="rounded-xl border shadow-sm overflow-hidden">
@@ -190,7 +204,15 @@ export function BackupDevicesTable({
                     </div>
                   </div>
                 </th>
-                <th className="pl-12 pr-4 py-3 w-40 text-left text-xs font-medium text-gray-600 uppercase">Last Backup</th>
+                <th className="pl-12 pr-4 py-3 w-40 text-left text-xs font-medium text-gray-600 uppercase">
+                  <button
+                    className="flex items-center hover:text-blue-600 transition-colors cursor-pointer"
+                    onClick={() => onSortChange('last_backup')}
+                  >
+                    Last Backup
+                    {getSortIcon('last_backup')}
+                  </button>
+                </th>
                 <th className="pl-16 pr-4 py-3 w-32 text-left text-xs font-medium text-gray-600 uppercase">Actions</th>
               </tr>
             </thead>

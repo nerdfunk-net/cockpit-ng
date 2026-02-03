@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
 import { escapeHtml } from '@/lib/security'
+import type { SavedInventory } from '@/hooks/queries/use-saved-inventories-queries'
 
 // Template import response interface
 interface TemplateImportResponse {
@@ -146,7 +147,7 @@ export default function TemplateManagement() {
   // Inventory selection state for TIG-Stack templates
   const [selectedInventory, setSelectedInventory] = useState<{ id: number; name: string } | null>(null)
   const [showInventoryDialog, setShowInventoryDialog] = useState(false)
-  const [inventories, setInventories] = useState<any[]>([])
+  const [inventories, setInventories] = useState<SavedInventory[]>([])
   const [isLoadingInventories, setIsLoadingInventories] = useState(false)
   const [isRendering, setIsRendering] = useState(false)
 
@@ -390,7 +391,7 @@ export default function TemplateManagement() {
   const loadInventories = useCallback(async () => {
     setIsLoadingInventories(true)
     try {
-      const response = await apiCall<{ inventories: any[] }>('inventory')
+      const response = await apiCall<{ inventories: SavedInventory[] }>('inventory')
       setInventories(response.inventories || [])
     } catch (error) {
       console.error('Failed to load inventories:', error)
@@ -401,7 +402,7 @@ export default function TemplateManagement() {
   }, [apiCall, showMessage])
 
   // Handle inventory selection
-  const handleInventorySelected = useCallback((inventory: any) => {
+  const handleInventorySelected = useCallback((inventory: SavedInventory) => {
     setSelectedInventory({ id: inventory.id, name: inventory.name })
     setShowInventoryDialog(false)
     showMessage(`Inventory "${inventory.name}" selected`, 'success')
