@@ -127,7 +127,118 @@ Celery Beat                 Redis Broker              Celery Worker             
 - **Redis**: Message broker and result backend
 - **Shared Code**: Business logic and services shared between main app and workers
 
-### 2. Communication Pattern
+### 2. Database Connection Handling (CRITICAL)
+
+**Problem**: When using Celery with PostgreSQL and the prefork pool (default), worker processes fork from a parent process. If SQLAlchemy database connections exist before forking, child processes inherit the same connection file descriptors. PostgreSQL connections have internal state that assumes single-process ownership, leading to:
+- `psycopg2.DatabaseError: error with status PGRES_TUPLES_OK and no message from the libpq`
+- Connection pool corruption
+- Segmentation faults (SIGSEGV) on macOS
+- Unpredictable transaction boundaries
+
+**Solution**: Use Celery worker lifecycle signals to ensure each worker process gets its own isolated database engine and connection pool.
+
+**Implementation**: See `backend/core/celery_signals.py`
+
+```python
+from celery import signals
+from sqlalchemy import create_engine
+
+@signals.worker_init.connect
+def init_worker(**kwargs):
+    """
+    Runs in parent process BEFORE forking.
+    Dispose all database connections to ensure clean fork.
+    """
+    from core import database
+    if hasattr(database, 'engine') and database.engine:
+        database.engine.dispose()
+        database.engine = None
+
+@signals.worker_process_init.connect
+def init_worker_process(**kwargs):
+    """
+    Runs in each child process AFTER forking.
+    Create fresh database engine with isolated connection pool.
+    """
+    from core import database
+    from config import settings
+
+    # Dispose inherited connections
+    if hasattr(database, 'engine') and database.engine:
+        database.engine.dispose()
+        database.engine = None
+
+    # Create new engine for this worker process
+    database.engine = create_engine(
+        settings.database_url,
+        pool_size=5,
+        max_overflow=10,
+        pool_pre_ping=True,
+        pool_recycle=3600,
+    )
+
+    # Recreate session factory
+    database.SessionLocal = sessionmaker(bind=database.engine)
+
+@signals.worker_process_shutdown.connect
+def shutdown_worker_process(**kwargs):
+    """
+    Clean up database connections on worker shutdown.
+    """
+    from core import database
+    if hasattr(database, 'engine') and database.engine:
+        database.engine.dispose()
+```
+
+**Key Rules**:
+- ✅ NO database access during module import time in `celery_app.py`
+- ✅ Each worker process creates its own engine AFTER forking
+- ✅ Parent process disposes all connections BEFORE forking
+- ✅ Worker signals are imported in `celery_worker.py` and `start_celery.py`
+- ❌ NEVER access database in global scope of Celery configuration
+
+### 3. Queue Configuration
+
+**Architecture**: Hybrid static + dynamic configuration to avoid database access before forking.
+
+**Built-in Queues** (hardcoded in `celery_app.py`):
+```python
+def get_default_queue_configuration():
+    return {
+        "default": {"exchange": "default", "routing_key": "default"},
+        "backup": {"exchange": "backup", "routing_key": "backup"},
+        "network": {"exchange": "network", "routing_key": "network"},
+        "heavy": {"exchange": "heavy", "routing_key": "heavy"},
+    }
+```
+
+**Custom Queues** (super user responsibility):
+1. Add queue in Settings UI (for documentation)
+2. Configure `CELERY_WORKER_QUEUE=custom_queue` in docker-compose.yml
+3. Worker listens to custom queue (Celery auto-creates in Redis)
+4. Route tasks manually: `task.apply_async(queue='custom_queue')`
+
+**Why This Approach**:
+- ✅ No database access before forking (prevents SIGSEGV)
+- ✅ Built-in queues have automatic task routing
+- ✅ Super users can add unlimited custom queues via env vars
+- ✅ Misconfigurations don't crash the system
+- ✅ Settings UI still functional for viewing/managing queues
+
+**Example**: Adding a `monitoring` queue:
+```yaml
+# docker-compose.yml
+cockpit-worker-monitoring:
+  environment:
+    - CELERY_WORKER_QUEUE=monitoring
+```
+
+```python
+# Route task to custom queue
+monitoring_task.apply_async(args=[...], queue='monitoring')
+```
+
+### 4. Communication Pattern
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -166,7 +277,7 @@ Celery Beat                 Redis Broker              Celery Worker             
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 3. Code Organization
+### 5. Code Organization
 
 ```
 backend/
@@ -176,6 +287,10 @@ backend/
 ├── celery_beat.py              # Celery Beat scheduler entry point
 ├── beat_schedule.py            # Periodic task schedule definitions
 ├── requirements.txt            # Add celery, redis, celery-redbeat
+│
+├── core/
+│   ├── database.py             # SQLAlchemy engine and session management
+│   └── celery_signals.py       # Worker lifecycle signals (DB connection handling)
 │
 ├── routers/
 │   └── celery_api.py           # /api/celery/* endpoints
@@ -200,9 +315,117 @@ backend/
 
 ## Implementation Details
 
-### 1. Celery Application Setup
+### 1. Worker Lifecycle Signals (Database Connection Handling)
+
+**File**: `backend/core/celery_signals.py`
+
+**CRITICAL**: This module MUST be imported before starting any Celery worker to prevent database connection corruption across forked processes.
+
+```python
+"""
+Celery worker lifecycle signals for proper database connection handling.
+Prevents SIGSEGV and PGRES_TUPLES_OK errors when using PostgreSQL with forked workers.
+"""
+import logging
+from celery import signals
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+
+logger = logging.getLogger(__name__)
+
+@signals.worker_init.connect
+def init_worker(**kwargs):
+    """
+    Called in parent process BEFORE forking workers.
+    CRITICAL: Dispose all database connections to ensure clean fork.
+    """
+    import os
+    from core import database
+
+    pid = os.getpid()
+    logger.info(f"[Worker Main] Celery worker initialized (parent process PID={pid})")
+
+    # Dispose database engine in parent process before forking
+    if hasattr(database, 'engine') and database.engine is not None:
+        logger.info("[Worker Main] Disposing database engine before forking")
+        database.engine.dispose(close=False)
+        database.engine = None
+
+    if hasattr(database, 'SessionLocal') and database.SessionLocal is not None:
+        database.SessionLocal.close_all()
+
+@signals.worker_process_init.connect
+def init_worker_process(**kwargs):
+    """
+    Called in each worker process AFTER forking.
+    Creates fresh database engine with isolated connection pool.
+    """
+    import os
+    from core import database
+    from config import settings
+
+    pid = os.getpid()
+    logger.info(f"[Worker Init] Initializing database engine for PID={pid}")
+
+    # Dispose any inherited connections
+    if hasattr(database, 'engine') and database.engine is not None:
+        database.engine.dispose(close=False)
+        database.engine = None
+
+    # Create new engine for this worker process
+    database.engine = create_engine(
+        settings.database_url,
+        pool_size=5,
+        max_overflow=10,
+        pool_pre_ping=True,
+        pool_recycle=3600,
+        echo=settings.debug,
+        pool_timeout=30,
+        connect_args={"connect_timeout": 10}
+    )
+
+    # Recreate session factory
+    database.SessionLocal = sessionmaker(
+        autocommit=False,
+        autoflush=False,
+        bind=database.engine
+    )
+
+    logger.info(f"[Worker Init] Database engine initialized for PID={pid}")
+
+@signals.worker_process_shutdown.connect
+def shutdown_worker_process(**kwargs):
+    """
+    Clean up database connections on worker shutdown.
+    """
+    from core import database
+    logger.info("[Worker Shutdown] Cleaning up database connections")
+    if hasattr(database, 'engine') and database.engine:
+        database.engine.dispose()
+```
+
+**Import in worker entry points**:
+
+`backend/celery_worker.py`:
+```python
+from celery_app import celery_app
+import core.celery_signals  # MUST import before starting worker
+from tasks import *
+```
+
+`backend/start_celery.py`:
+```python
+from celery_app import celery_app
+from config import settings
+import core.celery_signals  # MUST import before starting worker
+from tasks import *
+```
+
+### 2. Celery Application Setup
 
 **File**: `backend/celery_app.py`
+
+**IMPORTANT**: NO database access during module import to prevent connection sharing across forks.
 
 ```python
 """
@@ -211,14 +434,39 @@ Celery application configuration.
 from celery import Celery
 from celery.schedules import crontab
 from config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Create Celery application
 celery_app = Celery(
     'cockpit_ng',
-    broker=settings.redis_url,           # Redis as message broker
-    backend=settings.redis_url,          # Redis as result backend
-    include=['tasks']                     # Auto-discover tasks
+    broker=settings.celery_broker_url,    # Redis as message broker
+    backend=settings.celery_result_backend,  # Redis as result backend
+    include=['tasks']                      # Auto-discover tasks
 )
+
+def get_default_queue_configuration():
+    """
+    Return default queue configuration WITHOUT database access.
+
+    CRITICAL: No database access here to avoid connection sharing before forking.
+
+    Custom queues can be added by super users:
+    1. Add in Settings UI (for documentation)
+    2. Set CELERY_WORKER_QUEUE env var in docker-compose.yml
+    3. Celery auto-creates queue in Redis
+    4. Route tasks: task.apply_async(queue='custom')
+    """
+    return {
+        "default": {"exchange": "default", "routing_key": "default"},
+        "backup": {"exchange": "backup", "routing_key": "backup"},
+        "network": {"exchange": "network", "routing_key": "network"},
+        "heavy": {"exchange": "heavy", "routing_key": "heavy"},
+    }
+
+# Use static configuration (no database access before forking)
+task_queues = get_default_queue_configuration()
 
 # Celery configuration
 celery_app.conf.update(
@@ -233,6 +481,23 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,        # One task at a time per worker
     worker_max_tasks_per_child=100,      # Restart worker after 100 tasks
 
+    # Queue configuration (static to avoid DB access before forking)
+    task_queues=task_queues,
+
+    # Task routing - route specific tasks to dedicated queues
+    task_routes={
+        "tasks.backup_single_device_task": {"queue": "backup"},
+        "tasks.finalize_backup_task": {"queue": "backup"},
+        "tasks.ping_network_task": {"queue": "network"},
+        "tasks.scan_prefixes_task": {"queue": "network"},
+        "tasks.bulk_onboard_devices_task": {"queue": "heavy"},
+        "tasks.update_devices_from_csv_task": {"queue": "heavy"},
+        "*": {"queue": "default"},  # All other tasks → default
+    },
+
+    # Default queue
+    task_default_queue="default",
+
     # Celery Beat settings
     beat_scheduler='redbeat.RedBeatScheduler',  # Use Redis-based scheduler
     redbeat_redis_url=settings.redis_url,       # Redis URL for beat schedule
@@ -240,11 +505,14 @@ celery_app.conf.update(
 )
 
 # Import beat schedule (periodic tasks)
-from beat_schedule import CELERY_BEAT_SCHEDULE
-celery_app.conf.beat_schedule = CELERY_BEAT_SCHEDULE
+try:
+    from beat_schedule import CELERY_BEAT_SCHEDULE
+    celery_app.conf.beat_schedule = CELERY_BEAT_SCHEDULE
+except ImportError:
+    celery_app.conf.beat_schedule = {}
 ```
 
-### 2. Celery Worker Entry Point
+### 3. Celery Worker Entry Point
 
 **File**: `backend/celery_worker.py`
 
@@ -255,14 +523,20 @@ Run with: celery -A celery_worker worker --loglevel=info
 """
 from celery_app import celery_app
 
+# CRITICAL: Import worker lifecycle signals BEFORE starting worker
+import core.celery_signals  # noqa: F401
+
 # Import all tasks to register them
-from tasks import *
+try:
+    from tasks import *  # noqa: F403
+except ImportError:
+    pass
 
 if __name__ == '__main__':
     celery_app.start()
 ```
 
-### 3. Celery Beat Scheduler Entry Point
+### 4. Celery Beat Scheduler Entry Point
 
 **File**: `backend/celery_beat.py`
 
@@ -273,15 +547,25 @@ Run with: celery -A celery_beat beat --loglevel=info
 """
 from celery_app import celery_app
 
+# Import worker lifecycle signals (for database connection handling)
+import core.celery_signals  # noqa: F401
+
 # Import all tasks and schedules to register them
-from tasks import *
-from beat_schedule import CELERY_BEAT_SCHEDULE
+try:
+    from tasks import *  # noqa: F403
+except ImportError:
+    pass
+
+try:
+    from beat_schedule import CELERY_BEAT_SCHEDULE  # noqa: F401
+except ImportError:
+    pass
 
 if __name__ == '__main__':
     celery_app.start()
 ```
 
-### 4. Beat Schedule Configuration
+### 5. Beat Schedule Configuration
 
 **File**: `backend/beat_schedule.py`
 
@@ -371,7 +655,7 @@ CELERY_BEAT_SCHEDULE = {
 #   schedule = timedelta(minutes=30)
 ```
 
-### 5. Periodic Task Definitions
+### 6. Periodic Task Definitions
 
 **File**: `backend/tasks/periodic_tasks.py`
 
@@ -686,7 +970,7 @@ def backup_device_config(device_id: str) -> dict:
     pass
 ```
 
-### 4. API Router for Celery Endpoints
+### 7. API Router for Celery Endpoints
 
 **File**: `backend/routers/celery_api.py`
 
@@ -934,7 +1218,7 @@ async def beat_status(
         )
 ```
 
-### 5. Configuration
+### 8. Configuration
 
 **Add to `backend/config.py`**:
 
@@ -949,7 +1233,7 @@ class Settings(BaseSettings):
     celery_max_workers: int = Field(default=4)
 ```
 
-### 7. Dependencies
+### 9. Dependencies
 
 **Add to `backend/requirements.txt`**:
 
@@ -1286,11 +1570,36 @@ tail -f /var/log/celery/worker.log
    nautobot.create_device(...)
    ```
 
-2. **Don't share database connections**
-   - Each task should create its own database connection
-   - Use connection pooling in services
+2. **Don't access database during module import**
+   ```python
+   # BAD: Database access at module level (before forking)
+   from settings_manager import settings_manager
+   config = settings_manager.get_celery_settings()  # Accesses DB!
 
-3. **Don't store large objects in results**
+   # GOOD: Static configuration or lazy loading
+   def get_config():
+       return {"default": {...}}
+   ```
+
+3. **Don't share database connections across processes**
+   - NEVER create SQLAlchemy engine at module level in celery_app.py
+   - ALWAYS use worker signals to create engines after forking
+   - Each worker process MUST have its own isolated engine
+   - See `core/celery_signals.py` for proper implementation
+
+4. **Don't forget to import celery_signals**
+   ```python
+   # BAD: Worker starts without signals
+   from celery_app import celery_app
+   from tasks import *
+
+   # GOOD: Signals imported before worker starts
+   from celery_app import celery_app
+   import core.celery_signals  # CRITICAL!
+   from tasks import *
+   ```
+
+5. **Don't store large objects in results**
    - Results are stored in Redis
    - Keep results small and structured
 
@@ -1353,6 +1662,80 @@ def my_task():
 3. **Rich Ecosystem**: Plugins, monitoring tools, integrations
 4. **Active Development**: Regular updates and security patches
 
+## Troubleshooting
+
+### SIGSEGV / PGRES_TUPLES_OK Errors
+
+**Symptoms**:
+- Workers crash with `signal 11 (SIGSEGV)`
+- `psycopg2.DatabaseError: error with status PGRES_TUPLES_OK and no message from the libpq`
+- Workers fail to start: `WorkerLostError('Could not start worker processes')`
+
+**Root Cause**:
+Database connections created before worker processes fork. When workers inherit the same PostgreSQL connection file descriptors, the psycopg2 driver state gets corrupted.
+
+**Solution**:
+1. ✅ Ensure `core/celery_signals.py` is imported in worker entry points
+2. ✅ Verify NO database access in `celery_app.py` during module import
+3. ✅ Check logs for `[Worker Init]` messages confirming signal execution
+4. ✅ Verify each worker creates its own engine (check PIDs in logs)
+
+**Expected Logs**:
+```
+[Worker Main] Celery worker initialized (parent process PID=1234)
+[Worker Main] Disposing database engine before forking
+[Worker Init] Initializing database engine for PID=1235
+[Worker Init] Database engine initialized for PID=1235
+[Worker Init] Initializing database engine for PID=1236
+[Worker Init] Database engine initialized for PID=1236
+[Worker Ready] Celery worker is ready to accept tasks
+```
+
+**If Still Failing**:
+- Check for other modules accessing database at import time
+- Verify `core.celery_signals` is imported BEFORE `from tasks import *`
+- Ensure PostgreSQL connection parameters are correct
+- Try reducing `pool_size` in worker signal (from 5 to 2)
+
+### Queue Configuration Issues
+
+**Symptom**: Worker tries to listen to queue that doesn't exist
+
+**Solution**:
+1. Check if queue is defined in `get_default_queue_configuration()` in `celery_app.py`
+2. For custom queues: Set `CELERY_WORKER_QUEUE` env var in docker-compose.yml
+3. Verify task routing in `task_routes` configuration
+4. Check worker logs for queue configuration messages
+
+**Symptom**: Tasks not being processed
+
+**Solution**:
+1. Verify worker is listening to the correct queue: Check startup logs for `Queues: ...`
+2. Check task is routed to correct queue: See `task_routes` in celery_app.py
+3. Verify queue exists in Redis: `redis-cli KEYS *celery*`
+4. Check worker is running: `celery -A celery_worker inspect active`
+
+### Connection Pool Exhaustion
+
+**Symptom**: `QueuePool limit of size X overflow Y reached`
+
+**Solution**:
+1. Increase `pool_size` in `core/celery_signals.py` (default: 5)
+2. Increase `max_overflow` (default: 10)
+3. Reduce worker concurrency: `--concurrency=2`
+4. Check for connection leaks: Ensure sessions are closed after use
+
+### Worker Not Starting
+
+**Symptom**: Worker starts but immediately exits
+
+**Solution**:
+1. Check Redis is running: `redis-cli ping`
+2. Verify Redis URL: Check `CELERY_BROKER_URL` env var
+3. Check Python path: Worker needs to find all modules
+4. Review worker logs for import errors
+5. Verify `core.celery_signals` import doesn't have syntax errors
+
 ## References
 
 - [Celery Documentation](https://docs.celeryq.dev/)
@@ -1362,3 +1745,5 @@ def my_task():
 - [FastAPI Background Tasks](https://fastapi.tiangolo.com/tutorial/background-tasks/)
 - [Celery Best Practices](https://docs.celeryq.dev/en/stable/userguide/tasks.html#best-practices)
 - [Flower - Celery Monitoring Tool](https://flower.readthedocs.io/)
+- [SQLAlchemy Multi-processing Guide](https://docs.sqlalchemy.org/en/20/core/pooling.html#using-connection-pools-with-multiprocessing)
+- [Celery Worker Signals](https://docs.celeryq.dev/en/stable/userguide/signals.html#worker-signals)

@@ -48,6 +48,10 @@ if backend_dir not in sys.path:
 from celery_app import celery_app  # noqa: E402
 from config import settings  # noqa: E402
 
+# Import worker lifecycle signals (MUST be imported before starting worker)
+# This ensures each worker process gets its own isolated database engine
+import core.celery_signals  # noqa: E402, F401 - Import for side effects (signal registration)
+
 # Import all tasks to register them
 try:
     from tasks import *  # noqa: E402, F403 - intentional for task registration

@@ -83,33 +83,52 @@ class CacheSettings:
 
 @dataclass
 class CelerySettings:
-    """Celery task queue settings"""
+    """
+    Celery task queue settings.
+
+    Queue System:
+    -------------
+    - Built-in queues (default, backup, network, heavy) are hardcoded in celery_app.py
+    - Built-in queues have automatic task routing and cannot be deleted
+    - Custom queues can be added here for documentation purposes
+    - To use custom queues, configure CELERY_WORKER_QUEUE env var in docker-compose.yml
+    - Tasks must be manually routed to custom queues: task.apply_async(queue='custom')
+
+    Example: Adding a "monitoring" queue
+    1. Add queue here: {"name": "monitoring", "description": "...", "built_in": false}
+    2. Update docker-compose.yml: CELERY_WORKER_QUEUE=monitoring
+    3. Route tasks: monitoring_task.apply_async(queue='monitoring')
+    """
 
     max_workers: int = 4  # Worker concurrency (requires restart)
     cleanup_enabled: bool = True  # Enable automatic cleanup
     cleanup_interval_hours: int = 6  # Run cleanup every 6 hours
     cleanup_age_hours: int = 24  # Remove data older than 24 hours
     result_expires_hours: int = 24  # Celery result expiry
-    queues: List[Dict[str, str]] = field(
+    queues: List[Dict[str, Any]] = field(
         default_factory=lambda: [
             {
                 "name": "default",
                 "description": "Default queue for general tasks",
+                "built_in": True,
             },
             {
                 "name": "backup",
                 "description": "Queue for device backup operations",
+                "built_in": True,
             },
             {
                 "name": "network",
                 "description": "Queue for network scanning and discovery tasks",
+                "built_in": True,
             },
             {
                 "name": "heavy",
                 "description": "Queue for bulk operations and heavy processing tasks",
+                "built_in": True,
             },
         ]
-    )  # Configured queues [{"name": "backup", "description": "..."}]
+    )  # Queue configuration: [{"name": "backup", "description": "...", "built_in": true}]
 
 
 @dataclass
@@ -459,6 +478,80 @@ class SettingsManager:
             return True
         except Exception as e:
             logger.error(f"Error updating Celery settings: {e}")
+            return False
+
+    def ensure_builtin_queues(self) -> bool:
+        """
+        Ensure built-in queues (default, backup, network, heavy) exist in database.
+
+        This is called on application startup to restore any missing built-in queues.
+        Built-in queues are required for the system to function properly.
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Define built-in queues
+            BUILTIN_QUEUES = [
+                {
+                    "name": "default",
+                    "description": "Default queue for general tasks",
+                    "built_in": True,
+                },
+                {
+                    "name": "backup",
+                    "description": "Queue for device backup operations",
+                    "built_in": True,
+                },
+                {
+                    "name": "network",
+                    "description": "Queue for network scanning and discovery tasks",
+                    "built_in": True,
+                },
+                {
+                    "name": "heavy",
+                    "description": "Queue for bulk operations and heavy processing tasks",
+                    "built_in": True,
+                },
+            ]
+
+            # Get current settings
+            current = self.get_celery_settings()
+            current_queues = current.get("queues", [])
+
+            # Build set of existing queue names
+            existing_names = {q["name"] for q in current_queues}
+
+            # Add missing built-in queues
+            queues_added = []
+            for builtin_queue in BUILTIN_QUEUES:
+                if builtin_queue["name"] not in existing_names:
+                    current_queues.append(builtin_queue)
+                    queues_added.append(builtin_queue["name"])
+                    logger.info(f"Restored missing built-in queue: {builtin_queue['name']}")
+                else:
+                    # Ensure existing built-in queue has built_in flag set
+                    for q in current_queues:
+                        if q["name"] == builtin_queue["name"]:
+                            if not q.get("built_in"):
+                                q["built_in"] = True
+                                logger.info(f"Set built_in flag for queue: {builtin_queue['name']}")
+
+            # Update settings if changes were made
+            if queues_added or any(not q.get("built_in") for q in current_queues if q["name"] in {bq["name"] for bq in BUILTIN_QUEUES}):
+                current["queues"] = current_queues
+                success = self.update_celery_settings(current)
+
+                if success and queues_added:
+                    logger.info(f"Restored {len(queues_added)} built-in queue(s): {', '.join(queues_added)}")
+
+                return success
+            else:
+                logger.debug("All built-in queues present and configured correctly")
+                return True
+
+        except Exception as e:
+            logger.error(f"Error ensuring built-in queues: {e}")
             return False
 
     def update_nautobot_settings(self, settings: Dict[str, Any]) -> bool:

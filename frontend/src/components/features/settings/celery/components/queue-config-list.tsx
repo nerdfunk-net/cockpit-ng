@@ -34,7 +34,7 @@ interface QueueConfigListProps {
 export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
-  const [formData, setFormData] = useState<CeleryQueue>({ name: '', description: '' })
+  const [formData, setFormData] = useState<CeleryQueue>({ name: '', description: '', built_in: false })
   const [error, setError] = useState<string>('')
 
   const handleOpenDialog = useCallback((index: number | null = null) => {
@@ -43,7 +43,7 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
       setFormData(queues[index])
     } else {
       setEditingIndex(null)
-      setFormData({ name: '', description: '' })
+      setFormData({ name: '', description: '', built_in: false })
     }
     setError('')
     setIsDialogOpen(true)
@@ -52,7 +52,7 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
   const handleCloseDialog = useCallback(() => {
     setIsDialogOpen(false)
     setEditingIndex(null)
-    setFormData({ name: '', description: '' })
+    setFormData({ name: '', description: '', built_in: false })
     setError('')
   }, [])
 
@@ -98,9 +98,9 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
   }, [formData, queues, editingIndex, validateQueue, onChange, handleCloseDialog])
 
   const handleDelete = useCallback((index: number) => {
-    // Prevent deletion of the default queue
-    if (queues[index]?.name === 'default') {
-      setError('The default queue cannot be deleted')
+    // Prevent deletion of built-in queues
+    if (queues[index]?.built_in) {
+      setError(`Built-in queue "${queues[index]?.name}" cannot be deleted`)
       return
     }
     const updatedQueues = queues.filter((_, i) => i !== index)
@@ -127,7 +127,9 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
       <CardContent>
         <Alert className="mb-4 bg-blue-50 border-blue-200">
           <AlertDescription className="text-blue-800 text-sm">
-            <strong>Configure queues for job routing:</strong> Queues organize and route background jobs to specific workers. Workers listen to queues using CELERY_WORKER_QUEUE environment variable (e.g., CELERY_WORKER_QUEUE=backup). The system includes pre-configured queues (default, backup, network, heavy) that match existing task routing rules.
+            <strong>Queue System:</strong> Built-in queues (default, backup, network, heavy) are hardcoded with automatic task routing and cannot be deleted.
+            Custom queues can be added here for documentation. To use custom queues, configure the CELERY_WORKER_QUEUE environment variable in docker-compose.yml
+            (e.g., CELERY_WORKER_QUEUE=monitoring) and manually route tasks to them.
           </AlertDescription>
         </Alert>
 
@@ -149,16 +151,16 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
               </TableHeader>
               <TableBody>
                 {queues.map((queue, index) => {
-                  const isDefaultQueue = queue.name === 'default'
+                  const isBuiltIn = queue.built_in === true
                   return (
                     <TableRow key={queue.name}>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span className="font-mono font-medium">{queue.name}</span>
-                          {isDefaultQueue && (
+                          {isBuiltIn && (
                             <Badge variant="secondary" className="text-xs">
                               <Shield className="h-3 w-3 mr-1" />
-                              Required
+                              Built-in
                             </Badge>
                           )}
                         </div>
@@ -170,20 +172,21 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleOpenDialog(index)}
-                            title={isDefaultQueue ? 'Edit description' : 'Edit queue'}
+                            title={isBuiltIn ? 'Edit description only' : 'Edit queue'}
                           >
                             <Edit2 className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(index)}
-                            disabled={isDefaultQueue}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title={isDefaultQueue ? 'Default queue cannot be deleted' : 'Delete queue'}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {!isBuiltIn && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(index)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              title="Delete queue"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -210,15 +213,15 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
                 <Label htmlFor="queue-name">Queue Name *</Label>
                 <Input
                   id="queue-name"
-                  placeholder="e.g., backup, sync, default"
+                  placeholder="e.g., monitoring, custom"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className={error ? 'border-red-500' : ''}
-                  disabled={editingIndex !== null && queues[editingIndex]?.name === 'default'}
+                  disabled={editingIndex !== null && queues[editingIndex]?.built_in === true}
                 />
-                {editingIndex !== null && queues[editingIndex]?.name === 'default' ? (
+                {editingIndex !== null && queues[editingIndex]?.built_in === true ? (
                   <p className="text-xs text-muted-foreground text-amber-600">
-                    The default queue name cannot be changed
+                    Built-in queue names cannot be changed
                   </p>
                 ) : (
                   <p className="text-xs text-muted-foreground">

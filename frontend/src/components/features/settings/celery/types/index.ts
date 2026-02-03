@@ -53,6 +53,7 @@ export interface QueueMetrics {
 export interface CeleryQueue {
   name: string
   description: string
+  built_in?: boolean  // True for hardcoded queues (default, backup, network, heavy)
 }
 
 export interface CelerySettings {

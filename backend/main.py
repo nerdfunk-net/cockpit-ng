@@ -209,6 +209,16 @@ async def startup_services():
         logger.error(f"Failed to initialize database tables: {e}")
         raise
 
+    # Ensure built-in Celery queues exist
+    try:
+        from settings_manager import settings_manager
+
+        settings_manager.ensure_builtin_queues()
+        logger.info("Built-in Celery queues verified")
+    except Exception as e:
+        logger.error(f"Failed to ensure built-in queues: {e}")
+        # Don't raise - this is not critical for startup
+
     # Export SSH keys to filesystem
     try:
         import credentials_manager

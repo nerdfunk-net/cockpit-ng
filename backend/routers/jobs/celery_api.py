@@ -1682,8 +1682,17 @@ async def trigger_import_devices_from_csv(
 
 
 class CeleryQueue(BaseModel):
+    """
+    Celery queue configuration.
+
+    Fields:
+        name: Queue name (e.g., "default", "backup", "network", "heavy")
+        description: Human-readable description of queue purpose
+        built_in: True for hardcoded queues (cannot be deleted), False for custom queues
+    """
     name: str
     description: str = ""
+    built_in: bool = False  # Built-in queues are hardcoded in celery_app.py
 
 
 class CelerySettingsRequest(BaseModel):
@@ -1702,6 +1711,11 @@ async def get_celery_settings(
 ):
     """
     Get current Celery settings from database.
+
+    Queue System:
+    - Built-in queues (built_in=true): Hardcoded in celery_app.py, have automatic task routing
+    - Custom queues (built_in=false): Must be configured via CELERY_WORKER_QUEUE env var
+    - See CELERY_ARCHITECTURE.md for details on adding custom queues
     """
     from settings_manager import settings_manager
 
@@ -1719,6 +1733,12 @@ async def update_celery_settings(
     """
     Update Celery settings.
 
+    Queue Management:
+    - Built-in queues (default, backup, network, heavy) cannot be removed
+    - Custom queues can be added/removed freely
+    - Workers must be restarted to recognize queue changes
+    - Set CELERY_WORKER_QUEUE env var to use custom queues
+
     Note: max_workers changes require restarting the Celery worker to take effect.
     """
     from settings_manager import settings_manager
@@ -1726,6 +1746,27 @@ async def update_celery_settings(
     # Get current settings and merge with updates
     current = settings_manager.get_celery_settings()
     updates = request.model_dump(exclude_unset=True)
+
+    # Validate queue changes: Ensure built-in queues are not removed
+    if "queues" in updates:
+        built_in_queue_names = {"default", "backup", "network", "heavy"}
+        updated_queue_names = {q["name"] for q in updates["queues"]}
+
+        missing_built_ins = built_in_queue_names - updated_queue_names
+        if missing_built_ins:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot remove built-in queues: {', '.join(missing_built_ins)}. "
+                       f"Built-in queues (default, backup, network, heavy) are required.",
+            )
+
+        # Ensure built_in flag is set correctly for built-in queues
+        for queue in updates["queues"]:
+            if queue["name"] in built_in_queue_names:
+                queue["built_in"] = True
+            elif "built_in" not in queue:
+                queue["built_in"] = False
+
     merged = {**current, **updates}
 
     success = settings_manager.update_celery_settings(merged)

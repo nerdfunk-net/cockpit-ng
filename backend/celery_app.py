@@ -26,6 +26,12 @@ def load_queue_configuration():
     """
     Load queue configuration from database settings.
 
+    IMPORTANT: This function is NOT called at module import time to avoid
+    database connections before worker processes fork (which causes SIGSEGV on macOS).
+
+    Instead, we use a static default configuration that matches the database defaults.
+    Queue configuration changes require a worker restart.
+
     Returns a dict of queue configurations based on what's stored in the database.
     If database is not available or no queues configured, returns default queue only.
     """
@@ -55,16 +61,62 @@ def load_queue_configuration():
     except Exception as e:
         logger.error(f"Failed to load queues from database: {e}")
         logger.warning("Falling back to default queue configuration")
-        return {
-            "default": {
-                "exchange": "default",
-                "routing_key": "default",
-            }
-        }
+        return get_default_queue_configuration()
 
 
-# Load queues from database
-task_queues_from_db = load_queue_configuration()
+def get_default_queue_configuration():
+    """
+    Return default queue configuration without database access.
+
+    These are the built-in queues with automatic task routing.
+    Used at module import time to avoid database connections before forking.
+
+    CUSTOM QUEUES:
+    --------------
+    Super users can add custom queues without modifying this code:
+    1. Add queue in Settings UI (for documentation)
+    2. Configure CELERY_WORKER_QUEUE env var in docker-compose.yml
+    3. Celery will auto-create the queue in Redis
+    4. Manually route tasks to the queue (use .apply_async(queue='custom'))
+
+    Example docker-compose.yml:
+        environment:
+          - CELERY_WORKER_QUEUE=monitoring
+
+    The Settings UI queue configuration is mainly for documentation and
+    for start_celery.py to know which queues to listen to when
+    CELERY_WORKER_QUEUE is not set.
+    """
+    return {
+        "default": {
+            "exchange": "default",
+            "routing_key": "default",
+        },
+        "backup": {
+            "exchange": "backup",
+            "routing_key": "backup",
+        },
+        "network": {
+            "exchange": "network",
+            "routing_key": "network",
+        },
+        "heavy": {
+            "exchange": "heavy",
+            "routing_key": "heavy",
+        },
+    }
+
+
+# Use static default configuration to avoid database access before forking
+# NOTE: Previously this called load_queue_configuration() which accessed the database
+# at import time, causing SIGSEGV on macOS when workers forked
+#
+# Custom queues can be added by super users via:
+# 1. Settings UI (for documentation)
+# 2. CELERY_WORKER_QUEUE env var (tells worker which queue to listen to)
+# 3. Celery auto-creates queues in Redis as needed
+task_queues_from_db = get_default_queue_configuration()
+logger.info(f"Using default queue configuration ({len(task_queues_from_db)} queues)")
 
 # Celery configuration
 celery_app.conf.update(
