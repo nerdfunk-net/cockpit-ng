@@ -1,9 +1,17 @@
 #!/usr/bin/env python
 """
-Start script for Celery worker.
+Start script for Celery worker with platform-aware configuration.
 
-This script starts the Celery worker process with proper configuration.
-Supports dynamic queue configuration from database or environment variable.
+This script automatically detects the operating system and configures the Celery
+worker pool accordingly:
+
+Platform Detection:
+    - macOS (Darwin): Uses 'solo' pool to avoid SIGSEGV crashes with asyncio event
+      loops in forked processes. Tasks using asyncio.run() or asyncio.new_event_loop()
+      (like cache_all_devices_task) are incompatible with fork() on macOS.
+
+    - Linux/Other: Uses 'prefork' pool for optimal performance and concurrency.
+      Recommended for production deployments.
 
 Environment Variables:
     CELERY_WORKER_QUEUE: Comma-separated queue names to listen to.
@@ -18,9 +26,10 @@ Environment Variables:
 Behavior:
     - If CELERY_WORKER_QUEUE is NOT set: Worker listens to ALL queues configured in database
     - If CELERY_WORKER_QUEUE is set: Worker listens only to specified queues
+    - Pool type is automatically selected based on detected platform
 
 Usage:
-    # Listen to ALL queues from database
+    # Listen to ALL queues from database (automatic pool selection)
     python start_celery.py
 
     # Listen to specific queue
@@ -28,9 +37,15 @@ Usage:
 
     # Listen to multiple specific queues
     CELERY_WORKER_QUEUE=default,network,heavy python start_celery.py
+
+Notes:
+    - macOS developers: Worker runs in 'solo' mode (single process)
+    - Linux production: Worker runs in 'prefork' mode (multi-process)
+    - All asyncio-based tasks work correctly on both platforms
 """
 
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -139,6 +154,45 @@ def install_certificates():
         print(f"  WARNING: Failed to run update-ca-certificates: {e}")
 
 
+def get_worker_pool():
+    """
+    Determine the appropriate Celery worker pool based on the operating system.
+
+    macOS (Darwin): Uses 'solo' pool to avoid SIGSEGV crashes with asyncio event loops
+                    in forked processes. The asyncio.run() and asyncio.new_event_loop()
+                    calls in tasks like cache_all_devices_task are incompatible with
+                    fork() on macOS.
+
+    Linux/Other: Uses 'prefork' pool for optimal performance and concurrency.
+
+    Returns:
+        str: 'solo' for macOS, 'prefork' for Linux/other systems
+    """
+    system = platform.system().lower()
+
+    if system == 'darwin':  # macOS
+        return 'solo'
+    else:  # Linux and others
+        return 'prefork'
+
+
+def get_concurrency(pool_type):
+    """
+    Get appropriate concurrency setting based on pool type.
+
+    Args:
+        pool_type: The worker pool type ('solo' or 'prefork')
+
+    Returns:
+        int: Concurrency level (1 for solo, configured max_workers for prefork)
+    """
+    if pool_type == 'solo':
+        return 1
+    else:
+        # Use configured max_workers from settings
+        return settings.celery_max_workers
+
+
 def load_all_queues_from_db():
     """
     Load all configured queue names from the database.
@@ -169,6 +223,11 @@ def main():
     # Install certificates if enabled (for Docker environments)
     install_certificates()
 
+    # Detect platform and choose appropriate pool
+    pool_type = get_worker_pool()
+    concurrency = get_concurrency(pool_type)
+    system_name = platform.system()
+
     # Determine which queues to process from environment variable
     worker_queues_env = os.environ.get("CELERY_WORKER_QUEUE", "").strip()
 
@@ -192,21 +251,34 @@ def main():
     print("=" * 70)
     print(f"Starting Cockpit-NG Celery Worker - {worker_type}")
     print("=" * 70)
+    print(f"Platform: {system_name} ({platform.machine()})")
+    print(f"Pool Type: {pool_type}")
+    print(f"Concurrency: {concurrency}")
     print(f"Broker: {settings.celery_broker_url}")
     print(f"Backend: {settings.celery_result_backend}")
     print(f"Queues: {worker_queues}")
-    print(f"Max Workers: {settings.celery_max_workers}")
     print("Log Level: INFO")
     print("=" * 70)
+
+    # Show platform-specific warnings
+    if pool_type == 'solo':
+        print()
+        print("⚠️  DEVELOPMENT MODE (macOS)")
+        print("    Using 'solo' pool to avoid asyncio fork() incompatibility")
+        print("    Single-process worker - suitable for development only")
+        print("    Production deployments should use Linux with 'prefork' pool")
+        print("=" * 70)
+
     print()
 
     # Start worker with configured queues
     argv = [
         "worker",
         "--loglevel=INFO",
+        f"--pool={pool_type}",
         f"--queues={worker_queues}",
         f"--hostname={hostname_prefix}@%h",
-        f"--concurrency={settings.celery_max_workers}",
+        f"--concurrency={concurrency}",
         "--prefetch-multiplier=1",
         "--max-tasks-per-child=100",
     ]
