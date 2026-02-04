@@ -8,10 +8,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Debug: Print Redis configuration
-print(f"Celery Redis URL: {settings.redis_url}")
-print(f"Celery Broker URL: {settings.celery_broker_url}")
-print(f"Celery Result Backend: {settings.celery_result_backend}")
+# Log Redis configuration for startup verification
+logger.info(f"Celery Redis URL: {settings.redis_url}")
+logger.info(f"Celery Broker URL: {settings.celery_broker_url}")
+logger.info(f"Celery Result Backend: {settings.celery_result_backend}")
 
 # Create Celery application
 celery_app = Celery(
@@ -122,20 +122,52 @@ logger.info(f"Using default queue configuration ({len(task_queues_from_db)} queu
 
 # Celery configuration
 celery_app.conf.update(
+    # Serialization
     task_serializer="json",
     accept_content=["json"],
     result_serializer="json",
+
+    # Timezone
     timezone="UTC",
     enable_utc=True,
+
+    # Task execution settings
     task_track_started=True,
     task_time_limit=3600,  # 1 hour max per task
     result_expires=86400,  # Results expire after 24 hours
+
+    # Worker settings
     worker_prefetch_multiplier=1,  # One task at a time per worker
-    worker_max_tasks_per_child=100,  # Restart worker after 100 tasks
+    worker_max_tasks_per_child=100,  # Restart worker after 100 tasks to prevent memory leaks
+    worker_send_task_events=True,  # Enable task events for monitoring (Flower)
+
+    # Task reliability settings
+    task_acks_late=True,  # Acknowledge tasks after completion (prevents data loss on crash)
+    task_reject_on_worker_lost=True,  # Requeue tasks if worker crashes
+    task_send_sent_event=True,  # Track task lifecycle events
+
+    # Broker connection settings
+    broker_connection_retry_on_startup=True,  # Auto-reconnect on startup if Redis unavailable
+    broker_connection_retry=True,  # Retry on connection loss
+    broker_connection_max_retries=10,  # Max connection retry attempts
+
+    # Result backend transport options (Redis connection pooling)
+    result_backend_transport_options={
+        'master_name': None,  # Sentinel master name (None for standalone Redis)
+        'retry_on_timeout': True,  # Retry on Redis timeout
+        'socket_keepalive': True,  # Enable TCP keepalive
+        'socket_keepalive_options': {
+            1: 1,   # TCP_KEEPIDLE: seconds before sending keepalive probes
+            2: 1,   # TCP_KEEPINTVL: interval between keepalive probes
+            3: 5,   # TCP_KEEPCNT: number of keepalive probes
+        },
+    },
+
     # Celery Beat settings
     beat_scheduler="redbeat.RedBeatScheduler",  # Use Redis-based scheduler
     redbeat_redis_url=settings.redis_url,  # Redis URL for beat schedule
     redbeat_key_prefix="cockpit-ng:beat:",  # Prefix for beat keys in Redis
+
     # Queue Configuration - Loaded dynamically from database
     task_queues=task_queues_from_db,
     # Task routing rules - route specific tasks to dedicated queues
