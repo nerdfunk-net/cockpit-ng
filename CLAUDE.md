@@ -506,6 +506,8 @@ cd frontend && npm run dev
 # Backend: http://localhost:8000
 ```
 
+When implementing configuration changes, include verification steps that confirm the change works (e.g., run a quick test, check logs, or validate config loads)
+
 ## Nautobot Services Architecture
 
 **IMPORTANT:** Nautobot services follow a specialized pattern for external API integration.
@@ -692,3 +694,15 @@ ip_id = await ip_manager.ensure_ip_address_exists(...)
 - ❌ Inline query keys (always use `queryKeys` factory)
 - ❌ Storing query data in `useState` (use `useMemo` for derived state)
 - ❌ Forgetting to invalidate cache after mutations
+
+## Suggested CLAUDE.md Additions
+
+## Task Completion
+
+When removing features or debugging issues, always complete the full removal/fix cycle including: 1) Remove all related code, 2) Update configuration files, 3) Clean up imports/dependencies, 4) Verify no references remain with grep
+
+## Python Conventions
+
+For Python/Celery projects: Always add inline documentation comments when modifying queue configurations, task decorators, or worker settings
+
+
