@@ -39,6 +39,9 @@
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": false,
     "forceConsistentCasingInFileNames": true
+    // Future enhancements (require codebase refactoring):
+    // "exactOptionalPropertyTypes": true,  // Strict optional checking (8 files need updates)
+    // "verbatimModuleSyntax": true,        // Require 'import type' syntax (79 files need updates)
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
