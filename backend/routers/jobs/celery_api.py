@@ -6,6 +6,7 @@ All Celery-related endpoints are under /api/celery/*
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from celery.result import AsyncResult
+from kombu import Queue
 from core.auth import require_permission
 from core.celery_error_handler import handle_celery_errors
 from celery_app import celery_app
@@ -551,10 +552,15 @@ async def purge_queue(
 
         # Use broker_connection to purge the queue directly
         with celery_app.connection_or_acquire() as conn:
-            # Get the queue object
-            queue = task_queues[queue_name]
+            # Get the queue configuration and create a Queue object
+            queue_config = task_queues[queue_name]
+            queue_obj = Queue(
+                name=queue_name,
+                exchange=queue_config.get('exchange', queue_name),
+                routing_key=queue_config.get('routing_key', queue_name)
+            )
             # Purge it
-            purged_count = queue(conn.channel()).purge()
+            purged_count = queue_obj(conn.channel()).purge()
 
         logger.info(
             f"Purged {purged_count} task(s) from queue '{queue_name}' by user {current_user.get('username')}"
@@ -605,8 +611,13 @@ async def purge_all_queues(
         with celery_app.connection_or_acquire() as conn:
             for queue_name in task_queues.keys():
                 try:
-                    queue = task_queues[queue_name]
-                    purged_count = queue(conn.channel()).purge()
+                    queue_config = task_queues[queue_name]
+                    queue_obj = Queue(
+                        name=queue_name,
+                        exchange=queue_config.get('exchange', queue_name),
+                        routing_key=queue_config.get('routing_key', queue_name)
+                    )
+                    purged_count = queue_obj(conn.channel()).purge()
 
                     purged_queues.append(
                         {"queue": queue_name, "purged_tasks": purged_count or 0}

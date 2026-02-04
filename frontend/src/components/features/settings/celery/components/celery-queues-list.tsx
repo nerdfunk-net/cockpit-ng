@@ -26,12 +26,15 @@ export function CeleryQueuesList() {
   const { purgeQueue, purgeAllQueues } = useCeleryMutations()
   const [purgingQueue, setPurgingQueue] = useState<string | null>(null)
   const [purgingAll, setPurgingAll] = useState(false)
+  const [purgeDialogOpen, setPurgeDialogOpen] = useState<string | null>(null)
+  const [purgeAllDialogOpen, setPurgeAllDialogOpen] = useState(false)
 
   const handlePurgeQueue = async (queueName: string) => {
     setPurgingQueue(queueName)
     try {
       await purgeQueue.mutateAsync(queueName)
       await refetch()
+      setPurgeDialogOpen(null)
     } finally {
       setPurgingQueue(null)
     }
@@ -42,6 +45,7 @@ export function CeleryQueuesList() {
     try {
       await purgeAllQueues.mutateAsync()
       await refetch()
+      setPurgeAllDialogOpen(false)
     } finally {
       setPurgingAll(false)
     }
@@ -99,7 +103,7 @@ export function CeleryQueuesList() {
                     </div>
                     <TooltipProvider>
                       <Tooltip>
-                        <AlertDialog>
+                        <AlertDialog open={purgeAllDialogOpen} onOpenChange={setPurgeAllDialogOpen}>
                           <TooltipTrigger asChild>
                             <AlertDialogTrigger asChild>
                               <Button
@@ -128,7 +132,10 @@ export function CeleryQueuesList() {
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={handlePurgeAllQueues}
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  handlePurgeAllQueues()
+                                }}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
                                 Purge All Queues
@@ -275,7 +282,7 @@ export function CeleryQueuesList() {
                     <TableCell className="text-right">
                       <TooltipProvider>
                         <Tooltip>
-                          <AlertDialog>
+                          <AlertDialog open={purgeDialogOpen === queue.name} onOpenChange={(open) => setPurgeDialogOpen(open ? queue.name : null)}>
                             <TooltipTrigger asChild>
                               <AlertDialogTrigger asChild>
                                 <Button
@@ -304,7 +311,10 @@ export function CeleryQueuesList() {
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handlePurgeQueue(queue.name)}
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    handlePurgeQueue(queue.name)
+                                  }}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Purge Queue
