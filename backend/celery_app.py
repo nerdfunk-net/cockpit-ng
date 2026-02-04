@@ -121,6 +121,9 @@ task_queues_from_db = get_default_queue_configuration()
 logger.info(f"Using default queue configuration ({len(task_queues_from_db)} queues)")
 
 # Celery configuration
+# NOTE: These settings work with platform-aware pool selection in start_celery.py:
+#       - macOS: solo pool (no fork, safe for all settings)
+#       - Linux: prefork pool (optimal performance with all features)
 celery_app.conf.update(
     task_serializer="json",
     accept_content=["json"],
@@ -132,6 +135,29 @@ celery_app.conf.update(
     result_expires=86400,  # Results expire after 24 hours
     worker_prefetch_multiplier=1,  # One task at a time per worker
     worker_max_tasks_per_child=100,  # Restart worker after 100 tasks
+
+    # Monitoring settings - Enable Flower and task event tracking
+    worker_send_task_events=True,  # Send task events for Flower monitoring
+    task_send_sent_event=True,  # Track when tasks are sent to workers
+
+    # Connection reliability - Auto-reconnect on connection loss
+    broker_connection_retry_on_startup=True,  # Retry broker connection on startup
+    broker_connection_retry=True,  # Retry on connection loss during runtime
+    broker_connection_max_retries=10,  # Max retry attempts before giving up
+
+    # Task reliability - Ensure tasks survive worker crashes
+    task_acks_late=True,  # Acknowledge tasks after completion (not before)
+    task_reject_on_worker_lost=True,  # Requeue tasks if worker crashes
+
+    # Result backend optimization - Connection pooling and keepalive
+    result_backend_transport_options={
+        "master_name": None,  # Not using Redis Sentinel
+        "retry_on_timeout": True,  # Retry on Redis timeout
+        "socket_keepalive": True,  # Enable TCP keepalive for long connections
+        # NOTE: socket_keepalive_options removed - platform-specific TCP constants
+        # cause issues. Basic socket_keepalive=True is sufficient.
+    },
+
     # Celery Beat settings
     beat_scheduler="redbeat.RedBeatScheduler",  # Use Redis-based scheduler
     redbeat_redis_url=settings.redis_url,  # Redis URL for beat schedule
