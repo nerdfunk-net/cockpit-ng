@@ -526,16 +526,16 @@ async def purge_queue(
 ):
     """
     Purge all pending tasks from a specific queue.
-    
+
     This removes only queued (pending) tasks, not currently running tasks.
     Purged tasks cannot be recovered.
-    
+
     Args:
         queue_name: Name of the queue to purge (e.g., 'default', 'backup', 'network', 'heavy')
-    
+
     Returns:
         Success status, queue name, and number of purged tasks
-    
+
     Raises:
         HTTPException 404: Queue not found
         HTTPException 500: Failed to purge queue
@@ -546,35 +546,34 @@ async def purge_queue(
         if queue_name not in task_queues.keys():
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Queue '{queue_name}' not found"
+                detail=f"Queue '{queue_name}' not found",
             )
-        
-        # Purge the queue using Celery control
-        inspect = celery_app.control.inspect()
-        
+
         # Use broker_connection to purge the queue directly
         with celery_app.connection_or_acquire() as conn:
             # Get the queue object
             queue = task_queues[queue_name]
             # Purge it
             purged_count = queue(conn.channel()).purge()
-        
-        logger.info(f"Purged {purged_count} task(s) from queue '{queue_name}' by user {current_user.get('username')}")
-        
+
+        logger.info(
+            f"Purged {purged_count} task(s) from queue '{queue_name}' by user {current_user.get('username')}"
+        )
+
         return {
             "success": True,
             "queue": queue_name,
             "purged_tasks": purged_count or 0,
-            "message": f"Purged {purged_count or 0} pending task(s) from queue '{queue_name}'"
+            "message": f"Purged {purged_count or 0} pending task(s) from queue '{queue_name}'",
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error purging queue {queue_name}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to purge queue: {str(e)}"
+            detail=f"Failed to purge queue: {str(e)}",
         )
 
 
@@ -585,59 +584,60 @@ async def purge_all_queues(
 ):
     """
     Purge all pending tasks from all queues.
-    
+
     This removes all queued (pending) tasks from every queue, not currently running tasks.
     Purged tasks cannot be recovered.
-    
+
     Returns:
         Success status, list of purged queues with counts, and total purged tasks
-    
+
     Raises:
         HTTPException 500: Failed to purge queues
     """
     try:
         # Get all queue configurations
         task_queues = celery_app.conf.task_queues or {}
-        
+
         purged_queues = []
         total_purged = 0
-        
+
         # Purge each queue
         with celery_app.connection_or_acquire() as conn:
             for queue_name in task_queues.keys():
                 try:
                     queue = task_queues[queue_name]
                     purged_count = queue(conn.channel()).purge()
-                    
-                    purged_queues.append({
-                        "queue": queue_name,
-                        "purged_tasks": purged_count or 0
-                    })
-                    total_purged += (purged_count or 0)
-                    
-                    logger.info(f"Purged {purged_count} task(s) from queue '{queue_name}'")
+
+                    purged_queues.append(
+                        {"queue": queue_name, "purged_tasks": purged_count or 0}
+                    )
+                    total_purged += purged_count or 0
+
+                    logger.info(
+                        f"Purged {purged_count} task(s) from queue '{queue_name}'"
+                    )
                 except Exception as e:
                     logger.error(f"Error purging queue {queue_name}: {e}")
-                    purged_queues.append({
-                        "queue": queue_name,
-                        "purged_tasks": 0,
-                        "error": str(e)
-                    })
-        
-        logger.info(f"Purged total of {total_purged} task(s) from all queues by user {current_user.get('username')}")
-        
+                    purged_queues.append(
+                        {"queue": queue_name, "purged_tasks": 0, "error": str(e)}
+                    )
+
+        logger.info(
+            f"Purged total of {total_purged} task(s) from all queues by user {current_user.get('username')}"
+        )
+
         return {
             "success": True,
             "total_purged": total_purged,
             "queues": purged_queues,
-            "message": f"Purged {total_purged} pending task(s) from {len(purged_queues)} queue(s)"
+            "message": f"Purged {total_purged} pending task(s) from {len(purged_queues)} queue(s)",
         }
-        
+
     except Exception as e:
         logger.error(f"Error purging all queues: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to purge all queues: {str(e)}"
+            detail=f"Failed to purge all queues: {str(e)}",
         )
 
 
@@ -1813,6 +1813,7 @@ class CeleryQueue(BaseModel):
         description: Human-readable description of queue purpose
         built_in: True for hardcoded queues (cannot be deleted), False for custom queues
     """
+
     name: str
     description: str = ""
     built_in: bool = False  # Built-in queues are hardcoded in celery_app.py
@@ -1880,7 +1881,7 @@ async def update_celery_settings(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Cannot remove built-in queues: {', '.join(missing_built_ins)}. "
-                       f"Built-in queues (default, backup, network, heavy) are required.",
+                f"Built-in queues (default, backup, network, heavy) are required.",
             )
 
         # Ensure built_in flag is set correctly for built-in queues

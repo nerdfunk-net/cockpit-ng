@@ -152,9 +152,7 @@ class NetworkResolver(BaseResolver):
             logger.error(f"Error resolving interface: {e}", exc_info=True)
             return None
 
-    async def resolve_prefix(
-        self, prefix: str, namespace_id: str
-    ) -> Optional[str]:
+    async def resolve_prefix(self, prefix: str, namespace_id: str) -> Optional[str]:
         """
         Resolve prefix UUID from prefix and namespace.
 
@@ -166,9 +164,7 @@ class NetworkResolver(BaseResolver):
             Prefix UUID if found, None otherwise
         """
         try:
-            logger.debug(
-                f"Resolving prefix '{prefix}' in namespace {namespace_id}"
-            )
+            logger.debug(f"Resolving prefix '{prefix}' in namespace {namespace_id}")
 
             # Use REST API for prefix lookup
             prefix_search_endpoint = (

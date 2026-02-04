@@ -52,7 +52,7 @@ class BackupRepository:
 
         # Build GraphQL query - only include parentheses if there are filters
         devices_query = f"devices({filter_string})" if filter_string else "devices"
-        
+
         query = f"""
         query {{
             {devices_query} {{

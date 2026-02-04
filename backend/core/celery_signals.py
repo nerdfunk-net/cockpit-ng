@@ -35,7 +35,7 @@ References:
 
 import logging
 from celery import signals
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ def init_worker_process(**kwargs):
 
     # CRITICAL: Dispose of any inherited connections from parent process
     # This prevents connection sharing across processes which causes SIGSEGV
-    if hasattr(database, 'engine') and database.engine is not None:
+    if hasattr(database, "engine") and database.engine is not None:
         logger.info("[Worker Init] Disposing parent's database engine")
         try:
             database.engine.dispose(close=False)
@@ -73,7 +73,7 @@ def init_worker_process(**kwargs):
             logger.warning(f"[Worker Init] Error disposing parent engine: {e}")
 
     # Also dispose SessionLocal if it exists
-    if hasattr(database, 'SessionLocal') and database.SessionLocal is not None:
+    if hasattr(database, "SessionLocal") and database.SessionLocal is not None:
         try:
             database.SessionLocal.close_all()
         except Exception as e:
@@ -95,14 +95,12 @@ def init_worker_process(**kwargs):
             echo=False,  # SQL logging disabled (use LOG_LEVEL for application logging)
             # Important for forking: create connections lazily
             pool_timeout=30,
-            connect_args={"connect_timeout": 10}
+            connect_args={"connect_timeout": 10},
         )
 
         # Recreate session factory with new engine
         database.SessionLocal = sessionmaker(
-            autocommit=False,
-            autoflush=False,
-            bind=database.engine
+            autocommit=False, autoflush=False, bind=database.engine
         )
 
         # Note: We don't test the connection here because:
@@ -111,11 +109,14 @@ def init_worker_process(**kwargs):
         # 3. The first task that uses the DB will validate the connection
         # 4. Lazy connection creation avoids immediate psycopg2 calls after fork
 
-        logger.info(f"[Worker Init] Database engine initialized successfully for PID={pid}")
+        logger.info(
+            f"[Worker Init] Database engine initialized successfully for PID={pid}"
+        )
 
     except Exception as e:
         logger.error(f"[Worker Init] Failed to initialize database engine: {e}")
         import traceback
+
         logger.error(traceback.format_exc())
         raise
 
@@ -135,9 +136,11 @@ def shutdown_worker_process(**kwargs):
     """
     from core import database
 
-    logger.info(f"[Worker Shutdown] Cleaning up database connections for worker {kwargs.get('sender')}")
+    logger.info(
+        f"[Worker Shutdown] Cleaning up database connections for worker {kwargs.get('sender')}"
+    )
 
-    if hasattr(database, 'engine') and database.engine:
+    if hasattr(database, "engine") and database.engine:
         try:
             database.engine.dispose()
             logger.info("[Worker Shutdown] Database engine disposed")
@@ -166,21 +169,25 @@ def init_worker(**kwargs):
 
     # CRITICAL: Dispose of any database connections in parent process
     # before forking to avoid connection sharing
-    if hasattr(database, 'engine') and database.engine is not None:
-        logger.info("[Worker Main] Disposing database engine in parent process before forking")
+    if hasattr(database, "engine") and database.engine is not None:
+        logger.info(
+            "[Worker Main] Disposing database engine in parent process before forking"
+        )
         try:
             database.engine.dispose(close=False)
             database.engine = None
         except Exception as e:
             logger.warning(f"[Worker Main] Error disposing engine: {e}")
 
-    if hasattr(database, 'SessionLocal') and database.SessionLocal is not None:
+    if hasattr(database, "SessionLocal") and database.SessionLocal is not None:
         try:
             database.SessionLocal.close_all()
         except Exception as e:
             logger.warning(f"[Worker Main] Error closing sessions: {e}")
 
-    logger.info("[Worker Main] Worker child processes will initialize their own database engines")
+    logger.info(
+        "[Worker Main] Worker child processes will initialize their own database engines"
+    )
 
 
 @signals.worker_ready.connect

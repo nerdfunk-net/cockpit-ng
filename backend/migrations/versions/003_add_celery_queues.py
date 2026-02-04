@@ -42,12 +42,12 @@ class Migration(BaseMigration):
 
                 # Initialize existing records with default queues
                 self.log_info("Initializing existing records with default queues...")
-                default_queues = '''[
+                default_queues = """[
                     {"name": "default", "description": "Default queue for general tasks"},
                     {"name": "backup", "description": "Queue for device backup operations"},
                     {"name": "network", "description": "Queue for network scanning and discovery tasks"},
                     {"name": "heavy", "description": "Queue for bulk operations and heavy processing tasks"}
-                ]'''
+                ]"""
 
                 result = conn.execute(
                     text("""
@@ -55,18 +55,20 @@ class Migration(BaseMigration):
                         SET queues = :default_queues
                         WHERE queues IS NULL
                     """),
-                    {"default_queues": default_queues}
+                    {"default_queues": default_queues},
                 )
                 conn.commit()
 
                 rows_updated = result.rowcount
 
-                self.log_info("Successfully added queues column and initialized default queues")
+                self.log_info(
+                    "Successfully added queues column and initialized default queues"
+                )
 
                 return {
                     "columns_added": 1,
                     "rows_updated": rows_updated,
-                    "message": "Added queues column and initialized with default queue"
+                    "message": "Added queues column and initialized with default queue",
                 }
 
         except Exception as e:
@@ -97,7 +99,7 @@ class Migration(BaseMigration):
 
                 return {
                     "columns_removed": 1,
-                    "message": "Removed queues column from celery_settings table"
+                    "message": "Removed queues column from celery_settings table",
                 }
 
         except Exception as e:

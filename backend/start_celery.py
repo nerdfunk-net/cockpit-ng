@@ -148,14 +148,15 @@ def load_all_queues_from_db():
     """
     try:
         from settings_manager import settings_manager
+
         celery_settings = settings_manager.get_celery_settings()
-        configured_queues = celery_settings.get('queues', [])
+        configured_queues = celery_settings.get("queues", [])
 
         if not configured_queues:
             print("Warning: No queues found in database, using default queue")
             return "default"
 
-        queue_names = [q['name'] for q in configured_queues]
+        queue_names = [q["name"] for q in configured_queues]
         return ",".join(queue_names)
     except Exception as e:
         print(f"Warning: Failed to load queues from database: {e}")

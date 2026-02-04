@@ -39,7 +39,7 @@ def load_queue_configuration():
         from settings_manager import settings_manager
 
         celery_settings = settings_manager.get_celery_settings()
-        configured_queues = celery_settings.get('queues', [])
+        configured_queues = celery_settings.get("queues", [])
 
         if not configured_queues:
             logger.warning("No queues configured in database, using default queue only")
@@ -48,12 +48,14 @@ def load_queue_configuration():
         # Build task_queues dict from database configuration
         task_queues = {}
         for queue in configured_queues:
-            queue_name = queue.get('name', 'default')
+            queue_name = queue.get("name", "default")
             task_queues[queue_name] = {
                 "exchange": queue_name,
                 "routing_key": queue_name,
             }
-            logger.info(f"Loaded queue from database: {queue_name} - {queue.get('description', '')}")
+            logger.info(
+                f"Loaded queue from database: {queue_name} - {queue.get('description', '')}"
+            )
 
         logger.info(f"Loaded {len(task_queues)} queue(s) from database configuration")
         return task_queues

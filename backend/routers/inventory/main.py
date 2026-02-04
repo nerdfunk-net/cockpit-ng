@@ -481,7 +481,7 @@ async def export_inventory(
 
         # Build export data structure
         from datetime import datetime
-        
+
         export_data = {
             "version": 2,
             "metadata": {
@@ -492,7 +492,7 @@ async def export_inventory(
                 "exportedBy": username,
                 "originalId": inventory["id"],
             },
-            "conditionTree": None
+            "conditionTree": None,
         }
 
         # Extract condition tree from conditions
@@ -500,7 +500,11 @@ async def export_inventory(
         if conditions and len(conditions) > 0:
             first_condition = conditions[0]
             # Check if this is version 2 format (with tree)
-            if isinstance(first_condition, dict) and "version" in first_condition and first_condition["version"] == 2:
+            if (
+                isinstance(first_condition, dict)
+                and "version" in first_condition
+                and first_condition["version"] == 2
+            ):
                 export_data["conditionTree"] = first_condition.get("tree")
             else:
                 # Legacy flat format - convert to tree
@@ -513,20 +517,20 @@ async def export_inventory(
                             "id": f"item-{i}",
                             "field": cond.get("field", ""),
                             "operator": cond.get("operator", ""),
-                            "value": cond.get("value", "")
+                            "value": cond.get("value", ""),
                         }
                         for i, cond in enumerate(conditions)
-                    ]
+                    ],
                 }
 
         # Return as JSON response
         from fastapi.responses import JSONResponse
-        
+
         return JSONResponse(
             content=export_data,
             headers={
                 "Content-Disposition": f'attachment; filename="inventory-{inventory["name"]}.json"'
-            }
+            },
         )
 
     except HTTPException:
@@ -545,7 +549,9 @@ class ImportInventoryRequest(BaseModel):
     import_data: dict = Field(..., description="The JSON data to import")
 
 
-@router.post("/import", response_model=InventoryResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/import", response_model=InventoryResponse, status_code=status.HTTP_201_CREATED
+)
 async def import_inventory(
     request: ImportInventoryRequest,
     current_user: dict = Depends(require_permission("general.inventory", "write")),
@@ -593,10 +599,7 @@ async def import_inventory(
         description = metadata.get("description", "Imported inventory")
 
         # Wrap the condition tree in version 2 format
-        tree_data = {
-            "version": 2,
-            "tree": import_data["conditionTree"]
-        }
+        tree_data = {"version": 2, "tree": import_data["conditionTree"]}
 
         inventory_data = {
             "name": new_name,

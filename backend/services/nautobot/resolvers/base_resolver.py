@@ -48,9 +48,7 @@ class BaseResolver:
             '550e8400-e29b-41d4-a716-446655440000'
         """
         try:
-            logger.debug(
-                f"Resolving {resource_type} by {field_name}='{field_value}'"
-            )
+            logger.debug(f"Resolving {resource_type} by {field_name}='{field_value}'")
 
             # Build GraphQL query dynamically
             query = f"""
@@ -60,7 +58,9 @@ class BaseResolver:
               }}
             }}
             """
-            variables = {"value": [field_value] if isinstance(field_value, str) else field_value}
+            variables = {
+                "value": [field_value] if isinstance(field_value, str) else field_value
+            }
 
             result = await self.nautobot.graphql_query(query, variables)
 
@@ -87,9 +87,7 @@ class BaseResolver:
             )
             return None
 
-    async def _resolve_by_name(
-        self, resource_type: str, name: str
-    ) -> Optional[str]:
+    async def _resolve_by_name(self, resource_type: str, name: str) -> Optional[str]:
         """
         Resolve resource by name (common pattern).
 

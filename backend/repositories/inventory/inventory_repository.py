@@ -42,7 +42,7 @@ class InventoryRepository(BaseRepository[Inventory]):
                 | (
                     (self.model.scope == "private")
                     & (self.model.created_by == username)
-                )
+                ),
             )
 
             if active_only:

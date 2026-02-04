@@ -6,7 +6,7 @@ during scan_prefixes jobs.
 """
 
 from migrations.base import BaseMigration
-from sqlalchemy import Boolean, text
+from sqlalchemy import text
 
 
 class Migration(BaseMigration):
@@ -40,7 +40,7 @@ class Migration(BaseMigration):
                         """
                     )
                 )
-                
+
                 if result.fetchone() is None:
                     # Column doesn't exist, add it
                     conn.execute(
@@ -52,7 +52,9 @@ class Migration(BaseMigration):
                         )
                     )
                     conn.commit()
-                    self.log_info("✓ scan_set_reachable_ip_active column added successfully")
+                    self.log_info(
+                        "✓ scan_set_reachable_ip_active column added successfully"
+                    )
                 else:
                     self.log_debug("scan_set_reachable_ip_active column already exists")
 
@@ -70,7 +72,9 @@ class Migration(BaseMigration):
         """
         Remove scan_set_reachable_ip_active column from job_templates table.
         """
-        self.log_info("Removing scan_set_reachable_ip_active column from job_templates...")
+        self.log_info(
+            "Removing scan_set_reachable_ip_active column from job_templates..."
+        )
 
         try:
             with self.engine.connect() as conn:
@@ -85,7 +89,7 @@ class Migration(BaseMigration):
                         """
                     )
                 )
-                
+
                 if result.fetchone() is not None:
                     # Column exists, drop it
                     conn.execute(
@@ -97,7 +101,9 @@ class Migration(BaseMigration):
                         )
                     )
                     conn.commit()
-                    self.log_info("✓ scan_set_reachable_ip_active column removed successfully")
+                    self.log_info(
+                        "✓ scan_set_reachable_ip_active column removed successfully"
+                    )
                 else:
                     self.log_debug("scan_set_reachable_ip_active column doesn't exist")
 

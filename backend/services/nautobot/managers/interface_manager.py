@@ -3,7 +3,7 @@ Interface lifecycle manager.
 """
 
 import logging
-from typing import Optional, Tuple
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +11,9 @@ logger = logging.getLogger(__name__)
 class InterfaceManager:
     """Manager for interface lifecycle operations."""
 
-    def __init__(self, nautobot_service, network_resolver, metadata_resolver, ip_manager):
+    def __init__(
+        self, nautobot_service, network_resolver, metadata_resolver, ip_manager
+    ):
         """
         Initialize the interface manager.
 
@@ -263,7 +265,9 @@ class InterfaceManager:
 
         # Step 4: Assign the new IP to the existing interface
         logger.info(f"Assigning IP {new_ip} to interface {interface_name}")
-        await self.ip_manager.assign_ip_to_interface(ip_id=new_ip_id, interface_id=interface_id)
+        await self.ip_manager.assign_ip_to_interface(
+            ip_id=new_ip_id, interface_id=interface_id
+        )
 
         logger.info(
             f"✓ Successfully updated interface {interface_name} from {old_ip} to {new_ip}"

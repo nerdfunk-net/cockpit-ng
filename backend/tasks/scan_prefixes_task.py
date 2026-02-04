@@ -137,12 +137,16 @@ def _update_ip_in_nautobot(
             )
 
             if not response.ok:
-                logger.error(f"Failed to update IP {ip_address}. Status: {response.status_code}, Response: {response.text}")
+                logger.error(
+                    f"Failed to update IP {ip_address}. Status: {response.status_code}, Response: {response.text}"
+                )
 
             response.raise_for_status()
 
             # Log what was updated
-            log_msg = f"Updated IP {ip_address} - {response_custom_field_name}={current_date}"
+            log_msg = (
+                f"Updated IP {ip_address} - {response_custom_field_name}={current_date}"
+            )
             if set_active:
                 log_msg += ", status=Active"
             logger.info(log_msg)
@@ -159,7 +163,7 @@ def _update_ip_in_nautobot(
             response.raise_for_status()
 
             prefixes = response.json().get("results", [])
-            
+
             if not prefixes:
                 logger.error(f"No parent prefix found for IP {ip_address} in Nautobot")
                 return False
@@ -195,8 +199,10 @@ def _update_ip_in_nautobot(
 
             # Extract prefix length from parent prefix (e.g., "192.168.178.0/24" -> "24")
             parent_prefix_cidr = best_prefix.get("prefix", "")
-            prefix_length = parent_prefix_cidr.split("/")[1] if "/" in parent_prefix_cidr else "32"
-            
+            prefix_length = (
+                parent_prefix_cidr.split("/")[1] if "/" in parent_prefix_cidr else "32"
+            )
+
             # Create IP address WITH netmask (e.g., "192.168.178.1/24")
             ip_with_netmask = f"{ip_address}/{prefix_length}"
 
@@ -218,15 +224,21 @@ def _update_ip_in_nautobot(
             )
 
             if not response.ok:
-                logger.error(f"Failed to create IP {ip_address}. Status: {response.status_code}, Response: {response.text}")
+                logger.error(
+                    f"Failed to create IP {ip_address}. Status: {response.status_code}, Response: {response.text}"
+                )
 
             response.raise_for_status()
 
-            logger.info(f"Created IP {ip_address} - {response_custom_field_name}={current_date}, status=Active")
+            logger.info(
+                f"Created IP {ip_address} - {response_custom_field_name}={current_date}, status=Active"
+            )
             return True
 
     except Exception as e:
-        logger.error(f"Error processing IP {ip_address} in Nautobot: {e}", exc_info=True)
+        logger.error(
+            f"Error processing IP {ip_address} in Nautobot: {e}", exc_info=True
+        )
         return False
 
 

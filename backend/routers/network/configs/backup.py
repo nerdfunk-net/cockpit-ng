@@ -30,7 +30,9 @@ class BulkBackupTrigger(BaseModel):
     device_ids: list[str]
 
 
-@router.get("/devices", dependencies=[Depends(require_permission("network.backup", "read"))])
+@router.get(
+    "/devices", dependencies=[Depends(require_permission("network.backup", "read"))]
+)
 async def get_backup_devices(
     name: Optional[str] = Query(None, description="Filter by device name"),
     role: Optional[str] = Query(None, description="Filter by role"),
@@ -101,7 +103,9 @@ async def get_backup_devices(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/trigger", dependencies=[Depends(require_permission("network.backup", "write"))])
+@router.post(
+    "/trigger", dependencies=[Depends(require_permission("network.backup", "write"))]
+)
 async def trigger_backup(
     payload: BackupTrigger,
     db: Session = Depends(get_db),
@@ -138,7 +142,8 @@ async def trigger_backup(
 
 
 @router.post(
-    "/trigger-bulk", dependencies=[Depends(require_permission("network.backup", "write"))]
+    "/trigger-bulk",
+    dependencies=[Depends(require_permission("network.backup", "write"))],
 )
 async def trigger_bulk_backup(
     payload: BulkBackupTrigger,

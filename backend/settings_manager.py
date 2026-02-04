@@ -528,22 +528,32 @@ class SettingsManager:
                 if builtin_queue["name"] not in existing_names:
                     current_queues.append(builtin_queue)
                     queues_added.append(builtin_queue["name"])
-                    logger.info(f"Restored missing built-in queue: {builtin_queue['name']}")
+                    logger.info(
+                        f"Restored missing built-in queue: {builtin_queue['name']}"
+                    )
                 else:
                     # Ensure existing built-in queue has built_in flag set
                     for q in current_queues:
                         if q["name"] == builtin_queue["name"]:
                             if not q.get("built_in"):
                                 q["built_in"] = True
-                                logger.info(f"Set built_in flag for queue: {builtin_queue['name']}")
+                                logger.info(
+                                    f"Set built_in flag for queue: {builtin_queue['name']}"
+                                )
 
             # Update settings if changes were made
-            if queues_added or any(not q.get("built_in") for q in current_queues if q["name"] in {bq["name"] for bq in BUILTIN_QUEUES}):
+            if queues_added or any(
+                not q.get("built_in")
+                for q in current_queues
+                if q["name"] in {bq["name"] for bq in BUILTIN_QUEUES}
+            ):
                 current["queues"] = current_queues
                 success = self.update_celery_settings(current)
 
                 if success and queues_added:
-                    logger.info(f"Restored {len(queues_added)} built-in queue(s): {', '.join(queues_added)}")
+                    logger.info(
+                        f"Restored {len(queues_added)} built-in queue(s): {', '.join(queues_added)}"
+                    )
 
                 return success
             else:
