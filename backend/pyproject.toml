@@ -21,19 +21,33 @@ addopts = [
     "--cov-report=xml",            # Generate XML coverage report for CI
 ]
 
-# Markers
+# Async testing mode
+asyncio_mode = "auto"
+
+# Markers (registered to avoid warnings)
 markers = [
     "unit: Unit tests (fast, no external dependencies)",
-    "integration: Integration tests (may use external services)",
-    "slow: Tests that take a long time to run",
+    "integration: Integration tests (may use real external systems or mocked externals)",
+    "e2e: End-to-end tests (real systems, manual only)",
+    "nautobot: Tests involving Nautobot integration",
+    "checkmk: Tests involving CheckMK integration",
+    "snmp: Tests involving SNMP configuration and detection",
     "celery: Tests that require Celery",
+    "slow: Tests that take >5 seconds",
+    "asyncio: Async tests using pytest-asyncio",
+    "real_nautobot: Tests that connect to real Nautobot instance (requires .env.test)",
 ]
 
 # Ignore warnings from third-party libraries
 filterwarnings = [
-    "ignore::DeprecationWarning",
-    "ignore::PendingDeprecationWarning",
+    # Ignore passlib's crypt deprecation (third-party library issue)
+    "ignore:.*'crypt' is deprecated.*:DeprecationWarning",
+    # Ignore starlette multipart deprecation
+    "ignore:.*import python_multipart.*:PendingDeprecationWarning",
 ]
+
+# Console output style
+console_output_style = "progress"
 
 # Coverage settings
 [tool.coverage.run]
