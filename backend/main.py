@@ -369,7 +369,7 @@ async def startup_services():
             """Prefetch all device properties from Nautobot using Celery background task."""
             try:
                 logger.debug("Startup cache: prefetch_devices_once() starting")
-                from tasks.cache_tasks import cache_all_devices_task
+                from services.background_jobs import cache_all_devices_task
 
                 # Trigger device caching via Celery
                 task = cache_all_devices_task.delay()
