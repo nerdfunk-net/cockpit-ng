@@ -4,12 +4,50 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { RefreshCw, Layers, Users, Clock, AlertCircle } from 'lucide-react'
+import { RefreshCw, Layers, Users, Clock, AlertCircle, Eraser } from 'lucide-react'
 import { useCeleryQueues } from '../hooks/use-celery-queries'
+import { useCeleryMutations } from '../hooks/use-celery-mutations'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { useState } from 'react'
 
 export function CeleryQueuesList() {
   const { data: queues, isLoading, refetch } = useCeleryQueues()
+  const { purgeQueue, purgeAllQueues } = useCeleryMutations()
+  const [purgingQueue, setPurgingQueue] = useState<string | null>(null)
+  const [purgingAll, setPurgingAll] = useState(false)
+
+  const handlePurgeQueue = async (queueName: string) => {
+    setPurgingQueue(queueName)
+    try {
+      await purgeQueue.mutateAsync(queueName)
+      await refetch()
+    } finally {
+      setPurgingQueue(null)
+    }
+  }
+
+  const handlePurgeAllQueues = async () => {
+    setPurgingAll(true)
+    try {
+      await purgeAllQueues.mutateAsync()
+      await refetch()
+    } finally {
+      setPurgingAll(false)
+    }
+  }
+
+  const totalPendingTasks = queues?.reduce((sum, q) => sum + q.pending_tasks, 0) || 0
 
   // Queue color coding based on usage
   const getQueueVariant = (pendingTasks: number, workerCount: number): 'default' | 'secondary' | 'destructive' | 'outline' => {
@@ -54,14 +92,57 @@ export function CeleryQueuesList() {
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-orange-600" />
-                    Pending Tasks
+                  <CardTitle className="text-sm font-medium flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-orange-600" />
+                      Pending Tasks
+                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <AlertDialog>
+                          <TooltipTrigger asChild>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={totalPendingTasks === 0 || purgingAll}
+                                className="h-6 w-6 p-0"
+                              >
+                                <Eraser className="h-3.5 w-3.5 text-orange-600" />
+                              </Button>
+                            </AlertDialogTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Clear all pending tasks from all queues</p>
+                          </TooltipContent>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Purge All Queues</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to purge all {totalPendingTasks} pending task(s) from all queues?
+                                <br />
+                                <br />
+                                <strong>This action cannot be undone.</strong> Only pending tasks will be removed; running tasks will not be affected.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={handlePurgeAllQueues}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Purge All Queues
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </Tooltip>
+                    </TooltipProvider>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {queues.reduce((sum, q) => sum + q.pending_tasks, 0)}
+                    {totalPendingTasks}
                   </div>
                 </CardContent>
               </Card>
@@ -106,6 +187,7 @@ export function CeleryQueuesList() {
                   <TableHead className="text-right">Active</TableHead>
                   <TableHead>Workers</TableHead>
                   <TableHead>Routed Tasks</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -187,6 +269,49 @@ export function CeleryQueuesList() {
                               )}
                             </div>
                           </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <AlertDialog>
+                            <TooltipTrigger asChild>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={queue.pending_tasks === 0 || purgingQueue === queue.name}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Eraser className="h-4 w-4 text-orange-600" />
+                                </Button>
+                              </AlertDialogTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Clear all pending tasks from this queue</p>
+                            </TooltipContent>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Purge Queue: {queue.name}</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to purge all {queue.pending_tasks} pending task(s) from the &quot;{queue.name}&quot; queue?
+                                  <br />
+                                  <br />
+                                  <strong>This action cannot be undone.</strong> Only pending tasks will be removed; running tasks will not be affected.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handlePurgeQueue(queue.name)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Purge Queue
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </Tooltip>
                       </TooltipProvider>
                     </TableCell>

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
-import type { CelerySettings, CeleryActionResponse } from '../types'
+import type { CelerySettings, CeleryActionResponse, PurgeQueueResponse, PurgeAllQueuesResponse } from '../types'
 import { useMemo } from 'react'
 
 export function useCeleryMutations() {
@@ -91,10 +91,66 @@ export function useCeleryMutations() {
     }
   })
 
+  // Purge queue
+  const purgeQueue = useMutation({
+    mutationFn: async (queueName: string) => {
+      const response = await apiCall<PurgeQueueResponse>(`/api/celery/queues/${queueName}/purge`, {
+        method: 'DELETE'
+      })
+      if (!response?.success) {
+        throw new Error(response?.message || 'Failed to purge queue')
+      }
+      return response
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.celery.queues() })
+      toast({
+        title: 'Success',
+        description: data.message || `Purged ${data.purged_tasks} task(s) from queue ${data.queue}`,
+      })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: `Failed to purge queue: ${error.message}`,
+        variant: 'destructive'
+      })
+    }
+  })
+
+  // Purge all queues
+  const purgeAllQueues = useMutation({
+    mutationFn: async () => {
+      const response = await apiCall<PurgeAllQueuesResponse>('/api/celery/queues/purge-all', {
+        method: 'DELETE'
+      })
+      if (!response?.success) {
+        throw new Error(response?.message || 'Failed to purge all queues')
+      }
+      return response
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.celery.queues() })
+      toast({
+        title: 'Success',
+        description: data.message || `Purged ${data.total_purged} task(s) from all queues`,
+      })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: `Failed to purge all queues: ${error.message}`,
+        variant: 'destructive'
+      })
+    }
+  })
+
   // Memoize return object to prevent re-renders
   return useMemo(() => ({
     saveSettings,
     triggerCleanup,
     submitTestTask,
-  }), [saveSettings, triggerCleanup, submitTestTask])
+    purgeQueue,
+    purgeAllQueues,
+  }), [saveSettings, triggerCleanup, submitTestTask, purgeQueue, purgeAllQueues])
 }

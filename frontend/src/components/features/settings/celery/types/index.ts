@@ -98,3 +98,21 @@ export interface CeleryQueuesResponse {
   total_queues: number
   error?: string
 }
+
+export interface PurgeQueueResponse {
+  success: boolean
+  queue: string
+  purged_tasks: number
+  message: string
+}
+
+export interface PurgeAllQueuesResponse {
+  success: boolean
+  total_purged: number
+  queues: Array<{
+    queue: string
+    purged_tasks: number
+    error?: string
+  }>
+  message: string
+}
