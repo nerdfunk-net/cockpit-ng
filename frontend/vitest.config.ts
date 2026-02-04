@@ -24,6 +24,12 @@ export default defineConfig({
     ],
     pool: 'forks',
     fileParallelism: false,
+    // Timeout settings (in milliseconds)
+    testTimeout: 10000,       // 10s per test (default: 5s)
+    hookTimeout: 10000,       // 10s for beforeEach/afterEach
+    teardownTimeout: 10000,   // 10s for cleanup
+    // Test validation
+    passWithNoTests: false,   // Fail if no tests found (catch typos in test patterns)
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
