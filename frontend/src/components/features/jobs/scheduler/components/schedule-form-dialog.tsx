@@ -108,7 +108,7 @@ export function ScheduleFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl p-0 gap-0 overflow-hidden">
+      <DialogContent className="!max-w-5xl sm:!max-w-5xl p-0 gap-0 overflow-hidden">
         {/* Header with gradient */}
         <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 px-6 py-4">
           <DialogHeader className="text-white">
