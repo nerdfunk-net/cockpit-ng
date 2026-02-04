@@ -26,9 +26,18 @@ export default function BackupPage() {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [sorting, setSorting] = useState<BackupSorting>({ order: 'none' })
 
+  // Sanitize filters: remove dateComparison if no lastBackupDate is set
+  const sanitizedFilters = useMemo(() => {
+    const cleanFilters = { ...filters }
+    if (!cleanFilters.lastBackupDate && cleanFilters.dateComparison) {
+      delete cleanFilters.dateComparison
+    }
+    return cleanFilters
+  }, [filters])
+
   // TanStack Query - replaces ALL manual state management
   const { data, isLoading, error } = useBackupDevices({
-    filters,
+    filters: sanitizedFilters,
     pagination: {
       limit: pageSize,
       offset: currentPage * pageSize
