@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { FilterableSelect } from '@/components/ui/filterable-select'
 import { FileText, Loader2 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 
@@ -135,27 +135,20 @@ export function CustomFieldsModal({
                       </td>
                       <td className="py-2 px-3">
                         {field.type?.value === 'select' && customFieldChoices[field.key] ? (
-                          <Select
+                          <FilterableSelect
                             value={customFieldValues[field.key] || ''}
                             onValueChange={(value) => onUpdateCustomField(field.key, value)}
-                          >
-                            <SelectTrigger className="h-9 bg-white border">
-                              <SelectValue placeholder="Select..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {customFieldChoices[field.key]?.map((choice) => {
-                                // Handle both string and object choices
-                                const choiceValue = typeof choice === 'object' && choice !== null
-                                  ? (choice as { value?: string; id?: string }).value || (choice as { value?: string; id?: string }).id || JSON.stringify(choice)
-                                  : String(choice)
-                                return (
-                                  <SelectItem key={`${field.key}-${choiceValue}`} value={choiceValue}>
-                                    {choiceValue}
-                                  </SelectItem>
-                                )
-                              })}
-                            </SelectContent>
-                          </Select>
+                            options={(customFieldChoices[field.key] || []).map((choice) => {
+                              // Handle both string and object choices
+                              const choiceValue = typeof choice === 'object' && choice !== null
+                                ? (choice as { value?: string; id?: string }).value || (choice as { value?: string; id?: string }).id || JSON.stringify(choice)
+                                : String(choice)
+                              return choiceValue
+                            })}
+                            placeholder="Select..."
+                            searchPlaceholder="Filter options..."
+                            emptyMessage="No matching options found."
+                          />
                         ) : field.type?.value === 'boolean' ? (
                           <div className="flex items-center h-9">
                             <Checkbox
