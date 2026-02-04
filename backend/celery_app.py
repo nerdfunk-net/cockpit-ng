@@ -153,14 +153,10 @@ celery_app.conf.update(
 
     # Result backend transport options (Redis connection pooling)
     result_backend_transport_options={
-        'master_name': None,  # Sentinel master name (None for standalone Redis)
         'retry_on_timeout': True,  # Retry on Redis timeout
         'socket_keepalive': True,  # Enable TCP keepalive
-        'socket_keepalive_options': {
-            1: 1,   # TCP_KEEPIDLE: seconds before sending keepalive probes
-            2: 1,   # TCP_KEEPINTVL: interval between keepalive probes
-            3: 5,   # TCP_KEEPCNT: number of keepalive probes
-        },
+        # Note: socket_keepalive_options removed - causes SIGSEGV on macOS
+        # Platform-specific TCP socket constants are incompatible with fork pool
     },
 
     # Celery Beat settings
