@@ -67,6 +67,7 @@ export function TemplateFormDialog({
   const [formScanCustomFieldName, setFormScanCustomFieldName] = useState("")
   const [formScanCustomFieldValue, setFormScanCustomFieldValue] = useState("")
   const [formScanResponseCustomFieldName, setFormScanResponseCustomFieldName] = useState("")
+  const [formScanSetReachableIpActive, setFormScanSetReachableIpActive] = useState(true)
   const [formScanMaxIps, setFormScanMaxIps] = useState("")
   const [formIsGlobal, setFormIsGlobal] = useState(false)
 
@@ -92,6 +93,7 @@ export function TemplateFormDialog({
     setFormScanCustomFieldName("")
     setFormScanCustomFieldValue("")
     setFormScanResponseCustomFieldName("")
+    setFormScanSetReachableIpActive(true)
     setFormScanMaxIps("")
     setFormIsGlobal(false)
   }, [])
@@ -120,6 +122,7 @@ export function TemplateFormDialog({
       setFormScanCustomFieldName(editingTemplate.scan_custom_field_name || "")
       setFormScanCustomFieldValue(editingTemplate.scan_custom_field_value || "")
       setFormScanResponseCustomFieldName(editingTemplate.scan_response_custom_field_name || "")
+      setFormScanSetReachableIpActive(editingTemplate.scan_set_reachable_ip_active ?? true)
       setFormScanMaxIps(editingTemplate.scan_max_ips?.toString() || "")
       setFormIsGlobal(editingTemplate.is_global)
     } else if (open && !editingTemplate) {
@@ -159,6 +162,7 @@ export function TemplateFormDialog({
       scan_custom_field_name: formJobType === "scan_prefixes" ? formScanCustomFieldName : undefined,
       scan_custom_field_value: formJobType === "scan_prefixes" ? formScanCustomFieldValue : undefined,
       scan_response_custom_field_name: formJobType === "scan_prefixes" ? formScanResponseCustomFieldName : undefined,
+      scan_set_reachable_ip_active: formJobType === "scan_prefixes" ? formScanSetReachableIpActive : undefined,
       scan_max_ips: formJobType === "scan_prefixes" && formScanMaxIps ? parseInt(formScanMaxIps) : undefined,
       is_global: formIsGlobal
     }
@@ -286,6 +290,8 @@ export function TemplateFormDialog({
               setFormScanCustomFieldValue={setFormScanCustomFieldValue}
               formScanResponseCustomFieldName={formScanResponseCustomFieldName}
               setFormScanResponseCustomFieldName={setFormScanResponseCustomFieldName}
+              formScanSetReachableIpActive={formScanSetReachableIpActive}
+              setFormScanSetReachableIpActive={setFormScanSetReachableIpActive}
               formScanMaxIps={formScanMaxIps}
               setFormScanMaxIps={setFormScanMaxIps}
             />

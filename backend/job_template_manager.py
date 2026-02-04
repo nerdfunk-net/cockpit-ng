@@ -38,6 +38,7 @@ def create_job_template(
     scan_custom_field_name: Optional[str] = None,
     scan_custom_field_value: Optional[str] = None,
     scan_response_custom_field_name: Optional[str] = None,
+    scan_set_reachable_ip_active: bool = True,
     scan_max_ips: Optional[int] = None,
     parallel_tasks: int = 1,
     is_global: bool = False,
@@ -70,6 +71,7 @@ def create_job_template(
         scan_custom_field_name=scan_custom_field_name,
         scan_custom_field_value=scan_custom_field_value,
         scan_response_custom_field_name=scan_response_custom_field_name,
+        scan_set_reachable_ip_active=scan_set_reachable_ip_active,
         scan_max_ips=scan_max_ips,
         parallel_tasks=parallel_tasks,
         is_global=is_global,
@@ -141,6 +143,7 @@ def update_job_template(
     scan_custom_field_name: Optional[str] = None,
     scan_custom_field_value: Optional[str] = None,
     scan_response_custom_field_name: Optional[str] = None,
+    scan_set_reachable_ip_active: Optional[bool] = None,
     scan_max_ips: Optional[int] = None,
     parallel_tasks: Optional[int] = None,
     is_global: Optional[bool] = None,
@@ -196,6 +199,8 @@ def update_job_template(
         update_data["scan_custom_field_value"] = scan_custom_field_value
     if scan_response_custom_field_name is not None:
         update_data["scan_response_custom_field_name"] = scan_response_custom_field_name
+    if scan_set_reachable_ip_active is not None:
+        update_data["scan_set_reachable_ip_active"] = scan_set_reachable_ip_active
     if scan_max_ips is not None:
         update_data["scan_max_ips"] = scan_max_ips
     if parallel_tasks is not None:
@@ -284,6 +289,7 @@ def _model_to_dict(template) -> Dict[str, Any]:
         "scan_custom_field_name": template.scan_custom_field_name,
         "scan_custom_field_value": template.scan_custom_field_value,
         "scan_response_custom_field_name": template.scan_response_custom_field_name,
+        "scan_set_reachable_ip_active": template.scan_set_reachable_ip_active,
         "scan_max_ips": template.scan_max_ips,
         "parallel_tasks": template.parallel_tasks,
         "is_global": template.is_global,

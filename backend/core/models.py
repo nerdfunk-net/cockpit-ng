@@ -427,6 +427,9 @@ class JobTemplate(Base):
     scan_response_custom_field_name = Column(
         String(255)
     )  # Name of custom field to write scan results to (scan_prefixes type)
+    scan_set_reachable_ip_active = Column(
+        Boolean, nullable=False, default=True
+    )  # Whether to set reachable IPs to Active status (scan_prefixes type)
     scan_max_ips = Column(
         Integer
     )  # Maximum number of IPs to scan per job (scan_prefixes type)

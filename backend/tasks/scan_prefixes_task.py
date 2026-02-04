@@ -67,6 +67,7 @@ def _update_ip_in_nautobot(
     prefix_cidr: str,
     response_custom_field_name: str,
     dns_name: Optional[str] = None,
+    set_active: bool = True,
 ) -> bool:
     """
     Update or create IP address in Nautobot with scan date using REST API.
@@ -76,6 +77,7 @@ def _update_ip_in_nautobot(
         prefix_cidr: Parent prefix CIDR (e.g., '192.168.1.0/24')
         response_custom_field_name: Custom field name to write scan date
         dns_name: Optional DNS name from reverse lookup
+        set_active: Whether to set IP status to Active (default: True)
 
     Returns:
         bool: True if successful, False otherwise
@@ -114,6 +116,20 @@ def _update_ip_in_nautobot(
             # Custom fields nested without cf_ prefix for REST API PATCH
             update_data = {"custom_fields": {response_custom_field_name: current_date}}
 
+            # If set_active is True, update status to Active
+            if set_active:
+                # Get the "Active" status ID
+                status_response = requests.get(
+                    f"{base_url}/api/extras/statuses/",
+                    headers=headers,
+                    params={"name": "Active"},
+                )
+                status_response.raise_for_status()
+                statuses = status_response.json().get("results", [])
+                if statuses:
+                    status_id = statuses[0].get("id")
+                    update_data["status"] = status_id
+
             response = requests.patch(
                 f"{base_url}/api/ipam/ip-addresses/{ip_id}/",
                 headers=headers,
@@ -121,27 +137,20 @@ def _update_ip_in_nautobot(
             )
 
             if not response.ok:
-                logger.error(f"Failed to update IP. Status: {response.status_code}")
-                logger.error(f"Response body: {response.text}")
+                logger.error(f"Failed to update IP {ip_address}. Status: {response.status_code}, Response: {response.text}")
 
             response.raise_for_status()
 
-            # Verify the update
-            updated_ip = response.json()
-            updated_cf_value = updated_ip.get("custom_fields", {}).get(
-                response_custom_field_name
-            )
-            logger.debug(
-                f"Updated IP {ip_address} with custom field {response_custom_field_name}={updated_cf_value}"
-            )
+            # Log what was updated
+            log_msg = f"Updated IP {ip_address} - {response_custom_field_name}={current_date}"
+            if set_active:
+                log_msg += ", status=Active"
+            logger.info(log_msg)
             return True
 
         else:
             # IP doesn't exist, create it
-            logger.debug(f"Creating new IP {ip_address} in prefix {prefix_cidr}")
-
             # Find the best parent prefix by containment
-            # We search for prefixes containing this IP
             response = requests.get(
                 f"{base_url}/api/ipam/prefixes/",
                 headers=headers,
@@ -150,6 +159,7 @@ def _update_ip_in_nautobot(
             response.raise_for_status()
 
             prefixes = response.json().get("results", [])
+            
             if not prefixes:
                 logger.error(f"No parent prefix found for IP {ip_address} in Nautobot")
                 return False
@@ -167,9 +177,6 @@ def _update_ip_in_nautobot(
 
             best_prefix = prefixes[0]
             prefix_id = best_prefix.get("id")
-            logger.debug(
-                f"Found parent prefix: {best_prefix.get('prefix')} (ID: {prefix_id})"
-            )
 
             # Get the "Active" status ID
             response = requests.get(
@@ -186,9 +193,16 @@ def _update_ip_in_nautobot(
 
             status_id = statuses[0].get("id")
 
+            # Extract prefix length from parent prefix (e.g., "192.168.178.0/24" -> "24")
+            parent_prefix_cidr = best_prefix.get("prefix", "")
+            prefix_length = parent_prefix_cidr.split("/")[1] if "/" in parent_prefix_cidr else "32"
+            
+            # Create IP address WITH netmask (e.g., "192.168.178.1/24")
+            ip_with_netmask = f"{ip_address}/{prefix_length}"
+
             # Create new IP address with custom fields nested
             create_data = {
-                "address": ip_address,
+                "address": ip_with_netmask,
                 "status": {"id": status_id},
                 "parent": {"id": prefix_id},
                 "custom_fields": {response_custom_field_name: current_date},
@@ -197,11 +211,6 @@ def _update_ip_in_nautobot(
             if dns_name:
                 create_data["dns_name"] = dns_name
 
-            logger.debug(
-                f"Creating IP with custom field '{response_custom_field_name}' = '{current_date}'"
-            )
-            logger.debug(f"Create data: {create_data}")
-
             response = requests.post(
                 f"{base_url}/api/ipam/ip-addresses/",
                 headers=headers,
@@ -209,23 +218,15 @@ def _update_ip_in_nautobot(
             )
 
             if not response.ok:
-                logger.error(f"Failed to create IP. Status: {response.status_code}")
-                logger.error(f"Response body: {response.text}")
+                logger.error(f"Failed to create IP {ip_address}. Status: {response.status_code}, Response: {response.text}")
 
             response.raise_for_status()
 
-            # Verify the creation
-            created_ip = response.json()
-            created_cf_value = created_ip.get("custom_fields", {}).get(
-                response_custom_field_name
-            )
-            logger.debug(
-                f"Created IP {ip_address} with custom field {response_custom_field_name}={created_cf_value}"
-            )
+            logger.info(f"Created IP {ip_address} - {response_custom_field_name}={current_date}, status=Active")
             return True
 
     except Exception as e:
-        logger.error(f"Error updating IP {ip_address} in Nautobot: {e}", exc_info=True)
+        logger.error(f"Error processing IP {ip_address} in Nautobot: {e}", exc_info=True)
         return False
 
 
@@ -319,6 +320,7 @@ def _execute_scan_prefixes(
     custom_field_name: str,
     custom_field_value: str,
     response_custom_field_name: Optional[str] = None,
+    set_reachable_ip_active: bool = True,
     resolve_dns: bool = False,
     ping_count: int = 3,
     timeout_ms: int = 500,
@@ -667,6 +669,7 @@ def _execute_scan_prefixes(
                                 prefix_cidr=cidr,
                                 response_custom_field_name=response_custom_field_name,
                                 dns_name=hostname,
+                                set_active=set_reachable_ip_active,
                             )
                         except Exception as e:
                             logger.error(f"Failed to update IP {ip} in Nautobot: {e}")
@@ -734,6 +737,7 @@ def scan_prefixes_task(
     custom_field_name: str,
     custom_field_value: str,
     response_custom_field_name: Optional[str] = None,
+    set_reachable_ip_active: bool = True,
     resolve_dns: bool = False,
     ping_count: int = 3,
     timeout_ms: int = 500,
@@ -753,6 +757,7 @@ def scan_prefixes_task(
         custom_field_name=custom_field_name,
         custom_field_value=custom_field_value,
         response_custom_field_name=response_custom_field_name,
+        set_reachable_ip_active=set_reachable_ip_active,
         resolve_dns=resolve_dns,
         ping_count=ping_count,
         timeout_ms=timeout_ms,

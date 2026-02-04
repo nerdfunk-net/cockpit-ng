@@ -111,6 +111,10 @@ class JobTemplateBase(BaseModel):
         max_length=255,
         description="Name of the custom field to write scan results to (only applies to scan_prefixes type)",
     )
+    scan_set_reachable_ip_active: Optional[bool] = Field(
+        True,
+        description="Whether to set reachable IP addresses to Active status (only applies to scan_prefixes type)",
+    )
     scan_max_ips: Optional[int] = Field(
         None,
         ge=1,
@@ -157,6 +161,7 @@ class JobTemplateUpdate(BaseModel):
     scan_custom_field_name: Optional[str] = Field(None, max_length=255)
     scan_custom_field_value: Optional[str] = Field(None, max_length=255)
     scan_response_custom_field_name: Optional[str] = Field(None, max_length=255)
+    scan_set_reachable_ip_active: Optional[bool] = None
     scan_max_ips: Optional[int] = Field(None, ge=1)
     parallel_tasks: Optional[int] = Field(None, ge=1, le=50)
     is_global: Optional[bool] = None

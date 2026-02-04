@@ -61,6 +61,7 @@ def execute_scan_prefixes(
         custom_field_name = template.get("scan_custom_field_name")
         custom_field_value = template.get("scan_custom_field_value")
         response_custom_field_name = template.get("scan_response_custom_field_name")
+        set_reachable_ip_active = template.get("scan_set_reachable_ip_active", True)
 
         if not custom_field_name or not custom_field_value:
             return {
@@ -90,6 +91,7 @@ def execute_scan_prefixes(
             custom_field_name=custom_field_name,
             custom_field_value=custom_field_value,
             response_custom_field_name=response_custom_field_name,
+            set_reachable_ip_active=set_reachable_ip_active,
             resolve_dns=resolve_dns,
             ping_count=ping_count,
             timeout_ms=timeout_ms,

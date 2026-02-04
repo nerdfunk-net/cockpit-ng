@@ -38,6 +38,8 @@ interface ScanPrefixesJobTemplateProps {
   setFormScanCustomFieldValue: (value: string) => void
   formScanResponseCustomFieldName: string
   setFormScanResponseCustomFieldName: (value: string) => void
+  formScanSetReachableIpActive: boolean
+  setFormScanSetReachableIpActive: (value: boolean) => void
   formScanMaxIps: string
   setFormScanMaxIps: (value: string) => void
 }
@@ -61,6 +63,8 @@ export function ScanPrefixesJobTemplate({
   setFormScanCustomFieldValue,
   formScanResponseCustomFieldName,
   setFormScanResponseCustomFieldName,
+  formScanSetReachableIpActive,
+  setFormScanSetReachableIpActive,
   formScanMaxIps,
   setFormScanMaxIps,
 }: ScanPrefixesJobTemplateProps) {
@@ -228,6 +232,23 @@ export function ScanPrefixesJobTemplate({
               Optional: Write scan results to this custom field (content_type: ipam.prefix)
             </p>
           </div>
+        </div>
+
+        {/* Set Reachable IP to Active */}
+        <div className="pt-2 border-t border-purple-200">
+          <div className="flex items-center space-x-3">
+            <Switch
+              id="scan-set-reachable-ip-active"
+              checked={formScanSetReachableIpActive}
+              onCheckedChange={setFormScanSetReachableIpActive}
+            />
+            <Label htmlFor="scan-set-reachable-ip-active" className="text-sm text-purple-900 cursor-pointer">
+              Set reachable IP to Active
+            </Label>
+          </div>
+          <p className="text-xs text-purple-700 mt-1">
+            When enabled, all reachable IP addresses will be updated with status=Active
+          </p>
         </div>
       </div>
 

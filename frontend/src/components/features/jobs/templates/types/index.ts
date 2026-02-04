@@ -21,6 +21,7 @@ export interface JobTemplate {
   scan_custom_field_name?: string
   scan_custom_field_value?: string
   scan_response_custom_field_name?: string
+  scan_set_reachable_ip_active?: boolean
   scan_max_ips?: number
   parallel_tasks?: number
   is_global: boolean
