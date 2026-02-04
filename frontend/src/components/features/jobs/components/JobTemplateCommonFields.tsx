@@ -4,16 +4,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { Globe, Lock } from "lucide-react"
+import { Globe, Lock, ShieldAlert } from "lucide-react"
+import { hasPermission } from "@/lib/permissions"
+import type { User } from "@/types/auth"
 
 interface JobType {
   value: string
   label: string
   description: string
-}
-
-interface User {
-  roles: string[]
 }
 
 interface JobTemplateCommonFieldsProps {
@@ -45,6 +43,8 @@ export function JobTemplateCommonFields({
   editingTemplate,
   getJobTypeColor,
 }: JobTemplateCommonFieldsProps) {
+  const canCreateGlobalTemplate = hasPermission(user, 'jobs', 'write')
+
   return (
     <>
       {/* Name and Type in grid */}
@@ -111,7 +111,7 @@ export function JobTemplateCommonFields({
               id="is-global"
               checked={formIsGlobal}
               onCheckedChange={setFormIsGlobal}
-              disabled={!user?.roles?.includes("admin")}
+              disabled={!canCreateGlobalTemplate}
             />
             <Label htmlFor="is-global" className="text-sm font-medium text-indigo-900 cursor-pointer flex items-center gap-2">
               {formIsGlobal ? (
@@ -127,9 +127,9 @@ export function JobTemplateCommonFields({
               )}
             </Label>
           </div>
-          {user?.roles?.includes("admin") && (
+          {canCreateGlobalTemplate && (
             <Badge variant="secondary" className="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-100">
-              Admin
+              {user?.roles?.includes("admin") ? "Admin" : "Write Access"}
             </Badge>
           )}
         </div>
@@ -138,6 +138,14 @@ export function JobTemplateCommonFields({
             ? "Global templates can be scheduled by all users"
             : "Private templates can only be scheduled by you"}
         </p>
+        {!canCreateGlobalTemplate && (
+          <div className="flex items-start gap-2 mt-2 p-2 rounded-md bg-amber-50 border border-amber-200">
+            <ShieldAlert className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-amber-700">
+              You don&apos;t have permission to create global templates. Contact your administrator to request <span className="font-mono font-semibold">jobs:write</span> permission.
+            </p>
+          </div>
+        )}
       </div>
     </>
   )

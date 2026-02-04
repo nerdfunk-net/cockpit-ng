@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Pencil, Trash2, X, Check, Loader2, Download, Upload } from 'lucide-react'
 import { LogicalCondition, ConditionTree } from '@/types/shared/device-selector'
 
@@ -21,7 +22,7 @@ interface ManageInventoryModalProps {
         created_at?: string
     }>
     isLoading: boolean
-    onUpdate: (id: number, name: string, description: string) => Promise<void>
+    onUpdate: (id: number, name: string, description: string, scope: string) => Promise<void>
     onDelete: (id: number, name: string) => Promise<void>
     onExport: (id: number) => Promise<void>
     onImport: (file: File) => Promise<void>
@@ -40,15 +41,17 @@ export function ManageInventoryModal({
     const [editingId, setEditingId] = useState<number | null>(null)
     const [editName, setEditName] = useState('')
     const [editDescription, setEditDescription] = useState('')
+    const [editScope, setEditScope] = useState<string>('global')
     const [isDeleting, setIsDeleting] = useState<number | null>(null)
     const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null)
     const [isExporting, setIsExporting] = useState<number | null>(null)
     const [isImporting, setIsImporting] = useState(false)
 
-    const handleEditClick = (inventory: { id: number; name: string; description?: string }) => {
+    const handleEditClick = (inventory: { id: number; name: string; description?: string; scope: string }) => {
         setEditingId(inventory.id)
         setEditName(inventory.name)
         setEditDescription(inventory.description || '')
+        setEditScope(inventory.scope)
         setDeleteConfirmId(null)
     }
 
@@ -56,12 +59,13 @@ export function ManageInventoryModal({
         setEditingId(null)
         setEditName('')
         setEditDescription('')
+        setEditScope('global')
     }
 
     const handleSaveEdit = async (id: number) => {
         if (!editName.trim()) return
 
-        await onUpdate(id, editName, editDescription)
+        await onUpdate(id, editName, editDescription, editScope)
         setEditingId(null)
     }
 
@@ -159,6 +163,28 @@ export function ManageInventoryModal({
                                                         className="min-h-[40px]"
                                                     />
                                                 </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor={`edit-scope-${inventory.id}`}>Scope</Label>
+                                                <Select value={editScope} onValueChange={setEditScope}>
+                                                    <SelectTrigger id={`edit-scope-${inventory.id}`}>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="global">
+                                                            Global (accessible to all users)
+                                                        </SelectItem>
+                                                        <SelectItem value="private">
+                                                            Private (only accessible to you)
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <p className="text-xs text-gray-500">
+                                                    {editScope === 'global'
+                                                        ? 'All users can use this inventory'
+                                                        : 'Only you can see and use this inventory'
+                                                    }
+                                                </p>
                                             </div>
                                             <div className="flex justify-end gap-2">
                                                 <Button size="sm" variant="ghost" onClick={handleCancelEdit}>

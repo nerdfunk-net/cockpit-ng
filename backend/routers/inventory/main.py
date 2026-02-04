@@ -246,7 +246,9 @@ async def get_inventory_by_name(
     """
     Get a specific inventory by name.
 
-    Returns the inventory owned by the current user with the given name.
+    Returns the inventory with the given name if it is:
+    - A global inventory (accessible to all users), OR
+    - A private inventory owned by the current user
 
     Requires general.inventory:read permission.
     """
@@ -353,17 +355,17 @@ async def update_inventory(
 @router.delete("/{inventory_id}", response_model=InventoryDeleteResponse)
 async def delete_inventory(
     inventory_id: int,
-    hard_delete: bool = False,
+    hard_delete: bool = True,
     current_user: dict = Depends(require_permission("general.inventory", "delete")),
 ) -> InventoryDeleteResponse:
     """
-    Delete an inventory (soft delete by default).
+    Delete an inventory (hard delete by default).
 
     Only the owner of a private inventory can delete it.
     Global inventories can be deleted by anyone with delete permission.
 
     Query Parameters:
-    - hard_delete: If true, permanently delete. If false (default), soft delete.
+    - hard_delete: If true (default), permanently delete. If false, soft delete (mark as inactive).
 
     Requires general.inventory:delete permission.
     """

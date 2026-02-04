@@ -75,6 +75,7 @@ export function useSavedInventoriesQuery(enabled = true) {
  * ```tsx
  * const { data: tree, isLoading } = useInventoryByNameQuery('production-servers')
  * ```
+ * @deprecated Use useInventoryByIdQuery instead to avoid name conflicts between global/private scopes
  */
 export function useInventoryByNameQuery(inventoryName: string | null, enabled = false) {
   const { apiCall } = useApi()
@@ -89,6 +90,39 @@ export function useInventoryByNameQuery(inventoryName: string | null, enabled = 
     },
 
     enabled: !!inventoryName && enabled,
+
+    // Don't cache loaded inventories (user might edit)
+    staleTime: 0,
+  })
+}
+
+/**
+ * Hook for loading a specific inventory by ID
+ *
+ * Returns the condition tree for a saved inventory.
+ * Uses ID to avoid ambiguity between global and private inventories with the same name.
+ *
+ * @param inventoryId - ID of the inventory to load
+ * @param enabled - Whether to enable the query
+ *
+ * @example
+ * ```tsx
+ * const { data: inventory, isLoading } = useInventoryByIdQuery(123)
+ * ```
+ */
+export function useInventoryByIdQuery(inventoryId: number | null, enabled = false) {
+  const { apiCall } = useApi()
+
+  return useQuery({
+    queryKey: queryKeys.inventory.byId(inventoryId || 0),
+
+    queryFn: async () => {
+      if (!inventoryId) return null
+
+      return apiCall<BackendConditionsResponse>(`inventory/${inventoryId}`)
+    },
+
+    enabled: !!inventoryId && enabled,
 
     // Don't cache loaded inventories (user might edit)
     staleTime: 0,

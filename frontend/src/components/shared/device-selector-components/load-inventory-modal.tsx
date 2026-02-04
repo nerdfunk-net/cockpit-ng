@@ -16,7 +16,7 @@ interface LoadInventoryModalProps {
         created_by: string
     }>
     isLoading: boolean
-    onLoad: (name: string) => void
+    onLoad: (id: number) => void
 }
 
 export function LoadInventoryModal({
@@ -49,7 +49,7 @@ export function LoadInventoryModal({
                                 <div
                                     key={inventory.id}
                                     className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                                    onDoubleClick={() => onLoad(inventory.name)}
+                                    onDoubleClick={() => onLoad(inventory.id)}
                                 >
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2">
@@ -68,7 +68,7 @@ export function LoadInventoryModal({
                                         </div>
                                     </div>
                                     <Button
-                                        onClick={() => onLoad(inventory.name)}
+                                        onClick={() => onLoad(inventory.id)}
                                         size="sm"
                                         className="ml-4"
                                     >

@@ -171,9 +171,9 @@ export function DeviceSelector({
     setShowManageModal(true)
   }
 
-  const handleSaveInventory = async (name: string, description: string, isUpdate: boolean, existingId?: number) => {
+  const handleSaveInventory = async (name: string, description: string, scope: string, isUpdate: boolean, existingId?: number) => {
     try {
-      const success = await saveInventory(name, description, conditionTree, isUpdate, existingId)
+      const success = await saveInventory(name, description, scope, conditionTree, isUpdate, existingId)
       return success
     } catch (e) {
       alert('Error saving inventory: ' + (e as Error).message)
@@ -181,9 +181,9 @@ export function DeviceSelector({
     }
   }
 
-  const handleLoadInventory = async (name: string) => {
+  const handleLoadInventory = async (id: number) => {
     try {
-      const loadedTree = await loadInventory(name)
+      const loadedTree = await loadInventory(id)
       if (loadedTree) {
         setConditionTree(loadedTree)
         setShowPreviewResults(false)

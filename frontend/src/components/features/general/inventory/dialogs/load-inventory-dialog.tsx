@@ -8,22 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { FolderOpen, Search, Globe, Lock, Trash2 } from 'lucide-react'
-
-interface SavedInventory {
-  id: number
-  name: string
-  description: string | null
-  scope: string
-  created_by: string
-  created_at: string
-  updated_at: string
-  conditions: Array<{
-    field: string
-    operator: string
-    value: string
-    logic: string
-  }>
-}
+import type { SavedInventory } from '@/hooks/queries/use-saved-inventories-queries'
 
 interface LoadInventoryDialogProps {
   show: boolean
@@ -175,7 +160,7 @@ export function LoadInventoryDialog({
                           <span>•</span>
                           <span>Created by {inventory.created_by}</span>
                           <span>•</span>
-                          <span>Updated {formatDate(inventory.updated_at)}</span>
+                          <span>Updated {inventory.updated_at ? formatDate(inventory.updated_at) : 'N/A'}</span>
                         </div>
                       </div>
                       <Button

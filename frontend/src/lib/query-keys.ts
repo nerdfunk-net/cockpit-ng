@@ -144,6 +144,7 @@ export const queryKeys = {
     detail: (id: number) => [...queryKeys.inventory.all, 'detail', id] as const,
     preview: () => [...queryKeys.inventory.all, 'preview'] as const,
     byName: (name: string) => [...queryKeys.inventory.all, 'by-name', name] as const,
+    byId: (id: number) => [...queryKeys.inventory.all, 'by-id', id] as const,
     fieldOptions: () => [...queryKeys.inventory.all, 'field-options'] as const,
     fieldValues: (fieldName: string) => [...queryKeys.inventory.all, 'field-values', fieldName] as const,
     customFields: () => [...queryKeys.inventory.all, 'custom-fields'] as const,

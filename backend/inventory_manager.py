@@ -180,9 +180,9 @@ class InventoryManager:
             raise e
 
     def delete_inventory(
-        self, inventory_id: int, username: str, hard_delete: bool = False
+        self, inventory_id: int, username: str, hard_delete: bool = True
     ) -> bool:
-        """Delete an inventory (soft delete by default)"""
+        """Delete an inventory (hard delete by default)"""
         try:
             repo = InventoryRepository()
 
@@ -212,9 +212,9 @@ class InventoryManager:
             raise e
 
     def delete_inventory_by_name(
-        self, name: str, username: str, hard_delete: bool = False
+        self, name: str, username: str, hard_delete: bool = True
     ) -> bool:
-        """Delete an inventory by name"""
+        """Delete an inventory by name (hard delete by default)"""
         try:
             repo = InventoryRepository()
             inventory = repo.get_by_name(name, username, active_only=False)

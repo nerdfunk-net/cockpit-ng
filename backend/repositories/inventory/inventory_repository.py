@@ -16,14 +16,16 @@ class InventoryRepository(BaseRepository[Inventory]):
         super().__init__(Inventory)
 
     def get_by_name(
-        self, name: str, created_by: str, active_only: bool = True
+        self, name: str, username: str, active_only: bool = True
     ) -> Optional[Inventory]:
         """
-        Get an inventory by name for a specific user.
+        Get an inventory by name accessible to a user.
+
+        Returns global inventories or private inventories owned by the user.
 
         Args:
             name: Inventory name
-            created_by: Username of the creator
+            username: Username for access control
             active_only: Only return active inventories
 
         Returns:
@@ -31,8 +33,16 @@ class InventoryRepository(BaseRepository[Inventory]):
         """
         db = get_db_session()
         try:
+            # Find inventory by name that is either:
+            # 1. Global (accessible to all users)
+            # 2. Private and owned by this user
             query = db.query(self.model).filter(
-                self.model.name == name, self.model.created_by == created_by
+                self.model.name == name,
+                (self.model.scope == "global")
+                | (
+                    (self.model.scope == "private")
+                    & (self.model.created_by == username)
+                )
             )
 
             if active_only:
@@ -144,18 +154,20 @@ class InventoryRepository(BaseRepository[Inventory]):
         finally:
             db.close()
 
-    def delete_by_name(self, name: str, created_by: str) -> bool:
+    def delete_by_name(self, name: str, username: str) -> bool:
         """
         Delete (soft delete) an inventory by name.
 
+        Only allows deletion of inventories owned by the user.
+
         Args:
             name: Inventory name
-            created_by: Username of the creator (for ownership check)
+            username: Username of the user requesting deletion
 
         Returns:
-            True if deleted, False if not found
+            True if deleted, False if not found or not owned by user
         """
-        inventory = self.get_by_name(name, created_by, active_only=False)
-        if inventory:
+        inventory = self.get_by_name(name, username, active_only=False)
+        if inventory and inventory.created_by == username:
             return self.update(inventory.id, is_active=False) is not None
         return False

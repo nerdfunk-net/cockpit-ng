@@ -38,6 +38,7 @@ export function useSavedInventories() {
     const saveInventory = async (
         name: string,
         description: string,
+        scope: string,
         conditionTree: ConditionTree,
         isUpdate: boolean = false,
         existingId?: number
@@ -65,7 +66,7 @@ export function useSavedInventories() {
                     name: name,
                     description: description || undefined,
                     conditions: [treeData], // Wrap in array for backend compatibility
-                    scope: 'global'
+                    scope: scope
                 })
             }
 
@@ -99,12 +100,12 @@ export function useSavedInventories() {
         return tree
     }
 
-    const loadInventory = async (inventoryName: string): Promise<ConditionTree | null> => {
+    const loadInventory = async (inventoryId: number): Promise<ConditionTree | null> => {
         try {
-            // Make direct API call to load inventory by name
+            // Make direct API call to load inventory by ID (not by name to avoid ambiguity)
             const response = await apiCall<{
                 conditions: LogicalCondition[] | Array<{ version: number; tree: ConditionTree }>
-            }>(`inventory/by-name/${encodeURIComponent(inventoryName)}`)
+            }>(`inventory/${inventoryId}`)
 
             if (!response) {
                 return null
@@ -129,12 +130,13 @@ export function useSavedInventories() {
         }
     }
 
-    const updateInventoryDetails = async (inventoryId: number, name: string, description: string) => {
+    const updateInventoryDetails = async (inventoryId: number, name: string, description: string, scope: string) => {
         try {
-            // Only send name and description - don't send conditions
-            const updateData: { name: string; description: string | undefined } = {
+            // Only send name, description, and scope - don't send conditions
+            const updateData: { name: string; description: string | undefined; scope: string } = {
                 name,
                 description: description || undefined,
+                scope,
             }
 
             await updateInventoryMutation({
