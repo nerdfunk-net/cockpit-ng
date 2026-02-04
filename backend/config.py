@@ -39,8 +39,7 @@ class Settings:
     # Prefer backend-specific env vars, fall back to legacy SERVER_* names for compatibility
     host: str = os.getenv("BACKEND_SERVER_HOST", os.getenv("SERVER_HOST", "127.0.0.1"))
     port: int = int(os.getenv("BACKEND_SERVER_PORT", os.getenv("SERVER_PORT", "8000")))
-    debug: bool = get_env_bool("DEBUG", True)
-    log_level: str = os.getenv("LOG_LEVEL", "INFO")
+    log_level: str = os.getenv("LOG_LEVEL", "INFO").upper()  # Normalize to uppercase
 
     # Nautobot Configuration
     nautobot_url: str = os.getenv("NAUTOBOT_HOST", "http://localhost:8080")
@@ -138,5 +137,5 @@ settings = Settings()
 if __name__ == "__main__":
     print("Cockpit Backend Configuration:")
     print(f"  Server: http://{settings.host}:{settings.port}")
-    print(f"  Debug Mode: {settings.debug}")
+    print(f"  Log Level: {settings.log_level}")
     print(f"  Nautobot URL: {settings.nautobot_url}")

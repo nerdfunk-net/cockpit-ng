@@ -47,8 +47,15 @@ def main():
     """Start the FastAPI server with configuration."""
 
     # Configure logging
+    # Ensure log_level is valid, default to INFO if invalid
+    try:
+        log_level = getattr(logging, settings.log_level)
+    except AttributeError:
+        log_level = logging.INFO
+        print(f"Warning: Invalid LOG_LEVEL '{settings.log_level}', defaulting to INFO")
+
     logging.basicConfig(
-        level=getattr(logging, settings.log_level),
+        level=log_level,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
@@ -69,7 +76,7 @@ def main():
     # Log startup information
     logger.info("Starting Cockpit Backend Server")
     logger.info(f"Server: {settings.host}:{settings.port}")
-    logger.info(f"Debug: {settings.debug}")
+    logger.info(f"Log Level: {settings.log_level}")
     logger.info(f"Data Directory: {settings.data_directory}")
     logger.info(f"Nautobot (env): {settings.nautobot_url}")
     logger.info(f"Git SSL Verification: {settings.git_ssl_verify}")
@@ -87,9 +94,7 @@ def main():
             "main:app",
             host=settings.host,
             port=settings.port,
-            reload=settings.debug,
-            reload_dirs=["."],  # Only watch current directory (backend)
-            reload_excludes=["../data/**", "data/**"],  # Exclude data directories
+            reload=False,
             log_level=settings.log_level.lower(),
             access_log=True,
         )

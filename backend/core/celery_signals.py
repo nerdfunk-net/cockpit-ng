@@ -92,7 +92,7 @@ def init_worker_process(**kwargs):
             max_overflow=10,  # Additional connections when pool exhausted
             pool_pre_ping=True,  # Verify connections are alive before use
             pool_recycle=3600,  # Recycle connections after 1 hour
-            echo=settings.debug,  # Log SQL in debug mode
+            echo=False,  # SQL logging disabled (use LOG_LEVEL for application logging)
             # Important for forking: create connections lazily
             pool_timeout=30,
             connect_args={"connect_timeout": 10}
