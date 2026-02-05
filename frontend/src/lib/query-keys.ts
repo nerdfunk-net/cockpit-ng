@@ -286,4 +286,27 @@ export const queryKeys = {
     snmpMappings: () =>
       [...queryKeys.complianceSettings.all, 'snmpMappings'] as const,
   },
+
+  // Templates
+  templates: {
+    all: ['templates'] as const,
+
+    // Templates list
+    list: (filters?: { category?: string; source?: string; search?: string }) =>
+      filters
+        ? ([...queryKeys.templates.all, 'list', filters] as const)
+        : ([...queryKeys.templates.all, 'list'] as const),
+
+    // Single template
+    detail: (id: number) => [...queryKeys.templates.all, 'detail', id] as const,
+
+    // Template content
+    content: (id: number) => [...queryKeys.templates.all, 'content', id] as const,
+
+    // Categories
+    categories: () => [...queryKeys.templates.all, 'categories'] as const,
+
+    // Importable templates
+    importable: () => [...queryKeys.templates.all, 'importable'] as const,
+  },
 }
