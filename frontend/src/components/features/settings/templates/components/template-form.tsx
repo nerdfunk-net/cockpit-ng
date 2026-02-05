@@ -33,10 +33,12 @@ import {
   Upload,
   Code,
   RefreshCw,
-  FolderOpen
+  FolderOpen,
+  Play
 } from 'lucide-react'
 import { useTemplateMutations } from '../hooks/use-template-mutations'
 import { useTemplateContent } from '../hooks/use-template-queries'
+import { useToast } from '@/hooks/use-toast'
 import {
   CANONICAL_CATEGORIES,
   FILE_ACCEPT_TYPES
@@ -88,8 +90,10 @@ export function TemplateForm({
   const isEditMode = !!template
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [formKey, setFormKey] = useState(0)
+  const [isRendering, setIsRendering] = useState(false)
 
   const { createTemplate, updateTemplate } = useTemplateMutations()
+  const { toast } = useToast()
 
   // Fetch content only when editing
   const { data: templateContent, isLoading: isLoadingContent } = useTemplateContent(
@@ -175,8 +179,49 @@ export function TemplateForm({
     }
   }, [form])
 
+  const handleRenderTemplate = useCallback(async () => {
+    const formData = form.getValues()
+
+    if (!formData.name) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please provide a template name',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    // For Agent templates, require inventory selection
+    if (formData.category === 'agent' && !selectedInventory) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please select an inventory for Agent templates',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    setIsRendering(true)
+    try {
+      // TODO: Call backend API to render template
+      toast({
+        title: 'Info',
+        description: 'Template rendering will be implemented in backend'
+      })
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to render template',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsRendering(false)
+    }
+  }, [form, selectedInventory, toast])
+
   const watchedSource = useWatch({ control: form.control, name: 'source' })
   const watchedCategory = useWatch({ control: form.control, name: 'category' })
+  const watchedTemplateType = useWatch({ control: form.control, name: 'template_type' })
 
   if (isLoadingContent) {
     return (
@@ -518,6 +563,21 @@ export function TemplateForm({
               </div>
 
               <div className="flex items-center gap-3">
+                {/* Render Template button - show only for Jinja2 templates */}
+                {watchedTemplateType === 'jinja2' && (
+                  <Button
+                    variant="outline"
+                    onClick={handleRenderTemplate}
+                    type="button"
+                    disabled={isRendering || !form.getValues('name') || (watchedCategory === 'agent' && !selectedInventory)}
+                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                  >
+                    {isRendering && <RefreshCw className="h-4 w-4 animate-spin" />}
+                    {!isRendering && <Play className="h-4 w-4" />}
+                    <span>{isRendering ? 'Rendering...' : 'Render Template'}</span>
+                  </Button>
+                )}
+
                 <Button
                   type="submit"
                   disabled={createTemplate.isPending || updateTemplate.isPending}

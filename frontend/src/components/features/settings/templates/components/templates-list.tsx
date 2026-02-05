@@ -43,7 +43,7 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
   const [filters, setFilters] = useState<TemplateFilters>({})
   const [selectedTemplates, setSelectedTemplates] = useState<Set<number>>(EMPTY_SET)
 
-  const { templates, isLoading, refetch } = useTemplates({ filters })
+  const { templates, isLoading } = useTemplates({ filters })
   const { data: categories = EMPTY_CATEGORIES } = useTemplateCategories()
   const { deleteTemplate, bulkDeleteTemplates, syncTemplate } = useTemplateMutations()
 
@@ -149,10 +149,6 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
               <SelectItem value="webeditor">Web Editor</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={() => refetch()} disabled={isLoading}>
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </Button>
         </div>
 
         {/* Bulk Actions */}
