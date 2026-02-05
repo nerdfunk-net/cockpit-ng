@@ -928,10 +928,10 @@ class CheckMKSetting(Base):
     )
 
 
-class GrafanaSetting(Base):
-    """Grafana deployment settings."""
+class AgentsSetting(Base):
+    """Agents deployment settings."""
 
-    __tablename__ = "grafana_settings"
+    __tablename__ = "agents_settings"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     deployment_method = Column(
@@ -949,10 +949,6 @@ class GrafanaSetting(Base):
     global_credential_id = Column(Integer)
     # Git deployment
     git_repository_id = Column(Integer)
-    # Common settings
-    dashboards_path = Column(String(500), default="dashboards/")
-    datasources_path = Column(String(500), default="datasources/")
-    telegraf_config_path = Column(String(500), default="telegraf/")
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

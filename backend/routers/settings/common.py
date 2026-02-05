@@ -12,8 +12,8 @@ from models.settings import (
     NautobotSettingsRequest,
     GitSettingsRequest,
     CheckMKSettingsRequest,
-    GrafanaSettingsRequest,
-    GrafanaTestRequest,
+    AgentsSettingsRequest,
+    AgentsTestRequest,
     AllSettingsRequest,
     ConnectionTestRequest,
     CheckMKTestRequest,
@@ -436,68 +436,68 @@ async def test_checkmk_connection(
 
 
 # =============================================================================
-# Grafana Settings Endpoints
+# Agents Settings Endpoints
 # =============================================================================
 
 
-@router.get("/grafana")
-async def get_grafana_settings(
+@router.get("/agents")
+async def get_agents_settings(
     current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ):
-    """Get Grafana settings."""
+    """Get Agents settings."""
     try:
         from settings_manager import settings_manager
 
-        settings = settings_manager.get_grafana_settings()
+        settings = settings_manager.get_agents_settings()
 
         return {"success": True, "data": settings}
 
     except Exception as e:
-        logger.error(f"Error getting Grafana settings: {e}")
+        logger.error(f"Error getting Agents settings: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get Grafana settings: {str(e)}",
+            detail=f"Failed to get Agents settings: {str(e)}",
         )
 
 
-@router.post("/grafana")
-async def create_grafana_settings(
-    grafana_request: GrafanaSettingsRequest,
+@router.post("/agents")
+async def create_agents_settings(
+    agents_request: AgentsSettingsRequest,
     current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ):
-    """Create/Update Grafana settings via POST."""
+    """Create/Update Agents settings via POST."""
     try:
         from settings_manager import settings_manager
 
-        settings_dict = grafana_request.dict()
-        success = settings_manager.update_grafana_settings(settings_dict)
+        settings_dict = agents_request.dict()
+        success = settings_manager.update_agents_settings(settings_dict)
 
         if success:
             return {
                 "success": True,
-                "message": "Grafana settings updated successfully",
-                "data": settings_manager.get_grafana_settings(),
+                "message": "Agents settings updated successfully",
+                "data": settings_manager.get_agents_settings(),
             }
         else:
             return {
                 "success": False,
-                "message": "Failed to update Grafana settings",
+                "message": "Failed to update Agents settings",
             }
 
     except Exception as e:
-        logger.error(f"Error creating/updating Grafana settings: {e}")
+        logger.error(f"Error creating/updating Agents settings: {e}")
         return {
             "success": False,
-            "message": f"Failed to update Grafana settings: {str(e)}",
+            "message": f"Failed to update Agents settings: {str(e)}",
         }
 
 
-@router.post("/test/grafana")
-async def test_grafana_connection(
-    test_request: GrafanaTestRequest,
+@router.post("/test/agents")
+async def test_agents_connection(
+    test_request: AgentsTestRequest,
     current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ):
-    """Test Grafana connection with provided settings."""
+    """Test Agents connection with provided settings."""
     try:
         import os
         import paramiko
@@ -606,7 +606,7 @@ async def test_grafana_connection(
             }
 
     except Exception as e:
-        logger.error(f"Error testing Grafana connection: {e}")
+        logger.error(f"Error testing Agents connection: {e}")
         return {
             "success": False,
             "message": f"Test failed: {str(e)}",
@@ -646,7 +646,7 @@ async def test_git_connection(
         }
 
 
-@router.get("/grafana/telegraf/config")
+@router.get("/agents/telegraf/config")
 async def get_telegraf_config(
     current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ):
@@ -693,7 +693,7 @@ async def get_telegraf_config(
         }
 
 
-@router.post("/grafana/telegraf/save-config")
+@router.post("/agents/telegraf/save-config")
 async def save_telegraf_config(
     file_content: dict,
     current_user: dict = Depends(require_permission("settings.nautobot", "write")),

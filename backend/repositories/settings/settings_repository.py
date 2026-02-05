@@ -7,7 +7,7 @@ from core.models import (
     NautobotSetting,
     GitSetting,
     CheckMKSetting,
-    GrafanaSetting,
+    AgentsSetting,
     CacheSetting,
     CelerySetting,
     NautobotDefault,
@@ -66,17 +66,17 @@ class CheckMKSettingRepository(BaseRepository[CheckMKSetting]):
             session.close()
 
 
-class GrafanaSettingRepository(BaseRepository[GrafanaSetting]):
-    """Repository for Grafana settings."""
+class AgentsSettingRepository(BaseRepository[AgentsSetting]):
+    """Repository for Agents settings."""
 
     def __init__(self):
-        super().__init__(GrafanaSetting)
+        super().__init__(AgentsSetting)
 
-    def get_settings(self) -> Optional[GrafanaSetting]:
-        """Get the first (and should be only) Grafana settings record."""
+    def get_settings(self) -> Optional[AgentsSetting]:
+        """Get the first (and should be only) Agents settings record."""
         session = get_db_session()
         try:
-            return session.query(GrafanaSetting).first()
+            return session.query(AgentsSetting).first()
         finally:
             session.close()
 

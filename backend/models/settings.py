@@ -84,8 +84,8 @@ class CheckMKTestRequest(BaseModel):
     verify_ssl: bool = True
 
 
-class GrafanaSettingsRequest(BaseModel):
-    """Grafana settings request model."""
+class AgentsSettingsRequest(BaseModel):
+    """Agents settings request model."""
 
     deployment_method: Literal["local", "sftp", "git"]
     # Local deployment
@@ -100,14 +100,10 @@ class GrafanaSettingsRequest(BaseModel):
     global_credential_id: Optional[int] = None
     # Git deployment
     git_repository_id: Optional[int] = None
-    # Common settings
-    dashboards_path: str = "dashboards/"
-    datasources_path: str = "datasources/"
-    telegraf_config_path: str = "telegraf/"
 
 
-class GrafanaTestRequest(BaseModel):
-    """Grafana connection test request model."""
+class AgentsTestRequest(BaseModel):
+    """Agents connection test request model."""
 
     deployment_method: Literal["local", "sftp", "git"]
     local_root_path: Optional[str] = None

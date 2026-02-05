@@ -162,8 +162,8 @@ class DeviceOffboardingSettings:
 
 
 @dataclass
-class GrafanaSettings:
-    """Grafana deployment settings"""
+class AgentsSettings:
+    """Agents deployment settings"""
 
     deployment_method: str = "local"  # local, sftp, or git
     # Local deployment
@@ -178,10 +178,6 @@ class GrafanaSettings:
     global_credential_id: Optional[int] = None
     # Git deployment
     git_repository_id: Optional[int] = None
-    # Common settings
-    dashboards_path: str = "dashboards/"
-    datasources_path: str = "datasources/"
-    telegraf_config_path: str = "telegraf/"
 
 
 class SettingsManager:
@@ -201,7 +197,7 @@ class SettingsManager:
 
         self.default_git = GitSettings()
         self.default_checkmk = CheckMKSettings()
-        self.default_grafana = GrafanaSettings()
+        self.default_agents = AgentsSettings()
         self.default_nautobot_defaults = NautobotDefaults()
         self.default_cache = CacheSettings()
         self.default_celery = CelerySettings()
@@ -276,14 +272,14 @@ class SettingsManager:
             logger.error(f"Error getting CheckMK settings: {e}")
             return asdict(self.default_checkmk)
 
-    def get_grafana_settings(self) -> Optional[Dict[str, Any]]:
-        """Get current Grafana settings"""
+    def get_agents_settings(self) -> Optional[Dict[str, Any]]:
+        """Get current Agents settings"""
         try:
             from repositories.settings.settings_repository import (
-                GrafanaSettingRepository,
+                AgentsSettingRepository,
             )
 
-            repo = GrafanaSettingRepository()
+            repo = AgentsSettingRepository()
             settings = repo.get_settings()
 
             if settings:
@@ -298,17 +294,14 @@ class SettingsManager:
                     "use_global_credentials": settings.use_global_credentials,
                     "global_credential_id": settings.global_credential_id,
                     "git_repository_id": settings.git_repository_id,
-                    "dashboards_path": settings.dashboards_path,
-                    "datasources_path": settings.datasources_path,
-                    "telegraf_config_path": settings.telegraf_config_path,
                 }
             else:
                 # Fallback to defaults
-                return asdict(self.default_grafana)
+                return asdict(self.default_agents)
 
         except Exception as e:
-            logger.error(f"Error getting Grafana settings: {e}")
-            return asdict(self.default_grafana)
+            logger.error(f"Error getting Agents settings: {e}")
+            return asdict(self.default_agents)
 
     def get_all_settings(self) -> Dict[str, Any]:
         """Get all settings combined"""
@@ -668,52 +661,43 @@ class SettingsManager:
             logger.error(f"Error updating CheckMK settings: {e}")
             return False
 
-    def update_grafana_settings(self, settings: Dict[str, Any]) -> bool:
-        """Update Grafana settings"""
+    def update_agents_settings(self, settings: Dict[str, Any]) -> bool:
+        """Update Agents settings"""
         try:
             from repositories.settings.settings_repository import (
-                GrafanaSettingRepository,
+                AgentsSettingRepository,
             )
 
-            repo = GrafanaSettingRepository()
+            repo = AgentsSettingRepository()
             existing = repo.get_settings()
 
             update_data = {
                 "deployment_method": settings.get(
-                    "deployment_method", self.default_grafana.deployment_method
+                    "deployment_method", self.default_agents.deployment_method
                 ),
                 "local_root_path": settings.get(
-                    "local_root_path", self.default_grafana.local_root_path
+                    "local_root_path", self.default_agents.local_root_path
                 ),
                 "sftp_hostname": settings.get(
-                    "sftp_hostname", self.default_grafana.sftp_hostname
+                    "sftp_hostname", self.default_agents.sftp_hostname
                 ),
-                "sftp_port": settings.get("sftp_port", self.default_grafana.sftp_port),
-                "sftp_path": settings.get("sftp_path", self.default_grafana.sftp_path),
+                "sftp_port": settings.get("sftp_port", self.default_agents.sftp_port),
+                "sftp_path": settings.get("sftp_path", self.default_agents.sftp_path),
                 "sftp_username": settings.get(
-                    "sftp_username", self.default_grafana.sftp_username
+                    "sftp_username", self.default_agents.sftp_username
                 ),
                 "sftp_password": settings.get(
-                    "sftp_password", self.default_grafana.sftp_password
+                    "sftp_password", self.default_agents.sftp_password
                 ),
                 "use_global_credentials": settings.get(
                     "use_global_credentials",
-                    self.default_grafana.use_global_credentials,
+                    self.default_agents.use_global_credentials,
                 ),
                 "global_credential_id": settings.get(
-                    "global_credential_id", self.default_grafana.global_credential_id
+                    "global_credential_id", self.default_agents.global_credential_id
                 ),
                 "git_repository_id": settings.get(
-                    "git_repository_id", self.default_grafana.git_repository_id
-                ),
-                "dashboards_path": settings.get(
-                    "dashboards_path", self.default_grafana.dashboards_path
-                ),
-                "datasources_path": settings.get(
-                    "datasources_path", self.default_grafana.datasources_path
-                ),
-                "telegraf_config_path": settings.get(
-                    "telegraf_config_path", self.default_grafana.telegraf_config_path
+                    "git_repository_id", self.default_agents.git_repository_id
                 ),
             }
 
@@ -722,11 +706,11 @@ class SettingsManager:
             else:
                 repo.create(**update_data)
 
-            logger.info("Grafana settings updated successfully")
+            logger.info("Agents settings updated successfully")
             return True
 
         except Exception as e:
-            logger.error(f"Error updating Grafana settings: {e}")
+            logger.error(f"Error updating Agents settings: {e}")
             return False
 
     def update_all_settings(self, settings: Dict[str, Any]) -> bool:
