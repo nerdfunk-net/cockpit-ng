@@ -38,6 +38,7 @@ export function AgentsDeployPage() {
   // Device selection state
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([])
   const [selectedDevices, setSelectedDevices] = useState<DeviceInfo[]>(EMPTY_DEVICES)
+  const [deployPath, setDeployPath] = useState<string>('')
 
   // Initialize hooks
   const templateManager = useTemplateManager('agent')
@@ -66,13 +67,15 @@ export function AgentsDeployPage() {
       return acc
     }, {} as Record<string, string>),
     repositoryId: repoSelector.selectedRepoId!,
-    useNautobotContext: variableManager.useNautobotContext
+    useNautobotContext: variableManager.useNautobotContext,
+    path: deployPath || undefined
   }), [
     selectedDeviceIds,
     templateManager.selectedTemplateId,
     variableManager.variables,
     variableManager.useNautobotContext,
-    repoSelector.selectedRepoId
+    repoSelector.selectedRepoId,
+    deployPath
   ])
 
   // Action handlers
@@ -185,6 +188,8 @@ export function AgentsDeployPage() {
                 selectedRepoId={repoSelector.selectedRepoId}
                 onRepositoryChange={repoSelector.setSelectedRepoId}
                 isRepositoriesLoading={repoSelector.loading}
+                deployPath={deployPath}
+                onDeployPathChange={setDeployPath}
                 canExecute={canExecute}
                 isDryRunning={deployExecution.isDryRunning}
                 isDeploying={deployExecution.isDeploying}

@@ -5,6 +5,7 @@ export interface DeployConfig {
   variables: Record<string, string>
   repositoryId: number
   useNautobotContext: boolean
+  path?: string
 }
 
 // Result of dry run (template rendering)

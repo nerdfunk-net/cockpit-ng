@@ -1,5 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Play, GitCommit, Zap } from 'lucide-react'
 import { RepositorySelector } from '../ui/repository-selector'
 import type { GitRepository } from '../types'
@@ -9,6 +11,8 @@ interface DeployTabProps {
   selectedRepoId: number | null
   onRepositoryChange: (repoId: number) => void
   isRepositoriesLoading: boolean
+  deployPath: string
+  onDeployPathChange: (path: string) => void
   canExecute: boolean
   isDryRunning: boolean
   isDeploying: boolean
@@ -23,6 +27,8 @@ export function DeployTab({
   selectedRepoId,
   onRepositoryChange,
   isRepositoriesLoading,
+  deployPath,
+  onDeployPathChange,
   canExecute,
   isDryRunning,
   isDeploying,
@@ -43,13 +49,27 @@ export function DeployTab({
             Select the target repository for config deployment
           </div>
         </div>
-        <div className="p-6">
+        <div className="p-6 space-y-4">
           <RepositorySelector
             repositories={repositories}
             selectedRepoId={selectedRepoId}
             onChange={onRepositoryChange}
             loading={isRepositoriesLoading}
           />
+          
+          <div className="space-y-2">
+            <Label htmlFor="deploy-path">Path</Label>
+            <Input
+              id="deploy-path"
+              type="text"
+              placeholder="e.g., configs/agents"
+              value={deployPath}
+              onChange={(e) => onDeployPathChange(e.target.value)}
+            />
+            <p className="text-sm text-muted-foreground">
+              Path relative to the top directory of the git repository where the rendered template will be saved
+            </p>
+          </div>
         </div>
       </div>
 
