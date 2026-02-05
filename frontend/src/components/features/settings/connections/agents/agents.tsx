@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
@@ -283,7 +283,7 @@ export default function AgentsSettingsForm() {
                 </div>
               )}
               <p className="text-xs text-muted-foreground">
-                Only repositories with category "Cockpit Configs" are shown
+                Only repositories with category &quot;Cockpit Configs&quot; are shown
               </p>
             </div>
           </div>

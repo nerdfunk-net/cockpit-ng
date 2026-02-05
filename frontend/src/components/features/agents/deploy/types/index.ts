@@ -1,4 +1,4 @@
-// Deploy configuration for TIG-Stack operations
+// Deploy configuration for Agents operations
 export interface DeployConfig {
   deviceIds: string[]
   templateId: number

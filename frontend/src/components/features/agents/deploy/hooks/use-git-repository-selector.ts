@@ -21,10 +21,10 @@ export function useGitRepositorySelector() {
         const activeRepos = response.repositories.filter(r => r.is_active)
         setRepositories(activeRepos)
 
-        // Auto-select first TIG-Stack category repo
-        const tigRepo = activeRepos.find(r => r.category === 'tig-stack')
-        if (tigRepo) {
-          setSelectedRepoId(tigRepo.id)
+        // Auto-select first Agent category repo
+        const agentRepo = activeRepos.find(r => r.category === 'agent')
+        if (agentRepo) {
+          setSelectedRepoId(agentRepo.id)
         } else if (activeRepos.length > 0 && activeRepos[0]) {
           setSelectedRepoId(activeRepos[0].id)
         }

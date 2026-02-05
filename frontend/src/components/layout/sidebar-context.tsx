@@ -15,7 +15,7 @@ interface SidebarContextType {
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined)
 
 // Navigation sections - all collapsed by default on login
-const navigationSectionTitles = ['General', 'Nautobot', 'CheckMK', 'TIG-Stack', 'Network', 'Jobs', 'Settings']
+const navigationSectionTitles = ['General', 'Nautobot', 'CheckMK', 'Agents', 'Network', 'Jobs', 'Settings']
 
 // Collapsible menu items - all collapsed by default on login
 const collapsibleMenuItems = [

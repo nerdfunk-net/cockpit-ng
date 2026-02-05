@@ -13,7 +13,7 @@ interface Template {
 
 const EMPTY_TEMPLATES: Template[] = []
 
-export function useTemplateManager(category: string = 'tig-stack') {
+export function useTemplateManager(category: string = 'agent') {
   const { apiCall } = useApi()
   const [templates, setTemplates] = useState<Template[]>(EMPTY_TEMPLATES)
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('none')

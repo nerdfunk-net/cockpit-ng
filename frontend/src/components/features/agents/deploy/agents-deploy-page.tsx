@@ -32,7 +32,7 @@ interface ErrorDetails {
   details?: string[]
 }
 
-export function TigDeployPage() {
+export function AgentsDeployPage() {
   const { toast } = useToast()
 
   // Device selection state
@@ -40,7 +40,7 @@ export function TigDeployPage() {
   const [selectedDevices, setSelectedDevices] = useState<DeviceInfo[]>(EMPTY_DEVICES)
 
   // Initialize hooks
-  const templateManager = useTemplateManager('tig-stack')
+  const templateManager = useTemplateManager('agent')
   const variableManager = useVariableManager()
   const repoSelector = useGitRepositorySelector()
   const deployExecution = useDeployExecution()
@@ -141,7 +141,7 @@ export function TigDeployPage() {
             <GitCommit className="h-6 w-6 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">TIG-Stack Deploy</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Agents Deploy</h1>
             <p className="text-gray-600 mt-1">Deploy Telegraf/InfluxDB/Grafana configurations to devices</p>
           </div>
         </div>

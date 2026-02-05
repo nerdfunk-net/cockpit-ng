@@ -130,7 +130,7 @@ export default function TemplateManagement() {
     content: '',
     scope: 'global',
     variables: {},
-    use_nautobot_context: false,
+    use_nautobot_context: true,
     git_repo_url: '',
     git_branch: 'main',
     git_path: '',
@@ -144,7 +144,7 @@ export default function TemplateManagement() {
   const [activeTab, setActiveTab] = useState('list')
   const [showSourceChangeModal, setShowSourceChangeModal] = useState(false)
 
-  // Inventory selection state for TIG-Stack templates
+  // Inventory selection state for Agent templates
   const [selectedInventory, setSelectedInventory] = useState<{ id: number; name: string } | null>(null)
   const [showInventoryDialog, setShowInventoryDialog] = useState(false)
   const [inventories, setInventories] = useState<SavedInventory[]>([])
@@ -169,7 +169,7 @@ export default function TemplateManagement() {
       content: '',
       scope: 'global',
       variables: {},
-      use_nautobot_context: false,
+      use_nautobot_context: true,
       git_repo_url: '',
       git_branch: 'main',
       git_path: '',
@@ -222,7 +222,7 @@ export default function TemplateManagement() {
       content: '',
       scope: 'global',
       variables: {},
-      use_nautobot_context: false,
+      use_nautobot_context: true,
       git_repo_url: '',
       git_branch: 'main',
       git_path: '',
@@ -287,9 +287,6 @@ export default function TemplateManagement() {
       if (template.source === 'file' && editSource === 'webeditor') {
         setShowSourceChangeModal(true)
         setTimeout(() => setShowSourceChangeModal(false), 2000)
-        showMessage('Template loaded for editing', 'success')
-      } else {
-        showMessage('Template loaded for editing', 'success')
       }
     } catch (error) {
       console.error('Error loading template for edit:', error)
@@ -387,7 +384,7 @@ export default function TemplateManagement() {
     })
   }
 
-  // Load inventories for TIG-Stack templates
+  // Load inventories for Agent templates
   const loadInventories = useCallback(async () => {
     setIsLoadingInventories(true)
     try {
@@ -433,9 +430,9 @@ export default function TemplateManagement() {
       return
     }
 
-    // For TIG-Stack templates, require inventory selection
-    if (formData.category === 'tig-stack' && !selectedInventory) {
-      showMessage('Please select an inventory for TIG-Stack templates', 'error')
+    // For Agent templates, require inventory selection
+    if (formData.category === 'agent' && !selectedInventory) {
+      showMessage('Please select an inventory for Agent templates', 'error')
       return
     }
 
@@ -1054,7 +1051,7 @@ export default function TemplateManagement() {
                     <SelectContent>
                       <SelectItem value="__none__">No Category</SelectItem>
                       {/* Canonical categories only to avoid duplicates from the API */}
-                      {['ansible', 'onboarding', 'parser', 'netmiko', 'tig-stack'].map(cat => (
+                      {['ansible', 'onboarding', 'parser', 'netmiko', 'agent'].map(cat => (
                         <SelectItem key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1).replace('-', ' ')}</SelectItem>
                       ))}
                     </SelectContent>
@@ -1108,6 +1105,30 @@ export default function TemplateManagement() {
                   </p>
                 </div>
               </div>
+
+              {/* Nautobot Context Option - show only for Agent templates */}
+              {formData.category === 'agent' && (
+                <div className="flex items-center space-x-2 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <Checkbox
+                    id="use-nautobot-context"
+                    checked={formData.use_nautobot_context ?? true}
+                    onCheckedChange={(checked) =>
+                      setFormData(prev => ({ ...prev, use_nautobot_context: checked as boolean }))
+                    }
+                  />
+                  <div className="grid gap-1.5 leading-none">
+                    <label
+                      htmlFor="use-nautobot-context"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      Use Nautobot data & context
+                    </label>
+                    <p className="text-sm text-muted-foreground">
+                      When enabled, this template will have access to Nautobot device data and context variables during rendering.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Source-specific configurations */}
               {formData.source === 'git' && (
@@ -1232,8 +1253,8 @@ export default function TemplateManagement() {
                     <span>{editingTemplate ? 'Cancel Edit' : 'Reset'}</span>
                   </Button>
 
-                  {/* Select Inventory button - show only for TIG-Stack templates */}
-                  {formData.category === 'tig-stack' && (
+                  {/* Select Inventory button - show only for Agent templates */}
+                  {formData.category === 'agent' && (
                     <Button
                       variant="outline"
                       onClick={handleSelectInventory}
@@ -1253,7 +1274,7 @@ export default function TemplateManagement() {
                     <Button
                       variant="outline"
                       onClick={handleRenderTemplate}
-                      disabled={isRendering || !formData.name || (formData.category === 'tig-stack' && !selectedInventory)}
+                      disabled={isRendering || !formData.name || (formData.category === 'agent' && !selectedInventory)}
                       className="flex items-center space-x-2 border-blue-300 text-blue-700 hover:bg-blue-50"
                     >
                       {isRendering && <RefreshCw className="h-4 w-4 animate-spin" />}
@@ -1566,7 +1587,7 @@ export default function TemplateManagement() {
         </div>
       )}
 
-      {/* Inventory Selection Dialog for TIG-Stack Templates */}
+      {/* Inventory Selection Dialog for Agent Templates */}
       <LoadInventoryDialog
         show={showInventoryDialog}
         onClose={() => setShowInventoryDialog(false)}

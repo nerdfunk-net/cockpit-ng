@@ -20,9 +20,9 @@ export function useDeployExecution() {
   const executeDryRun = useCallback(async (config: DeployConfig) => {
     setIsDryRunning(true)
     try {
-      // API call: POST /tig-stack/deploy/dry-run
+      // API call: POST /agents/deploy/dry-run
       const response = await apiCall<{ results: DryRunResult[] }>(
-        'tig-stack/deploy/dry-run',
+        'agents/deploy/dry-run',
         {
           method: 'POST',
           body: JSON.stringify(config)
@@ -41,9 +41,9 @@ export function useDeployExecution() {
   const executeDeployToGit = useCallback(async (config: DeployConfig) => {
     setIsDeploying(true)
     try {
-      // API call: POST /tig-stack/deploy/to-git
+      // API call: POST /agents/deploy/to-git
       const response = await apiCall<{ results: DeployResult[] }>(
-        'tig-stack/deploy/to-git',
+        'agents/deploy/to-git',
         {
           method: 'POST',
           body: JSON.stringify(config)
@@ -62,9 +62,9 @@ export function useDeployExecution() {
   const executeActivate = useCallback(async (config: DeployConfig) => {
     setIsActivating(true)
     try {
-      // API call: POST /tig-stack/deploy/activate
+      // API call: POST /agents/deploy/activate
       const response = await apiCall<{ results: DeployResult[] }>(
-        'tig-stack/deploy/activate',
+        'agents/deploy/activate',
         {
           method: 'POST',
           body: JSON.stringify(config)

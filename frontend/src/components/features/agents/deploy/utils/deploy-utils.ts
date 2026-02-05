@@ -1,4 +1,4 @@
-// Utility functions for TIG-Stack deploy operations
+// Utility functions for Agents deploy operations
 
 export function validateDeviceSelection(deviceIds: string[]): boolean {
   return deviceIds.length > 0

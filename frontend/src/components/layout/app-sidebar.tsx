@@ -94,10 +94,10 @@ const navigationSections: NavSection[] = [
     ],
   },
   {
-    title: 'TIG-Stack',
+    title: 'Agents',
     items: [
-      { label: 'Deploy', href: '/tig-stack/deploy', icon: GitCommit },
-      { label: 'Templates', href: '/tig-stack/templates', icon: FileText },
+      { label: 'Deploy', href: '/agents/deploy', icon: GitCommit },
+      { label: 'Templates', href: '/agents/templates', icon: FileText },
     ],
   },
   {
