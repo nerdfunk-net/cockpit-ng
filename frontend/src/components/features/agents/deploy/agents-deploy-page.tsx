@@ -13,7 +13,7 @@ import { DeployTab } from './tabs/deploy-tab'
 // Hooks
 import { useTemplateManager } from './hooks/use-template-manager'
 import { useVariableManager } from './hooks/use-variable-manager'
-import { useGitRepositorySelector } from './hooks/use-git-repository-selector'
+import { useAgentSelector } from './hooks/use-agent-selector'
 import { useDeployExecution } from './hooks/use-deploy-execution'
 
 // Dialogs
@@ -43,7 +43,7 @@ export function AgentsDeployPage() {
   // Initialize hooks
   const templateManager = useTemplateManager('agent')
   const variableManager = useVariableManager()
-  const repoSelector = useGitRepositorySelector()
+  const agentSelector = useAgentSelector()
   const deployExecution = useDeployExecution()
 
   // Error dialog state
@@ -54,8 +54,9 @@ export function AgentsDeployPage() {
   const canExecute = useMemo(() =>
     selectedDeviceIds.length > 0 &&
     templateManager.selectedTemplateId !== 'none' &&
-    repoSelector.selectedRepoId !== null,
-    [selectedDeviceIds.length, templateManager.selectedTemplateId, repoSelector.selectedRepoId]
+    agentSelector.selectedAgentId !== null &&
+    deployPath.trim() !== '',
+    [selectedDeviceIds.length, templateManager.selectedTemplateId, agentSelector.selectedAgentId, deployPath]
   )
 
   // Build config for API calls
@@ -66,15 +67,15 @@ export function AgentsDeployPage() {
       if (v.name && v.value) acc[v.name] = v.value
       return acc
     }, {} as Record<string, string>),
-    repositoryId: repoSelector.selectedRepoId!,
+    agentId: agentSelector.selectedAgentId!,
     useNautobotContext: variableManager.useNautobotContext,
-    path: deployPath || undefined
+    path: deployPath
   }), [
     selectedDeviceIds,
     templateManager.selectedTemplateId,
     variableManager.variables,
     variableManager.useNautobotContext,
-    repoSelector.selectedRepoId,
+    agentSelector.selectedAgentId,
     deployPath
   ])
 
@@ -184,10 +185,10 @@ export function AgentsDeployPage() {
 
             <TabsContent value="deploy">
               <DeployTab
-                repositories={repoSelector.repositories}
-                selectedRepoId={repoSelector.selectedRepoId}
-                onRepositoryChange={repoSelector.setSelectedRepoId}
-                isRepositoriesLoading={repoSelector.loading}
+                agents={agentSelector.agents}
+                selectedAgentId={agentSelector.selectedAgentId}
+                onAgentChange={agentSelector.setSelectedAgentId}
+                isAgentsLoading={agentSelector.loading}
                 deployPath={deployPath}
                 onDeployPathChange={setDeployPath}
                 canExecute={canExecute}

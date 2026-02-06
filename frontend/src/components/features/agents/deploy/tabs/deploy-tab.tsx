@@ -3,14 +3,14 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Play, GitCommit, Zap } from 'lucide-react'
-import { RepositorySelector } from '../ui/repository-selector'
-import type { GitRepository } from '../types'
+import { AgentSelector } from '../ui/agent-selector'
+import type { Agent } from '../types'
 
 interface DeployTabProps {
-  repositories: GitRepository[]
-  selectedRepoId: number | null
-  onRepositoryChange: (repoId: number) => void
-  isRepositoriesLoading: boolean
+  agents: Agent[]
+  selectedAgentId: string | null
+  onAgentChange: (agentId: string) => void
+  isAgentsLoading: boolean
   deployPath: string
   onDeployPathChange: (path: string) => void
   canExecute: boolean
@@ -23,10 +23,10 @@ interface DeployTabProps {
 }
 
 export function DeployTab({
-  repositories,
-  selectedRepoId,
-  onRepositoryChange,
-  isRepositoriesLoading,
+  agents,
+  selectedAgentId,
+  onAgentChange,
+  isAgentsLoading,
   deployPath,
   onDeployPathChange,
   canExecute,
@@ -39,35 +39,38 @@ export function DeployTab({
 }: DeployTabProps) {
   return (
     <div className="space-y-6">
-      {/* Repository Selection */}
+      {/* Agent Selection */}
       <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
         <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium">Git Repository</span>
+            <span className="text-sm font-medium">Agent Repository</span>
           </div>
           <div className="text-xs text-blue-100">
-            Select the target repository for config deployment
+            Select the agent and path for config deployment
           </div>
         </div>
         <div className="p-6 space-y-4">
-          <RepositorySelector
-            repositories={repositories}
-            selectedRepoId={selectedRepoId}
-            onChange={onRepositoryChange}
-            loading={isRepositoriesLoading}
+          <AgentSelector
+            agents={agents}
+            selectedAgentId={selectedAgentId}
+            onChange={onAgentChange}
+            loading={isAgentsLoading}
           />
           
           <div className="space-y-2">
-            <Label htmlFor="deploy-path">Path</Label>
+            <Label htmlFor="deploy-path" className="flex items-center">
+              Path <span className="text-red-500 ml-1">*</span>
+            </Label>
             <Input
               id="deploy-path"
               type="text"
-              placeholder="e.g., configs/agents"
+              placeholder="e.g., /etc/telegraf/telegraf.d"
               value={deployPath}
               onChange={(e) => onDeployPathChange(e.target.value)}
+              required
             />
             <p className="text-sm text-muted-foreground">
-              Path relative to the top directory of the git repository where the rendered template will be saved
+              Absolute path on the target device where the rendered configuration will be deployed
             </p>
           </div>
         </div>
@@ -87,7 +90,7 @@ export function DeployTab({
           {!canExecute && (
             <Alert>
               <AlertDescription>
-                Please select devices, a template, and a repository before proceeding
+                Please select devices, a template, an agent, and provide a deployment path before proceeding
               </AlertDescription>
             </Alert>
           )}

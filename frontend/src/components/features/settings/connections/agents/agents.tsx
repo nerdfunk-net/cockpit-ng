@@ -9,7 +9,7 @@ import { Loader2, CheckCircle, XCircle, BarChart3, Plus } from 'lucide-react'
 import { AgentCard } from './agent-card'
 import { AgentModal } from './agent-modal'
 import { HelpDialog, HelpButton } from './help-dialog'
-import type { Agent, AgentsResponse, GitRepositoriesResponse, GitRepository } from './types'
+import type { Agent, AgentsSettings, AgentsResponse, GitRepositoriesResponse, GitRepository } from './types'
 
 type StatusType = 'idle' | 'success' | 'error' | 'saving'
 

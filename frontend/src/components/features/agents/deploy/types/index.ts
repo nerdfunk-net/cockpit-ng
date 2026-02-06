@@ -3,9 +3,9 @@ export interface DeployConfig {
   deviceIds: string[]
   templateId: number
   variables: Record<string, string>
-  repositoryId: number
+  agentId: string
   useNautobotContext: boolean
-  path?: string
+  path: string
 }
 
 // Result of dry run (template rendering)
@@ -34,5 +34,6 @@ export interface DeployExecutionSummary {
   failed: number
 }
 
-// Re-export Git repository type
+// Re-export Git repository and Agent types
 export type { GitRepository } from '@/types/git'
+export type { Agent } from '../hooks/use-agent-selector'
