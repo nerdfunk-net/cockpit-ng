@@ -84,6 +84,14 @@ class CheckMKTestRequest(BaseModel):
     verify_ssl: bool = True
 
 
+class Agent(BaseModel):
+    """Individual agent configuration."""
+    id: str
+    name: str
+    description: str
+    git_repository_id: Optional[int] = None
+
+
 class AgentsSettingsRequest(BaseModel):
     """Agents settings request model."""
 
@@ -100,6 +108,8 @@ class AgentsSettingsRequest(BaseModel):
     global_credential_id: Optional[int] = None
     # Git deployment
     git_repository_id: Optional[int] = None
+    # Agents array
+    agents: list[Agent] = []
 
 
 class AgentsTestRequest(BaseModel):

@@ -14,6 +14,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Index,
     LargeBinary,
+    JSON,
 )
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
@@ -949,6 +950,8 @@ class AgentsSetting(Base):
     global_credential_id = Column(Integer)
     # Git deployment
     git_repository_id = Column(Integer)
+    # Agents array
+    agents = Column(JSON, nullable=True)
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

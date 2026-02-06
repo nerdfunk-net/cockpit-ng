@@ -162,6 +162,7 @@ class DeviceOffboardingSettings:
 
 
 @dataclass
+@dataclass
 class AgentsSettings:
     """Agents deployment settings"""
 
@@ -178,6 +179,8 @@ class AgentsSettings:
     global_credential_id: Optional[int] = None
     # Git deployment
     git_repository_id: Optional[int] = None
+    # Agents array
+    agents: Optional[List] = None
 
 
 class SettingsManager:
@@ -294,14 +297,19 @@ class SettingsManager:
                     "use_global_credentials": settings.use_global_credentials,
                     "global_credential_id": settings.global_credential_id,
                     "git_repository_id": settings.git_repository_id,
+                    "agents": settings.agents if settings.agents else [],
                 }
             else:
                 # Fallback to defaults
-                return asdict(self.default_agents)
+                defaults = asdict(self.default_agents)
+                defaults["agents"] = []
+                return defaults
 
         except Exception as e:
             logger.error(f"Error getting Agents settings: {e}")
-            return asdict(self.default_agents)
+            defaults = asdict(self.default_agents)
+            defaults["agents"] = []
+            return defaults
 
     def get_all_settings(self) -> Dict[str, Any]:
         """Get all settings combined"""
@@ -699,6 +707,7 @@ class SettingsManager:
                 "git_repository_id": settings.get(
                     "git_repository_id", self.default_agents.git_repository_id
                 ),
+                "agents": settings.get("agents", []),
             }
 
             if existing:

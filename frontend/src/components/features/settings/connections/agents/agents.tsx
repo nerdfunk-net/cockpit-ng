@@ -1,75 +1,32 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
-import { Loader2, CheckCircle, XCircle, BarChart3, Settings as SettingsIcon } from 'lucide-react'
-
-interface AgentsSettings {
-  deployment_method: 'local' | 'sftp' | 'git'
-  local_root_path: string
-  sftp_hostname: string
-  sftp_port: number
-  sftp_path: string
-  sftp_username: string
-  sftp_password: string
-  use_global_credentials: boolean
-  global_credential_id: number | null
-  git_repository_id: number | null
-}
-
-interface ApiResponse {
-  success: boolean
-  data?: AgentsSettings
-  message?: string
-}
-
-interface GitRepository {
-  id: number
-  name: string
-  url: string
-  category: string
-  branch: string
-  last_sync: string | null
-}
-
-interface GitRepositoriesResponse {
-  repositories: GitRepository[]
-  total: number
-}
+import { Loader2, CheckCircle, XCircle, BarChart3, Plus } from 'lucide-react'
+import { AgentCard } from './agent-card'
+import { AgentModal } from './agent-modal'
+import { HelpDialog, HelpButton } from './help-dialog'
+import type { Agent, AgentsResponse, GitRepositoriesResponse, GitRepository } from './types'
 
 type StatusType = 'idle' | 'success' | 'error' | 'saving'
 
 export default function AgentsSettingsForm() {
   const { apiCall } = useApi()
-  const [settings, setSettings] = useState<AgentsSettings>({
-    deployment_method: 'local',
-    local_root_path: '',
-    sftp_hostname: '',
-    sftp_port: 22,
-    sftp_path: '',
-    sftp_username: '',
-    sftp_password: '',
-    use_global_credentials: false,
-    global_credential_id: null,
-    git_repository_id: null,
-  })
-
+  const [agents, setAgents] = useState<Agent[]>([])
+  const [settings, setSettings] = useState<AgentsSettings | null>(null)
   const [status, setStatus] = useState<StatusType>('idle')
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [gitRepositories, setGitRepositories] = useState<GitRepository[]>([])
   const [loadingGitRepos, setLoadingGitRepos] = useState(false)
+  
+  // Modal state
+  const [isAgentModalOpen, setIsAgentModalOpen] = useState(false)
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
+  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false)
 
   const showMessage = useCallback((msg: string, type: 'success' | 'error') => {
     setMessage(msg)
@@ -81,16 +38,19 @@ export default function AgentsSettingsForm() {
     }, 5000)
   }, [])
 
-  const loadSettings = useCallback(async () => {
+  const loadAgents = useCallback(async () => {
     try {
       setIsLoading(true)
-      const data: ApiResponse = await apiCall('settings/agents')
+      const data = await apiCall('settings/agents') as AgentsResponse
+      console.log('Loaded agents data:', data)
       if (data.success && data.data) {
+        console.log('Setting agents:', data.data.agents)
         setSettings(data.data)
+        setAgents(data.data.agents || [])
       }
     } catch (error) {
-      console.error('Error loading Agents settings:', error)
-      showMessage('Failed to load settings', 'error')
+      console.error('Error loading agents:', error)
+      showMessage('Failed to load agents', 'error')
     } finally {
       setIsLoading(false)
     }
@@ -116,39 +76,95 @@ export default function AgentsSettingsForm() {
     }
   }, [apiCall, showMessage])
 
-  const saveSettings = useCallback(async () => {
+  const saveAgents = useCallback(async (updatedAgents: Agent[]) => {
     try {
       setStatus('saving')
 
+      // Merge with existing settings to preserve backend-required fields
+      const payload: AgentsSettings = {
+        deployment_method: settings?.deployment_method || 'git',
+        local_root_path: settings?.local_root_path || '',
+        sftp_hostname: settings?.sftp_hostname || '',
+        sftp_port: settings?.sftp_port || 22,
+        sftp_path: settings?.sftp_path || '',
+        sftp_username: settings?.sftp_username || '',
+        sftp_password: settings?.sftp_password || '',
+        use_global_credentials: settings?.use_global_credentials || false,
+        global_credential_id: settings?.global_credential_id || null,
+        git_repository_id: settings?.git_repository_id || null,
+        agents: updatedAgents,
+      }
+
+      console.log('Saving agents payload:', payload)
+
       const response = await apiCall('settings/agents', {
         method: 'POST',
-        body: JSON.stringify(settings),
-      }) as ApiResponse
+        body: JSON.stringify(payload),
+      }) as AgentsResponse
+
+      console.log('Save response:', response)
 
       if (response.success) {
-        showMessage('Settings saved successfully', 'success')
+        showMessage('Agents saved successfully', 'success')
         if (response.data) {
+          console.log('Updating agents from response:', response.data.agents)
           setSettings(response.data)
+          setAgents(response.data.agents || [])
         }
       } else {
-        showMessage(response.message || 'Failed to save settings', 'error')
+        showMessage(response.message || 'Failed to save agents', 'error')
       }
     } catch (error) {
-      console.error('Error saving settings:', error)
-      showMessage('Failed to save settings', 'error')
+      console.error('Error saving agents:', error)
+      showMessage('Failed to save agents', 'error')
     }
   }, [apiCall, settings, showMessage])
 
-  const updateSetting = useCallback(<K extends keyof AgentsSettings>(
-    key: K,
-    value: AgentsSettings[K]
-  ) => {
-    setSettings(prev => ({ ...prev, [key]: value }))
+  const handleAddAgent = useCallback(() => {
+    setSelectedAgent(null)
+    setIsAgentModalOpen(true)
+  }, [])
+
+  const handleEditAgent = useCallback((agent: Agent) => {
+    setSelectedAgent(agent)
+    setIsAgentModalOpen(true)
+  }, [])
+
+  const handleRemoveAgent = useCallback((agentId: string) => {
+    if (!confirm('Are you sure you want to remove this agent? This action cannot be undone.')) {
+      return
+    }
+
+    const updatedAgents = agents.filter(a => a.id !== agentId)
+    setAgents(updatedAgents)
+    saveAgents(updatedAgents)
+  }, [agents, saveAgents])
+
+  const handleSaveAgent = useCallback((agent: Agent) => {
+    let updatedAgents: Agent[]
+    
+    if (selectedAgent) {
+      // Edit existing agent
+      updatedAgents = agents.map(a => (a.id === agent.id ? agent : a))
+    } else {
+      // Add new agent
+      updatedAgents = [...agents, agent]
+    }
+
+    setAgents(updatedAgents)
+    saveAgents(updatedAgents)
+    setIsAgentModalOpen(false)
+    setSelectedAgent(null)
+  }, [agents, selectedAgent, saveAgents])
+
+  const handleCancelAgent = useCallback(() => {
+    setIsAgentModalOpen(false)
+    setSelectedAgent(null)
   }, [])
 
   useEffect(() => {
-    loadSettings()
-  }, [loadSettings])
+    loadAgents()
+  }, [loadAgents])
 
   useEffect(() => {
     if (gitRepositories.length === 0) {
@@ -178,31 +194,14 @@ export default function AgentsSettingsForm() {
             </p>
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          <HelpButton onClick={() => setIsHelpDialogOpen(true)} />
+          <Button onClick={handleAddAgent} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Add New Agent
+          </Button>
+        </div>
       </div>
-
-      {/* Information Card */}
-      <Card className="border-blue-200 bg-blue-50/50">
-        <CardContent className="pt-6">
-          <div className="space-y-3">
-            <h3 className="font-semibold text-blue-900 flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              About Agents
-            </h3>
-            <p className="text-sm text-gray-700 leading-relaxed">
-              Agents are external applications used for monitoring, metrics collection, and observability. 
-              Cockpit can manage configurations for applications like <strong>Grafana</strong>, <strong>Telegraf</strong>, 
-              <strong>InfluxDB</strong>, and <strong>Smokeping</strong>.
-            </p>
-            <div className="bg-white/70 p-4 rounded-md border border-blue-200">
-              <p className="text-sm text-gray-700 leading-relaxed">
-                <strong>How it works:</strong> Cockpit renders configuration templates, commits them to a Git repository, 
-                and then calls the agent to restart the Docker container running the application. This ensures 
-                your monitoring stack stays synchronized with your network infrastructure.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {message && (
         <div
@@ -222,90 +221,52 @@ export default function AgentsSettingsForm() {
         </div>
       )}
 
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
-          <div className="flex items-center space-x-2">
-            <SettingsIcon className="h-4 w-4" />
-            <span className="text-sm font-medium">Deployment Configuration</span>
-          </div>
-          <div className="text-xs text-blue-100">
-            Configure agent repository settings
-          </div>
-        </div>
-        <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-6">
-          {/* Git Repository */}
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-1">Git Repository</h3>
-              <p className="text-sm text-muted-foreground">
-                Select the repository where agent configurations will be stored
-              </p>
+      {/* Agents List */}
+      {agents.length === 0 ? (
+        <Card className="border-gray-200">
+          <div className="p-12 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="bg-gray-100 p-4 rounded-full">
+                <BarChart3 className="h-8 w-8 text-gray-400" />
+              </div>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="git-repository-id" className="text-sm font-medium text-gray-700">
-                Configuration Repository <span className="text-red-500">*</span>
-              </Label>
-              {loadingGitRepos ? (
-                <div className="flex items-center space-x-2 p-3 border border-gray-300 rounded-md bg-gray-50 max-w-2xl">
-                  <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
-                  <span className="text-sm text-gray-600">Loading repositories...</span>
-                </div>
-              ) : gitRepositories.length > 0 ? (
-                <Select
-                  value={settings.git_repository_id?.toString() || ''}
-                  onValueChange={(value) => updateSetting('git_repository_id', parseInt(value) || null)}
-                >
-                  <SelectTrigger 
-                    id="git-repository-id" 
-                    className="max-w-2xl h-auto min-h-[44px] border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  >
-                    <SelectValue placeholder="Select a repository" />
-                  </SelectTrigger>
-                  <SelectContent className="max-w-[600px]">
-                    {gitRepositories.map((repo) => (
-                      <SelectItem key={repo.id} value={repo.id.toString()} className="cursor-pointer">
-                        <div className="flex flex-col py-1">
-                          <span className="font-medium text-gray-900">{repo.name}</span>
-                          <span className="text-xs text-gray-500 mt-0.5">
-                            {repo.url} • branch: {repo.branch}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className="p-4 border border-amber-200 rounded-md bg-amber-50 max-w-2xl">
-                  <p className="text-sm text-amber-800">
-                    <strong>No repositories found.</strong> Please add a Cockpit Configs repository in Settings → Git Management.
-                  </p>
-                </div>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Only repositories with category &quot;Cockpit Configs&quot; are shown
-              </p>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-end pt-4 border-t">
-            <Button
-              type="button"
-              onClick={saveSettings}
-              disabled={status === 'saving'}
-              className="flex items-center gap-2"
-            >
-              {status === 'saving' ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <CheckCircle className="h-4 w-4" />
-              )}
-              <span>{status === 'saving' ? 'Saving...' : 'Save Configuration'}</span>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Agents Configured</h3>
+            <p className="text-sm text-gray-600 mb-6 max-w-md mx-auto">
+              Get started by adding your first agent. Configure monitoring tools like Grafana, Telegraf,
+              or Smokeping to keep your infrastructure observable.
+            </p>
+            <Button onClick={handleAddAgent} className="flex items-center gap-2 mx-auto">
+              <Plus className="h-4 w-4" />
+              Add Your First Agent
             </Button>
           </div>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {agents.map((agent) => (
+            <AgentCard
+              key={agent.id}
+              agent={agent}
+              gitRepositories={gitRepositories}
+              onEdit={handleEditAgent}
+              onRemove={handleRemoveAgent}
+            />
+          ))}
         </div>
-      </div>
+      )}
+
+      {/* Agent Modal */}
+      <AgentModal
+        isOpen={isAgentModalOpen}
+        agent={selectedAgent}
+        gitRepositories={gitRepositories}
+        loadingGitRepos={loadingGitRepos}
+        onSave={handleSaveAgent}
+        onCancel={handleCancelAgent}
+      />
+
+      {/* Help Dialog */}
+      <HelpDialog isOpen={isHelpDialogOpen} onClose={() => setIsHelpDialogOpen(false)} />
     </div>
   )
 }
