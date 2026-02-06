@@ -7,6 +7,7 @@ interface Template {
   content: string
   category: string
   scope: 'global' | 'private'
+  use_nautobot_context: boolean
   created_at: string
   updated_at: string
 }

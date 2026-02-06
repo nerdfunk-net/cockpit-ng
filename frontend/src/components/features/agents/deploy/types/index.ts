@@ -4,8 +4,8 @@ export interface DeployConfig {
   templateId: number
   variables: Record<string, string>
   agentId: string
-  useNautobotContext: boolean
-  path: string
+  passSnmpMapping: boolean
+  path?: string
 }
 
 // Result of dry run (template rendering)

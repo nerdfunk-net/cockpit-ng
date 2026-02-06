@@ -12,7 +12,7 @@ const INITIAL_VARIABLES: TemplateVariable[] = [
 
 export function useVariableManager() {
   const [variables, setVariables] = useState<TemplateVariable[]>(INITIAL_VARIABLES)
-  const [useNautobotContext, setUseNautobotContext] = useState(true)
+  const [passSnmpMapping, setPassSnmpMapping] = useState(true)
 
   const addVariable = useCallback(() => {
     setVariables(prev => [...prev, { id: crypto.randomUUID(), name: '', value: '' }])
@@ -36,14 +36,14 @@ export function useVariableManager() {
   return useMemo(() => ({
     variables,
     setVariables,
-    useNautobotContext,
-    setUseNautobotContext,
+    passSnmpMapping,
+    setPassSnmpMapping,
     addVariable,
     removeVariable,
     updateVariable,
   }), [
     variables,
-    useNautobotContext,
+    passSnmpMapping,
     addVariable,
     removeVariable,
     updateVariable

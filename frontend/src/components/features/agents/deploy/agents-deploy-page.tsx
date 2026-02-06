@@ -54,9 +54,8 @@ export function AgentsDeployPage() {
   const canExecute = useMemo(() =>
     selectedDeviceIds.length > 0 &&
     templateManager.selectedTemplateId !== 'none' &&
-    agentSelector.selectedAgentId !== null &&
-    deployPath.trim() !== '',
-    [selectedDeviceIds.length, templateManager.selectedTemplateId, agentSelector.selectedAgentId, deployPath]
+    agentSelector.selectedAgentId !== null,
+    [selectedDeviceIds.length, templateManager.selectedTemplateId, agentSelector.selectedAgentId]
   )
 
   // Build config for API calls
@@ -68,13 +67,13 @@ export function AgentsDeployPage() {
       return acc
     }, {} as Record<string, string>),
     agentId: agentSelector.selectedAgentId!,
-    useNautobotContext: variableManager.useNautobotContext,
-    path: deployPath
+    passSnmpMapping: variableManager.passSnmpMapping,
+    path: deployPath || undefined
   }), [
     selectedDeviceIds,
     templateManager.selectedTemplateId,
     variableManager.variables,
-    variableManager.useNautobotContext,
+    variableManager.passSnmpMapping,
     agentSelector.selectedAgentId,
     deployPath
   ])
@@ -170,11 +169,11 @@ export function AgentsDeployPage() {
             <TabsContent value="variables">
               <VariablesAndTemplatesTab
                 variables={variableManager.variables}
-                useNautobotContext={variableManager.useNautobotContext}
+                passSnmpMapping={variableManager.passSnmpMapping}
                 onVariablesChange={variableManager.addVariable}
                 onVariableUpdate={variableManager.updateVariable}
                 onVariableRemove={variableManager.removeVariable}
-                onUseNautobotContextChange={variableManager.setUseNautobotContext}
+                onPassSnmpMappingChange={variableManager.setPassSnmpMapping}
                 templates={templateManager.templates}
                 selectedTemplateId={templateManager.selectedTemplateId}
                 onTemplateChange={templateManager.handleTemplateChange}

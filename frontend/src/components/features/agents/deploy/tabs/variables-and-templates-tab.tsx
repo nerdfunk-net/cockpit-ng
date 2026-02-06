@@ -18,15 +18,16 @@ interface Template {
   content: string
   category: string
   scope: 'global' | 'private'
+  use_nautobot_context: boolean
 }
 
 interface VariablesAndTemplatesTabProps {
   variables: TemplateVariable[]
-  useNautobotContext: boolean
+  passSnmpMapping: boolean
   onVariablesChange: () => void
   onVariableUpdate: (id: string, field: 'name' | 'value', value: string) => void
   onVariableRemove: (id: string) => void
-  onUseNautobotContextChange: (checked: boolean) => void
+  onPassSnmpMappingChange: (checked: boolean) => void
   templates: Template[]
   selectedTemplateId: string
   onTemplateChange: (templateId: string) => void
@@ -36,11 +37,11 @@ interface VariablesAndTemplatesTabProps {
 
 export function VariablesAndTemplatesTab({
   variables,
-  useNautobotContext,
+  passSnmpMapping,
   onVariablesChange,
   onVariableUpdate,
   onVariableRemove,
-  onUseNautobotContextChange,
+  onPassSnmpMappingChange,
   templates,
   selectedTemplateId,
   onTemplateChange,
@@ -64,16 +65,16 @@ export function VariablesAndTemplatesTab({
         <div className="p-6 space-y-4">
           <div className="flex items-center space-x-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
             <Checkbox
-              id="nautobot-context"
-              checked={useNautobotContext}
-              onCheckedChange={onUseNautobotContextChange}
+              id="snmp-mapping"
+              checked={passSnmpMapping}
+              onCheckedChange={onPassSnmpMappingChange}
             />
             <div className="flex-1">
-              <Label htmlFor="nautobot-context" className="font-medium cursor-pointer">
-                Use Nautobot data & context
+              <Label htmlFor="snmp-mapping" className="font-medium cursor-pointer">
+                Pass SNMP Mapping to template
               </Label>
               <p className="text-xs text-gray-600 mt-1">
-                When enabled, Nautobot device data will be available in the template context
+                When enabled, SNMP mapping data will be available in the template rendering context
               </p>
             </div>
           </div>
@@ -156,7 +157,22 @@ export function VariablesAndTemplatesTab({
           </div>
 
           {selectedTemplate && (
-            <div className="space-y-2">
+            <>
+              <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-gray-700">Template Configuration:</span>
+                    <span className="text-sm text-gray-600">
+                      Use Nautobot data & context is{' '}
+                      <span className={selectedTemplate.use_nautobot_context ? "font-semibold text-green-600" : "font-semibold text-gray-500"}>
+                        {selectedTemplate.use_nautobot_context ? 'enabled' : 'disabled'}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
               <Label htmlFor="template-preview">Template Preview</Label>
               <Textarea
                 id="template-preview"
@@ -170,7 +186,8 @@ export function VariablesAndTemplatesTab({
                   Global templates are read-only
                 </p>
               )}
-            </div>
+              </div>
+            </>
           )}
         </div>
       </div>

@@ -58,8 +58,8 @@ export function DeployTab({
           />
           
           <div className="space-y-2">
-            <Label htmlFor="deploy-path" className="flex items-center">
-              Path <span className="text-red-500 ml-1">*</span>
+            <Label htmlFor="deploy-path">
+              Path
             </Label>
             <Input
               id="deploy-path"
@@ -67,7 +67,6 @@ export function DeployTab({
               placeholder="e.g., /etc/telegraf/telegraf.d"
               value={deployPath}
               onChange={(e) => onDeployPathChange(e.target.value)}
-              required
             />
             <p className="text-sm text-muted-foreground">
               Absolute path on the target device where the rendered configuration will be deployed
@@ -90,7 +89,7 @@ export function DeployTab({
           {!canExecute && (
             <Alert>
               <AlertDescription>
-                Please select devices, a template, an agent, and provide a deployment path before proceeding
+                Please select devices, a template, and an agent before proceeding
               </AlertDescription>
             </Alert>
           )}
