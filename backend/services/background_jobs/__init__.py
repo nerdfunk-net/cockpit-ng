@@ -18,6 +18,9 @@ from services.background_jobs.checkmk_device_jobs import (
     update_device_in_checkmk_task,
     sync_devices_to_checkmk_task,
 )
+from services.background_jobs.diff_viewer_jobs import (
+    get_diff_between_nb_checkmk_task,
+)
 
 __all__ = [
     "cache_all_devices_task",
@@ -26,4 +29,5 @@ __all__ = [
     "add_device_to_checkmk_task",
     "update_device_in_checkmk_task",
     "sync_devices_to_checkmk_task",
+    "get_diff_between_nb_checkmk_task",
 ]

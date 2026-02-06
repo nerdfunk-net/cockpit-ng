@@ -996,6 +996,33 @@ async def trigger_compare_nautobot_and_checkmk(
     )
 
 
+@router.post("/tasks/get-diff-between-nb-checkmk", response_model=TaskResponse)
+@handle_celery_errors("get diff between Nautobot and CheckMK")
+async def trigger_get_diff_between_nb_checkmk(
+    current_user: dict = Depends(require_permission("checkmk.devices", "read")),
+):
+    """
+    Compare device inventories between Nautobot and CheckMK.
+
+    This task fetches all devices from both systems and categorizes them into:
+    - all_devices: union of both systems
+    - nautobot_only: devices only in Nautobot
+    - checkmk_only: devices only in CheckMK
+
+    Returns:
+        TaskResponse with task_id for tracking progress
+    """
+    from services.background_jobs import get_diff_between_nb_checkmk_task
+
+    task = get_diff_between_nb_checkmk_task.delay()
+
+    return TaskResponse(
+        task_id=task.id,
+        status="queued",
+        message=f"Diff task queued: {task.id}",
+    )
+
+
 # Backup request model
 class BackupDevicesRequest(BaseModel):
     inventory: List[str]

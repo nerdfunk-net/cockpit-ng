@@ -10,6 +10,8 @@ export const queryKeys = {
         ? ([...queryKeys.checkmk.all, 'hosts', filters] as const)
         : ([...queryKeys.checkmk.all, 'hosts'] as const),
     host: (id: string) => [...queryKeys.checkmk.all, 'host', id] as const,
+    diffViewer: () => [...queryKeys.checkmk.all, 'diff-viewer'] as const,
+    diffTask: (taskId: string) => [...queryKeys.checkmk.all, 'diff-task', taskId] as const,
     syncStatus: () => [...queryKeys.checkmk.all, 'sync-status'] as const,
     pendingChanges: () => [...queryKeys.checkmk.all, 'pending-changes'] as const,
     activationStatus: (activationId: string) => [...queryKeys.checkmk.all, 'activation-status', activationId] as const,
