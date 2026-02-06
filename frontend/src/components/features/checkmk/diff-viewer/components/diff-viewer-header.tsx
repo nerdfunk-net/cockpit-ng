@@ -1,12 +1,6 @@
-import { ArrowLeftRight, RotateCcw } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { ArrowLeftRight } from 'lucide-react'
 
-interface DiffViewerHeaderProps {
-  loading: boolean
-  onRunDiff: () => void
-}
-
-export function DiffViewerHeader({ loading, onRunDiff }: DiffViewerHeaderProps) {
+export function DiffViewerHeader() {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center space-x-3">
@@ -19,17 +13,6 @@ export function DiffViewerHeader({ loading, onRunDiff }: DiffViewerHeaderProps) 
             Compare device inventories between Nautobot and CheckMK
           </p>
         </div>
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <Button onClick={onRunDiff} variant="outline" disabled={loading}>
-          {loading ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2" />
-          ) : (
-            <RotateCcw className="h-4 w-4 mr-2" />
-          )}
-          {loading ? 'Running...' : 'Run Diff'}
-        </Button>
       </div>
     </div>
   )

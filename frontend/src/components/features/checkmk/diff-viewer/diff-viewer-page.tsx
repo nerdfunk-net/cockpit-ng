@@ -60,17 +60,6 @@ export default function DiffViewerPage() {
     setDiffResult,
   } = useDiffComparison({ showMessage })
 
-  // Job management for comparison results overlay
-  const jobManagement = useJobManagement(
-    token,
-    (loadedDevices) => {
-      // Overlay comparison results onto diff devices
-      overlayComparisonResults(loadedDevices)
-    },
-    (message) => showMessage(message, 'error'),
-    (message) => showMessage(message, 'success')
-  )
-
   // State for diff modal
   const [isDiffModalOpen, setIsDiffModalOpen] = useState(false)
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null)
@@ -90,6 +79,17 @@ export default function DiffViewerPage() {
     setComparisonOverlay(overlay)
     showMessage(`Loaded comparison results for ${loadedDevices.length} devices`, 'success')
   }, [showMessage])
+
+  // Job management for comparison results overlay
+  const jobManagement = useJobManagement(
+    token,
+    async (loadedDevices) => {
+      // Overlay comparison results onto diff devices
+      overlayComparisonResults(loadedDevices)
+    },
+    (message) => showMessage(message, 'error'),
+    (message) => showMessage(message, 'success')
+  )
 
   // Enrich devices with comparison overlay
   const enrichedDevices = useMemo((): DiffDevice[] => {
@@ -152,7 +152,7 @@ export default function DiffViewerPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <DiffViewerHeader loading={loading} onRunDiff={runDiff} />
+      <DiffViewerHeader />
 
       {/* Status Message */}
       {statusMessage && (
@@ -190,6 +190,7 @@ export default function DiffViewerPage() {
         systemFilter={systemFilter}
         filterOptions={filterOptions}
         activeFiltersCount={activeFiltersCount}
+        loading={loading}
         onDeviceNameFilterChange={setDeviceNameFilter}
         onRoleFiltersChange={setRoleFilters}
         onLocationChange={setSelectedLocation}
@@ -197,6 +198,7 @@ export default function DiffViewerPage() {
         onSystemFilterChange={setSystemFilter}
         onResetFilters={resetFilters}
         onGetDiff={handleGetDiff}
+        onRunDiff={runDiff}
       />
 
       {/* Job Controls Panel */}
@@ -206,7 +208,14 @@ export default function DiffViewerPage() {
         loadingResults={jobManagement.loadingResults}
         onStartNewJob={handleStartNewJob}
         onSelectJob={jobManagement.setSelectedJobId}
-        onLoadResults={() => jobManagement.loadJobResults()}
+        onLoadResults={async () => {
+          // If devices array is empty, run diff first
+          if (devices.length === 0) {
+            showMessage('No diff data available. Running diff first...', 'info')
+            await runDiff()
+          }
+          await jobManagement.loadJobResults()
+        }}
         onRefreshJobs={jobManagement.fetchAvailableJobs}
         onClearResults={handleClearResults}
       />

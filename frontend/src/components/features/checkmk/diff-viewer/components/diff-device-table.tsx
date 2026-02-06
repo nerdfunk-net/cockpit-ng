@@ -27,6 +27,7 @@ interface DiffDeviceTableProps {
     statuses: Set<string>
   }
   activeFiltersCount: number
+  loading: boolean
   onDeviceNameFilterChange: (value: string) => void
   onRoleFiltersChange: (value: Record<string, boolean>) => void
   onLocationChange: (value: string) => void
@@ -34,6 +35,7 @@ interface DiffDeviceTableProps {
   onSystemFilterChange: (value: SystemFilter) => void
   onResetFilters: () => void
   onGetDiff: (device: DiffDevice) => void
+  onRunDiff: () => void
 }
 
 export function DiffDeviceTable({
@@ -46,6 +48,7 @@ export function DiffDeviceTable({
   systemFilter,
   filterOptions,
   activeFiltersCount,
+  loading,
   onDeviceNameFilterChange,
   onRoleFiltersChange,
   onLocationChange,
@@ -53,6 +56,7 @@ export function DiffDeviceTable({
   onSystemFilterChange,
   onResetFilters,
   onGetDiff,
+  onRunDiff,
 }: DiffDeviceTableProps) {
   const [currentPage, setCurrentPage] = useState(0)
   const [pageSize, setPageSize] = useState(25)
@@ -114,6 +118,20 @@ export function DiffDeviceTable({
                 </Button>
               </>
             )}
+            <Button
+              onClick={onRunDiff}
+              variant="ghost"
+              size="sm"
+              disabled={loading}
+              className="text-white hover:bg-white/20"
+            >
+              {loading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+              ) : (
+                <RotateCcw className="h-4 w-4 mr-2" />
+              )}
+              {loading ? 'Running...' : 'Run Diff'}
+            </Button>
           </div>
         </div>
       </div>
