@@ -79,6 +79,9 @@ from health import router as health_router
 # Cockpit Agent router
 from routers.cockpit_agent import router as cockpit_agent_router
 
+# Agents routers
+from routers.agents import deploy_router as agents_deploy_router
+
 # Import auth dependency
 
 # Configure logging
@@ -141,6 +144,7 @@ app.include_router(compliance_check_router)
 app.include_router(certificates_router)
 app.include_router(tools_router)
 app.include_router(cockpit_agent_router)
+app.include_router(agents_deploy_router)
 app.include_router(health_router)
 
 

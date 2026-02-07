@@ -27,6 +27,8 @@ from models.templates import (
     TemplateRenderResponse,
     TemplateExecuteAndSyncRequest,
     TemplateExecuteAndSyncResponse,
+    TemplateRenderAgentRequest,
+    TemplateRenderAgentResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -901,6 +903,294 @@ async def render_template_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to render template: {str(e)}",
+        )
+
+
+@router.post("/render-agent", response_model=TemplateRenderAgentResponse)
+async def render_agent_template_endpoint(
+    render_request: TemplateRenderAgentRequest,
+    current_user: dict = Depends(require_permission("network.templates", "read")),
+) -> TemplateRenderAgentResponse:
+    """
+    Render an agent template with full inventory context.
+
+    This endpoint differs from /render in that it processes multiple devices
+    from an inventory and provides:
+    - devices: List of all device objects from inventory
+    - device_details: Dict mapping device_id to Nautobot data
+    - snmp_mapping: SNMP configuration mapping (if requested)
+    - Custom user variables
+
+    This is specifically designed for Telegraf/InfluxDB/Grafana agent deployment
+    where the template needs access to the complete device inventory.
+    """
+    try:
+        from services.nautobot import nautobot_service
+        from services.checkmk.config import config_service
+        from template_manager import template_manager
+        from jinja2 import Template, TemplateError, UndefinedError
+        import re
+
+        # Fetch the template
+        template = template_manager.get_template(render_request.template_id)
+        if not template:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Template with ID {render_request.template_id} not found",
+            )
+
+        template_content = template_manager.get_template_content(
+            render_request.template_id
+        )
+        if not template_content:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Template content for ID {render_request.template_id} not found",
+            )
+
+        # Step 1: Build devices list from device_ids
+        devices = []
+        for device_id in render_request.device_ids:
+            devices.append({"id": device_id})
+
+        # Step 2: Fetch Nautobot data for each device
+        device_details = {}
+        warnings = []
+
+        # GraphQL query for device details (same as used in netmiko rendering)
+        query = """
+        query DeviceDetails($deviceId: ID!) {
+            device(id: $deviceId) {
+                id
+                name
+                hostname: name
+                asset_tag
+                serial
+                position
+                face
+                config_context
+                local_config_context_data
+                _custom_field_data
+                primary_ip4 {
+                    id
+                    address
+                    description
+                    ip_version
+                    host
+                    mask_length
+                    dns_name
+                    status {
+                        id
+                        name
+                    }
+                    parent {
+                        id
+                        prefix
+                    }
+                }
+                role {
+                    id
+                    name
+                }
+                device_type {
+                    id
+                    model
+                    manufacturer {
+                        id
+                        name
+                    }
+                }
+                platform {
+                    id
+                    name
+                    network_driver
+                    manufacturer {
+                        id
+                        name
+                    }
+                }
+                location {
+                    id
+                    name
+                    description
+                    parent {
+                        id
+                        name
+                    }
+                }
+                status {
+                    id
+                    name
+                }
+                interfaces {
+                    id
+                    name
+                    type
+                    enabled
+                    mtu
+                    mac_address
+                    description
+                    status {
+                        id
+                        name
+                    }
+                    ip_addresses {
+                        id
+                        address
+                        ip_version
+                        status {
+                            id
+                            name
+                        }
+                    }
+                    connected_interface {
+                        id
+                        name
+                        device {
+                            id
+                            name
+                        }
+                    }
+                    cable {
+                        id
+                        status {
+                            id
+                            name
+                        }
+                    }
+                    tagged_vlans {
+                        id
+                        name
+                        vid
+                    }
+                    untagged_vlan {
+                        id
+                        name
+                        vid
+                    }
+                }
+                console_ports {
+                    id
+                    name
+                    type
+                    description
+                }
+                console_server_ports {
+                    id
+                    name
+                    type
+                    description
+                }
+                power_ports {
+                    id
+                    name
+                    type
+                    description
+                }
+                power_outlets {
+                    id
+                    name
+                    type
+                    description
+                }
+                secrets_group {
+                    id
+                    name
+                }
+                tags {
+                    id
+                    name
+                    color
+                }
+            }
+        }
+        """
+
+        for device_id in render_request.device_ids:
+            try:
+                variables = {"deviceId": device_id}
+                response = await nautobot_service.graphql_query(query, variables)
+
+                if (
+                    not response
+                    or "data" not in response
+                    or not response["data"].get("device")
+                ):
+                    warnings.append(f"Device {device_id} not found in Nautobot")
+                    continue
+
+                device_details[device_id] = response["data"]["device"]
+            except Exception as e:
+                error_msg = f"Failed to fetch Nautobot data for device {device_id}: {str(e)}"
+                logger.error(error_msg)
+                warnings.append(error_msg)
+
+        # Step 3: Load SNMP mapping if requested
+        snmp_mapping = {}
+        if render_request.pass_snmp_mapping:
+            try:
+                snmp_mapping = config_service.load_snmp_mapping()
+                logger.info(f"Loaded SNMP mapping with {len(snmp_mapping)} entries")
+            except Exception as e:
+                error_msg = f"Failed to load SNMP mapping: {str(e)}"
+                logger.error(error_msg)
+                warnings.append(error_msg)
+
+        # Step 4: Build template context
+        context = {
+            "devices": devices,
+            "device_details": device_details,
+            "snmp_mapping": snmp_mapping,
+            "agent_id": render_request.agent_id,
+            "path": render_request.path,
+        }
+
+        # Add user variables to context
+        if render_request.variables:
+            context.update(render_request.variables)
+
+        # Extract variables used in template
+        def extract_template_variables(template_content: str) -> List[str]:
+            """Extract variable names from Jinja2 template."""
+            # Pattern matches {{ variable }}, {{ loop.variable }}, etc.
+            pattern = r'\{\{\s*([a-zA-Z_][a-zA-Z0-9_\.]*)'
+            matches = re.findall(pattern, template_content)
+            # Deduplicate and sort
+            return sorted(set(matches))
+
+        variables_used = extract_template_variables(template_content)
+
+        # Step 5: Render the template
+        try:
+            jinja_template = Template(template_content)
+            rendered_content = jinja_template.render(**context)
+        except UndefinedError as e:
+            # Provide detailed error with available variables
+            available_vars = list(context.keys())
+            raise ValueError(
+                f"Undefined variable in template: {str(e)}. Available variables: {', '.join(available_vars)}"
+            )
+        except TemplateError as e:
+            raise ValueError(f"Template syntax error: {str(e)}")
+
+        return TemplateRenderAgentResponse(
+            rendered_content=rendered_content,
+            variables_used=variables_used,
+            warnings=warnings,
+        )
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.error(f"Error rendering agent template: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to render agent template: {str(e)}",
         )
 
 

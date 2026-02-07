@@ -358,3 +358,30 @@ class TemplateExecuteAndSyncResponse(BaseModel):
     warnings: Optional[List[str]] = Field(
         default_factory=list, description="List of warnings"
     )
+
+
+class TemplateRenderAgentRequest(BaseModel):
+    """Request model for rendering agent templates with inventory context."""
+
+    template_id: int = Field(..., description="Template ID to render")
+    device_ids: List[str] = Field(..., description="List of device UUIDs from inventory")
+    variables: Optional[Dict[str, Any]] = Field(
+        default_factory=dict, description="User-provided custom variables"
+    )
+    pass_snmp_mapping: bool = Field(
+        default=False, description="Whether to include SNMP mapping in template context"
+    )
+    agent_id: str = Field(..., description="Agent ID for deployment configuration")
+    path: Optional[str] = Field(None, description="Optional deployment path")
+
+
+class TemplateRenderAgentResponse(BaseModel):
+    """Response model for agent template rendering."""
+
+    rendered_content: str = Field(..., description="The rendered template output")
+    variables_used: List[str] = Field(
+        ..., description="List of variables referenced in the template"
+    )
+    warnings: Optional[List[str]] = Field(
+        default_factory=list, description="Non-fatal warnings during rendering"
+    )
