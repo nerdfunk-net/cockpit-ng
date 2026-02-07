@@ -97,15 +97,14 @@ app = FastAPI(
 
 # Mount swagger-ui static files for air-gapped environments
 # This serves Swagger UI assets locally instead of from CDN
+# Mounted under /api/ prefix so it works through the Next.js proxy
 try:
-    import swagger_ui
-    swagger_ui_dist_path = os.path.join(
-        os.path.dirname(swagger_ui.__file__), 'static'
-    )
-    app.mount("/static/swagger-ui", StaticFiles(directory=swagger_ui_dist_path), name="swagger-ui")
-    logger.info(f"Swagger UI static files mounted from: {swagger_ui_dist_path}")
-except ImportError:
-    logger.warning("swagger-ui-dist package not installed. Swagger UI will not be available.")
+    static_dir = os.path.join(os.path.dirname(__file__), "static", "swagger-ui")
+    if os.path.exists(static_dir):
+        app.mount("/api/static/swagger-ui", StaticFiles(directory=static_dir), name="swagger-ui")
+        logger.info(f"Swagger UI static files mounted from: {static_dir}")
+    else:
+        logger.warning(f"Swagger UI static directory not found: {static_dir}")
 except Exception as e:
     logger.error(f"Failed to mount Swagger UI static files: {e}")
 
@@ -152,9 +151,9 @@ async def custom_swagger_ui_html():
     return get_swagger_ui_html(
         openapi_url="/openapi.json",
         title=app.title + " - Swagger UI",
-        swagger_js_url="/static/swagger-ui/swagger-ui-bundle.js",
-        swagger_css_url="/static/swagger-ui/swagger-ui.css",
-        swagger_favicon_url="/static/swagger-ui/favicon-32x32.png",
+        swagger_js_url="/api/static/swagger-ui/swagger-ui-bundle.js",
+        swagger_css_url="/api/static/swagger-ui/swagger-ui.css",
+        swagger_favicon_url="/api/static/swagger-ui/favicon-32x32.png",
     )
 
 
@@ -164,7 +163,7 @@ async def redoc_html():
     return get_redoc_html(
         openapi_url="/openapi.json",
         title=app.title + " - ReDoc",
-        redoc_js_url="/static/swagger-ui/redoc.standalone.js",
+        redoc_js_url="/api/static/swagger-ui/redoc.standalone.js",
     )
 
 
