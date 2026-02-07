@@ -2,6 +2,11 @@ import { useState, useCallback, useMemo } from 'react'
 import type { TemplateVariable } from '../types'
 import { getDefaultVariables } from '../utils/category-variables'
 
+interface DeviceData {
+  devices: Array<{ id: string; name: string }>
+  device_details: Record<string, unknown>
+}
+
 export function useTemplateVariables(initialCategory: string = '__none__') {
   const [variables, setVariables] = useState<TemplateVariable[]>(() =>
     getDefaultVariables(initialCategory)
@@ -13,6 +18,30 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
       const defaults = getDefaultVariables(category)
       return [...defaults, ...userVars]
     })
+  }, [])
+
+  const updateDeviceData = useCallback((deviceData: DeviceData | null) => {
+    setVariables((prev) =>
+      prev.map((v) => {
+        if (!v.isDefault || !v.isAutoFilled) return v
+
+        if (v.name === 'devices' && deviceData) {
+          return {
+            ...v,
+            value: JSON.stringify(deviceData.devices, null, 2),
+          }
+        }
+
+        if (v.name === 'device_details' && deviceData) {
+          return {
+            ...v,
+            value: JSON.stringify(deviceData.device_details, null, 2),
+          }
+        }
+
+        return v
+      })
+    )
   }, [])
 
   const addVariable = useCallback(() => {
@@ -45,10 +74,11 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
     () => ({
       variables,
       updateForCategory,
+      updateDeviceData,
       addVariable,
       removeVariable,
       updateVariable,
     }),
-    [variables, updateForCategory, addVariable, removeVariable, updateVariable]
+    [variables, updateForCategory, updateDeviceData, addVariable, removeVariable, updateVariable]
   )
 }

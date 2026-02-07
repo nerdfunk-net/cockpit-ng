@@ -153,3 +153,120 @@ async def get_field_values(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get field values: {str(e)}",
         )
+
+
+@router.post("/resolve-devices")
+async def resolve_inventory_to_devices(
+    inventory_id: int,
+    current_user: dict = Depends(require_permission("general.inventory", "read")),
+) -> dict:
+    """
+    Resolve a saved inventory to a list of device IDs by inventory ID.
+
+    This endpoint converts an inventory ID to the actual list of matching device IDs.
+    Using ID instead of name ensures uniqueness and avoids ambiguity with private inventories.
+
+    This is commonly needed by:
+    - Template editor (agent templates with inventory selection)
+    - Backup operations (before triggering backup tasks)
+    - Job execution (before running jobs against inventory)
+    - Any feature that needs to convert inventory → device list
+
+    Args:
+        inventory_id: ID of the saved inventory
+        current_user: Authenticated user (injected)
+
+    Returns:
+        Dict containing:
+        - device_ids: List of device UUIDs
+        - device_count: Number of matching devices
+        - inventory_id: ID of the inventory that was resolved
+        - inventory_name: Name of the inventory
+
+    Example:
+        POST /api/inventory/resolve-devices?inventory_id=42
+
+        Response:
+        {
+            "device_ids": ["uuid1", "uuid2", ...],
+            "device_count": 3,
+            "inventory_id": 42,
+            "inventory_name": "production-routers"
+        }
+    """
+    try:
+        username = current_user.get("username")
+        if not username:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Username not found in token",
+            )
+
+        if not inventory_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="inventory_id is required",
+            )
+
+        # Load inventory by ID
+        from inventory_manager import inventory_manager
+        from utils.inventory_converter import convert_saved_inventory_to_operations
+        from services.inventory.inventory import inventory_service
+
+        logger.info(
+            f"Resolving inventory ID {inventory_id} for user '{username}'"
+        )
+
+        inventory = inventory_manager.get_inventory(inventory_id)
+
+        if not inventory:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Inventory with ID {inventory_id} not found",
+            )
+
+        # Check access control - user can only access their own private inventories
+        if inventory.get("scope") == "private" and inventory.get("created_by") != username:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to private inventory {inventory_id}",
+            )
+
+        # Convert stored conditions to LogicalOperations
+        conditions = inventory.get("conditions", [])
+        if not conditions:
+            logger.warning(f"Inventory {inventory_id} has no conditions")
+            return {
+                "device_ids": [],
+                "device_count": 0,
+                "inventory_id": inventory_id,
+                "inventory_name": inventory.get("name", ""),
+            }
+
+        operations = convert_saved_inventory_to_operations(conditions)
+
+        # Execute operations to get matching devices
+        devices, _ = await inventory_service.preview_inventory(operations)
+        device_ids = [device.id for device in devices]
+
+        logger.info(
+            f"Resolved {len(device_ids)} devices from inventory ID {inventory_id}"
+        )
+
+        return {
+            "device_ids": device_ids,
+            "device_count": len(device_ids),
+            "inventory_id": inventory_id,
+            "inventory_name": inventory.get("name", ""),
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Error resolving inventory '{inventory_name}': {e}", exc_info=True
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to resolve inventory: {str(e)}",
+        )

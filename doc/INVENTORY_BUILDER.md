@@ -12,6 +12,10 @@
 8. [Performance & Caching](#performance--caching)
 9. [Troubleshooting](#troubleshooting)
 
+**Related Documentation:**
+- [Inventory to Device Resolution Pattern](./INVENTORY_RESOLVER_PATTERN.md) - Common code for converting inventory to device lists
+- Used by backup, jobs, and other features that need device targeting
+
 ---
 
 ## Overview

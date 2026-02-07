@@ -26,9 +26,11 @@ import type { EditorFormData } from '../types'
 
 interface AgentOptionsPanelProps {
   form: UseFormReturn<EditorFormData>
+  isLoadingDevices?: boolean
+  deviceCount?: number
 }
 
-export function AgentOptionsPanel({ form }: AgentOptionsPanelProps) {
+export function AgentOptionsPanel({ form, isLoadingDevices, deviceCount }: AgentOptionsPanelProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const { data: inventoriesData, isLoading: isLoadingInventories } =
     useSavedInventoriesQuery()
@@ -38,9 +40,22 @@ export function AgentOptionsPanel({ form }: AgentOptionsPanelProps) {
     <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
       {/* Header with gradient */}
       <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
-        <div className="flex items-center">
-          <Server className="h-4 w-4 mr-2" />
-          <span className="text-sm font-medium">Agent Options</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center">
+            <Server className="h-4 w-4 mr-2" />
+            <span className="text-sm font-medium">Agent Options</span>
+          </div>
+          {isLoadingDevices && (
+            <div className="flex items-center gap-1.5 text-xs text-blue-100">
+              <div className="animate-spin rounded-full h-3 w-3 border-b border-white" />
+              <span>Loading devices...</span>
+            </div>
+          )}
+          {!isLoadingDevices && deviceCount !== undefined && deviceCount > 0 && (
+            <span className="text-xs text-blue-100">
+              {deviceCount} device{deviceCount !== 1 ? 's' : ''} loaded
+            </span>
+          )}
         </div>
         <Button
           variant="ghost"

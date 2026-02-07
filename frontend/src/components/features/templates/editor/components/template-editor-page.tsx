@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, Suspense } from 'react'
+import { useState, useCallback, useEffect, useRef, Suspense } from 'react'
 import { useWatch } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { FileCode, Play, Save, RefreshCw } from 'lucide-react'
@@ -9,6 +9,7 @@ import { useTemplateMutations } from '@/components/features/settings/templates/h
 
 import { useTemplateEditor } from '../hooks/use-template-editor'
 import { useTemplateRender } from '../hooks/use-template-render'
+import { useInventoryDevices } from '../hooks/use-inventory-devices'
 import { GeneralPanel } from './general-panel'
 import { AgentOptionsPanel } from './agent-options-panel'
 import { VariablesPanel } from './variables-panel'
@@ -23,6 +24,7 @@ function TemplateEditorContent() {
   const { createTemplate, updateTemplate } = useTemplateMutations()
 
   const [selectedVariableId, setSelectedVariableId] = useState<string | null>(null)
+  const lastInventoryIdRef = useRef<number | null>(null)
 
   const watchedContent = useWatch({ control: editor.form.control, name: 'content' })
   const watchedTemplateType = useWatch({
@@ -30,6 +32,32 @@ function TemplateEditorContent() {
     name: 'template_type',
   })
   const watchedCategory = useWatch({ control: editor.form.control, name: 'category' })
+  const watchedInventoryId = useWatch({ control: editor.form.control, name: 'inventoryId' })
+
+  // Fetch inventory devices when category is agent and inventory is selected
+  const inventoryDevices = useInventoryDevices(
+    watchedInventoryId,
+    watchedCategory === 'agent' && watchedInventoryId !== null
+  )
+
+  // Update variables with device data when inventory devices are loaded
+  useEffect(() => {
+    // Only update if inventory ID has changed
+    if (lastInventoryIdRef.current === watchedInventoryId) {
+      return
+    }
+    lastInventoryIdRef.current = watchedInventoryId
+
+    if (watchedCategory === 'agent' && inventoryDevices.deviceCount > 0) {
+      editor.variableManager.updateDeviceData({
+        devices: inventoryDevices.devices,
+        device_details: inventoryDevices.device_details,
+      })
+    } else if (watchedCategory === 'agent' && watchedInventoryId === null) {
+      // Clear device data when inventory is deselected
+      editor.variableManager.updateDeviceData(null)
+    }
+  }, [watchedCategory, watchedInventoryId, inventoryDevices.deviceCount])
 
   const handleContentChange = useCallback(
     (value: string) => {
@@ -133,7 +161,13 @@ function TemplateEditorContent() {
       <GeneralPanel form={editor.form} />
 
       {/* Agent Options (conditional) */}
-      {watchedCategory === 'agent' && <AgentOptionsPanel form={editor.form} />}
+      {watchedCategory === 'agent' && (
+        <AgentOptionsPanel
+          form={editor.form}
+          isLoadingDevices={inventoryDevices.isLoading}
+          deviceCount={inventoryDevices.deviceCount}
+        />
+      )}
 
       {/* Main Split Area */}
       <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-4" style={{ minHeight: '500px' }}>
