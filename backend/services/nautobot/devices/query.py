@@ -39,9 +39,216 @@ DEVICE_FIELDS = """
     cf_last_backup
 """
 
+# Comprehensive device details query for single device operations
+DEVICE_DETAILS_QUERY = """
+query DeviceDetails($deviceId: ID!) {
+    device(id: $deviceId) {
+        id
+        name
+        hostname: name
+        asset_tag
+        serial
+        position
+        face
+        config_context
+        local_config_context_data
+        _custom_field_data
+        primary_ip4 {
+            id
+            address
+            description
+            ip_version
+            host
+            mask_length
+            dns_name
+            status {
+                id
+                name
+            }
+            parent {
+                id
+                prefix
+            }
+        }
+        role {
+            id
+            name
+        }
+        device_type {
+            id
+            model
+            manufacturer {
+                id
+                name
+            }
+        }
+        platform {
+            id
+            name
+            network_driver
+            manufacturer {
+                id
+                name
+            }
+        }
+        location {
+            id
+            name
+            description
+            parent {
+                id
+                name
+            }
+        }
+        status {
+            id
+            name
+        }
+        interfaces {
+            id
+            name
+            type
+            enabled
+            mtu
+            mac_address
+            description
+            status {
+                id
+                name
+            }
+            ip_addresses {
+                id
+                address
+                ip_version
+                status {
+                    id
+                    name
+                }
+            }
+            connected_interface {
+                id
+                name
+                device {
+                    id
+                    name
+                }
+            }
+            cable {
+                id
+                status {
+                    id
+                    name
+                }
+            }
+            tagged_vlans {
+                id
+                name
+                vid
+            }
+            untagged_vlan {
+                id
+                name
+                vid
+            }
+        }
+        console_ports {
+            id
+            name
+            type
+            description
+        }
+        console_server_ports {
+            id
+            name
+            type
+            description
+        }
+        power_ports {
+            id
+            name
+            type
+            description
+        }
+        power_outlets {
+            id
+            name
+            type
+            description
+        }
+        secrets_group {
+            id
+            name
+        }
+        tags {
+            id
+            name
+            color
+        }
+    }
+}
+"""
+
 
 class DeviceQueryService:
     """Service for querying devices from Nautobot."""
+
+    async def get_device_details(
+        self,
+        device_id: str,
+        use_cache: bool = True,
+    ) -> dict:
+        """
+        Get comprehensive device details from Nautobot.
+
+        Returns full device information including interfaces, IPs,
+        config context, custom fields, console/power ports, and tags.
+
+        Args:
+            device_id: Device UUID from Nautobot
+            use_cache: If True, use cached data; if False, fetch fresh data
+
+        Returns:
+            dict: Complete device details
+
+        Raises:
+            ValueError: If device not found or query fails
+        """
+        # Check cache first
+        cache_key = f"nautobot:device_details:{device_id}"
+        if use_cache:
+            cached_device = cache_service.get(cache_key)
+            if cached_device is not None:
+                logger.debug(f"Cache hit for device details: {device_id}")
+                return cached_device
+        else:
+            logger.debug(f"Bypassing cache for device details: {device_id}")
+
+        # Execute GraphQL query
+        try:
+            result = await nautobot_service.graphql_query(
+                DEVICE_DETAILS_QUERY,
+                {"deviceId": device_id},
+            )
+
+            if "errors" in result:
+                error_msg = f"GraphQL errors: {result['errors']}"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            if not result.get("data") or not result["data"].get("device"):
+                raise ValueError(f"Device {device_id} not found in Nautobot")
+
+            device = result["data"]["device"]
+
+            # Cache the result
+            cache_service.set(cache_key, device, DEVICE_CACHE_TTL)
+            logger.debug(f"Cached device details for: {device_id}")
+
+            return device
+
+        except Exception as e:
+            logger.error(f"Error fetching device details for {device_id}: {str(e)}")
+            raise ValueError(f"Failed to fetch device details: {str(e)}")
 
     async def get_devices(
         self,

@@ -14,6 +14,7 @@ This package contains services for:
 from services.nautobot.devices.common import DeviceCommonService
 from services.nautobot.devices.update import DeviceUpdateService
 from services.nautobot.devices.interface_manager import InterfaceManagerService
+from services.nautobot.devices.query import device_query_service, DEVICE_DETAILS_QUERY
 from services.nautobot.devices.types import (
     DeviceIdentifier,
     InterfaceConfig,
@@ -26,6 +27,8 @@ __all__ = [
     "DeviceCommonService",
     "DeviceUpdateService",
     "InterfaceManagerService",
+    "device_query_service",
+    "DEVICE_DETAILS_QUERY",
     "DeviceIdentifier",
     "InterfaceConfig",
     "InterfaceSpec",

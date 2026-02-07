@@ -857,177 +857,27 @@ async def get_device_details(
     **🔷 This endpoint uses GraphQL** to fetch comprehensive device details.
     """
     try:
-        # Start with a simplified query based on the working get_device method, then add more fields
-        query = """
-        query DeviceDetails($deviceId: ID!) {
-            device(id: $deviceId) {
-                id
-                name
-                hostname: name
-                asset_tag
-                serial
-                position
-                face
-                config_context
-                local_config_context_data
-                _custom_field_data
-                primary_ip4 {
-                    id
-                    address
-                    description
-                    ip_version
-                    host
-                    mask_length
-                    dns_name
-                    status {
-                        id
-                        name
-                    }
-                    parent {
-                        id
-                        prefix
-                    }
-                }
-                role {
-                    id
-                    name
-                }
-                device_type {
-                    id
-                    model
-                    manufacturer {
-                        id
-                        name
-                    }
-                }
-                platform {
-                    id
-                    name
-                    network_driver
-                    manufacturer {
-                        id
-                        name
-                    }
-                }
-                location {
-                    id
-                    name
-                    description
-                    parent {
-                        id
-                        name
-                    }
-                }
-                status {
-                    id
-                    name
-                }
-                interfaces {
-                    id
-                    name
-                    type
-                    enabled
-                    mtu
-                    mac_address
-                    description
-                    status {
-                        id
-                        name
-                    }
-                    ip_addresses {
-                        id
-                        address
-                        ip_version
-                        status {
-                            id
-                            name
-                        }
-                    }
-                    connected_interface {
-                        id
-                        name
-                        device {
-                            id
-                            name
-                        }
-                    }
-                    cable {
-                        id
-                        status {
-                            id
-                            name
-                        }
-                    }
-                    tagged_vlans {
-                        id
-                        name
-                        vid
-                    }
-                    untagged_vlan {
-                        id
-                        name
-                        vid
-                    }
-                }
-                console_ports {
-                    id
-                    name
-                    type
-                    description
-                }
-                console_server_ports {
-                    id
-                    name
-                    type
-                    description
-                }
-                power_ports {
-                    id
-                    name
-                    type
-                    description
-                }
-                power_outlets {
-                    id
-                    name
-                    type
-                    description
-                }
-                secrets_group {
-                    id
-                    name
-                }
-                tags {
-                    id
-                    name
-                    color
-                }
-            }
-        }
-        """
-        variables = {"deviceId": device_id}
-        result = await nautobot_service.graphql_query(query, variables)
+        from services.nautobot.devices import device_query_service
 
-        if "errors" in result:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"GraphQL errors: {result['errors']}",
-            )
-
-        device = result["data"]["device"]
-        if not device:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Device {device_id} not found",
-            )
-
-        # Cache the device details
-        cache_key = f"nautobot:device_details:{device_id}"
-        cache_service.set(cache_key, device, DEVICE_CACHE_TTL)
-
+        # Use shared device details service
+        device = await device_query_service.get_device_details(
+            device_id=device_id,
+            use_cache=True,
+        )
         return device
     except HTTPException:
         raise
+    except ValueError as e:
+        # ValueError from service indicates device not found or query error
+        if "not found" in str(e).lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(e),
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
     except Exception as e:
         logger.error(f"Error fetching device details for {device_id}: {str(e)}")
         raise HTTPException(

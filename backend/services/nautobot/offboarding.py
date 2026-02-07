@@ -15,153 +15,6 @@ from settings_manager import settings_manager
 logger = logging.getLogger(__name__)
 
 DEVICE_CACHE_TTL = 30 * 60
-DEVICE_DETAILS_QUERY = """
-query DeviceDetails($deviceId: ID!) {
-  device(id: $deviceId) {
-    id
-    name
-    hostname: name
-    asset_tag
-    serial
-    position
-    face
-    config_context
-    local_config_context_data
-    _custom_field_data
-    primary_ip4 {
-      id
-      address
-      description
-      ip_version
-      host
-      mask_length
-      dns_name
-      status {
-        id
-        name
-      }
-      parent {
-        id
-        prefix
-      }
-    }
-    role {
-      id
-      name
-    }
-    device_type {
-      id
-      model
-      manufacturer {
-        id
-        name
-      }
-    }
-    platform {
-      id
-      name
-      network_driver
-      manufacturer {
-        id
-        name
-      }
-    }
-    location {
-      id
-      name
-      description
-      parent {
-        id
-        name
-      }
-    }
-    status {
-      id
-      name
-    }
-    interfaces {
-      id
-      name
-      type
-      enabled
-      mtu
-      mac_address
-      description
-      status {
-        id
-        name
-      }
-      ip_addresses {
-        id
-        address
-        ip_version
-        status {
-          id
-          name
-        }
-      }
-      connected_interface {
-        id
-        name
-        device {
-          id
-          name
-        }
-      }
-      cable {
-        id
-        status {
-          id
-          name
-        }
-      }
-      tagged_vlans {
-        id
-        name
-        vid
-      }
-      untagged_vlan {
-        id
-        name
-        vid
-      }
-    }
-    console_ports {
-      id
-      name
-      type
-      description
-    }
-    console_server_ports {
-      id
-      name
-      type
-      description
-    }
-    power_ports {
-      id
-      name
-      type
-      description
-    }
-    power_outlets {
-      id
-      name
-      type
-      description
-    }
-    secrets_group {
-      id
-      name
-    }
-    tags {
-      id
-      name
-      color
-    }
-  }
-}
-"""
 
 
 class OffboardingService:
@@ -750,11 +603,27 @@ class OffboardingService:
             logger.error(error_msg)
 
     async def _fetch_device_details(self, device_id: str) -> Dict[str, Any]:
+        """Fetch device details using shared device query service."""
         try:
-            result = await nautobot_service.graphql_query(
-                DEVICE_DETAILS_QUERY,
-                {"deviceId": device_id},
+            from services.nautobot.devices import device_query_service
+
+            # Use shared device details service
+            device = await device_query_service.get_device_details(
+                device_id=device_id,
+                use_cache=True,
             )
+            return device
+        except ValueError as exc:
+            # ValueError from service indicates device not found or query error
+            if "not found" in str(exc).lower():
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=str(exc),
+                ) from exc
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(exc),
+            ) from exc
         except Exception as exc:
             logger.error(
                 "Error fetching device details for %s: %s", device_id, str(exc)
@@ -763,31 +632,6 @@ class OffboardingService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to fetch device details: {str(exc)}",
             ) from exc
-
-        if "errors" in result:
-            logger.error(
-                "GraphQL errors fetching device details for %s: %s",
-                device_id,
-                result["errors"],
-            )
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"GraphQL errors: {result['errors']}",
-            )
-
-        device = result.get("data", {}).get("device")
-        if not device:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Device {device_id} not found",
-            )
-
-        cache_service.set(
-            self._device_details_cache_key(device_id),
-            device,
-            DEVICE_CACHE_TTL,
-        )
-        return device
 
     async def _delete_device(self, device_id: str) -> Dict[str, Any]:
         try:
