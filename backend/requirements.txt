@@ -2,6 +2,7 @@ fastapi
 uvicorn
 pydantic[dotenv]
 pydantic-settings
+swagger-ui-dist>=5.0.0
 requests
 httpx
 pyjwt

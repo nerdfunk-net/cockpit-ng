@@ -7,8 +7,11 @@ for better code organization and maintainability.
 
 from __future__ import annotations
 import logging
+import os
 from datetime import datetime
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 import asyncio
 
 # Import routers
@@ -87,10 +90,24 @@ app = FastAPI(
     title="Cockpit API",
     description="Network Device Management Dashboard API",
     version="2.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None,  # Disable default docs to use custom ones
+    redoc_url=None,  # Disable default redoc to use custom one
     redirect_slashes=True,
 )
+
+# Mount swagger-ui static files for air-gapped environments
+# This serves Swagger UI assets locally instead of from CDN
+try:
+    import swagger_ui
+    swagger_ui_dist_path = os.path.join(
+        os.path.dirname(swagger_ui.__file__), 'static'
+    )
+    app.mount("/static/swagger-ui", StaticFiles(directory=swagger_ui_dist_path), name="swagger-ui")
+    logger.info(f"Swagger UI static files mounted from: {swagger_ui_dist_path}")
+except ImportError:
+    logger.warning("swagger-ui-dist package not installed. Swagger UI will not be available.")
+except Exception as e:
+    logger.error(f"Failed to mount Swagger UI static files: {e}")
 
 # Include routers
 app.include_router(auth_router)
@@ -129,6 +146,28 @@ app.include_router(health_router)
 
 
 # Health check and basic endpoints
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    """Custom Swagger UI endpoint using local static files."""
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",
+        title=app.title + " - Swagger UI",
+        swagger_js_url="/static/swagger-ui/swagger-ui-bundle.js",
+        swagger_css_url="/static/swagger-ui/swagger-ui.css",
+        swagger_favicon_url="/static/swagger-ui/favicon-32x32.png",
+    )
+
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_html():
+    """Custom ReDoc endpoint using local static files."""
+    return get_redoc_html(
+        openapi_url="/openapi.json",
+        title=app.title + " - ReDoc",
+        redoc_js_url="/static/swagger-ui/redoc.standalone.js",
+    )
+
+
 @app.get("/")
 async def root():
     """Root endpoint with basic API information."""

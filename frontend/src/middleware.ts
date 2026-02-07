@@ -16,16 +16,17 @@ export function middleware(request: NextRequest) {
     const response = NextResponse.next()
 
     // Set relaxed CSP headers for Swagger UI
+    // All assets served locally - no CDN dependencies for air-gapped environments
     response.headers.set(
       'Content-Security-Policy',
       [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
-        "script-src-elem 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-        "style-src-elem 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-        "img-src 'self' data: blob: https://fastapi.tiangolo.com https://cdn.jsdelivr.net",
-        "font-src 'self' data: https://cdn.jsdelivr.net",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+        "script-src-elem 'self' 'unsafe-inline'",
+        "style-src 'self' 'unsafe-inline'",
+        "style-src-elem 'self' 'unsafe-inline'",
+        "img-src 'self' data: blob:",
+        "font-src 'self' data:",
         "connect-src 'self'",
         "frame-ancestors 'none'",
         "base-uri 'self'",
