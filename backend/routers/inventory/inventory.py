@@ -12,6 +12,7 @@ from models.inventory import (
     InventoryPreviewResponse,
 )
 from services.inventory.inventory import inventory_service
+from services.nautobot.devices.query import device_query_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/inventory", tags=["inventory"])
@@ -155,7 +156,7 @@ async def get_field_values(
         )
 
 
-@router.post("/resolve-devices")
+@router.get("/resolve-devices/{inventory_id}")
 async def resolve_inventory_to_devices(
     inventory_id: int,
     current_user: dict = Depends(require_permission("general.inventory", "read")),
@@ -184,7 +185,7 @@ async def resolve_inventory_to_devices(
         - inventory_name: Name of the inventory
 
     Example:
-        POST /api/inventory/resolve-devices?inventory_id=42
+        GET /api/inventory/resolve-devices/42
 
         Response:
         {
@@ -200,12 +201,6 @@ async def resolve_inventory_to_devices(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Username not found in token",
-            )
-
-        if not inventory_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="inventory_id is required",
             )
 
         # Load inventory by ID
@@ -269,4 +264,134 @@ async def resolve_inventory_to_devices(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to resolve inventory: {str(e)}",
+        )
+
+
+@router.get("/resolve-devices/detailed/{inventory_id}")
+async def resolve_inventory_to_devices_detailed(
+    inventory_id: int,
+    current_user: dict = Depends(require_permission("general.inventory", "read")),
+) -> dict:
+    """
+    Resolve a saved inventory to detailed device information by inventory ID.
+
+    This endpoint converts an inventory ID to a list of devices with their
+    detailed information fetched from Nautobot.
+
+    Args:
+        inventory_id: ID of the saved inventory
+        current_user: Authenticated user (injected)
+
+    Returns:
+        Dict containing:
+        - devices: List of dicts with device UUID and name
+        - device_details: List of detailed device information
+        - device_count: Number of matching devices
+        - inventory_id: ID of the inventory that was resolved
+        - inventory_name: Name of the inventory
+
+    Example:
+        GET /api/inventory/resolve-devices/detailed/42
+
+        Response:
+        {
+            "devices": [{"id": "uuid1", "name": "device1"}, ...],
+            "device_details": [{...}, ...],
+            "device_count": 3,
+            "inventory_id": 42,
+            "inventory_name": "production-routers"
+        }
+    """
+    try:
+        username = current_user.get("username")
+        if not username:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Username not found in token",
+            )
+
+        # Load inventory by ID
+        from inventory_manager import inventory_manager
+        from utils.inventory_converter import convert_saved_inventory_to_operations
+
+        logger.info(
+            f"Resolving detailed inventory ID {inventory_id} for user '{username}'"
+        )
+
+        inventory = inventory_manager.get_inventory(inventory_id)
+
+        if not inventory:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Inventory with ID {inventory_id} not found",
+            )
+
+        # Check access control - user can only access their own private inventories
+        if inventory.get("scope") == "private" and inventory.get("created_by") != username:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to private inventory {inventory_id}",
+            )
+
+        # Convert stored conditions to LogicalOperations
+        conditions = inventory.get("conditions", [])
+        if not conditions:
+            logger.warning(f"Inventory {inventory_id} has no conditions")
+            return {
+                "devices": [],
+                "device_details": [],
+                "device_count": 0,
+                "inventory_id": inventory_id,
+                "inventory_name": inventory.get("name", ""),
+            }
+
+        operations = convert_saved_inventory_to_operations(conditions)
+
+        # Execute operations to get matching devices
+        devices, _ = await inventory_service.preview_inventory(operations)
+
+        # Build simplified device list with UUID and name
+        device_list = [
+            {"id": device.id, "name": device.name}
+            for device in devices
+        ]
+
+        # Fetch detailed information for each device
+        device_details = []
+        for device in devices:
+            try:
+                detail = await device_query_service.get_device_details(
+                    device_id=device.id,
+                    use_cache=True,
+                )
+                device_details.append(detail)
+            except Exception as e:
+                logger.error(
+                    f"Error fetching details for device {device.id} ({device.name}): {e}"
+                )
+                # Continue with remaining devices even if one fails
+                continue
+
+        logger.info(
+            f"Resolved {len(device_list)} devices with {len(device_details)} "
+            f"detailed entries from inventory ID {inventory_id}"
+        )
+
+        return {
+            "devices": device_list,
+            "device_details": device_details,
+            "device_count": len(device_list),
+            "inventory_id": inventory_id,
+            "inventory_name": inventory.get("name", ""),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Error resolving detailed inventory {inventory_id}: {e}", exc_info=True
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to resolve detailed inventory: {str(e)}",
         )
