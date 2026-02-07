@@ -1,565 +1,520 @@
-# Backup Task Workflow - Inventory to Device Conversion
+# Backup Workflow Documentation
 
 ## Overview
 
-This document explains how scheduled backup tasks convert inventory definitions (logical filter conditions) into concrete device IDs for execution. The workflow demonstrates that **scheduled backup tasks DO use the improved custom field type logic** through the unified `ansible_inventory_service`.
+This document describes the complete backup workflow in Cockpit-NG after the service layer refactoring. The backup system retrieves device configurations from network devices via SSH and stores them in a Git repository for version control.
 
----
+## Architecture
 
-## Complete Workflow Diagram
+The backup system consists of four layers:
 
+1. **Celery Tasks Layer** - Orchestrates workflows and manages task execution
+2. **Service Layer** - Contains business logic and operations
+3. **Data Models Layer** - Provides type safety with Pydantic
+4. **External Systems** - Nautobot, SSH/Netmiko, Git, File System
+
+See [Service Layer Architecture](./SERVICE_LAYER_ARCHITECTURE.md) for detailed architecture documentation.
+
+## Workflow Stages
+
+### Stage 1: Validation
+
+**Purpose**: Validate backup inputs before starting
+
+**Process**:
+1. Validate credential exists and has required fields
+2. Validate repository configuration
+3. Create Pydantic models for type safety
+
+**Services Used**:
+- `DeviceBackupService.validate_backup_inputs()`
+
+**Models Created**:
+- `CredentialInfo` - Validated credential information
+- Repository dict - Validated repository configuration
+
+**Success Criteria**:
+- Credential has username and password
+- Repository has URL and local_path
+- All required fields present
+
+**Failure Handling**:
+- Returns None if validation fails
+- Task aborts with error message
+
+### Stage 2: Git Repository Setup
+
+**Purpose**: Initialize or update local Git repository
+
+**Process**:
+1. Check if local repository exists
+2. Clone if not exists, pull if exists
+3. Verify Git authentication (SSH key or token)
+4. Create GitStatus model
+
+**Services Used**:
+- `git_service.setup_repository()`
+
+**Models Created**:
+- `GitStatus` - Repository status and configuration
+
+**Success Criteria**:
+- Local repository exists
+- Repository is up to date with remote
+- Authentication successful
+
+**Failure Handling**:
+- Clone errors logged and task aborted
+- Authentication failures reported
+- Git errors returned in GitStatus
+
+### Stage 3: Device Information Retrieval
+
+**Purpose**: Fetch device metadata from Nautobot
+
+**Process**:
+1. Query Nautobot GraphQL API with device ID
+2. Extract device metadata (name, IP, platform, location)
+3. Validate device has primary IP address
+4. Create DeviceBackupInfo model
+
+**Services Used**:
+- `DeviceConfigService.fetch_device_from_nautobot()`
+
+**Models Created**:
+- `DeviceBackupInfo` - Complete device metadata
+
+**Success Criteria**:
+- Device found in Nautobot
+- Device has primary IP address
+- Platform information available
+
+**Failure Handling**:
+- Device not found → add to failed list, continue
+- No primary IP → add to failed list, continue
+- GraphQL error → retry or skip
+
+### Stage 4: Configuration Retrieval
+
+**Purpose**: Connect to device and retrieve configurations
+
+**Process**:
+1. Map platform to Netmiko device type
+2. Establish SSH connection using credentials
+3. Execute "show running-config" command
+4. Execute "show startup-config" command (if supported)
+5. Parse and clean configuration output
+
+**Services Used**:
+- `NetmikoPlatformMapper.map_to_netmiko()`
+- `DeviceConfigService.retrieve_device_configs()`
+- `DeviceConfigService.parse_config_output()`
+
+**Success Criteria**:
+- SSH connection successful
+- Running config retrieved (minimum requirement)
+- Configs parsed and cleaned
+
+**Failure Handling**:
+- Connection timeout → retry with exponential backoff
+- Authentication failure → try alternate credentials
+- Command failure → log and mark as failed
+- Parse error → save raw output
+
+### Stage 5: File Storage
+
+**Purpose**: Save configurations to disk in hierarchical structure
+
+**Process**:
+1. Generate device path based on location hierarchy
+2. Create directory structure
+3. Save running-config with timestamp
+4. Save startup-config with timestamp (if available)
+5. Return success/failure status
+
+**Services Used**:
+- `DeviceConfigService.save_configs_to_disk()`
+- `DeviceConfigService._generate_device_path()`
+
+**File Structure**:
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│ 1. USER CREATES BACKUP TEMPLATE                                     │
-│    - Type: "backup"                                                 │
-│    - Inventory Source: "inventory"                                  │
-│    - Inventory Name: "production_routers" (saved inventory)         │
-│    - Config Repository ID: 5                                        │
-│    - Credential: (selected)                                         │
-│    - Backup paths: (templates)                                      │
-└─────────────────────────┬───────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│ 2. USER SCHEDULES JOB USING TEMPLATE                                │
-│    - Schedule: "Daily at 2am"                                       │
-│    - Template ID: 42                                                │
-│    - Credential ID: 7                                               │
-└─────────────────────────┬───────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│ 3. CELERY BEAT TRIGGERS CHECK EVERY MINUTE                          │
-│    - Celery Beat process runs check_job_schedules_task()            │
-│    - Task queries database for due schedules (next_run <= now)      │
-│    - Finds schedule ID 99 (next_run = 02:00:00)                     │
-│    - For this schedule:                                             │
-│      Calls: job_dispatcher_task.delay(                              │
-│        template_id=42,                                              │
-│        schedule_id=99,                                              │
-│        credential_id=7,                                             │
-│        triggered_by="schedule"                                      │
-│      )                                                              │
-│    - Updates next_run to next occurrence (tomorrow 02:00:00)        │
-└─────────────────────────┬───────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│ 4. JOB DISPATCHER                                                   │
-│    File: /backend/tasks/scheduling/job_dispatcher.py                │
-│                                                                     │
-│    Steps:                                                           │
-│    a) Load template from database (template_id=42)                  │
-│    b) Extract template properties:                                  │
-│       - inventory_source = "inventory"                              │
-│       - inventory_name = "production_routers"                       │
-│       - config_repository_id = 5                                    │
-│       - created_by = "admin"                                        │
-│                                                                     │
-│    c) ✅ CONVERT INVENTORY TO DEVICE IDS                             │
-│       target_devices = get_target_devices(template, job_parameters) │
-└─────────────────────────┬───────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│ 5. GET_TARGET_DEVICES FUNCTION                                      │
-│    File: /backend/tasks/utils/device_helpers.py                     │
-│                                                                     │
-│    Input: template = {                                              │
-│      "inventory_source": "inventory",                               │
-│      "inventory_name": "production_routers",                        │
-│      "created_by": "admin"                                          │
-│    }                                                                │
-│                                                                     │
-│    Process:                                                         │
-│    ┌─────────────────────────────────────────────────────┐          │
-│    │ 5a. Load Saved Inventory from Database              │          │
-│    │     inventory_manager.get_inventory_by_name(        │          │
-│    │       "production_routers", "admin"                 │          │
-│    │     )                                               │          │
-│    │                                                     │          │
-│    │     Returns: {                                      │          │
-│    │       "id": 123,                                    │          │
-│    │       "name": "production_routers",                 │          │
-│    │       "conditions": [                               │          │
-│    │         {                                           │          │
-│    │           "field": "role",                          │          │
-│    │           "operator": "equals",                     │          │
-│    │           "value": "router",                        │          │
-│    │           "logic": "AND"                            │          │
-│    │         },                                          │          │
-│    │         {                                           │          │
-│    │           "field": "cf_checkmk_site",               │          │
-│    │           "operator": "equals",                     │          │
-│    │           "value": "production",                    │          │
-│    │           "logic": "AND"                            │          │
-│    │         }                                           │          │
-│    │       ]                                             │          │
-│    │     }                                               │          │
-│    └─────────────────────────────────────────────────────┘          │
-│                          │                                          │
-│                          ▼                                          │
-│    ┌─────────────────────────────────────────────────────┐          │
-│    │ 5b. Convert Conditions to LogicalOperations         │          │
-│    │     operations = convert_conditions_to_operations(  │          │
-│    │       inventory["conditions"]                       │          │
-│    │     )                                               │          │
-│    │                                                     │          │
-│    │     Returns: [                                      │          │
-│    │       LogicalOperation(                             │          │
-│    │         operation_type="AND",                       │          │
-│    │         conditions=[                                │          │
-│    │           LogicalCondition(                         │          │
-│    │             field="role",                           │          │
-│    │             operator="equals",                      │          │
-│    │             value="router",                         │          │
-│    │             logic="AND"                             │          │
-│    │           ),                                        │          │
-│    │           LogicalCondition(                         │          │
-│    │             field="cf_checkmk_site",                │          │
-│    │             operator="equals",                      │          │
-│    │             value="production",                     │          │
-│    │             logic="AND"                             │          │
-│    │           )                                         │          │
-│    │         ]                                           │          │
-│    │       )                                             │          │
-│    │     ]                                               │          │
-│    └─────────────────────────────────────────────────────┘          │
-│                          │                                          │
-│                          ▼                                          │
-│    ┌─────────────────────────────────────────────────────┐          │
-│    │ 5c. ✅ EXECUTE INVENTORY WITH NEW CUSTOM FIELD       │         │
-│    │        TYPE LOGIC                                   │          │
-│    │                                                     │          │
-│    │     devices, _ = ansible_inventory_service          │          │
-│    │       .preview_inventory(operations)                │          │
-│    │                                                     │          │
-│    │     This calls:                                     │          │
-│    │     - _execute_operation()                          │          │
-│    │       - For each condition:                         │          │
-│    │     - _execute_condition()                          │          │
-│    │       - Routes to appropriate query function        │          │
-│    │     - For cf_* fields:                              │          │
-│    │       _query_devices_by_custom_field()              │          │
-│    │         ✅ Fetches custom field types               │          │
-│    │         ✅ Detects cf_checkmk_site is "select"      │          │
-│    │         ✅ Uses GraphQL type [String]               │          │
-│    │         ✅ Wraps value in array: ["production"]     │          │
-│    │                                                     │          │
-│    │     GraphQL Query Executed:                         │          │
-│    │     ┌───────────────────────────────────────┐       │          │
-│    │     │ query devices_by_custom_field(        │       │          │
-│    │     │   $field_value: [String]              │       │          │
-│    │     │ ) {                                   │       │          │
-│    │     │   devices(cf_checkmk_site: $field_value) {│   │          │
-│    │     │     id                                │       │          │
-│    │     │     name                              │       │          │
-│    │     │     ...                               │       │          │
-│    │     │   }                                   │       │          │
-│    │     │ }                                     │       │          │
-│    │     │                                       │       │          │
-│    │     │ Variables: {                          │       │          │
-│    │     │   "field_value": ["production"]       │       │          │
-│    │     │ }                                     │       │          │
-│    │     └───────────────────────────────────────┘       │          │
-│    │                                                     │          │
-│    │     Returns: [                                      │          │
-│    │       DeviceInfo(id="uuid-1234", name="router1"),   │          │
-│    │       DeviceInfo(id="uuid-5678", name="router2"),   │          │
-│    │       DeviceInfo(id="uuid-9abc", name="router3")    │          │
-│    │     ]                                               │          │
-│    └─────────────────────────────────────────────────────┘          │
-│                          │                                          │
-│                          ▼                                          │
-│    ┌─────────────────────────────────────────────────────┐          │
-│    │ 5d. Extract Device IDs                              │          │
-│    │     device_ids = [device.id for device in devices]  │          │
-│    │                                                     │          │
-│    │     Returns: [                                      │          │
-│    │       "uuid-1234-5678-abcd",                        │          │
-│    │       "uuid-5678-9abc-defg",                        │          │
-│    │       "uuid-9abc-defg-hijk"                         │          │
-│    │     ]                                               │          │
-│    └─────────────────────────────────────────────────────┘          │
-│                                                                     │
-│    Output: target_devices = [                                       │
-│      "uuid-1234-5678-abcd",                                         │
-│      "uuid-5678-9abc-defg",                                         │
-│      "uuid-9abc-defg-hijk"                                          │
-│    ]                                                                │
-└─────────────────────────┬───────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│ 6. EXECUTE JOB TYPE                                                 │
-│    File: /backend/tasks/execution/base_executor.py                  │
-│                                                                     │
-│    Calls: execute_backup(                                           │
-│      schedule_id=schedule_id,                                       │
-│      credential_id=credential_id,                                   │
-│      job_parameters={...},                                          │
-│      target_devices=[                                               │
-│        "uuid-1234-5678-abcd",                                       │
-│        "uuid-5678-9abc-defg",                                       │
-│        "uuid-9abc-defg-hijk"                                        │
-│      ],                                                             │
-│      task_context=self,                                             │
-│      template=template                                              │
-│    )                                                                │
-└─────────────────────────┬───────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│ 7. BACKUP EXECUTOR                                                  │
-│    File: /backend/tasks/execution/backup_executor.py                │
-│                                                                     │
-│    Input: target_devices = [                                        │
-│      "uuid-1234-5678-abcd",                                         │
-│      "uuid-5678-9abc-defg",                                         │
-│      "uuid-9abc-defg-hijk"                                          │
-│    ]                                                                │
-│                                                                     │
-│    Steps:                                                           │
-│    ┌──────────────────────────────────────────────────────┐         │
-│    │ STEP 1: Validate Inputs                              │         │
-│    │   - Check credential exists                          │         │
-│    │   - Check repository exists                          │         │
-│    │   - Validate target_devices is not empty             │         │
-│    └──────────────────────────────────────────────────────┘         │
-│                          │                                          │
-│                          ▼                                          │
-│    ┌──────────────────────────────────────────────────────┐         │
-│    │ STEP 2: Setup Git Repository                         │         │
-│    │   - Clone or open repository                         │         │
-│    │   - Pull latest changes                              │         │
-│    │   - Prepare for commits                              │         │
-│    └──────────────────────────────────────────────────────┘         │
-│                          │                                          │
-│                          ▼                                          │
-│    ┌──────────────────────────────────────────────────────┐         │
-│    │ STEP 3: Backup Each Device (Loop)                    │         │
-│    │                                                      │         │
-│    │   For device_id in target_devices:                   │         │
-│    │                                                      │         │
-│    │   ┌────────────────────────────────────────┐         │         │
-│    │   │ 3a. Fetch Device Details from Nautobot│          │         │
-│    │   │     GraphQL query by device ID         │         │         │
-│    │   │     Gets: name, IP, platform, etc.     │         │         │
-│    │   └────────────────────────────────────────┘         │         │
-│    │                  │                                   │         │
-│    │                  ▼                                   │         │
-│    │   ┌────────────────────────────────────────┐         │         │
-│    │   │ 3b. Connect via SSH (Netmiko)          │         │         │
-│    │   │     - Use device IP and credentials    │         │         │
-│    │   │     - Map platform to device_type      │         │         │
-│    │   └────────────────────────────────────────┘         │         │
-│    │                  │                                   │         │
-│    │                  ▼                                   │         │
-│    │   ┌────────────────────────────────────────┐         │         │
-│    │   │ 3c. Execute Commands                   │         │         │
-│    │   │     - show running-config              │         │         │
-│    │   │     - show startup-config              │         │         │
-│    │   └────────────────────────────────────────┘         │         │
-│    │                  │                                   │         │
-│    │                  ▼                                   │         │
-│    │   ┌────────────────────────────────────────┐         │         │
-│    │   │ 3d. Save Configs to Git Repo Files     │         │         │
-│    │   │     - Apply path templates             │         │         │
-│    │   │     - Write to repository files        │         │         │
-│    │   │     Example:                           │         │         │
-│    │   │     backups/router1.running-config     │         │         │
-│    │   │     backups/router1.startup-config     │         │         │
-│    │   └────────────────────────────────────────┘         │         │
-│    │                                                      │         │
-│    │   Success: backed_up_devices.append(device_info)     │         │
-│    │   Failure: failed_devices.append(device_info)        │         │
-│    └──────────────────────────────────────────────────────┘         │
-│                          │                                          │
-│                          ▼                                          │
-│    ┌──────────────────────────────────────────────────────┐         │
-│    │ STEP 4: Git Commit and Push                          │         │
-│    │   - git add .                                        │         │
-│    │   - git commit -m "Backup config 20251212_140500"    │         │
-│    │   - git push                                         │         │
-│    └──────────────────────────────────────────────────────┘         │
-│                          │                                          │
-│                          ▼                                          │
-│    ┌──────────────────────────────────────────────────────┐         │
-│    │ STEP 5: Update Nautobot Custom Fields (Optional)     │         │
-│    │   - If write_timestamp_to_custom_field enabled       │         │
-│    │   - Update cf_last_backup = "2025-12-12"             │         │
-│    │   - For each successfully backed up device           │         │
-│    └──────────────────────────────────────────────────────┘         │
-│                                                                     │
-│    Note: Backup executor does NOT filter devices -                  │
-│          it processes the pre-filtered device ID list               │
-└─────────────────────────┬───────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│ 8. RESULT                                                           │
-│    {                                                                │
-│      "success": true,                                               │
-│      "devices_backed_up": 3,                                        │
-│      "devices_failed": 0,                                           │
-│      "message": "Backed up 3 device configurations",                │
-│      "backed_up_devices": [                                         │
-│        {                                                            │
-│          "device_id": "uuid-1234-5678-abcd",                        │
-│          "device_name": "router1",                                  │
-│          "device_ip": "192.168.1.1",                                │
-│          "platform": "cisco_ios",                                   │
-│          "running_config_file": "backups/router1.running-config",   │
-│          "startup_config_file": "backups/router1.startup-config",   │
-│          "running_config_bytes": 45678,                             │
-│          "startup_config_bytes": 45123                              │
-│        },                                                           │
-│        ...                                                          │
-│      ],                                                             │
-│      "failed_devices": [],                                          │
-│      "git_commit_status": {                                         │
-│        "committed": true,                                           │
-│        "pushed": true,                                              │
-│        "commit_hash": "a1b2c3d4",                                   │
-│        "files_changed": 6                                           │
-│      },                                                             │
-│      "timestamp_update_status": {                                   │
-│        "enabled": true,                                             │
-│        "updated_count": 3,                                          │
-│        "failed_count": 0                                            │
-│      }                                                              │
-│    }                                                                │
-└─────────────────────────────────────────────────────────────────────┘
+/backups/repo/
+└── Region1/
+    └── DC1/
+        └── switch01/
+            ├── switch01_running-config_2024-01-01.txt
+            └── switch01_startup-config_2024-01-01.txt
 ```
 
----
+**Success Criteria**:
+- Directories created successfully
+- Files written successfully
+- File permissions correct
 
-## Key Files and Functions
+**Failure Handling**:
+- Permission denied → log error, mark as failed
+- Disk full → abort batch, return partial results
+- I/O error → retry once, then mark as failed
 
-### 1. Job Dispatcher
-**File**: `/backend/tasks/scheduling/job_dispatcher.py`
+### Stage 6: Git Commit and Push
 
-**Function**: `job_dispatcher_task()`
+**Purpose**: Commit backed-up configurations to Git
 
-**Responsibility**: Orchestrates job execution by loading template, converting inventory to device IDs, and calling the appropriate executor.
+**Process**:
+1. Stage all changed files (`git add .`)
+2. Create commit with date-stamped message
+3. Push to remote repository
+4. Record commit hash and file count
 
+**Services Used**:
+- `git_service.commit_and_push()`
+
+**Models Updated**:
+- `GitCommitStatus` - Commit details and push status
+
+**Success Criteria**:
+- All files staged successfully
+- Commit created with changes
+- Push to remote successful
+
+**Failure Handling**:
+- No changes → skip commit, mark as success
+- Commit failed → log error, return partial success
+- Push failed → leave local commit, report push failure
+
+### Stage 7: Nautobot Timestamp Update
+
+**Purpose**: Update custom field in Nautobot with backup timestamp
+
+**Process**:
+1. Check if timestamp update is enabled
+2. Format current date (YYYY-MM-DD)
+3. For each backed-up device:
+   - Call Nautobot REST API to update custom field
+   - Track successes and failures
+4. Create TimestampUpdateStatus model
+
+**Services Used**:
+- `DeviceBackupService.update_nautobot_timestamps()`
+
+**Models Created**:
+- `TimestampUpdateStatus` - Update results
+
+**Success Criteria**:
+- All devices updated successfully
+- Custom field name is valid
+- API authentication successful
+
+**Failure Handling**:
+- Update disabled → skip, return status
+- Device update fails → log, continue with others
+- Partial failure → report counts and errors
+
+### Stage 8: Result Preparation
+
+**Purpose**: Prepare final backup result for task response
+
+**Process**:
+1. Collect all backed-up devices
+2. Collect all failed devices
+3. Serialize Pydantic models to dicts
+4. Assemble final result dictionary
+
+**Services Used**:
+- `DeviceBackupService.prepare_backup_result()`
+
+**Result Structure**:
 ```python
-# Load template
-template = job_template_manager.get_job_template(template_id)
+{
+    "success": True,
+    "backed_up_count": 5,
+    "failed_count": 1,
+    "backed_up_devices": [...],
+    "failed_devices": [...],
+    "git_status": {...},
+    "git_commit_status": {...},
+    "credential_info": {...},
+    "timestamp_update_status": {...},
+    "repository": "backup-repo",
+    "commit_date": "2024-01-01",
+}
+```
 
-# Convert inventory to device IDs
-target_devices = get_target_devices(template, job_parameters)
+## Execution Modes
 
-# Execute job
-result = execute_job_type(
-    job_type=job_type,
-    target_devices=target_devices,
-    ...
+### Sequential Execution
+
+**When to Use**:
+- Small number of devices (< 10)
+- Devices with rate limiting
+- Debugging individual device issues
+- First-time setup
+
+**Process**:
+1. Loop through device IDs
+2. Fetch → Backup → Save (one at a time)
+3. Collect results after each device
+4. Continue on individual failures
+
+**Advantages**:
+- Predictable resource usage
+- Easier to debug
+- No worker coordination needed
+
+**Disadvantages**:
+- Slower for large device counts
+- Underutilizes available resources
+
+### Parallel Execution
+
+**When to Use**:
+- Large number of devices (10+)
+- Production backups
+- Time-sensitive operations
+
+**Process**:
+1. Create subtask for each device
+2. Launch all subtasks via Celery chord
+3. Subtasks execute independently
+4. Callback (finalize) runs after all complete
+
+**Advantages**:
+- Fast execution (limited by workers)
+- Efficient resource utilization
+- Automatic retry on worker failure
+
+**Disadvantages**:
+- Requires Celery workers
+- More complex debugging
+- Higher resource usage spike
+
+## Task Orchestration
+
+### Task: `backup_single_device_task`
+
+**Purpose**: Backup a single device (used as subtask in parallel mode)
+
+**Parameters**:
+- `device_info`: Device metadata dict
+- `credential`: Credential dict
+- `base_path`: Local repository path
+- `date_str`: Timestamp string
+
+**Returns**:
+- Success dict with device info and configs
+- Failure dict with error message
+
+**Execution Time**: 10-30 seconds per device
+
+### Task: `backup_devices_task`
+
+**Purpose**: Main orchestration task for batch backups
+
+**Parameters**:
+- `device_ids`: List of device UUIDs
+- `credential_id`: Credential ID
+- `repo_id`: Repository ID
+- `execution_mode`: "sequential" or "parallel"
+- `job_run_id`: Optional job run tracking ID
+
+**Returns**:
+- Summary dict with counts and device lists
+
+**Execution Time**:
+- Sequential: (devices × 20 seconds)
+- Parallel: ~60 seconds (regardless of device count, up to worker limit)
+
+### Task: `finalize_backup_task`
+
+**Purpose**: Finalize backup after all devices complete (chord callback)
+
+**Parameters**:
+- `device_results`: List of device backup results
+- `repo_config`: Repository and job configuration
+
+**Returns**:
+- Final summary with Git status
+
+**Execution Time**: 5-15 seconds
+
+## Error Handling
+
+### Recoverable Errors
+
+**Connection Timeouts**:
+- Retry with exponential backoff (3 attempts)
+- If all retries fail, mark device as failed
+- Continue with other devices
+
+**Authentication Failures**:
+- Log detailed error
+- Try alternate credentials if available
+- Mark device as failed if no alternates
+
+**Temporary API Failures**:
+- Retry GraphQL/REST requests (3 attempts)
+- Cache successful responses
+- Continue with other devices
+
+### Non-Recoverable Errors
+
+**Invalid Credentials**:
+- Abort entire batch
+- Report error immediately
+- Don't waste time on remaining devices
+
+**Repository Access Denied**:
+- Abort entire batch
+- Cannot store backups without Git access
+- Report configuration error
+
+**Disk Full**:
+- Abort with partial results
+- Report backed-up devices before failure
+- Alert administrators
+
+## Monitoring and Logging
+
+### Logging Levels
+
+**INFO**: Normal operation progress
+- Device fetch started/completed
+- SSH connection established
+- Config saved
+- Git commit/push succeeded
+
+**WARNING**: Recoverable issues
+- Device not found in Nautobot
+- Startup config not available
+- Timestamp update failed for some devices
+
+**ERROR**: Operation failures
+- SSH connection failed
+- Config retrieval failed
+- Git push failed
+- Critical validation errors
+
+### Progress Tracking
+
+**Celery State Updates**:
+```python
+self.update_state(
+    state="PROGRESS",
+    meta={
+        "current": 5,
+        "total": 10,
+        "status": "Backing up device 5/10: switch-05"
+    }
 )
 ```
 
----
+**Job Run Updates** (if enabled):
+- Status: queued → running → completed/failed
+- Progress percentage
+- Device counts (backed up / failed / total)
+- Error messages
 
-### 2. Device Helpers
-**File**: `/backend/tasks/utils/device_helpers.py`
+## Performance Considerations
 
-**Function**: `get_target_devices(template, job_parameters)`
+### Bottlenecks
 
-**Responsibility**: Converts template's inventory definition into concrete device IDs using the unified inventory service.
+1. **SSH Connection Establishment**: 2-5 seconds per device
+2. **Config Retrieval**: 5-15 seconds per device (varies by config size)
+3. **Git Push**: 1-5 seconds (depends on network and changes)
+4. **Nautobot Updates**: 0.5-1 second per device
 
-```python
-def get_target_devices(template: dict, job_parameters: Optional[dict] = None) -> Optional[List]:
-    inventory_source = template.get("inventory_source", "all")
+### Optimization Strategies
 
-    if inventory_source == "inventory":
-        inventory_name = template.get("inventory_name")
+**Parallel Execution**:
+- Use workers equal to expected concurrent devices
+- Limit to avoid overwhelming target devices
 
-        # Load saved inventory from database
-        inventory = inventory_manager.get_inventory_by_name(inventory_name, username)
+**Connection Pooling**:
+- Not currently implemented (Netmiko limitation)
+- Consider connection reuse for multiple commands
 
-        # Convert conditions to operations
-        operations = convert_conditions_to_operations(inventory["conditions"])
+**Caching**:
+- Cache Nautobot device queries (short TTL)
+- Cache credentials (encrypted)
+- Don't cache configs (defeats backup purpose)
 
-        # ✅ USES UNIFIED INVENTORY SERVICE WITH CUSTOM FIELD TYPE LOGIC
-        devices, _ = ansible_inventory_service.preview_inventory(operations)
+**Batch Operations**:
+- Commit all device configs in single Git commit
+- Batch Nautobot timestamp updates (if API supports)
 
-        # Extract device IDs
-        device_ids = [device.id for device in devices]
+## Troubleshooting
 
-        return device_ids
-```
+### Common Issues
 
----
+**Issue**: "Device not found in Nautobot"
+- **Cause**: Device ID invalid or device deleted
+- **Solution**: Verify device exists, check UUID format
 
-### 3. Ansible Inventory Service
-**File**: `/backend/services/ansible_inventory.py`
+**Issue**: "No primary IP address"
+- **Cause**: Device not configured in Nautobot
+- **Solution**: Add primary IP in Nautobot, re-run backup
 
-**Function**: `preview_inventory(operations)`
+**Issue**: "SSH connection timeout"
+- **Cause**: Device unreachable, firewall, wrong IP
+- **Solution**: Test connectivity, verify IP, check firewall rules
 
-**Responsibility**: Executes logical operations to filter devices with proper custom field type handling.
+**Issue**: "Authentication failed"
+- **Cause**: Wrong credentials, expired password
+- **Solution**: Verify credentials, update if needed
 
-```python
-async def preview_inventory(self, operations: List[LogicalOperation]) -> tuple[List[DeviceInfo], int]:
-    for operation in operations:
-        operation_result, op_count, devices_data = await self._execute_operation(operation)
-        # ... combine results
+**Issue**: "Git push failed: rejected"
+- **Cause**: Repository has changes, authentication failed
+- **Solution**: Pull latest changes, verify Git credentials
 
-    return devices, operations_count
+**Issue**: "Permission denied writing file"
+- **Cause**: File system permissions, disk full
+- **Solution**: Check directory permissions, check disk space
 
-async def _execute_condition(self, condition: LogicalCondition) -> List[DeviceInfo]:
-    # Route to appropriate query function
-    if condition.field.startswith("cf_"):
-        return await self._query_devices_by_custom_field(...)
-    elif condition.field == "role":
-        return await self._query_devices_by_role(...)
-    # ... etc
+### Debug Mode
 
-async def _query_devices_by_custom_field(self, custom_field_name, custom_field_value, use_contains):
-    # ✅ CUSTOM FIELD TYPE LOGIC APPLIED HERE
-
-    # Fetch custom field types
-    custom_field_types = await self._get_custom_field_types()
-
-    # Determine GraphQL variable type
-    cf_type = custom_field_types.get(cf_key)
-    if cf_type == "select":
-        graphql_var_type = "[String]"
-    elif use_contains:
-        graphql_var_type = "[String]"
-    else:
-        graphql_var_type = "String"
-
-    # Build and execute GraphQL query
-    query = f"""
-    query devices_by_custom_field($field_value: {graphql_var_type}) {{
-      devices({filter_field}: $field_value) {{ ... }}
-    }}
-    """
-
-    # Format variables
-    if graphql_var_type == "[String]":
-        variables = {"field_value": [custom_field_value]}
-    else:
-        variables = {"field_value": custom_field_value}
-
-    result = await nautobot_service.graphql_query(query, variables)
-```
-
----
-
-### 4. Backup Executor
-**File**: `/backend/tasks/execution/backup_executor.py`
-
-**Function**: `execute_backup(target_devices, ...)`
-
-**Responsibility**: Processes each device in the pre-filtered list - connects via SSH, fetches configs, commits to Git.
+Enable debug logging for detailed trace:
 
 ```python
-def execute_backup(target_devices: Optional[list], ...):
-    # RECEIVES pre-filtered device IDs
-    # Does NOT re-filter - just processes each device
-
-    for device_id in target_devices:
-        # Fetch device details
-        device_data = nautobot_service._sync_graphql_query(query, {"deviceId": device_id})
-
-        # Connect via SSH
-        result = netmiko_service._connect_and_execute(...)
-
-        # Save configs to files
-        running_file.write_text(running_config)
-        startup_file.write_text(startup_config)
-
-    # Commit to Git
-    git_service.commit_and_push(...)
+import logging
+logging.getLogger("services").setLevel(logging.DEBUG)
+logging.getLogger("tasks").setLevel(logging.DEBUG)
 ```
 
----
+View detailed logs:
+- SSH connection attempts
+- Command outputs (truncated)
+- File paths being created
+- Git operations
 
-## ✅ Confirmation: Custom Field Type Logic is Used
+## Best Practices
 
-### Evidence
+1. **Test with Small Batch First**: Always test with 1-5 devices before running on hundreds
+2. **Use Parallel Mode for Production**: Much faster for large device counts
+3. **Monitor Resource Usage**: CPU, memory, network during backups
+4. **Set Appropriate Timeouts**: Balance between slow devices and failures
+5. **Enable Nautobot Timestamps**: Track when devices were last backed up
+6. **Review Failed Devices**: Investigate patterns in failures
+7. **Regular Git Cleanup**: Archive old commits to keep repository size manageable
+8. **Rotate Credentials**: Update SSH passwords regularly
+9. **Backup the Backup Repo**: Ensure Git remote is also backed up
+10. **Document Device-Specific Issues**: Some devices need special handling
 
-1. **`get_target_devices()` calls `ansible_inventory_service.preview_inventory()`**
-   - Location: `/backend/tasks/utils/device_helpers.py:76-78`
+## Future Enhancements
 
-2. **`preview_inventory()` uses `_query_devices_by_custom_field()`**
-   - Location: `/backend/services/ansible_inventory.py:735-865`
+- [ ] Differential backups (only changed configs)
+- [ ] Config validation (syntax checking)
+- [ ] Automatic retry scheduling for failed devices
+- [ ] Email notifications on backup completion
+- [ ] Backup verification (restore test)
+- [ ] Multi-vendor template support
+- [ ] Config diff visualization in UI
+- [ ] Backup scheduling with cron expressions
+- [ ] Device grouping and batch management
+- [ ] Integration with change management systems
 
-3. **`_query_devices_by_custom_field()` implements custom field type logic**
-   - Fetches field types from Nautobot
-   - Determines correct GraphQL variable type
-   - Formats variables appropriately
+## See Also
 
-### Custom Field Type Decision Matrix
-
-| Custom Field Type | Lookup (contains)? | GraphQL Variable Type | Variable Format | Example |
-|-------------------|--------------------|-----------------------|-----------------|---------|
-| `select` | No | `[String]` | `["value"]` | `cf_checkmk_site: ["prod"]` |
-| `select` | Yes (`__ic`) | `[String]` | `["value"]` | `cf_checkmk_site__ic: ["prod"]` |
-| `text` | No | `String` | `"value"` | `cf_description: "text"` |
-| `text` | Yes (`__ic`) | `[String]` | `["value"]` | `cf_description__ic: ["text"]` |
-| `date` | No | `String` | `"2025-12-12"` | `cf_last_backup: "2025-12-12"` |
-| `date` | Yes (`__ic`) | `[String]` | `["2025"]` | `cf_last_backup__ic: ["2025"]` |
-
----
-
-## Inventory Source Types
-
-Templates can use different inventory sources:
-
-### 1. `inventory_source="all"`
-- Uses ALL devices in Nautobot
-- No filtering applied
-- `target_devices = None` (indicates all)
-
-### 2. `inventory_source="inventory"`
-- Uses saved inventory from database
-- Applies logical filter conditions
-- ✅ **Uses custom field type logic**
-- Converts to device ID list
-
-### 3. `inventory_source="tags"` (if implemented)
-- Filters devices by tags
-- Returns matching device IDs
-
----
-
-## Separation of Concerns
-
-The architecture cleanly separates **filtering** from **execution**:
-
-### Filtering Phase (Uses Custom Field Logic)
-- **Where**: `get_target_devices()` → `ansible_inventory_service`
-- **When**: Before job execution
-- **Output**: List of device UUIDs
-- **Features**: Logical operations, custom field type detection, caching
-
-### Execution Phase (Processes Device List)
-- **Where**: `execute_backup()` (or other executors)
-- **When**: After filtering complete
-- **Input**: List of device UUIDs
-- **Features**: SSH connection, config retrieval, Git operations
-
-### Benefits of This Architecture
-
-1. **✅ Single Source of Truth**: All filtering uses `ansible_inventory_service`
-2. **✅ Custom Field Logic Applied Once**: During filtering, not per-device
-3. **✅ Predictable Results**: Same devices selected as preview showed
-4. **✅ Performance**: Filter once, execute many operations
-5. **✅ Maintainability**: Fix filtering bugs in one place
-
----
-
-## Related Documentation
-
-- **Custom Field Type Fix**: [CUSTOM_FIELD_TYPE_FIX.md](CUSTOM_FIELD_TYPE_FIX.md)
-- **Inventory Consolidation**: [CONSOLIDATION_SUMMARY.md](CONSOLIDATION_SUMMARY.md)
-- **Inventory Plan**: [INVENTORY_CONSOLIDATION_PLAN.md](INVENTORY_CONSOLIDATION_PLAN.md)
-- **Architecture Guide**: [CLAUDE.md](CLAUDE.md)
-
----
-
-**Last Updated**: 2025-12-12
-**Version**: 1.0
-**Status**: ✅ Documented
+- [Service Layer Architecture](./SERVICE_LAYER_ARCHITECTURE.md) - Detailed architecture
+- [Usage Examples](./USAGE_EXAMPLES.md) - Code examples
+- [Testing Guide](../tests/README.md) - How to test
+- [API Reference](../README.md) - Service API documentation
