@@ -76,6 +76,7 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: blob:",
               "font-src 'self' data:",
               "connect-src 'self'",
+              "worker-src 'self' blob:", // Monaco editor web workers
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",

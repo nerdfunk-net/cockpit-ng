@@ -44,6 +44,7 @@ import {
   FileSpreadsheet,
   GitCommit,
   ArrowLeftRight,
+  FileCode,
 } from 'lucide-react'
 
 interface NavItem {
@@ -119,6 +120,7 @@ const navigationSections: NavSection[] = [
         children: [
           { label: 'Netmiko', href: '/netmiko', icon: Terminal },
           { label: 'Templates', href: '/automation/templates', icon: FileText },
+          { label: 'Template Editor', href: '/templates/editor', icon: FileCode },
           { label: 'Snapshots', href: '/network/snapshots', icon: Camera },
         ],
       },
