@@ -330,7 +330,8 @@ export function AppSidebar({ className }: AppSidebarProps) {
                   size="sm"
                   onClick={() => {
                     logout()
-                    router.push('/login')
+                    // Use window.location.replace to ensure clean redirect without URL parameters
+                    window.location.replace('/login')
                   }}
                   className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 transition-colors"
                 >

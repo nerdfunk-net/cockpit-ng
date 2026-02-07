@@ -168,7 +168,7 @@ function OIDCCallbackContent() {
                 </div>
                 <Button
                   className="w-full"
-                  onClick={() => router.push('/login')}
+                  onClick={() => window.location.replace('/login')}
                 >
                   Return to Login
                 </Button>

@@ -104,6 +104,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     // Remove cookies
     removeCookies()
 
+    // Clear OIDC-related sessionStorage to prevent stale state
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('oidc_state')
+      sessionStorage.removeItem('oidc_provider_id')
+      sessionStorage.removeItem('last_login_data')
+    }
+
     // Clear state
     set({
       token: null,

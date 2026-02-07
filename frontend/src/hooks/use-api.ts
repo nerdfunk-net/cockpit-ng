@@ -66,10 +66,12 @@ export function useApi() {
       // Handle authentication failures (401) - redirect to login
       if (response.status === 401) {
         logoutRef.current() // Clear invalid token
-        // Small delay to ensure logout completes
-        setTimeout(() => {
-          routerRef.current.push('/login')
-        }, 100)
+        // Use window.location.replace to ensure clean redirect without URL parameters
+        if (typeof window !== 'undefined') {
+          setTimeout(() => {
+            window.location.replace('/login')
+          }, 100)
+        }
         // Return a rejected promise that components can handle gracefully
         return Promise.reject(new Error('Session expired, redirecting to login...'))
       }

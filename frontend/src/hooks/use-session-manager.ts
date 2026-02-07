@@ -126,9 +126,9 @@ export function useSessionManager(config: SessionConfig = EMPTY_CONFIG) {
           console.warn('Session Manager: Token invalid, logging out user')
           isRefreshingRef.current = false
           logout()
-          // Redirect to login page
+          // Redirect to login page - use replace to clear any URL parameters
           if (typeof window !== 'undefined') {
-            window.location.href = '/login'
+            window.location.replace('/login')
           }
           return false
         }
@@ -260,9 +260,9 @@ export function useSessionManager(config: SessionConfig = EMPTY_CONFIG) {
       if (currentToken && !cookieToken) {
         console.warn('Session Manager: Cookies cleared externally, logging out')
         logout()
-        // Redirect to login page
+        // Redirect to login page - use replace to clear any URL parameters
         if (typeof window !== 'undefined') {
-          window.location.href = '/login'
+          window.location.replace('/login')
         }
         return
       }
@@ -303,9 +303,9 @@ export function useSessionManager(config: SessionConfig = EMPTY_CONFIG) {
       if (timeUntilExpiry <= -GRACE_PERIOD && !isRefreshingRef.current) {
         console.warn('Session Manager: Token expired beyond grace period, logging out')
         logout()
-        // Redirect to login page
+        // Redirect to login page - use replace to clear any URL parameters
         if (typeof window !== 'undefined') {
-          window.location.href = '/login'
+          window.location.replace('/login')
         }
       } else if (timeUntilExpiry <= 0 && timeUntilExpiry > -GRACE_PERIOD) {
         // Token expired but within grace period - give refresh a chance
@@ -315,8 +315,9 @@ export function useSessionManager(config: SessionConfig = EMPTY_CONFIG) {
           // User is inactive and token expired - logout immediately
           console.warn('Session Manager: Token expired and user inactive, logging out')
           logout()
+          // Redirect to login page - use replace to clear any URL parameters
           if (typeof window !== 'undefined') {
-            window.location.href = '/login'
+            window.location.replace('/login')
           }
         }
       }
