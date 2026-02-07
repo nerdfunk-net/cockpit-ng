@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
+import { useAuthStore } from '@/lib/auth-store'
 import type { Device } from '@/types/features/checkmk/sync-devices'
 
 // Custom hooks
@@ -13,6 +14,7 @@ import { useDeviceSelection } from './hooks/use-device-selection'
 import { useTaskTracking } from './hooks/use-task-tracking'
 import { useDiffComparison } from './hooks/use-diff-comparison'
 import { useDeviceOperations } from './hooks/use-device-operations'
+import { useJobManagement } from './hooks/use-job-management'
 
 // Components
 import { StatusMessageCard } from './components/status-message-card'
@@ -23,11 +25,52 @@ import { DiffModal } from './components/diff-modal'
 import { AddDeviceModal } from './components/add-device-modal'
 
 export default function SyncDevicesPage() {
+  const token = useAuthStore(state => state.token)
+
   // Status messages
   const { statusMessage, showMessage, clearMessage } = useStatusMessages()
 
   // Device loader
   const { devices, loading, error, authReady, reloadDevices } = useDeviceLoader()
+
+  // Track comparison overlay results
+  const [comparisonOverlay, setComparisonOverlay] = useState<Map<string, string>>(new Map())
+
+  // Overlay comparison job results onto devices
+  const overlayComparisonResults = useCallback((loadedDevices: Device[]) => {
+    const overlay = new Map<string, string>()
+    for (const device of loadedDevices) {
+      const key = device.name.toLowerCase()
+      if (device.checkmk_status) {
+        overlay.set(key, device.checkmk_status)
+      }
+    }
+    setComparisonOverlay(overlay)
+    showMessage(`Loaded comparison results for ${loadedDevices.length} devices`, 'success')
+  }, [showMessage])
+
+  // Job management for loading comparison results
+  const jobManagement = useJobManagement(
+    token,
+    async (loadedDevices) => {
+      // Overlay comparison results onto devices
+      overlayComparisonResults(loadedDevices)
+    },
+    (message) => showMessage(message, 'error'),
+    (message) => showMessage(message, 'success')
+  )
+
+  // Enrich devices with comparison overlay
+  const enrichedDevices = useMemo((): Device[] => {
+    if (comparisonOverlay.size === 0) return devices
+    return devices.map(device => {
+      const status = comparisonOverlay.get(device.name.toLowerCase())
+      if (status) {
+        return { ...device, checkmk_status: status }
+      }
+      return device
+    })
+  }, [devices, comparisonOverlay])
 
   // Device filters
   const {
@@ -45,7 +88,7 @@ export default function SyncDevicesPage() {
     setStatusFilter,
     setCheckmkFilters,
     resetFilters
-  } = useDeviceFilters(devices)
+  } = useDeviceFilters(enrichedDevices)
 
   // Device selection
   const { selectedDevices, handleSelectDevice, handleSelectAll, clearSelection } = useDeviceSelection()
@@ -139,6 +182,28 @@ export default function SyncDevicesPage() {
     }
   }, [handleSyncSelected, selectedDevices, clearSelection])
 
+  // Handle load latest comparison results
+  const handleLoadLatestResults = useCallback(async () => {
+    try {
+      // Fetch available jobs
+      await jobManagement.fetchAvailableJobs()
+
+      // Get the latest job (first in the list, as they're already sorted by created_at desc)
+      const latestJobId = jobManagement.availableJobs[0]?.id
+
+      if (!latestJobId) {
+        showMessage('No comparison results available. Please run a comparison job first.', 'info')
+        return
+      }
+
+      // Load the latest job results
+      await jobManagement.loadJobResults(latestJobId)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load latest results'
+      showMessage(message, 'error')
+    }
+  }, [jobManagement, showMessage])
+
   // Handle page change
   const handlePageChange = useCallback((newPage: number) => {
     const totalPages = Math.ceil(filteredDevices.length / pageSize)
@@ -209,7 +274,7 @@ export default function SyncDevicesPage() {
       {/* Device Table with integrated header and footer */}
       <DeviceTable
         devices={filteredDevices}
-        totalDeviceCount={devices.length}
+        totalDeviceCount={enrichedDevices.length}
         selectedDevices={selectedDevices}
         diffResults={deviceDiffResults}
         deviceNameFilter={deviceNameFilter}
@@ -225,6 +290,7 @@ export default function SyncDevicesPage() {
         hasDevicesSynced={true}
         isActivating={isActivating}
         isSyncing={isSyncingSelected}
+        loadingLatestResults={jobManagement.loadingResults}
         onSelectDevice={handleSelectDevice}
         onSelectAll={(checked) => handleSelectAll(filteredDevices.slice(currentPage * pageSize, (currentPage + 1) * pageSize), checked)}
         onGetDiff={handleGetDiff}
@@ -238,6 +304,7 @@ export default function SyncDevicesPage() {
         onPageChange={handlePageChange}
         onPageSizeChange={setPageSize}
         onReloadDevices={reloadDevices}
+        onLoadLatestResults={handleLoadLatestResults}
         onResetFilters={resetFilters}
         onClearSelection={clearSelection}
         onSyncSelected={handleSyncSelectedDevices}

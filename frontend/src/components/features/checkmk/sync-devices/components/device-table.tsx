@@ -31,6 +31,7 @@ interface DeviceTableProps {
   hasDevicesSynced: boolean
   isActivating: boolean
   isSyncing: boolean
+  loadingLatestResults: boolean
   onSelectDevice: (deviceId: string, checked: boolean) => void
   onSelectAll: (checked: boolean) => void
   onGetDiff: (device: Device) => void
@@ -44,6 +45,7 @@ interface DeviceTableProps {
   onPageChange: (page: number) => void
   onPageSizeChange: (size: number) => void
   onReloadDevices: () => void
+  onLoadLatestResults: () => void
   onResetFilters: () => void
   onClearSelection: () => void
   onSyncSelected: () => void
@@ -64,10 +66,11 @@ export function DeviceTable({
   activeFiltersCount,
   currentPage,
   pageSize,
-  loading,
+  loading: _loading,
   hasDevicesSynced,
   isActivating,
   isSyncing,
+  loadingLatestResults,
   onSelectDevice,
   onSelectAll,
   onGetDiff,
@@ -80,7 +83,8 @@ export function DeviceTable({
   onCheckmkFiltersChange,
   onPageChange,
   onPageSizeChange,
-  onReloadDevices,
+  onReloadDevices: _onReloadDevices,
+  onLoadLatestResults,
   onResetFilters,
   onClearSelection,
   onSyncSelected,
@@ -137,17 +141,17 @@ export function DeviceTable({
             <Button
               variant="ghost"
               size="sm"
-              onClick={onReloadDevices}
+              onClick={onLoadLatestResults}
               className="text-white hover:bg-white/20 text-xs h-7"
-              disabled={loading}
-              title="Reload devices from Nautobot"
+              disabled={loadingLatestResults}
+              title="Load latest comparison results"
             >
-              {loading ? (
+              {loadingLatestResults ? (
                 <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1" />
               ) : (
                 <Search className="h-3 w-3 mr-1" />
               )}
-              Load Devices
+              Load latest Results
             </Button>
           </div>
         </div>
