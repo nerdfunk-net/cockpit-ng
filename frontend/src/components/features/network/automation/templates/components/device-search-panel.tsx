@@ -9,6 +9,8 @@ import { useDeviceSearchQuery } from '../hooks/use-device-search-query'
 import type { DeviceSearchResult } from '../types/templates'
 import { DEVICE_SEARCH_MIN_CHARS } from '../utils/template-constants'
 
+const EMPTY_ARRAY: DeviceSearchResult[] = []
+
 interface DeviceSearchPanelProps {
   selectedDevice: DeviceSearchResult | null
   onDeviceSelect: (device: DeviceSearchResult) => void
@@ -38,7 +40,7 @@ export function DeviceSearchPanel({
     return () => clearTimeout(timer)
   }, [searchTerm])
 
-  const { data: devices = [], isLoading } = useDeviceSearchQuery(debouncedTerm, {
+  const { data: devices = EMPTY_ARRAY, isLoading } = useDeviceSearchQuery(debouncedTerm, {
     enabled: debouncedTerm.length >= DEVICE_SEARCH_MIN_CHARS && !selectedDevice,
   })
 

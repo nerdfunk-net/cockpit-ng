@@ -2,84 +2,119 @@ import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { useMemo } from 'react'
 
-interface InventoryDevicesResponse {
-  device_ids: string[]
-  device_count: number
-  inventory_id: number
-  inventory_name: string
+interface SimpleDevice {
+  id: string
+  name: string
 }
 
 interface DeviceDetail {
   id: string
   name: string
+  hostname?: string
   serial?: string
-  asset_tag?: string
+  asset_tag?: string | null
+  position?: number | null
+  face?: string | null
+  config_context?: Record<string, unknown>
+  local_config_context_data?: Record<string, unknown> | null
+  _custom_field_data?: Record<string, unknown>
   device_type?: {
+    id: string
     model: string
-    manufacturer: { name: string }
+    manufacturer: { id: string; name: string }
   }
-  role?: { name: string }
-  platform?: { name: string }
-  location?: { name: string }
-  status?: { name: string }
+  role?: { id: string; name: string }
+  platform?: { 
+    id: string
+    name: string
+    network_driver?: string
+    manufacturer?: { id: string; name: string } | null
+  }
+  location?: { 
+    id: string
+    name: string
+    description?: string
+    parent?: { id: string; name: string }
+  }
+  status?: { id: string; name: string }
   primary_ip4?: {
+    id: string
     address: string
     host: string
+    ip_version?: number
+    mask_length?: number
+    description?: string
+    dns_name?: string
+    status?: { id: string; name: string }
+    parent?: { id: string; prefix: string }
   }
-  tags?: Array<{ name: string; color: string }>
-  custom_fields?: Record<string, unknown>
+  interfaces?: Array<{
+    id: string
+    name: string
+    type: string
+    enabled: boolean
+    mtu?: number
+    mac_address?: string
+    description?: string
+    status?: { id: string; name: string }
+    ip_addresses?: Array<{
+      id: string
+      address: string
+      ip_version: number
+      status?: { id: string; name: string }
+    }>
+    connected_interface?: {
+      id: string
+      name: string
+      device?: { id: string; name: string }
+    } | null
+    cable?: {
+      id: string
+      status?: { id: string; name: string }
+    } | null
+    tagged_vlans?: Array<unknown>
+    untagged_vlan?: unknown | null
+  }>
+  console_ports?: Array<unknown>
+  console_server_ports?: Array<unknown>
+  power_ports?: Array<unknown>
+  power_outlets?: Array<unknown>
+  secrets_group?: { id: string; name: string }
+  tags?: Array<{ id: string; name: string; color: string }>
+}
+
+interface InventoryDevicesResponse {
+  devices: SimpleDevice[]
+  device_details: DeviceDetail[]
+  device_count: number
+  inventory_id: number
+  inventory_name: string
 }
 
 export function useInventoryDevices(inventoryId: number | null, enabled: boolean = true) {
   const { apiCall } = useApi()
 
-  // Step 1: Get device IDs from inventory
+  // Fetch inventory devices with full details in one call
   const {
     data: inventoryData,
-    isLoading: isLoadingInventory,
-    error: inventoryError,
+    isLoading,
+    error,
   } = useQuery({
-    queryKey: ['inventory-devices', inventoryId],
+    queryKey: ['inventory-devices-detailed', inventoryId],
     queryFn: async () => {
       if (!inventoryId) return null
       return apiCall<InventoryDevicesResponse>(
-        `inventory/resolve-devices?inventory_id=${inventoryId}`,
-        { method: 'POST' }
+        `inventory/resolve-devices/detailed/${inventoryId}`,
+        { method: 'GET' }
       )
     },
     enabled: enabled && inventoryId !== null,
     staleTime: 30 * 1000,
   })
 
-  const deviceIds = inventoryData?.device_ids || []
-
-  // Step 2: Fetch details for each device
-  const {
-    data: devicesDetails,
-    isLoading: isLoadingDevices,
-    error: devicesError,
-  } = useQuery({
-    queryKey: ['inventory-device-details', deviceIds],
-    queryFn: async () => {
-      if (deviceIds.length === 0) return []
-
-      const results = await Promise.allSettled(
-        deviceIds.map((deviceId) =>
-          apiCall<DeviceDetail>(`nautobot/devices/${deviceId}`, { method: 'GET' })
-        )
-      )
-
-      return results
-        .filter((result): result is PromiseFulfilledResult<DeviceDetail> => result.status === 'fulfilled')
-        .map((result) => result.value)
-    },
-    enabled: enabled && deviceIds.length > 0,
-    staleTime: 30 * 1000,
-  })
-
   // Format data for template variables
   const formattedData = useMemo(() => {
-    if (!devicesDetails || devicesDetails.length === 0) {
+    if (!inventoryData || !inventoryData.device_details || inventoryData.device_details.length === 0) {
       return {
         devices: [],
         device_details: {},
@@ -87,29 +122,26 @@ export function useInventoryDevices(inventoryId: number | null, enabled: boolean
       }
     }
 
-    // Format for "devices" variable (simple list)
-    const devices = devicesDetails.map((device) => ({
-      id: device.id,
-      name: device.name,
-    }))
+    // Use devices array directly from response
+    const devices = inventoryData.devices
 
-    // Format for "device_details" variable (detailed info per device)
+    // Convert device_details array to keyed object for easy access
     const device_details: Record<string, DeviceDetail> = {}
-    devicesDetails.forEach((device) => {
+    inventoryData.device_details.forEach((device) => {
       device_details[device.id] = device
     })
 
     return {
       devices,
       device_details,
-      deviceCount: devicesDetails.length,
+      deviceCount: inventoryData.device_count,
     }
-  }, [devicesDetails])
+  }, [inventoryData])
 
   return {
     ...formattedData,
-    isLoading: isLoadingInventory || isLoadingDevices,
-    error: inventoryError || devicesError,
+    isLoading,
+    error,
     inventoryName: inventoryData?.inventory_name || '',
   }
 }

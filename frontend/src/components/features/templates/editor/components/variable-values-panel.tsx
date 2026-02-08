@@ -67,9 +67,15 @@ export function VariableValuesPanel({
             <div className="space-y-1">
               <Label className="text-xs text-gray-500">Value</Label>
               {selectedVariable.isAutoFilled ? (
-                <p className="text-xs text-gray-500 bg-gray-50 px-2 py-1.5 rounded italic">
-                  Auto-filled at render time from backend context
-                </p>
+                selectedVariable.value ? (
+                  <pre className="text-xs bg-gray-50 px-2 py-1.5 rounded border border-gray-200 overflow-auto max-h-[400px] font-mono">
+                    {selectedVariable.value}
+                  </pre>
+                ) : (
+                  <p className="text-xs text-gray-500 bg-gray-50 px-2 py-1.5 rounded italic">
+                    Auto-filled at render time from backend context
+                  </p>
+                )
               ) : (
                 <Input
                   value={selectedVariable.value}
@@ -88,12 +94,14 @@ export function VariableValuesPanel({
         {!selectedVariable && variables.length > 0 && (
           <div className="space-y-2 mt-2">
             {variables.map((v) => (
-              <div key={v.id} className="flex items-center gap-2 text-xs">
-                <span className="font-mono text-gray-700 font-medium min-w-[100px]">
+              <div key={v.id} className="flex items-start gap-2 text-xs">
+                <span className="font-mono text-gray-700 font-medium min-w-[100px] flex-shrink-0">
                   {v.name || '(unnamed)'}
                 </span>
                 <span className="text-gray-400 truncate">
-                  {v.isAutoFilled ? 'auto-filled' : v.value || '(empty)'}
+                  {v.isAutoFilled 
+                    ? (v.value ? `${v.value.substring(0, 50)}...` : 'auto-filled') 
+                    : (v.value || '(empty)')}
                 </span>
               </div>
             ))}

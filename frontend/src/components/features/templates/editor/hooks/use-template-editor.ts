@@ -83,8 +83,8 @@ export function useTemplateEditor() {
 
   // Update variables when category changes
   useEffect(() => {
-    variableManager.updateForCategory(watchedCategory)
-  }, [watchedCategory, variableManager.updateForCategory])
+    variableManager.updateForCategory(watchedCategory, true) // Always include all variables initially
+  }, [watchedCategory, variableManager])
 
   // Populate form when template data loads (edit mode)
   useEffect(() => {

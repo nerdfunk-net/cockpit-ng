@@ -8,6 +8,7 @@ interface DeviceSearchResponse {
 }
 
 const EMPTY_DEVICES: DeviceSearchResult[] = []
+const EMPTY_OBJECT: { enabled?: boolean } = {}
 
 /**
  * Debounced device search using TanStack Query.
@@ -17,7 +18,7 @@ const EMPTY_DEVICES: DeviceSearchResult[] = []
  * - Search term must be >= 3 characters
  * - No device should already be selected
  */
-export function useDeviceSearchQuery(searchTerm: string, options: { enabled?: boolean } = {}) {
+export function useDeviceSearchQuery(searchTerm: string, options: { enabled?: boolean } = EMPTY_OBJECT) {
   const { apiCall } = useApi()
   const { enabled = true } = options
 

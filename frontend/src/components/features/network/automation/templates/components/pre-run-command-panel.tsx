@@ -7,6 +7,9 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Terminal, ChevronDown, ChevronUp, Key } from 'lucide-react'
 import { useCredentialsQuery } from '../hooks/use-credentials-query'
+import type { SSHCredential } from '../types/templates'
+
+const EMPTY_ARRAY: SSHCredential[] = []
 
 interface PreRunCommandPanelProps {
   command: string
@@ -22,7 +25,7 @@ export function PreRunCommandPanel({
   onCredentialChange,
 }: PreRunCommandPanelProps) {
   const [isExpanded, setIsExpanded] = useState(!!command)
-  const { data: credentials = [] } = useCredentialsQuery({ type: 'ssh' })
+  const { data: credentials = EMPTY_ARRAY } = useCredentialsQuery({ type: 'ssh' })
 
   return (
     <div className="border-2 border-slate-200 rounded-lg overflow-hidden">

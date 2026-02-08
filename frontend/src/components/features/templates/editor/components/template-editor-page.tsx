@@ -10,6 +10,7 @@ import { useTemplateMutations } from '@/components/features/settings/templates/h
 import { useTemplateEditor } from '../hooks/use-template-editor'
 import { useTemplateRender } from '../hooks/use-template-render'
 import { useInventoryDevices } from '../hooks/use-inventory-devices'
+import { useSnmpMappings } from '../hooks/use-snmp-mappings'
 import { GeneralPanel } from './general-panel'
 import { AgentOptionsPanel } from './agent-options-panel'
 import { VariablesPanel } from './variables-panel'
@@ -25,6 +26,7 @@ function TemplateEditorContent() {
 
   const [selectedVariableId, setSelectedVariableId] = useState<string | null>(null)
   const lastInventoryIdRef = useRef<number | null>(null)
+  const hasUpdatedDataRef = useRef<boolean>(false)
 
   const watchedContent = useWatch({ control: editor.form.control, name: 'content' })
   const watchedTemplateType = useWatch({
@@ -33,6 +35,8 @@ function TemplateEditorContent() {
   })
   const watchedCategory = useWatch({ control: editor.form.control, name: 'category' })
   const watchedInventoryId = useWatch({ control: editor.form.control, name: 'inventoryId' })
+  const watchedPath = useWatch({ control: editor.form.control, name: 'path' })
+  const watchedPassSnmpMapping = useWatch({ control: editor.form.control, name: 'passSnmpMapping' })
 
   // Fetch inventory devices when category is agent and inventory is selected
   const inventoryDevices = useInventoryDevices(
@@ -40,30 +44,58 @@ function TemplateEditorContent() {
     watchedCategory === 'agent' && watchedInventoryId !== null
   )
 
+  // Fetch SNMP mappings when category is agent
+  const snmpMappings = useSnmpMappings(watchedCategory === 'agent')
+
   // Update variables with device data when inventory devices are loaded
   useEffect(() => {
-    // Only update if inventory ID has changed
-    if (lastInventoryIdRef.current === watchedInventoryId) {
-      return
+    // Check if inventory ID has changed
+    const inventoryChanged = lastInventoryIdRef.current !== watchedInventoryId
+    if (inventoryChanged) {
+      lastInventoryIdRef.current = watchedInventoryId
+      hasUpdatedDataRef.current = false // Reset update flag for new inventory
     }
-    lastInventoryIdRef.current = watchedInventoryId
 
-    if (watchedCategory === 'agent' && inventoryDevices.deviceCount > 0) {
+    // Update if we have data and haven't updated yet for this inventory
+    if (watchedCategory === 'agent' && inventoryDevices.deviceCount > 0 && !hasUpdatedDataRef.current) {
       editor.variableManager.updateDeviceData({
         devices: inventoryDevices.devices,
         device_details: inventoryDevices.device_details,
       })
+      hasUpdatedDataRef.current = true
     } else if (watchedCategory === 'agent' && watchedInventoryId === null) {
       // Clear device data when inventory is deselected
       editor.variableManager.updateDeviceData(null)
+      hasUpdatedDataRef.current = false
     }
-  }, [watchedCategory, watchedInventoryId, inventoryDevices.deviceCount])
+  }, [watchedCategory, watchedInventoryId, inventoryDevices, editor.variableManager])
+
+  // Update snmp_mapping variable when SNMP mappings are loaded
+  useEffect(() => {
+    if (watchedCategory === 'agent' && !snmpMappings.isLoading) {
+      editor.variableManager.updateSnmpMapping(snmpMappings.snmpMappings)
+    }
+  }, [watchedCategory, snmpMappings, editor.variableManager])
+
+  // Update path variable when path field changes
+  useEffect(() => {
+    if (watchedCategory === 'agent') {
+      editor.variableManager.updatePath(watchedPath || '')
+    }
+  }, [watchedCategory, watchedPath, editor.variableManager])
+
+  // Toggle snmp_mapping variable based on checkbox
+  useEffect(() => {
+    if (watchedCategory === 'agent') {
+      editor.variableManager.toggleSnmpMappingVariable(watchedPassSnmpMapping)
+    }
+  }, [watchedCategory, watchedPassSnmpMapping, editor.variableManager])
 
   const handleContentChange = useCallback(
     (value: string) => {
       editor.setContent(value)
     },
-    [editor.setContent]
+    [editor]
   )
 
   const handleRender = useCallback(async () => {

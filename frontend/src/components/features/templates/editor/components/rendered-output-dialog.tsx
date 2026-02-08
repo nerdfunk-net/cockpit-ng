@@ -33,7 +33,7 @@ export function RenderedOutputDialog({
       await navigator.clipboard.writeText(result.renderedContent)
       toast({ title: 'Copied', description: 'Rendered output copied to clipboard' })
     }
-  }, [result?.renderedContent, toast])
+  }, [result, toast])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
