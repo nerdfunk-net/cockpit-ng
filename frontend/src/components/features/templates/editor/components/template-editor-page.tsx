@@ -68,34 +68,39 @@ function TemplateEditorContent() {
       editor.variableManager.updateDeviceData(null)
       hasUpdatedDataRef.current = false
     }
-  }, [watchedCategory, watchedInventoryId, inventoryDevices, editor.variableManager])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateDeviceData is stable from useCallback
+  }, [watchedCategory, watchedInventoryId, inventoryDevices.deviceCount, inventoryDevices.devices, inventoryDevices.device_details, editor.variableManager.updateDeviceData])
 
   // Update snmp_mapping variable when SNMP mappings are loaded
   useEffect(() => {
     if (watchedCategory === 'agent' && !snmpMappings.isLoading) {
       editor.variableManager.updateSnmpMapping(snmpMappings.snmpMappings)
     }
-  }, [watchedCategory, snmpMappings, editor.variableManager])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateSnmpMapping is stable from useCallback
+  }, [watchedCategory, snmpMappings.isLoading, snmpMappings.snmpMappings, editor.variableManager.updateSnmpMapping])
 
   // Update path variable when path field changes
   useEffect(() => {
     if (watchedCategory === 'agent') {
       editor.variableManager.updatePath(watchedPath || '')
     }
-  }, [watchedCategory, watchedPath, editor.variableManager])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- updatePath is stable from useCallback
+  }, [watchedCategory, watchedPath, editor.variableManager.updatePath])
 
   // Toggle snmp_mapping variable based on checkbox
   useEffect(() => {
     if (watchedCategory === 'agent') {
       editor.variableManager.toggleSnmpMappingVariable(watchedPassSnmpMapping)
     }
-  }, [watchedCategory, watchedPassSnmpMapping, editor.variableManager])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- toggleSnmpMappingVariable is stable from useCallback
+  }, [watchedCategory, watchedPassSnmpMapping, editor.variableManager.toggleSnmpMappingVariable])
 
   const handleContentChange = useCallback(
     (value: string) => {
       editor.setContent(value)
     },
-    [editor]
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setContent is stable from useCallback
+    [editor.setContent]
   )
 
   const handleRender = useCallback(async () => {

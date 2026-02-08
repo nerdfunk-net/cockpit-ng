@@ -84,7 +84,8 @@ export function useTemplateEditor() {
   // Update variables when category changes
   useEffect(() => {
     variableManager.updateForCategory(watchedCategory, true) // Always include all variables initially
-  }, [watchedCategory, variableManager])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateForCategory is stable from useCallback
+  }, [watchedCategory, variableManager.updateForCategory])
 
   // Populate form when template data loads (edit mode)
   useEffect(() => {
