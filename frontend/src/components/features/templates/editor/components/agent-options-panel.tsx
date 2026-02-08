@@ -18,7 +18,6 @@ import {
   FormItem,
   FormLabel,
   FormControl,
-  FormDescription,
 } from '@/components/ui/form'
 import { Server, ChevronDown, ChevronUp } from 'lucide-react'
 import { useSavedInventoriesQuery } from '@/hooks/queries/use-saved-inventories-queries'
@@ -75,13 +74,13 @@ export function AgentOptionsPanel({ form, isLoadingDevices, deviceCount }: Agent
       {!isCollapsed && (
       <div className="p-4 bg-gradient-to-b from-white to-gray-50">
         <Form {...form}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
           {/* Inventory selector */}
           <FormField
             control={form.control}
             name="inventoryId"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="md:col-span-4">
                 <FormLabel>Inventory</FormLabel>
                 <Select
                   value={field.value?.toString() || 'none'}
@@ -116,11 +115,33 @@ export function AgentOptionsPanel({ form, isLoadingDevices, deviceCount }: Agent
             control={form.control}
             name="path"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="md:col-span-4">
                 <FormLabel>Deployment Path</FormLabel>
                 <FormControl>
                   <Input placeholder="/etc/telegraf/telegraf.conf" {...field} />
                 </FormControl>
+              </FormItem>
+            )}
+          />
+
+          {/* Use Nautobot Context checkbox */}
+          <FormField
+            control={form.control}
+            name="useNautobotContext"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel className="text-sm mb-2 block">Nautobot Context</FormLabel>
+                <div className="flex items-center space-x-2 h-9">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormLabel className="text-xs font-normal cursor-pointer">
+                    Use data & context
+                  </FormLabel>
+                </div>
               </FormItem>
             )}
           />
@@ -130,18 +151,18 @@ export function AgentOptionsPanel({ form, isLoadingDevices, deviceCount }: Agent
             control={form.control}
             name="passSnmpMapping"
             render={({ field }) => (
-              <FormItem className="flex items-center space-x-2 pt-6">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <div className="space-y-0 leading-none">
-                  <FormLabel className="text-sm">Add SNMP Mapping</FormLabel>
-                  <FormDescription className="text-xs mt-0.5">
-                    Pass snmp_mapping variable
-                  </FormDescription>
+              <FormItem className="md:col-span-2">
+                <FormLabel className="text-sm mb-2 block">SNMP Mapping</FormLabel>
+                <div className="flex items-center space-x-2 h-9">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormLabel className="text-xs font-normal cursor-pointer">
+                    Add mapping
+                  </FormLabel>
                 </div>
               </FormItem>
             )}

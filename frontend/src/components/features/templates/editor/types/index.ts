@@ -17,6 +17,7 @@ export interface EditorFormData {
   // Agent-specific
   inventoryId: number | null
   passSnmpMapping: boolean
+  useNautobotContext: boolean
   path: string
 }
 

@@ -18,6 +18,7 @@ const editorFormSchema = z.object({
   content: z.string(),
   inventoryId: z.number().nullable(),
   passSnmpMapping: z.boolean(),
+  useNautobotContext: z.boolean(),
   path: z.string(),
 })
 
@@ -30,6 +31,7 @@ const DEFAULT_VALUES: EditorFormData = {
   content: '',
   inventoryId: null,
   passSnmpMapping: true,
+  useNautobotContext: true,
   path: '',
 }
 
@@ -99,6 +101,7 @@ export function useTemplateEditor() {
         content: templateContent || '',
         inventoryId: null,
         passSnmpMapping: true,
+        useNautobotContext: true,
         path: '',
       })
     }

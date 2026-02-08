@@ -37,6 +37,7 @@ function TemplateEditorContent() {
   const watchedInventoryId = useWatch({ control: editor.form.control, name: 'inventoryId' })
   const watchedPath = useWatch({ control: editor.form.control, name: 'path' })
   const watchedPassSnmpMapping = useWatch({ control: editor.form.control, name: 'passSnmpMapping' })
+  const watchedUseNautobotContext = useWatch({ control: editor.form.control, name: 'useNautobotContext' })
 
   // Fetch inventory devices when category is agent and inventory is selected
   const inventoryDevices = useInventoryDevices(
@@ -94,6 +95,14 @@ function TemplateEditorContent() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- toggleSnmpMappingVariable is stable from useCallback
   }, [watchedCategory, watchedPassSnmpMapping, editor.variableManager.toggleSnmpMappingVariable])
+
+  // Toggle device_details variable based on checkbox
+  useEffect(() => {
+    if (watchedCategory === 'agent') {
+      editor.variableManager.toggleDeviceDetailsVariable(watchedUseNautobotContext)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- toggleDeviceDetailsVariable is stable from useCallback
+  }, [watchedCategory, watchedUseNautobotContext, editor.variableManager.toggleDeviceDetailsVariable])
 
   const handleContentChange = useCallback(
     (value: string) => {
