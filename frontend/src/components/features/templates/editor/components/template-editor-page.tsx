@@ -208,7 +208,8 @@ function TemplateEditorContent() {
       }
     }
 
-    const templateData = {
+    // Build template data with category-specific fields
+    const templateData: any = {
       name: formData.name,
       source: 'webeditor' as const,
       template_type: formData.template_type,
@@ -217,7 +218,17 @@ function TemplateEditorContent() {
       scope: formData.scope,
       content: formData.content,
       variables,
-      use_nautobot_context: formData.category === 'agent',
+    }
+
+    // Add category-specific fields
+    if (formData.category === 'agent') {
+      templateData.use_nautobot_context = formData.useNautobotContext
+      templateData.file_path = formData.path || null
+    } else if (formData.category === 'netmiko') {
+      templateData.execution_mode = formData.netmikoMode
+      templateData.pre_run_command = formData.preRunCommand || null
+      templateData.credential_id = formData.credentialId !== 'none' && formData.credentialId ? parseInt(formData.credentialId) : null
+      templateData.file_path = formData.netmikoMode === 'write_to_file' ? formData.path || null : null
     }
 
     try {

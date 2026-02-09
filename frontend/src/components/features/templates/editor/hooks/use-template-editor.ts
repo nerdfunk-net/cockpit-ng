@@ -109,15 +109,17 @@ export function useTemplateEditor() {
         description: templateData.description || '',
         scope: (templateData.scope as 'global' | 'private') || 'global',
         content: templateContent || '',
+        // Agent-specific fields
         inventoryId: null,
         passSnmpMapping: true,
-        useNautobotContext: true,
-        path: '',
-        netmikoMode: 'run_on_device',
+        useNautobotContext: templateData.use_nautobot_context ?? false,
+        path: templateData.file_path || '',
+        // Netmiko-specific fields
+        netmikoMode: (templateData.execution_mode as EditorFormData['netmikoMode']) || 'run_on_device',
         testDeviceId: null,
         testDeviceName: '',
-        preRunCommand: '',
-        credentialId: 'none',
+        preRunCommand: templateData.pre_run_command || '',
+        credentialId: templateData.credential_id?.toString() || 'none',
       })
     }
   }, [templateData, templateContent, form])

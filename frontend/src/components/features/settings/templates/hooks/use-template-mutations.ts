@@ -33,6 +33,19 @@ export function useTemplateMutations() {
   // Create template
   const createTemplate = useMutation({
     mutationFn: async ({ formData, selectedFile }: CreateTemplateInput) => {
+      // If formData already has 'content' and 'source', use it as-is (from editor)
+      if (formData.content !== undefined && formData.source) {
+        const templateData = {
+          ...formData,
+          category: formData.category === '__none__' ? '' : formData.category,
+        }
+        return apiCall('templates', {
+          method: 'POST',
+          body: templateData
+        })
+      }
+
+      // Otherwise, build templateData from formData (from old template form)
       const templateData: Record<string, unknown> = {
         name: formData.name,
         source: formData.source,
@@ -82,6 +95,19 @@ export function useTemplateMutations() {
   // Update template
   const updateTemplate = useMutation({
     mutationFn: async ({ templateId, formData, selectedFile }: UpdateTemplateInput) => {
+      // If formData already has 'content' and 'source', use it as-is (from editor)
+      if (formData.content !== undefined && formData.source) {
+        const templateData = {
+          ...formData,
+          category: formData.category === '__none__' ? '' : formData.category,
+        }
+        return apiCall(`templates/${templateId}`, {
+          method: 'PUT',
+          body: templateData
+        })
+      }
+
+      // Otherwise, build templateData from formData (from old template form)
       const templateData: Record<string, unknown> = {
         name: formData.name,
         source: formData.source,

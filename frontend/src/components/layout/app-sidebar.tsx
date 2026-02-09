@@ -156,7 +156,14 @@ const navigationSections: NavSection[] = [
         ],
       },
       { label: 'Compliance', href: '/settings/compliance', icon: CheckCircle },
-      { label: 'Templates', href: '/settings/templates', icon: FileText },
+      {
+        label: 'Templates',
+        icon: FileText,
+        children: [
+          { label: 'List & Import', href: '/settings/templates', icon: FileText },
+          { label: 'Editor', href: '/settings/templates/editor', icon: FileText },
+        ],
+      },
       { label: 'Git Management', href: '/settings/git', icon: GitBranch },
       { label: 'Cache', href: '/settings/cache', icon: Zap },
       { label: 'Celery', href: '/settings/celery', icon: Server },
