@@ -6,7 +6,6 @@ export function useVariableManager() {
   const [variables, setVariables] = useState<TemplateVariable[]>([
     { id: crypto.randomUUID(), name: '', value: '' }
   ])
-  const [useNautobotContext, setUseNautobotContext] = useState(true)
 
   const addVariable = () => {
     setVariables([...variables, { id: crypto.randomUUID(), name: '', value: '' }])
@@ -27,8 +26,6 @@ export function useVariableManager() {
   return {
     variables,
     setVariables,
-    useNautobotContext,
-    setUseNautobotContext,
     addVariable,
     removeVariable,
     updateVariable,

@@ -1081,8 +1081,22 @@ async def advanced_render_template(
 
         # Handle netmiko templates
         if category == "netmiko":
-            # Fetch Nautobot device data if requested
-            if render_request.use_nautobot_context and render_request.device_id:
+            # Initialize pre_run to empty (optional, will be populated if command provided)
+            context["pre_run"] = {
+                "raw": "",
+                "parsed": []
+            }
+            
+            # Determine if we need to fetch device data
+            # We need it if: use_nautobot_context is True OR pre_run_command is provided
+            needs_device_data = (
+                (render_request.use_nautobot_context or 
+                 (render_request.pre_run_command and render_request.pre_run_command.strip()))
+                and render_request.device_id
+            )
+            
+            # Fetch Nautobot device data if needed
+            if needs_device_data:
                 try:
                     device_data = await device_query_service.get_device_details(
                         device_id=render_request.device_id,
@@ -1102,6 +1116,12 @@ async def advanced_render_template(
                     logger.info(f"Fetched Nautobot context for device {render_request.device_id}")
                 except Exception as e:
                     error_msg = f"Failed to fetch Nautobot device data: {str(e)}"
+                    logger.error(error_msg)
+                    # If we needed device data for pre_run_command, this is critical
+                    if render_request.pre_run_command and render_request.pre_run_command.strip():
+                        raise ValueError(error_msg)
+                    # Otherwise just add warning
+                    warnings.append(error_msg)
             
             # Execute pre-run command if provided
             if render_request.pre_run_command and render_request.pre_run_command.strip():

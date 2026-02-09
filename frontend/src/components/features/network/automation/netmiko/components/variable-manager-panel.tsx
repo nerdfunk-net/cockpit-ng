@@ -1,14 +1,11 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { Plus, Trash2 } from 'lucide-react'
 import type { TemplateVariable } from '../types'
 
 interface VariableManagerPanelProps {
   variables: TemplateVariable[]
-  useNautobotContext: boolean
-  setUseNautobotContext: (value: boolean) => void
   addVariable: () => void
   removeVariable: (id: string) => void
   updateVariable: (id: string, field: 'name' | 'value', value: string) => void
@@ -17,8 +14,6 @@ interface VariableManagerPanelProps {
 
 export function VariableManagerPanel({
   variables,
-  useNautobotContext,
-  setUseNautobotContext,
   addVariable,
   removeVariable,
   updateVariable,
@@ -35,23 +30,6 @@ export function VariableManagerPanel({
         </div>
       </div>
       <div className="p-6 space-y-4">
-        {/* Nautobot Context Checkbox */}
-        <div className="flex items-center space-x-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <Switch
-            id="use-nautobot-context"
-            checked={useNautobotContext}
-            onCheckedChange={setUseNautobotContext}
-          />
-          <div className="flex-1">
-            <Label htmlFor="use-nautobot-context" className="font-medium cursor-pointer">
-              Use Nautobot data & context
-            </Label>
-            <p className="text-xs text-gray-600 mt-1">
-              When enabled, Nautobot device data will be available in the template context
-            </p>
-          </div>
-        </div>
-
         {/* Variables List */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">

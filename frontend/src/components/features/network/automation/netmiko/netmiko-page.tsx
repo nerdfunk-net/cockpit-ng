@@ -16,16 +16,8 @@ import { DeviceSelectionTab } from './tabs/device-selection-tab'
 import { VariablesAndTemplatesTab } from './tabs/variables-and-templates-tab'
 import { CommandExecutionTab } from './tabs/command-execution-tab'
 
-// Dialog Components
-import { TestResultDialog } from './dialogs/test-result-dialog'
-import { NautobotDataDialog } from './dialogs/nautobot-data-dialog'
-import { ErrorDialog } from './dialogs/error-dialog'
-
 // Results Component
 import { ExecutionResults } from './components/execution-results'
-
-// Types
-import type { ErrorDetails } from './types'
 
 export default function NetmikoPage() {
   // Device selection state
@@ -38,13 +30,7 @@ export default function NetmikoPage() {
   const [writeConfig, setWriteConfig] = useState(false)
   const [dryRun, setDryRun] = useState(false)
 
-  // Dialog state
-  const [showTestResultDialog, setShowTestResultDialog] = useState(false)
-  const [testResult, setTestResult] = useState<string>('')
-  const [showNautobotDataDialog, setShowNautobotDataDialog] = useState(false)
-  const [nautobotData, setNautobotData] = useState<Record<string, unknown> | null>(null)
-  const [showErrorDialog, setShowErrorDialog] = useState(false)
-  const [errorDetails, setErrorDetails] = useState<ErrorDetails | null>(null)
+
 
   // Custom hooks
   const credentialManager = useCredentialManager()
@@ -102,7 +88,7 @@ export default function NetmikoPage() {
         selectedTemplate: templateManager.selectedTemplate,
         editedTemplateContent: templateManager.editedTemplateContent,
         variables: variableManager.variables,
-        useNautobotContext: variableManager.useNautobotContext,
+        useNautobotContext: true,
         dryRun,
         enableMode,
         writeConfig,
@@ -111,21 +97,6 @@ export default function NetmikoPage() {
         password: credentialManager.password,
       })
     }
-  }
-
-  const handleShowError = (error: ErrorDetails) => {
-    setErrorDetails(error)
-    setShowErrorDialog(true)
-  }
-
-  const handleShowTestResult = (result: string) => {
-    setTestResult(result)
-    setShowTestResultDialog(true)
-  }
-
-  const handleShowNautobotData = (data: Record<string, unknown>) => {
-    setNautobotData(data)
-    setShowNautobotDataDialog(true)
   }
 
   return (
@@ -165,8 +136,6 @@ export default function NetmikoPage() {
         <TabsContent value="variables" className="space-y-6">
           <VariablesAndTemplatesTab
             variables={variableManager.variables}
-            useNautobotContext={variableManager.useNautobotContext}
-            setUseNautobotContext={variableManager.setUseNautobotContext}
             addVariable={variableManager.addVariable}
             removeVariable={variableManager.removeVariable}
             updateVariable={variableManager.updateVariable}
@@ -179,10 +148,6 @@ export default function NetmikoPage() {
             setEditedTemplateContent={templateManager.setEditedTemplateContent}
             handleTemplateChange={templateManager.handleTemplateChange}
             handleSaveTemplate={templateManager.handleSaveTemplate}
-            selectedDevices={selectedDevices}
-            onError={handleShowError}
-            onShowTestResult={handleShowTestResult}
-            onShowNautobotData={handleShowNautobotData}
           />
         </TabsContent>
 
@@ -223,25 +188,6 @@ export default function NetmikoPage() {
           )}
         </TabsContent>
       </Tabs>
-
-      {/* Dialogs */}
-      <TestResultDialog
-        open={showTestResultDialog}
-        onOpenChange={setShowTestResultDialog}
-        testResult={testResult}
-      />
-
-      <NautobotDataDialog
-        open={showNautobotDataDialog}
-        onOpenChange={setShowNautobotDataDialog}
-        nautobotData={nautobotData}
-      />
-
-      <ErrorDialog
-        open={showErrorDialog}
-        onOpenChange={setShowErrorDialog}
-        errorDetails={errorDetails}
-      />
     </div>
   )
 }
