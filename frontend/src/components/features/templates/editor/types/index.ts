@@ -5,6 +5,8 @@ export interface TemplateVariable {
   isDefault: boolean
   isAutoFilled: boolean
   description?: string
+  requiresExecution?: boolean  // For pre_run variables that need command execution
+  isExecuting?: boolean        // Track if execution is in progress
 }
 
 export interface EditorFormData {
@@ -25,6 +27,17 @@ export interface EditorFormData {
   testDeviceName: string
   preRunCommand: string
   credentialId: string
+}
+
+export interface NetmikoExecuteResponse {
+  results: Array<{
+    device: string
+    output: string
+    command_outputs?: Record<string, any>  // Contains parsed TextFSM data per command
+    success: boolean
+    error?: string
+  }>
+  session_id: string
 }
 
 export interface RenderResult {

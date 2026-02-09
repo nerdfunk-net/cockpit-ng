@@ -16,10 +16,12 @@ const CATEGORY_VARIABLES: Record<string, CategoryConfig> = {
     },
   },
   netmiko: {
-    defaults: ['devices', 'device_details'],
+    defaults: ['devices', 'device_details', 'pre_run.raw', 'pre_run.parsed'],
     descriptions: {
       devices: 'List of test device (single device from Netmiko panel)',
       device_details: 'Detailed device data from Nautobot for test device',
+      'pre_run.raw': 'Raw output from pre-run command execution',
+      'pre_run.parsed': 'Parsed output from pre-run command (TextFSM)',
     },
   },
   __none__: {
@@ -37,6 +39,8 @@ export function getDefaultVariables(category: string): TemplateVariable[] {
     isDefault: true,
     isAutoFilled: true,
     description: config.descriptions[name] || '',
+    requiresExecution: name.startsWith('pre_run.'),  // Mark pre_run variables as requiring execution
+    isExecuting: false,
   }))
 }
 

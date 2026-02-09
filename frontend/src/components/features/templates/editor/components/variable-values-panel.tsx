@@ -2,22 +2,35 @@
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { Play, RefreshCw } from 'lucide-react'
 import type { TemplateVariable } from '../types'
 
 interface VariableValuesPanelProps {
   variables: TemplateVariable[]
   selectedVariableId: string | null
   onUpdateVariable: (id: string, field: 'name' | 'value', value: string) => void
+  onExecutePreRun?: (variableName: 'pre_run.raw' | 'pre_run.parsed') => Promise<void>
 }
 
 export function VariableValuesPanel({
   variables,
   selectedVariableId,
   onUpdateVariable,
+  onExecutePreRun,
 }: VariableValuesPanelProps) {
   const selectedVariable = selectedVariableId
     ? variables.find((v) => v.id === selectedVariableId)
     : null
+
+  const handleExecuteCommand = async () => {
+    if (!selectedVariable || !selectedVariable.requiresExecution || !onExecutePreRun) {
+      return
+    }
+    
+    const varName = selectedVariable.name as 'pre_run.raw' | 'pre_run.parsed'
+    await onExecutePreRun(varName)
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -57,6 +70,34 @@ export function VariableValuesPanel({
                   <pre className="text-xs bg-gray-50 px-2 py-1.5 rounded border border-gray-200 overflow-auto max-h-[400px] font-mono">
                     {selectedVariable.value}
                   </pre>
+                ) : selectedVariable.requiresExecution ? (
+                  <div className="space-y-2">
+                    <div className="text-xs text-orange-600 bg-orange-50 px-3 py-2 rounded border border-orange-200">
+                      <p className="font-medium mb-1">⚡ Command Execution Required</p>
+                      <p className="text-gray-600">
+                        Execute the pre-run command to populate both <code className="font-mono bg-orange-100 px-1">pre_run.raw</code> and <code className="font-mono bg-orange-100 px-1">pre_run.parsed</code> variables.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={handleExecuteCommand}
+                      disabled={selectedVariable.isExecuting}
+                      size="sm"
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                    >
+                      {selectedVariable.isExecuting ? (
+                        <>
+                          <RefreshCw className="h-3 w-3 mr-2 animate-spin" />
+                          Executing Command...
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-3 w-3 mr-2" />
+                          Execute Pre-Run Command
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 ) : (
                   <p className="text-xs text-gray-500 bg-gray-50 px-2 py-1.5 rounded italic">
                     Auto-filled at render time from backend context

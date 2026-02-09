@@ -163,29 +163,51 @@ class NetmikoService:
                             f"Executing command {idx}/{len(commands)} on {host_ip}: {command}"
                         )
 
-                        # Send command and wait for prompt (Netmiko handles this)
-                        # Use TextFSM parsing if requested
-                        cmd_output = connection.send_command(
+                        # Get raw output from device (execute once)
+                        raw_output = connection.send_command(
                             command,
-                            use_textfsm=use_textfsm,
+                            use_textfsm=False,
                             read_timeout=30,
                             expect_string=None,  # Auto-detect prompt
                         )
 
-                        # Store output mapped to command (can be string or list of dicts if TextFSM parsed)
-                        command_outputs[command] = cmd_output
-
-                        # For backward compatibility with concatenated output
-                        # Convert parsed data to string representation if needed
+                        # Add raw output to concatenated output
                         if output:
                             output += "\n"
-                        if isinstance(cmd_output, list):
-                            # TextFSM returns list of dicts, convert to readable string
-                            import json
+                        output += raw_output
 
-                            output += json.dumps(cmd_output, indent=2)
+                        # If TextFSM parsing is requested, parse the raw output we already have
+                        if use_textfsm:
+                            logger.info(
+                                f"Parsing command output with TextFSM for: {command}"
+                            )
+                            try:
+                                # Use netmiko's textfsm parsing on the raw output
+                                from netmiko.utilities import get_structured_data
+                                
+                                parsed_output = get_structured_data(
+                                    raw_output,
+                                    platform=device_type,
+                                    command=command
+                                )
+                                
+                                # Store parsed output if we got structured data
+                                if parsed_output:
+                                    command_outputs[command] = parsed_output
+                                    logger.info(f"Successfully parsed output for: {command}")
+                                else:
+                                    # No TextFSM template available, store raw output
+                                    logger.info(f"No TextFSM template available for: {command}")
+                                    command_outputs[command] = raw_output
+                            except Exception as parse_error:
+                                logger.warning(
+                                    f"TextFSM parsing failed for command '{command}': {parse_error}"
+                                )
+                                # Store raw output if parsing fails
+                                command_outputs[command] = raw_output
                         else:
-                            output += cmd_output
+                            # Store raw output in command_outputs if no parsing requested
+                            command_outputs[command] = raw_output
 
                 # Save config if requested and execution was successful
                 if write_config:

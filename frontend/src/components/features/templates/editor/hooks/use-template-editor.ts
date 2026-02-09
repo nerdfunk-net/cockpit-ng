@@ -63,6 +63,11 @@ export function useTemplateEditor() {
         description: string
         scope: string
         use_nautobot_context: boolean
+        variables: Record<string, string>
+        pre_run_command: string | null
+        credential_id: number | null
+        execution_mode: string | null
+        file_path: string | null
       }>(`templates/${templateId}`, { method: 'GET' })
       return response
     },
@@ -121,8 +126,14 @@ export function useTemplateEditor() {
         preRunCommand: templateData.pre_run_command || '',
         credentialId: templateData.credential_id?.toString() || 'none',
       })
+
+      // Restore saved custom variables
+      if (templateData.variables && Object.keys(templateData.variables).length > 0) {
+        variableManager.setCustomVariables(templateData.variables)
+      }
     }
-  }, [templateData, templateContent, form])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setCustomVariables is stable from useCallback
+  }, [templateData, templateContent, form, variableManager.setCustomVariables])
 
   const setContent = useCallback(
     (content: string) => {

@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef, Suspense } from 'react'
 import { useWatch } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
-import { FileCode, Play, Save, RefreshCw } from 'lucide-react'
+import { FileCode, Play, Save, RefreshCw, HelpCircle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useTemplateMutations } from '@/components/features/settings/templates/hooks/use-template-mutations'
 import { useApi } from '@/hooks/use-api'
@@ -19,6 +19,8 @@ import { VariablesPanel } from './variables-panel'
 import { VariableValuesPanel } from './variable-values-panel'
 import { CodeEditorPanel } from './code-editor-panel'
 import { RenderedOutputDialog } from './rendered-output-dialog'
+import { TemplateEditorHelpDialog } from './template-editor-help-dialog'
+import type { NetmikoExecuteResponse } from '../types'
 
 function TemplateEditorContent() {
   const { toast } = useToast()
@@ -28,6 +30,7 @@ function TemplateEditorContent() {
   const { createTemplate, updateTemplate } = useTemplateMutations()
 
   const [selectedVariableId, setSelectedVariableId] = useState<string | null>(null)
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false)
   const lastInventoryIdRef = useRef<number | null>(null)
   const hasUpdatedDataRef = useRef<boolean>(false)
   const lastCategoryRef = useRef<string>('__none__')
@@ -44,6 +47,8 @@ function TemplateEditorContent() {
   const watchedPassSnmpMapping = useWatch({ control: editor.form.control, name: 'passSnmpMapping' })
   const watchedUseNautobotContext = useWatch({ control: editor.form.control, name: 'useNautobotContext' })
   const watchedTestDeviceId = useWatch({ control: editor.form.control, name: 'testDeviceId' })
+  const watchedPreRunCommand = useWatch({ control: editor.form.control, name: 'preRunCommand' })
+  const watchedCredentialId = useWatch({ control: editor.form.control, name: 'credentialId' })
 
   // Fetch inventory devices when category is agent and inventory is selected
   const inventoryDevices = useInventoryDevices(
@@ -167,6 +172,15 @@ function TemplateEditorContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- updateDeviceData is stable from useCallback
   }, [watchedCategory, watchedTestDeviceId, apiCall, editor.variableManager.updateDeviceData])
 
+  // Toggle pre_run variables when command is entered/cleared
+  useEffect(() => {
+    if (watchedCategory === 'netmiko') {
+      const hasCommand = watchedPreRunCommand && watchedPreRunCommand.trim().length > 0
+      editor.variableManager.togglePreRunVariables(hasCommand)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- togglePreRunVariables is stable from useCallback
+  }, [watchedCategory, watchedPreRunCommand, editor.variableManager.togglePreRunVariables])
+
   const handleContentChange = useCallback(
     (value: string) => {
       editor.setContent(value)
@@ -174,6 +188,143 @@ function TemplateEditorContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- setContent is stable from useCallback
     [editor.setContent]
   )
+
+  const handleExecutePreRun = useCallback(async (variableName: 'pre_run.raw' | 'pre_run.parsed') => {
+    const formData = editor.form.getValues()
+    
+    // Validate required fields
+    if (!formData.preRunCommand || !formData.preRunCommand.trim()) {
+      toast({
+        title: 'Missing Command',
+        description: 'Please enter a pre-run command in the Netmiko Options panel',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (!formData.testDeviceId) {
+      toast({
+        title: 'Missing Device',
+        description: 'Please select a test device in the Netmiko Options panel',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Get device details to build the request
+    const deviceVar = editor.variableManager.variables.find(v => v.name === 'devices')
+    if (!deviceVar || !deviceVar.value) {
+      toast({
+        title: 'Device Data Not Available',
+        description: 'Please ensure a test device is selected',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      const devices = JSON.parse(deviceVar.value)
+      if (!devices || devices.length === 0) {
+        throw new Error('No device data available')
+      }
+
+      const device = devices[0]
+      const deviceIp = device.primary_ip4 || device.primary_ip6 || device.name
+
+      // Set executing state for BOTH variables
+      editor.variableManager.setPreRunExecuting('pre_run.raw', true)
+      editor.variableManager.setPreRunExecuting('pre_run.parsed', true)
+
+      // Get device details for platform information
+      const deviceDetailsVar = editor.variableManager.variables.find(v => v.name === 'device_details')
+      let platform = 'cisco_ios' // Default platform
+      if (deviceDetailsVar && deviceDetailsVar.value) {
+        try {
+          const deviceDetails = JSON.parse(deviceDetailsVar.value)
+          // Try to extract platform from device details
+          platform = deviceDetails.platform?.slug || deviceDetails.platform?.name || 'cisco_ios'
+        } catch (e) {
+          console.warn('Could not parse device details for platform:', e)
+        }
+      }
+
+      // Build the request payload - backend expects 'ip' or 'primary_ip4' and 'platform'
+      // Always use textfsm to get both raw and parsed output
+      const payload: any = {
+        devices: [{ 
+          ip: deviceIp,
+          platform: platform,
+          name: device.name || deviceIp,
+        }],
+        commands: [formData.preRunCommand],
+        use_textfsm: true,  // Always true to get both raw and parsed
+        enable_mode: false,
+        write_config: false,
+        session_id: crypto.randomUUID(),
+      }
+
+      // Add credentials if provided
+      if (formData.credentialId && formData.credentialId !== 'none') {
+        payload.credential_id = parseInt(formData.credentialId)
+      }
+
+      // Execute the command
+      const response = await apiCall<NetmikoExecuteResponse>(
+        'netmiko/execute-commands',
+        {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        }
+      )
+
+      // Process the response
+      if (response.results && response.results.length > 0) {
+        const result = response.results[0]
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Command execution failed')
+        }
+
+        // Update BOTH variables from the single response
+        // 1. Update pre_run.raw with the raw output
+        editor.variableManager.updatePreRunVariable('pre_run.raw', result.output || '')
+        
+        // 2. Update pre_run.parsed with parsed output (or fallback to raw)
+        let parsedValue = ''
+        if (result.command_outputs && Object.keys(result.command_outputs).length > 0) {
+          // Get the first command's output (we only sent one command)
+          const commandKey = Object.keys(result.command_outputs)[0]
+          const parsedData = result.command_outputs[commandKey]
+          parsedValue = typeof parsedData === 'string' 
+            ? parsedData 
+            : JSON.stringify(parsedData, null, 2)
+        } else {
+          // Fallback to raw output if no parsed data
+          parsedValue = result.output || ''
+        }
+        editor.variableManager.updatePreRunVariable('pre_run.parsed', parsedValue)
+
+        toast({
+          title: 'Command Executed Successfully',
+          description: `Both pre_run.raw and pre_run.parsed have been populated`,
+        })
+      } else {
+        throw new Error('No results returned from command execution')
+      }
+    } catch (error) {
+      console.error('Error executing pre-run command:', error)
+      // Reset executing state for BOTH variables
+      editor.variableManager.setPreRunExecuting('pre_run.raw', false)
+      editor.variableManager.setPreRunExecuting('pre_run.parsed', false)
+      
+      toast({
+        title: 'Execution Failed',
+        description: error instanceof Error ? error.message : 'Failed to execute pre-run command',
+        variant: 'destructive',
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor.form, editor.variableManager, apiCall, toast])
 
   const handleRender = useCallback(async () => {
     const formData = editor.form.getValues()
@@ -263,18 +414,29 @@ function TemplateEditorContent() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex items-center space-x-3">
-        <div className="bg-purple-100 p-2 rounded-lg">
-          <FileCode className="h-6 w-6 text-purple-600" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="bg-purple-100 p-2 rounded-lg">
+            <FileCode className="h-6 w-6 text-purple-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {editor.isEditMode ? 'Edit Template' : 'Template Editor'}
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Create and edit Jinja2 templates with variable support and live preview
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            {editor.isEditMode ? 'Edit Template' : 'Template Editor'}
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Create and edit Jinja2 templates with variable support and live preview
-          </p>
-        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setHelpDialogOpen(true)}
+          className="border-purple-300 text-purple-700 hover:bg-purple-50"
+          title="Help & Documentation"
+        >
+          <HelpCircle className="h-5 w-5" />
+        </Button>
       </div>
 
       {/* General Panel */}
@@ -312,6 +474,7 @@ function TemplateEditorContent() {
               variables={editor.variableManager.variables}
               selectedVariableId={selectedVariableId}
               onUpdateVariable={editor.variableManager.updateVariable}
+              onExecutePreRun={watchedCategory === 'netmiko' ? handleExecutePreRun : undefined}
             />
           </div>
         </div>
@@ -359,6 +522,9 @@ function TemplateEditorContent() {
         onOpenChange={renderer.setShowDialog}
         result={renderer.renderResult}
       />
+
+      {/* Help Dialog */}
+      <TemplateEditorHelpDialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen} />
     </div>
   )
 }

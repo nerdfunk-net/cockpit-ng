@@ -59,6 +59,10 @@ class CommandResult(BaseModel):
     success: bool
     output: str
     error: str | None = None
+    command_outputs: Dict[str, Any] | None = Field(
+        default=None,
+        description="Parsed command outputs (when use_textfsm=True) or raw outputs per command"
+    )
 
 
 class CommandExecutionResponse(BaseModel):
@@ -278,6 +282,7 @@ async def execute_commands(
                 success=r["success"],
                 output=r["output"],
                 error=r.get("error"),
+                command_outputs=r.get("command_outputs"),
             )
             for r in results
         ]

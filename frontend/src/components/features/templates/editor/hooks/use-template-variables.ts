@@ -206,6 +206,99 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
     []
   )
 
+  const setCustomVariables = useCallback((savedVars: Record<string, string>) => {
+    setVariables((prev) => {
+      // Keep only default variables, replace all custom ones with saved data
+      const defaults = prev.filter((v) => v.isDefault)
+      const custom: TemplateVariable[] = Object.entries(savedVars).map(([name, value]) => ({
+        id: crypto.randomUUID(),
+        name,
+        value,
+        isDefault: false,
+        isAutoFilled: false,
+      }))
+      return [...defaults, ...custom]
+    })
+  }, [])
+
+  const updatePreRunVariable = useCallback((variableName: 'pre_run.raw' | 'pre_run.parsed', value: string) => {
+    setVariables((prev) =>
+      prev.map((v) => {
+        if (v.name === variableName && v.isDefault && v.requiresExecution) {
+          return {
+            ...v,
+            value,
+            isExecuting: false,
+          }
+        }
+        return v
+      })
+    )
+  }, [])
+
+  const setPreRunExecuting = useCallback((variableName: 'pre_run.raw' | 'pre_run.parsed', isExecuting: boolean) => {
+    setVariables((prev) =>
+      prev.map((v) => {
+        if (v.name === variableName && v.isDefault && v.requiresExecution) {
+          return {
+            ...v,
+            isExecuting,
+          }
+        }
+        return v
+      })
+    )
+  }, [])
+
+  const togglePreRunVariables = useCallback((show: boolean) => {
+    setVariables((prev) => {
+      if (show) {
+        // Add pre_run variables if they don't exist
+        const hasPreRunRaw = prev.some(v => v.name === 'pre_run.raw' && v.isDefault)
+        const hasPreRunParsed = prev.some(v => v.name === 'pre_run.parsed' && v.isDefault)
+        
+        if (!hasPreRunRaw || !hasPreRunParsed) {
+          const defaultVars = prev.filter(v => v.isDefault)
+          const userVars = prev.filter(v => !v.isDefault)
+          
+          if (!hasPreRunRaw) {
+            const preRunRaw: TemplateVariable = {
+              id: 'default-pre_run.raw',
+              name: 'pre_run.raw',
+              value: '',
+              isDefault: true,
+              isAutoFilled: true,
+              requiresExecution: true,
+              isExecuting: false,
+              description: 'Raw output from pre-run command execution',
+            }
+            defaultVars.push(preRunRaw)
+          }
+          
+          if (!hasPreRunParsed) {
+            const preRunParsed: TemplateVariable = {
+              id: 'default-pre_run.parsed',
+              name: 'pre_run.parsed',
+              value: '',
+              isDefault: true,
+              isAutoFilled: true,
+              requiresExecution: true,
+              isExecuting: false,
+              description: 'Parsed output from pre-run command (TextFSM)',
+            }
+            defaultVars.push(preRunParsed)
+          }
+          
+          return [...defaultVars, ...userVars]
+        }
+        return prev
+      } else {
+        // Remove pre_run variables
+        return prev.filter(v => !(v.name?.startsWith('pre_run.') && v.isDefault))
+      }
+    })
+  }, [])
+
   return useMemo(
     () => ({
       variables,
@@ -218,7 +311,11 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
       addVariable,
       removeVariable,
       updateVariable,
+      setCustomVariables,
+      updatePreRunVariable,
+      setPreRunExecuting,
+      togglePreRunVariables,
     }),
-    [variables, updateForCategory, updateDeviceData, updateSnmpMapping, toggleSnmpMappingVariable, toggleDeviceDetailsVariable, updatePath, addVariable, removeVariable, updateVariable]
+    [variables, updateForCategory, updateDeviceData, updateSnmpMapping, toggleSnmpMappingVariable, toggleDeviceDetailsVariable, updatePath, addVariable, removeVariable, updateVariable, setCustomVariables, updatePreRunVariable, setPreRunExecuting, togglePreRunVariables]
   )
 }
