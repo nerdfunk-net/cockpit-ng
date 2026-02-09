@@ -19,7 +19,6 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form'
 import { FileCode, ChevronDown, ChevronUp } from 'lucide-react'
 import { CANONICAL_CATEGORIES } from '@/components/features/settings/templates/utils/constants'
