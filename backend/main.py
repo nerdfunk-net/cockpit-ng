@@ -61,7 +61,6 @@ from routers.inventory import (
     general_inventory_router,
     inventory_router,
     certificates_router,
-    ansible_inventory_router,
 )
 
 # git_repositories_router is included via git_router - no need to import separately
@@ -125,7 +124,6 @@ app.include_router(settings_router)
 app.include_router(templates_router)
 app.include_router(general_inventory_router)
 app.include_router(inventory_router)
-app.include_router(ansible_inventory_router)
 app.include_router(credentials_router)
 app.include_router(scan_and_add_router)
 app.include_router(cache_router)

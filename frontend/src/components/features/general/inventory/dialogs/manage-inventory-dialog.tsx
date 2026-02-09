@@ -11,7 +11,8 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { Settings, Search, Globe, Lock, Eye, Edit2, Trash2, X, Check } from 'lucide-react'
-import { conditionTreeToExpression, type ConditionTree, type ConditionGroup } from '@/components/features/general/inventory/utils/helpers'
+import { conditionTreeToExpression } from '@/hooks/shared/device-selector/condition-tree-utils'
+import type { ConditionTree, ConditionGroup } from '@/types/shared/device-selector'
 
 // Legacy flat condition format
 interface LegacyCondition {
