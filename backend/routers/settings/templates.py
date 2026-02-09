@@ -29,6 +29,8 @@ from models.templates import (
     TemplateExecuteAndSyncResponse,
     TemplateRenderAgentRequest,
     TemplateRenderAgentResponse,
+    AdvancedTemplateRenderRequest,
+    AdvancedTemplateRenderResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -1038,6 +1040,228 @@ async def render_agent_template_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to render agent template: {str(e)}",
+        )
+
+
+@router.post("/advanced-render", response_model=AdvancedTemplateRenderResponse)
+async def advanced_render_template(
+    render_request: AdvancedTemplateRenderRequest,
+    current_user: dict = Depends(require_permission("network.templates", "read")),
+) -> AdvancedTemplateRenderResponse:
+    """
+    Advanced unified template rendering for both netmiko and agent templates.
+    
+    This endpoint:
+    - Handles both netmiko and agent template types
+    - Executes pre_run commands dynamically for netmiko templates
+    - Fetches inventory context for agent templates
+    - Supports all necessary variables and context
+    
+    The frontend should send user_variables WITHOUT pre_run.raw and pre_run.parsed,
+    as the backend will execute and parse commands dynamically.
+    """
+    try:
+        from services.nautobot.devices import device_query_service
+        from services.checkmk.config import config_service
+        from jinja2 import Template, TemplateError, UndefinedError
+        import re
+
+        category = render_request.category.lower()
+        template_content = render_request.template_content
+        warnings = []
+        
+        # Initialize pre_run variables (only used for netmiko templates)
+        pre_run_output = None
+        pre_run_parsed = None
+
+        # Initialize context with user variables
+        context = {}
+        if render_request.user_variables:
+            context.update(render_request.user_variables)
+
+        # Handle netmiko templates
+        if category == "netmiko":
+            # Fetch Nautobot device data if requested
+            if render_request.use_nautobot_context and render_request.device_id:
+                try:
+                    device_data = await device_query_service.get_device_details(
+                        device_id=render_request.device_id,
+                        use_cache=True,
+                    )
+                    context["device_details"] = device_data
+                    
+                    # Build simplified devices array for compatibility
+                    devices = [{
+                        "id": render_request.device_id,
+                        "name": device_data.get("name", ""),
+                        "primary_ip4": device_data.get("primary_ip4", {}).get("address", "") if isinstance(device_data.get("primary_ip4"), dict) else device_data.get("primary_ip4", ""),
+                        "primary_ip6": device_data.get("primary_ip6", {}).get("address", "") if isinstance(device_data.get("primary_ip6"), dict) else device_data.get("primary_ip6", ""),
+                    }]
+                    context["devices"] = devices
+                    
+                    logger.info(f"Fetched Nautobot context for device {render_request.device_id}")
+                except Exception as e:
+                    error_msg = f"Failed to fetch Nautobot device data: {str(e)}"
+            
+            # Execute pre-run command if provided
+            if render_request.pre_run_command and render_request.pre_run_command.strip():
+                if not render_request.device_id:
+                    raise ValueError(
+                        "A test device is required to execute pre-run commands. "
+                        "Please select a test device in the Netmiko Options panel."
+                    )
+                if not render_request.credential_id:
+                    raise ValueError(
+                        "Device credentials are required to execute pre-run commands. "
+                        "Please select credentials in the Netmiko Options panel."
+                    )
+
+                try:
+                    # Import the render service to use its pre-run execution method
+                    from services.network.automation.render import render_service
+                    
+                    pre_run_result = await render_service._execute_pre_run_command(
+                        device_id=render_request.device_id,
+                        command=render_request.pre_run_command.strip(),
+                        credential_id=render_request.credential_id,
+                        nautobot_device=context.get("device_details"),
+                    )
+                    
+                    pre_run_output = pre_run_result.get("raw_output", "")
+                    pre_run_parsed = pre_run_result.get("parsed_output", [])
+                    
+                    # Add to context as pre_run object
+                    context["pre_run"] = {
+                        "raw": pre_run_output,
+                        "parsed": pre_run_parsed
+                    }
+                    
+                    if pre_run_result.get("parse_error"):
+                        warnings.append(f"TextFSM parsing not available: {pre_run_result['parse_error']}")
+                    
+                    logger.info(f"Pre-run command executed. Raw length: {len(pre_run_output)}, Parsed records: {len(pre_run_parsed)}")
+                except Exception as e:
+                    error_msg = f"Failed to execute pre-run command: {str(e)}"
+                    logger.error(error_msg)
+                    raise ValueError(error_msg)
+
+        # Handle agent templates
+        elif category == "agent":
+            # Fetch inventory devices if inventory_id provided
+            if render_request.inventory_id:
+                try:
+                    # Fetch devices from inventory using the same pattern as /api/inventory/resolve-devices
+                    from inventory_manager import inventory_manager
+                    from utils.inventory_converter import convert_saved_inventory_to_operations
+                    from services.inventory.inventory import inventory_service
+                    
+                    # Get inventory by ID
+                    inventory = inventory_manager.get_inventory(render_request.inventory_id)
+                    if not inventory:
+                        raise ValueError(f"Inventory with ID {render_request.inventory_id} not found")
+                    
+                    # Convert stored conditions to operations
+                    conditions = inventory.get("conditions", [])
+                    if not conditions:
+                        logger.warning(f"Inventory {render_request.inventory_id} has no conditions")
+                        context["devices"] = []
+                        context["device_details"] = {}
+                    else:
+                        operations = convert_saved_inventory_to_operations(conditions)
+                        
+                        # Execute operations to get matching devices
+                        devices, _ = await inventory_service.preview_inventory(operations)
+                        
+                        # Convert devices to simple dict format for context
+                        device_list = [
+                            {
+                                "id": device.id,
+                                "name": device.name,
+                                "primary_ip4": device.primary_ip4,
+                            }
+                            for device in devices
+                        ]
+                        context["devices"] = device_list
+                        
+                        # Fetch device details for each device
+                        device_details = {}
+                        for device in devices:
+                            try:
+                                device_data = await device_query_service.get_device_details(
+                                    device_id=device.id,
+                                    use_cache=True,
+                                )
+                                device_details[device.id] = device_data
+                            except Exception as e:
+                                warning_msg = f"Failed to fetch details for device {device.id}: {str(e)}"
+                                logger.warning(warning_msg)
+                                warnings.append(warning_msg)
+                        
+                        context["device_details"] = device_details
+                        logger.info(f"Fetched {len(device_list)} devices from inventory {render_request.inventory_id}")
+                    
+                except Exception as e:
+                    error_msg = f"Failed to fetch inventory devices: {str(e)}"
+                    logger.error(error_msg)
+                    warnings.append(error_msg)
+
+            # Load SNMP mapping if requested
+            if render_request.pass_snmp_mapping:
+                try:
+                    snmp_mapping = config_service.load_snmp_mapping()
+                    context["snmp_mapping"] = snmp_mapping
+                    logger.info(f"Loaded SNMP mapping with {len(snmp_mapping)} entries")
+                except Exception as e:
+                    error_msg = f"Failed to load SNMP mapping: {str(e)}"
+                    logger.error(error_msg)
+                    warnings.append(error_msg)
+
+            # Add path if provided
+            if render_request.path:
+                context["path"] = render_request.path
+
+        # Extract variables used in template
+        def extract_template_variables(template_content: str) -> List[str]:
+            """Extract variable names from Jinja2 template."""
+            pattern = r'\{\{\s*([a-zA-Z_][a-zA-Z0-9_\.]*)'
+            matches = re.findall(pattern, template_content)
+            return sorted(set(matches))
+
+        variables_used = extract_template_variables(template_content)
+
+        # Render the template
+        try:
+            jinja_template = Template(template_content)
+            rendered_content = jinja_template.render(**context)
+        except UndefinedError as e:
+            available_vars = list(context.keys())
+            raise ValueError(
+                f"Undefined variable in template: {str(e)}. Available variables: {', '.join(available_vars)}"
+            )
+        except TemplateError as e:
+            raise ValueError(f"Template syntax error: {str(e)}")
+
+        return AdvancedTemplateRenderResponse(
+            rendered_content=rendered_content,
+            variables_used=variables_used,
+            context_data=context,
+            warnings=warnings,
+            pre_run_output=pre_run_output,
+            pre_run_parsed=pre_run_parsed,
+        )
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.error(f"Error in advanced template rendering: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to render template: {str(e)}",
         )
 
 

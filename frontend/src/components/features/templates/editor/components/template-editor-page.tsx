@@ -48,7 +48,7 @@ function TemplateEditorContent() {
   const watchedUseNautobotContext = useWatch({ control: editor.form.control, name: 'useNautobotContext' })
   const watchedTestDeviceId = useWatch({ control: editor.form.control, name: 'testDeviceId' })
   const watchedPreRunCommand = useWatch({ control: editor.form.control, name: 'preRunCommand' })
-  const watchedCredentialId = useWatch({ control: editor.form.control, name: 'credentialId' })
+  // Note: credentialId is used directly in handleRender via form.getValues()
 
   // Fetch inventory devices when category is agent and inventory is selected
   const inventoryDevices = useInventoryDevices(
@@ -328,15 +328,35 @@ function TemplateEditorContent() {
 
   const handleRender = useCallback(async () => {
     const formData = editor.form.getValues()
+    
+    // Validate netmiko-specific requirements
+    if (formData.category === 'netmiko') {
+      // If there's a pre_run_command, a test device must be selected
+      if (formData.preRunCommand && formData.preRunCommand.trim() && !formData.testDeviceId) {
+        toast({
+          title: 'Missing Test Device',
+          description: 'Please select a test device when using pre-run commands',
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+    
     await renderer.render({
       content: formData.content,
       category: formData.category,
       variables: editor.variableManager.variables,
+      // Agent-specific
       inventoryId: formData.inventoryId,
       passSnmpMapping: formData.passSnmpMapping,
       path: formData.path,
+      // Netmiko-specific
+      deviceId: formData.testDeviceId,
+      credentialId: formData.credentialId,
+      preRunCommand: formData.preRunCommand,
+      useNautobotContext: formData.useNautobotContext,
     })
-  }, [editor.form, editor.variableManager.variables, renderer])
+  }, [editor.form, editor.variableManager.variables, renderer, toast])
 
   const handleSave = useCallback(async () => {
     const isValid = await editor.form.trigger()

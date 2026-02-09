@@ -9,6 +9,11 @@ interface RenderOptions {
   inventoryId?: number | null
   passSnmpMapping?: boolean
   path?: string
+  // Netmiko-specific
+  deviceId?: string | null
+  credentialId?: string | null
+  preRunCommand?: string | null
+  useNautobotContext?: boolean
 }
 
 export function useTemplateRender() {
@@ -19,7 +24,18 @@ export function useTemplateRender() {
 
   const render = useCallback(
     async (options: RenderOptions) => {
-      const { content, category, variables, inventoryId, passSnmpMapping, path } = options
+      const { 
+        content, 
+        category, 
+        variables, 
+        inventoryId, 
+        passSnmpMapping, 
+        path,
+        deviceId,
+        credentialId,
+        preRunCommand,
+        useNautobotContext = true,
+      } = options
 
       if (!content.trim()) {
         setRenderResult({
@@ -33,71 +49,61 @@ export function useTemplateRender() {
 
       setIsRendering(true)
       try {
-        const userVariables: Record<string, string> = {}
+        // Build user variables, filtering out pre_run.raw and pre_run.parsed
+        // as the backend will execute and populate these dynamically
+        const userVariables: Record<string, any> = {}
         for (const v of variables) {
+          // Skip auto-filled variables and pre_run variables
           if (v.name && v.value && !v.isAutoFilled) {
+            // Filter out pre_run.raw and pre_run.parsed - backend will generate these
+            if (v.name === 'pre_run.raw' || v.name === 'pre_run.parsed') {
+              continue
+            }
             userVariables[v.name] = v.value
           }
         }
 
-        if (category === 'agent' && inventoryId) {
-          // Use the agent deploy dry-run endpoint for agent templates
-          // We need to get devices from the inventory first
-          const inventoryResponse = await apiCall<{ devices: Array<{ id: string }> }>(
-            `inventory/${inventoryId}/preview`,
-            { method: 'POST', body: { operations: [] } }
-          ).catch(() => null)
-
-          const deviceIds = inventoryResponse?.devices?.map((d) => d.id) || []
-
-          const response = await apiCall<{
-            results: Array<{
-              renderedConfig: string
-              success: boolean
-              error: string | null
-            }>
-          }>('agents/deploy/dry-run', {
-            method: 'POST',
-            body: {
-              templateId: 0, // Will use raw content below
-              deviceIds,
-              variables: userVariables,
-              passSnmpMapping: passSnmpMapping ?? true,
-              agentId: 'preview',
-              path: path || '',
-            },
-          })
-
-          const result = response.results?.[0]
-          if (result) {
-            setRenderResult({
-              success: result.success,
-              renderedContent: result.renderedConfig || '',
-              error: result.error || undefined,
-            })
-          }
-        } else {
-          // Use the generic template render endpoint
-          const response = await apiCall<{
-            rendered_content: string
-            errors?: string[]
-            warnings?: string[]
-          }>('templates/render', {
-            method: 'POST',
-            body: {
-              template_content: content,
-              category: category === '__none__' ? '' : category,
-              user_variables: userVariables,
-            },
-          })
-
-          setRenderResult({
-            success: !response.errors?.length,
-            renderedContent: response.rendered_content || '',
-            error: response.errors?.join(', '),
-            warnings: response.warnings,
-          })
+        // Use the new unified advanced-render endpoint for both categories
+        const requestBody: any = {
+          template_content: content,
+          category: category === '__none__' ? 'generic' : category,
+          user_variables: userVariables,
         }
+
+        // Add netmiko-specific fields
+        if (category === 'netmiko') {
+          requestBody.device_id = deviceId || null
+          requestBody.use_nautobot_context = useNautobotContext
+          requestBody.pre_run_command = preRunCommand || null
+          requestBody.credential_id = credentialId && credentialId !== 'none' 
+            ? parseInt(credentialId) 
+            : null
+        }
+
+        // Add agent-specific fields
+        if (category === 'agent') {
+          requestBody.inventory_id = inventoryId || null
+          requestBody.pass_snmp_mapping = passSnmpMapping ?? false
+          requestBody.path = path || null
+        }
+
+        const response = await apiCall<{
+          rendered_content: string
+          variables_used: string[]
+          context_data?: Record<string, any>
+          warnings?: string[]
+          pre_run_output?: string
+          pre_run_parsed?: Array<Record<string, any>>
+        }>('templates/advanced-render', {
+          method: 'POST',
+          body: requestBody,
+        })
+
+        setRenderResult({
+          success: true,
+          renderedContent: response.rendered_content || '',
+          warnings: response.warnings,
+        })
       } catch (err) {
         setRenderResult({
           success: false,

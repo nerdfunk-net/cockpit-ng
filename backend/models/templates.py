@@ -385,3 +385,70 @@ class TemplateRenderAgentResponse(BaseModel):
     warnings: Optional[List[str]] = Field(
         default_factory=list, description="Non-fatal warnings during rendering"
     )
+
+
+class AdvancedTemplateRenderRequest(BaseModel):
+    """
+    Unified advanced template render request for both netmiko and agent templates.
+    
+    This model supports all features needed for both template types:
+    - For netmiko: device context, pre-run commands, credentials
+    - For agent: inventory context, SNMP mapping, deployment path
+    """
+
+    # Template content (required)
+    template_content: str = Field(..., description="Template content to render")
+    category: str = Field(..., description="Template category (netmiko or agent)")
+
+    # User variables (common to both)
+    user_variables: Optional[Dict[str, Any]] = Field(
+        default_factory=dict,
+        description="User-provided custom variables (should NOT include pre_run.raw or pre_run.parsed)"
+    )
+
+    # Netmiko-specific fields
+    device_id: Optional[str] = Field(
+        None, description="Device UUID for Nautobot context (netmiko templates)"
+    )
+    use_nautobot_context: bool = Field(
+        default=True, description="Whether to include Nautobot device context"
+    )
+    pre_run_command: Optional[str] = Field(
+        None,
+        description="Command to execute on device before rendering (netmiko templates). Backend will execute and parse this."
+    )
+    credential_id: Optional[int] = Field(
+        None, description="Credential ID for device authentication (netmiko templates)"
+    )
+
+    # Agent-specific fields
+    inventory_id: Optional[int] = Field(
+        None, description="Inventory ID to fetch devices from (agent templates)"
+    )
+    pass_snmp_mapping: bool = Field(
+        default=False, description="Whether to include SNMP mapping (agent templates)"
+    )
+    path: Optional[str] = Field(
+        None, description="Deployment file path (agent templates)"
+    )
+
+
+class AdvancedTemplateRenderResponse(BaseModel):
+    """Unified response model for advanced template rendering."""
+
+    rendered_content: str = Field(..., description="The rendered template output")
+    variables_used: List[str] = Field(
+        ..., description="List of variables referenced in the template"
+    )
+    context_data: Optional[Dict[str, Any]] = Field(
+        None, description="Full context used for rendering (for debugging)"
+    )
+    warnings: Optional[List[str]] = Field(
+        default_factory=list, description="Non-fatal warnings during rendering"
+    )
+    pre_run_output: Optional[str] = Field(
+        None, description="Raw output from pre-run command (netmiko only, if executed)"
+    )
+    pre_run_parsed: Optional[List[Dict[str, Any]]] = Field(
+        None, description="TextFSM parsed output from pre-run command (netmiko only, if available)"
+    )
