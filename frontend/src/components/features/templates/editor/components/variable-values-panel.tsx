@@ -10,7 +10,7 @@ interface VariableValuesPanelProps {
   variables: TemplateVariable[]
   selectedVariableId: string | null
   onUpdateVariable: (id: string, field: 'name' | 'value', value: string) => void
-  onExecutePreRun?: (variableName: 'pre_run.raw' | 'pre_run.parsed') => Promise<void>
+  onExecutePreRun?: () => Promise<void>
 }
 
 export function VariableValuesPanel({
@@ -28,8 +28,7 @@ export function VariableValuesPanel({
       return
     }
     
-    const varName = selectedVariable.name as 'pre_run.raw' | 'pre_run.parsed'
-    await onExecutePreRun(varName)
+    await onExecutePreRun()
   }
 
   return (

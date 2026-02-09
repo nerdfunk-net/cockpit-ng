@@ -51,7 +51,7 @@ export function useTemplateRender() {
       try {
         // Build user variables, filtering out pre_run.raw and pre_run.parsed
         // as the backend will execute and populate these dynamically
-        const userVariables: Record<string, any> = {}
+        const userVariables: Record<string, string> = {}
         for (const v of variables) {
           // Skip auto-filled variables and pre_run variables
           if (v.name && v.value && !v.isAutoFilled) {
@@ -64,7 +64,7 @@ export function useTemplateRender() {
         }
 
         // Use the new unified advanced-render endpoint for both categories
-        const requestBody: any = {
+        const requestBody: Record<string, unknown> = {
           template_content: content,
           category: category === '__none__' ? 'generic' : category,
           user_variables: userVariables,
@@ -90,10 +90,10 @@ export function useTemplateRender() {
         const response = await apiCall<{
           rendered_content: string
           variables_used: string[]
-          context_data?: Record<string, any>
+          context_data?: Record<string, unknown>
           warnings?: string[]
           pre_run_output?: string
-          pre_run_parsed?: Array<Record<string, any>>
+          pre_run_parsed?: Array<Record<string, unknown>>
         }>('templates/advanced-render', {
           method: 'POST',
           body: requestBody,

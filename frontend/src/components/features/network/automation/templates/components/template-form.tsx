@@ -18,6 +18,7 @@ import { TemplateRenderResultDialog, type TemplateRenderResult } from '@/compone
 import { NautobotDataDialog } from '@/components/features/network/automation/netmiko/dialogs/nautobot-data-dialog'
 import { useTemplatesMutations } from '../hooks/use-templates-mutations'
 import type { Template, DeviceSearchResult } from '../types/templates'
+import type { NautobotDeviceDetails } from '@/components/features/templates/editor/types'
 import { DEFAULT_FILE_PATH } from '../utils/template-constants'
 
 interface TemplateFormProps {
@@ -50,13 +51,14 @@ export function TemplateForm({
 
   // Dialog state
   const [showNautobotDataDialog, setShowNautobotDataDialog] = useState(false)
-  const [nautobotData, setNautobotData] = useState<Record<string, unknown> | null>(null)
+  const [nautobotData, setNautobotData] = useState<NautobotDeviceDetails | null>(null)
   const [showRenderResultDialog, setShowRenderResultDialog] = useState(false)
   const [renderResult, setRenderResult] = useState<TemplateRenderResult | null>(null)
 
   // Pre-run command state
   const [preRunCommand, setPreRunCommand] = useState('')
   const [selectedCredentialId, setSelectedCredentialId] = useState<number | null>(null)
+  const [useNautobotContext, setUseNautobotContext] = useState(true)
 
   // File path state
   const [filePath, setFilePath] = useState(DEFAULT_FILE_PATH)
@@ -95,7 +97,7 @@ export function TemplateForm({
       execution_mode: 'run_on_device'
     })
     variableManager.setVariables([{ id: crypto.randomUUID(), name: '', value: '' }])
-    variableManager.setUseNautobotContext(false)
+    setUseNautobotContext(true)
     setSelectedDevice(null)
     setPreRunCommand('')
     setSelectedCredentialId(null)
@@ -113,7 +115,7 @@ export function TemplateForm({
         execution_mode: editingTemplate.execution_mode || 'run_on_device'
       })
       variableManager.setVariables(objectToVariables(editingTemplate.variables))
-      variableManager.setUseNautobotContext(editingTemplate.use_nautobot_context || false)
+      setUseNautobotContext(editingTemplate.use_nautobot_context ?? true)
       setPreRunCommand(editingTemplate.pre_run_command || '')
       setSelectedCredentialId(editingTemplate.credential_id || null)
       setFilePath(editingTemplate.file_path || DEFAULT_FILE_PATH)
@@ -142,7 +144,7 @@ export function TemplateForm({
       content: formData.content,
       scope: formData.scope,
       variables: variablesToObject(),
-      use_nautobot_context: variableManager.useNautobotContext,
+      use_nautobot_context: useNautobotContext,
       pre_run_command: preRunCommand || undefined,
       credential_id: selectedCredentialId,
       execution_mode: formData.execution_mode,
@@ -173,7 +175,7 @@ export function TemplateForm({
         content: formData.content,
         scope: formData.scope,
         variables: variablesToObject(),
-        use_nautobot_context: variableManager.useNautobotContext,
+        use_nautobot_context: useNautobotContext,
         pre_run_command: preRunCommand || undefined,
         credential_id: selectedCredentialId,
         execution_mode: formData.execution_mode,
@@ -194,7 +196,7 @@ export function TemplateForm({
     }
 
     try {
-      const response = await apiCall<Record<string, unknown>>(`nautobot/devices/${selectedDevice.id}/details`)
+      const response = await apiCall<NautobotDeviceDetails>(`nautobot/devices/${selectedDevice.id}/details`)
       setNautobotData(response)
       setShowNautobotDataDialog(true)
     } catch (error) {
@@ -225,7 +227,7 @@ export function TemplateForm({
       category: 'netmiko',
       device_id: selectedDevice.id,
       user_variables: varsObject,
-      use_nautobot_context: variableManager.useNautobotContext,
+      use_nautobot_context: useNautobotContext,
       ...(preRunCommand.trim() && {
         pre_run_command: preRunCommand.trim(),
         credential_id: selectedCredentialId
@@ -261,7 +263,7 @@ export function TemplateForm({
           error_details: errorDetails.length > 0 ? errorDetails : undefined,
           context_data: {
             user_variables: varsObject,
-            use_nautobot_context: variableManager.useNautobotContext,
+            use_nautobot_context: useNautobotContext,
             device_id: selectedDevice.id
           }
         })
@@ -397,8 +399,6 @@ export function TemplateForm({
           {/* Template Variables Panel */}
           <VariableManagerPanel
             variables={variableManager.variables}
-            useNautobotContext={variableManager.useNautobotContext}
-            setUseNautobotContext={variableManager.setUseNautobotContext}
             addVariable={variableManager.addVariable}
             removeVariable={variableManager.removeVariable}
             updateVariable={variableManager.updateVariable}

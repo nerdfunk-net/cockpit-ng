@@ -1,10 +1,10 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
-import type { TemplateVariable } from '../types'
+import type { TemplateVariable, NautobotDeviceDetails } from '../types'
 import { getDefaultVariables } from '../utils/category-variables'
 
 interface DeviceData {
   devices: Array<{ id: string; name: string }>
-  device_details: Record<string, unknown>
+  device_details: NautobotDeviceDetails | Record<string, unknown>
 }
 
 interface SnmpMapping {

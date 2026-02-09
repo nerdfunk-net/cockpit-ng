@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { FileCode, Play, Save, RefreshCw, HelpCircle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useTemplateMutations } from '@/components/features/settings/templates/hooks/use-template-mutations'
+import type { TemplateFormData } from '@/components/features/settings/templates/types'
 import { useApi } from '@/hooks/use-api'
 
 import { useTemplateEditor } from '../hooks/use-template-editor'
@@ -20,7 +21,7 @@ import { VariableValuesPanel } from './variable-values-panel'
 import { CodeEditorPanel } from './code-editor-panel'
 import { RenderedOutputDialog } from './rendered-output-dialog'
 import { TemplateEditorHelpDialog } from './template-editor-help-dialog'
-import type { NetmikoExecuteResponse } from '../types'
+import type { NetmikoExecuteResponse, NautobotDeviceDetails } from '../types'
 
 function TemplateEditorContent() {
   const { toast } = useToast()
@@ -143,7 +144,7 @@ function TemplateEditorContent() {
 
     const fetchDeviceDetails = async () => {
       try {
-        const deviceDetails = await apiCall<any>(`nautobot/devices/${watchedTestDeviceId}/details`)
+        const deviceDetails = await apiCall<NautobotDeviceDetails>(`nautobot/devices/${watchedTestDeviceId}/details`)
         
         // Build the devices array with simplified data
         const devices = [
@@ -175,7 +176,7 @@ function TemplateEditorContent() {
   // Toggle pre_run variables when command is entered/cleared
   useEffect(() => {
     if (watchedCategory === 'netmiko') {
-      const hasCommand = watchedPreRunCommand && watchedPreRunCommand.trim().length > 0
+      const hasCommand = Boolean(watchedPreRunCommand && watchedPreRunCommand.trim().length > 0)
       editor.variableManager.togglePreRunVariables(hasCommand)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- togglePreRunVariables is stable from useCallback
@@ -189,7 +190,7 @@ function TemplateEditorContent() {
     [editor.setContent]
   )
 
-  const handleExecutePreRun = useCallback(async (variableName: 'pre_run.raw' | 'pre_run.parsed') => {
+  const handleExecutePreRun = useCallback(async () => {
     const formData = editor.form.getValues()
     
     // Validate required fields
@@ -250,7 +251,7 @@ function TemplateEditorContent() {
 
       // Build the request payload - backend expects 'ip' or 'primary_ip4' and 'platform'
       // Always use textfsm to get both raw and parsed output
-      const payload: any = {
+      const payload = {
         devices: [{ 
           ip: deviceIp,
           platform: platform,
@@ -261,6 +262,7 @@ function TemplateEditorContent() {
         enable_mode: false,
         write_config: false,
         session_id: crypto.randomUUID(),
+        credential_id: undefined as number | undefined,
       }
 
       // Add credentials if provided
@@ -281,6 +283,10 @@ function TemplateEditorContent() {
       if (response.results && response.results.length > 0) {
         const result = response.results[0]
         
+        if (!result) {
+          throw new Error('No result returned from command execution')
+        }
+        
         if (!result.success) {
           throw new Error(result.error || 'Command execution failed')
         }
@@ -294,10 +300,15 @@ function TemplateEditorContent() {
         if (result.command_outputs && Object.keys(result.command_outputs).length > 0) {
           // Get the first command's output (we only sent one command)
           const commandKey = Object.keys(result.command_outputs)[0]
-          const parsedData = result.command_outputs[commandKey]
-          parsedValue = typeof parsedData === 'string' 
-            ? parsedData 
-            : JSON.stringify(parsedData, null, 2)
+          if (commandKey) {
+            const parsedData = result.command_outputs[commandKey]
+            parsedValue = typeof parsedData === 'string' 
+              ? parsedData 
+              : JSON.stringify(parsedData, null, 2)
+          } else {
+            // Fallback to raw output if no key found
+            parsedValue = result.output || ''
+          }
         } else {
           // Fallback to raw output if no parsed data
           parsedValue = result.output || ''
@@ -323,7 +334,6 @@ function TemplateEditorContent() {
         variant: 'destructive',
       })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor.form, editor.variableManager, apiCall, toast])
 
   const handleRender = useCallback(async () => {
@@ -380,7 +390,7 @@ function TemplateEditorContent() {
     }
 
     // Build template data with category-specific fields
-    const templateData: any = {
+    const templateData: Record<string, string | number | boolean | null | Record<string, string>> = {
       name: formData.name,
       source: 'webeditor' as const,
       template_type: formData.template_type,
@@ -406,11 +416,11 @@ function TemplateEditorContent() {
       if (editor.isEditMode && editor.templateId) {
         await updateTemplate.mutateAsync({
           templateId: editor.templateId,
-          formData: templateData,
+          formData: templateData as unknown as TemplateFormData,
         })
       } else {
         await createTemplate.mutateAsync({
-          formData: templateData,
+          formData: templateData as unknown as TemplateFormData,
         })
       }
     } catch {

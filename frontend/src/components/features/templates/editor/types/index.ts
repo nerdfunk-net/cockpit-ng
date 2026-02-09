@@ -33,7 +33,7 @@ export interface NetmikoExecuteResponse {
   results: Array<{
     device: string
     output: string
-    command_outputs?: Record<string, any>  // Contains parsed TextFSM data per command
+    command_outputs?: Record<string, unknown>  // Contains parsed TextFSM data per command
     success: boolean
     error?: string
   }>
@@ -45,4 +45,52 @@ export interface RenderResult {
   renderedContent: string
   error?: string
   warnings?: string[]
+}
+
+export interface NautobotDeviceDetails {
+  id: string
+  name: string
+  hostname?: string
+  asset_tag?: string | null
+  serial?: string | null
+  primary_ip4?: {
+    id: string
+    address: string
+    description?: string
+    ip_version?: number
+    host?: string
+    mask_length?: number
+    dns_name?: string
+    status?: { id: string; name: string }
+    parent?: { id: string; prefix: string }
+  } | null
+  role?: { id: string; name: string } | null
+  device_type?: {
+    id: string
+    model: string
+    manufacturer?: { id: string; name: string }
+  } | null
+  platform?: {
+    id: string
+    name: string
+    network_driver?: string
+    manufacturer?: { id: string; name: string }
+  } | null
+  location?: {
+    id: string
+    name: string
+    description?: string
+    parent?: { id: string; name: string } | null
+  } | null
+  status?: { id: string; name: string } | null
+  config_context?: Record<string, unknown>
+  local_config_context_data?: Record<string, unknown>
+  _custom_field_data?: Record<string, unknown>
+  interfaces?: Array<Record<string, unknown>>
+  console_ports?: Array<Record<string, unknown>>
+  console_server_ports?: Array<Record<string, unknown>>
+  power_ports?: Array<Record<string, unknown>>
+  power_outlets?: Array<Record<string, unknown>>
+  secrets_group?: { id: string; name: string } | null
+  tags?: Array<{ id: string; name: string }>
 }

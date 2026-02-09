@@ -44,7 +44,6 @@ import {
   FileSpreadsheet,
   GitCommit,
   ArrowLeftRight,
-  FileCode,
 } from 'lucide-react'
 
 interface NavItem {
