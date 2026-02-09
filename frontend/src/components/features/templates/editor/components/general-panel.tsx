@@ -56,43 +56,33 @@ export function GeneralPanel({ form }: GeneralPanelProps) {
       <div className="p-4 bg-gradient-to-b from-white to-gray-50">
         <Form {...form}>
           <div className="space-y-3">
-            {/* Row 1: Name */}
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Template Name <span className="text-red-500">*</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., telegraf-agent-config" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Row 2: Type, Category, Description */}
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+            {/* Template Details in 12-column grid */}
+            <div className="grid grid-cols-12 gap-3">
               <FormField
                 control={form.control}
-                name="template_type"
+                name="name"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-1">
-                    <FormLabel>Type</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="jinja2">Jinja2</SelectItem>
-                        <SelectItem value="text">Plain Text</SelectItem>
-                        <SelectItem value="textfsm">TextFSM</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <FormItem className="col-span-3">
+                    <FormLabel>
+                      Template Name <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., telegraf-agent-config" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem className="col-span-3">
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Brief description of the template" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -102,7 +92,7 @@ export function GeneralPanel({ form }: GeneralPanelProps) {
                 control={form.control}
                 name="category"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-1">
+                  <FormItem className="col-span-2">
                     <FormLabel>Category</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
@@ -126,43 +116,49 @@ export function GeneralPanel({ form }: GeneralPanelProps) {
 
               <FormField
                 control={form.control}
-                name="description"
+                name="template_type"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-4">
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Brief description of the template" {...field} />
-                    </FormControl>
+                  <FormItem className="col-span-2">
+                    <FormLabel>Type</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="jinja2">Jinja2</SelectItem>
+                        <SelectItem value="text">Plain Text</SelectItem>
+                        <SelectItem value="textfsm">TextFSM</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="scope"
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Scope</FormLabel>
+                    <div className="flex items-center space-x-2 h-9">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value === 'global'}
+                          onCheckedChange={(checked) =>
+                            field.onChange(checked ? 'global' : 'private')
+                          }
+                        />
+                      </FormControl>
+                      <span className="text-sm">Global Template</span>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-
-            {/* Scope checkbox */}
-            <FormField
-              control={form.control}
-              name="scope"
-              render={({ field }) => (
-                <FormItem className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value === 'global'}
-                      onCheckedChange={(checked) =>
-                        field.onChange(checked ? 'global' : 'private')
-                      }
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>Global template</FormLabel>
-                    <FormDescription>
-                      Global templates are visible to all users. Private templates are only
-                      visible to you.
-                    </FormDescription>
-                  </div>
-                </FormItem>
-              )}
-            />
           </div>
         </Form>
       </div>

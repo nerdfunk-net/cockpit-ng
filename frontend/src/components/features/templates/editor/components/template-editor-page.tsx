@@ -30,6 +30,8 @@ function TemplateEditorContent() {
   const [selectedVariableId, setSelectedVariableId] = useState<string | null>(null)
   const lastInventoryIdRef = useRef<number | null>(null)
   const hasUpdatedDataRef = useRef<boolean>(false)
+  const lastCategoryRef = useRef<string>('__none__')
+  const lastTestDeviceIdRef = useRef<string | null>(null)
 
   const watchedContent = useWatch({ control: editor.form.control, name: 'content' })
   const watchedTemplateType = useWatch({
@@ -51,6 +53,17 @@ function TemplateEditorContent() {
 
   // Fetch SNMP mappings when category is agent
   const snmpMappings = useSnmpMappings(watchedCategory === 'agent')
+
+  // Track category changes and reset data reload flags
+  useEffect(() => {
+    const categoryChanged = lastCategoryRef.current !== watchedCategory
+    if (categoryChanged) {
+      lastCategoryRef.current = watchedCategory
+      // Reset flags to force reload when switching categories
+      hasUpdatedDataRef.current = false
+      lastTestDeviceIdRef.current = null
+    }
+  }, [watchedCategory])
 
   // Update variables with device data when inventory devices are loaded
   useEffect(() => {
@@ -118,6 +131,11 @@ function TemplateEditorContent() {
       return
     }
 
+    // Skip if we've already fetched this device (unless category just changed)
+    if (lastTestDeviceIdRef.current === watchedTestDeviceId) {
+      return
+    }
+
     const fetchDeviceDetails = async () => {
       try {
         const deviceDetails = await apiCall<any>(`nautobot/devices/${watchedTestDeviceId}/details`)
@@ -136,6 +154,9 @@ function TemplateEditorContent() {
           devices,
           device_details: deviceDetails,
         })
+        
+        // Update ref after successful fetch
+        lastTestDeviceIdRef.current = watchedTestDeviceId
       } catch (error) {
         console.error('Error fetching device details:', error)
         editor.variableManager.updateDeviceData(null)

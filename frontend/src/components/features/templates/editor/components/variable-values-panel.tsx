@@ -34,6 +34,21 @@ export function VariableValuesPanel({
         )}
         {selectedVariable && (
           <div className="space-y-3">
+            {/* Variable name - only for custom variables */}
+            {!selectedVariable.isDefault && (
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">Name</Label>
+                <Input
+                  value={selectedVariable.name}
+                  onChange={(e) =>
+                    onUpdateVariable(selectedVariable.id, 'name', e.target.value)
+                  }
+                  placeholder="variable_name"
+                  className="font-mono text-sm h-8"
+                />
+              </div>
+            )}
+
             {/* Variable value */}
             <div className="space-y-1">
               <Label className="text-xs text-gray-500">Value</Label>
