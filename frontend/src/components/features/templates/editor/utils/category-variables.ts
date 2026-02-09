@@ -16,12 +16,10 @@ const CATEGORY_VARIABLES: Record<string, CategoryConfig> = {
     },
   },
   netmiko: {
-    defaults: ['device', 'hostname', 'ip_address', 'platform'],
+    defaults: ['devices', 'device_details'],
     descriptions: {
-      device: 'Target device object from Nautobot',
-      hostname: 'Device hostname',
-      ip_address: 'Device management IP',
-      platform: 'Device platform/OS',
+      devices: 'List of test device (single device from Netmiko panel)',
+      device_details: 'Detailed device data from Nautobot for test device',
     },
   },
   __none__: {

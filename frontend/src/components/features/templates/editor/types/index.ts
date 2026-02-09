@@ -19,6 +19,12 @@ export interface EditorFormData {
   passSnmpMapping: boolean
   useNautobotContext: boolean
   path: string
+  // Netmiko-specific
+  netmikoMode: 'run_on_device' | 'write_to_file' | 'sync_to_nautobot'
+  testDeviceId: string | null
+  testDeviceName: string
+  preRunCommand: string
+  credentialId: string
 }
 
 export interface RenderResult {

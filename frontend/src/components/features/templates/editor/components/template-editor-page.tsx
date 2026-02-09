@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { FileCode, Play, Save, RefreshCw } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useTemplateMutations } from '@/components/features/settings/templates/hooks/use-template-mutations'
+import { useApi } from '@/hooks/use-api'
 
 import { useTemplateEditor } from '../hooks/use-template-editor'
 import { useTemplateRender } from '../hooks/use-template-render'
@@ -13,6 +14,7 @@ import { useInventoryDevices } from '../hooks/use-inventory-devices'
 import { useSnmpMappings } from '../hooks/use-snmp-mappings'
 import { GeneralPanel } from './general-panel'
 import { AgentOptionsPanel } from './agent-options-panel'
+import { NetmikoOptionsPanel } from './netmiko-options-panel'
 import { VariablesPanel } from './variables-panel'
 import { VariableValuesPanel } from './variable-values-panel'
 import { CodeEditorPanel } from './code-editor-panel'
@@ -20,6 +22,7 @@ import { RenderedOutputDialog } from './rendered-output-dialog'
 
 function TemplateEditorContent() {
   const { toast } = useToast()
+  const { apiCall } = useApi()
   const editor = useTemplateEditor()
   const renderer = useTemplateRender()
   const { createTemplate, updateTemplate } = useTemplateMutations()
@@ -38,6 +41,7 @@ function TemplateEditorContent() {
   const watchedPath = useWatch({ control: editor.form.control, name: 'path' })
   const watchedPassSnmpMapping = useWatch({ control: editor.form.control, name: 'passSnmpMapping' })
   const watchedUseNautobotContext = useWatch({ control: editor.form.control, name: 'useNautobotContext' })
+  const watchedTestDeviceId = useWatch({ control: editor.form.control, name: 'testDeviceId' })
 
   // Fetch inventory devices when category is agent and inventory is selected
   const inventoryDevices = useInventoryDevices(
@@ -103,6 +107,44 @@ function TemplateEditorContent() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- toggleDeviceDetailsVariable is stable from useCallback
   }, [watchedCategory, watchedUseNautobotContext, editor.variableManager.toggleDeviceDetailsVariable])
+
+  // Fetch device details for Netmiko test device
+  useEffect(() => {
+    if (watchedCategory !== 'netmiko' || !watchedTestDeviceId) {
+      // Clear device data when no test device is selected
+      if (watchedCategory === 'netmiko') {
+        editor.variableManager.updateDeviceData(null)
+      }
+      return
+    }
+
+    const fetchDeviceDetails = async () => {
+      try {
+        const deviceDetails = await apiCall<any>(`nautobot/devices/${watchedTestDeviceId}/details`)
+        
+        // Build the devices array with simplified data
+        const devices = [
+          {
+            id: deviceDetails.id,
+            name: deviceDetails.name,
+            primary_ip4: deviceDetails.primary_ip4?.address || null,
+          },
+        ]
+
+        // Update variables with device data
+        editor.variableManager.updateDeviceData({
+          devices,
+          device_details: deviceDetails,
+        })
+      } catch (error) {
+        console.error('Error fetching device details:', error)
+        editor.variableManager.updateDeviceData(null)
+      }
+    }
+
+    fetchDeviceDetails()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateDeviceData is stable from useCallback
+  }, [watchedCategory, watchedTestDeviceId, apiCall, editor.variableManager.updateDeviceData])
 
   const handleContentChange = useCallback(
     (value: string) => {
@@ -213,6 +255,11 @@ function TemplateEditorContent() {
           isLoadingDevices={inventoryDevices.isLoading}
           deviceCount={inventoryDevices.deviceCount}
         />
+      )}
+
+      {/* Netmiko Options (conditional) */}
+      {watchedCategory === 'netmiko' && (
+        <NetmikoOptionsPanel form={editor.form} />
       )}
 
       {/* Main Split Area */}

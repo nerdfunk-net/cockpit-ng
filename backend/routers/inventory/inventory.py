@@ -350,12 +350,6 @@ async def resolve_inventory_to_devices_detailed(
         # Execute operations to get matching devices
         devices, _ = await inventory_service.preview_inventory(operations)
 
-        # Build simplified device list with UUID and name
-        device_list = [
-            {"id": device.id, "name": device.name}
-            for device in devices
-        ]
-
         # Fetch detailed information for each device
         device_details = []
         for device in devices:
@@ -371,6 +365,22 @@ async def resolve_inventory_to_devices_detailed(
                 )
                 # Continue with remaining devices even if one fails
                 continue
+
+        # Build simplified device list with UUID, name, and primary IP
+        device_list = []
+        for detail in device_details:
+            device_entry = {
+                "id": detail.get("id"),
+                "name": detail.get("name"),
+            }
+            # Add primary_ip4 if available
+            primary_ip4 = detail.get("primary_ip4")
+            if primary_ip4 and isinstance(primary_ip4, dict):
+                device_entry["primary_ip4"] = primary_ip4.get("address")
+            else:
+                device_entry["primary_ip4"] = None
+            
+            device_list.append(device_entry)
 
         logger.info(
             f"Resolved {len(device_list)} devices with {len(device_details)} "

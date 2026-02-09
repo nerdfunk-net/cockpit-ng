@@ -20,6 +20,11 @@ const editorFormSchema = z.object({
   passSnmpMapping: z.boolean(),
   useNautobotContext: z.boolean(),
   path: z.string(),
+  netmikoMode: z.enum(['run_on_device', 'write_to_file', 'sync_to_nautobot']),
+  testDeviceId: z.string().nullable(),
+  testDeviceName: z.string(),
+  preRunCommand: z.string(),
+  credentialId: z.string(),
 })
 
 const DEFAULT_VALUES: EditorFormData = {
@@ -33,6 +38,11 @@ const DEFAULT_VALUES: EditorFormData = {
   passSnmpMapping: true,
   useNautobotContext: true,
   path: '',
+  netmikoMode: 'run_on_device',
+  testDeviceId: null,
+  testDeviceName: '',
+  preRunCommand: '',
+  credentialId: 'none',
 }
 
 export function useTemplateEditor() {
@@ -103,6 +113,11 @@ export function useTemplateEditor() {
         passSnmpMapping: true,
         useNautobotContext: true,
         path: '',
+        netmikoMode: 'run_on_device',
+        testDeviceId: null,
+        testDeviceName: '',
+        preRunCommand: '',
+        credentialId: 'none',
       })
     }
   }, [templateData, templateContent, form])

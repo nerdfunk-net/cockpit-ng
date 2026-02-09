@@ -34,35 +34,6 @@ export function VariableValuesPanel({
         )}
         {selectedVariable && (
           <div className="space-y-3">
-            {/* Variable name */}
-            <div className="space-y-1">
-              <Label className="text-xs text-gray-500">Name</Label>
-              {selectedVariable.isDefault ? (
-                <p className="text-sm font-mono bg-gray-100 px-2 py-1.5 rounded">
-                  {selectedVariable.name}
-                </p>
-              ) : (
-                <Input
-                  value={selectedVariable.name}
-                  onChange={(e) =>
-                    onUpdateVariable(selectedVariable.id, 'name', e.target.value)
-                  }
-                  placeholder="variable_name"
-                  className="font-mono text-sm h-8"
-                />
-              )}
-            </div>
-
-            {/* Description (for default variables) */}
-            {selectedVariable.description && (
-              <div className="space-y-1">
-                <Label className="text-xs text-gray-500">Description</Label>
-                <p className="text-xs text-gray-600 bg-blue-50 px-2 py-1.5 rounded">
-                  {selectedVariable.description}
-                </p>
-              </div>
-            )}
-
             {/* Variable value */}
             <div className="space-y-1">
               <Label className="text-xs text-gray-500">Value</Label>
