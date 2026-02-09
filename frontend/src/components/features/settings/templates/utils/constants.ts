@@ -32,6 +32,6 @@ export const STALE_TIME = {
 export const TEMPLATE_TYPES = ['jinja2', 'text', 'textfsm'] as const
 export const TEMPLATE_SOURCES = ['git', 'file', 'webeditor'] as const
 export const TEMPLATE_SCOPES = ['global', 'private'] as const
-export const CANONICAL_CATEGORIES = ['ansible', 'onboarding', 'parser', 'netmiko', 'agent'] as const
+export const CANONICAL_CATEGORIES = ['netmiko', 'agent'] as const
 
 export const FILE_ACCEPT_TYPES = '.txt,.conf,.cfg,.j2,.jinja2,.textfsm'

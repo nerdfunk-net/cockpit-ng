@@ -16,9 +16,7 @@ class RenderService:
     def __init__(self):
         self.category_renderers = {
             "netmiko": self.render_netmiko_template,
-            "inventory": self.render_inventory_template,
-            "onboarding": self.render_onboarding_template,
-            "parser": self.render_parser_template,
+            "agent": self.render_generic_template,
         }
 
     async def render_template(
@@ -36,7 +34,7 @@ class RenderService:
 
         Args:
             template_content: The Jinja2 template content
-            category: Template category (netmiko, inventory, onboarding, parser)
+            category: Template category (netmiko, agent, or generic)
             device_id: Device UUID for Nautobot lookup (optional)
             user_variables: User-provided variables
             use_nautobot_context: Whether to fetch and include Nautobot device data
@@ -172,79 +170,6 @@ class RenderService:
             "variables_used": variables_used,
             "context_data": context,
             "warnings": warnings,
-        }
-
-    async def render_inventory_template(
-        self,
-        template_content: str,
-        device_id: Optional[str] = None,
-        user_variables: Optional[Dict[str, Any]] = None,
-        use_nautobot_context: bool = True,
-        pre_run_command: Optional[str] = None,
-        credential_id: Optional[int] = None,
-    ) -> Dict[str, Any]:
-        """
-        Render an Ansible inventory template.
-
-        Note: Inventory templates typically work with multiple devices.
-        This is a placeholder for future implementation.
-        """
-        # For now, use generic rendering
-        # TODO: Implement inventory-specific logic when needed
-        return await self.render_generic_template(
-            template_content=template_content,
-            device_id=device_id,
-            user_variables=user_variables,
-            use_nautobot_context=use_nautobot_context,
-        )
-
-    async def render_onboarding_template(
-        self,
-        template_content: str,
-        device_id: Optional[str] = None,
-        user_variables: Optional[Dict[str, Any]] = None,
-        use_nautobot_context: bool = True,
-        pre_run_command: Optional[str] = None,
-        credential_id: Optional[int] = None,
-    ) -> Dict[str, Any]:
-        """
-        Render an onboarding template.
-
-        Onboarding templates may have specific requirements.
-        This is a placeholder for future implementation.
-        """
-        # For now, use generic rendering
-        # TODO: Implement onboarding-specific logic when needed
-        return await self.render_generic_template(
-            template_content=template_content,
-            device_id=device_id,
-            user_variables=user_variables,
-            use_nautobot_context=use_nautobot_context,
-        )
-
-    async def render_parser_template(
-        self,
-        template_content: str,
-        device_id: Optional[str] = None,
-        user_variables: Optional[Dict[str, Any]] = None,
-        use_nautobot_context: bool = True,
-        pre_run_command: Optional[str] = None,
-        credential_id: Optional[int] = None,
-    ) -> Dict[str, Any]:
-        """
-        Render a parser template (TextFSM).
-
-        Parser templates may not use Jinja2 rendering.
-        This is a placeholder for future implementation.
-        """
-        # Parser templates (TextFSM) don't typically use Jinja2
-        # They are used for parsing device output, not generating it
-        # Return the template as-is for now
-        return {
-            "rendered_content": template_content,
-            "variables_used": [],
-            "context_data": {},
-            "warnings": ["Parser templates are not rendered with Jinja2"],
         }
 
     async def render_generic_template(

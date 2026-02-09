@@ -1,9 +1,0 @@
----
-import: template
-path: contributing-data/inventory_templates/onboarding.j2
-properties:
-  name: onboarding
-  source: file
-  type: jinja2
-  category: onboarding
-  description: Onboarding template

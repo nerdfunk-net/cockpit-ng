@@ -1,9 +1,0 @@
----
-import: template
-path: contributing-data/parser_templates/cisco_ios_show_version.textfsm
-properties:
-  name: show-version-parser
-  source: file
-  type: textfsm
-  category: parser
-  description: Parser for new cisco devices

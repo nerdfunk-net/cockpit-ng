@@ -14,7 +14,7 @@ class GitCategory(str, Enum):
     CONFIGS = "device_configs"
     COCKPIT_CONFIGS = "cockpit_configs"
     TEMPLATES = "templates"
-    ANSIBLE = "ansible"
+    AGENT = "agent"
 
 
 class GitAuthType(str, Enum):

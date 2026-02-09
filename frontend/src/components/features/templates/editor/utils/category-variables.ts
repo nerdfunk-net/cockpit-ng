@@ -24,31 +24,6 @@ const CATEGORY_VARIABLES: Record<string, CategoryConfig> = {
       platform: 'Device platform/OS',
     },
   },
-  ansible: {
-    defaults: ['hosts', 'groups', 'inventory_name'],
-    descriptions: {
-      hosts: 'List of target hosts',
-      groups: 'Host group assignments',
-      inventory_name: 'Name of the inventory',
-    },
-  },
-  onboarding: {
-    defaults: ['device', 'device_type', 'platform', 'location', 'role'],
-    descriptions: {
-      device: 'Device being onboarded',
-      device_type: 'Hardware model',
-      platform: 'Software platform',
-      location: 'Physical location',
-      role: 'Device role',
-    },
-  },
-  parser: {
-    defaults: ['input', 'template_name'],
-    descriptions: {
-      input: 'Raw command output to parse',
-      template_name: 'Name of the TextFSM template',
-    },
-  },
   __none__: {
     defaults: [],
     descriptions: {},
