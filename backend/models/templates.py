@@ -268,58 +268,6 @@ class TemplateUpdateRequest(BaseModel):
     )
 
 
-class TemplateRenderRequest(BaseModel):
-    """Template render request model for flexible template rendering."""
-
-    template_id: Optional[int] = Field(
-        None, description="Template ID to render (either this or template_content)"
-    )
-    template_content: Optional[str] = Field(
-        None,
-        description="Template content for ad-hoc rendering (either this or template_id)",
-    )
-    category: str = Field(
-        ..., description="Template category (netmiko, inventory, onboarding, parser)"
-    )
-    device_id: Optional[str] = Field(
-        None, description="Device UUID for Nautobot context lookup"
-    )
-    user_variables: Optional[Dict[str, Any]] = Field(
-        default_factory=dict, description="User-provided variables for template"
-    )
-    use_nautobot_context: bool = Field(
-        default=True, description="Whether to include Nautobot device context"
-    )
-    pre_run_command: Optional[str] = Field(
-        None,
-        description="Command to execute on the device before rendering. Output is parsed with TextFSM and available as 'pre_run_output' variable.",
-    )
-    credential_id: Optional[int] = Field(
-        None, description="ID of stored credential to use for pre-run command execution"
-    )
-
-
-class TemplateRenderResponse(BaseModel):
-    """Template render response model."""
-
-    rendered_content: str = Field(..., description="The rendered template output")
-    variables_used: List[str] = Field(
-        ..., description="List of variables referenced in the template"
-    )
-    context_data: Optional[Dict[str, Any]] = Field(
-        None, description="Full context used for rendering (for debugging)"
-    )
-    warnings: Optional[List[str]] = Field(
-        default_factory=list, description="Non-fatal warnings during rendering"
-    )
-    pre_run_output: Optional[str] = Field(
-        None, description="Raw output from pre-run command (if executed)"
-    )
-    pre_run_parsed: Optional[List[Dict[str, Any]]] = Field(
-        None, description="TextFSM parsed output from pre-run command (if available)"
-    )
-
-
 class TemplateExecuteAndSyncRequest(BaseModel):
     """Request model for executing template and syncing to Nautobot."""
 
@@ -357,33 +305,6 @@ class TemplateExecuteAndSyncResponse(BaseModel):
     )
     warnings: Optional[List[str]] = Field(
         default_factory=list, description="List of warnings"
-    )
-
-
-class TemplateRenderAgentRequest(BaseModel):
-    """Request model for rendering agent templates with inventory context."""
-
-    template_id: int = Field(..., description="Template ID to render")
-    device_ids: List[str] = Field(..., description="List of device UUIDs from inventory")
-    variables: Optional[Dict[str, Any]] = Field(
-        default_factory=dict, description="User-provided custom variables"
-    )
-    pass_snmp_mapping: bool = Field(
-        default=False, description="Whether to include SNMP mapping in template context"
-    )
-    agent_id: str = Field(..., description="Agent ID for deployment configuration")
-    path: Optional[str] = Field(None, description="Optional deployment path")
-
-
-class TemplateRenderAgentResponse(BaseModel):
-    """Response model for agent template rendering."""
-
-    rendered_content: str = Field(..., description="The rendered template output")
-    variables_used: List[str] = Field(
-        ..., description="List of variables referenced in the template"
-    )
-    warnings: Optional[List[str]] = Field(
-        default_factory=list, description="Non-fatal warnings during rendering"
     )
 
 

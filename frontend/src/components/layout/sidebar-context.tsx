@@ -24,6 +24,7 @@ const collapsibleMenuItems = [
   'Network-Automation',
   'Network-Tools',
   'Settings-Connections',
+  'Settings-Templates',
 ]
 
 export function SidebarProvider({ children }: { children: ReactNode }) {

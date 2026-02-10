@@ -8,10 +8,6 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from models.templates import (
-    TemplateRenderAgentRequest,
-    TemplateRenderAgentResponse,
-)
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
