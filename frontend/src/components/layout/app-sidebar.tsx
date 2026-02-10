@@ -118,7 +118,7 @@ const navigationSections: NavSection[] = [
         icon: Zap,
         children: [
           { label: 'Netmiko', href: '/netmiko', icon: Terminal },
-          { label: 'Templates', href: '/automation/templates', icon: FileText },
+          { label: 'Templates', href: '/settings/templates/editor', icon: FileText },
           { label: 'Snapshots', href: '/network/snapshots', icon: Camera },
         ],
       },

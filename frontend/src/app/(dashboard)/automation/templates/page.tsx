@@ -1,14 +1,22 @@
-import { Suspense } from 'react'
-import { TemplatesPage } from '@/components/features/network/automation/templates/templates-page'
+'use client'
 
-function TemplatesContent() {
-  return <TemplatesPage />
-}
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
-export default function TemplatesRoute() {
+/**
+ * Redirect old netmiko templates route to the new unified template editor.
+ * This maintains backwards compatibility for any bookmarked links.
+ */
+export default function TemplatesRedirect() {
+  const router = useRouter()
+  
+  useEffect(() => {
+    router.replace('/settings/templates/editor?category=netmiko')
+  }, [router])
+  
   return (
-    <Suspense fallback={<div className="p-4">Loading templates...</div>}>
-      <TemplatesContent />
-    </Suspense>
+    <div className="flex items-center justify-center h-screen">
+      <p className="text-gray-600">Redirecting to Template Editor...</p>
+    </div>
   )
 }
