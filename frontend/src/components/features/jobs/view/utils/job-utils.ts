@@ -95,3 +95,53 @@ export function calculateProgress(completed: number, total: number): number {
   if (total === 0) return 0
   return Math.round((completed / total) * 100)
 }
+
+/**
+ * Check if a running job is suspicious (possibly crashed/stuck)
+ * 
+ * A job is suspicious if:
+ * - Status is 'running' or 'pending'
+ * - Running for more than 1.5 hours (90 minutes)
+ * - Will be automatically marked as failed at 2 hours by backend
+ */
+export function isJobSuspicious(job: JobRun): boolean {
+  // Only check running or pending jobs
+  if (!isJobActive(job.status)) return false
+  
+  // Check started_at for running jobs
+  if (job.status === 'running' && job.started_at) {
+    const startedAt = new Date(job.started_at)
+    const hoursRunning = (Date.now() - startedAt.getTime()) / (1000 * 60 * 60)
+    // Warn if running more than 1.5 hours (before 2-hour timeout)
+    return hoursRunning > 1.5
+  }
+  
+  // Check queued_at for pending jobs
+  if (job.status === 'pending' && job.queued_at) {
+    const queuedAt = new Date(job.queued_at)
+    const hoursPending = (Date.now() - queuedAt.getTime()) / (1000 * 60 * 60)
+    // Warn if pending more than 0.75 hours (45 minutes, before 1-hour timeout)
+    return hoursPending > 0.75
+  }
+  
+  return false
+}
+
+/**
+ * Get warning message for suspicious jobs
+ */
+export function getSuspiciousJobWarning(job: JobRun): string {
+  if (job.status === 'running' && job.started_at) {
+    const startedAt = new Date(job.started_at)
+    const minutesRunning = Math.floor((Date.now() - startedAt.getTime()) / (1000 * 60))
+    return `Job has been running for ${minutesRunning} minutes. It will be automatically marked as failed after 2 hours if not completed.`
+  }
+  
+  if (job.status === 'pending' && job.queued_at) {
+    const queuedAt = new Date(job.queued_at)
+    const minutesPending = Math.floor((Date.now() - queuedAt.getTime()) / (1000 * 60))
+    return `Job has been pending for ${minutesPending} minutes. It will be automatically marked as failed after 1 hour if not started.`
+  }
+  
+  return ''
+}

@@ -310,3 +310,108 @@ def cleanup_celery_data_task() -> dict:
     except Exception as e:
         logger.error(f"Cleanup task failed: {e}")
         return {"success": False, "error": str(e)}
+
+
+@shared_task(name="tasks.check_stale_jobs")
+def check_stale_jobs_task() -> dict:
+    """
+    Periodic task: Detect and mark stale/crashed jobs as failed.
+    
+    A job is considered stale if:
+    - Status is 'running' or 'pending'
+    - Started more than 2 hours ago (or pending more than 1 hour)
+    - Celery task ID doesn't exist in active/reserved tasks
+    
+    Runs every 10 minutes.
+    """
+    try:
+        import job_run_manager
+        from celery_app import celery_app
+        
+        # Get all running/pending jobs
+        running_jobs = job_run_manager.get_recent_runs(limit=500, status='running')
+        pending_jobs = job_run_manager.get_recent_runs(limit=500, status='pending')
+        
+        # Get active Celery tasks
+        inspect = celery_app.control.inspect()
+        active_tasks = inspect.active() or {}
+        reserved_tasks = inspect.reserved() or {}
+        
+        # Collect all active task IDs
+        active_task_ids = set()
+        for worker_tasks in active_tasks.values():
+            active_task_ids.update(task['id'] for task in worker_tasks)
+        for worker_tasks in reserved_tasks.values():
+            active_task_ids.update(task['id'] for task in worker_tasks)
+        
+        now = datetime.now(timezone.utc)
+        marked_failed = []
+        
+        # Check running jobs
+        for job in running_jobs:
+            started_at = job.get('started_at')
+            celery_task_id = job.get('celery_task_id')
+            
+            if not started_at:
+                continue
+                
+            # Parse datetime
+            if isinstance(started_at, str):
+                started_at = datetime.fromisoformat(started_at.replace('Z', '+00:00'))
+            
+            # Job running for more than 2 hours
+            running_duration = (now - started_at).total_seconds()
+            if running_duration > 7200:  # 2 hours
+                # Check if task still exists in Celery
+                if celery_task_id not in active_task_ids:
+                    job_run_manager.mark_failed(
+                        job['id'],
+                        f"Job marked as failed - exceeded maximum runtime (2 hours) and not found in active tasks"
+                    )
+                    marked_failed.append({
+                        'job_id': job['id'],
+                        'job_name': job['job_name'],
+                        'running_duration': int(running_duration)
+                    })
+                    logger.warning(
+                        f"Marked stale job {job['id']} ({job['job_name']}) as failed - running for {int(running_duration/60)} minutes"
+                    )
+        
+        # Check pending jobs
+        for job in pending_jobs:
+            queued_at = job.get('queued_at')
+            if not queued_at:
+                continue
+                
+            # Parse datetime
+            if isinstance(queued_at, str):
+                queued_at = datetime.fromisoformat(queued_at.replace('Z', '+00:00'))
+            
+            # Job pending for more than 1 hour
+            pending_duration = (now - queued_at).total_seconds()
+            if pending_duration > 3600:  # 1 hour
+                job_run_manager.mark_failed(
+                    job['id'],
+                    f"Job marked as failed - stuck in pending state for over 1 hour"
+                )
+                marked_failed.append({
+                    'job_id': job['id'],
+                    'job_name': job['job_name'],
+                    'pending_duration': int(pending_duration)
+                })
+                logger.warning(
+                    f"Marked pending job {job['id']} ({job['job_name']}) as failed - pending for {int(pending_duration/60)} minutes"
+                )
+        
+        if marked_failed:
+            logger.info(f"Stale job check: marked {len(marked_failed)} job(s) as failed")
+        
+        return {
+            'success': True,
+            'stale_jobs_found': len(marked_failed),
+            'marked_failed': marked_failed
+        }
+        
+    except Exception as e:
+        logger.error(f"Error checking stale jobs: {e}", exc_info=True)
+        return {'success': False, 'error': str(e)}

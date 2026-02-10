@@ -44,6 +44,15 @@ CELERY_BEAT_SCHEDULE = {
             "expires": 3600,  # Task expires after 1 hour if not picked up
         },
     },
+    # Stale job detection - runs every 10 minutes
+    # Marks crashed/orphaned jobs as failed
+    "check-stale-jobs": {
+        "task": "tasks.check_stale_jobs",
+        "schedule": crontab(minute="*/10"),  # Every 10 minutes
+        "options": {
+            "expires": 540,  # Task expires after 9 minutes if not picked up
+        },
+    },
 }
 
 # Schedule examples using different patterns:

@@ -15,10 +15,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { History } from 'lucide-react'
+import { History, AlertTriangle } from 'lucide-react'
 import { JobStatusBadge } from './job-status-badge'
 import { JobActionsMenu } from './job-actions-menu'
-import { formatDuration, formatDateTime, getTriggerBadgeClasses } from '../utils/job-utils'
+import { formatDuration, formatDateTime, getTriggerBadgeClasses, isJobSuspicious, getSuspiciousJobWarning } from '../utils/job-utils'
 import type { JobRun, JobProgressResponse } from '../types'
 
 interface JobsTableProps {
@@ -103,28 +103,43 @@ export function JobsTable({
                 >
                   {/* Job Name */}
                   <TableCell className="font-medium text-gray-700">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="cursor-help truncate block max-w-[160px] hover:text-blue-600 transition-colors">
-                          {run.job_name}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="max-w-sm">
-                        <div className="space-y-1 text-xs">
-                          <p><strong>ID:</strong> {run.id}</p>
-                          <p><strong>Schedule:</strong> {run.schedule_name || '-'}</p>
-                          {run.celery_task_id && (
-                            <p><strong>Task ID:</strong> {run.celery_task_id.slice(0, 8)}...</p>
-                          )}
-                          {run.executed_by && (
-                            <p><strong>Executed by:</strong> {run.executed_by}</p>
-                          )}
-                          {run.error_message && (
-                            <p className="text-red-400 mt-2">{run.error_message}</p>
-                          )}
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
+                    <div className="flex items-center gap-2">
+                      {isJobSuspicious(run) && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <AlertTriangle className="h-4 w-4 text-amber-500 animate-pulse flex-shrink-0" />
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="max-w-sm bg-amber-50 border-amber-200">
+                            <div className="space-y-1 text-xs">
+                              <p className="font-semibold text-amber-900">⚠️ Job May Be Stuck</p>
+                              <p className="text-amber-700">{getSuspiciousJobWarning(run)}</p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help truncate block max-w-[160px] hover:text-blue-600 transition-colors">
+                            {run.job_name}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-sm">
+                          <div className="space-y-1 text-xs">
+                            <p><strong>ID:</strong> {run.id}</p>
+                            <p><strong>Schedule:</strong> {run.schedule_name || '-'}</p>
+                            {run.celery_task_id && (
+                              <p><strong>Task ID:</strong> {run.celery_task_id.slice(0, 8)}...</p>
+                            )}
+                            {run.executed_by && (
+                              <p><strong>Executed by:</strong> {run.executed_by}</p>
+                            )}
+                            {run.error_message && (
+                              <p className="text-red-400 mt-2">{run.error_message}</p>
+                            )}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                   </TableCell>
 
                   {/* Job Type */}
