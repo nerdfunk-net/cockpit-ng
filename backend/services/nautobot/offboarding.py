@@ -267,13 +267,13 @@ class OffboardingService:
 
         # 2. Get the list of all custom fields and their default values
         try:
-            logger.info("DEBUG: Fetching custom field definitions from nautobot router")
-            from routers.nautobot import get_nautobot_device_custom_fields
+            logger.debug("Fetching custom field definitions from Nautobot")
+            from services.nautobot import nautobot_metadata_service
 
-            custom_field_list = await get_nautobot_device_custom_fields()
+            custom_field_list = await nautobot_metadata_service.get_device_custom_fields()
 
-            logger.info(
-                "DEBUG: Retrieved %d custom field definitions",
+            logger.debug(
+                "Retrieved %d custom field definitions",
                 len(custom_field_list) if isinstance(custom_field_list, list) else 0,
             )
         except Exception as exc:
@@ -583,17 +583,18 @@ class OffboardingService:
             return
 
         try:
-            from routers.checkmk import delete_host  # Local import to avoid cycles
+            from services.checkmk import checkmk_host_service
 
-            await delete_host(device_name, current_user)
+            result = await checkmk_host_service.delete_host(device_name)
             results["removed_items"].append(f"CheckMK Host: {device_name}")
             logger.info("Successfully removed device %s from CheckMK", device_name)
-        except HTTPException as exc:
-            results["errors"].append(exc.detail)
+        except ValueError as exc:
+            # CheckMK not configured
+            results["errors"].append(str(exc))
             logger.error(
                 "Failed to remove device %s from CheckMK: %s",
                 device_name,
-                exc.detail,
+                str(exc),
             )
         except Exception as exc:
             error_msg = (

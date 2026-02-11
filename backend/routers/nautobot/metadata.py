@@ -821,10 +821,9 @@ async def get_nautobot_device_custom_fields(
 ):
     """Get Nautobot custom fields specifically for dcim.device content type."""
     try:
-        result = await nautobot_service.rest_request(
-            "extras/custom-fields/?content_types=dcim.device"
-        )
-        return result.get("results", [])
+        from services.nautobot import nautobot_metadata_service
+
+        return await nautobot_metadata_service.get_device_custom_fields()
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -838,10 +837,9 @@ async def get_nautobot_prefix_custom_fields(
 ):
     """Get Nautobot custom fields specifically for ipam.prefix content type."""
     try:
-        result = await nautobot_service.rest_request(
-            "extras/custom-fields/?content_types=ipam.prefix"
-        )
-        return result.get("results", [])
+        from services.nautobot import nautobot_metadata_service
+
+        return await nautobot_metadata_service.get_prefix_custom_fields()
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -856,10 +854,9 @@ async def get_nautobot_custom_field_choices(
 ):
     """Get Nautobot custom field choices for a specific custom field."""
     try:
-        result = await nautobot_service.rest_request(
-            f"extras/custom-field-choices/?custom_field={custom_field_name}"
-        )
-        return result.get("results", [])
+        from services.nautobot import nautobot_metadata_service
+
+        return await nautobot_metadata_service.get_custom_field_choices(custom_field_name)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

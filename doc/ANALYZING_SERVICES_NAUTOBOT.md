@@ -126,18 +126,50 @@ result = await self.nautobot.graphql_query(query, {"name": [namespace_name]})
 
 ---
 
-### 2.3 Service Layer Imports from Router Layer
+### 2.3 ~~Service Layer Imports from Router Layer~~ **RESOLVED**
 
-**Severity: Critical** | **File:** `offboarding.py:271, 586`
+**Status: RESOLVED (2026-02-11)** | **File:** `offboarding.py:271, 586`
 
+**Previous Issue:** Service layer was importing from router layer, violating the layered architecture.
+
+**Previous Code (violating layering):**
 ```python
 from routers.nautobot import get_nautobot_device_custom_fields  # line 271
 from routers.checkmk import delete_host  # line 586
 ```
 
-This violates the layered architecture (Model → Repository → Service → Router). Services should **never** import from routers. The dependency direction is inverted.
+This violated the layered architecture (Model → Repository → Service → Router). Services should **never** import from routers. The dependency direction was inverted.
 
-**Fix:** Extract the business logic from the router functions into service-layer functions and import from there.
+**Resolution:**
+1. Created `services/nautobot/metadata_service.py` with `NautobotMetadataService` class containing:
+   - `get_device_custom_fields()` - extracts custom field fetching logic
+   - `get_prefix_custom_fields()` - extracts prefix custom field logic
+   - `get_custom_field_choices()` - extracts custom field choices logic
+
+2. Created `services/checkmk/host_service.py` with `CheckMKHostService` class containing:
+   - `delete_host()` - extracts host deletion logic
+   - `_get_client()` - helper to get configured CheckMK client
+
+3. Updated `services/nautobot/__init__.py` to export `nautobot_metadata_service` singleton
+
+4. Updated `services/checkmk/__init__.py` to export `checkmk_host_service` singleton
+
+5. Updated `offboarding.py` to import from service layer:
+   ```python
+   from services.nautobot import nautobot_metadata_service
+   from services.checkmk import checkmk_host_service
+   ```
+
+6. Updated routers to delegate to service layer:
+   - `routers/nautobot/metadata.py` now calls `nautobot_metadata_service` methods
+   - `routers/checkmk/main.py` now calls `checkmk_host_service.delete_host()`
+
+**Impact:** 
+- Architectural layers are now properly separated
+- Business logic is in the service layer where it belongs
+- Routers are thin wrappers handling HTTP concerns (auth, validation, error conversion)
+- Service functions can be reused by other services without circular dependencies
+- Easier to test business logic independently
 
 ---
 
@@ -410,13 +442,13 @@ Well-structured with:
 ## 6. Recommendations
 
 ### Priority 1: Security Fix
-1. **Fix GraphQL injection** in `network_resolver.py:38-45` — use parameterized variables
+1. ~~**Fix GraphQL injection**~~ **RESOLVED** ~~in `network_resolver.py:38-45` — use parameterized variables~~
 
 ### Priority 2: Architecture Violations
-2. **Remove router imports from offboarding.py** — extract business logic from `routers/nautobot.py` and `routers/checkmk.py` into service functions
-3. **Decide on DeviceCommonService** — either:
-   - **Option A:** Keep facade, remove "DEPRECATED" label, add lazy initialization of resolvers/managers
-   - **Option B:** Actually migrate consumers to use resolvers/managers directly (larger effort)
+2. ~~**Remove router imports from offboarding.py**~~ **RESOLVED** ~~— extract business logic from `routers/nautobot.py` and `routers/checkmk.py` into service functions~~
+3. ~~**Decide on DeviceCommonService**~~ **RESOLVED** ~~— either:~~
+   - ~~**Option A:** Keep facade, remove "DEPRECATED" label, add lazy initialization of resolvers/managers~~
+   - ~~**Option B:** Actually migrate consumers to use resolvers/managers directly (larger effort)~~
 
 ### Priority 3: Code Quality
 4. **Replace all `raise Exception(...)` with custom exceptions** from `common/exceptions.py`

@@ -619,16 +619,23 @@ async def delete_host(
 ):
     """Delete host from CheckMK"""
     try:
-        client = _get_checkmk_client()
-        client.delete_host(hostname)
+        from services.checkmk import checkmk_host_service
 
+        result = await checkmk_host_service.delete_host(hostname)
         return CheckMKOperationResponse(
-            success=True, message=f"Host {hostname} deleted successfully"
+            success=result["success"],
+            message=result["message"],
+        )
+    except ValueError as e:
+        # CheckMK not configured
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
         )
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting host {hostname}: {str(e)}")
+        logger.error("Error deleting host %s: %s", hostname, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete host {hostname}: {str(e)}",
