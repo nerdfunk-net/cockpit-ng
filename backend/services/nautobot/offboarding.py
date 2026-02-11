@@ -57,22 +57,22 @@ class OffboardingService:
         )
 
         if integration_mode == "remove":
-            logger.info("DEBUG: Taking REMOVAL path for device %s", device_id)
+            logger.debug("Taking REMOVAL path for device %s", device_id)
             await self._handle_device_removal(device_id, results)
         else:
-            logger.info("DEBUG: Taking SET_OFFBOARDING path for device %s", device_id)
+            logger.debug("Taking SET_OFFBOARDING path for device %s", device_id)
             # Validate settings before proceeding
             if not self._validate_offboarding_settings(offboarding_settings, results):
-                logger.warning(
-                    "DEBUG: Offboarding settings validation failed for device %s",
+                logger.debug(
+                    "Offboarding settings validation failed for device %s",
                     device_id,
                 )
                 return results
 
             # Handle device name clearing (independent of custom fields)
             if offboarding_settings.get("clear_device_name", False):
-                logger.info(
-                    "DEBUG: clear_device_name is True - clearing device name for %s",
+                logger.debug(
+                    "clear_device_name is True - clearing device name for %s",
                     device_id,
                 )
                 try:
@@ -231,7 +231,7 @@ class OffboardingService:
         device_id: str,
         results: Dict[str, Any],
     ) -> None:
-        logger.info("DEBUG: _handle_device_removal called for device %s", device_id)
+        logger.debug("_handle_device_removal called for device %s", device_id)
         logger.info("Removing device %s", device_id)
         try:
             await self._delete_device(device_id)
@@ -287,15 +287,15 @@ class OffboardingService:
             return
 
         if not custom_field_list:
-            logger.info("DEBUG: No custom field definitions found")
+            logger.debug("No custom field definitions found")
             results["skipped_items"].append("No custom field definitions found")
             return
 
         # Get custom field settings from offboarding settings
         custom_field_settings = settings.get("custom_field_settings", {})
         remove_all_custom_fields = settings.get("remove_all_custom_fields", False)
-        logger.info("DEBUG: custom_field_settings = %s", custom_field_settings)
-        logger.info("DEBUG: remove_all_custom_fields = %s", remove_all_custom_fields)
+        logger.debug("custom_field_settings = %s", custom_field_settings)
+        logger.debug("remove_all_custom_fields = %s", remove_all_custom_fields)
 
         # 3. Loop through the custom field list
         for field_def in custom_field_list:
@@ -354,7 +354,7 @@ class OffboardingService:
             return
 
         payload = {"custom_fields": custom_fields_update}
-        logger.info("DEBUG: Payload for updating custom fields: %s", payload)
+        logger.debug("Payload for updating custom fields: %s", payload)
 
         try:
             await self._update_device(device_id, payload)
@@ -692,7 +692,7 @@ class OffboardingService:
 
     async def _clear_device_name(self, device_id: str) -> Dict[str, Any]:
         """Clear the device name by setting it to an empty string."""
-        logger.info("DEBUG: Clearing device name for device %s", device_id)
+        logger.debug("Clearing device name for device %s", device_id)
         payload = {"name": ""}
 
         try:
@@ -720,12 +720,12 @@ class OffboardingService:
             )
             cache_service.delete(self._device_list_cache_key())
 
-        logger.info("DEBUG: Successfully cleared device name for %s", device_id)
+        logger.debug("Successfully cleared device name for %s", device_id)
         return updated_device
 
     async def _clear_device_serial(self, device_id: str) -> Dict[str, Any]:
         """Clear the device serial number by setting it to an empty string."""
-        logger.info("DEBUG: Clearing device serial number for device %s", device_id)
+        logger.debug("Clearing device serial number for device %s", device_id)
         payload = {"serial": ""}
 
         try:
@@ -769,26 +769,26 @@ class OffboardingService:
         self, settings: Optional[Dict[str, Any]], results: Dict[str, Any]
     ) -> bool:
         """Validate offboarding settings before processing."""
-        logger.info("DEBUG: Validating offboarding settings")
+        logger.debug("Validating offboarding settings")
 
         if not settings:
             error_msg = "No offboarding settings configured - cannot proceed with set-offboarding mode"
             results["errors"].append(error_msg)
             results["success"] = False
-            logger.error("DEBUG: %s", error_msg)
+            logger.error("%s", error_msg)
             return False
 
         # Check if remove_all_custom_fields is set
         remove_all_fields = settings.get("remove_all_custom_fields", False)
-        logger.info("DEBUG: remove_all_custom_fields = %s", remove_all_fields)
+        logger.debug("remove_all_custom_fields = %s", remove_all_fields)
 
         # Check if clear_device_name is set
         clear_device_name = settings.get("clear_device_name", False)
-        logger.info("DEBUG: clear_device_name = %s", clear_device_name)
+        logger.debug("clear_device_name = %s", clear_device_name)
 
         # Check if custom field settings exist
         custom_field_settings = settings.get("custom_field_settings") or {}
-        logger.info("DEBUG: custom_field_settings = %s", custom_field_settings)
+        logger.debug("custom_field_settings = %s", custom_field_settings)
 
         # If remove_all_custom_fields is True or clear_device_name is True, we have valid actions
         if remove_all_fields or clear_device_name:
@@ -807,26 +807,26 @@ class OffboardingService:
             )
             results["errors"].append(error_msg)
             results["success"] = False
-            logger.error("DEBUG: %s", error_msg)
+            logger.error("%s", error_msg)
             return False
 
-        logger.info("DEBUG: Offboarding settings validation passed")
+        logger.debug("Offboarding settings validation passed")
         return True
 
     @staticmethod
     def _normalize_integration_mode(mode: Optional[str]) -> str:
         """Convert integration mode aliases to canonical values."""
-        logger.info("DEBUG: _normalize_integration_mode called with mode='%s'", mode)
+        logger.debug("_normalize_integration_mode called with mode='%s'", mode)
 
         if not mode:
-            logger.info("DEBUG: Mode is None/empty, defaulting to 'remove'")
+            logger.debug("Mode is None/empty, defaulting to 'remove'")
             return "remove"
 
         normalized = mode.strip().lower()
-        logger.info("DEBUG: Normalized input '%s' to '%s'", mode, normalized)
+        logger.debug("Normalized input '%s' to '%s'", mode, normalized)
 
         if normalized == "remove":
-            logger.info("DEBUG: Exact match for 'remove', returning 'remove'")
+            logger.debug("Exact match for 'remove', returning 'remove'")
             return "remove"
 
         aliases = {
@@ -835,7 +835,7 @@ class OffboardingService:
             "set offboarding values": "set-offboarding",
         }
         result = aliases.get(normalized, "remove")
-        logger.info("DEBUG: Alias lookup for '%s' returned '%s'", normalized, result)
+        logger.debug("Alias lookup for '%s' returned '%s'", normalized, result)
         return result
 
     @staticmethod

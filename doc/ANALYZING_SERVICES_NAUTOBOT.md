@@ -215,22 +215,36 @@ All 30 instances of bare `raise Exception(...)` have been replaced with appropri
 
 ---
 
-### 3.2 Excessive and Incorrect Debug Logging in offboarding.py
+### 3.2 ~~Excessive and Incorrect Debug Logging in offboarding.py~~ **RESOLVED**
 
-**Severity: High** | **File:** `offboarding.py` (21 occurrences)
+**Status: RESOLVED (2026-02-11)** | **File:** `offboarding.py` (23 occurrences)
 
-The file contains **21 instances** of `logger.info("DEBUG: ...")` - debug messages logged at INFO level. These are leftover development debugging statements that pollute production logs.
+**Previous Issue:** The file contained **23 instances** of debug messages logged at inappropriate levels - `logger.info("DEBUG: ...")`, `logger.warning("DEBUG: ...")`, and `logger.error("DEBUG: ...")` statements that polluted production logs with development debugging output.
 
-Examples:
+**Resolution:**
+All 23 instances have been fixed:
+- **20 `logger.info("DEBUG: ...")`** → Changed to `logger.debug(...)` (appropriate debug level)
+- **1 `logger.warning("DEBUG: ...")`** → Changed to `logger.debug(...)` (not a warning condition)
+- **2 `logger.error("DEBUG: %s")`** → Changed to `logger.error("%s")` (kept as error, removed DEBUG prefix)
+
+**Impact:**
+- ✅ Production logs are no longer polluted with debug-level messages at INFO level
+- ✅ Debug logging can now be properly controlled via log level configuration
+- ✅ Actual errors remain logged as errors, but without misleading DEBUG prefix
+- ✅ Proper log level semantics restored throughout offboarding workflow
+
+**Examples of Changes:**
 ```python
-logger.info("DEBUG: Retrieved offboarding settings: %s", ...)
-logger.info("DEBUG: Offboarding device %s - raw_mode='%s', normalized_mode='%s'", ...)
-logger.info("DEBUG: _handle_device_removal called for device %s", ...)
-logger.info("DEBUG: Fetching custom field definitions from nautobot router")
-logger.info("DEBUG: Processing custom field '%s' with default value: %s", ...)
-```
+# Before
+logger.info("DEBUG: Taking REMOVAL path for device %s", device_id)
+logger.warning("DEBUG: Offboarding settings validation failed for device %s", device_id)
+logger.error("DEBUG: %s", error_msg)
 
-**Fix:** Change all `logger.info("DEBUG: ...")` to `logger.debug(...)` and remove the "DEBUG:" prefix.
+# After
+logger.debug("Taking REMOVAL path for device %s", device_id)
+logger.debug("Offboarding settings validation failed for device %s", device_id)
+logger.error("%s", error_msg)
+```
 
 ---
 
@@ -457,7 +471,7 @@ Well-structured with:
 ### Priority 3: Code Quality
 4. ~~**Replace all `raise Exception(...)` with custom exceptions**~~ **RESOLVED** ~~from `common/exceptions.py`~~
 5. **Fix f-string logging** — replace `logger.xxx(f"...")` with `logger.xxx("...", args)` across all 20 files
-6. **Clean up offboarding.py** — change 21x `logger.info("DEBUG: ...")` to `logger.debug(...)`
+6. ~~**Clean up offboarding.py**~~ **RESOLVED** ~~— change 23x debug messages to `logger.debug(...)`~~
 7. **Clean up vm_manager.py** — demote verbose logging to `logger.debug()`
 
 ### Priority 4: Consolidation
@@ -481,7 +495,7 @@ Well-structured with:
 | Largest file | `offboarding.py` (903 lines) |
 | `raise Exception(...)` occurrences | ~~30+~~ → **0** ✅ |
 | f-string logging occurrences | ~270 |
-| DEBUG logs at INFO level | 21 |
+| DEBUG logs at INFO level | ~~23~~ → **0** ✅ |
 | Custom exceptions defined | 5 |
 | Custom exceptions actually used | ~~0~~ → **5 (all)** ✅ |
 | `NautobotService()` instances created | 3 (module singleton + config + backup) |
