@@ -44,12 +44,12 @@ class InventoryService:
 
         try:
             # Import here to avoid circular imports
-            from services.nautobot import nautobot_service
+            from services.nautobot import nautobot_metadata_service
 
             logger.info("Fetching custom field types from Nautobot")
 
             # Fetch custom fields for devices
-            custom_fields = await nautobot_service.get_custom_fields_for_devices()
+            custom_fields = await nautobot_metadata_service.get_device_custom_fields()
 
             # Build a mapping of custom field key -> type
             type_mapping = {}

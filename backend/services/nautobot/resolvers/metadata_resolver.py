@@ -212,3 +212,46 @@ class MetadataResolver(BaseResolver):
         except Exception as e:
             logger.error(f"Error resolving location: {e}", exc_info=True)
             return None
+
+    async def resolve_secrets_group_id(self, group_name: str) -> Optional[str]:
+        """
+        Resolve secrets group name to UUID using GraphQL.
+
+        Args:
+            group_name: Name of the secrets group
+
+        Returns:
+            Secrets group UUID if found, None otherwise
+        """
+        try:
+            logger.info(f"Resolving secrets group '{group_name}'")
+
+            query = """
+            query GetSecretsGroup($name: [String]) {
+              secrets_groups(name: $name) {
+                id
+                name
+              }
+            }
+            """
+            variables = {"name": [group_name]}
+            result = await self.nautobot.graphql_query(query, variables)
+
+            if "errors" in result:
+                logger.error(f"GraphQL error resolving secrets group: {result['errors']}")
+                return None
+
+            groups = result.get("data", {}).get("secrets_groups", [])
+            if groups and len(groups) > 0:
+                group_id = groups[0]["id"]
+                logger.info(
+                    f"Resolved secrets group '{group_name}' to UUID {group_id}"
+                )
+                return group_id
+
+            logger.warning(f"Secrets group not found: {group_name}")
+            return None
+
+        except Exception as e:
+            logger.error(f"Error resolving secrets group: {e}", exc_info=True)
+            return None

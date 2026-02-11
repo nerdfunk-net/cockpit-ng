@@ -274,29 +274,35 @@ logger.warning("Failed to look up location '%s': %s", location_name, e)
 
 ---
 
-### 3.4 `client.py` Has Dual Responsibility
+### 3.4 ~~`client.py` Has Dual Responsibility~~ **RESOLVED**
 
-**Severity: High** | **File:** `client.py` (545 lines)
+**Status: RESOLVED (2026-02-11)** | **File:** `client.py` (224 lines, down from 545 lines)
 
-The `NautobotService` class serves as both:
-1. **API client** (GraphQL/REST transport) - its intended purpose
-2. **Business logic service** with resolver-like methods
+**Previous Issue:** The `NautobotService` class served both as an API client AND as a business logic service with resolver-like methods, creating dual responsibility.
 
-Methods that belong in resolvers/managers (not the API client):
-- `get_location_id_by_name()` → duplicates `MetadataResolver.resolve_location_id()`
-- `get_role_id_by_name()` → duplicates `MetadataResolver.resolve_role_id()`
-- `get_status_id_by_name()` → duplicates `MetadataResolver.resolve_status_id()`
-- `get_platform_id_by_name()` → duplicates `MetadataResolver.resolve_platform_id()`
-- `get_namespace_id_by_name()` → duplicates `NetworkResolver.resolve_namespace_id()`
-- `get_secrets_group_id_by_name()` → no resolver equivalent exists
-- `onboard_device()` → 100+ line business logic method with UUID resolution
-- `get_devices_paginated()` → synchronous method that should be in `DeviceQueryService`
-- `get_custom_fields_for_devices()` → utility method
+**Resolution:**
+1. **Added missing resolver method**: Created `resolve_secrets_group_id()` in `MetadataResolver`
+2. **Created DeviceOnboardingService**: Moved 100+ line `onboard_device()` business logic to new `devices/onboarding.py` service that uses resolvers
+3. **Removed duplicate resolver methods from client.py**:
+   - ✅ `get_location_id_by_name()` → Use `MetadataResolver.resolve_location_id()`
+   - ✅ `get_role_id_by_name()` → Use `MetadataResolver.resolve_role_id()`
+   - ✅ `get_status_id_by_name()` → Use `MetadataResolver.resolve_status_id()`
+   - ✅ `get_platform_id_by_name()` → Use `MetadataResolver.resolve_platform_id()`
+   - ✅ `get_namespace_id_by_name()` → Use `NetworkResolver.resolve_namespace_id()`
+   - ✅ `get_secrets_group_id_by_name()` → Use `MetadataResolver.resolve_secrets_group_id()`
+4. **Removed business logic methods**:
+   - ✅ `onboard_device()` → Use `DeviceOnboardingService.onboard_device()`
+   - ✅ `get_devices_paginated()` → Not used, removed (DeviceQueryService provides pagination)
+   - ✅ `get_custom_fields_for_devices()` → Use `NautobotMetadataService.get_device_custom_fields()`
+5. **Updated consumers**:
+   - `inventory.py` now uses `nautobot_metadata_service.get_device_custom_fields()`
+   - `ansible_inventory.py` now uses `nautobot_metadata_service.get_device_custom_fields()`
 
-**Impact:**
-- Two parallel code paths for the same operations
-- Consumers don't know which to use
-- Changes need to be made in two places
+**Result:**
+- ✅ `NautobotService` is now a pure API client (GraphQL, REST, connection testing only)
+- ✅ Business logic moved to appropriate resolvers and services
+- ✅ Single responsibility principle restored
+- ✅ File size reduced by 59% (321 lines removed)
 
 ---
 
@@ -333,16 +339,18 @@ This is confusing. The `devices/` version orchestrates the `managers/` version t
 
 ---
 
-### 3.7 Deprecated `asyncio.get_event_loop()`
+### 3.7 ~~Deprecated `asyncio.get_event_loop()`~~ **RESOLVED**
 
-**Severity: Medium** | **File:** `client.py:105, 158`
+**Status: RESOLVED (2026-02-11)** | **File:** `client.py`
 
-```python
-loop = asyncio.get_event_loop()
-return await loop.run_in_executor(self.executor, ...)
-```
+**Previous Issue:** Used deprecated `asyncio.get_event_loop()` in three async methods.
 
-`asyncio.get_event_loop()` is deprecated since Python 3.10. Use `asyncio.get_running_loop()` instead.
+**Resolution:** Replaced all occurrences with `asyncio.get_running_loop()`:
+- ✅ `graphql_query()` - line 107
+- ✅ `rest_request()` - line 160
+- ✅ `test_connection()` - line 215
+
+This follows Python 3.10+ best practices for async/await code.
 
 ---
 
@@ -475,9 +483,9 @@ Well-structured with:
 7. **Clean up vm_manager.py** — demote verbose logging to `logger.debug()`
 
 ### Priority 4: Consolidation
-8. **Move resolver-like methods out of `client.py`** into proper resolvers (or at minimum, have client.py delegate to resolvers)
+8. ~~**Move resolver-like methods out of `client.py`**~~ **RESOLVED** ~~into proper resolvers (or at minimum, have client.py delegate to resolvers)~~
 9. **Standardize DI pattern** — make `DeviceConfigService` and `DeviceBackupService` accept `NautobotService` via constructor instead of creating new instances
-10. **Fix `asyncio.get_event_loop()`** deprecation in `client.py`
+10. ~~**Fix `asyncio.get_event_loop()`** deprecation in `client.py`~~ **RESOLVED**
 
 ### Priority 5: Cleanup
 11. **Remove dead code**: empty `helpers/` package, unused `_build_custom_field_payload`
@@ -490,8 +498,8 @@ Well-structured with:
 
 | Metric | Value |
 |--------|-------|
-| Total files | 31 |
-| Total lines | 8,430 |
+| Total files | 32 (added `devices/onboarding.py`) |
+| Total lines | ~8,587 (added onboarding service, removed from client) |
 | Largest file | `offboarding.py` (903 lines) |
 | `raise Exception(...)` occurrences | ~~30+~~ → **0** ✅ |
 | f-string logging occurrences | ~270 |
@@ -500,3 +508,6 @@ Well-structured with:
 | Custom exceptions actually used | ~~0~~ → **5 (all)** ✅ |
 | `NautobotService()` instances created | 3 (module singleton + config + backup) |
 | Files using deprecated facade | 7 |
+| Business logic methods in `client.py` | ~~9~~ → **0** ✅ |
+| `client.py` line count | ~~545~~ → **224** ✅ (59% reduction) |
+| Deprecated `asyncio.get_event_loop()` | ~~3~~ → **0** ✅ |
