@@ -72,7 +72,7 @@ function getEndpointForObjectType(objectType: ObjectType): string {
     case 'devices':
       return 'celery/tasks/update-devices-from-csv'
     case 'ip-addresses':
-      return 'celery/tasks/update-ip-addresses-from-csv' // TODO: Implement
+      return 'celery/tasks/update-ip-addresses-from-csv'
     case 'locations':
       return 'celery/tasks/update-locations-from-csv' // TODO: Implement
     default:

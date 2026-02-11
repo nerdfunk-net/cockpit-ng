@@ -28,6 +28,9 @@ from .update_devices_from_csv_task import update_devices_from_csv_task
 # Import update IP prefixes task
 from .update_ip_prefixes_from_csv_task import update_ip_prefixes_from_csv_task
 
+# Import update IP addresses task
+from .update_ip_addresses_from_csv_task import update_ip_addresses_from_csv_task
+
 # Import ping network task
 from .ping_network_task import ping_network_task
 
@@ -76,8 +79,9 @@ __all__ = [
     # Device update
     "update_devices_task",
     "update_devices_from_csv_task",
-    # IP prefix update
+    # IPAM updates
     "update_ip_prefixes_from_csv_task",
+    "update_ip_addresses_from_csv_task",
     # Network tools
     "ping_network_task",
     "scan_prefixes_task",

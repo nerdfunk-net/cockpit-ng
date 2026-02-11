@@ -453,18 +453,25 @@ export default function CsvUpdatesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {csvUpload.parsedData.rows.slice(0, 10).map((row) => (
-                    <TableRow key={row.join('|')}>
-                      {row.slice(0, 8).map((cell) => (
-                        <TableCell key={`${row.join('|')}-${cell}`} className="max-w-xs truncate">
-                          {cell || <span className="text-muted-foreground">-</span>}
-                        </TableCell>
-                      ))}
-                      {row.length > 8 && (
-                        <TableCell className="text-muted-foreground">...</TableCell>
-                      )}
-                    </TableRow>
-                  ))}
+                  {csvUpload.parsedData.rows.slice(0, 10).map((row, rowIndex) => {
+                    // Create unique key from row index and first few cell values
+                    const rowKey = `row-${rowIndex}-${row.slice(0, 3).join('-').substring(0, 50)}`
+                    return (
+                      <TableRow key={rowKey}>
+                        {row.slice(0, 8).map((cell, cellIndex) => {
+                          const cellKey = `${rowKey}-cell-${cellIndex}`
+                          return (
+                            <TableCell key={cellKey} className="max-w-xs truncate">
+                              {cell || <span className="text-muted-foreground">-</span>}
+                            </TableCell>
+                          )
+                        })}
+                        {row.length > 8 && (
+                          <TableCell className="text-muted-foreground">...</TableCell>
+                        )}
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>

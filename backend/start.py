@@ -63,6 +63,10 @@ def main():
     logging.getLogger("git.cmd").setLevel(logging.WARNING)
     logging.getLogger("git.repo").setLevel(logging.WARNING)
 
+    # Suppress debug logging from Celery
+    logging.getLogger("celery").setLevel(logging.INFO)
+    logging.getLogger("celery.utils.functional").setLevel(logging.INFO)
+
     global logger
     logger = logging.getLogger(__name__)
 
