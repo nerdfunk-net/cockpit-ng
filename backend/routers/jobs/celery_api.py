@@ -556,8 +556,8 @@ async def purge_queue(
             queue_config = task_queues[queue_name]
             queue_obj = Queue(
                 name=queue_name,
-                exchange=queue_config.get('exchange', queue_name),
-                routing_key=queue_config.get('routing_key', queue_name)
+                exchange=queue_config.get("exchange", queue_name),
+                routing_key=queue_config.get("routing_key", queue_name),
             )
             # Purge it
             purged_count = queue_obj(conn.channel()).purge()
@@ -614,8 +614,8 @@ async def purge_all_queues(
                     queue_config = task_queues[queue_name]
                     queue_obj = Queue(
                         name=queue_name,
-                        exchange=queue_config.get('exchange', queue_name),
-                        routing_key=queue_config.get('routing_key', queue_name)
+                        exchange=queue_config.get("exchange", queue_name),
+                        routing_key=queue_config.get("routing_key", queue_name),
                     )
                     purged_count = queue_obj(conn.channel()).purge()
 
@@ -1721,7 +1721,9 @@ async def trigger_update_ip_addresses_from_csv(
         - parent__namespace__name: Namespace name (optional, defaults to "Global")
         - Other fields: Any updatable IP address fields (description, status, dns_name, etc.)
     """
-    from tasks.update_ip_addresses_from_csv_task import update_ip_addresses_from_csv_task
+    from tasks.update_ip_addresses_from_csv_task import (
+        update_ip_addresses_from_csv_task,
+    )
     import logging
 
     logger = logging.getLogger(__name__)

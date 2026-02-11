@@ -47,7 +47,7 @@ class VirtualMachineManager:
 
             # Check if assignment already exists
             check_endpoint = f"ipam/ip-address-to-interface/?ip_address={ip_address_id}&vm_interface={virtual_interface_id}"
-            logger.info(f"    -> Checking if assignment already exists...")
+            logger.info("    -> Checking if assignment already exists...")
             logger.info(f"    -> Check endpoint: {check_endpoint}")
 
             existing_assignment = await self.nautobot.rest_request(
@@ -56,8 +56,10 @@ class VirtualMachineManager:
             )
 
             if existing_assignment and existing_assignment.get("count", 0) > 0:
-                logger.info(f"    -> Assignment already exists, skipping creation")
-                logger.info(f"    -> Existing assignment: {existing_assignment['results'][0]}")
+                logger.info("    -> Assignment already exists, skipping creation")
+                logger.info(
+                    f"    -> Existing assignment: {existing_assignment['results'][0]}"
+                )
                 return True
 
             # Create the IP-to-Interface mapping using vm_interface field
@@ -67,10 +69,10 @@ class VirtualMachineManager:
                 "vm_interface": {"id": virtual_interface_id},
             }
 
-            logger.info(f"    -> Creating new IP-to-Interface assignment...")
+            logger.info("    -> Creating new IP-to-Interface assignment...")
             logger.info(f"    -> Endpoint: {endpoint}")
             logger.info(f"    -> Payload: {payload}")
-            logger.info(f"    -> Making POST request to Nautobot...")
+            logger.info("    -> Making POST request to Nautobot...")
 
             result = await self.nautobot.rest_request(
                 endpoint=endpoint,
@@ -78,23 +80,21 @@ class VirtualMachineManager:
                 data=payload,
             )
 
-            logger.info(f"    -> POST request successful")
+            logger.info("    -> POST request successful")
             logger.info(f"    -> Response: {result}")
             logger.info(f"    -> Assignment ID: {result.get('id')}")
-            logger.info(f"    -> ✓ Successfully assigned IP to virtual interface")
+            logger.info("    -> ✓ Successfully assigned IP to virtual interface")
             return True
 
         except Exception as e:
-            logger.error(f"    -> ✗ Request failed")
+            logger.error("    -> ✗ Request failed")
             logger.error(f"    -> Error: {str(e)}")
             logger.error(
                 f"Failed to assign IP to virtual interface {virtual_interface_id}: {str(e)}"
             )
             raise Exception(f"Failed to assign IP to virtual interface: {str(e)}")
 
-    async def assign_primary_ip_to_vm(
-        self, vm_id: str, ip_address_id: str
-    ) -> bool:
+    async def assign_primary_ip_to_vm(self, vm_id: str, ip_address_id: str) -> bool:
         """
         Assign primary IPv4 address to a virtual machine.
 
@@ -118,7 +118,7 @@ class VirtualMachineManager:
 
             logger.info(f"    -> Endpoint: {endpoint}")
             logger.info(f"    -> Payload: {payload}")
-            logger.info(f"    -> Making PATCH request to Nautobot...")
+            logger.info("    -> Making PATCH request to Nautobot...")
 
             result = await self.nautobot.rest_request(
                 endpoint=endpoint,
@@ -126,17 +126,15 @@ class VirtualMachineManager:
                 data=payload,
             )
 
-            logger.info(f"    -> PATCH request successful")
+            logger.info("    -> PATCH request successful")
             logger.info(f"    -> Response: {result}")
-            logger.info(f"    -> ✓ Successfully set primary IPv4 for VM")
+            logger.info("    -> ✓ Successfully set primary IPv4 for VM")
             return True
 
         except Exception as e:
-            logger.error(f"    -> ✗ PATCH request failed")
+            logger.error("    -> ✗ PATCH request failed")
             logger.error(f"    -> Error: {str(e)}")
-            logger.error(
-                f"Failed to assign primary IPv4 to VM {vm_id}: {str(e)}"
-            )
+            logger.error(f"Failed to assign primary IPv4 to VM {vm_id}: {str(e)}")
             raise Exception(f"Failed to assign primary IP to VM: {str(e)}")
 
     async def create_virtual_machine(
@@ -218,21 +216,23 @@ class VirtualMachineManager:
 
         try:
             logger.info(f"    -> Payload: {vm_data}")
-            logger.info(f"    -> Making POST request to virtualization/virtual-machines/")
+            logger.info(
+                "    -> Making POST request to virtualization/virtual-machines/"
+            )
 
             # Call Nautobot REST API to create the VM
             result = await self.nautobot.rest_request(
                 "virtualization/virtual-machines/", method="POST", data=vm_data
             )
 
-            logger.info(f"    -> POST request successful")
+            logger.info("    -> POST request successful")
             logger.info(f"    -> Response: {result}")
             logger.info(f"    -> VM ID: {result.get('id')}")
             logger.info(f"    -> ✓ Successfully created VM '{name}'")
             return result
 
         except Exception as e:
-            logger.error(f"    -> ✗ POST request failed")
+            logger.error("    -> ✗ POST request failed")
             logger.error(f"    -> Error: {str(e)}")
             logger.error(f"Failed to create VM '{name}': {e}", exc_info=True)
             raise Exception(f"Failed to create virtual machine: {str(e)}")
@@ -313,21 +313,21 @@ class VirtualMachineManager:
 
         try:
             logger.info(f"    -> Payload: {interface_data}")
-            logger.info(f"    -> Making POST request to virtualization/interfaces/")
+            logger.info("    -> Making POST request to virtualization/interfaces/")
 
             # Call Nautobot REST API to create the interface
             result = await self.nautobot.rest_request(
                 "virtualization/interfaces/", method="POST", data=interface_data
             )
 
-            logger.info(f"    -> POST request successful")
+            logger.info("    -> POST request successful")
             logger.info(f"    -> Response: {result}")
             logger.info(f"    -> Interface ID: {result.get('id')}")
             logger.info(f"    -> ✓ Successfully created interface '{name}'")
             return result
 
         except Exception as e:
-            logger.error(f"    -> ✗ POST request failed")
+            logger.error("    -> ✗ POST request failed")
             logger.error(f"    -> Error: {str(e)}")
             logger.error(
                 f"Failed to create interface '{name}' for VM {virtual_machine_id}: {e}",

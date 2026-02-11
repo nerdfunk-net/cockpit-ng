@@ -195,7 +195,9 @@ class AddVirtualMachineRequest(BaseModel):
     # Interface configuration (for the first interface)
     interfaceName: Optional[str] = None
     primaryIpv4: Optional[str] = None  # IPv4 address (e.g., "10.0.0.1/24")
-    namespace: Optional[str] = None  # Namespace UUID (defaults to "Global" if not provided)
+    namespace: Optional[str] = (
+        None  # Namespace UUID (defaults to "Global" if not provided)
+    )
 
 
 class AddVirtualInterfaceRequest(BaseModel):

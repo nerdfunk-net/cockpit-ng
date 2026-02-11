@@ -170,10 +170,10 @@ def get_worker_pool():
     """
     system = platform.system().lower()
 
-    if system == 'darwin':  # macOS
-        return 'solo'
+    if system == "darwin":  # macOS
+        return "solo"
     else:  # Linux and others
-        return 'prefork'
+        return "prefork"
 
 
 def get_concurrency(pool_type):
@@ -186,7 +186,7 @@ def get_concurrency(pool_type):
     Returns:
         int: Concurrency level (1 for solo, configured max_workers for prefork)
     """
-    if pool_type == 'solo':
+    if pool_type == "solo":
         return 1
     else:
         # Use configured max_workers from settings
@@ -261,7 +261,7 @@ def main():
     print("=" * 70)
 
     # Show platform-specific warnings
-    if pool_type == 'solo':
+    if pool_type == "solo":
         print()
         print("⚠️  DEVELOPMENT MODE (macOS)")
         print("    Using 'solo' pool to avoid asyncio fork() incompatibility")

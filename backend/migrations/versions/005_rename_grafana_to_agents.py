@@ -46,7 +46,9 @@ class Migration(BaseMigration):
                         text("ALTER TABLE grafana_settings RENAME TO agents_settings")
                     )
                     conn.commit()
-                    self.log_info("✓ Table renamed from grafana_settings to agents_settings")
+                    self.log_info(
+                        "✓ Table renamed from grafana_settings to agents_settings"
+                    )
                 else:
                     # Check if new table already exists
                     result = conn.execute(
@@ -62,7 +64,9 @@ class Migration(BaseMigration):
                     if result.fetchone() is not None:
                         self.log_debug("agents_settings table already exists")
                     else:
-                        self.log_warning("Neither grafana_settings nor agents_settings table exists")
+                        self.log_warning(
+                            "Neither grafana_settings nor agents_settings table exists"
+                        )
 
             return {
                 "success": True,
@@ -100,7 +104,9 @@ class Migration(BaseMigration):
                         text("ALTER TABLE agents_settings RENAME TO grafana_settings")
                     )
                     conn.commit()
-                    self.log_info("✓ Table renamed from agents_settings back to grafana_settings")
+                    self.log_info(
+                        "✓ Table renamed from agents_settings back to grafana_settings"
+                    )
                 else:
                     self.log_debug("agents_settings table doesn't exist")
 

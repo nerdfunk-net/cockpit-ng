@@ -17,7 +17,11 @@ from models.nautobot import (
     AddVirtualInterfaceRequest,
 )
 from services.nautobot import nautobot_service
-from services.nautobot.resolvers import ClusterResolver, NetworkResolver, MetadataResolver
+from services.nautobot.resolvers import (
+    ClusterResolver,
+    NetworkResolver,
+    MetadataResolver,
+)
 from services.nautobot.managers.vm_manager import VirtualMachineManager
 from services.nautobot.managers import IPManager
 
@@ -25,7 +29,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/virtualization", tags=["nautobot-virtualization"])
 
 
-@router.get("/clusters", response_model=List[Cluster], summary="🔷 GraphQL: List Clusters")
+@router.get(
+    "/clusters", response_model=List[Cluster], summary="🔷 GraphQL: List Clusters"
+)
 async def get_clusters(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
@@ -59,7 +65,9 @@ async def get_clusters(
 
 
 @router.get(
-    "/clusters/{cluster_id}", response_model=Cluster, summary="🔷 GraphQL: Get Cluster Details"
+    "/clusters/{cluster_id}",
+    response_model=Cluster,
+    summary="🔷 GraphQL: Get Cluster Details",
 )
 async def get_cluster_by_id(
     cluster_id: str,
@@ -220,7 +228,9 @@ async def create_virtual_machine(
             if not interface_id:
                 raise Exception("Interface creation succeeded but no ID returned")
 
-            logger.info(f"✓ PHASE 2 COMPLETE: Interface created with ID: {interface_id}")
+            logger.info(
+                f"✓ PHASE 2 COMPLETE: Interface created with ID: {interface_id}"
+            )
             response_data["interface"] = interface_result
             response_data["message"] += f" with interface '{vm_request.interfaceName}'"
 
@@ -244,18 +254,26 @@ async def create_virtual_machine(
                     # Resolve namespace (use "Global" as default if not specified)
                     namespace_id = vm_request.namespace
                     if not namespace_id:
-                        logger.info("No namespace UUID provided, resolving 'Global' namespace...")
-                        namespace_id = await network_resolver.resolve_namespace_id("Global")
+                        logger.info(
+                            "No namespace UUID provided, resolving 'Global' namespace..."
+                        )
+                        namespace_id = await network_resolver.resolve_namespace_id(
+                            "Global"
+                        )
                         if not namespace_id:
                             raise Exception(
                                 "Could not resolve 'Global' namespace. Please specify a namespace."
                             )
-                        logger.info(f"Resolved 'Global' namespace to UUID: {namespace_id}")
+                        logger.info(
+                            f"Resolved 'Global' namespace to UUID: {namespace_id}"
+                        )
                     else:
                         logger.info(f"Using provided namespace UUID: {namespace_id}")
 
                     # Create or get the IP address
-                    logger.info(f"Creating/ensuring IP address {vm_request.primaryIpv4} exists...")
+                    logger.info(
+                        f"Creating/ensuring IP address {vm_request.primaryIpv4} exists..."
+                    )
                     ip_id = await ip_manager.ensure_ip_address_exists(
                         ip_address=vm_request.primaryIpv4,
                         namespace_id=namespace_id,
@@ -263,7 +281,9 @@ async def create_virtual_machine(
                         add_prefixes_automatically=True,
                     )
 
-                    logger.info(f"✓ PHASE 3 COMPLETE: IP address created/found with ID: {ip_id}")
+                    logger.info(
+                        f"✓ PHASE 3 COMPLETE: IP address created/found with ID: {ip_id}"
+                    )
 
                     logger.info("")
                     logger.info("=" * 80)
@@ -278,7 +298,7 @@ async def create_virtual_machine(
                         ip_address_id=ip_id, virtual_interface_id=interface_id
                     )
 
-                    logger.info(f"✓ PHASE 4 COMPLETE: IP assigned to interface")
+                    logger.info("✓ PHASE 4 COMPLETE: IP assigned to interface")
 
                     logger.info("")
                     logger.info("=" * 80)
@@ -292,13 +312,15 @@ async def create_virtual_machine(
                         vm_id=vm_id, ip_address_id=ip_id
                     )
 
-                    logger.info(f"✓ PHASE 5 COMPLETE: Primary IP set for VM")
+                    logger.info("✓ PHASE 5 COMPLETE: Primary IP set for VM")
 
                     response_data["ip_address"] = {
                         "id": ip_id,
                         "address": vm_request.primaryIpv4,
                     }
-                    response_data["message"] += f" and primary IP {vm_request.primaryIpv4}"
+                    response_data["message"] += (
+                        f" and primary IP {vm_request.primaryIpv4}"
+                    )
 
                     logger.info("")
                     logger.info("=" * 80)

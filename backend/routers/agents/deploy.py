@@ -17,11 +17,21 @@ router = APIRouter(prefix="/api/agents/deploy", tags=["agents"])
 class DryRunRequest(BaseModel):
     """Request model for agent deployment dry run."""
 
-    templateId: int = Field(..., alias="templateId", description="Template ID to render")
-    deviceIds: List[str] = Field(..., alias="deviceIds", description="List of device UUIDs from inventory")
-    variables: dict = Field(default_factory=dict, description="User-provided custom variables")
-    passSnmpMapping: bool = Field(False, alias="passSnmpMapping", description="Whether to include SNMP mapping")
-    agentId: str = Field(..., alias="agentId", description="Agent ID for deployment configuration")
+    templateId: int = Field(
+        ..., alias="templateId", description="Template ID to render"
+    )
+    deviceIds: List[str] = Field(
+        ..., alias="deviceIds", description="List of device UUIDs from inventory"
+    )
+    variables: dict = Field(
+        default_factory=dict, description="User-provided custom variables"
+    )
+    passSnmpMapping: bool = Field(
+        False, alias="passSnmpMapping", description="Whether to include SNMP mapping"
+    )
+    agentId: str = Field(
+        ..., alias="agentId", description="Agent ID for deployment configuration"
+    )
     path: str | None = Field(None, description="Optional deployment path")
 
     class Config:
@@ -57,11 +67,9 @@ async def agent_deploy_dry_run(
     Telegraf/InfluxDB/Grafana agent deployment.
     """
     try:
-        from services.nautobot import nautobot_service
         from services.checkmk.config import config_service
         from template_manager import template_manager
         from jinja2 import Template, TemplateError, UndefinedError
-        import re
 
         # Fetch the template
         template = template_manager.get_template(request.templateId)
@@ -100,7 +108,9 @@ async def agent_deploy_dry_run(
                 device_details[device_id] = device_data
                 device_name_map[device_id] = device_data.get("name", device_id)
             except Exception as e:
-                error_msg = f"Failed to fetch Nautobot data for device {device_id}: {str(e)}"
+                error_msg = (
+                    f"Failed to fetch Nautobot data for device {device_id}: {str(e)}"
+                )
                 logger.error(error_msg)
                 warnings.append(error_msg)
 

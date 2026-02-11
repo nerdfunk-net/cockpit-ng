@@ -83,9 +83,7 @@ class Migration(BaseMigration):
 
                 if result.fetchone() is not None:
                     # Column exists, drop it
-                    conn.execute(
-                        text("ALTER TABLE agents_settings DROP COLUMN agents")
-                    )
+                    conn.execute(text("ALTER TABLE agents_settings DROP COLUMN agents"))
                     conn.commit()
                     self.log_info("✓ Removed agents column from agents_settings table")
                 else:

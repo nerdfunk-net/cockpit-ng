@@ -61,7 +61,7 @@ class CommandResult(BaseModel):
     error: str | None = None
     command_outputs: Dict[str, Any] | None = Field(
         default=None,
-        description="Parsed command outputs (when use_textfsm=True) or raw outputs per command"
+        description="Parsed command outputs (when use_textfsm=True) or raw outputs per command",
     )
 
 
@@ -415,7 +415,6 @@ async def execute_template(
     from services.nautobot.devices import device_query_service
     from template_manager import template_manager
     from jinja2 import Template, TemplateError, UndefinedError
-    import re
 
     try:
         logger.info(
@@ -439,7 +438,7 @@ async def execute_template(
         template = None
         pre_run_command = None
         template_credential_id = None
-        
+
         if request.template_id:
             template = template_manager.get_template(request.template_id)
             if not template:
@@ -601,24 +600,20 @@ async def execute_template(
                     # Build context for advanced rendering
                     context = {}
                     warnings = []
-                    
+
                     # Initialize pre_run to empty (optional, will be populated if configured)
-                    context["pre_run"] = {
-                        "raw": "",
-                        "parsed": []
-                    }
-                    
+                    context["pre_run"] = {"raw": "", "parsed": []}
+
                     # Add user variables directly to context
                     if request.user_variables:
                         context.update(request.user_variables)
-                    
+
                     # Determine if we need to fetch device data
                     # We need it if: use_nautobot_context is True OR pre_run_command is configured
-                    needs_device_data = (
-                        request.use_nautobot_context or 
-                        (pre_run_command and pre_run_command.strip())
+                    needs_device_data = request.use_nautobot_context or (
+                        pre_run_command and pre_run_command.strip()
                     )
-                    
+
                     # Fetch Nautobot device data if needed
                     if needs_device_data:
                         try:
@@ -627,69 +622,93 @@ async def execute_template(
                                 use_cache=True,
                             )
                             context["device_details"] = device_data
-                            
+
                             # Build simplified devices array for compatibility
-                            devices = [{
-                                "id": device_id,
-                                "name": device_data.get("name", ""),
-                                "primary_ip4": device_data.get("primary_ip4", {}).get("address", "") if isinstance(device_data.get("primary_ip4"), dict) else device_data.get("primary_ip4", ""),
-                                "primary_ip6": device_data.get("primary_ip6", {}).get("address", "") if isinstance(device_data.get("primary_ip6"), dict) else device_data.get("primary_ip6", ""),
-                            }]
+                            devices = [
+                                {
+                                    "id": device_id,
+                                    "name": device_data.get("name", ""),
+                                    "primary_ip4": device_data.get(
+                                        "primary_ip4", {}
+                                    ).get("address", "")
+                                    if isinstance(device_data.get("primary_ip4"), dict)
+                                    else device_data.get("primary_ip4", ""),
+                                    "primary_ip6": device_data.get(
+                                        "primary_ip6", {}
+                                    ).get("address", "")
+                                    if isinstance(device_data.get("primary_ip6"), dict)
+                                    else device_data.get("primary_ip6", ""),
+                                }
+                            ]
                             context["devices"] = devices
-                            
-                            logger.info(f"Fetched Nautobot context for device {device_id}")
+
+                            logger.info(
+                                f"Fetched Nautobot context for device {device_id}"
+                            )
                         except Exception as e:
-                            error_msg = f"Failed to fetch Nautobot device data: {str(e)}"
+                            error_msg = (
+                                f"Failed to fetch Nautobot device data: {str(e)}"
+                            )
                             logger.error(error_msg)
                             # If we needed device data for pre_run_command, this is critical
                             if pre_run_command and pre_run_command.strip():
                                 raise ValueError(error_msg)
                             # Otherwise just add warning
                             warnings.append(error_msg)
-                    
+
                     # Execute pre-run command if configured in template
                     if pre_run_command and pre_run_command.strip():
                         if not template_credential_id:
                             raise ValueError(
                                 "Template has pre_run_command but no credential_id configured"
                             )
-                        
+
                         try:
-                            from services.network.automation.render import render_service
-                            
-                            pre_run_result = await render_service._execute_pre_run_command(
-                                device_id=device_id,
-                                command=pre_run_command.strip(),
-                                credential_id=template_credential_id,
-                                nautobot_device=context.get("device_details"),
+                            from services.network.automation.render import (
+                                render_service,
                             )
-                            
+
+                            pre_run_result = (
+                                await render_service._execute_pre_run_command(
+                                    device_id=device_id,
+                                    command=pre_run_command.strip(),
+                                    credential_id=template_credential_id,
+                                    nautobot_device=context.get("device_details"),
+                                )
+                            )
+
                             pre_run_output = pre_run_result.get("raw_output", "")
                             pre_run_parsed = pre_run_result.get("parsed_output", [])
-                            
+
                             # Add to context as pre_run object (NEW structure)
                             context["pre_run"] = {
                                 "raw": pre_run_output,
-                                "parsed": pre_run_parsed
+                                "parsed": pre_run_parsed,
                             }
-                            
+
                             if pre_run_result.get("parse_error"):
-                                warnings.append(f"TextFSM parsing not available: {pre_run_result['parse_error']}")
-                            
-                            logger.info(f"Pre-run command executed. Raw length: {len(pre_run_output)}, Parsed records: {len(pre_run_parsed)}")
+                                warnings.append(
+                                    f"TextFSM parsing not available: {pre_run_result['parse_error']}"
+                                )
+
+                            logger.info(
+                                f"Pre-run command executed. Raw length: {len(pre_run_output)}, Parsed records: {len(pre_run_parsed)}"
+                            )
                         except Exception as e:
                             error_msg = f"Failed to execute pre-run command: {str(e)}"
                             logger.error(error_msg)
                             warnings.append(error_msg)
-                    
+
                     # Render the template
                     jinja_template = Template(template_content)
                     rendered_content = jinja_template.render(**context)
                     rendered_count += 1
-                    
+
                     if warnings:
-                        logger.warning(f"Template rendering warnings for {device_name}: {warnings}")
-                        
+                        logger.warning(
+                            f"Template rendering warnings for {device_name}: {warnings}"
+                        )
+
                 except UndefinedError as e:
                     available_vars = list(context.keys())
                     error_msg = f"Undefined variable in template: {str(e)}. Available variables: {', '.join(available_vars)}"

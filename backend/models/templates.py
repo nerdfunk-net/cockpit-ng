@@ -311,7 +311,7 @@ class TemplateExecuteAndSyncResponse(BaseModel):
 class AdvancedTemplateRenderRequest(BaseModel):
     """
     Unified advanced template render request for both netmiko and agent templates.
-    
+
     This model supports all features needed for both template types:
     - For netmiko: device context, pre-run commands, credentials
     - For agent: inventory context, SNMP mapping, deployment path
@@ -324,7 +324,7 @@ class AdvancedTemplateRenderRequest(BaseModel):
     # User variables (common to both)
     user_variables: Optional[Dict[str, Any]] = Field(
         default_factory=dict,
-        description="User-provided custom variables (should NOT include pre_run.raw or pre_run.parsed)"
+        description="User-provided custom variables (should NOT include pre_run.raw or pre_run.parsed)",
     )
 
     # Netmiko-specific fields
@@ -336,7 +336,7 @@ class AdvancedTemplateRenderRequest(BaseModel):
     )
     pre_run_command: Optional[str] = Field(
         None,
-        description="Command to execute on device before rendering (netmiko templates). Backend will execute and parse this."
+        description="Command to execute on device before rendering (netmiko templates). Backend will execute and parse this.",
     )
     credential_id: Optional[int] = Field(
         None, description="Credential ID for device authentication (netmiko templates)"
@@ -371,5 +371,6 @@ class AdvancedTemplateRenderResponse(BaseModel):
         None, description="Raw output from pre-run command (netmiko only, if executed)"
     )
     pre_run_parsed: Optional[List[Dict[str, Any]]] = Field(
-        None, description="TextFSM parsed output from pre-run command (netmiko only, if available)"
+        None,
+        description="TextFSM parsed output from pre-run command (netmiko only, if available)",
     )

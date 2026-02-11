@@ -86,6 +86,7 @@ class CheckMKTestRequest(BaseModel):
 
 class Agent(BaseModel):
     """Individual agent configuration."""
+
     id: str
     name: str
     description: str

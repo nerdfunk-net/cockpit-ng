@@ -129,7 +129,9 @@ def update_ip_addresses_from_csv_task(
 
         logger.info("Column name mapping:")
         logger.info(f"  - Lookup field 'address' → CSV column '{address_col}'")
-        logger.info(f"  - Lookup field 'parent__namespace__name' → CSV column '{namespace_col}'")
+        logger.info(
+            f"  - Lookup field 'parent__namespace__name' → CSV column '{namespace_col}'"
+        )
         if id_col:
             logger.info(f"  - Lookup field 'id' → CSV column '{id_col}'")
 
@@ -177,7 +179,9 @@ def update_ip_addresses_from_csv_task(
                 identifier = f"{address_value} (UUID: {csv_uuid})"
 
             try:
-                logger.info(f"Processing IP address {idx}/{total_ip_addresses}: {identifier}")
+                logger.info(
+                    f"Processing IP address {idx}/{total_ip_addresses}: {identifier}"
+                )
 
                 # Update progress
                 progress = 10 + int((idx / total_ip_addresses) * 80)
@@ -317,7 +321,9 @@ def update_ip_addresses_from_csv_task(
                     logger.info(f"  - Payload: {update_data}")
 
                     result = asyncio.run(
-                        _update_ip_address(nautobot_service, ip_address_uuid, update_data)
+                        _update_ip_address(
+                            nautobot_service, ip_address_uuid, update_data
+                        )
                     )
 
                     if result["success"]:
@@ -349,7 +355,8 @@ def update_ip_addresses_from_csv_task(
             except Exception as e:
                 error_msg = str(e)
                 logger.error(
-                    f"Failed to process IP address {identifier}: {error_msg}", exc_info=True
+                    f"Failed to process IP address {identifier}: {error_msg}",
+                    exc_info=True,
                 )
                 failures.append(
                     {
@@ -444,7 +451,9 @@ async def _get_ip_address_by_uuid(
         result = await nautobot_service.rest_request(endpoint, method="GET")
         return result
     except Exception as e:
-        logger.error(f"Error getting IP address by UUID {ip_address_uuid}: {e}", exc_info=True)
+        logger.error(
+            f"Error getting IP address by UUID {ip_address_uuid}: {e}", exc_info=True
+        )
         return None
 
 
@@ -495,13 +504,17 @@ async def _find_ip_address_by_address_and_namespace_graphql(
         result = await nautobot_service.graphql_query(query, variables)
 
         if not result or "data" not in result:
-            logger.warning(f"No data returned from GraphQL query for address: {address}")
+            logger.warning(
+                f"No data returned from GraphQL query for address: {address}"
+            )
             return None, None
 
         ip_addresses = result.get("data", {}).get("ip_addresses", [])
 
         if not ip_addresses:
-            logger.warning(f"IP address '{address}' not found in namespace '{namespace}'")
+            logger.warning(
+                f"IP address '{address}' not found in namespace '{namespace}'"
+            )
             return None, None
 
         if len(ip_addresses) > 1:
@@ -555,7 +568,9 @@ async def _update_ip_address(
 
     except Exception as e:
         error_msg = str(e)
-        logger.error(f"[API CALL] ✗ Failed to update IP address {ip_address_uuid}: {error_msg}")
+        logger.error(
+            f"[API CALL] ✗ Failed to update IP address {ip_address_uuid}: {error_msg}"
+        )
         logger.error(f"[API CALL]   - Update data that caused error: {update_data}")
         return {"success": False, "error": error_msg}
 
@@ -629,7 +644,9 @@ def _prepare_ip_address_update_data(
 
     columns_to_process = selected_columns if selected_columns is not None else headers
 
-    logger.info(f"[_prepare_ip_address_update_data] Columns to process: {columns_to_process}")
+    logger.info(
+        f"[_prepare_ip_address_update_data] Columns to process: {columns_to_process}"
+    )
 
     for field in columns_to_process:
         if field in excluded_fields:
@@ -697,7 +714,9 @@ def _prepare_ip_address_update_data(
         # Skip nested fields (e.g., status__name, parent__namespace__name)
         # These are lookup fields from CSV export and should not be sent to API
         if "__" in field:
-            logger.debug(f"Skipping nested field '{field}' - lookup fields not supported for updates")
+            logger.debug(
+                f"Skipping nested field '{field}' - lookup fields not supported for updates"
+            )
             continue
 
         # Regular field

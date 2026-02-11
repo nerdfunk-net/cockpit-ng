@@ -13,8 +13,6 @@ from models.templates import (
     TemplateRequest,
     TemplateResponse,
     TemplateListResponse,
-    TemplateContentRequest,
-    TemplateContentResponse,
     TemplateGitTestRequest,
     TemplateSyncRequest,
     TemplateSyncResponse,
@@ -764,13 +762,13 @@ async def advanced_render_template(
 ) -> AdvancedTemplateRenderResponse:
     """
     Advanced unified template rendering for both netmiko and agent templates.
-    
+
     This endpoint:
     - Handles both netmiko and agent template types
     - Executes pre_run commands dynamically for netmiko templates
     - Fetches inventory context for agent templates
     - Supports all necessary variables and context
-    
+
     The frontend should send user_variables WITHOUT pre_run.raw and pre_run.parsed,
     as the backend will execute and parse commands dynamically.
     """
@@ -783,7 +781,7 @@ async def advanced_render_template(
         category = render_request.category.lower()
         template_content = render_request.template_content
         warnings = []
-        
+
         # Initialize pre_run variables (only used for netmiko templates)
         pre_run_output = None
         pre_run_parsed = None
@@ -796,19 +794,18 @@ async def advanced_render_template(
         # Handle netmiko templates
         if category == "netmiko":
             # Initialize pre_run to empty (optional, will be populated if command provided)
-            context["pre_run"] = {
-                "raw": "",
-                "parsed": []
-            }
-            
+            context["pre_run"] = {"raw": "", "parsed": []}
+
             # Determine if we need to fetch device data
             # We need it if: use_nautobot_context is True OR pre_run_command is provided
             needs_device_data = (
-                (render_request.use_nautobot_context or 
-                 (render_request.pre_run_command and render_request.pre_run_command.strip()))
-                and render_request.device_id
-            )
-            
+                render_request.use_nautobot_context
+                or (
+                    render_request.pre_run_command
+                    and render_request.pre_run_command.strip()
+                )
+            ) and render_request.device_id
+
             # Fetch Nautobot device data if needed
             if needs_device_data:
                 try:
@@ -817,28 +814,46 @@ async def advanced_render_template(
                         use_cache=True,
                     )
                     context["device_details"] = device_data
-                    
+
                     # Build simplified devices array for compatibility
-                    devices = [{
-                        "id": render_request.device_id,
-                        "name": device_data.get("name", ""),
-                        "primary_ip4": device_data.get("primary_ip4", {}).get("address", "") if isinstance(device_data.get("primary_ip4"), dict) else device_data.get("primary_ip4", ""),
-                        "primary_ip6": device_data.get("primary_ip6", {}).get("address", "") if isinstance(device_data.get("primary_ip6"), dict) else device_data.get("primary_ip6", ""),
-                    }]
+                    devices = [
+                        {
+                            "id": render_request.device_id,
+                            "name": device_data.get("name", ""),
+                            "primary_ip4": device_data.get("primary_ip4", {}).get(
+                                "address", ""
+                            )
+                            if isinstance(device_data.get("primary_ip4"), dict)
+                            else device_data.get("primary_ip4", ""),
+                            "primary_ip6": device_data.get("primary_ip6", {}).get(
+                                "address", ""
+                            )
+                            if isinstance(device_data.get("primary_ip6"), dict)
+                            else device_data.get("primary_ip6", ""),
+                        }
+                    ]
                     context["devices"] = devices
-                    
-                    logger.info(f"Fetched Nautobot context for device {render_request.device_id}")
+
+                    logger.info(
+                        f"Fetched Nautobot context for device {render_request.device_id}"
+                    )
                 except Exception as e:
                     error_msg = f"Failed to fetch Nautobot device data: {str(e)}"
                     logger.error(error_msg)
                     # If we needed device data for pre_run_command, this is critical
-                    if render_request.pre_run_command and render_request.pre_run_command.strip():
+                    if (
+                        render_request.pre_run_command
+                        and render_request.pre_run_command.strip()
+                    ):
                         raise ValueError(error_msg)
                     # Otherwise just add warning
                     warnings.append(error_msg)
-            
+
             # Execute pre-run command if provided
-            if render_request.pre_run_command and render_request.pre_run_command.strip():
+            if (
+                render_request.pre_run_command
+                and render_request.pre_run_command.strip()
+            ):
                 if not render_request.device_id:
                     raise ValueError(
                         "A test device is required to execute pre-run commands. "
@@ -853,27 +868,31 @@ async def advanced_render_template(
                 try:
                     # Import the render service to use its pre-run execution method
                     from services.network.automation.render import render_service
-                    
+
                     pre_run_result = await render_service._execute_pre_run_command(
                         device_id=render_request.device_id,
                         command=render_request.pre_run_command.strip(),
                         credential_id=render_request.credential_id,
                         nautobot_device=context.get("device_details"),
                     )
-                    
+
                     pre_run_output = pre_run_result.get("raw_output", "")
                     pre_run_parsed = pre_run_result.get("parsed_output", [])
-                    
+
                     # Add to context as pre_run object
                     context["pre_run"] = {
                         "raw": pre_run_output,
-                        "parsed": pre_run_parsed
+                        "parsed": pre_run_parsed,
                     }
-                    
+
                     if pre_run_result.get("parse_error"):
-                        warnings.append(f"TextFSM parsing not available: {pre_run_result['parse_error']}")
-                    
-                    logger.info(f"Pre-run command executed. Raw length: {len(pre_run_output)}, Parsed records: {len(pre_run_parsed)}")
+                        warnings.append(
+                            f"TextFSM parsing not available: {pre_run_result['parse_error']}"
+                        )
+
+                    logger.info(
+                        f"Pre-run command executed. Raw length: {len(pre_run_output)}, Parsed records: {len(pre_run_parsed)}"
+                    )
                 except Exception as e:
                     error_msg = f"Failed to execute pre-run command: {str(e)}"
                     logger.error(error_msg)
@@ -886,26 +905,36 @@ async def advanced_render_template(
                 try:
                     # Fetch devices from inventory using the same pattern as /api/inventory/resolve-devices
                     from inventory_manager import inventory_manager
-                    from utils.inventory_converter import convert_saved_inventory_to_operations
+                    from utils.inventory_converter import (
+                        convert_saved_inventory_to_operations,
+                    )
                     from services.inventory.inventory import inventory_service
-                    
+
                     # Get inventory by ID
-                    inventory = inventory_manager.get_inventory(render_request.inventory_id)
+                    inventory = inventory_manager.get_inventory(
+                        render_request.inventory_id
+                    )
                     if not inventory:
-                        raise ValueError(f"Inventory with ID {render_request.inventory_id} not found")
-                    
+                        raise ValueError(
+                            f"Inventory with ID {render_request.inventory_id} not found"
+                        )
+
                     # Convert stored conditions to operations
                     conditions = inventory.get("conditions", [])
                     if not conditions:
-                        logger.warning(f"Inventory {render_request.inventory_id} has no conditions")
+                        logger.warning(
+                            f"Inventory {render_request.inventory_id} has no conditions"
+                        )
                         context["devices"] = []
                         context["device_details"] = {}
                     else:
                         operations = convert_saved_inventory_to_operations(conditions)
-                        
+
                         # Execute operations to get matching devices
-                        devices, _ = await inventory_service.preview_inventory(operations)
-                        
+                        devices, _ = await inventory_service.preview_inventory(
+                            operations
+                        )
+
                         # Convert devices to simple dict format for context
                         device_list = [
                             {
@@ -916,24 +945,28 @@ async def advanced_render_template(
                             for device in devices
                         ]
                         context["devices"] = device_list
-                        
+
                         # Fetch device details for each device
                         device_details = {}
                         for device in devices:
                             try:
-                                device_data = await device_query_service.get_device_details(
-                                    device_id=device.id,
-                                    use_cache=True,
+                                device_data = (
+                                    await device_query_service.get_device_details(
+                                        device_id=device.id,
+                                        use_cache=True,
+                                    )
                                 )
                                 device_details[device.id] = device_data
                             except Exception as e:
                                 warning_msg = f"Failed to fetch details for device {device.id}: {str(e)}"
                                 logger.warning(warning_msg)
                                 warnings.append(warning_msg)
-                        
+
                         context["device_details"] = device_details
-                        logger.info(f"Fetched {len(device_list)} devices from inventory {render_request.inventory_id}")
-                    
+                        logger.info(
+                            f"Fetched {len(device_list)} devices from inventory {render_request.inventory_id}"
+                        )
+
                 except Exception as e:
                     error_msg = f"Failed to fetch inventory devices: {str(e)}"
                     logger.error(error_msg)
@@ -957,7 +990,7 @@ async def advanced_render_template(
         # Extract variables used in template
         def extract_template_variables(template_content: str) -> List[str]:
             """Extract variable names from Jinja2 template."""
-            pattern = r'\{\{\s*([a-zA-Z_][a-zA-Z0-9_\.]*)'
+            pattern = r"\{\{\s*([a-zA-Z_][a-zA-Z0-9_\.]*)"
             matches = re.findall(pattern, template_content)
             return sorted(set(matches))
 

@@ -184,20 +184,22 @@ class NetmikoService:
                             try:
                                 # Use netmiko's textfsm parsing on the raw output
                                 from netmiko.utilities import get_structured_data
-                                
+
                                 parsed_output = get_structured_data(
-                                    raw_output,
-                                    platform=device_type,
-                                    command=command
+                                    raw_output, platform=device_type, command=command
                                 )
-                                
+
                                 # Store parsed output if we got structured data
                                 if parsed_output:
                                     command_outputs[command] = parsed_output
-                                    logger.info(f"Successfully parsed output for: {command}")
+                                    logger.info(
+                                        f"Successfully parsed output for: {command}"
+                                    )
                                 else:
                                     # No TextFSM template available, store raw output
-                                    logger.info(f"No TextFSM template available for: {command}")
+                                    logger.info(
+                                        f"No TextFSM template available for: {command}"
+                                    )
                                     command_outputs[command] = raw_output
                             except Exception as parse_error:
                                 logger.warning(

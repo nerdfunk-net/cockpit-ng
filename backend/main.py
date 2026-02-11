@@ -103,7 +103,11 @@ app = FastAPI(
 try:
     static_dir = os.path.join(os.path.dirname(__file__), "static", "swagger-ui")
     if os.path.exists(static_dir):
-        app.mount("/api/static/swagger-ui", StaticFiles(directory=static_dir), name="swagger-ui")
+        app.mount(
+            "/api/static/swagger-ui",
+            StaticFiles(directory=static_dir),
+            name="swagger-ui",
+        )
         logger.info(f"Swagger UI static files mounted from: {static_dir}")
     else:
         logger.warning(f"Swagger UI static directory not found: {static_dir}")

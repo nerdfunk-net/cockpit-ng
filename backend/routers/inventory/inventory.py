@@ -208,9 +208,7 @@ async def resolve_inventory_to_devices(
         from utils.inventory_converter import convert_saved_inventory_to_operations
         from services.inventory.inventory import inventory_service
 
-        logger.info(
-            f"Resolving inventory ID {inventory_id} for user '{username}'"
-        )
+        logger.info(f"Resolving inventory ID {inventory_id} for user '{username}'")
 
         inventory = inventory_manager.get_inventory(inventory_id)
 
@@ -221,7 +219,10 @@ async def resolve_inventory_to_devices(
             )
 
         # Check access control - user can only access their own private inventories
-        if inventory.get("scope") == "private" and inventory.get("created_by") != username:
+        if (
+            inventory.get("scope") == "private"
+            and inventory.get("created_by") != username
+        ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied to private inventory {inventory_id}",
@@ -254,13 +255,11 @@ async def resolve_inventory_to_devices(
             "inventory_id": inventory_id,
             "inventory_name": inventory.get("name", ""),
         }
-    
+
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            f"Error resolving inventory '{inventory_name}': {e}", exc_info=True
-        )
+        logger.error(f"Error resolving inventory '{inventory_id}': {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to resolve inventory: {str(e)}",
@@ -327,7 +326,10 @@ async def resolve_inventory_to_devices_detailed(
             )
 
         # Check access control - user can only access their own private inventories
-        if inventory.get("scope") == "private" and inventory.get("created_by") != username:
+        if (
+            inventory.get("scope") == "private"
+            and inventory.get("created_by") != username
+        ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied to private inventory {inventory_id}",
@@ -379,7 +381,7 @@ async def resolve_inventory_to_devices_detailed(
                 device_entry["primary_ip4"] = primary_ip4.get("address")
             else:
                 device_entry["primary_ip4"] = None
-            
+
             device_list.append(device_entry)
 
         logger.info(
