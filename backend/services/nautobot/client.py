@@ -9,6 +9,8 @@ import logging
 from typing import Dict, Any, Optional
 from concurrent.futures import ThreadPoolExecutor
 
+from .common.exceptions import NautobotValidationError, NautobotAPIError
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,7 +66,7 @@ class NautobotService:
         config = self._get_config()
 
         if not config["url"] or not config["token"]:
-            raise Exception("Nautobot URL and token must be configured")
+            raise NautobotValidationError("Nautobot URL and token must be configured")
 
         graphql_url = f"{config['url'].rstrip('/')}/api/graphql/"
 
@@ -87,11 +89,11 @@ class NautobotService:
             if response.status_code == 200:
                 return response.json()
             else:
-                raise Exception(
+                raise NautobotAPIError(
                     f"GraphQL request failed with status {response.status_code}: {response.text}"
                 )
         except requests.exceptions.Timeout:
-            raise Exception(
+            raise NautobotAPIError(
                 f"GraphQL request timed out after {config['timeout']} seconds"
             )
         except Exception as e:
@@ -114,7 +116,7 @@ class NautobotService:
         config = self._get_config()
 
         if not config["url"] or not config["token"]:
-            raise Exception("Nautobot URL and token must be configured")
+            raise NautobotValidationError("Nautobot URL and token must be configured")
 
         api_url = f"{config['url'].rstrip('/')}/api/{endpoint.lstrip('/')}"
 
@@ -142,11 +144,11 @@ class NautobotService:
                     }
                 return response.json()
             else:
-                raise Exception(
+                raise NautobotAPIError(
                     f"REST request failed with status {response.status_code}: {response.text}"
                 )
         except requests.exceptions.Timeout:
-            raise Exception(f"REST request timed out after {config['timeout']} seconds")
+            raise NautobotAPIError(f"REST request timed out after {config['timeout']} seconds")
         except Exception as e:
             logger.error(f"REST request failed: {str(e)}")
             raise
@@ -499,7 +501,7 @@ class NautobotService:
 
         except Exception as e:
             logger.error(f"Device onboarding failed: {e}")
-            raise Exception(f"Failed to onboard device: {str(e)}")
+            raise NautobotAPIError(f"Failed to onboard device: {str(e)}")
 
     def get_devices_paginated(
         self, limit: int = 100, offset: int = 0, fields: Optional[list] = None

@@ -6,6 +6,7 @@ This resolver handles read-only operations for virtualization clusters.
 
 import logging
 from typing import Optional, Dict, Any, List
+from ..common.exceptions import NautobotAPIError
 from .base_resolver import BaseResolver
 
 logger = logging.getLogger(__name__)
@@ -48,7 +49,7 @@ class ClusterResolver(BaseResolver):
 
             if "errors" in result:
                 logger.error(f"GraphQL errors fetching clusters: {result['errors']}")
-                raise Exception(f"GraphQL errors: {result['errors']}")
+                raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
 
             clusters = result.get("data", {}).get("clusters", [])
             logger.info(f"Retrieved {len(clusters)} clusters from Nautobot")
@@ -97,7 +98,7 @@ class ClusterResolver(BaseResolver):
                 logger.error(
                     f"GraphQL errors fetching cluster {cluster_id}: {result['errors']}"
                 )
-                raise Exception(f"GraphQL errors: {result['errors']}")
+                raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
 
             clusters = result.get("data", {}).get("clusters", [])
             if clusters:

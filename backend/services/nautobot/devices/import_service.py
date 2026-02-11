@@ -15,6 +15,11 @@ Based on the workflow from device_creation_service.py but redesigned to:
 import logging
 from typing import Optional, Dict, Any, List
 from services.nautobot import NautobotService
+from services.nautobot.common.exceptions import (
+    NautobotAPIError,
+    NautobotDuplicateResourceError,
+    NautobotResourceNotFoundError,
+)
 from services.nautobot.devices.common import DeviceCommonService
 from services.nautobot.devices.interface_manager import InterfaceManagerService
 
@@ -344,7 +349,7 @@ class DeviceImportService:
             )
 
             if not device_response or "id" not in device_response:
-                raise Exception("No device ID returned from Nautobot")
+                raise NautobotAPIError("No device ID returned from Nautobot")
 
             device_id = device_response["id"]
             logger.info(
@@ -374,11 +379,12 @@ class DeviceImportService:
                         logger.info(f"Found existing device: {existing_id}")
                         return existing_id, device_response, False
                     else:
-                        raise Exception(
-                            f"Device '{device_name}' reported as duplicate but lookup failed"
+                        raise NautobotResourceNotFoundError(
+                            "device",
+                            f"{device_name} (reported as duplicate but lookup failed)"
                         )
                 else:
-                    raise Exception(f"Device '{device_name}' already exists") from e
+                    raise NautobotDuplicateResourceError("device", device_name) from e
             else:
                 # Some other error
                 logger.error(f"Failed to create device '{device_name}': {error_msg}")

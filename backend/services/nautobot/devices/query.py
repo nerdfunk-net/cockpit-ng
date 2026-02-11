@@ -8,6 +8,7 @@ import logging
 from typing import Optional
 from services.nautobot import nautobot_service
 from services.settings.cache import cache_service
+from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot_helpers.cache_helpers import (
     DEVICE_CACHE_TTL,
     get_device_list_cache_key,
@@ -342,7 +343,7 @@ class DeviceQueryService:
             count_query, {"name_filter": [name_filter]}
         )
         if "errors" in count_result:
-            raise Exception(f"GraphQL errors in count query: {count_result['errors']}")
+            raise NautobotAPIError(f"GraphQL errors in count query: {count_result['errors']}")
         total_count = len(count_result["data"]["devices"])
 
         # Get paginated data
@@ -408,7 +409,7 @@ class DeviceQueryService:
 
         result = await nautobot_service.graphql_query(query, variables)
         if "errors" in result:
-            raise Exception(f"GraphQL errors: {result['errors']}")
+            raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
 
         # Extract devices from locations
         devices = []
@@ -459,7 +460,7 @@ class DeviceQueryService:
 
         result = await nautobot_service.graphql_query(query, variables)
         if "errors" in result:
-            raise Exception(f"GraphQL errors: {result['errors']}")
+            raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
 
         # Extract unique devices from prefixes
         devices_dict = {}
@@ -510,7 +511,7 @@ class DeviceQueryService:
 
         result = await nautobot_service.graphql_query(query, variables)
         if "errors" in result:
-            raise Exception(f"GraphQL errors: {result['errors']}")
+            raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
 
         # Extract unique devices from IP addresses
         devices_dict = {}
@@ -552,7 +553,7 @@ class DeviceQueryService:
 
         result = await nautobot_service.graphql_query(query, variables)
         if "errors" in result:
-            raise Exception(f"GraphQL errors: {result['errors']}")
+            raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
 
         devices = result["data"]["devices"]
 
@@ -568,7 +569,7 @@ class DeviceQueryService:
             """
             count_result = await nautobot_service.graphql_query(count_query, {})
             if "errors" in count_result:
-                raise Exception(
+                raise NautobotAPIError(
                     f"GraphQL errors in count query: {count_result['errors']}"
                 )
             total_count = len(count_result["data"]["devices"])

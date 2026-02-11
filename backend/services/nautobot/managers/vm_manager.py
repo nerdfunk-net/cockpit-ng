@@ -6,6 +6,7 @@ This manager handles lifecycle operations (create/update) for virtual machines.
 
 import logging
 from typing import Dict, Any, Optional
+from ..common.exceptions import NautobotAPIError
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +93,7 @@ class VirtualMachineManager:
             logger.error(
                 f"Failed to assign IP to virtual interface {virtual_interface_id}: {str(e)}"
             )
-            raise Exception(f"Failed to assign IP to virtual interface: {str(e)}")
+            raise NautobotAPIError(f"Failed to assign IP to virtual interface: {str(e)}")
 
     async def assign_primary_ip_to_vm(self, vm_id: str, ip_address_id: str) -> bool:
         """
@@ -135,7 +136,7 @@ class VirtualMachineManager:
             logger.error("    -> ✗ PATCH request failed")
             logger.error(f"    -> Error: {str(e)}")
             logger.error(f"Failed to assign primary IPv4 to VM {vm_id}: {str(e)}")
-            raise Exception(f"Failed to assign primary IP to VM: {str(e)}")
+            raise NautobotAPIError(f"Failed to assign primary IP to VM: {str(e)}")
 
     async def create_virtual_machine(
         self,
@@ -235,7 +236,7 @@ class VirtualMachineManager:
             logger.error("    -> ✗ POST request failed")
             logger.error(f"    -> Error: {str(e)}")
             logger.error(f"Failed to create VM '{name}': {e}", exc_info=True)
-            raise Exception(f"Failed to create virtual machine: {str(e)}")
+            raise NautobotAPIError(f"Failed to create virtual machine: {str(e)}")
 
     async def create_virtual_interface(
         self,
@@ -333,4 +334,4 @@ class VirtualMachineManager:
                 f"Failed to create interface '{name}' for VM {virtual_machine_id}: {e}",
                 exc_info=True,
             )
-            raise Exception(f"Failed to create virtual interface: {str(e)}")
+            raise NautobotAPIError(f"Failed to create virtual interface: {str(e)}")

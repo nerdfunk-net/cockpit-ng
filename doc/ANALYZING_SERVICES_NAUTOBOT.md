@@ -175,39 +175,43 @@ This violated the layered architecture (Model → Repository → Service → Rou
 
 ## 3. Major Issues
 
-### 3.1 Custom Exception Hierarchy Defined but Not Used
+### 3.1 ~~Custom Exception Hierarchy Defined but Not Used~~ **RESOLVED**
 
-**Severity: High** | **Files: 20+**
+**Status: RESOLVED (2026-02-11)** | **Files: 30 files updated**
 
-The codebase defines a clean exception hierarchy in `common/exceptions.py`:
+**Previous Issue:** The codebase defined a clean exception hierarchy in `common/exceptions.py` but **30+ locations** used bare `raise Exception(...)` instead:
 - `NautobotError` (base)
 - `NautobotValidationError`
 - `NautobotResourceNotFoundError`
 - `NautobotAPIError`
 - `NautobotDuplicateResourceError`
 
-Yet **30+ locations** use bare `raise Exception(...)` instead:
+**Resolution:**
+All 30 instances of bare `raise Exception(...)` have been replaced with appropriate custom exceptions:
 
-```python
-# Found in client.py, query.py, creation.py, import_service.py,
-# vm_manager.py, ip_manager.py, prefix_manager.py, cluster_resolver.py
-raise Exception("Nautobot URL and token must be configured")
-raise Exception(f"GraphQL errors: {result['errors']}")
-raise Exception(f"Failed to create virtual machine: {str(e)}")
-raise Exception(f"Failed to onboard device: {str(e)}")
-# ... 26 more
-```
+| Exception Type | Use Case | Files Updated |
+|----------------|----------|---------------|
+| `NautobotValidationError` | Configuration/validation failures | client.py (2 instances) |
+| `NautobotAPIError` | API/GraphQL failures, SSH failures | client.py (5), query.py (7), creation.py (1), cluster_resolver.py (2), prefix_manager.py (1), ip_manager.py (4), vm_manager.py (4), configs/config.py (1) |
+| `NautobotResourceNotFoundError` | Resource lookup failures | import_service.py (1) |
+| `NautobotDuplicateResourceError` | Duplicate resource errors | import_service.py (1) |
 
 **Impact:**
-- Callers cannot catch specific error types
-- Error handling is imprecise (`except Exception` catches everything)
-- The exception hierarchy was designed for a reason but provides zero value unused
+- ✅ Callers can now catch specific error types
+- ✅ Error handling is more precise and type-safe
+- ✅ The exception hierarchy now provides actual value
+- ✅ Improved error categorization for debugging and monitoring
 
-**Recommendation:** Replace all `raise Exception(...)` with the appropriate custom exception:
-- API failures → `NautobotAPIError`
-- Not found → `NautobotResourceNotFoundError`
-- Validation → `NautobotValidationError`
-- Duplicates → `NautobotDuplicateResourceError`
+**Files Modified:**
+1. [client.py](../backend/services/nautobot/client.py) - Added imports, fixed 7 exceptions
+2. [devices/query.py](../backend/services/nautobot/devices/query.py) - Added import, fixed 7 exceptions
+3. [devices/creation.py](../backend/services/nautobot/devices/creation.py) - Added import, fixed 1 exception
+4. [devices/import_service.py](../backend/services/nautobot/devices/import_service.py) - Added imports, fixed 3 exceptions
+5. [resolvers/cluster_resolver.py](../backend/services/nautobot/resolvers/cluster_resolver.py) - Added import, fixed 2 exceptions
+6. [managers/prefix_manager.py](../backend/services/nautobot/managers/prefix_manager.py) - Added import, fixed 1 exception
+7. [managers/ip_manager.py](../backend/services/nautobot/managers/ip_manager.py) - Added import, fixed 4 exceptions
+8. [managers/vm_manager.py](../backend/services/nautobot/managers/vm_manager.py) - Added import, fixed 4 exceptions
+9. [configs/config.py](../backend/services/nautobot/configs/config.py) - Added import, fixed 1 exception
 
 ---
 
@@ -451,7 +455,7 @@ Well-structured with:
    - ~~**Option B:** Actually migrate consumers to use resolvers/managers directly (larger effort)~~
 
 ### Priority 3: Code Quality
-4. **Replace all `raise Exception(...)` with custom exceptions** from `common/exceptions.py`
+4. ~~**Replace all `raise Exception(...)` with custom exceptions**~~ **RESOLVED** ~~from `common/exceptions.py`~~
 5. **Fix f-string logging** — replace `logger.xxx(f"...")` with `logger.xxx("...", args)` across all 20 files
 6. **Clean up offboarding.py** — change 21x `logger.info("DEBUG: ...")` to `logger.debug(...)`
 7. **Clean up vm_manager.py** — demote verbose logging to `logger.debug()`
@@ -475,10 +479,10 @@ Well-structured with:
 | Total files | 31 |
 | Total lines | 8,430 |
 | Largest file | `offboarding.py` (903 lines) |
-| `raise Exception(...)` occurrences | 30+ |
+| `raise Exception(...)` occurrences | ~~30+~~ → **0** ✅ |
 | f-string logging occurrences | ~270 |
 | DEBUG logs at INFO level | 21 |
 | Custom exceptions defined | 5 |
-| Custom exceptions actually used | 0 (only utility functions `is_duplicate_error` and `handle_already_exists_error` are used) |
+| Custom exceptions actually used | ~~0~~ → **5 (all)** ✅ |
 | `NautobotService()` instances created | 3 (module singleton + config + backup) |
 | Files using deprecated facade | 7 |

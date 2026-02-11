@@ -3,6 +3,7 @@ IP address lifecycle manager.
 """
 
 import logging
+from ..common.exceptions import NautobotAPIError
 
 logger = logging.getLogger(__name__)
 
@@ -146,7 +147,7 @@ class IPManager:
                         return existing_ip["id"]
                     else:
                         logger.error(f"Could not find existing IP for host {host_ip}")
-                        raise Exception(
+                        raise NautobotAPIError(
                             f"IP {host_ip} reported as duplicate but not found in namespace"
                         )
 
@@ -154,7 +155,7 @@ class IPManager:
                     logger.error(
                         f"Failed to find existing IP for {ip_address}: {lookup_error}"
                     )
-                    raise Exception(
+                    raise NautobotAPIError(
                         f"Failed to create IP {ip_address} and could not find existing IP: {lookup_error}"
                     ) from lookup_error
 
@@ -213,7 +214,7 @@ class IPManager:
                         logger.error(
                             f"Failed to auto-create prefix for {ip_address}: {prefix_error}"
                         )
-                        raise Exception(
+                        raise NautobotAPIError(
                             f"Failed to create IP {ip_address} and could not auto-create prefix: {prefix_error}"
                         ) from prefix_error
                 else:
@@ -222,7 +223,7 @@ class IPManager:
                         f"IP creation failed: No suitable parent prefix exists for {ip_address}. "
                         f"Automatic prefix creation is disabled. Error: {error_message}"
                     )
-                    raise Exception(
+                    raise NautobotAPIError(
                         f"Cannot create IP address {ip_address}: No suitable parent prefix exists. "
                         f"Please either create the parent prefix manually or enable automatic prefix creation in the form."
                     ) from e

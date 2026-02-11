@@ -10,6 +10,7 @@ from typing import Optional
 from pathlib import Path
 
 from services.nautobot import NautobotService
+from services.nautobot.common.exceptions import NautobotAPIError
 from services.network.automation.netmiko import NetmikoService
 from utils.netmiko_platform_mapper import NetmikoPlatformMapper
 
@@ -287,7 +288,7 @@ class DeviceConfigService:
         if not result["success"]:
             logger.error(f"{log_prefix} ✗ SSH connection or command execution failed")
             logger.error(f"{log_prefix} Error: {result.get('error')}")
-            raise Exception(result.get("error", "SSH connection failed"))
+            raise NautobotAPIError(result.get("error", "SSH connection failed"))
 
         logger.info(f"{log_prefix} ✓ SSH connection successful")
         return result

@@ -4,6 +4,7 @@ Prefix lifecycle manager.
 
 import logging
 from typing import Optional
+from ..common.exceptions import NautobotAPIError
 from ..common.validators import is_valid_uuid
 from ..common.utils import normalize_tags
 
@@ -140,7 +141,7 @@ class PrefixManager:
         )
 
         if not result or "id" not in result:
-            raise Exception(f"Failed to create prefix {prefix}: No ID returned")
+            raise NautobotAPIError(f"Failed to create prefix {prefix}: No ID returned")
 
         prefix_id = result["id"]
         logger.info(f"Created new prefix: {prefix} with ID: {prefix_id}")

@@ -9,6 +9,7 @@ import ipaddress
 from typing import Optional, List, Dict, Any
 from models.nautobot import AddDeviceRequest, InterfaceData
 from services.nautobot import nautobot_service
+from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot.devices.common import DeviceCommonService
 from services.nautobot.devices.interface_manager import InterfaceManagerService
 
@@ -261,7 +262,7 @@ class DeviceCreationService:
             workflow_status["step1_device"]["message"] = (
                 "Failed to create device: No device ID returned"
             )
-            raise Exception("Failed to create device: No device ID returned")
+            raise NautobotAPIError("Failed to create device: No device ID returned")
 
         device_id = device_response["id"]
         workflow_status["step1_device"]["status"] = "success"
