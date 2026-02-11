@@ -10,6 +10,12 @@ from fastapi import HTTPException, status
 from models.nautobot import OffboardDeviceRequest
 from services.settings.cache import cache_service
 from services.nautobot import nautobot_service
+from services.nautobot_helpers import (
+    get_device_cache_key,
+    get_device_details_cache_key,
+    get_device_list_cache_key,
+    get_ip_address_cache_key,
+)
 from settings_manager import settings_manager
 
 logger = logging.getLogger(__name__)
@@ -643,9 +649,9 @@ class OffboardingService:
         except Exception as exc:
             raise self._translate_exception(exc, f"Failed to delete device {device_id}")
 
-        cache_service.delete(self._device_cache_key(device_id))
-        cache_service.delete(self._device_details_cache_key(device_id))
-        cache_service.delete(self._device_list_cache_key())
+        cache_service.delete(get_device_cache_key(device_id))
+        cache_service.delete(get_device_details_cache_key(device_id))
+        cache_service.delete(get_device_list_cache_key())
         return result
 
     async def _delete_ip_address(self, ip_id: str, device_id: str) -> Dict[str, Any]:
@@ -657,10 +663,10 @@ class OffboardingService:
         except Exception as exc:
             raise self._translate_exception(exc, f"Failed to delete IP address {ip_id}")
 
-        cache_service.delete(self._ip_address_cache_key(ip_id))
-        cache_service.delete(self._device_cache_key(device_id))
-        cache_service.delete(self._device_details_cache_key(device_id))
-        cache_service.delete(self._device_list_cache_key())
+        cache_service.delete(get_ip_address_cache_key(ip_id))
+        cache_service.delete(get_device_cache_key(device_id))
+        cache_service.delete(get_device_details_cache_key(device_id))
+        cache_service.delete(get_device_list_cache_key())
         return result
 
     async def _update_device(
@@ -839,27 +845,6 @@ class OffboardingService:
         return result
 
     @staticmethod
-    def _build_custom_field_payload(
-        settings: Dict[str, Any],
-    ) -> Optional[Dict[str, Any]]:
-        if not settings:
-            return None
-
-        custom_fields: Dict[str, Any] = {}
-        for name, value in settings.items():
-            if value is None:
-                custom_fields[name] = None
-            elif isinstance(value, str) and value.lower() == "clear":
-                custom_fields[name] = None
-            else:
-                custom_fields[name] = value
-
-        if not custom_fields:
-            return None
-
-        return {"custom_fields": custom_fields}
-
-    @staticmethod
     def _translate_exception(exc: Exception, context: str) -> HTTPException:
         message = str(exc)
         if "404" in message or "Not Found" in message:
@@ -881,22 +866,6 @@ class OffboardingService:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"{context}: {message}",
         )
-
-    @staticmethod
-    def _device_cache_key(device_id: str) -> str:
-        return f"nautobot:devices:{device_id}"
-
-    @staticmethod
-    def _device_details_cache_key(device_id: str) -> str:
-        return f"nautobot:device_details:{device_id}"
-
-    @staticmethod
-    def _device_list_cache_key() -> str:
-        return "nautobot:devices:list:all"
-
-    @staticmethod
-    def _ip_address_cache_key(ip_id: str) -> str:
-        return f"nautobot:ip_address:{ip_id}"
 
 
 offboarding_service = OffboardingService()

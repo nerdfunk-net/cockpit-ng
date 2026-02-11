@@ -1,5 +1,5 @@
 """
-Unit tests for Ansible Inventory Service.
+Unit tests for Inventory Service.
 
 Tests inventory generation including:
 - Device filtering by various criteria
@@ -12,7 +12,7 @@ Tests inventory generation including:
 
 import pytest
 from unittest.mock import AsyncMock, patch
-from services.network.automation.ansible_inventory import AnsibleInventoryService
+from services.inventory.inventory import InventoryService
 from models.inventory import LogicalOperation, LogicalCondition
 from tests.fixtures import create_devices_list
 
@@ -30,7 +30,7 @@ class TestInventoryPreview:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Set up test instance."""
-        self.service = AnsibleInventoryService()
+        self.service = InventoryService()
 
     @pytest.mark.asyncio
     async def test_preview_inventory_by_location(self, mock_nautobot_service):
@@ -162,7 +162,7 @@ class TestDeviceFiltering:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Set up test instance."""
-        self.service = AnsibleInventoryService()
+        self.service = InventoryService()
 
     @pytest.mark.asyncio
     async def test_filter_by_name(self, mock_nautobot_service):
@@ -286,7 +286,7 @@ class TestInventoryGeneration:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Set up test instance."""
-        self.service = AnsibleInventoryService()
+        self.service = InventoryService()
 
     @pytest.mark.asyncio
     async def test_generate_inventory_format(self, mock_nautobot_service):
@@ -366,7 +366,7 @@ class TestCustomFieldHandling:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Set up test instance."""
-        self.service = AnsibleInventoryService()
+        self.service = InventoryService()
 
     @pytest.mark.asyncio
     async def test_get_custom_field_types(self, mock_nautobot_service):
@@ -421,7 +421,7 @@ class TestComplexQueries:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Set up test instance."""
-        self.service = AnsibleInventoryService()
+        self.service = InventoryService()
 
     @pytest.mark.asyncio
     async def test_complex_and_or_combination(self, mock_nautobot_service):
@@ -520,7 +520,7 @@ class TestGraphQLQueryConstruction:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Set up test instance."""
-        self.service = AnsibleInventoryService()
+        self.service = InventoryService()
 
     @pytest.mark.asyncio
     async def test_location_equals_builds_correct_query(self, mock_nautobot_service):
@@ -794,7 +794,7 @@ class TestClientSideFiltering:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Set up test instance."""
-        self.service = AnsibleInventoryService()
+        self.service = InventoryService()
 
     @pytest.mark.asyncio
     async def test_and_operation_returns_intersection(self, mock_nautobot_service):
@@ -1001,7 +1001,7 @@ class TestAnsibleInventoryErrorHandling:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Set up test instance."""
-        self.service = AnsibleInventoryService()
+        self.service = InventoryService()
 
     @pytest.mark.asyncio
     async def test_handles_graphql_errors(self, mock_nautobot_service):

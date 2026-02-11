@@ -52,9 +52,7 @@ async def resolve_inventory_to_device_ids(
     """
     try:
         from inventory_manager import inventory_manager
-        from services.network.automation.ansible_inventory import (
-            ansible_inventory_service,
-        )
+        from services.inventory.inventory import inventory_service
         from utils.inventory_converter import convert_saved_inventory_to_operations
 
         # Load inventory from database by name
@@ -75,7 +73,7 @@ async def resolve_inventory_to_device_ids(
             return None
 
         # Preview inventory to get matching devices
-        devices, _ = await ansible_inventory_service.preview_inventory(operations)
+        devices, _ = await inventory_service.preview_inventory(operations)
 
         # Extract device IDs (UUIDs)
         device_ids = [device.id for device in devices]

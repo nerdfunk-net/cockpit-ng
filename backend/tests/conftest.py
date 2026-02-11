@@ -257,7 +257,7 @@ def mock_nb2cmk_service():
 
 @pytest.fixture
 def mock_ansible_inventory_service():
-    """Mock AnsibleInventoryService for testing."""
+    """Mock InventoryService for testing."""
     service = MagicMock()
     service.generate_inventory = AsyncMock()
     service.save_inventory = AsyncMock()
@@ -488,9 +488,9 @@ def real_nautobot_service(test_nautobot_configured):
 @pytest.fixture(scope="module")
 def real_ansible_inventory_service(real_nautobot_service):
     """
-    Real AnsibleInventoryService configured with real Nautobot connection.
+    Real InventoryService configured with real Nautobot connection.
 
-    This fixture provides the ansible inventory service that will make
+    This fixture provides the inventory service that will make
     real API calls to the test Nautobot instance.
 
     Usage:
@@ -499,11 +499,11 @@ def real_ansible_inventory_service(real_nautobot_service):
         async def test_inventory_generation(real_ansible_inventory_service):
             devices, count = await real_ansible_inventory_service.preview_inventory(ops)
     """
-    from services.network.automation.ansible_inventory import AnsibleInventoryService
+    from services.inventory.inventory import InventoryService
     from unittest.mock import patch
 
-    # Patch the global nautobot_service instance that ansible_inventory imports
-    # The ansible_inventory service does: from services.nautobot import nautobot_service
+    # Patch the global nautobot_service instance that inventory service imports
+    # The inventory service does: from services.nautobot import nautobot_service
     with patch("services.nautobot.nautobot_service", real_nautobot_service):
-        service = AnsibleInventoryService()
+        service = InventoryService()
         yield service

@@ -263,9 +263,7 @@ def _get_target_devices(
 
         try:
             from inventory_manager import inventory_manager
-            from services.network.automation.ansible_inventory import (
-                ansible_inventory_service,
-            )
+            from services.inventory.inventory import inventory_service
 
             # Load inventory from database by name
             # Note: We need to get the username from the template context
@@ -305,7 +303,7 @@ def _get_target_devices(
 
                 # Preview inventory to get matching devices
                 devices, _ = loop.run_until_complete(
-                    ansible_inventory_service.preview_inventory(operations)
+                    inventory_service.preview_inventory(operations)
                 )
 
                 # Extract device IDs (UUIDs)

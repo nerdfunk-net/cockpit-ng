@@ -14,6 +14,11 @@ def get_device_cache_key(device_id: str) -> str:
     return f"nautobot:devices:{device_id}"
 
 
+def get_device_details_cache_key(device_id: str) -> str:
+    """Generate cache key for device details."""
+    return f"nautobot:device_details:{device_id}"
+
+
 def get_device_list_cache_key(
     filter_type: str = None,
     filter_value: str = None,
@@ -30,6 +35,11 @@ def get_device_list_cache_key(
         key += f":limit_{limit}:offset_{offset}"
 
     return key
+
+
+def get_ip_address_cache_key(ip_id: str) -> str:
+    """Generate cache key for individual IP address."""
+    return f"nautobot:ip_address:{ip_id}"
 
 
 def cache_device(device: dict) -> None:

@@ -296,7 +296,7 @@ logger.warning("Failed to look up location '%s': %s", location_name, e)
    - ✅ `get_custom_fields_for_devices()` → Use `NautobotMetadataService.get_device_custom_fields()`
 5. **Updated consumers**:
    - `inventory.py` now uses `nautobot_metadata_service.get_device_custom_fields()`
-   - `ansible_inventory.py` now uses `nautobot_metadata_service.get_device_custom_fields()`
+   - `ansible_inventory.py` now uses `nautobot_metadata_service.get_device_custom_fields()` **file was removed**
 
 **Result:**
 - ✅ `NautobotService` is now a pure API client (GraphQL, REST, connection testing only)
@@ -356,11 +356,29 @@ This follows Python 3.10+ best practices for async/await code.
 
 ## 4. Minor Issues
 
-### 4.1 Dead Code
+### 4.1 ~~Dead Code~~ **RESOLVED**
 
-- **`helpers/__init__.py`**: Empty package with no modules — can be removed
-- **`_build_custom_field_payload()`** in `offboarding.py:840-859`: Static method that appears unused (offboarding uses `_handle_set_offboarding_values` instead)
-- **`offboarding.py` cache key methods** (`_device_cache_key`, `_device_details_cache_key`, `_device_list_cache_key`, `_ip_address_cache_key`): Duplicate the cache key patterns used in `query.py` and `nautobot_helpers/cache_helpers.py`
+**Status: RESOLVED (2026-02-11)**
+
+**Previous Issue:** Three types of dead code existed in the codebase:
+- **`helpers/__init__.py`**: Empty package with no modules
+- **`_build_custom_field_payload()`** in `offboarding.py:840-859`: Static method that appeared unused (offboarding uses `_handle_set_offboarding_values` instead)
+- **`offboarding.py` cache key methods** (`_device_cache_key`, `_device_details_cache_key`, `_device_list_cache_key`, `_ip_address_cache_key`): Duplicated the cache key patterns used in `query.py` and `nautobot_helpers/cache_helpers.py`
+
+**Resolution:**
+1. ✅ Removed the empty `helpers/` package directory entirely
+2. ✅ Removed the unused `_build_custom_field_payload()` static method from `offboarding.py`
+3. ✅ Added missing cache key functions to `nautobot_helpers/cache_helpers.py`:
+   - `get_device_details_cache_key(device_id)` - for device details cache keys
+   - `get_ip_address_cache_key(ip_id)` - for IP address cache keys
+4. ✅ Updated `offboarding.py` to import and use centralized cache key functions
+5. ✅ Removed duplicate cache key methods from `offboarding.py`
+
+**Impact:**
+- ✅ All cache key generation is now centralized in `nautobot_helpers/cache_helpers.py`
+- ✅ Eliminated code duplication and maintenance burden
+- ✅ Improved consistency across the codebase
+- ✅ Removed ~30 lines of dead code
 
 ### 4.2 Missing Type Hints on Manager Constructors
 
@@ -488,7 +506,7 @@ Well-structured with:
 10. ~~**Fix `asyncio.get_event_loop()`** deprecation in `client.py`~~ **RESOLVED**
 
 ### Priority 5: Cleanup
-11. **Remove dead code**: empty `helpers/` package, unused `_build_custom_field_payload`
+11. ~~**Remove dead code**~~ **RESOLVED** ~~: empty `helpers/` package, unused `_build_custom_field_payload`, duplicate cache key methods~~
 12. **Use `TYPE_CHECKING` imports** in managers instead of lazy runtime imports
 13. **Rename to avoid confusion**: Either rename `devices/interface_manager.py` to `devices/interface_workflow.py` or `managers/interface_manager.py` to `managers/interface_crud.py`
 
