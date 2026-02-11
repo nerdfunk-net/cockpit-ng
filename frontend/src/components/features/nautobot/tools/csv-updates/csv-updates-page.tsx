@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import type { ObjectType } from './types'
 import { useCsvUpload } from './hooks/use-csv-upload'
 import { useCsvUpdatesMutations } from '@/hooks/queries/use-csv-updates-mutations'
-import { PropertiesPanel, MappingPanel } from './components'
+import { PropertiesPanel, MappingPanel, LegacyMappingPanel } from './components'
 import { useToast } from '@/hooks/use-toast'
 
 const EMPTY_SET = new Set<string>()
@@ -25,6 +25,10 @@ export default function CsvUpdatesPage() {
   const [ignoredColumns, setIgnoredColumns] = useState<Set<string>>(EMPTY_SET)
   const [tagsMode, setTagsMode] = useState<'replace' | 'merge'>('replace') // Default: replace tags
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>(EMPTY_MAPPING)
+  
+  // Legacy CSV mapping state
+  const [isLegacyFormat, setIsLegacyFormat] = useState(false)
+  const [legacyMapping, setLegacyMapping] = useState<Record<string, string>>(EMPTY_MAPPING)
 
   // Auto-populate column mapping based on CSV headers
   const autoPopulateColumnMapping = useCallback((headers: string[]) => {
@@ -56,6 +60,27 @@ export default function CsvUpdatesPage() {
       // CSV parsed successfully - auto-populate column mapping
       // Use data.headers directly (not csvUpload.parsedData.headers which isn't updated yet)
       autoPopulateColumnMapping(data.headers)
+      
+      // Check if this is a legacy format (missing required Nautobot fields)
+      if (objectType === 'ip-addresses') {
+        const hasAddress = data.headers.includes('address')
+        const hasId = data.headers.includes('id')
+        const hasNamespace = data.headers.includes('parent__namespace__name')
+        
+        // If missing Nautobot required fields, treat as legacy format
+        if (!hasAddress || (!hasId && !hasNamespace)) {
+          setIsLegacyFormat(true)
+          // Initialize legacy mapping with empty values
+          const initialMapping: Record<string, string> = {}
+          data.headers.forEach(header => {
+            initialMapping[header] = 'none'
+          })
+          setLegacyMapping(initialMapping)
+        } else {
+          setIsLegacyFormat(false)
+          setLegacyMapping(EMPTY_MAPPING)
+        }
+      }
     },
     onParseError: (error) => {
       console.error('CSV parse error:', error)
@@ -72,6 +97,8 @@ export default function CsvUpdatesPage() {
       // Reset properties when changing object type
       setIgnoredColumns(EMPTY_SET)
       setColumnMapping(EMPTY_MAPPING)
+      setIsLegacyFormat(false)
+      setLegacyMapping(EMPTY_MAPPING)
       // Re-validate with new object type if data is already parsed
       csvUpload.revalidate(value)
     },
@@ -104,8 +131,18 @@ export default function CsvUpdatesPage() {
     () =>
       csvUpload.parsedData.headers.length > 0 &&
       !csvUpload.validationSummary.hasErrors &&
-      (objectType === 'ip-prefixes'),
-    [csvUpload.parsedData.headers, csvUpload.validationSummary.hasErrors, objectType]
+      (objectType === 'ip-prefixes') &&
+      !isLegacyFormat,
+    [csvUpload.parsedData.headers, csvUpload.validationSummary.hasErrors, objectType, isLegacyFormat]
+  )
+
+  // Show legacy mapping panel for legacy IP addresses format
+  const showLegacyMappingPanel = useMemo(
+    () =>
+      csvUpload.parsedData.headers.length > 0 &&
+      objectType === 'ip-addresses' &&
+      isLegacyFormat,
+    [csvUpload.parsedData.headers, objectType, isLegacyFormat]
   )
 
   // Validate column mapping - check if all required fields are mapped
@@ -118,8 +155,69 @@ export default function CsvUpdatesPage() {
     return missingFields.length === 0
   }, [objectType, columnMapping])
 
+  // Validate legacy mapping - check if address field is mapped
+  const validateLegacyMapping = useCallback((): boolean => {
+    if (!isLegacyFormat) return true
+    
+    // Check if 'address' field is mapped
+    const mappedFields = Object.values(legacyMapping)
+    return mappedFields.includes('address')
+  }, [isLegacyFormat, legacyMapping])
+
+  // Transform legacy CSV to Nautobot format
+  const transformLegacyCSV = useCallback((): { headers: string[], rows: string[][] } | null => {
+    if (!isLegacyFormat || !csvUpload.parsedData) return null
+
+    // Create reverse mapping: nautobotField -> csvColumn
+    const reverseMapping: Record<string, number> = {}
+    Object.entries(legacyMapping).forEach(([csvColumn, nautobotField]) => {
+      if (nautobotField !== 'none') {
+        const columnIndex = csvUpload.parsedData.headers.indexOf(csvColumn)
+        if (columnIndex !== -1) {
+          reverseMapping[nautobotField] = columnIndex
+        }
+      }
+    })
+
+    // Define Nautobot headers in order
+    const nautobotHeaders = ['address', 'host', 'dns_name', 'description', 'status', 'role', 'parent__namespace__name']
+    const mappedHeaders: string[] = []
+    const headerIndexMap: Record<string, number> = {}
+
+    nautobotHeaders.forEach((nautobotField) => {
+      if (reverseMapping[nautobotField] !== undefined) {
+        mappedHeaders.push(nautobotField === 'namespace' ? 'parent__namespace__name' : nautobotField)
+        headerIndexMap[nautobotField] = reverseMapping[nautobotField]
+      }
+    })
+
+    // Transform rows
+    const transformedRows = csvUpload.parsedData.rows.map((row) => {
+      const transformedRow: string[] = []
+      nautobotHeaders.forEach((nautobotField) => {
+        const csvColumnIndex = headerIndexMap[nautobotField]
+        if (csvColumnIndex !== undefined) {
+          // Use the value exactly as it appears in the CSV (no CIDR notation modification)
+          const value = row[csvColumnIndex] || ''
+          transformedRow.push(value)
+        }
+      })
+      return transformedRow
+    })
+
+    return {
+      headers: mappedHeaders,
+      rows: transformedRows,
+    }
+  }, [isLegacyFormat, legacyMapping, csvUpload.parsedData])
+
   const handleProcessUpdates = useCallback((dryRun: boolean = false) => {
-    if (!csvUpload.parsedData || csvUpload.validationSummary.hasErrors) {
+    if (!csvUpload.parsedData) {
+      return
+    }
+
+    // Skip standard validation if legacy format (it will have errors)
+    if (!isLegacyFormat && csvUpload.validationSummary.hasErrors) {
       return
     }
 
@@ -128,6 +226,16 @@ export default function CsvUpdatesPage() {
       toast({
         title: 'Mapping Error',
         description: 'Please map all required lookup fields before processing updates.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Validate legacy mapping
+    if (!validateLegacyMapping()) {
+      toast({
+        title: 'Legacy Mapping Error',
+        description: 'Please map the required "address" field before processing updates.',
         variant: 'destructive',
       })
       return
@@ -168,10 +276,38 @@ export default function CsvUpdatesPage() {
     const alwaysIgnored = ALWAYS_IGNORED_COLUMNS[objectType] || []
     const lookupColumns = LOOKUP_COLUMNS[objectType] || []
 
+    // Handle legacy format transformation
+    let headers: string[]
+    let rows: string[][]
+
+    if (isLegacyFormat) {
+      const transformed = transformLegacyCSV()
+      if (!transformed) {
+        toast({
+          title: 'Transformation Error',
+          description: 'Failed to transform legacy CSV format.',
+          variant: 'destructive',
+        })
+        return
+      }
+      headers = transformed.headers
+      rows = transformed.rows
+      
+      // For legacy format, we need to ensure namespace defaults to "Global" if not provided
+      const namespaceIndex = headers.indexOf('parent__namespace__name')
+      if (namespaceIndex === -1) {
+        // Add namespace column with default "Global" value
+        headers.push('parent__namespace__name')
+        rows = rows.map(row => [...row, 'Global'])
+      }
+    } else {
+      headers = csvUpload.parsedData.headers
+      rows = csvUpload.parsedData.rows
+    }
+
     // Build two lists:
     // 1. csvHeaders/csvRows - Include lookup columns (needed to find objects) but exclude always-ignored and user-ignored
     // 2. selectedColumns - Only updateable columns (no lookup, no always-ignored, no user-ignored)
-    const headers = csvUpload.parsedData.headers
     const csvHeaders: string[] = []
     const csvHeaderIndexMap: number[] = []
     const selectedColumns: string[] = []
@@ -196,7 +332,7 @@ export default function CsvUpdatesPage() {
     })
 
     // Filter rows to only include columns in csvHeaders
-    const csvRows = csvUpload.parsedData.rows.map((row) =>
+    const csvRows = rows.map((row) =>
       csvHeaderIndexMap.map((index) => row[index] || '')
     )
 
@@ -216,7 +352,7 @@ export default function CsvUpdatesPage() {
       columnMapping: objectType === 'ip-prefixes' ? columnMapping : undefined, // Pass column mapping for IP prefixes
       selectedColumns, // Pass only the updateable columns (excludes lookup columns)
     })
-  }, [objectType, csvUpload.parsedData, csvUpload.csvConfig, csvUpload.validationSummary, ignoredColumns, ignoreUuid, tagsMode, columnMapping, validateColumnMapping, processUpdates, toast])
+  }, [objectType, csvUpload.parsedData, csvUpload.csvConfig, csvUpload.validationSummary, ignoredColumns, ignoreUuid, tagsMode, columnMapping, validateColumnMapping, validateLegacyMapping, transformLegacyCSV, isLegacyFormat, processUpdates, toast])
 
   return (
     <div className="space-y-6">
@@ -400,6 +536,16 @@ export default function CsvUpdatesPage() {
         </div>
       )}
 
+      {/* Legacy Mapping Panel - For legacy IP addresses format */}
+      {showLegacyMappingPanel && (
+        <LegacyMappingPanel
+          objectType={objectType}
+          csvHeaders={csvUpload.parsedData.headers}
+          legacyMapping={legacyMapping}
+          onLegacyMappingChange={setLegacyMapping}
+        />
+      )}
+
       {/* Mapping Panel - For IP prefixes */}
       {showMappingPanel && (
         <MappingPanel
@@ -485,7 +631,7 @@ export default function CsvUpdatesPage() {
       )}
 
       {/* Action Buttons */}
-      {csvUpload.parsedData.headers.length > 0 && !csvUpload.validationSummary.hasErrors && (
+      {csvUpload.parsedData.headers.length > 0 && (isLegacyFormat || !csvUpload.validationSummary.hasErrors) && (
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={csvUpload.clearData} className="border-2">
             Clear
