@@ -35,15 +35,16 @@ class NetworkResolver(BaseResolver):
 
         logger.info(f"Resolving namespace '{namespace_name}'")
 
-        query = f"""
-        query {{
-            namespaces(name: "{namespace_name}") {{
+        query = """
+        query GetNamespace($name: [String]) {
+            namespaces(name: $name) {
                 id
                 name
-            }}
-        }}
+            }
+        }
         """
-        result = await self.nautobot.graphql_query(query)
+        variables = {"name": [namespace_name]}
+        result = await self.nautobot.graphql_query(query, variables)
 
         if "errors" in result:
             raise ValueError(

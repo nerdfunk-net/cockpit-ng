@@ -537,7 +537,7 @@ backend/services/nautobot/
 │   └── device_manager.py      # Device-specific operations
 │
 └── devices/
-    ├── common.py              # Facade (DEPRECATED - backward compat only)
+    ├── common.py              # Unified facade (recommended for device operations)
     ├── creation.py            # Device creation workflows
     ├── update.py              # Device update workflows
     └── import_service.py      # Bulk device import
@@ -545,46 +545,43 @@ backend/services/nautobot/
 
 ### Usage Pattern
 
-**✅ CORRECT - Direct Injection (new code):**
+**✅ RECOMMENDED - Use Facade for Device Operations:**
 ```python
 from services.nautobot import NautobotService
-from services.nautobot.resolvers import DeviceResolver, MetadataResolver
-from services.nautobot.managers import IPManager
+from services.nautobot.devices.common import DeviceCommonService
 
 class MyDeviceService:
     def __init__(self, nautobot_service: NautobotService):
         self.nautobot = nautobot_service
-        self.device_resolver = DeviceResolver(nautobot_service)
-        self.metadata_resolver = MetadataResolver(nautobot_service)
-
-        # Managers need resolvers for status/namespace resolution
-        from services.nautobot.resolvers import NetworkResolver
-        network_resolver = NetworkResolver(nautobot_service)
-        self.ip_manager = IPManager(
-            nautobot_service,
-            network_resolver,
-            self.metadata_resolver
-        )
+        self.common = DeviceCommonService(nautobot_service)
 
     async def my_operation(self):
-        # Use resolvers for lookups
-        device_id = await self.device_resolver.resolve_device_by_name("router1")
+        # All device operations available through facade
+        device_id = await self.common.resolve_device_by_name("router1")
+        status_id = await self.common.resolve_status_id("active")
 
-        # Use managers for create/update operations
-        ip_id = await self.ip_manager.ensure_ip_address_exists(
+        ip_id = await self.common.ensure_ip_address_exists(
             ip_address="10.0.0.1/24",
             namespace_id="...",
             status_name="active"
         )
 ```
 
-**❌ WRONG - Using Facade (legacy):**
-```python
-from services.nautobot.devices.common import DeviceCommonService  # DEPRECATED
+**✅ ALTERNATIVE - Direct Injection (for specialized use cases):**
 
-class MyService:
-    def __init__(self, nautobot_service):
-        self.common = DeviceCommonService(nautobot_service)  # DON'T USE
+Use this when you only need specific components or want fine-grained control:
+
+```python
+from services.nautobot import NautobotService
+from services.nautobot.resolvers import DeviceResolver, MetadataResolver
+from services.nautobot.managers import IPManager
+
+class MySpecializedService:
+    def __init__(self, nautobot_service: NautobotService):
+        self.nautobot = nautobot_service
+        # Only inject what you need
+        self.device_resolver = DeviceResolver(nautobot_service)
+        self.metadata_resolver = MetadataResolver(nautobot_service)
 ```
 
 ### Pure Functions vs. Services
@@ -624,17 +621,17 @@ ip_id = await ip_manager.ensure_ip_address_exists(...)
 2. **Add to existing manager** if it's CRUD for an existing resource type
 3. **Create new resolver** if you need a new domain of lookups (e.g., `VLANResolver`)
 4. **Create new manager** if you need lifecycle management for a new resource type
-5. **Never modify `devices/common.py`** - it's a deprecated facade
+5. **Update `devices/common.py`** to expose new resolver/manager methods through the facade
 
 ### DO:
+- ✅ Use `DeviceCommonService` facade for device operations (simplifies dependency management)
 - ✅ Use pure functions from `common/` for validation/transformation
-- ✅ Inject specific resolvers/managers you need
-- ✅ Follow Single Responsibility Principle (one resolver per domain)
+- ✅ Follow Single Responsibility Principle in resolvers/managers
 - ✅ Use BaseResolver for common GraphQL patterns
 - ✅ Add type hints to all functions
+- ✅ Use direct injection when you need only 1-2 specific components
 
 ### DON'T:
-- ❌ Use `DeviceCommonService` facade in new code
 - ❌ Put business logic in resolvers (read-only only)
 - ❌ Bypass managers for create/update operations
 - ❌ Create monolithic service classes
@@ -678,8 +675,7 @@ ip_id = await ip_manager.ensure_ip_address_exists(...)
 - ❌ Writing raw SQL instead of SQLAlchemy ORM
 - ❌ Bypassing repository pattern for local database
 - ❌ Business logic in routers
-- ❌ Using `DeviceCommonService` facade in new Nautobot code
-- ❌ Creating monolithic God Object services
+- ❌ Creating monolithic God Object services (note: DeviceCommonService is a facade, not a God Object)
 - ❌ Mixing validation/transformation logic with API calls
 
 **Frontend:**

@@ -1,10 +1,17 @@
 """
-Device Common Service - Facade for backward compatibility.
+Device Common Service - Unified facade for device operations.
 
-DEPRECATED: This facade provides backward compatibility for existing code.
-New code should inject specific resolvers/managers directly.
+This service provides a clean, stable API for device operations by coordinating
+multiple specialized components (resolvers, managers, utilities). It simplifies
+dependency management for consumers while maintaining the modular backend architecture.
 
-This service will be removed in a future version.
+The facade delegates to specialized modules:
+- resolvers/ - Read-only lookups (Device, Metadata, Network)
+- managers/ - Create/update operations (IP, Interface, Prefix, Device)
+- common/ - Pure utility functions (validators, utils, exceptions)
+
+For most device operations, use this facade. For specialized use cases that need
+fine-grained control, you can import resolvers/managers directly.
 """
 
 import logging
@@ -43,49 +50,119 @@ logger = logging.getLogger(__name__)
 
 class DeviceCommonService:
     """
-    Common service providing shared utilities for device operations.
+    Unified facade for device operations in Nautobot.
 
-    DEPRECATED: This is a facade for backward compatibility.
-    New code should inject DeviceResolver, MetadataResolver, NetworkResolver,
-    IPManager, InterfaceManager, PrefixManager, or DeviceManager directly.
+    This facade coordinates multiple specialized components to provide a
+    cohesive API for device management. It handles dependency wiring and
+    provides convenient access to all device-related operations.
+
+    Components:
+    - DeviceResolver: Device and device-type resolution
+    - MetadataResolver: Status, role, platform, location resolution
+    - NetworkResolver: IP, interface, namespace, prefix resolution
+    - DeviceManager: Device-specific operations
+    - InterfaceManager: Interface lifecycle management
+    - IPManager: IP address operations
+    - PrefixManager: Prefix operations
+
+    Usage:
+        service = DeviceCommonService(nautobot_service)
+        device_id = await service.resolve_device_by_name("router1")
+        ip_id = await service.ensure_ip_address_exists("10.0.0.1/24", namespace_id)
     """
 
     def __init__(self, nautobot_service: NautobotService):
         """
-        Initialize the common service.
+        Initialize the common service with lazy-loaded components.
+
+        Components (resolvers and managers) are instantiated on first access
+        to avoid overhead when only a subset of functionality is needed.
 
         Args:
             nautobot_service: NautobotService instance for API calls
         """
         self.nautobot = nautobot_service
 
-        # Initialize resolvers
-        self.device_resolver = DeviceResolver(nautobot_service)
-        self.metadata_resolver = MetadataResolver(nautobot_service)
-        self.network_resolver = NetworkResolver(nautobot_service)
+        # Lazy-loaded resolvers (instantiated on first access)
+        self._device_resolver = None
+        self._metadata_resolver = None
+        self._network_resolver = None
 
-        # Initialize managers
-        self.ip_manager = IPManager(
-            nautobot_service,
-            self.network_resolver,
-            self.metadata_resolver,
-        )
-        self.prefix_manager = PrefixManager(
-            nautobot_service,
-            self.network_resolver,
-            self.metadata_resolver,
-        )
-        self.interface_manager = InterfaceManager(
-            nautobot_service,
-            self.network_resolver,
-            self.metadata_resolver,
-            self.ip_manager,
-        )
-        self.device_manager = DeviceManager(
-            nautobot_service,
-            self.device_resolver,
-            self.network_resolver,
-        )
+        # Lazy-loaded managers (instantiated on first access)
+        self._ip_manager = None
+        self._prefix_manager = None
+        self._interface_manager = None
+        self._device_manager = None
+
+    # ========================================================================
+    # LAZY-LOADED PROPERTIES (Resolvers & Managers)
+    # ========================================================================
+
+    @property
+    def device_resolver(self) -> DeviceResolver:
+        """Lazy-load DeviceResolver on first access."""
+        if self._device_resolver is None:
+            self._device_resolver = DeviceResolver(self.nautobot)
+        return self._device_resolver
+
+    @property
+    def metadata_resolver(self) -> MetadataResolver:
+        """Lazy-load MetadataResolver on first access."""
+        if self._metadata_resolver is None:
+            self._metadata_resolver = MetadataResolver(self.nautobot)
+        return self._metadata_resolver
+
+    @property
+    def network_resolver(self) -> NetworkResolver:
+        """Lazy-load NetworkResolver on first access."""
+        if self._network_resolver is None:
+            self._network_resolver = NetworkResolver(self.nautobot)
+        return self._network_resolver
+
+    @property
+    def ip_manager(self) -> IPManager:
+        """Lazy-load IPManager on first access."""
+        if self._ip_manager is None:
+            self._ip_manager = IPManager(
+                self.nautobot,
+                self.network_resolver,  # Will trigger lazy load if needed
+                self.metadata_resolver,
+            )
+        return self._ip_manager
+
+    @property
+    def prefix_manager(self) -> PrefixManager:
+        """Lazy-load PrefixManager on first access."""
+        if self._prefix_manager is None:
+            self._prefix_manager = PrefixManager(
+                self.nautobot,
+                self.network_resolver,
+                self.metadata_resolver,
+            )
+        return self._prefix_manager
+
+    @property
+    def interface_manager(self) -> InterfaceManager:
+        """Lazy-load InterfaceManager on first access."""
+        if self._interface_manager is None:
+            self._interface_manager = InterfaceManager(
+                self.nautobot,
+                self.network_resolver,
+                self.metadata_resolver,
+                self.ip_manager,  # Will trigger lazy load if needed
+            )
+        return self._interface_manager
+
+    @property
+    def device_manager(self) -> DeviceManager:
+        """Lazy-load DeviceManager on first access."""
+        if self._device_manager is None:
+            self._device_manager = DeviceManager(
+                self.nautobot,
+                self.device_resolver,
+                self.network_resolver,
+            )
+        return self._device_manager
 
     # ========================================================================
     # DEVICE RESOLUTION METHODS (delegated to DeviceResolver)
