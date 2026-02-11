@@ -44,6 +44,7 @@ import {
   FileSpreadsheet,
   GitCommit,
   ArrowLeftRight,
+  Monitor,
 } from 'lucide-react'
 
 interface NavItem {
@@ -71,6 +72,7 @@ const navigationSections: NavSection[] = [
     title: 'Nautobot',
     items: [
       { label: 'Add Device', href: '/nautobot-add-device', icon: Plus },
+      { label: 'Add VM', href: '/nautobot-add-vm', icon: Monitor },
       { label: 'Onboard Device', href: '/onboard-device', icon: Plus },
       { label: 'Sync Devices', href: '/sync-devices', icon: RefreshCw },
       { label: 'Offboarding', href: '/offboard-device', icon: Minus },

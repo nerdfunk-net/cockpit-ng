@@ -1,0 +1,5 @@
+export { VMInfoSection } from './vm-info-section'
+export { ClusterSection } from './cluster-section'
+export { ManagementSection } from './management-section'
+export { ResourcesSection } from './resources-section'
+export { TagsSection } from './tags-section'

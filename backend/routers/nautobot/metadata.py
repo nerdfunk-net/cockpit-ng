@@ -218,6 +218,23 @@ async def get_nautobot_device_roles(
         )
 
 
+@router.get("/roles/vm", summary="🔶 REST: List Virtual Machine Roles")
+async def get_nautobot_vm_roles(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
+    """Get Nautobot roles specifically for virtualization.virtualmachine content type."""
+    try:
+        result = await nautobot_service.rest_request(
+            "extras/roles/?content_types=virtualization.virtualmachine&limit=0"
+        )
+        return result.get("results", [])
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch VM roles: {str(e)}",
+        )
+
+
 @router.get("/roles/ipaddress", summary="🔶 REST: List IP Address Roles")
 async def get_nautobot_ipaddress_roles(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
@@ -330,6 +347,23 @@ async def get_nautobot_prefix_statuses(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch prefix statuses: {str(e)}",
+        )
+
+
+@router.get("/statuses/vm", summary="🔶 REST: List Virtual Machine Statuses")
+async def get_nautobot_vm_statuses(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
+    """Get Nautobot virtual machine statuses."""
+    try:
+        result = await nautobot_service.rest_request(
+            "extras/statuses/?content_types=virtualization.virtualmachine"
+        )
+        return result.get("results", [])
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch VM statuses: {str(e)}",
         )
 
 
@@ -496,6 +530,57 @@ async def get_software_versions(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch software versions: {str(e)}",
+        )
+
+
+@router.get("/software-image-files", summary="🔷 GraphQL: List Software Image Files")
+async def get_software_image_files(
+    software_version: str = None,
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
+    """Get list of software image files from Nautobot.
+
+    **🔷 This endpoint uses GraphQL** to fetch software image files.
+
+    Args:
+        software_version: Optional software version string to filter image files
+    """
+    try:
+        from services.settings.cache import cache_service
+        from settings_manager import settings_manager
+
+        cache_key = f"nautobot:software_image_files:list:{software_version or 'all'}"
+        cached = cache_service.get(cache_key)
+        if cached is not None:
+            return cached
+
+        query = """
+        query ($software_version_filter: [String]) {
+            software_image_files(software_version: $software_version_filter) {
+                id
+                image_file_name
+            }
+        }
+        """
+        variables = {
+            "software_version_filter": [software_version] if software_version else None,
+        }
+        result = await nautobot_service.graphql_query(query, variables)
+
+        if "errors" in result:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"GraphQL errors: {result['errors']}",
+            )
+
+        image_files = result["data"]["software_image_files"]
+        ttl = int(settings_manager.get_cache_settings().get("ttl_seconds", 600))
+        cache_service.set(cache_key, image_files, ttl)
+        return image_files
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch software image files: {str(e)}",
         )
 
 
@@ -710,6 +795,23 @@ async def get_nautobot_device_tags(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch device tags: {str(e)}",
+        )
+
+
+@router.get("/tags/vm", summary="🔶 REST: List Virtual Machine Tags")
+async def get_nautobot_vm_tags(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
+    """Get Nautobot tags specifically for virtualization.virtualmachine content type."""
+    try:
+        result = await nautobot_service.rest_request(
+            "extras/tags/?content_types=virtualization.virtualmachine"
+        )
+        return result.get("results", [])
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch VM tags: {str(e)}",
         )
 
 

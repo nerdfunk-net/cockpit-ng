@@ -104,7 +104,10 @@ export const queryKeys = {
       type
         ? ([...queryKeys.nautobot.all, 'statuses', type] as const)
         : ([...queryKeys.nautobot.all, 'statuses'] as const),
-    softwareVersions: () => [...queryKeys.nautobot.all, 'software-versions'] as const,
+    softwareVersions: (platform?: string) =>
+      platform
+        ? ([...queryKeys.nautobot.all, 'software-versions', platform] as const)
+        : ([...queryKeys.nautobot.all, 'software-versions'] as const),
     interfaceTypes: () => [...queryKeys.nautobot.all, 'interface-types'] as const,
     namespaces: () => [...queryKeys.nautobot.all, 'namespaces'] as const,
     defaults: () => [...queryKeys.nautobot.all, 'defaults'] as const,
@@ -117,6 +120,9 @@ export const queryKeys = {
       filters
         ? ([...queryKeys.nautobot.all, 'vlans', filters] as const)
         : ([...queryKeys.nautobot.all, 'vlans'] as const),
+
+    // VM dropdowns (add-vm page)
+    vmDropdowns: () => [...queryKeys.nautobot.all, 'vm-dropdowns'] as const,
   },
 
   // Network

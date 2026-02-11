@@ -137,3 +137,81 @@ class UpdateDeviceRequest(BaseModel):
     default_prefix_length: str = "/24"
     # Interfaces array
     interfaces: Optional[list[InterfaceData]] = None
+
+
+# Virtualization models
+class VirtualMachine(BaseModel):
+    """Virtual machine model."""
+
+    id: str
+    name: str
+
+
+class ClusterDevice(BaseModel):
+    """Device assigned to a cluster."""
+
+    id: str
+    name: str
+
+
+class ClusterDeviceAssignment(BaseModel):
+    """Device assignment to a cluster."""
+
+    id: str
+    device: ClusterDevice
+
+
+class Cluster(BaseModel):
+    """Cluster model for virtualization."""
+
+    id: str
+    name: str
+    virtual_machines: list[VirtualMachine] = []
+    device_assignments: list[ClusterDeviceAssignment] = []
+
+
+class AddVirtualMachineRequest(BaseModel):
+    """Request model for adding a virtual machine to Nautobot."""
+
+    # Required fields
+    name: str
+    status: str  # Status UUID
+    cluster: str  # Cluster UUID
+
+    # Optional VM configuration
+    role: Optional[str] = None  # Role UUID
+    platform: Optional[str] = None  # Platform UUID
+    vcpus: Optional[int] = None
+    memory: Optional[int] = None  # Memory in MB
+    disk: Optional[int] = None  # Disk size in GB
+
+    # Software version and image
+    softwareVersion: Optional[str] = None  # Software version UUID
+    softwareImageFile: Optional[str] = None  # Software image file UUID
+
+    # Tags
+    tags: Optional[list[str]] = None  # List of tag UUIDs
+
+    # Interface configuration (for the first interface)
+    interfaceName: Optional[str] = None
+    primaryIpv4: Optional[str] = None  # IPv4 address (e.g., "10.0.0.1/24")
+    namespace: Optional[str] = None  # Namespace UUID (defaults to "Global" if not provided)
+
+
+class AddVirtualInterfaceRequest(BaseModel):
+    """Request model for adding a virtual interface to a VM."""
+
+    # Required fields
+    name: str
+    virtual_machine: str  # VM UUID
+    status: str  # Status UUID
+
+    # Optional fields
+    enabled: bool = True
+    mac_address: Optional[str] = None
+    mtu: Optional[int] = None
+    description: Optional[str] = None
+    mode: Optional[str] = None  # 'access', 'tagged', etc.
+    untagged_vlan: Optional[str] = None  # VLAN UUID
+    tagged_vlans: Optional[list[str]] = None  # List of VLAN UUIDs
+    tags: Optional[list[str]] = None  # List of tag UUIDs
