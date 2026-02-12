@@ -56,7 +56,7 @@ export function useVMDropdownsQuery(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         apiCall<any>('nautobot/statuses/interface', { method: 'GET' }).catch(() => []),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apiCall<any>('nautobot/ip-roles', { method: 'GET' }).catch(() => []),
+        apiCall<any>('nautobot/roles/ipaddress', { method: 'GET' }).catch(() => []),
       ])
 
       return {

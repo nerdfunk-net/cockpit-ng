@@ -164,6 +164,7 @@ class VirtualMachineManager:
         software_version_id: Optional[str] = None,
         software_image_file_ids: Optional[list[str]] = None,
         tags: Optional[list[str]] = None,
+        custom_fields: Optional[dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """
         Create a virtual machine in Nautobot using the REST API.
@@ -180,6 +181,7 @@ class VirtualMachineManager:
             software_version_id: Optional UUID of software version
             software_image_file_ids: Optional list of software image file UUIDs
             tags: Optional list of tag UUIDs
+            custom_fields: Optional dict of custom field key-value pairs
 
         Returns:
             Dict containing the created VM data with 'id' field
@@ -227,6 +229,9 @@ class VirtualMachineManager:
 
         if tags:
             vm_data["tags"] = [{"id": tag_id} for tag_id in tags]
+
+        if custom_fields:
+            vm_data["custom_fields"] = custom_fields
 
         try:
             logger.info("    -> Payload: %s", vm_data)

@@ -129,9 +129,10 @@ async def create_virtual_machine(
     current_user: dict = Depends(require_permission("nautobot.devices", "write")),
 ):
     """
-    Create a new virtual machine in Nautobot.
+    Create a new virtual machine in Nautobot with interfaces and IP addresses.
 
-    This endpoint creates a VM and optionally creates a virtual interface with an IP address.
+    This endpoint creates a VM and optionally creates virtual interfaces with IP addresses.
+    Supports both new interface array format and legacy single interface format.
 
     **🔧 This endpoint uses REST API** to create the virtual machine.
 
@@ -149,12 +150,16 @@ async def create_virtual_machine(
     - `softwareVersion`: Software version UUID (optional)
     - `softwareImageFile`: Software image file UUID (optional)
     - `tags`: List of tag UUIDs (optional)
-    - `interfaceName`: Name for the first interface (optional)
-    - `primaryIpv4`: Primary IPv4 address (optional)
+    - `customFieldValues`: Dict of custom field key-value pairs (optional)
+    - `interfaces`: List of interface configurations with properties (optional, new format)
+    - `interfaceName`: Name for the first interface (optional, legacy format)
+    - `primaryIpv4`: Primary IPv4 address (optional, legacy format)
 
     **Returns:**
     - Created VM object with ID
-    - If an interface was created, also includes interface data
+    - List of created interfaces
+    - List of created IP addresses
+    - Primary IP assignment status
 
     **Raises:**
     - `400`: Invalid request data
@@ -162,14 +167,21 @@ async def create_virtual_machine(
     """
     try:
         logger.info("=" * 80)
+        logger.info("======= RECEIVED VM CREATION REQUEST =======")
+        logger.info("=" * 80)
+        logger.info(f"Request data: {vm_request.model_dump()}")
+        logger.info("=" * 80)
         logger.info("======= PHASE 1: CREATE VIRTUAL MACHINE =======")
         logger.info("=" * 80)
         logger.info(f"VM Name: {vm_request.name}")
         logger.info(f"Cluster: {vm_request.cluster}")
         logger.info(f"Status: {vm_request.status}")
-        logger.info(f"Interface Name: {vm_request.interfaceName}")
-        logger.info(f"Primary IPv4: {vm_request.primaryIpv4}")
-        logger.info(f"Namespace: {vm_request.namespace}")
+        logger.info(f"Custom Fields: {vm_request.customFieldValues}")
+        logger.info(f"Interfaces count: {len(vm_request.interfaces)}")
+        # Legacy format logging
+        if vm_request.interfaceName:
+            logger.info(f"Legacy Interface Name: {vm_request.interfaceName}")
+            logger.info(f"Legacy Primary IPv4: {vm_request.primaryIpv4}")
 
         # Initialize the VM manager
         vm_manager = VirtualMachineManager(nautobot_service)
@@ -192,6 +204,7 @@ async def create_virtual_machine(
             software_version_id=vm_request.softwareVersion,
             software_image_file_ids=software_image_file_ids,
             tags=vm_request.tags,
+            custom_fields=vm_request.customFieldValues,
         )
 
         vm_id = vm_result.get("id")
@@ -202,144 +215,237 @@ async def create_virtual_machine(
 
         response_data = {
             "virtual_machine": vm_result,
-            "interface": None,
-            "ip_address": None,
+            "interfaces": [],
+            "ip_addresses": [],
+            "primary_ip": None,
+            "warnings": [],
             "message": f"Virtual machine '{vm_request.name}' created successfully",
         }
 
-        # Create the interface if interfaceName is provided
-        if vm_request.interfaceName:
+        # Initialize resolvers and managers for interface/IP operations
+        network_resolver = NetworkResolver(nautobot_service)
+        metadata_resolver = MetadataResolver(nautobot_service)
+        ip_manager = IPManager(nautobot_service, network_resolver, metadata_resolver)
+
+        # Track primary IP for the VM
+        primary_ip_id = None
+
+        # Determine which interface format to use
+        use_new_format = len(vm_request.interfaces) > 0
+        use_legacy_format = vm_request.interfaceName is not None
+
+        if use_new_format:
+            # NEW FORMAT: Process interfaces array
             logger.info("")
             logger.info("=" * 80)
-            logger.info("======= PHASE 2: CREATE VIRTUAL INTERFACE =======")
+            logger.info("======= PHASE 2: CREATE INTERFACES (NEW FORMAT) =======")
+            logger.info("=" * 80)
+            logger.info(f"Processing {len(vm_request.interfaces)} interfaces")
+
+            for idx, interface_data in enumerate(vm_request.interfaces):
+                try:
+                    logger.info(f"\n--- Interface {idx + 1}/{len(vm_request.interfaces)}: {interface_data.name} ---")
+
+                    # Create the virtual interface with all properties
+                    logger.info(f"Creating interface '{interface_data.name}'...")
+                    interface_result = await vm_manager.create_virtual_interface(
+                        name=interface_data.name,
+                        virtual_machine_id=vm_id,
+                        status_id=interface_data.status,
+                        enabled=interface_data.enabled if interface_data.enabled is not None else True,
+                        mac_address=interface_data.mac_address,
+                        mtu=interface_data.mtu,
+                        description=interface_data.description,
+                        mode=interface_data.mode,
+                        untagged_vlan_id=interface_data.untagged_vlan,
+                        tagged_vlan_ids=interface_data.tagged_vlans.split(",") if interface_data.tagged_vlans else None,
+                        tags=interface_data.tags.split(",") if interface_data.tags else None,
+                    )
+
+                    interface_id = interface_result.get("id")
+                    if not interface_id:
+                        raise Exception(f"Interface '{interface_data.name}' created but no ID returned")
+
+                    logger.info(f"✓ Interface '{interface_data.name}' created with ID: {interface_id}")
+                    response_data["interfaces"].append({
+                        "name": interface_data.name,
+                        "id": interface_id,
+                        "status": "success",
+                    })
+
+                    # Process IP addresses for this interface
+                    if interface_data.ip_addresses:
+                        logger.info(f"Processing {len(interface_data.ip_addresses)} IP addresses for interface '{interface_data.name}'")
+
+                        for ip_idx, ip_data in enumerate(interface_data.ip_addresses):
+                            try:
+                                logger.info(f"  IP {ip_idx + 1}: {ip_data.address}")
+
+                                # Create or get the IP address
+                                ip_id = await ip_manager.ensure_ip_address_exists(
+                                    ip_address=ip_data.address,
+                                    namespace_id=ip_data.namespace,
+                                    status_name="active",
+                                    add_prefixes_automatically=True,
+                                )
+
+                                logger.info(f"  ✓ IP address created/found with ID: {ip_id}")
+
+                                # Assign IP to virtual interface
+                                await vm_manager.assign_ip_to_virtual_interface(
+                                    ip_address_id=ip_id,
+                                    virtual_interface_id=interface_id,
+                                )
+
+                                logger.info(f"  ✓ IP assigned to interface")
+
+                                response_data["ip_addresses"].append({
+                                    "address": ip_data.address,
+                                    "id": ip_id,
+                                    "interface": interface_data.name,
+                                    "is_primary": ip_data.is_primary,
+                                })
+
+                                # Track primary IP
+                                if ip_data.is_primary and not primary_ip_id:
+                                    primary_ip_id = ip_id
+                                    logger.info(f"  ✓ Marked as primary IP for VM")
+
+                            except Exception as ip_error:
+                                logger.error(f"  ✗ Failed to process IP {ip_data.address}: {ip_error}")
+                                response_data["warnings"].append(
+                                    f"Failed to create/assign IP {ip_data.address} on interface {interface_data.name}: {str(ip_error)}"
+                                )
+
+                except Exception as iface_error:
+                    logger.error(f"✗ Failed to create interface '{interface_data.name}': {iface_error}", exc_info=True)
+                    response_data["warnings"].append(
+                        f"Failed to create interface {interface_data.name}: {str(iface_error)}"
+                    )
+
+            logger.info("")
+            logger.info(f"✓ PHASE 2 COMPLETE: Created {len(response_data['interfaces'])} interfaces")
+
+        elif use_legacy_format:
+            # LEGACY FORMAT: Single interface with single IP
+            logger.info("")
+            logger.info("=" * 80)
+            logger.info("======= PHASE 2: CREATE INTERFACE (LEGACY FORMAT) =======")
             logger.info("=" * 80)
             logger.info(f"Interface Name: {vm_request.interfaceName}")
-            logger.info(f"VM ID: {vm_id}")
-            logger.info(f"Status ID: {vm_request.status}")
 
-            interface_result = await vm_manager.create_virtual_interface(
-                name=vm_request.interfaceName,
-                virtual_machine_id=vm_id,
-                status_id=vm_request.status,
-                enabled=True,
-            )
+            try:
+                interface_result = await vm_manager.create_virtual_interface(
+                    name=vm_request.interfaceName,
+                    virtual_machine_id=vm_id,
+                    status_id=vm_request.status,
+                    enabled=True,
+                )
 
-            interface_id = interface_result.get("id")
-            if not interface_id:
-                raise Exception("Interface creation succeeded but no ID returned")
+                interface_id = interface_result.get("id")
+                if not interface_id:
+                    raise Exception("Interface creation succeeded but no ID returned")
 
-            logger.info(
-                f"✓ PHASE 2 COMPLETE: Interface created with ID: {interface_id}"
-            )
-            response_data["interface"] = interface_result
-            response_data["message"] += f" with interface '{vm_request.interfaceName}'"
+                logger.info(f"✓ Interface created with ID: {interface_id}")
+                response_data["interfaces"].append({
+                    "name": vm_request.interfaceName,
+                    "id": interface_id,
+                    "status": "success",
+                })
 
-            # Handle IP address assignment if provided
-            if vm_request.primaryIpv4:
-                try:
-                    logger.info("")
-                    logger.info("=" * 80)
-                    logger.info("======= PHASE 3: CREATE IP ADDRESS =======")
-                    logger.info("=" * 80)
-                    logger.info(f"IP Address: {vm_request.primaryIpv4}")
-                    logger.info(f"Namespace (from request): {vm_request.namespace}")
-
-                    # Initialize resolvers and managers
-                    network_resolver = NetworkResolver(nautobot_service)
-                    metadata_resolver = MetadataResolver(nautobot_service)
-                    ip_manager = IPManager(
-                        nautobot_service, network_resolver, metadata_resolver
-                    )
-
-                    # Resolve namespace (use "Global" as default if not specified)
-                    namespace_id = vm_request.namespace
-                    if not namespace_id:
-                        logger.info(
-                            "No namespace UUID provided, resolving 'Global' namespace..."
-                        )
-                        namespace_id = await network_resolver.resolve_namespace_id(
-                            "Global"
-                        )
+                # Handle IP address if provided
+                if vm_request.primaryIpv4:
+                    try:
+                        # Resolve namespace (use "Global" as default if not specified)
+                        namespace_id = vm_request.namespace
                         if not namespace_id:
-                            raise Exception(
-                                "Could not resolve 'Global' namespace. Please specify a namespace."
-                            )
-                        logger.info(
-                            f"Resolved 'Global' namespace to UUID: {namespace_id}"
+                            logger.info("Resolving 'Global' namespace...")
+                            namespace_id = await network_resolver.resolve_namespace_id("Global")
+                            if not namespace_id:
+                                raise Exception("Could not resolve 'Global' namespace")
+
+                        # Create or get the IP address
+                        ip_id = await ip_manager.ensure_ip_address_exists(
+                            ip_address=vm_request.primaryIpv4,
+                            namespace_id=namespace_id,
+                            status_name="active",
+                            add_prefixes_automatically=True,
                         )
-                    else:
-                        logger.info(f"Using provided namespace UUID: {namespace_id}")
 
-                    # Create or get the IP address
-                    logger.info(
-                        f"Creating/ensuring IP address {vm_request.primaryIpv4} exists..."
-                    )
-                    ip_id = await ip_manager.ensure_ip_address_exists(
-                        ip_address=vm_request.primaryIpv4,
-                        namespace_id=namespace_id,
-                        status_name="active",
-                        add_prefixes_automatically=True,
-                    )
+                        # Assign IP to virtual interface
+                        await vm_manager.assign_ip_to_virtual_interface(
+                            ip_address_id=ip_id,
+                            virtual_interface_id=interface_id,
+                        )
 
-                    logger.info(
-                        f"✓ PHASE 3 COMPLETE: IP address created/found with ID: {ip_id}"
-                    )
+                        logger.info(f"✓ IP {vm_request.primaryIpv4} assigned to interface")
 
-                    logger.info("")
-                    logger.info("=" * 80)
-                    logger.info("======= PHASE 4: ASSIGN IP TO INTERFACE =======")
-                    logger.info("=" * 80)
-                    logger.info(f"IP ID: {ip_id}")
-                    logger.info(f"Interface ID: {interface_id}")
-                    logger.info(f"IP Address: {vm_request.primaryIpv4}")
+                        response_data["ip_addresses"].append({
+                            "address": vm_request.primaryIpv4,
+                            "id": ip_id,
+                            "interface": vm_request.interfaceName,
+                            "is_primary": True,
+                        })
 
-                    # Assign IP to virtual interface
-                    await vm_manager.assign_ip_to_virtual_interface(
-                        ip_address_id=ip_id, virtual_interface_id=interface_id
-                    )
+                        primary_ip_id = ip_id
 
-                    logger.info("✓ PHASE 4 COMPLETE: IP assigned to interface")
+                    except Exception as ip_error:
+                        logger.error(f"✗ IP assignment failed: {ip_error}", exc_info=True)
+                        response_data["warnings"].append(
+                            f"VM and interface created, but IP assignment failed: {str(ip_error)}"
+                        )
 
-                    logger.info("")
-                    logger.info("=" * 80)
-                    logger.info("======= PHASE 5: SET PRIMARY IP FOR VM =======")
-                    logger.info("=" * 80)
-                    logger.info(f"VM ID: {vm_id}")
-                    logger.info(f"IP ID: {ip_id}")
+            except Exception as iface_error:
+                logger.error(f"✗ Interface creation failed: {iface_error}", exc_info=True)
+                response_data["warnings"].append(
+                    f"VM created, but interface creation failed: {str(iface_error)}"
+                )
 
-                    # Set as primary IP for the VM
-                    await vm_manager.assign_primary_ip_to_vm(
-                        vm_id=vm_id, ip_address_id=ip_id
-                    )
+        # Set primary IP for the VM if one was marked as primary
+        if primary_ip_id:
+            try:
+                logger.info("")
+                logger.info("=" * 80)
+                logger.info("======= PHASE 3: SET PRIMARY IP FOR VM =======")
+                logger.info("=" * 80)
+                logger.info(f"VM ID: {vm_id}")
+                logger.info(f"Primary IP ID: {primary_ip_id}")
 
-                    logger.info("✓ PHASE 5 COMPLETE: Primary IP set for VM")
+                await vm_manager.assign_primary_ip_to_vm(
+                    vm_id=vm_id,
+                    ip_address_id=primary_ip_id,
+                )
 
-                    response_data["ip_address"] = {
-                        "id": ip_id,
-                        "address": vm_request.primaryIpv4,
-                    }
-                    response_data["message"] += (
-                        f" and primary IP {vm_request.primaryIpv4}"
-                    )
+                logger.info("✓ PHASE 3 COMPLETE: Primary IP set for VM")
+                response_data["primary_ip"] = primary_ip_id
 
-                    logger.info("")
-                    logger.info("=" * 80)
-                    logger.info("======= ALL PHASES COMPLETE =======")
-                    logger.info("=" * 80)
-                    logger.info(f"VM ID: {vm_id}")
-                    logger.info(f"Interface ID: {interface_id}")
-                    logger.info(f"IP ID: {ip_id}")
-                    logger.info(f"Primary IP: {vm_request.primaryIpv4}")
+                # Find the primary IP address in response data
+                for ip in response_data["ip_addresses"]:
+                    if ip["id"] == primary_ip_id:
+                        response_data["message"] += f" with primary IP {ip['address']}"
+                        break
 
-                except Exception as ip_error:
-                    logger.error("")
-                    logger.error("=" * 80)
-                    logger.error("======= ERROR IN IP ASSIGNMENT =======")
-                    logger.error("=" * 80)
-                    logger.error(f"Error: {ip_error}", exc_info=True)
-                    response_data["warning"] = (
-                        f"VM and interface created, but IP assignment failed: {str(ip_error)}"
-                    )
+            except Exception as primary_error:
+                logger.error(f"✗ Failed to set primary IP: {primary_error}", exc_info=True)
+                response_data["warnings"].append(
+                    f"VM and interfaces created, but failed to set primary IP: {str(primary_error)}"
+                )
+
+        # Update final message
+        if response_data["interfaces"]:
+            response_data["message"] += f" with {len(response_data['interfaces'])} interface(s)"
+        if response_data["ip_addresses"]:
+            response_data["message"] += f" and {len(response_data['ip_addresses'])} IP address(es)"
+
+        logger.info("")
+        logger.info("=" * 80)
+        logger.info("======= ALL PHASES COMPLETE =======")
+        logger.info("=" * 80)
+        logger.info(f"VM ID: {vm_id}")
+        logger.info(f"Interfaces created: {len(response_data['interfaces'])}")
+        logger.info(f"IP addresses created: {len(response_data['ip_addresses'])}")
+        logger.info(f"Primary IP: {primary_ip_id}")
+        logger.info(f"Warnings: {len(response_data['warnings'])}")
 
         return response_data
 

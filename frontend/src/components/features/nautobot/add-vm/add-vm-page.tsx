@@ -101,9 +101,17 @@ export function AddVMPage() {
     async (formData: VMFormValues) => {
       setStatusMessage(null)
       try {
+        // Filter out incomplete interfaces (interfaces without name or status)
+        // Note: Virtual interfaces don't have a 'type' field like physical interfaces
+        const validInterfaces = (formData.interfaces || []).filter((iface) => {
+          return iface.name && iface.name.trim() !== '' &&
+                 iface.status && iface.status.trim() !== ''
+        })
+
         // Include tags and custom fields in submission
         const submissionData: VMFormValues = {
           ...formData,
+          interfaces: validInterfaces,
           tags: tagsManager.selectedTags,
           customFieldValues: customFieldsManager.customFieldValues,
         }
@@ -119,6 +127,15 @@ export function AddVMPage() {
     },
     [createVM, reset, tagsManager, customFieldsManager]
   )
+
+  // Handle validation errors
+  const onInvalid = useCallback((errors: unknown) => {
+    console.error('Form validation failed:', errors)
+    setStatusMessage({
+      type: 'error',
+      message: 'Please fill in all required fields (VM name, status, and cluster)',
+    })
+  }, [])
 
   // Clear form
   const handleClear = useCallback(() => {
@@ -178,7 +195,7 @@ export function AddVMPage() {
         </Alert>
       )}
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-6">
         <VMInfoSection
           form={form}
           dropdownData={dropdownData}

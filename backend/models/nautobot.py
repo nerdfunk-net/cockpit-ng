@@ -3,8 +3,8 @@ Nautobot-related Pydantic models.
 """
 
 from __future__ import annotations
-from pydantic import BaseModel
-from typing import Any, Dict, Literal, Optional
+from pydantic import BaseModel, field_validator
+from typing import Any, Dict, Literal, Optional, Union
 
 
 class CheckIPRequest(BaseModel):
@@ -66,12 +66,12 @@ class IpAddressData(BaseModel):
 
 
 class InterfaceData(BaseModel):
-    """Interface data model for add device request."""
+    """Interface data model for add device/VM request."""
 
     id: Optional[str] = None  # Frontend interface ID for LAG mapping
-    name: str
-    type: str
-    status: str
+    name: Optional[str] = None  # Interface name (required for actual creation)
+    type: Optional[str] = None  # Required for physical devices, not used for VMs
+    status: Optional[str] = None  # Interface status (required for actual creation)
     ip_addresses: list[IpAddressData] = []  # Multiple IP addresses per interface
     # Optional properties
     enabled: Optional[bool] = None
@@ -81,11 +81,31 @@ class InterfaceData(BaseModel):
     mtu: Optional[int] = None
     mode: Optional[str] = None
     untagged_vlan: Optional[str] = None
-    tagged_vlans: Optional[str] = None
+    tagged_vlans: Optional[Union[str, list[str]]] = None
     parent_interface: Optional[str] = None
     bridge: Optional[str] = None
     lag: Optional[str] = None
-    tags: Optional[str] = None
+    tags: Optional[Union[str, list[str]]] = None
+
+    @field_validator('tagged_vlans', mode='before')
+    @classmethod
+    def convert_tagged_vlans_to_string(cls, v: Optional[Union[str, list[str]]]) -> Optional[str]:
+        """Convert tagged_vlans array to comma-separated string."""
+        if v is None:
+            return None
+        if isinstance(v, list):
+            return ','.join(str(vlan) for vlan in v if vlan)
+        return v
+
+    @field_validator('tags', mode='before')
+    @classmethod
+    def convert_tags_to_string(cls, v: Optional[Union[str, list[str]]]) -> Optional[str]:
+        """Convert tags array to comma-separated string."""
+        if v is None:
+            return None
+        if isinstance(v, list):
+            return ','.join(str(tag) for tag in v if tag)
+        return v
 
 
 class AddDeviceRequest(BaseModel):
@@ -180,6 +200,7 @@ class AddVirtualMachineRequest(BaseModel):
 
     # Optional VM configuration
     role: Optional[str] = None  # Role UUID
+    clusterGroup: Optional[str] = None  # Cluster Group UUID (informational, not used in creation)
     platform: Optional[str] = None  # Platform UUID
     vcpus: Optional[int] = None
     memory: Optional[int] = None  # Memory in MB
@@ -192,7 +213,14 @@ class AddVirtualMachineRequest(BaseModel):
     # Tags
     tags: Optional[list[str]] = None  # List of tag UUIDs
 
-    # Interface configuration (for the first interface)
+    # Custom fields (key-value pairs)
+    customFieldValues: Optional[dict[str, str]] = None
+
+    # Interfaces array (new: supports multiple interfaces with properties)
+    interfaces: list[InterfaceData] = []
+
+    # Legacy interface configuration (for backward compatibility)
+    # DEPRECATED: Use 'interfaces' array instead
     interfaceName: Optional[str] = None
     primaryIpv4: Optional[str] = None  # IPv4 address (e.g., "10.0.0.1/24")
     namespace: Optional[str] = (

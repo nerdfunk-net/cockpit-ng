@@ -9,8 +9,10 @@ interface VMCreationResult {
   message: string
   messageType: 'success' | 'error' | 'warning'
   vmId?: string
-  interfaceId?: string
-  warning?: string
+  interfaces?: Array<{ name: string; id: string; status: string }>
+  ipAddresses?: Array<{ address: string; id: string; interface: string; is_primary?: boolean }>
+  primaryIp?: string
+  warnings?: string[]
 }
 
 export function useVMMutations() {
@@ -40,19 +42,54 @@ export function useVMMutations() {
           hasWarnings = true
         }
 
-        // Interface creation
-        const interfaceCount = data.interfaces?.length || 0
-        if (response.interfaces_created > 0) {
-          statusMessages.push(`✓ ${response.interfaces_created} interface(s) created successfully`)
+        // Interface creation (new format)
+        if (response.interfaces && Array.isArray(response.interfaces)) {
+          const successfulInterfaces = response.interfaces.filter(
+            (iface: { status: string }) => iface.status === 'success'
+          )
+          if (successfulInterfaces.length > 0) {
+            statusMessages.push(
+              `✓ ${successfulInterfaces.length} interface(s) created successfully`
+            )
+          }
+
+          // Check if any interfaces failed
+          const failedInterfaces = response.interfaces.length - successfulInterfaces.length
+          if (failedInterfaces > 0) {
+            statusMessages.push(`⚠ ${failedInterfaces} interface(s) failed to create`)
+            hasWarnings = true
+          }
         } else if (response.interface?.id) {
+          // Legacy single interface format
           statusMessages.push(`✓ Interface created successfully`)
-        } else if (interfaceCount > 0) {
-          statusMessages.push(`⚠ Interfaces were not created`)
-          hasWarnings = true
         }
 
-        // IP address warning
-        if (response.warning) {
+        // IP addresses
+        if (response.ip_addresses && Array.isArray(response.ip_addresses)) {
+          statusMessages.push(
+            `✓ ${response.ip_addresses.length} IP address(es) assigned`
+          )
+
+          // Check for primary IP
+          const primaryIp = response.ip_addresses.find(
+            (ip: { is_primary?: boolean }) => ip.is_primary
+          )
+          if (primaryIp) {
+            statusMessages.push(`✓ Primary IP set to ${primaryIp.address}`)
+          }
+        } else if (response.ip_address?.address) {
+          // Legacy single IP format
+          statusMessages.push(`✓ IP address ${response.ip_address.address} assigned`)
+        }
+
+        // Handle warnings from backend
+        if (response.warnings && Array.isArray(response.warnings) && response.warnings.length > 0) {
+          response.warnings.forEach((warning: string) => {
+            statusMessages.push(`⚠ ${warning}`)
+          })
+          hasWarnings = true
+        } else if (response.warning) {
+          // Legacy single warning format
           statusMessages.push(`⚠ ${response.warning}`)
           hasWarnings = true
         }
@@ -62,8 +99,10 @@ export function useVMMutations() {
           message: statusMessages.join('\n'),
           messageType: hasWarnings ? 'warning' : 'success',
           vmId: response.virtual_machine?.id,
-          interfaceId: response.interface?.id,
-          warning: response.warning,
+          interfaces: response.interfaces,
+          ipAddresses: response.ip_addresses,
+          primaryIp: response.primary_ip,
+          warnings: response.warnings,
         }
       } catch (error) {
         return {
