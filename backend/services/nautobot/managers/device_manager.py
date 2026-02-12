@@ -2,8 +2,15 @@
 Device operations manager.
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Dict, Any, Optional, List, Tuple
+from typing import TYPE_CHECKING, Dict, Any, Optional, List, Tuple
+
+if TYPE_CHECKING:
+    from services.nautobot import NautobotService
+    from ..resolvers.device_resolver import DeviceResolver
+    from ..resolvers.network_resolver import NetworkResolver
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +18,12 @@ logger = logging.getLogger(__name__)
 class DeviceManager:
     """Manager for device-specific operations."""
 
-    def __init__(self, nautobot_service, device_resolver, network_resolver):
+    def __init__(
+        self,
+        nautobot_service: NautobotService,
+        device_resolver: DeviceResolver,
+        network_resolver: NetworkResolver,
+    ):
         """
         Initialize the device manager.
 
@@ -20,13 +32,9 @@ class DeviceManager:
             device_resolver: DeviceResolver instance for device resolution
             network_resolver: NetworkResolver instance for network resolution
         """
-        from services.nautobot import NautobotService
-        from ..resolvers.device_resolver import DeviceResolver
-        from ..resolvers.network_resolver import NetworkResolver
-
-        self.nautobot: NautobotService = nautobot_service
-        self.device_resolver: DeviceResolver = device_resolver
-        self.network_resolver: NetworkResolver = network_resolver
+        self.nautobot = nautobot_service
+        self.device_resolver = device_resolver
+        self.network_resolver = network_resolver
 
     async def get_device_details(
         self, device_id: str, depth: int = 0

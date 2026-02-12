@@ -438,9 +438,11 @@ This follows Python 3.10+ best practices for async/await code.
 - ✅ Improved consistency across the codebase
 - ✅ Removed ~30 lines of dead code
 
-### 4.2 Missing Type Hints on Manager Constructors
+### 4.2 ~~Missing Type Hints on Manager Constructors~~ **RESOLVED**
 
-Manager `__init__` methods have no parameter type hints, using lazy imports inside the body instead:
+**Status: RESOLVED (2026-02-12)** | **Files: 5 manager files updated**
+
+**Previous Issue:** Manager `__init__` methods had no parameter type hints, using lazy imports inside the body instead:
 
 ```python
 class IPManager:
@@ -449,7 +451,9 @@ class IPManager:
         self.nautobot: NautobotService = nautobot_service
 ```
 
-This is a workaround for circular imports. A better solution is to use `TYPE_CHECKING`:
+This was a workaround for circular imports.
+
+**Resolution:** All manager constructors now use the `TYPE_CHECKING` pattern:
 
 ```python
 from __future__ import annotations
@@ -462,9 +466,66 @@ class IPManager:
         self.nautobot = nautobot_service
 ```
 
-### 4.3 No ThreadPoolExecutor Cleanup
+**Files Updated:**
+1. [device_manager.py](../backend/services/nautobot/managers/device_manager.py) - 3 type hints added
+2. [interface_manager.py](../backend/services/nautobot/managers/interface_manager.py) - 4 type hints added
+3. [ip_manager.py](../backend/services/nautobot/managers/ip_manager.py) - 3 type hints added
+4. [prefix_manager.py](../backend/services/nautobot/managers/prefix_manager.py) - 3 type hints added
+5. [vm_manager.py](../backend/services/nautobot/managers/vm_manager.py) - 1 type hint added
 
-`NautobotService` creates a `ThreadPoolExecutor(max_workers=4)` but never shuts it down. Should implement `__del__` or context manager protocol.
+**Impact:**
+- ✅ Proper type hints on all manager constructors
+- ✅ No circular import issues (TYPE_CHECKING only imports types at type-check time)
+- ✅ Better IDE support with proper type inference
+- ✅ Improved code maintainability and type safety
+- ✅ Removed lazy runtime imports from constructor bodies
+
+### 4.3 ~~No ThreadPoolExecutor Cleanup~~ **RESOLVED**
+
+**Status: RESOLVED (2026-02-12)** | **File:** [client.py](../backend/services/nautobot/client.py)
+
+**Previous Issue:** `NautobotService` created a `ThreadPoolExecutor(max_workers=4)` but never shut it down, leading to potential resource leaks.
+
+**Resolution:** Implemented proper resource management with multiple cleanup mechanisms:
+
+1. **`shutdown()` method**: Explicit method to shut down the executor, can be called during application shutdown
+   ```python
+   def shutdown(self, wait: bool = True):
+       """Shut down the thread pool executor."""
+       if not self._shutdown and self.executor:
+           logger.debug("Shutting down NautobotService ThreadPoolExecutor")
+           self.executor.shutdown(wait=wait)
+           self._shutdown = True
+   ```
+
+2. **`__del__` destructor**: Automatic cleanup when instance is garbage collected
+   ```python
+   def __del__(self):
+       """Destructor - ensure executor is shut down."""
+       self.shutdown()
+   ```
+
+3. **Context manager protocol**: Support for `with` statement usage in tests or explicit scoping
+   ```python
+   def __enter__(self):
+       return self
+   
+   def __exit__(self, exc_type, exc_val, exc_tb):
+       self.shutdown()
+       return False
+   ```
+
+4. **Shutdown state tracking**: Prevents executor usage after shutdown
+   - Added `_shutdown` flag to track state
+   - All async methods (`graphql_query`, `rest_request`, `test_connection`) now check shutdown state
+   - Raises `NautobotAPIError` if called after shutdown
+
+**Impact:**
+- ✅ ThreadPoolExecutor is properly cleaned up when service is destroyed
+- ✅ Multiple cleanup mechanisms ensure resources are freed
+- ✅ Context manager support for testing and explicit resource management
+- ✅ Safe guard against using shutdown executor
+- ✅ No resource leaks
 
 ### 4.4 `offboarding.py` Is Too Large (903 lines)
 
@@ -565,7 +626,7 @@ Well-structured with:
 
 ### Priority 5: Cleanup
 11. ~~**Remove dead code**~~ **RESOLVED** ~~: empty `helpers/` package, unused `_build_custom_field_payload`, duplicate cache key methods~~
-12. **Use `TYPE_CHECKING` imports** in managers instead of lazy runtime imports
+12. ~~**Use `TYPE_CHECKING` imports**~~ **RESOLVED** ~~in managers instead of lazy runtime imports~~
 13. ~~**Rename to avoid confusion**~~ **RESOLVED** ~~: Either rename `devices/interface_manager.py` to `devices/interface_workflow.py` or `managers/interface_manager.py` to `managers/interface_crud.py`~~
 
 ---

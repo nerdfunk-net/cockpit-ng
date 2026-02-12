@@ -2,11 +2,19 @@
 Prefix lifecycle manager.
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
 from ..common.exceptions import NautobotAPIError
 from ..common.validators import is_valid_uuid
 from ..common.utils import normalize_tags
+
+if TYPE_CHECKING:
+    from services.nautobot import NautobotService
+    from ..resolvers.network_resolver import NetworkResolver
+    from ..resolvers.metadata_resolver import MetadataResolver
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +22,12 @@ logger = logging.getLogger(__name__)
 class PrefixManager:
     """Manager for IP prefix lifecycle operations."""
 
-    def __init__(self, nautobot_service, network_resolver, metadata_resolver):
+    def __init__(
+        self,
+        nautobot_service: NautobotService,
+        network_resolver: NetworkResolver,
+        metadata_resolver: MetadataResolver,
+    ):
         """
         Initialize the prefix manager.
 
@@ -23,13 +36,9 @@ class PrefixManager:
             network_resolver: NetworkResolver instance for resolution
             metadata_resolver: MetadataResolver instance for status resolution
         """
-        from services.nautobot import NautobotService
-        from ..resolvers.network_resolver import NetworkResolver
-        from ..resolvers.metadata_resolver import MetadataResolver
-
-        self.nautobot: NautobotService = nautobot_service
-        self.network_resolver: NetworkResolver = network_resolver
-        self.metadata_resolver: MetadataResolver = metadata_resolver
+        self.nautobot = nautobot_service
+        self.network_resolver = network_resolver
+        self.metadata_resolver = metadata_resolver
 
     async def ensure_prefix_exists(
         self,

@@ -4,9 +4,15 @@ Virtual machine manager for Nautobot virtualization operations.
 This manager handles lifecycle operations (create/update) for virtual machines.
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Dict, Any, Optional
+from typing import TYPE_CHECKING, Dict, Any, Optional
+
 from ..common.exceptions import NautobotAPIError
+
+if TYPE_CHECKING:
+    from services.nautobot import NautobotService
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +20,7 @@ logger = logging.getLogger(__name__)
 class VirtualMachineManager:
     """Manager for virtual machine lifecycle operations."""
 
-    def __init__(self, nautobot_service):
+    def __init__(self, nautobot_service: NautobotService):
         """
         Initialize the VM manager.
 

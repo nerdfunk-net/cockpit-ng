@@ -630,6 +630,7 @@ ip_id = await ip_manager.ensure_ip_address_exists(...)
 - ✅ Use BaseResolver for common GraphQL patterns
 - ✅ Add type hints to all functions
 - ✅ Use direct injection when you need only 1-2 specific components
+- ✅ Always use type hints in constructor; All manager constructors use the `TYPE_CHECKING` pattern:
 
 ### DON'T:
 - ❌ Put business logic in resolvers (read-only only)

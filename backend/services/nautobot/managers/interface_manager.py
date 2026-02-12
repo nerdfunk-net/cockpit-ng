@@ -2,8 +2,16 @@
 Interface lifecycle manager.
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from services.nautobot import NautobotService
+    from ..resolvers.network_resolver import NetworkResolver
+    from ..resolvers.metadata_resolver import MetadataResolver
+    from .ip_manager import IPManager
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +20,11 @@ class InterfaceManager:
     """Manager for interface lifecycle operations."""
 
     def __init__(
-        self, nautobot_service, network_resolver, metadata_resolver, ip_manager
+        self,
+        nautobot_service: NautobotService,
+        network_resolver: NetworkResolver,
+        metadata_resolver: MetadataResolver,
+        ip_manager: IPManager,
     ):
         """
         Initialize the interface manager.
@@ -23,15 +35,10 @@ class InterfaceManager:
             metadata_resolver: MetadataResolver instance for status resolution
             ip_manager: IPManager instance for IP operations
         """
-        from services.nautobot import NautobotService
-        from ..resolvers.network_resolver import NetworkResolver
-        from ..resolvers.metadata_resolver import MetadataResolver
-        from .ip_manager import IPManager
-
-        self.nautobot: NautobotService = nautobot_service
-        self.network_resolver: NetworkResolver = network_resolver
-        self.metadata_resolver: MetadataResolver = metadata_resolver
-        self.ip_manager: IPManager = ip_manager
+        self.nautobot = nautobot_service
+        self.network_resolver = network_resolver
+        self.metadata_resolver = metadata_resolver
+        self.ip_manager = ip_manager
 
     async def ensure_interface_exists(
         self,

@@ -20,6 +20,32 @@ class NautobotService:
     def __init__(self):
         self.config = None
         self.executor = ThreadPoolExecutor(max_workers=4)
+        self._shutdown = False
+
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit - ensure executor is shut down."""
+        self.shutdown()
+        return False
+
+    def __del__(self):
+        """Destructor - ensure executor is shut down."""
+        self.shutdown()
+
+    def shutdown(self, wait: bool = True):
+        """
+        Shut down the thread pool executor.
+
+        Args:
+            wait: If True, wait for all pending futures to complete before shutting down
+        """
+        if not self._shutdown and self.executor:
+            logger.debug("Shutting down NautobotService ThreadPoolExecutor")
+            self.executor.shutdown(wait=wait)
+            self._shutdown = True
 
     def _get_config(self) -> Dict[str, Any]:
         """Get Nautobot configuration from database with fallback to environment variables."""
@@ -104,6 +130,8 @@ class NautobotService:
         self, query: str, variables: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Execute GraphQL query against Nautobot."""
+        if self._shutdown:
+            raise NautobotAPIError("NautobotService has been shut down")
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             self.executor, self._sync_graphql_query, query, variables
@@ -159,6 +187,8 @@ class NautobotService:
         self, endpoint: str, method: str = "GET", data: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Execute REST API request against Nautobot."""
+        if self._shutdown:
+            raise NautobotAPIError("NautobotService has been shut down")
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             self.executor, self._sync_rest_request, endpoint, method, data
@@ -214,6 +244,8 @@ class NautobotService:
         self, url: str, token: str, timeout: int = 30, verify_ssl: bool = True
     ) -> tuple[bool, str]:
         """Test connection to Nautobot instance."""
+        if self._shutdown:
+            raise NautobotAPIError("NautobotService has been shut down")
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             self.executor, self._sync_test_connection, url, token, timeout, verify_ssl
