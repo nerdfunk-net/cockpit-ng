@@ -48,7 +48,7 @@ class BaseResolver:
             '550e8400-e29b-41d4-a716-446655440000'
         """
         try:
-            logger.debug(f"Resolving {resource_type} by {field_name}='{field_value}'")
+            logger.debug("Resolving %s by %s='%s'", resource_type, field_name, field_value)
 
             # Build GraphQL query dynamically
             query = f"""
@@ -74,16 +74,16 @@ class BaseResolver:
             if resources and len(resources) > 0:
                 resolved_value = resources[0].get(return_field)
                 logger.debug(
-                    f"Resolved {resource_type} '{field_value}' -> {resolved_value}"
+                    "Resolved %s '%s' -> %s", resource_type, field_value, resolved_value
                 )
                 return resolved_value
 
-            logger.debug(f"{resource_type.capitalize()} not found: {field_value}")
+            logger.debug("%s not found: %s", resource_type.capitalize(), field_value)
             return None
 
         except Exception as e:
             logger.error(
-                f"Error resolving {resource_type} by {field_name}: {e}", exc_info=True
+                "Error resolving %s by %s: %s", resource_type, field_name, e, exc_info=True
             )
             return None
 

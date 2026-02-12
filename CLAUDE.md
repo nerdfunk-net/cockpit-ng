@@ -677,6 +677,7 @@ ip_id = await ip_manager.ensure_ip_address_exists(...)
 - ❌ Business logic in routers
 - ❌ Creating monolithic God Object services (note: DeviceCommonService is a facade, not a God Object)
 - ❌ Mixing validation/transformation logic with API calls
+- ❌ using f-string in Logging
 
 **Frontend:**
 - ❌ Placing components at `/components/` root without feature grouping

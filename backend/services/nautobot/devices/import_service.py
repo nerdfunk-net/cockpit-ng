@@ -113,7 +113,7 @@ class DeviceImportService:
             ValueError: If validation fails or required resources not found
             Exception: If creation fails and skip_if_exists=False
         """
-        logger.info(f"Starting device import for: {device_data.get('name', 'unknown')}")
+        logger.info("Starting device import for: %s", device_data.get('name', 'unknown'))
 
         warnings = []
         details = {
@@ -136,14 +136,14 @@ class DeviceImportService:
 
             if not was_created:
                 logger.info(
-                    f"Device '{validated_data['name']}' already exists, skipped creation"
+                    "Device '%s' already exists, skipped creation", validated_data['name']
                 )
                 warnings.append("Device already exists, skipped creation")
 
             # Step 3: Create interfaces (if provided)
             primary_ipv4_id = None
             if interface_config:
-                logger.info(f"Step 3: Creating {len(interface_config)} interface(s)")
+                logger.info("Step 3: Creating %s interface(s)", len(interface_config))
                 (
                     created_interfaces,
                     primary_ipv4_id,
@@ -229,7 +229,7 @@ class DeviceImportService:
         Raises:
             ValueError: If validation fails or required resources not found
         """
-        logger.debug(f"Validating import data: {device_data}")
+        logger.debug("Validating import data: %s", device_data)
 
         # Check required fields
         required_fields = ["name", "device_type", "role", "location"]
@@ -311,8 +311,8 @@ class DeviceImportService:
         if "custom_fields" in device_data and device_data["custom_fields"]:
             validated["custom_fields"] = device_data["custom_fields"]
 
-        logger.info(f"Validation complete for device '{validated['name']}'")
-        logger.debug(f"Validated data: {validated}")
+        logger.info("Validation complete for device '%s'", validated['name'])
+        logger.debug("Validated data: %s", validated)
 
         return validated
 
@@ -338,8 +338,8 @@ class DeviceImportService:
             Exception: If device creation fails and skip_if_exists=False
         """
         device_name = validated_data["name"]
-        logger.info(f"Creating device '{device_name}' in Nautobot DCIM")
-        logger.debug(f"Device payload: {validated_data}")
+        logger.info("Creating device '%s' in Nautobot DCIM", device_name)
+        logger.debug("Device payload: %s", validated_data)
 
         try:
             device_response = await self.nautobot.rest_request(
@@ -376,7 +376,7 @@ class DeviceImportService:
                             endpoint=f"dcim/devices/{existing_id}/",
                             method="GET",
                         )
-                        logger.info(f"Found existing device: {existing_id}")
+                        logger.info("Found existing device: %s", existing_id)
                         return existing_id, device_response, False
                     else:
                         raise NautobotResourceNotFoundError(
@@ -387,7 +387,7 @@ class DeviceImportService:
                     raise NautobotDuplicateResourceError("device", device_name) from e
             else:
                 # Some other error
-                logger.error(f"Failed to create device '{device_name}': {error_msg}")
+                logger.error("Failed to create device '%s': %s", device_name, error_msg)
                 raise
 
     async def _create_device_interfaces(
@@ -449,7 +449,7 @@ class DeviceImportService:
 
         # Log any warnings
         for warning in result.warnings:
-            logger.warning(f"Interface creation warning: {warning}")
+            logger.warning("Interface creation warning: %s", warning)
 
         logger.info(
             f"Interface creation complete: {result.interfaces_created + result.interfaces_updated} succeeded, "

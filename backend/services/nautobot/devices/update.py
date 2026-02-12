@@ -130,7 +130,7 @@ class DeviceUpdateService:
             ValueError: If device not found and create_if_missing=False
             Exception: If update fails
         """
-        logger.info(f"Starting device update for: {device_identifier}")
+        logger.info("Starting device update for: %s", device_identifier)
 
         warnings = []
         details = {
@@ -175,7 +175,7 @@ class DeviceUpdateService:
             # Only return early if BOTH validated_data AND interfaces are empty
             if not validated_data and not interfaces:
                 logger.info(
-                    f"No fields to update and no interfaces for device {device_name}"
+                    "No fields to update and no interfaces for device %s", device_name
                 )
                 return {
                     "success": True,
@@ -190,14 +190,14 @@ class DeviceUpdateService:
             # Log what we're going to process
             if not validated_data and interfaces:
                 logger.info(
-                    f"No device fields to update, but processing {len(interfaces)} interface(s)"
+                    "No device fields to update, but processing %s interface(s)", len(interfaces)
                 )
 
             # Step 3: Update device properties (if any)
             updated_fields = []
             if validated_data:
                 logger.info(
-                    f"Step 3: Updating device {device_name} with {len(validated_data)} field(s)"
+                    "Step 3: Updating device %s with %s field(s)", device_name, len(validated_data)
                 )
                 updated_fields = await self._update_device_properties(
                     device_id=device_id,
@@ -233,7 +233,7 @@ class DeviceUpdateService:
                 interfaces_failed = interface_result.interfaces_failed
                 warnings.extend(interface_result.warnings)
                 logger.info(
-                    f"Interface update complete: {interfaces_created} created, {interfaces_updated} updated, {interfaces_failed} failed"
+                    "Interface update complete: %s created, %s updated, %s failed", interfaces_created, interfaces_updated, interfaces_failed
                 )
 
             # Get device state after update
@@ -338,7 +338,7 @@ class DeviceUpdateService:
             )
             device_name = device_response.get("name", resolved_id)
 
-        logger.info(f"Resolved device: {device_name} ({resolved_id})")
+        logger.info("Resolved device: %s (%s)", device_name, resolved_id)
         return resolved_id, device_name
 
     async def validate_update_data(
@@ -364,7 +364,7 @@ class DeviceUpdateService:
             - Resolves all names to UUIDs
             - Normalizes tags to list format
         """
-        logger.debug(f"Validating update data for device {device_id}: {update_data}")
+        logger.debug("Validating update data for device %s: %s", device_id, update_data)
 
         validated = {}
         ip_namespace = None
@@ -379,7 +379,7 @@ class DeviceUpdateService:
                 base_field, nested_field = field.rsplit(".", 1)
                 field = base_field
                 logger.debug(
-                    f"Flattened nested field: {field}.{nested_field} → {field}"
+                    "Flattened nested field: %s.%s → %s", field, nested_field, field
                 )
 
             # Clean string values
@@ -403,7 +403,7 @@ class DeviceUpdateService:
                     if platform_id:
                         validated[field] = platform_id
                     else:
-                        logger.warning(f"Platform '{value}' not found, will be omitted")
+                        logger.warning("Platform '%s' not found, will be omitted", value)
                 else:
                     validated[field] = value
 
@@ -414,7 +414,7 @@ class DeviceUpdateService:
                     if role_id:
                         validated[field] = role_id
                     else:
-                        logger.warning(f"Role '{value}' not found, will be omitted")
+                        logger.warning("Role '%s' not found, will be omitted", value)
                 else:
                     validated[field] = value
 
@@ -425,7 +425,7 @@ class DeviceUpdateService:
                     if location_id:
                         validated[field] = location_id
                     else:
-                        logger.warning(f"Location '{value}' not found, will be omitted")
+                        logger.warning("Location '%s' not found, will be omitted", value)
                 else:
                     validated[field] = value
 
@@ -456,15 +456,15 @@ class DeviceUpdateService:
                     validated[field] = value
                 else:
                     logger.warning(
-                        f"Invalid custom_fields format: {type(value)}, expected dict"
+                        "Invalid custom_fields format: %s, expected dict", type(value)
                     )
 
             else:
                 # Copy other fields as-is (including primary_ip4, etc.)
                 validated[field] = value
 
-        logger.info(f"Validation complete, {len(validated)} fields to update")
-        logger.debug(f"Validated data: {validated}")
+        logger.info("Validation complete, %s fields to update", len(validated))
+        logger.debug("Validated data: %s", validated)
 
         return validated, ip_namespace
 
@@ -495,8 +495,8 @@ class DeviceUpdateService:
         Returns:
             List of updated field names
         """
-        logger.info(f"Updating device {device_id} via REST API")
-        logger.debug(f"Update data: {validated_data}")
+        logger.info("Updating device %s via REST API", device_id)
+        logger.debug("Update data: %s", validated_data)
 
         # Make a copy so we don't modify the original
         update_payload = validated_data.copy()
@@ -505,7 +505,7 @@ class DeviceUpdateService:
         # Special handling for primary_ip4
         if "primary_ip4" in update_payload:
             primary_ip4 = update_payload["primary_ip4"]
-            logger.info(f"Processing primary_ip4 update: {primary_ip4}")
+            logger.info("Processing primary_ip4 update: %s", primary_ip4)
 
             # Use interface config if provided, otherwise use defaults
             if not interface_config:
@@ -523,19 +523,19 @@ class DeviceUpdateService:
             create_new = interface_config.get(
                 "mgmt_interface_create_on_ip_change", False
             )
-            logger.info(f"Create new interface on IP change: {create_new}")
+            logger.info("Create new interface on IP change: %s", create_new)
 
             # Get add_prefixes_automatically flag (default to False for backward compatibility)
             add_prefixes_automatically = interface_config.get(
                 "add_prefixes_automatically", False
             )
-            logger.info(f"Add prefixes automatically: {add_prefixes_automatically}")
+            logger.info("Add prefixes automatically: %s", add_prefixes_automatically)
 
             # Get use_assigned_ip_if_exists flag (default to False for backward compatibility)
             use_assigned_ip_if_exists = interface_config.get(
                 "use_assigned_ip_if_exists", False
             )
-            logger.info(f"Use assigned IP if exists: {use_assigned_ip_if_exists}")
+            logger.info("Use assigned IP if exists: %s", use_assigned_ip_if_exists)
 
             if create_new:
                 # BEHAVIOR 1: Create new interface with new IP (existing behavior)
@@ -565,7 +565,7 @@ class DeviceUpdateService:
 
             # Update the payload to use the IP UUID instead of the address string
             update_payload["primary_ip4"] = ip_id
-            logger.info(f"Updated primary_ip4 to use IP UUID: {ip_id}")
+            logger.info("Updated primary_ip4 to use IP UUID: %s", ip_id)
 
         # PATCH the device
         endpoint = f"dcim/devices/{device_id}/"
@@ -589,12 +589,12 @@ class DeviceUpdateService:
                     f"(expected {expected_ip_id}, got {actual_ip_id})"
                 )
                 logger.error(error_msg)
-                logger.error(f"Full update result: {result}")
+                logger.error("Full update result: %s", result)
                 raise ValueError(error_msg)
 
             logger.info(
                 f"✓ Successfully verified device {device_id} primary_ip4 is set to {expected_ip_id}"
             )
 
-        logger.info(f"Successfully updated device {device_id}")
+        logger.info("Successfully updated device %s", device_id)
         return updated_fields

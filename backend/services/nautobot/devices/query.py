@@ -219,10 +219,10 @@ class DeviceQueryService:
         if use_cache:
             cached_device = cache_service.get(cache_key)
             if cached_device is not None:
-                logger.debug(f"Cache hit for device details: {device_id}")
+                logger.debug("Cache hit for device details: %s", device_id)
                 return cached_device
         else:
-            logger.debug(f"Bypassing cache for device details: {device_id}")
+            logger.debug("Bypassing cache for device details: %s", device_id)
 
         # Execute GraphQL query
         try:
@@ -243,12 +243,12 @@ class DeviceQueryService:
 
             # Cache the result
             cache_service.set(cache_key, device, DEVICE_CACHE_TTL)
-            logger.debug(f"Cached device details for: {device_id}")
+            logger.debug("Cached device details for: %s", device_id)
 
             return device
 
         except Exception as e:
-            logger.error(f"Error fetching device details for {device_id}: {str(e)}")
+            logger.error("Error fetching device details for %s: %s", device_id, str(e))
             raise ValueError(f"Failed to fetch device details: {str(e)}")
 
     async def get_devices(
@@ -278,10 +278,10 @@ class DeviceQueryService:
         if not reload:
             cached_result = get_cached_device_list(cache_key)
             if cached_result is not None:
-                logger.debug(f"Cache hit for devices list: {cache_key}")
+                logger.debug("Cache hit for devices list: %s", cache_key)
                 return cached_result
         else:
-            logger.debug(f"Reload requested, bypassing cache for: {cache_key}")
+            logger.debug("Reload requested, bypassing cache for: %s", cache_key)
 
         # Route to appropriate query method based on filter type
         if filter_type and filter_value:
@@ -617,7 +617,7 @@ class DeviceQueryService:
         }
 
         # Cache the result
-        logger.debug(f"Caching devices list: {cache_key}")
+        logger.debug("Caching devices list: %s", cache_key)
         cache_service.set(cache_key, response_data, DEVICE_CACHE_TTL)
         cache_device_list(cache_key, response_data["devices"])
 

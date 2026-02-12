@@ -36,7 +36,7 @@ class NautobotService:
                     "verify_ssl": db_settings.get("verify_ssl", True),
                     "_source": "database",
                 }
-                logger.debug(f"Using database settings for Nautobot: {config['url']}")
+                logger.debug("Using database settings for Nautobot: %s", config['url'])
                 return config
         except Exception as e:
             logger.warning(
@@ -55,7 +55,7 @@ class NautobotService:
                 "_source": "environment",
             }
             logger.debug(
-                f"Using environment settings for Nautobot: {self.config['url']}"
+                "Using environment settings for Nautobot: %s", self.config['url']
             )
         return self.config
 
@@ -97,7 +97,7 @@ class NautobotService:
                 f"GraphQL request timed out after {config['timeout']} seconds"
             )
         except Exception as e:
-            logger.error(f"GraphQL query failed: {str(e)}")
+            logger.error("GraphQL query failed: %s", str(e))
             raise
 
     async def graphql_query(
@@ -150,7 +150,7 @@ class NautobotService:
         except requests.exceptions.Timeout:
             raise NautobotAPIError(f"REST request timed out after {config['timeout']} seconds")
         except Exception as e:
-            logger.error(f"REST request failed: {str(e)}")
+            logger.error("REST request failed: %s", str(e))
             raise
 
     async def rest_request(

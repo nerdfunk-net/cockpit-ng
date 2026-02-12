@@ -48,15 +48,15 @@ class ClusterResolver(BaseResolver):
             result = await self.nautobot.graphql_query(query)
 
             if "errors" in result:
-                logger.error(f"GraphQL errors fetching clusters: {result['errors']}")
+                logger.error("GraphQL errors fetching clusters: %s", result['errors'])
                 raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
 
             clusters = result.get("data", {}).get("clusters", [])
-            logger.info(f"Retrieved {len(clusters)} clusters from Nautobot")
+            logger.info("Retrieved %s clusters from Nautobot", len(clusters))
             return clusters
 
         except Exception as e:
-            logger.error(f"Failed to fetch clusters: {e}", exc_info=True)
+            logger.error("Failed to fetch clusters: %s", e, exc_info=True)
             raise
 
     async def get_cluster_by_id(self, cluster_id: str) -> Optional[Dict[str, Any]]:
@@ -96,18 +96,18 @@ class ClusterResolver(BaseResolver):
 
             if "errors" in result:
                 logger.error(
-                    f"GraphQL errors fetching cluster {cluster_id}: {result['errors']}"
+                    "GraphQL errors fetching cluster %s: %s", cluster_id, result['errors']
                 )
                 raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
 
             clusters = result.get("data", {}).get("clusters", [])
             if clusters:
-                logger.info(f"Retrieved cluster {cluster_id} from Nautobot")
+                logger.info("Retrieved cluster %s from Nautobot", cluster_id)
                 return clusters[0]
             else:
-                logger.warning(f"Cluster {cluster_id} not found in Nautobot")
+                logger.warning("Cluster %s not found in Nautobot", cluster_id)
                 return None
 
         except Exception as e:
-            logger.error(f"Failed to fetch cluster {cluster_id}: {e}", exc_info=True)
+            logger.error("Failed to fetch cluster %s: %s", cluster_id, e, exc_info=True)
             raise

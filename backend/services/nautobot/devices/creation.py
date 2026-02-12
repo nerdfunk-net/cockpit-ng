@@ -47,7 +47,7 @@ class DeviceCreationService:
         Returns:
             dict with success status, device_id, workflow_status, and summary
         """
-        logger.info(f"Starting add-device workflow for: {request.name}")
+        logger.info("Starting add-device workflow for: %s", request.name)
 
         # Initialize workflow status tracking
         workflow_status = {
@@ -191,22 +191,21 @@ class DeviceCreationService:
     def _log_request_data(self, request: AddDeviceRequest) -> None:
         """Log incoming request data for debugging."""
         logger.info("=== ADD DEVICE DEBUG ===")
-        logger.info(f"Device name: {request.name}")
-        logger.info(f"Device type: {request.device_type}")
-        logger.info(f"Role: {request.role}")
-        logger.info(f"Location: {request.location}")
-        logger.info(f"Status: {request.status}")
-        logger.info(f"Platform: {request.platform}")
-        logger.info(f"Software version: {request.software_version}")
-        logger.info(f"Serial: {request.serial}")
-        logger.info(f"Asset tag: {request.asset_tag}")
-        logger.info(f"Tags: {request.tags}")
-        logger.info(f"Custom fields: {request.custom_fields}")
-        logger.info(f"Interfaces count: {len(request.interfaces)}")
+        logger.info("Device name: %s", request.name)
+        logger.info("Device type: %s", request.device_type)
+        logger.info("Role: %s", request.role)
+        logger.info("Location: %s", request.location)
+        logger.info("Status: %s", request.status)
+        logger.info("Platform: %s", request.platform)
+        logger.info("Software version: %s", request.software_version)
+        logger.info("Serial: %s", request.serial)
+        logger.info("Asset tag: %s", request.asset_tag)
+        logger.info("Tags: %s", request.tags)
+        logger.info("Custom fields: %s", request.custom_fields)
+        logger.info("Interfaces count: %s", len(request.interfaces))
         for i, iface in enumerate(request.interfaces):
             logger.info(
-                f"  Interface {i + 1}: name={iface.name}, type={iface.type}, "
-                f"ip_addresses_count={len(iface.ip_addresses)}"
+                "  Interface %s: name=%s, type=%s, ip_addresses_count=%s", i + 1, iface.name, iface.type, len(iface.ip_addresses)
             )
             for j, ip_data in enumerate(iface.ip_addresses):
                 logger.info(
@@ -251,7 +250,7 @@ class DeviceCreationService:
         if request.custom_fields:
             device_payload["custom_fields"] = request.custom_fields
 
-        logger.info(f"Device payload: {device_payload}")
+        logger.info("Device payload: %s", device_payload)
 
         device_response = await nautobot_service.rest_request(
             endpoint="dcim/devices/", method="POST", data=device_payload
@@ -273,7 +272,7 @@ class DeviceCreationService:
             "id": device_id,
             "name": request.name,
         }
-        logger.info(f"Device created with ID: {device_id}")
+        logger.info("Device created with ID: %s", device_id)
 
         return device_id, device_response
 
@@ -315,23 +314,23 @@ class DeviceCreationService:
                     # IP has no CIDR notation, append default prefix length
                     ip_with_cidr = f"{ip_str}{request.default_prefix_length}"
                     logger.info(
-                        f"Appending default prefix length {request.default_prefix_length} to {ip_str}"
+                        "Appending default prefix length %s to %s", request.default_prefix_length, ip_str
                     )
 
                 # Parse IP address and calculate network prefix
                 try:
                     ip_network = ipaddress.ip_network(ip_with_cidr, strict=False)
                     prefix_str = str(ip_network)
-                    logger.info(f"Calculated prefix for {ip_with_cidr}: {prefix_str}")
+                    logger.info("Calculated prefix for %s: %s", ip_with_cidr, prefix_str)
                 except ValueError as e:
-                    logger.error(f"Invalid IP address format for {ip_with_cidr}: {e}")
+                    logger.error("Invalid IP address format for %s: %s", ip_with_cidr, e)
                     continue
 
                 # Create unique key for prefix+namespace to avoid duplicates
                 prefix_key = f"{prefix_str}|{namespace}"
                 if prefix_key in prefixes_created:
                     logger.info(
-                        f"Prefix {prefix_str} in namespace {namespace} already processed, skipping"
+                        "Prefix %s in namespace %s already processed, skipping", prefix_str, namespace
                     )
                     continue
 
@@ -339,7 +338,7 @@ class DeviceCreationService:
                 # Note: We don't set location for auto-created prefixes because
                 # Nautobot has restrictions on which location types can be used with prefixes
                 logger.info(
-                    f"Ensuring prefix exists: {prefix_str} in namespace {namespace}"
+                    "Ensuring prefix exists: %s in namespace %s", prefix_str, namespace
                 )
                 prefix_id = await self.common_service.ensure_prefix_exists(
                     prefix=prefix_str,
@@ -348,12 +347,12 @@ class DeviceCreationService:
                     prefix_type="network",
                     description=f"Auto-created for device {request.name}",
                 )
-                logger.info(f"Prefix {prefix_str} exists with ID: {prefix_id}")
+                logger.info("Prefix %s exists with ID: %s", prefix_str, prefix_id)
                 prefixes_created.add(prefix_key)
 
             except Exception as e:
                 logger.error(
-                    f"Error creating prefix for interface {interface_name} with IP {ip_data.address}: {e}"
+                    "Error creating prefix for interface %s with IP %s: %s", interface_name, ip_data.address, e
                 )
                 # Continue with other interfaces - prefix creation failures shouldn't stop device creation
                 continue

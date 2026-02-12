@@ -69,7 +69,7 @@ def handle_already_exists_error(error: Exception, resource_type: str) -> dict:
 
     logger = logging.getLogger(__name__)
     error_msg = str(error)
-    logger.warning(f"{resource_type} already exists: {error_msg}")
+    logger.warning("%s already exists: %s", resource_type, error_msg)
 
     return {
         "error": "already_exists",

@@ -59,7 +59,7 @@ def validate_ip_address(ip: str) -> bool:
     if re.match(ipv4_pattern, ip) or re.match(ipv6_pattern, ip):
         return True
 
-    logger.warning(f"Invalid IP address format: {ip}")
+    logger.warning("Invalid IP address format: %s", ip)
     return False
 
 
@@ -91,7 +91,7 @@ def validate_mac_address(mac: str) -> bool:
     if re.match(mac_pattern, mac):
         return True
 
-    logger.warning(f"Invalid MAC address format: {mac}")
+    logger.warning("Invalid MAC address format: %s", mac)
     return False
 
 
