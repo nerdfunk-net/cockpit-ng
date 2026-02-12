@@ -21,7 +21,7 @@ from services.nautobot.common.exceptions import (
     NautobotResourceNotFoundError,
 )
 from services.nautobot.devices.common import DeviceCommonService
-from services.nautobot.devices.interface_manager import InterfaceManagerService
+from services.nautobot.devices.interface_workflow import InterfaceManagerService
 
 logger = logging.getLogger(__name__)
 

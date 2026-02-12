@@ -11,7 +11,7 @@ from models.nautobot import AddDeviceRequest, InterfaceData
 from services.nautobot import nautobot_service
 from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot.devices.common import DeviceCommonService
-from services.nautobot.devices.interface_manager import InterfaceManagerService
+from services.nautobot.devices.interface_workflow import InterfaceManagerService
 
 logger = logging.getLogger(__name__)
 

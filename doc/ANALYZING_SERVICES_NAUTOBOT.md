@@ -370,15 +370,30 @@ logger.warning("Failed to look up location '%s': %s", location_name, e)
 
 ---
 
-### 3.6 Naming Collision Between `managers/` and `devices/`
+### 3.6 ~~Naming Collision Between `managers/` and `devices/`~~ **RESOLVED**
 
-**Severity: Medium** | **Files:** `managers/interface_manager.py`, `devices/interface_manager.py`
+**Status: RESOLVED (2026-02-12)** | **Files:** `managers/interface_manager.py`, `devices/interface_workflow.py` (renamed)
 
-Two files with the same name serve different purposes:
+**Previous Issue:** Two files with the same name served different purposes:
 - `managers/interface_manager.py` → `InterfaceManager` (low-level CRUD)
 - `devices/interface_manager.py` → `InterfaceManagerService` (high-level workflow orchestration)
 
-This is confusing. The `devices/` version orchestrates the `managers/` version through the `DeviceCommonService` facade.
+This naming collision was confusing since both files were named `interface_manager.py` despite having different responsibilities.
+
+**Resolution:**
+1. ✅ Renamed `devices/interface_manager.py` to `devices/interface_workflow.py` to better reflect its role as a high-level workflow orchestration service
+2. ✅ Updated all imports across the codebase (5 files):
+   - `services/nautobot/devices/__init__.py`
+   - `services/nautobot/devices/import_service.py`
+   - `services/nautobot/devices/update.py`
+   - `services/nautobot/devices/creation.py`
+   - `tests/test_device_import_service.py`
+3. ✅ Deleted the old `devices/interface_manager.py` file
+
+**Impact:**
+- Clearer distinction between low-level CRUD operations (`managers/interface_manager.py`) and high-level workflow orchestration (`devices/interface_workflow.py`)
+- Improved code discoverability and maintainability
+- No functional changes, only improved naming semantics
 
 ---
 
@@ -551,7 +566,7 @@ Well-structured with:
 ### Priority 5: Cleanup
 11. ~~**Remove dead code**~~ **RESOLVED** ~~: empty `helpers/` package, unused `_build_custom_field_payload`, duplicate cache key methods~~
 12. **Use `TYPE_CHECKING` imports** in managers instead of lazy runtime imports
-13. **Rename to avoid confusion**: Either rename `devices/interface_manager.py` to `devices/interface_workflow.py` or `managers/interface_manager.py` to `managers/interface_crud.py`
+13. ~~**Rename to avoid confusion**~~ **RESOLVED** ~~: Either rename `devices/interface_manager.py` to `devices/interface_workflow.py` or `managers/interface_manager.py` to `managers/interface_crud.py`~~
 
 ---
 

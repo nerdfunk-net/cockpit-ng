@@ -17,7 +17,7 @@ import logging
 from typing import Optional, Dict, Any, List, Tuple
 from services.nautobot import NautobotService
 from services.nautobot.devices.common import DeviceCommonService
-from services.nautobot.devices.interface_manager import InterfaceManagerService
+from services.nautobot.devices.interface_workflow import InterfaceManagerService
 
 logger = logging.getLogger(__name__)
 

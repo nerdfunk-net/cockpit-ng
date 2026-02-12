@@ -10,7 +10,7 @@ from services.nautobot.devices.import_service import DeviceImportService
 from services.nautobot.devices.types import InterfaceUpdateResult
 from services.nautobot import NautobotService
 from services.nautobot.devices.common import DeviceCommonService
-from services.nautobot.devices.interface_manager import InterfaceManagerService
+from services.nautobot.devices.interface_workflow import InterfaceManagerService
 
 
 @pytest.fixture

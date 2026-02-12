@@ -1,9 +1,9 @@
 """
-Interface Management Service for Nautobot Devices.
+Interface Management Workflow Service for Nautobot Devices.
 
-This service handles creating, updating, and managing interfaces and their IP addresses
-for devices in Nautobot. It is designed to be used by DeviceUpdateService and other
-services that need to manipulate device interfaces.
+This service handles the high-level orchestration of creating, updating, and managing
+interfaces and their IP addresses for devices in Nautobot. It is designed to be used
+by DeviceUpdateService and other services that need to manipulate device interfaces.
 """
 
 from __future__ import annotations
