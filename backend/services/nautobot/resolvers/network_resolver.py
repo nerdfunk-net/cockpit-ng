@@ -54,7 +54,9 @@ class NetworkResolver(BaseResolver):
         namespaces = result.get("data", {}).get("namespaces", [])
         if namespaces:
             namespace_id = namespaces[0]["id"]
-            logger.info("Resolved namespace '%s' to UUID %s", namespace_name, namespace_id)
+            logger.info(
+                "Resolved namespace '%s' to UUID %s", namespace_name, namespace_id
+            )
             return namespace_id
 
         raise ValueError(f"Namespace '{namespace_name}' not found")
@@ -89,7 +91,7 @@ class NetworkResolver(BaseResolver):
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error("GraphQL error resolving IP address: %s", result['errors'])
+                logger.error("GraphQL error resolving IP address: %s", result["errors"])
                 return None
 
             ip_addresses = result.get("data", {}).get("ip_addresses", [])
@@ -135,7 +137,7 @@ class NetworkResolver(BaseResolver):
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error("GraphQL error resolving interface: %s", result['errors'])
+                logger.error("GraphQL error resolving interface: %s", result["errors"])
                 return None
 
             interfaces = result.get("data", {}).get("interfaces", [])

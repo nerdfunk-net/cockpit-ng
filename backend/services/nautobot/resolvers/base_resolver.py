@@ -48,7 +48,9 @@ class BaseResolver:
             '550e8400-e29b-41d4-a716-446655440000'
         """
         try:
-            logger.debug("Resolving %s by %s='%s'", resource_type, field_name, field_value)
+            logger.debug(
+                "Resolving %s by %s='%s'", resource_type, field_name, field_value
+            )
 
             # Build GraphQL query dynamically
             query = f"""
@@ -83,7 +85,11 @@ class BaseResolver:
 
         except Exception as e:
             logger.error(
-                "Error resolving %s by %s: %s", resource_type, field_name, e, exc_info=True
+                "Error resolving %s by %s: %s",
+                resource_type,
+                field_name,
+                e,
+                exc_info=True,
             )
             return None
 

@@ -856,7 +856,9 @@ async def get_nautobot_custom_field_choices(
     try:
         from services.nautobot import nautobot_metadata_service
 
-        return await nautobot_metadata_service.get_custom_field_choices(custom_field_name)
+        return await nautobot_metadata_service.get_custom_field_choices(
+            custom_field_name
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

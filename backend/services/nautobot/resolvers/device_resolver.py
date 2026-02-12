@@ -39,7 +39,7 @@ class DeviceResolver(BaseResolver):
 
             if "errors" in result:
                 logger.error(
-                    "GraphQL error looking up device by name: %s", result['errors']
+                    "GraphQL error looking up device by name: %s", result["errors"]
                 )
                 return None
 
@@ -89,7 +89,9 @@ class DeviceResolver(BaseResolver):
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error("GraphQL error looking up IP address: %s", result['errors'])
+                logger.error(
+                    "GraphQL error looking up IP address: %s", result["errors"]
+                )
                 return None
 
             ip_addresses = result.get("data", {}).get("ip_addresses", [])
@@ -111,7 +113,8 @@ class DeviceResolver(BaseResolver):
             if isinstance(devices, list):
                 if len(devices) == 0:
                     logger.warning(
-                        "IP address %s is not set as primary IP for any device", ip_address
+                        "IP address %s is not set as primary IP for any device",
+                        ip_address,
                     )
                     return None
                 device = devices[0]
@@ -189,7 +192,7 @@ class DeviceResolver(BaseResolver):
             logger.info(
                 "Resolving device type '%s'%s",
                 model,
-                (" from manufacturer '%s'" % manufacturer) if manufacturer else ""
+                (" from manufacturer '%s'" % manufacturer) if manufacturer else "",
             )
 
             # Build query with optional manufacturer filter
@@ -223,7 +226,9 @@ class DeviceResolver(BaseResolver):
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error("GraphQL error resolving device type: %s", result['errors'])
+                logger.error(
+                    "GraphQL error resolving device type: %s", result["errors"]
+                )
                 return None
 
             device_types = result.get("data", {}).get("device_types", [])
@@ -232,7 +237,10 @@ class DeviceResolver(BaseResolver):
                 device_type_id = device_type["id"]
                 mfr_name = device_type.get("manufacturer", {}).get("name", "unknown")
                 logger.info(
-                    "Resolved device type '%s' (%s) to UUID %s", model, mfr_name, device_type_id
+                    "Resolved device type '%s' (%s) to UUID %s",
+                    model,
+                    mfr_name,
+                    device_type_id,
                 )
                 return device_type_id
 
@@ -265,7 +273,9 @@ class DeviceResolver(BaseResolver):
                 display_name = result.get("display") or result.get("model")
                 if display_name:
                     logger.debug(
-                        "Device type UUID %s -> display: %s", device_type_id, display_name
+                        "Device type UUID %s -> display: %s",
+                        device_type_id,
+                        display_name,
                     )
                     return display_name
 
@@ -315,7 +325,7 @@ class DeviceResolver(BaseResolver):
 
             if "errors" in result:
                 logger.error(
-                    "GraphQL error finding interface with IP: %s", result['errors']
+                    "GraphQL error finding interface with IP: %s", result["errors"]
                 )
                 return None
 
@@ -329,7 +339,9 @@ class DeviceResolver(BaseResolver):
 
             if not interfaces or len(interfaces) == 0:
                 logger.info(
-                    "No interface found with IP %s on device %s", ip_address, device_name
+                    "No interface found with IP %s on device %s",
+                    ip_address,
+                    device_name,
                 )
                 return None
 
@@ -339,7 +351,10 @@ class DeviceResolver(BaseResolver):
             interface_name = interface.get("name")
 
             logger.info(
-                "Found interface '%s' (ID: %s) with IP %s", interface_name, interface_id, ip_address
+                "Found interface '%s' (ID: %s) with IP %s",
+                interface_name,
+                interface_id,
+                ip_address,
             )
             return (interface_id, interface_name)
 

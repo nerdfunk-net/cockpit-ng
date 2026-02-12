@@ -190,14 +190,17 @@ class DeviceUpdateService:
             # Log what we're going to process
             if not validated_data and interfaces:
                 logger.info(
-                    "No device fields to update, but processing %s interface(s)", len(interfaces)
+                    "No device fields to update, but processing %s interface(s)",
+                    len(interfaces),
                 )
 
             # Step 3: Update device properties (if any)
             updated_fields = []
             if validated_data:
                 logger.info(
-                    "Step 3: Updating device %s with %s field(s)", device_name, len(validated_data)
+                    "Step 3: Updating device %s with %s field(s)",
+                    device_name,
+                    len(validated_data),
                 )
                 updated_fields = await self._update_device_properties(
                     device_id=device_id,
@@ -233,7 +236,10 @@ class DeviceUpdateService:
                 interfaces_failed = interface_result.interfaces_failed
                 warnings.extend(interface_result.warnings)
                 logger.info(
-                    "Interface update complete: %s created, %s updated, %s failed", interfaces_created, interfaces_updated, interfaces_failed
+                    "Interface update complete: %s created, %s updated, %s failed",
+                    interfaces_created,
+                    interfaces_updated,
+                    interfaces_failed,
                 )
 
             # Get device state after update
@@ -403,7 +409,9 @@ class DeviceUpdateService:
                     if platform_id:
                         validated[field] = platform_id
                     else:
-                        logger.warning("Platform '%s' not found, will be omitted", value)
+                        logger.warning(
+                            "Platform '%s' not found, will be omitted", value
+                        )
                 else:
                     validated[field] = value
 
@@ -425,7 +433,9 @@ class DeviceUpdateService:
                     if location_id:
                         validated[field] = location_id
                     else:
-                        logger.warning("Location '%s' not found, will be omitted", value)
+                        logger.warning(
+                            "Location '%s' not found, will be omitted", value
+                        )
                 else:
                     validated[field] = value
 

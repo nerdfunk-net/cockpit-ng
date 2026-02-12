@@ -74,7 +74,7 @@ class InterfaceManager:
 
         if interfaces_result and interfaces_result.get("count", 0) > 0:
             existing_interface = interfaces_result["results"][0]
-            logger.info("Interface already exists: %s", existing_interface['id'])
+            logger.info("Interface already exists: %s", existing_interface["id"])
             return existing_interface["id"]
 
         # Interface doesn't exist, create it

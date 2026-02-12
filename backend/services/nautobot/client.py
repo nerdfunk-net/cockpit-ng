@@ -36,7 +36,7 @@ class NautobotService:
                     "verify_ssl": db_settings.get("verify_ssl", True),
                     "_source": "database",
                 }
-                logger.debug("Using database settings for Nautobot: %s", config['url'])
+                logger.debug("Using database settings for Nautobot: %s", config["url"])
                 return config
         except Exception as e:
             logger.warning(
@@ -55,7 +55,7 @@ class NautobotService:
                 "_source": "environment",
             }
             logger.debug(
-                "Using environment settings for Nautobot: %s", self.config['url']
+                "Using environment settings for Nautobot: %s", self.config["url"]
             )
         return self.config
 
@@ -148,7 +148,9 @@ class NautobotService:
                     f"REST request failed with status {response.status_code}: {response.text}"
                 )
         except requests.exceptions.Timeout:
-            raise NautobotAPIError(f"REST request timed out after {config['timeout']} seconds")
+            raise NautobotAPIError(
+                f"REST request timed out after {config['timeout']} seconds"
+            )
         except Exception as e:
             logger.error("REST request failed: %s", str(e))
             raise
@@ -216,7 +218,6 @@ class NautobotService:
         return await loop.run_in_executor(
             self.executor, self._sync_test_connection, url, token, timeout, verify_ssl
         )
-
 
 
 # Global instance

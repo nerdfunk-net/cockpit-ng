@@ -113,7 +113,9 @@ class DeviceImportService:
             ValueError: If validation fails or required resources not found
             Exception: If creation fails and skip_if_exists=False
         """
-        logger.info("Starting device import for: %s", device_data.get('name', 'unknown'))
+        logger.info(
+            "Starting device import for: %s", device_data.get("name", "unknown")
+        )
 
         warnings = []
         details = {
@@ -136,7 +138,8 @@ class DeviceImportService:
 
             if not was_created:
                 logger.info(
-                    "Device '%s' already exists, skipped creation", validated_data['name']
+                    "Device '%s' already exists, skipped creation",
+                    validated_data["name"],
                 )
                 warnings.append("Device already exists, skipped creation")
 
@@ -311,7 +314,7 @@ class DeviceImportService:
         if "custom_fields" in device_data and device_data["custom_fields"]:
             validated["custom_fields"] = device_data["custom_fields"]
 
-        logger.info("Validation complete for device '%s'", validated['name'])
+        logger.info("Validation complete for device '%s'", validated["name"])
         logger.debug("Validated data: %s", validated)
 
         return validated
@@ -381,7 +384,7 @@ class DeviceImportService:
                     else:
                         raise NautobotResourceNotFoundError(
                             "device",
-                            f"{device_name} (reported as duplicate but lookup failed)"
+                            f"{device_name} (reported as duplicate but lookup failed)",
                         )
                 else:
                     raise NautobotDuplicateResourceError("device", device_name) from e

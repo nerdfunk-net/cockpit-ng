@@ -47,7 +47,10 @@ class VirtualMachineManager:
             logger.info("    -> Virtual Interface ID: %s", virtual_interface_id)
 
             # Check if assignment already exists
-            check_endpoint = "ipam/ip-address-to-interface/?ip_address=%s&vm_interface=%s" % (ip_address_id, virtual_interface_id)
+            check_endpoint = (
+                "ipam/ip-address-to-interface/?ip_address=%s&vm_interface=%s"
+                % (ip_address_id, virtual_interface_id)
+            )
             logger.info("    -> Checking if assignment already exists...")
             logger.info("    -> Check endpoint: %s", check_endpoint)
 
@@ -59,7 +62,7 @@ class VirtualMachineManager:
             if existing_assignment and existing_assignment.get("count", 0) > 0:
                 logger.info("    -> Assignment already exists, skipping creation")
                 logger.info(
-                    "    -> Existing assignment: %s", existing_assignment['results'][0]
+                    "    -> Existing assignment: %s", existing_assignment["results"][0]
                 )
                 return True
 
@@ -83,7 +86,7 @@ class VirtualMachineManager:
 
             logger.info("    -> POST request successful")
             logger.info("    -> Response: %s", result)
-            logger.info("    -> Assignment ID: %s", result.get('id'))
+            logger.info("    -> Assignment ID: %s", result.get("id"))
             logger.info("    -> ✓ Successfully assigned IP to virtual interface")
             return True
 
@@ -91,9 +94,13 @@ class VirtualMachineManager:
             logger.error("    -> ✗ Request failed")
             logger.error("    -> Error: %s", str(e))
             logger.error(
-                "Failed to assign IP to virtual interface %s: %s", virtual_interface_id, str(e)
+                "Failed to assign IP to virtual interface %s: %s",
+                virtual_interface_id,
+                str(e),
             )
-            raise NautobotAPIError(f"Failed to assign IP to virtual interface: {str(e)}")
+            raise NautobotAPIError(
+                f"Failed to assign IP to virtual interface: {str(e)}"
+            )
 
     async def assign_primary_ip_to_vm(self, vm_id: str, ip_address_id: str) -> bool:
         """
@@ -228,7 +235,7 @@ class VirtualMachineManager:
 
             logger.info("    -> POST request successful")
             logger.info("    -> Response: %s", result)
-            logger.info("    -> VM ID: %s", result.get('id'))
+            logger.info("    -> VM ID: %s", result.get("id"))
             logger.info("    -> ✓ Successfully created VM '%s'", name)
             return result
 
@@ -323,7 +330,7 @@ class VirtualMachineManager:
 
             logger.info("    -> POST request successful")
             logger.info("    -> Response: %s", result)
-            logger.info("    -> Interface ID: %s", result.get('id'))
+            logger.info("    -> Interface ID: %s", result.get("id"))
             logger.info("    -> ✓ Successfully created interface '%s'", name)
             return result
 

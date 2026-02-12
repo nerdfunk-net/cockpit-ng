@@ -81,7 +81,7 @@ class PrefixManager:
 
         if prefix_result and prefix_result.get("count", 0) > 0:
             existing_prefix = prefix_result["results"][0]
-            logger.info("Prefix already exists: %s", existing_prefix['id'])
+            logger.info("Prefix already exists: %s", existing_prefix["id"])
             return existing_prefix["id"]
 
         # Prefix doesn't exist, create it

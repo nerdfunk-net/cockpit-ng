@@ -65,7 +65,9 @@ class CheckMKHostService:
             verify_ssl=db_settings.get("verify_ssl", True),
         )
 
-    async def delete_host(self, hostname: str, site_name: Optional[str] = None) -> Dict[str, Any]:
+    async def delete_host(
+        self, hostname: str, site_name: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Delete a host from CheckMK.
 
@@ -81,16 +83,13 @@ class CheckMKHostService:
             Exception: If the delete operation fails
         """
         logger.info("Deleting host from CheckMK: %s", hostname)
-        
+
         try:
             client = self._get_client(site_name)
             client.delete_host(hostname)
-            
+
             logger.info("Successfully deleted host %s from CheckMK", hostname)
-            return {
-                "success": True,
-                "message": f"Host {hostname} deleted successfully"
-            }
+            return {"success": True, "message": f"Host {hostname} deleted successfully"}
         except Exception as e:
             logger.error("Error deleting host %s from CheckMK: %s", hostname, str(e))
             raise

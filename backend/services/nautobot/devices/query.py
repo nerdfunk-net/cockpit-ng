@@ -343,7 +343,9 @@ class DeviceQueryService:
             count_query, {"name_filter": [name_filter]}
         )
         if "errors" in count_result:
-            raise NautobotAPIError(f"GraphQL errors in count query: {count_result['errors']}")
+            raise NautobotAPIError(
+                f"GraphQL errors in count query: {count_result['errors']}"
+            )
         total_count = len(count_result["data"]["devices"])
 
         # Get paginated data

@@ -49,7 +49,7 @@ class MetadataResolver(BaseResolver):
             for status in result.get("results", []):
                 if status.get("name", "").lower() == status_name.lower():
                     logger.info(
-                        "Resolved status '%s' to UUID %s", status_name, status['id']
+                        "Resolved status '%s' to UUID %s", status_name, status["id"]
                     )
                     return status["id"]
 
@@ -82,11 +82,11 @@ class MetadataResolver(BaseResolver):
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error("GraphQL error resolving role: %s", result['errors'])
+                logger.error("GraphQL error resolving role: %s", result["errors"])
                 return None
 
             roles = result.get("data", {}).get("roles", [])
-            if roles and len(roles) >0:
+            if roles and len(roles) > 0:
                 role_id = roles[0]["id"]
                 logger.info("Resolved role '%s' to UUID %s", role_name, role_id)
                 return role_id
@@ -123,7 +123,7 @@ class MetadataResolver(BaseResolver):
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error("GraphQL error resolving platform: %s", result['errors'])
+                logger.error("GraphQL error resolving platform: %s", result["errors"])
                 return None
 
             platforms = result.get("data", {}).get("platforms", [])
@@ -195,7 +195,7 @@ class MetadataResolver(BaseResolver):
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error("GraphQL error resolving location: %s", result['errors'])
+                logger.error("GraphQL error resolving location: %s", result["errors"])
                 return None
 
             locations = result.get("data", {}).get("locations", [])
@@ -238,7 +238,9 @@ class MetadataResolver(BaseResolver):
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error("GraphQL error resolving secrets group: %s", result['errors'])
+                logger.error(
+                    "GraphQL error resolving secrets group: %s", result["errors"]
+                )
                 return None
 
             groups = result.get("data", {}).get("secrets_groups", [])

@@ -48,7 +48,7 @@ class ClusterResolver(BaseResolver):
             result = await self.nautobot.graphql_query(query)
 
             if "errors" in result:
-                logger.error("GraphQL errors fetching clusters: %s", result['errors'])
+                logger.error("GraphQL errors fetching clusters: %s", result["errors"])
                 raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
 
             clusters = result.get("data", {}).get("clusters", [])
@@ -96,7 +96,9 @@ class ClusterResolver(BaseResolver):
 
             if "errors" in result:
                 logger.error(
-                    "GraphQL errors fetching cluster %s: %s", cluster_id, result['errors']
+                    "GraphQL errors fetching cluster %s: %s",
+                    cluster_id,
+                    result["errors"],
                 )
                 raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
 

@@ -205,7 +205,11 @@ class DeviceCreationService:
         logger.info("Interfaces count: %s", len(request.interfaces))
         for i, iface in enumerate(request.interfaces):
             logger.info(
-                "  Interface %s: name=%s, type=%s, ip_addresses_count=%s", i + 1, iface.name, iface.type, len(iface.ip_addresses)
+                "  Interface %s: name=%s, type=%s, ip_addresses_count=%s",
+                i + 1,
+                iface.name,
+                iface.type,
+                len(iface.ip_addresses),
             )
             for j, ip_data in enumerate(iface.ip_addresses):
                 logger.info(
@@ -314,23 +318,31 @@ class DeviceCreationService:
                     # IP has no CIDR notation, append default prefix length
                     ip_with_cidr = f"{ip_str}{request.default_prefix_length}"
                     logger.info(
-                        "Appending default prefix length %s to %s", request.default_prefix_length, ip_str
+                        "Appending default prefix length %s to %s",
+                        request.default_prefix_length,
+                        ip_str,
                     )
 
                 # Parse IP address and calculate network prefix
                 try:
                     ip_network = ipaddress.ip_network(ip_with_cidr, strict=False)
                     prefix_str = str(ip_network)
-                    logger.info("Calculated prefix for %s: %s", ip_with_cidr, prefix_str)
+                    logger.info(
+                        "Calculated prefix for %s: %s", ip_with_cidr, prefix_str
+                    )
                 except ValueError as e:
-                    logger.error("Invalid IP address format for %s: %s", ip_with_cidr, e)
+                    logger.error(
+                        "Invalid IP address format for %s: %s", ip_with_cidr, e
+                    )
                     continue
 
                 # Create unique key for prefix+namespace to avoid duplicates
                 prefix_key = f"{prefix_str}|{namespace}"
                 if prefix_key in prefixes_created:
                     logger.info(
-                        "Prefix %s in namespace %s already processed, skipping", prefix_str, namespace
+                        "Prefix %s in namespace %s already processed, skipping",
+                        prefix_str,
+                        namespace,
                     )
                     continue
 
@@ -352,7 +364,10 @@ class DeviceCreationService:
 
             except Exception as e:
                 logger.error(
-                    "Error creating prefix for interface %s with IP %s: %s", interface_name, ip_data.address, e
+                    "Error creating prefix for interface %s with IP %s: %s",
+                    interface_name,
+                    ip_data.address,
+                    e,
                 )
                 # Continue with other interfaces - prefix creation failures shouldn't stop device creation
                 continue

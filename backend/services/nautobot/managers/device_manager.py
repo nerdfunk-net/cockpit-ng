@@ -52,7 +52,7 @@ class DeviceManager:
 
         device_data = await self.nautobot.rest_request(endpoint=endpoint, method="GET")
 
-        logger.debug("Retrieved device data: %s", device_data.get('name', device_id))
+        logger.debug("Retrieved device data: %s", device_data.get("name", device_id))
         return device_data
 
     async def extract_primary_ip_address(
@@ -124,7 +124,9 @@ class DeviceManager:
             True if successful, False otherwise
         """
         try:
-            logger.info("Assigning primary IPv4 %s to device %s", ip_address_id, device_id)
+            logger.info(
+                "Assigning primary IPv4 %s to device %s", ip_address_id, device_id
+            )
 
             endpoint = f"dcim/devices/{device_id}/"
             await self.nautobot.rest_request(

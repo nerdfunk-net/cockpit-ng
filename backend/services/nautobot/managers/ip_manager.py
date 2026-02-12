@@ -71,7 +71,7 @@ class IPManager:
 
         if ip_result and ip_result.get("count", 0) > 0:
             existing_ip = ip_result["results"][0]
-            logger.info("IP address already exists: %s", existing_ip['id'])
+            logger.info("IP address already exists: %s", existing_ip["id"])
             return existing_ip["id"]
 
         # IP doesn't exist, create it
@@ -135,7 +135,9 @@ class IPManager:
                         # Found at least one IP with this host address
                         existing_ip = existing_ip_result["results"][0]
                         logger.info(
-                            "Found existing IP: %s with UUID %s", existing_ip['address'], existing_ip['id']
+                            "Found existing IP: %s with UUID %s",
+                            existing_ip["address"],
+                            existing_ip["id"],
                         )
 
                         # If multiple IPs found with same host, log a warning
@@ -143,8 +145,8 @@ class IPManager:
                             logger.warning(
                                 "Multiple IPs found with host %s (%s total), using first: %s",
                                 host_ip,
-                                existing_ip_result['count'],
-                                existing_ip['address'],
+                                existing_ip_result["count"],
+                                existing_ip["address"],
                             )
 
                         return existing_ip["id"]
@@ -277,5 +279,5 @@ class IPManager:
             data=association_data,
         )
 
-        logger.info("Created IP-to-Interface association: %s", association_result['id'])
+        logger.info("Created IP-to-Interface association: %s", association_result["id"])
         return association_result

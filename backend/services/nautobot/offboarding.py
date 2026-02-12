@@ -276,7 +276,9 @@ class OffboardingService:
             logger.debug("Fetching custom field definitions from Nautobot")
             from services.nautobot import nautobot_metadata_service
 
-            custom_field_list = await nautobot_metadata_service.get_device_custom_fields()
+            custom_field_list = (
+                await nautobot_metadata_service.get_device_custom_fields()
+            )
 
             logger.debug(
                 "Retrieved %d custom field definitions",
@@ -591,7 +593,7 @@ class OffboardingService:
         try:
             from services.checkmk import checkmk_host_service
 
-            result = await checkmk_host_service.delete_host(device_name)
+            await checkmk_host_service.delete_host(device_name)
             results["removed_items"].append(f"CheckMK Host: {device_name}")
             logger.info("Successfully removed device %s from CheckMK", device_name)
         except ValueError as exc:

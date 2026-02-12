@@ -81,11 +81,13 @@ class DeviceBackupService:
 
         repository = git_repo_manager.get_repository(config_repository_id)
         if not repository:
-            raise ValueError("Repository %s not found in database" % config_repository_id)
+            raise ValueError(
+                "Repository %s not found in database" % config_repository_id
+            )
 
         logger.info("✓ Repository: %s", repository.name)
         logger.info("  - URL: %s", repository.url)
-        logger.info("  - Branch: %s", repository.branch or 'main')
+        logger.info("  - Branch: %s", repository.branch or "main")
 
         # Validate credentials
         if not credential_id:
@@ -101,7 +103,7 @@ class DeviceBackupService:
         if not username or not password:
             raise ValueError("Credential does not contain username or password")
 
-        logger.info("✓ Credential: %s", credential.get('name'))
+        logger.info("✓ Credential: %s", credential.get("name"))
         logger.info("  - Username: %s", username)
 
         logger.info("✓ All inputs validated successfully")
@@ -281,7 +283,10 @@ class DeviceBackupService:
                 status.updated_count += 1
 
             except Exception as e:
-                error_msg = "Failed to update custom field for %s: %s" % (device_name, str(e))
+                error_msg = "Failed to update custom field for %s: %s" % (
+                    device_name,
+                    str(e),
+                )
                 logger.error("✗ %s", error_msg)
                 status.failed_count += 1
                 status.errors.append(error_msg)

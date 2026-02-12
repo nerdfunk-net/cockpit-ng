@@ -111,7 +111,9 @@ class DeviceOnboardingService:
                 platform_id = await self.metadata_resolver.resolve_platform_id(
                     platform_name
                 )
-                logger.debug("Platform '%s' resolved to ID: %s", platform_name, platform_id)
+                logger.debug(
+                    "Platform '%s' resolved to ID: %s", platform_name, platform_id
+                )
                 # If UUID lookup fails, use None instead of the platform name
                 if not platform_id:
                     platform_id = None
@@ -125,7 +127,8 @@ class DeviceOnboardingService:
                     "location": location_id,
                     "ip_addresses": device_data.get("ip_address", ""),
                     "secrets_group": secret_group_id,
-                    "device_role": role_id or role_name,  # Fallback to name if resolution fails
+                    "device_role": role_id
+                    or role_name,  # Fallback to name if resolution fails
                     "namespace": namespace_id or namespace_name,
                     "device_status": device_status_id or device_status_name,
                     "interface_status": interface_status_id or interface_status_name,
@@ -144,8 +147,14 @@ class DeviceOnboardingService:
             logger.debug("  Original names -> UUIDs:")
             logger.debug("    role: '%s' -> '%s'", role_name, role_id)
             logger.debug("    namespace: '%s' -> '%s'", namespace_name, namespace_id)
-            logger.debug("    device_status: '%s' -> '%s'", device_status_name, device_status_id)
-            logger.debug("    interface_status: '%s' -> '%s'", interface_status_name, interface_status_id)
+            logger.debug(
+                "    device_status: '%s' -> '%s'", device_status_name, device_status_id
+            )
+            logger.debug(
+                "    interface_status: '%s' -> '%s'",
+                interface_status_name,
+                interface_status_id,
+            )
             logger.debug("    ip_status: '%s' -> '%s'", ip_status_name, ip_status_id)
             logger.debug("    platform: '%s' -> '%s'", platform_name, platform_id)
             for key, value in job_data["data"].items():

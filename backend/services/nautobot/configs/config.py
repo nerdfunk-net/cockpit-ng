@@ -222,7 +222,7 @@ class DeviceConfigService:
 
         logger.info("%s ✓ Device data fetched from Nautobot", log_prefix)
         logger.info("%s   - Name: %s", log_prefix, device_name)
-        logger.info("%s   - Primary IP: %s", log_prefix, primary_ip or 'NOT SET')
+        logger.info("%s   - Primary IP: %s", log_prefix, primary_ip or "NOT SET")
         logger.info("%s   - Platform: %s", log_prefix, platform)
 
         if not primary_ip:
@@ -287,7 +287,7 @@ class DeviceConfigService:
 
         if not result["success"]:
             logger.error("%s ✗ SSH connection or command execution failed", log_prefix)
-            logger.error("%s Error: %s", log_prefix, result.get('error'))
+            logger.error("%s Error: %s", log_prefix, result.get("error"))
             raise NautobotAPIError(result.get("error", "SSH connection failed"))
 
         logger.info("%s ✓ SSH connection successful", log_prefix)
@@ -329,7 +329,7 @@ class DeviceConfigService:
             logger.debug(
                 "%s Startup config content (first 100 chars): '%s'",
                 log_prefix,
-                command_outputs.get('show startup-config', '')[:100],
+                command_outputs.get("show startup-config", "")[:100],
             )
 
         # Fallback to general output if structured data is missing
@@ -345,12 +345,16 @@ class DeviceConfigService:
 
         # Validate we got configs
         if running_config:
-            logger.info("%s ✓ Running config: %s bytes", log_prefix, len(running_config))
+            logger.info(
+                "%s ✓ Running config: %s bytes", log_prefix, len(running_config)
+            )
         else:
             logger.warning("%s ⚠ Running config is empty!", log_prefix)
 
         if startup_config:
-            logger.info("%s ✓ Startup config: %s bytes", log_prefix, len(startup_config))
+            logger.info(
+                "%s ✓ Startup config: %s bytes", log_prefix, len(startup_config)
+            )
         else:
             logger.info("%s Startup config is empty or not retrieved", log_prefix)
 

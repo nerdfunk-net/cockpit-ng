@@ -60,7 +60,9 @@ class NautobotMetadataService:
         logger.debug("Retrieved %d prefix custom field definitions", len(custom_fields))
         return custom_fields
 
-    async def get_custom_field_choices(self, custom_field_name: str) -> List[Dict[str, Any]]:
+    async def get_custom_field_choices(
+        self, custom_field_name: str
+    ) -> List[Dict[str, Any]]:
         """
         Get Nautobot custom field choices for a specific custom field.
 
