@@ -384,53 +384,66 @@ export function AddDevicePage() {
   // Loading state
   if (isLoadingDropdowns) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading form data...</p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="bg-blue-100 p-2 rounded-lg">
+              <Server className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">Add Device to Nautobot</h1>
+              <p className="text-muted-foreground mt-2">
+                Add a new network device or bare metal server
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       </div>
     )
   }
 
   return (
-    <div>
-      <form onSubmit={formHandleSubmit(onSubmit, onInvalid)} className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Server className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Add Device to Nautobot</h1>
-              <p className="text-muted-foreground">
-                Add a new network device or bare metal server
-              </p>
-            </div>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="bg-blue-100 p-2 rounded-lg">
+            <Server className="h-6 w-6 text-blue-600" />
           </div>
-          <div className="flex gap-1">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => csvUpload.setShowModal(true)}
-              disabled={createDevice.isPending}
-            >
-              <FileSpreadsheet className="h-4 w-4 mr-2" />
-              Import from CSV
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => setShowHelpModal(true)}
-              disabled={createDevice.isPending}
-              title="Help"
-            >
-              <HelpCircle className="h-4 w-4" />
-            </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Add Device to Nautobot</h1>
+            <p className="text-muted-foreground mt-2">
+              Add a new network device or bare metal server
+            </p>
           </div>
         </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => csvUpload.setShowModal(true)}
+            disabled={createDevice.isPending}
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Import from CSV
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => setShowHelpModal(true)}
+            disabled={createDevice.isPending}
+            title="Help"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <form onSubmit={formHandleSubmit(onSubmit, onInvalid)} className="space-y-6">
 
         {/* Status Messages (non-errors only) */}
         {statusMessage && statusMessage.type !== 'error' && (

@@ -23,6 +23,7 @@
 11. [Common Icons Reference](#11-common-icons-reference)
 12. [Common Mistakes to Avoid](#12-common-mistakes-to-avoid)
 13. [Quick Reference Templates](#13-quick-reference-templates)
+14. [Structural Consistency Checklist (Cross-App)](#14-structural-consistency-checklist-cross-app)
 
 ---
 
@@ -805,7 +806,7 @@ export default function MyPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-4">
           <div className="bg-blue-100 p-2 rounded-lg">
             <MyIcon className="h-6 w-6 text-blue-600" />
           </div>
@@ -848,7 +849,7 @@ export default function MyTabbedPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-4">
           <div className="bg-blue-100 p-2 rounded-lg">
             <MyIcon className="h-6 w-6 text-blue-600" />
           </div>
@@ -923,6 +924,117 @@ Before considering your design implementation complete:
 
 **Complete Guide:**
 - Full Style Guide: [STYLE_GUIDE.md](STYLE_GUIDE.md) - includes code architecture, hooks, API patterns, and more
+
+---
+
+## 14. Structural Consistency Checklist (Cross-App)
+
+When building a new page or aligning an existing page with the design system, verify these structural rules. These are the most common sources of visual inconsistency between apps.
+
+### 14.1 Page-Level Structure
+
+Every page **MUST** follow this exact wrapper pattern:
+
+```tsx
+export function MyPage() {
+  return (
+    <div className="space-y-6">
+      {/* Page Header - OUTSIDE the form */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="bg-{color}-100 p-2 rounded-lg">
+            <Icon className="h-6 w-6 text-{color}-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Page Title</h1>
+            <p className="text-muted-foreground mt-2">Description</p>
+          </div>
+        </div>
+        {/* Optional: action buttons */}
+      </div>
+
+      {/* Form or content sections go here */}
+      <form className="space-y-6">
+        {/* Sections */}
+      </form>
+    </div>
+  )
+}
+```
+
+**Common mistakes to avoid:**
+
+| Mistake | Correct |
+|---------|---------|
+| `<div>` root wrapper (no classes) | `<div className="space-y-6">` |
+| Header inside `<form>` | Header outside `<form>`, as a sibling |
+| Fixed-size icon box (`h-12 w-12 flex items-center justify-center`) | Padding-based icon box (`p-2 rounded-lg`) |
+| `gap-3` or `space-x-3` between icon and title | `gap-4` (matches Add VM reference) |
+| `tracking-tight` on title | `text-slate-900` on title |
+| No margin on subtitle `<p>` | `mt-2` on subtitle |
+| Spinner-only loading state | Show header + spinner below (like the loaded state, but with a spinner in place of content) |
+
+### 14.2 Section Panel Consistency
+
+All gradient header sections within a single app **MUST** use identical structural properties:
+
+```tsx
+{/* Container */}
+<div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+
+  {/* Header - ALWAYS these exact classes */}
+  <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+    ...
+  </div>
+
+  {/* Content - ALWAYS p-6, never p-4 */}
+  <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+    ...
+  </div>
+</div>
+```
+
+**Rules:**
+- Content padding is **always `p-6`** — never mix `p-4` and `p-6` within the same app
+- Grid gap is **always `gap-4`** — never mix `gap-3` and `gap-4`
+- Header layout uses `justify-between` when there are action buttons on the right; this is fine
+- All sections within an app must have the same header height (same `py-2 px-4`, same `text-sm font-medium`)
+
+### 14.3 Loading State Pattern
+
+Loading states **MUST** preserve the page header so the page doesn't visually "jump" when data loads:
+
+```tsx
+if (isLoading) {
+  return (
+    <div className="space-y-6">
+      {/* Same header as the loaded state */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="bg-blue-100 p-2 rounded-lg">
+            <Icon className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Page Title</h1>
+            <p className="text-muted-foreground mt-2">Description</p>
+          </div>
+        </div>
+      </div>
+      {/* Centered spinner */}
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    </div>
+  )
+}
+```
+
+### 14.4 Reference Implementation
+
+When in doubt, use the **Add VM** page as the canonical reference for page structure:
+
+- **File:** `/frontend/src/components/features/nautobot/add-vm/add-vm-page.tsx`
+- **Why:** Clean separation of header/form, correct spacing, consistent panel padding, proper loading state
 
 ---
 

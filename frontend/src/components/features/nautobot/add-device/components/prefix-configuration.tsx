@@ -23,7 +23,7 @@ export function PrefixConfiguration({ form, isLoading }: PrefixConfigurationProp
           Automatically add prefix to IP addresses
         </div>
       </div>
-      <div className="p-4 bg-gradient-to-b from-white to-gray-50">
+      <div className="p-6 bg-gradient-to-b from-white to-gray-50">
         <div className="flex items-center gap-4">
           <div className="flex items-center space-x-2">
             <Checkbox
