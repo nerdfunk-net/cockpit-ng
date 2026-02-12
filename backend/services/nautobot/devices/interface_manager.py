@@ -64,7 +64,7 @@ class InterfaceManagerService:
             InterfaceUpdateResult with operation statistics and warnings
         """
         logger.info(
-            f"Creating/updating {len(interfaces)} interface(s) for device {device_id}"
+            "Creating/updating %s interface(s) for device %s", len(interfaces), device_id
         )
 
         created_interfaces = []
@@ -88,13 +88,13 @@ class InterfaceManagerService:
         logger.info("=" * 80)
         for interface in interfaces:
             try:
-                logger.info(f"\n--- Processing interface: {interface['name']} ---")
+                logger.info("\n--- Processing interface: %s ---", interface['name'])
                 interface_id = await self._create_or_update_interface(
                     device_id=device_id,
                     interface=interface,
                     warnings=warnings,
                 )
-                logger.info(f"Interface ID returned: {interface_id}")
+                logger.info("Interface ID returned: %s", interface_id)
 
                 if interface_id:
                     if (
@@ -111,7 +111,7 @@ class InterfaceManagerService:
                     # Clean existing IP assignments (once per interface)
                     if interface_id not in cleaned_interfaces:
                         logger.info(
-                            f"Cleaning existing IPs from interface {interface['name']}"
+                            "Cleaning existing IPs from interface %s", interface['name']
                         )
                         await self._clean_interface_ips(
                             interface_id=interface_id,
@@ -120,13 +120,13 @@ class InterfaceManagerService:
                         )
                         cleaned_interfaces.add(interface_id)
                     else:
-                        logger.info(f"Interface {interface['name']} already cleaned")
+                        logger.info("Interface %s already cleaned", interface['name'])
 
                     # Assign IP addresses - handle both array and single formats
                     logger.info(
-                        f"\n==== STEP 3: ASSIGN IP(S) TO INTERFACE {interface['name']} ===="
+                        "\n==== STEP 3: ASSIGN IP(S) TO INTERFACE %s ====", interface['name']
                     )
-                    logger.info(f"Interface ID: {interface_id}")
+                    logger.info("Interface ID: %s", interface_id)
 
                     # Get IP addresses in array format
                     ip_addresses = interface.get("ip_addresses", [])
@@ -139,7 +139,7 @@ class InterfaceManagerService:
                             }
                         ]
 
-                    logger.info(f"Found {len(ip_addresses)} IP(s) to assign")
+                    logger.info("Found %s IP(s) to assign", len(ip_addresses))
 
                     # Assign each IP address
                     for idx, ip_data in enumerate(ip_addresses):
@@ -147,7 +147,7 @@ class InterfaceManagerService:
                         if not ip_address:
                             continue
 
-                        logger.info(f"\n  >> Assigning IP #{idx + 1}: {ip_address}")
+                        logger.info("\n  >> Assigning IP #%s: %s", idx + 1, ip_address)
 
                         # Create a temporary interface dict for the assignment call
                         temp_interface = interface.copy()
@@ -159,7 +159,7 @@ class InterfaceManagerService:
                             ip_address_map=ip_address_map,
                             warnings=warnings,
                         )
-                        logger.info(f"  IP assignment result: {ip_assigned}")
+                        logger.info("  IP assignment result: %s", ip_assigned)
 
                         # Track if this should be primary IPv4
                         if ip_assigned:
@@ -169,12 +169,16 @@ class InterfaceManagerService:
                                 if ip_data.get("is_primary"):
                                     primary_ipv4_id = ip_assigned
                                     logger.info(
-                                        f"  ✓ Interface {interface['name']} IP {ip_address} marked as primary IPv4 (explicit)"
+                                        "  ✓ Interface %s IP %s marked as primary IPv4 (explicit)",
+                                        interface['name'],
+                                        ip_address,
                                     )
                                 elif primary_ipv4_id is None:
                                     primary_ipv4_id = ip_assigned
                                     logger.info(
-                                        f"  ✓ Interface {interface['name']} IP {ip_address} set as primary IPv4 (first IPv4 found)"
+                                        "  ✓ Interface %s IP %s set as primary IPv4 (first IPv4 found)",
+                                        interface['name'],
+                                        ip_address,
                                     )
 
                     # Track success
@@ -191,7 +195,7 @@ class InterfaceManagerService:
                     f"Interface {interface['name']}: Failed to process interface: {error_msg}"
                 )
                 logger.error(
-                    f"Error processing interface {interface['name']}: {error_msg}"
+                    "Error processing interface %s: %s", interface['name'], error_msg
                 )
 
         # Step 3: Set primary IPv4 if found
@@ -237,8 +241,8 @@ class InterfaceManagerService:
         ip_address_map = {}
 
         for interface in interfaces:
-            logger.info(f"\n--- Processing interface: {interface['name']} ---")
-            logger.info(f"Interface data: {interface}")
+            logger.info("\n--- Processing interface: %s ---", interface['name'])
+            logger.info("Interface data: %s", interface)
 
             # Handle both formats: ip_addresses (array) and ip_address (string)
             ip_addresses = interface.get("ip_addresses", [])
@@ -255,15 +259,15 @@ class InterfaceManagerService:
 
             if not ip_addresses:
                 logger.info(
-                    f"No ip_address or ip_addresses field found for interface {interface['name']}, skipping"
+                    "No ip_address or ip_addresses field found for interface %s, skipping", interface['name']
                 )
                 continue
 
-            logger.info(f"Found {len(ip_addresses)} IP address(es) to process")
+            logger.info("Found %s IP address(es) to process", len(ip_addresses))
 
             # Process each IP address for this interface
             for idx, ip_data in enumerate(ip_addresses):
-                logger.info(f"\n  >> Processing IP #{idx + 1}: {ip_data}")
+                logger.info("\n  >> Processing IP #%s: %s", idx + 1, ip_data)
 
                 ip_address = ip_data.get("address")
                 if not ip_address:
@@ -278,7 +282,11 @@ class InterfaceManagerService:
                 ip_role = ip_data.get("ip_role")
 
                 logger.info(
-                    f"  Extracted values: ip={ip_address}, namespace={namespace}, status={status}, ip_role={ip_role}"
+                    "  Extracted values: ip=%s, namespace=%s, status=%s, ip_role=%s",
+                    ip_address,
+                    namespace,
+                    status,
+                    ip_role,
                 )
 
                 if not namespace:
@@ -295,10 +303,10 @@ class InterfaceManagerService:
                     ip_kwargs = {}
                     if ip_role and ip_role != "none":
                         ip_kwargs["role"] = ip_role
-                        logger.info(f"  Adding role '{ip_role}' to IP creation")
+                        logger.info("  Adding role '%s' to IP creation", ip_role)
 
                     # Use common service to ensure IP exists (handles all error cases)
-                    logger.info(f"  Calling ensure_ip_address_exists for {ip_address}")
+                    logger.info("  Calling ensure_ip_address_exists for %s", ip_address)
                     ip_id = await self.common.ensure_ip_address_exists(
                         ip_address=ip_address,
                         namespace_id=namespace_id,
@@ -309,12 +317,12 @@ class InterfaceManagerService:
 
                     map_key = f"{interface['name']}:{ip_address}"
                     ip_address_map[map_key] = ip_id
-                    logger.info(f"  ✓ SUCCESS: IP address {ip_address} ready")
-                    logger.info(f"    - IP ID: {ip_id}")
-                    logger.info(f"    - Map key: {map_key}")
+                    logger.info("  ✓ SUCCESS: IP address %s ready", ip_address)
+                    logger.info("    - IP ID: %s", ip_id)
+                    logger.info("    - Map key: %s", map_key)
 
                 except Exception as e:
-                    logger.error(f"  ✗ Error ensuring IP {ip_address}: {str(e)}")
+                    logger.error("  ✗ Error ensuring IP %s: %s", ip_address, str(e))
                     warnings.append(
                         f"Interface {interface['name']}: Failed to ensure IP address {ip_address}: {str(e)}"
                     )
@@ -328,8 +336,8 @@ class InterfaceManagerService:
 
         logger.info("\n" + "=" * 80)
         logger.info("==== STEP 1 COMPLETE: IP ADDRESS MAP ====")
-        logger.info(f"Total IPs created/found: {len(ip_address_map)}")
-        logger.info(f"IP address map: {ip_address_map}")
+        logger.info("Total IPs created/found: %s", len(ip_address_map))
+        logger.info("IP address map: %s", ip_address_map)
         logger.info("=" * 80 + "\n")
         return ip_address_map
 
@@ -387,7 +395,7 @@ class InterfaceManagerService:
             if interface_response and "id" in interface_response:
                 interface_id = interface_response["id"]
                 logger.info(
-                    f"Created interface {interface['name']} with ID: {interface_id}"
+                    "Created interface %s with ID: %s", interface['name'], interface_id
                 )
                 return interface_id
 
@@ -400,7 +408,7 @@ class InterfaceManagerService:
                 )
                 if interface_id:
                     logger.info(
-                        f"Found existing interface {interface['name']} with ID: {interface_id}"
+                        "Found existing interface %s with ID: %s", interface['name'], interface_id
                     )
                     return interface_id
                 else:
@@ -430,7 +438,7 @@ class InterfaceManagerService:
         """
         try:
             existing_assignments_endpoint = (
-                f"ipam/ip-address-to-interface/?interface={interface_id}&format=json"
+                "ipam/ip-address-to-interface/?interface=%s&format=json" % interface_id
             )
             existing_assignments = await self.nautobot.rest_request(
                 endpoint=existing_assignments_endpoint, method="GET"
@@ -438,17 +446,19 @@ class InterfaceManagerService:
 
             if existing_assignments and existing_assignments.get("count", 0) > 0:
                 logger.info(
-                    f"Found {existing_assignments['count']} existing IP assignment(s) on interface {interface_name}, removing them..."
+                    "Found %s existing IP assignment(s) on interface %s, removing them...",
+                    existing_assignments['count'],
+                    interface_name,
                 )
                 for assignment in existing_assignments.get("results", []):
                     assignment_id = assignment["id"]
                     try:
                         await self.nautobot.rest_request(
-                            endpoint=f"ipam/ip-address-to-interface/{assignment_id}/",
+                            endpoint="ipam/ip-address-to-interface/%s/" % assignment_id,
                             method="DELETE",
                         )
                         logger.info(
-                            f"Unassigned IP assignment {assignment_id} from interface {interface_name}"
+                            "Unassigned IP assignment %s from interface %s", assignment_id, interface_name
                         )
                     except Exception as delete_error:
                         warnings.append(
@@ -480,9 +490,9 @@ class InterfaceManagerService:
             IP UUID if successfully assigned, None otherwise
         """
         logger.info("_assign_ip_to_interface called")
-        logger.info(f"  Interface: {interface['name']}")
-        logger.info(f"  Interface ID: {interface_id}")
-        logger.info(f"  IP address map keys: {list(ip_address_map.keys())}")
+        logger.info("  Interface: %s", interface['name'])
+        logger.info("  Interface ID: %s", interface_id)
+        logger.info("  IP address map keys: %s", list(ip_address_map.keys()))
 
         ip_address = interface.get("ip_address")
         if not ip_address:
@@ -490,27 +500,29 @@ class InterfaceManagerService:
             return None
 
         map_key = f"{interface['name']}:{ip_address}"
-        logger.info(f"Looking for map_key: '{map_key}'")
+        logger.info("Looking for map_key: '%s'", map_key)
 
         if map_key not in ip_address_map:
-            logger.error(f"✗ IP address not found in map for key '{map_key}'")
-            logger.error(f"Available keys: {list(ip_address_map.keys())}")
+            logger.error("✗ IP address not found in map for key '%s'", map_key)
+            logger.error("Available keys: %s", list(ip_address_map.keys()))
             return None
 
         ip_id = ip_address_map[map_key]
-        logger.info(f"✓ Found IP in map: {ip_address} (ID: {ip_id})")
-        logger.info(f"Attempting to assign IP to interface {interface['name']}")
+        logger.info("✓ Found IP in map: %s (ID: %s)", ip_address, ip_id)
+        logger.info("Attempting to assign IP to interface %s", interface['name'])
 
         try:
             # Check if assignment already exists
-            check_assignment_endpoint = f"ipam/ip-address-to-interface/?ip_address={ip_id}&interface={interface_id}&format=json"
+            check_assignment_endpoint = "ipam/ip-address-to-interface/?ip_address=%s&interface=%s&format=json" % (ip_id, interface_id)
             existing_assignment = await self.nautobot.rest_request(
                 endpoint=check_assignment_endpoint, method="GET"
             )
 
             if existing_assignment and existing_assignment.get("count", 0) > 0:
                 logger.info(
-                    f"✓ IP-to-Interface assignment already exists for IP {ip_id} and interface {interface['name']}"
+                    "✓ IP-to-Interface assignment already exists for IP %s and interface %s",
+                    ip_id,
+                    interface['name'],
                 )
             else:
                 # Create new assignment
@@ -518,23 +530,28 @@ class InterfaceManagerService:
                     "ip_address": ip_id,
                     "interface": interface_id,
                 }
-                logger.info(f"Creating assignment with payload: {assignment_payload}")
+                logger.info("Creating assignment with payload: %s", assignment_payload)
                 result = await self.nautobot.rest_request(
                     endpoint="ipam/ip-address-to-interface/",
                     method="POST",
                     data=assignment_payload,
                 )
-                logger.info(f"Assignment response: {result}")
+                logger.info("Assignment response: %s", result)
                 logger.info(
-                    f"✓ Created new IP-to-Interface assignment: IP {ip_id} → interface {interface['name']}"
+                    "✓ Created new IP-to-Interface assignment: IP %s → interface %s",
+                    ip_id,
+                    interface['name'],
                 )
 
             return ip_id
 
         except Exception as e:
-            logger.error(f"✗ Exception during IP assignment: {str(e)}")
+            logger.error("✗ Exception during IP assignment: %s", str(e))
             logger.error(
-                f"Interface: {interface['name']}, IP: {ip_address}, Interface ID: {interface_id}"
+                "Interface: %s, IP: %s, Interface ID: %s",
+                interface['name'],
+                ip_address,
+                interface_id,
             )
             warnings.append(
                 f"Interface {interface['name']}: Failed to assign IP address: {str(e)}"
@@ -558,10 +575,10 @@ class InterfaceManagerService:
         try:
             update_payload = {"primary_ip4": primary_ipv4_id}
             await self.nautobot.rest_request(
-                endpoint=f"dcim/devices/{device_id}/",
+                endpoint="dcim/devices/%s/" % device_id,
                 method="PATCH",
                 data=update_payload,
             )
-            logger.info(f"Set primary IPv4 to {primary_ipv4_id}")
+            logger.info("Set primary IPv4 to %s", primary_ipv4_id)
         except Exception as e:
             warnings.append(f"Failed to set primary IPv4: {str(e)}")

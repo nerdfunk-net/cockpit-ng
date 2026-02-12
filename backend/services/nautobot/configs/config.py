@@ -203,8 +203,8 @@ class DeviceConfigService:
             or "data" not in device_data
             or not device_data["data"].get("device")
         ):
-            logger.error(f"{log_prefix} ✗ Failed to get device data from Nautobot")
-            logger.error(f"{log_prefix} Response: {device_data}")
+            logger.error("%s ✗ Failed to get device data from Nautobot", log_prefix)
+            logger.error("%s Response: %s", log_prefix, device_data)
             raise ValueError("Failed to fetch device data from Nautobot")
 
         device = device_data["data"]["device"]
@@ -220,14 +220,14 @@ class DeviceConfigService:
             else "unknown"
         )
 
-        logger.info(f"{log_prefix} ✓ Device data fetched from Nautobot")
-        logger.info(f"{log_prefix}   - Name: {device_name}")
-        logger.info(f"{log_prefix}   - Primary IP: {primary_ip or 'NOT SET'}")
-        logger.info(f"{log_prefix}   - Platform: {platform}")
+        logger.info("%s ✓ Device data fetched from Nautobot", log_prefix)
+        logger.info("%s   - Name: %s", log_prefix, device_name)
+        logger.info("%s   - Primary IP: %s", log_prefix, primary_ip or 'NOT SET')
+        logger.info("%s   - Platform: %s", log_prefix, platform)
 
         if not primary_ip:
             logger.error(
-                f"{log_prefix} ✗ Device has no primary IP address - cannot connect"
+                "%s ✗ Device has no primary IP address - cannot connect", log_prefix
             )
             raise ValueError("No primary IP address")
 
@@ -268,10 +268,10 @@ class DeviceConfigService:
         display_name = device_name or device_ip
 
         logger.info(
-            f"{log_prefix} Connecting to {display_name} ({device_ip}) via SSH..."
+            "%s Connecting to %s (%s) via SSH...", log_prefix, display_name, device_ip
         )
-        logger.info(f"{log_prefix}   - Username: {username}")
-        logger.info(f"{log_prefix}   - Device type: {device_type}")
+        logger.info("%s   - Username: %s", log_prefix, username)
+        logger.info("%s   - Device type: %s", log_prefix, device_type)
 
         # Connect and execute backup commands
         commands = ["show running-config", "show startup-config"]
@@ -286,11 +286,11 @@ class DeviceConfigService:
         )
 
         if not result["success"]:
-            logger.error(f"{log_prefix} ✗ SSH connection or command execution failed")
-            logger.error(f"{log_prefix} Error: {result.get('error')}")
+            logger.error("%s ✗ SSH connection or command execution failed", log_prefix)
+            logger.error("%s Error: %s", log_prefix, result.get('error'))
             raise NautobotAPIError(result.get("error", "SSH connection failed"))
 
-        logger.info(f"{log_prefix} ✓ SSH connection successful")
+        logger.info("%s ✓ SSH connection successful", log_prefix)
         return result
 
     def parse_config_output(
@@ -312,27 +312,29 @@ class DeviceConfigService:
         """
         log_prefix = f"[{device_index}]" if device_index else ""
 
-        logger.info(f"{log_prefix} Parsing configuration output...")
+        logger.info("%s Parsing configuration output...", log_prefix)
         logger.debug(
-            f"{log_prefix} Available command outputs keys: "
-            f"{list(command_outputs.keys())}"
+            "%s Available command outputs keys: %s",
+            log_prefix,
+            list(command_outputs.keys()),
         )
 
         running_config = command_outputs.get("show running-config", "").strip()
         startup_config = command_outputs.get("show startup-config", "").strip()
 
-        logger.debug(f"{log_prefix} Running config length: {len(running_config)}")
-        logger.debug(f"{log_prefix} Startup config length: {len(startup_config)}")
+        logger.debug("%s Running config length: %s", log_prefix, len(running_config))
+        logger.debug("%s Startup config length: %s", log_prefix, len(startup_config))
 
         if not startup_config:
             logger.debug(
-                f"{log_prefix} Startup config content (first 100 chars): "
-                f"'{command_outputs.get('show startup-config', '')[:100]}'"
+                "%s Startup config content (first 100 chars): '%s'",
+                log_prefix,
+                command_outputs.get('show startup-config', '')[:100],
             )
 
         # Fallback to general output if structured data is missing
         if not running_config and not startup_config:
-            logger.debug(f"{log_prefix} Using fallback output parsing")
+            logger.debug("%s Using fallback output parsing", log_prefix)
             if "show startup-config" in fallback_output:
                 parts = fallback_output.split("show startup-config")
                 running_config = parts[0].strip()
@@ -343,14 +345,14 @@ class DeviceConfigService:
 
         # Validate we got configs
         if running_config:
-            logger.info(f"{log_prefix} ✓ Running config: {len(running_config)} bytes")
+            logger.info("%s ✓ Running config: %s bytes", log_prefix, len(running_config))
         else:
-            logger.warning(f"{log_prefix} ⚠ Running config is empty!")
+            logger.warning("%s ⚠ Running config is empty!", log_prefix)
 
         if startup_config:
-            logger.info(f"{log_prefix} ✓ Startup config: {len(startup_config)} bytes")
+            logger.info("%s ✓ Startup config: %s bytes", log_prefix, len(startup_config))
         else:
-            logger.info(f"{log_prefix} Startup config is empty or not retrieved")
+            logger.info("%s Startup config is empty or not retrieved", log_prefix)
 
         return running_config, startup_config
 
@@ -396,12 +398,12 @@ class DeviceConfigService:
             running_path = replace_template_variables(running_template, device)
             running_path = running_path.lstrip("/")
             logger.info(
-                f"{log_prefix} Using templated running config path: {running_path}"
+                "%s Using templated running config path: %s", log_prefix, running_path
             )
         else:
-            running_path = f"backups/{device_name}.{current_date}.running-config"
+            running_path = "backups/%s.%s.running-config" % (device_name, current_date)
             logger.info(
-                f"{log_prefix} Using default running config path: {running_path}"
+                "%s Using default running config path: %s", log_prefix, running_path
             )
 
         if startup_template:
@@ -410,12 +412,12 @@ class DeviceConfigService:
             startup_path = replace_template_variables(startup_template, device)
             startup_path = startup_path.lstrip("/")
             logger.info(
-                f"{log_prefix} Using templated startup config path: {startup_path}"
+                "%s Using templated startup config path: %s", log_prefix, startup_path
             )
         else:
-            startup_path = f"backups/{device_name}.{current_date}.startup-config"
+            startup_path = "backups/%s.%s.startup-config" % (device_name, current_date)
             logger.info(
-                f"{log_prefix} Using default startup config path: {startup_path}"
+                "%s Using default startup config path: %s", log_prefix, startup_path
             )
 
         running_file = repo_path / running_path
@@ -425,14 +427,14 @@ class DeviceConfigService:
         running_file.parent.mkdir(parents=True, exist_ok=True)
         startup_file.parent.mkdir(parents=True, exist_ok=True)
 
-        logger.info(f"{log_prefix} Writing configs to disk...")
+        logger.info("%s Writing configs to disk...", log_prefix)
         running_file.write_text(running_config)
-        logger.info(f"{log_prefix}   - Running config → {running_file.name}")
+        logger.info("%s   - Running config → %s", log_prefix, running_file.name)
 
         startup_file_relative = None
         if startup_config:
             startup_file.write_text(startup_config)
-            logger.info(f"{log_prefix}   - Startup config → {startup_file.name}")
+            logger.info("%s   - Startup config → %s", log_prefix, startup_file.name)
             startup_file_relative = str(startup_file.relative_to(repo_path))
 
         return {
