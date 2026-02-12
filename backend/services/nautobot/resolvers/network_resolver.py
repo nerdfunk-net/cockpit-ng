@@ -30,10 +30,10 @@ class NetworkResolver(BaseResolver):
         """
         # If already a UUID, return directly
         if is_valid_uuid(namespace_name):
-            logger.debug(f"Namespace is already a UUID: {namespace_name}")
+            logger.debug("Namespace is already a UUID: %s", namespace_name)
             return namespace_name
 
-        logger.info(f"Resolving namespace '{namespace_name}'")
+        logger.info("Resolving namespace '%s'", namespace_name)
 
         query = """
         query GetNamespace($name: [String]) {
@@ -54,7 +54,7 @@ class NetworkResolver(BaseResolver):
         namespaces = result.get("data", {}).get("namespaces", [])
         if namespaces:
             namespace_id = namespaces[0]["id"]
-            logger.info(f"Resolved namespace '{namespace_name}' to UUID {namespace_id}")
+            logger.info("Resolved namespace '%s' to UUID %s", namespace_name, namespace_id)
             return namespace_id
 
         raise ValueError(f"Namespace '{namespace_name}' not found")
@@ -74,7 +74,7 @@ class NetworkResolver(BaseResolver):
         """
         try:
             logger.debug(
-                f"Resolving IP address '{ip_address}' in namespace {namespace_id}"
+                "Resolving IP address '%s' in namespace %s", ip_address, namespace_id
             )
 
             query = """
@@ -89,20 +89,20 @@ class NetworkResolver(BaseResolver):
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error(f"GraphQL error resolving IP address: {result['errors']}")
+                logger.error("GraphQL error resolving IP address: %s", result['errors'])
                 return None
 
             ip_addresses = result.get("data", {}).get("ip_addresses", [])
             if ip_addresses and len(ip_addresses) > 0:
                 ip_id = ip_addresses[0]["id"]
-                logger.debug(f"Resolved IP address '{ip_address}' to UUID {ip_id}")
+                logger.debug("Resolved IP address '%s' to UUID %s", ip_address, ip_id)
                 return ip_id
 
-            logger.debug(f"IP address not found: {ip_address}")
+            logger.debug("IP address not found: %s", ip_address)
             return None
 
         except Exception as e:
-            logger.error(f"Error resolving IP address: {e}", exc_info=True)
+            logger.error("Error resolving IP address: %s", e, exc_info=True)
             return None
 
     async def resolve_interface_by_name(
@@ -120,7 +120,7 @@ class NetworkResolver(BaseResolver):
         """
         try:
             logger.debug(
-                f"Resolving interface '{interface_name}' on device {device_id}"
+                "Resolving interface '%s' on device %s", interface_name, device_id
             )
 
             query = """
@@ -135,22 +135,22 @@ class NetworkResolver(BaseResolver):
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error(f"GraphQL error resolving interface: {result['errors']}")
+                logger.error("GraphQL error resolving interface: %s", result['errors'])
                 return None
 
             interfaces = result.get("data", {}).get("interfaces", [])
             if interfaces and len(interfaces) > 0:
                 interface_id = interfaces[0]["id"]
                 logger.debug(
-                    f"Resolved interface '{interface_name}' to UUID {interface_id}"
+                    "Resolved interface '%s' to UUID %s", interface_name, interface_id
                 )
                 return interface_id
 
-            logger.debug(f"Interface not found: {interface_name}")
+            logger.debug("Interface not found: %s", interface_name)
             return None
 
         except Exception as e:
-            logger.error(f"Error resolving interface: {e}", exc_info=True)
+            logger.error("Error resolving interface: %s", e, exc_info=True)
             return None
 
     async def resolve_prefix(self, prefix: str, namespace_id: str) -> Optional[str]:
@@ -165,7 +165,7 @@ class NetworkResolver(BaseResolver):
             Prefix UUID if found, None otherwise
         """
         try:
-            logger.debug(f"Resolving prefix '{prefix}' in namespace {namespace_id}")
+            logger.debug("Resolving prefix '%s' in namespace %s", prefix, namespace_id)
 
             # Use REST API for prefix lookup
             prefix_search_endpoint = (
@@ -177,12 +177,12 @@ class NetworkResolver(BaseResolver):
 
             if prefix_result and prefix_result.get("count", 0) > 0:
                 prefix_id = prefix_result["results"][0]["id"]
-                logger.debug(f"Resolved prefix '{prefix}' to UUID {prefix_id}")
+                logger.debug("Resolved prefix '%s' to UUID %s", prefix, prefix_id)
                 return prefix_id
 
-            logger.debug(f"Prefix not found: {prefix}")
+            logger.debug("Prefix not found: %s", prefix)
             return None
 
         except Exception as e:
-            logger.error(f"Error resolving prefix: {e}", exc_info=True)
+            logger.error("Error resolving prefix: %s", e, exc_info=True)
             return None

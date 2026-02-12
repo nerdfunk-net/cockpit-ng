@@ -658,7 +658,7 @@ ip_id = await ip_manager.ensure_ip_address_exists(...)
 
 **Database:**
 - Single PostgreSQL database
-- Auto-migrations via schema_manager
+- use complete migration framework to migrate database (./doc/MIGRATION_SYSTEM.md)
 - All models in `/backend/core/models.py`
 - Connection pooling + health checks
 
