@@ -2,6 +2,10 @@
 Custom exceptions for Nautobot operations.
 """
 
+from __future__ import annotations
+
+from fastapi import HTTPException, status
+
 
 class NautobotError(Exception):
     """Base exception for Nautobot operations."""
@@ -76,3 +80,35 @@ def handle_already_exists_error(error: Exception, resource_type: str) -> dict:
         "message": f"{resource_type} already exists",
         "detail": error_msg,
     }
+
+
+def translate_http_exception(exc: Exception, context: str) -> HTTPException:
+    """Map common Nautobot API errors to appropriate HTTP status codes.
+
+    Args:
+        exc: The exception to translate
+        context: Context message describing what operation failed
+
+    Returns:
+        HTTPException with appropriate status code
+    """
+    message = str(exc)
+    if "404" in message or "Not Found" in message:
+        return HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{context}: Resource not found",
+        )
+    if "403" in message:
+        return HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"{context}: Permission denied",
+        )
+    if "400" in message:
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{context}: Invalid request",
+        )
+    return HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=f"{context}: {message}",
+    )
