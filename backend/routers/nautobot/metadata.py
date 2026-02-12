@@ -847,6 +847,22 @@ async def get_nautobot_prefix_custom_fields(
         )
 
 
+@router.get("/custom-fields/vm", summary="🔶 REST: List VM Custom Fields")
+async def get_nautobot_vm_custom_fields(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
+    """Get Nautobot custom fields specifically for virtualization.virtualmachine content type."""
+    try:
+        from services.nautobot import nautobot_metadata_service
+
+        return await nautobot_metadata_service.get_vm_custom_fields()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch VM custom fields: {str(e)}",
+        )
+
+
 @router.get("/custom-field-choices/{custom_field_name}")
 async def get_nautobot_custom_field_choices(
     custom_field_name: str,

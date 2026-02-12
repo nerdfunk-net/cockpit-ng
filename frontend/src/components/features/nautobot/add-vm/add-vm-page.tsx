@@ -12,18 +12,25 @@ import {
   useVMMutations,
 } from './hooks/queries'
 import { useVMForm, type VMFormValues } from './hooks/use-vm-form'
+import { useTagsManager } from './hooks/use-tags-manager'
+import { useCustomFieldsManager } from './hooks/use-custom-fields-manager'
+import { usePropertiesModal } from './hooks/use-properties-modal'
 import {
   VMInfoSection,
   ClusterSection,
   ManagementSection,
   ResourcesSection,
-  TagsSection,
+  InterfaceList,
+  InterfacePropertiesModal,
+  TagsModal,
+  CustomFieldsModal,
 } from './components'
 import {
   EMPTY_DROPDOWN_OPTIONS,
   EMPTY_CLUSTERS,
   EMPTY_SOFTWARE_IMAGES,
   EMPTY_SOFTWARE_VERSIONS,
+  EMPTY_INTERFACE_TYPES,
 } from './constants'
 import type { StatusMessage } from './types'
 
@@ -40,6 +47,9 @@ export function AddVMPage() {
       platforms: EMPTY_DROPDOWN_OPTIONS,
       namespaces: EMPTY_DROPDOWN_OPTIONS,
       tags: EMPTY_DROPDOWN_OPTIONS,
+      interfaceTypes: EMPTY_INTERFACE_TYPES,
+      interfaceStatuses: EMPTY_DROPDOWN_OPTIONS,
+      ipRoles: EMPTY_DROPDOWN_OPTIONS,
     },
     isLoading: isLoadingDropdowns,
   } = useVMDropdownsQuery()
@@ -50,6 +60,13 @@ export function AddVMPage() {
 
   // VM mutations
   const { createVM } = useVMMutations()
+
+  // Tags & Custom Fields managers
+  const tagsManager = useTagsManager()
+  const customFieldsManager = useCustomFieldsManager()
+
+  // Interface properties modal
+  const propertiesModal = usePropertiesModal()
 
   // Resolve selected platform ID → name for the software versions filter
   const selectedPlatformId = form.watch('platform')
@@ -84,22 +101,32 @@ export function AddVMPage() {
     async (formData: VMFormValues) => {
       setStatusMessage(null)
       try {
-        await createVM.mutateAsync(formData)
+        // Include tags and custom fields in submission
+        const submissionData: VMFormValues = {
+          ...formData,
+          tags: tagsManager.selectedTags,
+          customFieldValues: customFieldsManager.customFieldValues,
+        }
+        await createVM.mutateAsync(submissionData)
         // Reset form on success
         reset()
+        tagsManager.clearSelectedTags()
+        customFieldsManager.clearFieldValues()
       } catch (error) {
         // Error handling is done in the mutation hook
         console.error('VM creation failed:', error)
       }
     },
-    [createVM, reset]
+    [createVM, reset, tagsManager, customFieldsManager]
   )
 
   // Clear form
   const handleClear = useCallback(() => {
     reset()
+    tagsManager.clearSelectedTags()
+    customFieldsManager.clearFieldValues()
     setStatusMessage(null)
-  }, [reset])
+  }, [reset, tagsManager, customFieldsManager])
 
   // Full-page loading state
   if (isLoadingDropdowns) {
@@ -152,7 +179,14 @@ export function AddVMPage() {
       )}
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <VMInfoSection form={form} dropdownData={dropdownData} isLoading={isLoadingDropdowns} />
+        <VMInfoSection
+          form={form}
+          dropdownData={dropdownData}
+          isLoading={isLoadingDropdowns}
+          onOpenTags={tagsManager.openModal}
+          onOpenCustomFields={customFieldsManager.openModal}
+          selectedTagsCount={tagsManager.selectedTags.length}
+        />
         <ClusterSection form={form} dropdownData={dropdownData} isLoading={isLoadingDropdowns} />
         <ManagementSection
           form={form}
@@ -164,7 +198,16 @@ export function AddVMPage() {
           isLoading={isLoadingDropdowns}
         />
         <ResourcesSection form={form} isLoading={isLoadingDropdowns} />
-        <TagsSection form={form} dropdownData={dropdownData} isLoading={isLoadingDropdowns} />
+
+        {/* Network Interfaces */}
+        <InterfaceList
+          form={form}
+          dropdownData={dropdownData}
+          onOpenProperties={(id) => {
+            propertiesModal.openModal(id)
+          }}
+          isLoading={createVM.isPending}
+        />
 
         {/* Submit buttons */}
         <div className="flex justify-end gap-3">
@@ -183,6 +226,35 @@ export function AddVMPage() {
           </Button>
         </div>
       </form>
+
+      {/* Modals */}
+      <TagsModal
+        show={tagsManager.showModal}
+        onClose={tagsManager.closeModal}
+        availableTags={tagsManager.availableTags}
+        selectedTags={tagsManager.selectedTags}
+        onToggleTag={tagsManager.toggleTag}
+        isLoading={tagsManager.isLoading}
+      />
+
+      <CustomFieldsModal
+        show={customFieldsManager.showModal}
+        onClose={customFieldsManager.closeModal}
+        customFields={customFieldsManager.customFields}
+        customFieldValues={customFieldsManager.customFieldValues}
+        onUpdateField={customFieldsManager.updateFieldValue}
+        isLoading={customFieldsManager.isLoading}
+        customFieldChoices={customFieldsManager.customFieldChoices}
+      />
+
+      <InterfacePropertiesModal
+        form={form}
+        interfaceId={propertiesModal.currentInterfaceId}
+        vlans={propertiesModal.vlans}
+        isLoadingVlans={propertiesModal.isLoadingVlans}
+        show={propertiesModal.showModal}
+        onClose={propertiesModal.closeModal}
+      />
     </div>
   )
 }

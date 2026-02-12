@@ -33,6 +33,9 @@ export function useVMDropdownsQuery(
         platforms,
         namespaces,
         tags,
+        interfaceTypes,
+        interfaceStatuses,
+        ipRoles,
       ] = await Promise.all([
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         apiCall<any>('nautobot/roles/vm', { method: 'GET' }).catch(() => []),
@@ -48,6 +51,12 @@ export function useVMDropdownsQuery(
         apiCall<any>('nautobot/namespaces', { method: 'GET' }).catch(() => []),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         apiCall<any>('nautobot/tags/vm', { method: 'GET' }).catch(() => []),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        apiCall<any>('nautobot/interface-types', { method: 'GET' }).catch(() => []),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        apiCall<any>('nautobot/statuses/interface', { method: 'GET' }).catch(() => []),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        apiCall<any>('nautobot/ip-roles', { method: 'GET' }).catch(() => []),
       ])
 
       return {
@@ -58,6 +67,9 @@ export function useVMDropdownsQuery(
         platforms: Array.isArray(platforms) ? platforms : [],
         namespaces: Array.isArray(namespaces) ? namespaces : [],
         tags: Array.isArray(tags) ? tags : [],
+        interfaceTypes: Array.isArray(interfaceTypes) ? interfaceTypes : [],
+        interfaceStatuses: Array.isArray(interfaceStatuses) ? interfaceStatuses : [],
+        ipRoles: Array.isArray(ipRoles) ? ipRoles : [],
       }
     },
     enabled,

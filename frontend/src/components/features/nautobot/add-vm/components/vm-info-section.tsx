@@ -1,5 +1,7 @@
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -7,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Tags, FileText } from 'lucide-react'
 import type { VMFormReturn } from '../hooks/use-vm-form'
 import type { VMDropdownsResponse } from '../types'
 
@@ -14,9 +17,19 @@ interface VMInfoSectionProps {
   form: VMFormReturn
   dropdownData: VMDropdownsResponse
   isLoading: boolean
+  onOpenTags: () => void
+  onOpenCustomFields: () => void
+  selectedTagsCount: number
 }
 
-export function VMInfoSection({ form, dropdownData, isLoading }: VMInfoSectionProps) {
+export function VMInfoSection({
+  form,
+  dropdownData,
+  isLoading,
+  onOpenTags,
+  onOpenCustomFields,
+  selectedTagsCount,
+}: VMInfoSectionProps) {
   const {
     register,
     setValue,
@@ -26,8 +39,37 @@ export function VMInfoSection({ form, dropdownData, isLoading }: VMInfoSectionPr
 
   return (
     <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center rounded-t-lg">
+      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
         <span className="text-sm font-medium">Virtual Machine</span>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 text-white hover:bg-white/20 hover:text-white"
+            onClick={onOpenTags}
+            disabled={isLoading}
+          >
+            <Tags className="h-3.5 w-3.5 mr-1.5" />
+            Tags
+            {selectedTagsCount > 0 && (
+              <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs bg-white/20 text-white hover:bg-white/20">
+                {selectedTagsCount}
+              </Badge>
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 text-white hover:bg-white/20 hover:text-white"
+            onClick={onOpenCustomFields}
+            disabled={isLoading}
+          >
+            <FileText className="h-3.5 w-3.5 mr-1.5" />
+            Custom Fields
+          </Button>
+        </div>
       </div>
       <div className="p-6 bg-gradient-to-b from-white to-gray-50">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

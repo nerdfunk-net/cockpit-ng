@@ -60,6 +60,24 @@ class NautobotMetadataService:
         logger.debug("Retrieved %d prefix custom field definitions", len(custom_fields))
         return custom_fields
 
+    async def get_vm_custom_fields(self) -> List[Dict[str, Any]]:
+        """
+        Get Nautobot custom fields specifically for virtualization.virtualmachine content type.
+
+        Returns:
+            List of custom field definitions for virtual machines
+
+        Raises:
+            Exception: If the API request fails
+        """
+        logger.debug("Fetching VM custom fields from Nautobot")
+        result = await self.nautobot.rest_request(
+            "extras/custom-fields/?content_types=virtualization.virtualmachine&limit=0"
+        )
+        custom_fields = result.get("results", [])
+        logger.debug("Retrieved %d VM custom field definitions", len(custom_fields))
+        return custom_fields
+
     async def get_custom_field_choices(
         self, custom_field_name: str
     ) -> List[Dict[str, Any]]:

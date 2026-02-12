@@ -41,10 +41,13 @@ export function useVMMutations() {
         }
 
         // Interface creation
-        if (response.interface?.id) {
-          statusMessages.push(`✓ Interface "${data.interfaceName}" created successfully`)
-        } else if (data.interfaceName) {
-          statusMessages.push(`⚠ Interface "${data.interfaceName}" was not created`)
+        const interfaceCount = data.interfaces?.length || 0
+        if (response.interfaces_created > 0) {
+          statusMessages.push(`✓ ${response.interfaces_created} interface(s) created successfully`)
+        } else if (response.interface?.id) {
+          statusMessages.push(`✓ Interface created successfully`)
+        } else if (interfaceCount > 0) {
+          statusMessages.push(`⚠ Interfaces were not created`)
           hasWarnings = true
         }
 

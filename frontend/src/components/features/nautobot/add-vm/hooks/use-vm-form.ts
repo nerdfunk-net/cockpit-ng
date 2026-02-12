@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { ipAddressSchema, interfaceSchema } from '@/components/shared/device-form/validation'
 
 export const vmFormSchema = z.object({
   name: z.string().min(1, 'VM name is required'),
@@ -8,9 +9,6 @@ export const vmFormSchema = z.object({
   cluster: z.string().min(1, 'Cluster is required'),
   role: z.string().optional(),
   clusterGroup: z.string().optional(),
-  interfaceName: z.string().optional(),
-  primaryIpv4: z.string().optional(),
-  namespace: z.string().optional(),
   platform: z.string().optional(),
   softwareVersion: z.string().optional(),
   softwareImageFile: z.string().optional(),
@@ -18,10 +16,15 @@ export const vmFormSchema = z.object({
   memory: z.union([z.coerce.number().int().positive(), z.literal('')]).optional(),
   disk: z.union([z.coerce.number().int().positive(), z.literal('')]).optional(),
   tags: z.array(z.string()).optional(),
+  customFieldValues: z.record(z.string(), z.string()).optional(),
+  interfaces: z.array(interfaceSchema),
 })
 
 export type VMFormValues = z.infer<typeof vmFormSchema>
 export type VMFormReturn = ReturnType<typeof useVMForm>
+
+// Re-export for convenience
+export type { ipAddressSchema, interfaceSchema }
 
 export function useVMForm() {
   const form = useForm<VMFormValues, unknown, VMFormValues>({
@@ -33,9 +36,6 @@ export function useVMForm() {
       cluster: '',
       role: '',
       clusterGroup: '',
-      interfaceName: '',
-      primaryIpv4: '',
-      namespace: '',
       platform: '',
       softwareVersion: '',
       softwareImageFile: '',
@@ -43,6 +43,8 @@ export function useVMForm() {
       memory: '',
       disk: '',
       tags: [],
+      customFieldValues: {},
+      interfaces: [],
     },
   })
 

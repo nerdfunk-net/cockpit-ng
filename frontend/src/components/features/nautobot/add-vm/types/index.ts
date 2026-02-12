@@ -31,6 +31,50 @@ export interface SoftwareVersion {
 }
 
 // ============================================================================
+// Interface & Network Types
+// ============================================================================
+
+export interface InterfaceTypeOption {
+  value: string
+  display_name: string
+}
+
+export interface InterfaceData {
+  id: string
+  name: string
+  type: string
+  status: string
+  ip_addresses: Array<{
+    id: string
+    address: string
+    namespace: string
+    ip_role: string
+    is_primary?: boolean
+  }>
+  enabled?: boolean
+  mgmt_only?: boolean
+  description?: string
+  mac_address?: string
+  mtu?: number
+  mode?: string
+  untagged_vlan?: string
+  tagged_vlans?: string[]
+  parent_interface?: string
+  bridge?: string
+  lag?: string
+  tags?: string[]
+}
+
+export interface VlanItem {
+  id: string
+  name: string
+  description?: string
+  vid: number
+  role?: { id: string; name: string }
+  location?: { id: string; name: string }
+}
+
+// ============================================================================
 // Response Types for TanStack Query
 // ============================================================================
 
@@ -42,6 +86,9 @@ export interface VMDropdownsResponse {
   platforms: DropdownOption[]
   namespaces: DropdownOption[]
   tags: DropdownOption[]
+  interfaceTypes: InterfaceTypeOption[]
+  interfaceStatuses: DropdownOption[]
+  ipRoles: DropdownOption[]
 }
 
 // ============================================================================
@@ -51,4 +98,25 @@ export interface VMDropdownsResponse {
 export interface StatusMessage {
   type: 'success' | 'error' | 'warning' | 'info'
   message: string
+}
+
+// ============================================================================
+// Tags & Custom Fields
+// ============================================================================
+
+export interface TagItem {
+  id: string
+  name: string
+  color?: string
+}
+
+export interface CustomField {
+  id: string
+  key: string
+  label: string
+  type: {
+    value: string
+  }
+  required: boolean
+  description?: string
 }
