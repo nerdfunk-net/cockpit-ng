@@ -61,7 +61,7 @@ class IPManager:
         Raises:
             Exception: If creation fails and IP doesn't exist (or auto-features are disabled)
         """
-        logger.info(f"Ensuring IP address exists: {ip_address}")
+        logger.info("Ensuring IP address exists: %s", ip_address)
 
         # Check if IP already exists
         ip_search_endpoint = f"ipam/ip-addresses/?address={ip_address}&namespace={namespace_id}&format=json"
@@ -71,11 +71,11 @@ class IPManager:
 
         if ip_result and ip_result.get("count", 0) > 0:
             existing_ip = ip_result["results"][0]
-            logger.info(f"IP address already exists: {existing_ip['id']}")
+            logger.info("IP address already exists: %s", existing_ip['id'])
             return existing_ip["id"]
 
         # IP doesn't exist, create it
-        logger.info(f"Creating new IP address: {ip_address}")
+        logger.info("Creating new IP address: %s", ip_address)
 
         # Resolve status to UUID
         status_id = await self.metadata_resolver.resolve_status_id(
@@ -97,7 +97,7 @@ class IPManager:
             )
 
             ip_id = ip_create_result["id"]
-            logger.info(f"Created IP address: {ip_id}")
+            logger.info("Created IP address: %s", ip_id)
             return ip_id
 
         except Exception as e:
@@ -121,7 +121,7 @@ class IPManager:
                     host_ip = str(ip_obj.ip)
 
                     logger.info(
-                        f"Searching for existing IP with host address: {host_ip}"
+                        "Searching for existing IP with host address: %s", host_ip
                     )
 
                     # Search for IP by host address (without netmask) in the namespace
@@ -135,18 +135,21 @@ class IPManager:
                         # Found at least one IP with this host address
                         existing_ip = existing_ip_result["results"][0]
                         logger.info(
-                            f"Found existing IP: {existing_ip['address']} with UUID {existing_ip['id']}"
+                            "Found existing IP: %s with UUID %s", existing_ip['address'], existing_ip['id']
                         )
 
                         # If multiple IPs found with same host, log a warning
                         if existing_ip_result.get("count", 0) > 1:
                             logger.warning(
-                                f"Multiple IPs found with host {host_ip} ({existing_ip_result['count']} total), using first: {existing_ip['address']}"
+                                "Multiple IPs found with host %s (%s total), using first: %s",
+                                host_ip,
+                                existing_ip_result['count'],
+                                existing_ip['address'],
                             )
 
                         return existing_ip["id"]
                     else:
-                        logger.error(f"Could not find existing IP for host {host_ip}")
+                        logger.error("Could not find existing IP for host %s", host_ip)
                         raise NautobotAPIError(
                             f"IP {host_ip} reported as duplicate but not found in namespace"
                         )
@@ -174,7 +177,7 @@ class IPManager:
                         ip_obj = ipaddress.ip_interface(ip_address)
                         network_prefix = str(ip_obj.network)
 
-                        logger.info(f"Creating missing prefix: {network_prefix}")
+                        logger.info("Creating missing prefix: %s", network_prefix)
 
                         # Import here to avoid circular dependency
                         from .prefix_manager import PrefixManager
@@ -248,7 +251,7 @@ class IPManager:
         Raises:
             Exception: If assignment fails
         """
-        logger.info(f"Assigning IP {ip_id} to interface {interface_id}")
+        logger.info("Assigning IP %s to interface %s", ip_id, interface_id)
 
         # Check if association already exists
         check_endpoint = f"ipam/ip-address-to-interface/?ip_address={ip_id}&interface={interface_id}&format=json"
@@ -274,5 +277,5 @@ class IPManager:
             data=association_data,
         )
 
-        logger.info(f"Created IP-to-Interface association: {association_result['id']}")
+        logger.info("Created IP-to-Interface association: %s", association_result['id'])
         return association_result

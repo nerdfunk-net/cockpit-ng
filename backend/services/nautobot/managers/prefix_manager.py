@@ -62,11 +62,11 @@ class PrefixManager:
         Raises:
             Exception: If creation fails and prefix doesn't exist
         """
-        logger.info(f"Ensuring prefix exists: {prefix} in namespace {namespace}")
+        logger.info("Ensuring prefix exists: %s in namespace %s", prefix, namespace)
 
         # Resolve namespace to UUID (or use directly if already UUID)
         if is_valid_uuid(namespace):
-            logger.debug(f"Namespace is already a UUID: {namespace}")
+            logger.debug("Namespace is already a UUID: %s", namespace)
             namespace_id = namespace
         else:
             namespace_id = await self.network_resolver.resolve_namespace_id(namespace)
@@ -81,11 +81,11 @@ class PrefixManager:
 
         if prefix_result and prefix_result.get("count", 0) > 0:
             existing_prefix = prefix_result["results"][0]
-            logger.info(f"Prefix already exists: {existing_prefix['id']}")
+            logger.info("Prefix already exists: %s", existing_prefix['id'])
             return existing_prefix["id"]
 
         # Prefix doesn't exist, create it
-        logger.info(f"Creating new prefix: {prefix}")
+        logger.info("Creating new prefix: %s", prefix)
 
         # Resolve status to UUID
         status_id = await self.metadata_resolver.resolve_status_id(
@@ -125,7 +125,7 @@ class PrefixManager:
                 if is_valid_uuid(value):
                     prefix_data[field] = value
                 else:
-                    logger.warning(f"Field '{field}' should be a UUID, got: {value}")
+                    logger.warning("Field '%s' should be a UUID, got: %s", field, value)
 
         # Add tags if provided
         if "tags" in kwargs and kwargs["tags"]:
@@ -144,5 +144,5 @@ class PrefixManager:
             raise NautobotAPIError(f"Failed to create prefix {prefix}: No ID returned")
 
         prefix_id = result["id"]
-        logger.info(f"Created new prefix: {prefix} with ID: {prefix_id}")
+        logger.info("Created new prefix: %s with ID: %s", prefix, prefix_id)
         return prefix_id

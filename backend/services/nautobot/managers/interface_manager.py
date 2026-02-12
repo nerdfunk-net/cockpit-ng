@@ -61,7 +61,7 @@ class InterfaceManager:
             Exception: If creation fails and interface doesn't exist
         """
         logger.info(
-            f"Ensuring interface exists: {interface_name} on device {device_id}"
+            "Ensuring interface exists: %s on device %s", interface_name, device_id
         )
 
         # Check if interface already exists
@@ -74,11 +74,11 @@ class InterfaceManager:
 
         if interfaces_result and interfaces_result.get("count", 0) > 0:
             existing_interface = interfaces_result["results"][0]
-            logger.info(f"Interface already exists: {existing_interface['id']}")
+            logger.info("Interface already exists: %s", existing_interface['id'])
             return existing_interface["id"]
 
         # Interface doesn't exist, create it
-        logger.info(f"Creating new interface: {interface_name}")
+        logger.info("Creating new interface: %s", interface_name)
 
         # Resolve status to UUID
         status_id = await self.metadata_resolver.resolve_status_id(
@@ -98,7 +98,7 @@ class InterfaceManager:
         )
 
         interface_id = interface_result["id"]
-        logger.info(f"Created interface: {interface_id}")
+        logger.info("Created interface: %s", interface_id)
         return interface_id
 
     async def ensure_interface_with_ip(
@@ -133,7 +133,9 @@ class InterfaceManager:
         Returns:
             IP address UUID
         """
-        logger.info(f"Ensuring interface with IP {ip_address} for device {device_id}")
+        logger.info(
+            "Ensuring interface with IP %s for device %s", ip_address, device_id
+        )
 
         # Resolve namespace
         namespace_id = await self.network_resolver.resolve_namespace_id(ip_namespace)
@@ -251,11 +253,11 @@ class InterfaceManager:
             )
 
         # Step 2: Resolve namespace name to UUID
-        logger.info(f"Resolving namespace '{namespace}'")
+        logger.info("Resolving namespace '%s'", namespace)
         namespace_id = await self.network_resolver.resolve_namespace_id(namespace)
 
         # Step 3: Create or get the new IP address in Nautobot (with automatic prefix creation if enabled)
-        logger.info(f"Ensuring IP address {new_ip} exists in namespace {namespace}")
+        logger.info("Ensuring IP address %s exists in namespace %s", new_ip, namespace)
         new_ip_id = await self.ip_manager.ensure_ip_address_exists(
             ip_address=new_ip,
             namespace_id=namespace_id,
@@ -264,7 +266,7 @@ class InterfaceManager:
         )
 
         # Step 4: Assign the new IP to the existing interface
-        logger.info(f"Assigning IP {new_ip} to interface {interface_name}")
+        logger.info("Assigning IP %s to interface %s", new_ip, interface_name)
         await self.ip_manager.assign_ip_to_interface(
             ip_id=new_ip_id, interface_id=interface_id
         )

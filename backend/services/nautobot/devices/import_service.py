@@ -295,7 +295,7 @@ class DeviceImportService:
                 if platform_id:
                     validated["platform"] = platform_id
                 else:
-                    logger.warning(f"Platform '{platform}' not found, will be omitted")
+                    logger.warning("Platform '%s' not found, will be omitted", platform)
 
         # Copy optional string fields as-is
         optional_fields = ["serial", "asset_tag", "software_version", "description"]

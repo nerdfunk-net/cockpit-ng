@@ -218,9 +218,9 @@ class DeviceUpdateService:
             interfaces_failed = 0
             if interfaces:
                 logger.info(
-                    f"Step 3.5: Creating/updating {len(interfaces)} interface(s)"
+                    "Step 3.5: Creating/updating %s interface(s)", len(interfaces)
                 )
-                logger.info(f"Prefix auto-creation enabled: {add_prefix}")
+                logger.info("Prefix auto-creation enabled: %s", add_prefix)
                 interface_result = (
                     await self.interface_manager.update_device_interfaces(
                         device_id=device_id,

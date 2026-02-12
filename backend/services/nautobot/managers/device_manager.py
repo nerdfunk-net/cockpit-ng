@@ -44,7 +44,7 @@ class DeviceManager:
         Raises:
             Exception: If device fetch fails
         """
-        logger.info(f"Fetching device details for {device_id} (depth={depth})")
+        logger.info("Fetching device details for %s (depth=%s)", device_id, depth)
 
         endpoint = f"dcim/devices/{device_id}/"
         if depth > 0:
@@ -52,7 +52,7 @@ class DeviceManager:
 
         device_data = await self.nautobot.rest_request(endpoint=endpoint, method="GET")
 
-        logger.debug(f"Retrieved device data: {device_data.get('name', device_id)}")
+        logger.debug("Retrieved device data: %s", device_data.get('name', device_id))
         return device_data
 
     async def extract_primary_ip_address(
@@ -76,8 +76,8 @@ class DeviceManager:
             - Returns None if no primary IP is set
         """
         primary_ip4_field = device_data.get("primary_ip4")
-        logger.debug(f"Device primary_ip4 field: {primary_ip4_field}")
-        logger.debug(f"Type: {type(primary_ip4_field)}")
+        logger.debug("Device primary_ip4 field: %s", primary_ip4_field)
+        logger.debug("Type: %s", type(primary_ip4_field))
 
         if not primary_ip4_field:
             logger.info("Device has no primary_ip4 set")
@@ -86,12 +86,12 @@ class DeviceManager:
         # Case 1: primary_ip4 is a dict with 'address' field (depth=1+ API response)
         if isinstance(primary_ip4_field, dict):
             current_primary_ip4 = primary_ip4_field.get("address")
-            logger.info(f"Current primary_ip4 (from dict): {current_primary_ip4}")
+            logger.info("Current primary_ip4 (from dict): %s", current_primary_ip4)
             return current_primary_ip4
 
         # Case 2: primary_ip4 is a UUID string (depth=0 API response)
         elif isinstance(primary_ip4_field, str):
-            logger.info(f"Primary IP field is a UUID: {primary_ip4_field}")
+            logger.info("Primary IP field is a UUID: %s", primary_ip4_field)
             try:
                 ip_details = await self.nautobot.rest_request(
                     endpoint=f"ipam/ip-addresses/{primary_ip4_field}/",
@@ -103,11 +103,11 @@ class DeviceManager:
                 )
                 return current_primary_ip4
             except Exception as e:
-                logger.warning(f"Could not fetch IP details: {e}")
+                logger.warning("Could not fetch IP details: %s", e)
                 return None
 
         else:
-            logger.warning(f"Unexpected primary_ip4 type: {type(primary_ip4_field)}")
+            logger.warning("Unexpected primary_ip4 type: %s", type(primary_ip4_field))
             return None
 
     async def assign_primary_ip_to_device(
@@ -124,7 +124,7 @@ class DeviceManager:
             True if successful, False otherwise
         """
         try:
-            logger.info(f"Assigning primary IPv4 {ip_address_id} to device {device_id}")
+            logger.info("Assigning primary IPv4 %s to device %s", ip_address_id, device_id)
 
             endpoint = f"dcim/devices/{device_id}/"
             await self.nautobot.rest_request(
@@ -133,7 +133,7 @@ class DeviceManager:
                 data={"primary_ip4": ip_address_id},
             )
 
-            logger.info(f"Successfully assigned primary IPv4 to device {device_id}")
+            logger.info("Successfully assigned primary IPv4 to device %s", device_id)
             return True
 
         except Exception as e:
@@ -167,7 +167,7 @@ class DeviceManager:
             - success: True if all updates verified, False if any mismatches
             - mismatches: List of mismatch details
         """
-        logger.debug(f"Verifying updates for device {device_id}")
+        logger.debug("Verifying updates for device %s", device_id)
 
         mismatches = []
 
@@ -215,7 +215,7 @@ class DeviceManager:
                 )
 
         if mismatches:
-            logger.warning(f"Verification found {len(mismatches)} mismatch(es)")
+            logger.warning("Verification found %s mismatch(es)", len(mismatches))
             return False, mismatches
         else:
             logger.debug("All updates verified successfully")

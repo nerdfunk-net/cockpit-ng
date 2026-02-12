@@ -73,7 +73,7 @@ class DeviceBackupService:
         if not inventory:
             raise ValueError("No devices specified in inventory")
 
-        logger.info(f"✓ Inventory: {len(inventory)} devices")
+        logger.info("✓ Inventory: %s devices", len(inventory))
 
         # Validate repository
         if not config_repository_id:
@@ -81,11 +81,11 @@ class DeviceBackupService:
 
         repository = git_repo_manager.get_repository(config_repository_id)
         if not repository:
-            raise ValueError(f"Repository {config_repository_id} not found in database")
+            raise ValueError("Repository %s not found in database" % config_repository_id)
 
-        logger.info(f"✓ Repository: {repository.name}")
-        logger.info(f"  - URL: {repository.url}")
-        logger.info(f"  - Branch: {repository.branch or 'main'}")
+        logger.info("✓ Repository: %s", repository.name)
+        logger.info("  - URL: %s", repository.url)
+        logger.info("  - Branch: %s", repository.branch or 'main')
 
         # Validate credentials
         if not credential_id:
@@ -93,7 +93,7 @@ class DeviceBackupService:
 
         credential = credentials_manager.get_credential_by_id(credential_id)
         if not credential:
-            raise ValueError(f"Credential {credential_id} not found in database")
+            raise ValueError("Credential %s not found in database" % credential_id)
 
         username = credential.get("username")
         password = credential.get("password")
@@ -101,8 +101,8 @@ class DeviceBackupService:
         if not username or not password:
             raise ValueError("Credential does not contain username or password")
 
-        logger.info(f"✓ Credential: {credential.get('name')}")
-        logger.info(f"  - Username: {username}")
+        logger.info("✓ Credential: %s", credential.get('name'))
+        logger.info("  - Username: %s", username)
 
         logger.info("✓ All inputs validated successfully")
 
@@ -139,9 +139,9 @@ class DeviceBackupService:
         Returns:
             DeviceBackupInfo: Device backup information
         """
-        logger.info(f"\n{'=' * 60}")
-        logger.info(f"Device {device_index}/{total_devices}: {device_id}")
-        logger.info(f"{'=' * 60}")
+        logger.info("\n%s", "=" * 60)
+        logger.info("Device %s/%s: %s", device_index, total_devices, device_id)
+        logger.info("%s", "=" * 60)
 
         device_backup_info = DeviceBackupInfo(device_id=device_id)
 
@@ -170,7 +170,7 @@ class DeviceBackupService:
 
             # Step 2: Determine Netmiko device type
             device_type = self.platform_mapper.map_to_netmiko(platform)
-            logger.info(f"[{device_index}] Netmiko device type: {device_type}")
+            logger.info("[%s] Netmiko device type: %s", device_index, device_type)
 
             # Step 3: Retrieve configurations via SSH
             result = self.config_service.retrieve_device_configs(
@@ -218,11 +218,11 @@ class DeviceBackupService:
             device_backup_info.running_config_file = save_result["running_file"]
             device_backup_info.startup_config_file = save_result["startup_file"]
 
-            logger.info(f"[{device_index}] ✓ Backup completed for {device_name}")
+            logger.info("[%s] ✓ Backup completed for %s", device_index, device_name)
 
         except Exception as e:
             logger.error(
-                f"[{device_index}] ✗ Exception during backup: {e}", exc_info=True
+                "[%s] ✗ Exception during backup: %s", device_index, e, exc_info=True
             )
             device_backup_info.error = str(e)
 
@@ -252,8 +252,8 @@ class DeviceBackupService:
         if backup_date is None:
             backup_date = datetime.now().strftime("%Y-%m-%d")
 
-        logger.info(f"Custom field: {custom_field_name}")
-        logger.info(f"Backup date: {backup_date}")
+        logger.info("Custom field: %s", custom_field_name)
+        logger.info("Backup date: %s", backup_date)
 
         status = TimestampUpdateStatus(
             enabled=True,
@@ -266,29 +266,30 @@ class DeviceBackupService:
 
             try:
                 logger.info(
-                    f"Updating custom field for device: {device_name} ({device_id})"
+                    "Updating custom field for device: %s (%s)", device_name, device_id
                 )
 
                 update_data = {"custom_fields": {custom_field_name: backup_date}}
 
                 self.nautobot_service._sync_rest_request(
-                    endpoint=f"dcim/devices/{device_id}/",
+                    endpoint="dcim/devices/%s/" % device_id,
                     method="PATCH",
                     data=update_data,
                 )
 
-                logger.info(f"✓ Updated custom field for {device_name}")
+                logger.info("✓ Updated custom field for %s", device_name)
                 status.updated_count += 1
 
             except Exception as e:
-                error_msg = f"Failed to update custom field for {device_name}: {str(e)}"
-                logger.error(f"✗ {error_msg}")
+                error_msg = "Failed to update custom field for %s: %s" % (device_name, str(e))
+                logger.error("✗ %s", error_msg)
                 status.failed_count += 1
                 status.errors.append(error_msg)
 
         logger.info(
-            f"Custom field updates: {status.updated_count} successful, "
-            f"{status.failed_count} failed"
+            "Custom field updates: %s successful, %s failed",
+            status.updated_count,
+            status.failed_count,
         )
 
         return status

@@ -191,7 +191,7 @@ class DeviceConfigService:
         """
         log_prefix = f"[{device_index}]" if device_index else ""
 
-        logger.info(f"{log_prefix} Fetching device details from Nautobot...")
+        logger.info("%s Fetching device details from Nautobot...", log_prefix)
 
         query = self.DEVICE_QUERY_FULL if full_details else self.DEVICE_QUERY_BASIC
         variables = {"deviceId": device_id}
