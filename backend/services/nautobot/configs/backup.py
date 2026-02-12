@@ -36,10 +36,15 @@ class DeviceBackupService:
     - Preparing final results
     """
 
-    def __init__(self):
-        """Initialize service with dependencies."""
-        self.config_service = DeviceConfigService()
-        self.nautobot_service = NautobotService()
+    def __init__(self, nautobot_service: NautobotService):
+        """
+        Initialize service with dependencies.
+        
+        Args:
+            nautobot_service: NautobotService instance for API operations
+        """
+        self.nautobot_service = nautobot_service
+        self.config_service = DeviceConfigService(nautobot_service)
         self.platform_mapper = NetmikoPlatformMapper()
 
     def validate_backup_inputs(

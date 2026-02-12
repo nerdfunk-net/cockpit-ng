@@ -337,11 +337,11 @@ logger.warning("Failed to look up location '%s': %s", location_name, e)
 
 ---
 
-### 3.5 Inconsistent Dependency Injection
+### 3.5 ~~Inconsistent Dependency Injection~~ **RESOLVED**
 
-**Severity: High** | **Files: Multiple**
+**Status: RESOLVED (2026-02-12)** | **Files: config.py, backup.py, backup_tasks.py**
 
-Three different patterns are used for obtaining `NautobotService`:
+**Previous Issue:** Three different patterns were used for obtaining `NautobotService`:
 
 | Pattern | Files | Example |
 |---------|-------|---------|
@@ -350,11 +350,23 @@ Three different patterns are used for obtaining `NautobotService`:
 | Create own instance (bad) | `configs/config.py`, `configs/backup.py` | `self.nautobot_service = NautobotService()` |
 
 **Problems with multiple instances:**
-- `DeviceConfigService.__init__()` creates `NautobotService()` — a separate instance with its own `ThreadPoolExecutor`
-- `DeviceBackupService.__init__()` creates another `NautobotService()`
-- The module-level `nautobot_service` singleton is a third instance
+- `DeviceConfigService.__init__()` created `NautobotService()` — a separate instance with its own `ThreadPoolExecutor`
+- `DeviceBackupService.__init__()` created another `NautobotService()`
+- The module-level `nautobot_service` singleton was a third instance
+- This meant up to **3 separate ThreadPoolExecutors** (12 threads total) could exist
 
-This means up to **3 separate ThreadPoolExecutors** (12 threads total) may exist.
+**Resolution:**
+1. **Modified `DeviceConfigService`** to accept `nautobot_service: NautobotService` via constructor
+2. **Modified `DeviceBackupService`** to accept `nautobot_service: NautobotService` via constructor and pass it to `DeviceConfigService`
+3. **Updated all callers in `backup_tasks.py`** (3 locations) to pass the `nautobot_service` singleton
+
+**Impact:**
+- ✅ Both config services now use constructor-based dependency injection
+- ✅ Only one `NautobotService` instance exists (the singleton)
+- ✅ Only one `ThreadPoolExecutor` (4 threads) exists instead of three (12 threads)
+- ✅ Consistent pattern across all services
+- ✅ Easier to test with mock services
+- ✅ Better resource management and performance
 
 ---
 
@@ -533,7 +545,7 @@ Well-structured with:
 
 ### Priority 4: Consolidation
 8. ~~**Move resolver-like methods out of `client.py`**~~ **RESOLVED** ~~into proper resolvers (or at minimum, have client.py delegate to resolvers)~~
-9. **Standardize DI pattern** — make `DeviceConfigService` and `DeviceBackupService` accept `NautobotService` via constructor instead of creating new instances
+9. ~~**Standardize DI pattern**~~ **RESOLVED** ~~— make `DeviceConfigService` and `DeviceBackupService` accept `NautobotService` via constructor instead of creating new instances~~
 10. ~~**Fix `asyncio.get_event_loop()`** deprecation in `client.py`~~ **RESOLVED**
 
 ### Priority 5: Cleanup
@@ -555,7 +567,7 @@ Well-structured with:
 | DEBUG logs at INFO level | ~~23~~ → **0** ✅ |
 | Custom exceptions defined | 5 |
 | Custom exceptions actually used | ~~0~~ → **5 (all)** ✅ |
-| `NautobotService()` instances created | 3 (module singleton + config + backup) |
+| `NautobotService()` instances created | ~~3 (module singleton + config + backup)~~ → **1 (singleton only)** ✅ |
 | Files using deprecated facade | 7 |
 | Business logic methods in `client.py` | ~~9~~ → **0** ✅ |
 | `client.py` line count | ~~545~~ → **224** ✅ (59% reduction) |

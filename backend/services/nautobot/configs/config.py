@@ -132,20 +132,18 @@ class DeviceConfigService:
     }
     """
 
-    def __init__(self):
+    def __init__(self, nautobot_service: NautobotService):
         """
         Initialize the DeviceConfigService with required dependencies.
 
+        Args:
+            nautobot_service: NautobotService instance for GraphQL queries to Nautobot
+
         Creates instances of:
-        - NautobotService: For GraphQL queries to Nautobot
         - NetmikoService: For SSH connections to network devices
         - NetmikoPlatformMapper: For platform name normalization
-
-        Note:
-            Services are created with default configurations. For custom
-            configurations, consider dependency injection pattern.
         """
-        self.nautobot_service = NautobotService()
+        self.nautobot_service = nautobot_service
         self.netmiko_service = NetmikoService()
         self.platform_mapper = NetmikoPlatformMapper()
 
