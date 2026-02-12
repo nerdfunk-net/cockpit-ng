@@ -99,7 +99,7 @@ export function AddVMPage() {
   // Form submission
   const onSubmit = useCallback(
     async (formData: VMFormValues) => {
-      setStatusMessage(null)
+      setStatusMessage({ type: 'info', message: 'Creating virtual machine...' })
       try {
         // Filter out incomplete interfaces (interfaces without name or status)
         // Note: Virtual interfaces don't have a 'type' field like physical interfaces
@@ -115,17 +115,28 @@ export function AddVMPage() {
           tags: tagsManager.selectedTags,
           customFieldValues: customFieldsManager.customFieldValues,
         }
-        await createVM.mutateAsync(submissionData)
-        // Reset form on success
-        reset()
-        tagsManager.clearSelectedTags()
-        customFieldsManager.clearFieldValues()
+        const result = await createVM.mutateAsync(submissionData)
+
+        // Don't reset form - allow user to add similar VMs
+        // Show success message
+        if (result.success) {
+          setStatusMessage({
+            type: result.messageType,
+            message: `✓ Virtual machine '${formData.name}' created successfully`,
+          })
+          // Clear message after 3 seconds
+          setTimeout(() => setStatusMessage(null), 3000)
+        }
       } catch (error) {
         // Error handling is done in the mutation hook
         console.error('VM creation failed:', error)
+        setStatusMessage({
+          type: 'error',
+          message: error instanceof Error ? error.message : 'Failed to create virtual machine',
+        })
       }
     },
-    [createVM, reset, tagsManager, customFieldsManager]
+    [createVM, tagsManager, customFieldsManager]
   )
 
   // Handle validation errors
