@@ -38,11 +38,13 @@ class CheckMKFolderService:
                 return True
 
             # Use site-aware CheckMK client
-            from routers.checkmk import _get_checkmk_client
+            from services.checkmk.client_factory import get_checkmk_client
             from checkmk.client import CheckMKAPIError
 
-            client = _get_checkmk_client()
-            logger.info("Creating folder path '%s' in site '%s'", folder_path, site_name)
+            client = get_checkmk_client()
+            logger.info(
+                "Creating folder path '%s' in site '%s'", folder_path, site_name
+            )
             logger.info("Path parts to create: %s", path_parts)
 
             # Build and create each path incrementally
@@ -103,7 +105,9 @@ class CheckMKFolderService:
                         )
                         return False
                 except Exception as e:
-                    logger.error("General error creating folder '%s': %s", folder_name, e)
+                    logger.error(
+                        "General error creating folder '%s': %s", folder_name, e
+                    )
                     return False
 
             return True

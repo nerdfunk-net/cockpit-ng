@@ -37,18 +37,24 @@ class ClusterResolver(BaseResolver):
             result = await self.nautobot.graphql_query(query)
 
             if "errors" in result:
-                logger.error("GraphQL errors fetching cluster groups: %s", result["errors"])
+                logger.error(
+                    "GraphQL errors fetching cluster groups: %s", result["errors"]
+                )
                 raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
 
             cluster_groups = result.get("data", {}).get("cluster_groups", [])
-            logger.info("Retrieved %s cluster groups from Nautobot", len(cluster_groups))
+            logger.info(
+                "Retrieved %s cluster groups from Nautobot", len(cluster_groups)
+            )
             return cluster_groups
 
         except Exception as e:
             logger.error("Failed to fetch cluster groups: %s", e, exc_info=True)
             raise
 
-    async def get_all_clusters(self, group: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    async def get_all_clusters(
+        self, group: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
         """
         Get all clusters from Nautobot, optionally filtered by cluster group.
 
@@ -94,7 +100,11 @@ class ClusterResolver(BaseResolver):
 
             clusters = result.get("data", {}).get("clusters", [])
             if group:
-                logger.info("Retrieved %s clusters from Nautobot (filtered by group: %s)", len(clusters), group)
+                logger.info(
+                    "Retrieved %s clusters from Nautobot (filtered by group: %s)",
+                    len(clusters),
+                    group,
+                )
             else:
                 logger.info("Retrieved %s clusters from Nautobot", len(clusters))
             return clusters

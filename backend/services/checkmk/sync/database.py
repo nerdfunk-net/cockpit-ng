@@ -178,7 +178,9 @@ class NB2CMKDatabaseService:
         """Add a device result to the job."""
         try:
             logger.info(
-                "[DB_SERVICE] Device %s: Received ignored_attributes = %s", device_name, ignored_attributes
+                "[DB_SERVICE] Device %s: Received ignored_attributes = %s",
+                device_name,
+                ignored_attributes,
             )
             logger.info("[DB_SERVICE] Device %s: Received diff = %s", device_name, diff)
 
@@ -186,7 +188,9 @@ class NB2CMKDatabaseService:
                 json.dumps(ignored_attributes) if ignored_attributes else json.dumps([])
             )
             logger.info(
-                "[DB_SERVICE] Device %s: JSON ignored_attributes = %s", device_name, ignored_attrs_json
+                "[DB_SERVICE] Device %s: JSON ignored_attributes = %s",
+                device_name,
+                ignored_attrs_json,
             )
 
             self.result_repo.create(
@@ -218,23 +222,31 @@ class NB2CMKDatabaseService:
             result_models = self.result_repo.get_by_job_id(job_id)
 
             logger.info(
-                "[DB_SERVICE] Retrieved %s results from database for job %s", len(result_models), job_id
+                "[DB_SERVICE] Retrieved %s results from database for job %s",
+                len(result_models),
+                job_id,
             )
 
             results = []
             for row in result_models:
                 logger.info(
-                    "[DB_SERVICE] Device %s: raw ignored_attributes from DB = %s", row.device_name, row.ignored_attributes
+                    "[DB_SERVICE] Device %s: raw ignored_attributes from DB = %s",
+                    row.device_name,
+                    row.ignored_attributes,
                 )
                 logger.info(
-                    "[DB_SERVICE] Device %s: raw diff from DB = %s", row.device_name, row.diff
+                    "[DB_SERVICE] Device %s: raw diff from DB = %s",
+                    row.device_name,
+                    row.diff,
                 )
 
                 ignored_attrs = (
                     json.loads(row.ignored_attributes) if row.ignored_attributes else []
                 )
                 logger.info(
-                    "[DB_SERVICE] Device %s: parsed ignored_attributes = %s", row.device_name, ignored_attrs
+                    "[DB_SERVICE] Device %s: parsed ignored_attributes = %s",
+                    row.device_name,
+                    ignored_attrs,
                 )
 
                 results.append(

@@ -121,6 +121,7 @@ def finalize_backup_task(
         and backed_up_devices
     ):
         from services.nautobot import nautobot_service
+
         backup_service = DeviceBackupService(nautobot_service)
         custom_field_name = repo_config["timestamp_custom_field_name"]
 
@@ -212,6 +213,7 @@ def backup_single_device_task(
 
     # Delegate to service layer
     from services.nautobot import nautobot_service
+
     backup_service = DeviceBackupService(nautobot_service)
     result = backup_service.backup_single_device(
         device_id=device_id,

@@ -280,9 +280,7 @@ def update_devices_task(
                                 extra_data=extra_data,
                             )
                         except Exception as audit_error:
-                            logger.warning(
-                                f"Failed to create audit log: {audit_error}"
-                            )
+                            logger.warning(f"Failed to create audit log: {audit_error}")
 
             except Exception as e:
                 error_msg = str(e)

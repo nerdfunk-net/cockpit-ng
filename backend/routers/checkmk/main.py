@@ -44,6 +44,9 @@ from models.checkmk import (
     CheckMKOperationResponse,
 )
 from services.checkmk import checkmk_service
+from services.checkmk.client_factory import (
+    get_checkmk_client as _get_checkmk_client,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/checkmk", tags=["checkmk"])
@@ -216,58 +219,6 @@ async def get_checkmk_stats(
         )
 
 
-def _get_checkmk_client(site_name: str = None):
-    """Helper function to create CheckMK client from settings
-
-    Args:
-        site_name: Optional site name to use. If None, uses the configured default site.
-    """
-    from settings_manager import settings_manager
-    from checkmk.client import CheckMKClient
-    from urllib.parse import urlparse
-
-    db_settings = settings_manager.get_checkmk_settings()
-    if not db_settings or not all(
-        key in db_settings for key in ["url", "site", "username", "password"]
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="CheckMK settings not configured. Please configure CheckMK settings first.",
-        )
-
-    # Parse URL
-    url = db_settings["url"].rstrip("/")
-    if url.startswith(("http://", "https://")):
-        parsed_url = urlparse(url)
-        protocol = parsed_url.scheme
-        host = parsed_url.netloc
-    else:
-        protocol = "https"
-        host = url
-
-    # Use provided site_name or fall back to configured site
-    # effective_site = site_name or db_settings["site"]
-    effective_site = db_settings["site"]
-
-    # Log client initialization details for debugging
-    logger.info("Initializing CheckMK client:")
-    logger.info(f"  host: {host}")
-    logger.info(f"  site_name: {effective_site}")
-    logger.info(f"  username: {db_settings['username']}")
-    logger.info(f"  protocol: {protocol}")
-    logger.info(f"  verify_ssl: {db_settings.get('verify_ssl', True)}")
-
-    return CheckMKClient(
-        host=host,
-        site_name=effective_site,
-        username=db_settings["username"],
-        password=db_settings["password"],
-        protocol=protocol,
-        verify_ssl=db_settings.get("verify_ssl", True),
-        timeout=30,
-    )
-
-
 # System Information Endpoints
 
 
@@ -348,29 +299,38 @@ async def get_host(
 ):
     """Get specific host configuration"""
     try:
+        from services.checkmk.client_factory import (
+            get_host_data,
+            HostNotFoundError,
+            CheckMKClientError,
+        )
         from checkmk.client import CheckMKAPIError
 
-        client = _get_checkmk_client()
-        result = client.get_host(hostname, effective_attributes)
+        result = await get_host_data(hostname, effective_attributes)
 
         return CheckMKOperationResponse(
             success=True, message=f"Host {hostname} retrieved successfully", data=result
         )
+    except CheckMKClientError as e:
+        logger.error(f"CheckMK client configuration error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except HostNotFoundError as e:
+        logger.info(f"Host {hostname} not found in CheckMK")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
     except CheckMKAPIError as e:
-        if e.status_code == 404:
-            logger.info(f"Host {hostname} not found in CheckMK")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Host '{hostname}' not found in CheckMK",
-            )
-        else:
-            logger.error(
-                f"CheckMK API error getting host {hostname}: {str(e)} (status: {e.status_code})"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"CheckMK API error: {str(e)}",
-            )
+        logger.error(
+            f"CheckMK API error getting host {hostname}: {str(e)} (status: {e.status_code})"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"CheckMK API error: {str(e)}",
+        )
     except HTTPException:
         raise
     except Exception as e:

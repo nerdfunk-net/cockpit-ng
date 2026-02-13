@@ -195,9 +195,7 @@ def import_devices_from_csv_task(
                             "device_name": result["device_name"],
                             "created": True,
                             "warnings": result["warnings"],
-                            "interfaces_created": len(
-                                result["details"]["interfaces"]
-                            ),
+                            "interfaces_created": len(result["details"]["interfaces"]),
                         }
                     )
                     logger.info(

@@ -46,7 +46,9 @@ class CheckMKService:
                 protocol = "https"
                 host = url
 
-            logger.info("Testing CheckMK connection to: %s://%s/%s", protocol, host, site)
+            logger.info(
+                "Testing CheckMK connection to: %s://%s/%s", protocol, host, site
+            )
 
             # Create CheckMK client
             client = CheckMKClient(
