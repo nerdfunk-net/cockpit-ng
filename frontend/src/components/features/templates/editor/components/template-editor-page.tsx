@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef, Suspense } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo, Suspense } from 'react'
 import { useWatch } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { FileCode, Play, Save, RefreshCw, HelpCircle } from 'lucide-react'
@@ -21,6 +21,7 @@ import { VariableValuesPanel } from './variable-values-panel'
 import { CodeEditorPanel } from './code-editor-panel'
 import { RenderedOutputDialog } from './rendered-output-dialog'
 import { TemplateEditorHelpDialog } from './template-editor-help-dialog'
+import { AddVariableDialog } from '../dialogs/add-variable-dialog'
 import type { NetmikoExecuteResponse, NautobotDeviceDetails } from '../types'
 
 function TemplateEditorContent() {
@@ -32,6 +33,7 @@ function TemplateEditorContent() {
 
   const [selectedVariableId, setSelectedVariableId] = useState<string | null>(null)
   const [helpDialogOpen, setHelpDialogOpen] = useState(false)
+  const [addVariableDialogOpen, setAddVariableDialogOpen] = useState(false)
   const lastInventoryIdRef = useRef<number | null>(null)
   const hasUpdatedDataRef = useRef<boolean>(false)
   const lastCategoryRef = useRef<string>('__none__')
@@ -188,6 +190,25 @@ function TemplateEditorContent() {
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- setContent is stable from useCallback
     [editor.setContent]
+  )
+
+  const existingVariableNames = useMemo(
+    () => editor.variableManager.variables.map((v) => v.name).filter(Boolean),
+    [editor.variableManager.variables]
+  )
+
+  const handleOpenAddVariableDialog = useCallback(() => {
+    setAddVariableDialogOpen(true)
+  }, [])
+
+  const handleAddVariableFromDialog = useCallback(
+    (name: string, value: string) => {
+      const newId = editor.variableManager.addVariableWithData(name, value)
+      setSelectedVariableId(newId)
+      toast({ title: 'Variable Added', description: `Variable "${name}" has been added` })
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- addVariableWithData is stable from useCallback
+    [editor.variableManager.addVariableWithData, toast]
   )
 
   const handleExecutePreRun = useCallback(async () => {
@@ -495,7 +516,7 @@ function TemplateEditorContent() {
               variables={editor.variableManager.variables}
               selectedVariableId={selectedVariableId}
               onSelectVariable={setSelectedVariableId}
-              onAddVariable={editor.variableManager.addVariable}
+              onAddVariable={handleOpenAddVariableDialog}
               onRemoveVariable={editor.variableManager.removeVariable}
             />
           </div>
@@ -555,6 +576,14 @@ function TemplateEditorContent() {
 
       {/* Help Dialog */}
       <TemplateEditorHelpDialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen} />
+
+      {/* Add Variable Dialog */}
+      <AddVariableDialog
+        open={addVariableDialogOpen}
+        onOpenChange={setAddVariableDialogOpen}
+        onAdd={handleAddVariableFromDialog}
+        existingVariableNames={existingVariableNames}
+      />
     </div>
   )
 }

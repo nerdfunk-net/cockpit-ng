@@ -193,6 +193,15 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
     ])
   }, [])
 
+  const addVariableWithData = useCallback((name: string, value: string) => {
+    const newId = crypto.randomUUID()
+    setVariables((prev) => [
+      ...prev,
+      { id: newId, name, value, isDefault: false, isAutoFilled: false },
+    ])
+    return newId
+  }, [])
+
   const removeVariable = useCallback((id: string) => {
     setVariables((prev) => prev.filter((v) => v.id !== id || v.isDefault))
   }, [])
@@ -309,6 +318,7 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
       toggleDeviceDetailsVariable,
       updatePath,
       addVariable,
+      addVariableWithData,
       removeVariable,
       updateVariable,
       setCustomVariables,
@@ -316,6 +326,6 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
       setPreRunExecuting,
       togglePreRunVariables,
     }),
-    [variables, updateForCategory, updateDeviceData, updateSnmpMapping, toggleSnmpMappingVariable, toggleDeviceDetailsVariable, updatePath, addVariable, removeVariable, updateVariable, setCustomVariables, updatePreRunVariable, setPreRunExecuting, togglePreRunVariables]
+    [variables, updateForCategory, updateDeviceData, updateSnmpMapping, toggleSnmpMappingVariable, toggleDeviceDetailsVariable, updatePath, addVariable, addVariableWithData, removeVariable, updateVariable, setCustomVariables, updatePreRunVariable, setPreRunExecuting, togglePreRunVariables]
   )
 }

@@ -8,6 +8,7 @@ import logging
 import os
 import fnmatch
 
+import yaml
 from fastapi import APIRouter, Depends, HTTPException, status
 from git import InvalidGitRepositoryError, GitCommandError
 
@@ -481,6 +482,97 @@ async def get_file_content(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error reading file content: {str(e)}",
+        )
+
+
+@router.get("/file-content-parsed")
+async def get_file_content_parsed(
+    repo_id: int,
+    path: str,
+    current_user: dict = Depends(require_permission("git.repositories", "read")),
+):
+    """Read a YAML file from a Git repository and return parsed JSON.
+
+    Reuses the same security checks (path traversal protection, repo validation)
+    as get_file_content, then parses with yaml.safe_load.
+
+    Args:
+        repo_id: Git repository ID
+        path: Relative path to the YAML file within the repository
+        current_user: Current authenticated user
+
+    Returns:
+        JSON with parsed data and file path
+    """
+    try:
+        # Get repository details
+        repository = git_repo_manager.get_repository(repo_id)
+        if not repository:
+            raise HTTPException(status_code=404, detail="Repository not found")
+
+        # Resolve repository working directory
+        repo_path = git_repo_path(repository)
+
+        if not os.path.exists(repo_path):
+            raise HTTPException(
+                status_code=404,
+                detail="Repository directory not found",
+            )
+
+        # Construct full file path
+        file_path = os.path.join(repo_path, path)
+
+        # Security check: ensure the file is within the repository
+        file_path_resolved = os.path.realpath(file_path)
+        repo_path_resolved = os.path.realpath(repo_path)
+
+        if not file_path_resolved.startswith(repo_path_resolved):
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied: file path is outside repository",
+            )
+
+        if not os.path.exists(file_path_resolved):
+            raise HTTPException(status_code=404, detail="File not found: %s" % path)
+
+        if not os.path.isfile(file_path_resolved):
+            raise HTTPException(status_code=400, detail="Path is not a file: %s" % path)
+
+        # Read file content
+        try:
+            with open(file_path_resolved, "r", encoding="utf-8") as f:
+                content = f.read()
+        except UnicodeDecodeError:
+            raise HTTPException(
+                status_code=400,
+                detail="File is not a text file: %s" % path,
+            )
+
+        # Parse YAML content
+        try:
+            parsed = yaml.safe_load(content)
+        except yaml.YAMLError as e:
+            raise HTTPException(
+                status_code=400,
+                detail="YAML parse error: %s" % str(e),
+            )
+
+        logger.info(
+            "User %s parsed YAML file %s from repository %s",
+            current_user.get("username"),
+            path,
+            repository["name"],
+        )
+
+        return {"parsed": parsed, "file_path": path}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error parsing YAML file content: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error parsing file content: %s" % str(e),
         )
 
 
