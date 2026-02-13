@@ -1,0 +1,505 @@
+# Analysis: `backend/services/checkmk/` — CheckMK Integration Services
+
+**Date:** 2026-02-13
+**Scope:** All files in `backend/services/checkmk/` (2,978 lines across 10 files)
+**Analyzed against:** CLAUDE.md architectural standards, Python best practices, OWASP security guidelines
+
+---
+
+## Table of Contents
+
+1. [Executive Summary](#executive-summary)
+2. [File Inventory](#file-inventory)
+3. [Architecture Analysis](#architecture-analysis)
+4. [Critical Issues](#critical-issues)
+5. [Security Analysis](#security-analysis)
+6. [Per-File Analysis](#per-file-analysis)
+7. [Code Quality Metrics](#code-quality-metrics)
+8. [Recommended Refactoring](#recommended-refactoring)
+9. [Positive Observations](#positive-observations)
+
+---
+
+## Executive Summary
+
+The CheckMK services are **functionally complete** and handle complex device synchronization between Nautobot and CheckMK well. Type hints are excellent, async patterns are correct, and error handling is comprehensive.
+
+However, the codebase has **three critical architectural violations** that need immediate attention:
+
+| Priority | Issue | Impact |
+|----------|-------|--------|
+| P0 | f-string logging (96 occurrences across all 7 files) | Performance, CLAUDE.md violation |
+| P0 | Services importing routers (4 import sites) | Layered architecture violation |
+| P1 | God objects (1,031-line and 627-line classes) | Maintainability, testability |
+
+**Overall Grade: C+** — Functional but needs architectural cleanup.
+
+---
+
+## File Inventory
+
+| File | Lines | Responsibility |
+|------|-------|---------------|
+| `__init__.py` | 16 | Package exports |
+| `client.py` | 127 | CheckMK API connection testing |
+| `config.py` | 186 | YAML configuration loading & caching |
+| `folder.py` | 109 | CheckMK folder creation |
+| `host_service.py` | 99 | Host deletion operations |
+| `normalization.py` | 627 | Device data transformation (Nautobot → CheckMK) |
+| `sync/__init__.py` | 10 | Sync sub-package exports |
+| `sync/base.py` | 1,031 | Core sync logic (compare, add, update devices) |
+| `sync/background.py` | 407 | Background job processing with progress tracking |
+| `sync/database.py` | 366 | Job tracking via PostgreSQL repositories |
+| **Total** | **2,978** | |
+
+---
+
+## Architecture Analysis
+
+### Current Dependency Graph
+
+```
+routers/checkmk/main.py
+    ├── services/checkmk/client.py        ✅ correct direction
+    ├── services/checkmk/folder.py        ✅ correct direction
+    ├── services/checkmk/host_service.py   ✅ correct direction
+    └── services/checkmk/sync/base.py      ✅ correct direction
+
+services/checkmk/folder.py
+    └── routers/checkmk/main.py            ❌ REVERSE DEPENDENCY
+
+services/checkmk/sync/base.py
+    └── routers/checkmk/main.py            ❌ REVERSE DEPENDENCY (3 import sites)
+```
+
+### CLAUDE.md Mandated Architecture
+
+```
+Router → Service → Repository → Model
+```
+
+**Violation:** `folder.py` and `sync/base.py` import `_get_checkmk_client()` and `get_host()` from `routers/checkmk/main.py`. This creates a **circular dependency path** between layers.
+
+### Root Cause
+
+`_get_checkmk_client()` (defined at `routers/checkmk/main.py:219`) is a utility function misplaced in the router layer. It creates a `CheckMKClient` instance from database settings — pure service-layer logic.
+
+---
+
+## Critical Issues
+
+### Issue 1: f-string Logging (P0 — CLAUDE.md Violation)
+
+**96 occurrences** across all 7 Python files.
+
+CLAUDE.md explicitly forbids f-strings in logging:
+> ❌ using f-string in Logging
+
+**Why this matters:**
+- f-strings are **always evaluated**, even when the log level is disabled
+- Prevents lazy string formatting that `logging` module provides
+- Can cause `str()` calls on complex objects unnecessarily
+- Breaks structured logging pipelines
+
+**Examples from the codebase:**
+
+```python
+# ❌ CURRENT (client.py:49)
+logger.info(f"Testing CheckMK connection to: {protocol}://{host}/{site}")
+
+# ✅ CORRECT
+logger.info("Testing CheckMK connection to: %s://%s/%s", protocol, host, site)
+```
+
+```python
+# ❌ CURRENT (sync/base.py:multiple)
+logger.error(f"Error comparing devices: {str(e)}")
+
+# ✅ CORRECT
+logger.error("Error comparing devices: %s", e)
+```
+
+**Distribution by file:**
+
+| File | f-string log count |
+|------|-------------------|
+| `normalization.py` | 11 |
+| `sync/base.py` | 39 |
+| `sync/background.py` | 12 |
+| `sync/database.py` | 13 |
+| `config.py` | 13 |
+| `folder.py` | 4 |
+| `client.py` | 4 |
+
+---
+
+### Issue 2: Services Importing Routers (P0 — Architecture Violation)
+
+**4 import sites** create reverse dependencies:
+
+| File | Line | Import |
+|------|------|--------|
+| `folder.py` | 41 | `from routers.checkmk import _get_checkmk_client` |
+| `sync/base.py` | 363 | `from routers.checkmk import get_host` |
+| `sync/base.py` | 718 | `from routers.checkmk import _get_checkmk_client` |
+| `sync/base.py` | 877 | `from routers.checkmk import _get_checkmk_client` |
+
+Note: These are **lazy imports** (inside functions), which avoids circular import errors at module load time — but the architectural violation remains. The use of lazy imports here is actually a code smell indicating the developers were aware of the dependency issue and worked around it rather than fixing it.
+
+**Solution:** Extract `_get_checkmk_client()` into a new service utility:
+
+```python
+# services/checkmk/client_factory.py
+from checkmk.client import CheckMKClient
+from core.settings_manager import settings_manager
+
+async def get_checkmk_client(site_name: str = None) -> CheckMKClient:
+    """Create CheckMK client from database settings."""
+    db_settings = await settings_manager.get_checkmk_settings()
+    # ... existing logic from routers/checkmk/main.py:219-270
+```
+
+---
+
+### Issue 3: God Objects (P1 — Maintainability)
+
+**`NautobotToCheckMKService`** (`sync/base.py`) — 1,031 lines, 10 public methods:
+- Device retrieval and normalization
+- Configuration comparison and diffing
+- Device creation in CheckMK
+- Device updates in CheckMK
+- Folder management
+- Attribute filtering
+
+**`DeviceNormalizationService`** (`normalization.py`) — 627 lines, 11 methods:
+- IP address processing
+- SNMP configuration
+- Custom field → host tag group mapping
+- Tags → host tag group mapping
+- Attribute → host tag group mapping
+- Field mapping
+- Additional attribute processing
+
+Both violate the Single Responsibility Principle and CLAUDE.md's guideline:
+> ❌ Creating monolithic God Object services
+
+---
+
+### Issue 4: Inline GraphQL Queries (P2 — Code Duplication)
+
+GraphQL queries are defined inline in multiple files instead of using `config_service.get_query()`:
+
+| File | Lines | Query Purpose |
+|------|-------|--------------|
+| `sync/base.py` | 44–60 | Device list query |
+| `sync/base.py` | 212–228 | Device detail query |
+| `sync/background.py` | 154–170 | Device list query (duplicated from base.py) |
+
+The `ConfigService` already provides `get_query(query_name)` for centralized query management, but it's not used.
+
+---
+
+### Issue 5: Hardcoded Magic Values (P2)
+
+```python
+# sync/base.py:366 — Magic permission bitmask
+admin_user = {"permissions": 15}  # Admin permissions
+
+# Should use a named constant or the auth module
+from core.auth import ADMIN_PERMISSIONS
+admin_user = {"permissions": ADMIN_PERMISSIONS}
+```
+
+Other magic values:
+- Comparison result strings: `"equal"`, `"diff"`, `"host_not_found"` — should be an enum
+- Hardcoded timeout `10` in `client.py` — should be configurable
+- Sleep duration `0.1` in `sync/background.py:328`
+
+---
+
+## Security Analysis
+
+### Credential Handling — Acceptable
+
+- Passwords are stored in the database and retrieved through `settings_manager`
+- No plaintext credentials in source code
+- SNMP credentials mapped through database configuration
+
+### Input Validation — Needs Improvement
+
+| Check | Status | Location |
+|-------|--------|----------|
+| UUID format validation for device IDs | ❌ Missing | `sync/base.py` |
+| URL validation for CheckMK server | ✅ Present | `client.py` (via urlparse) |
+| YAML safe loading | ✅ Present | `config.py` (yaml.safe_load) |
+| Path traversal protection | ✅ Present | `config.py` (Path-based) |
+| Custom field value sanitization | ❌ Missing | `normalization.py` |
+| Tag value sanitization | ❌ Missing | `normalization.py` |
+
+### Permission Bypass Risk — Low
+
+`sync/base.py:366` creates a fake admin user context with `{"permissions": 15}` to call internal CheckMK functions. While functional, this bypasses the normal auth flow. If the called function ever changes its permission checks, this hardcoded value could silently fail or over-grant access.
+
+**Recommendation:** Use the actual auth module's admin permission constant and document why elevated permissions are needed.
+
+### Error Message Information Leakage — Low Risk
+
+Some error messages include raw exception details that could expose internal paths or configuration:
+
+```python
+# sync/base.py — exception details passed to HTTPException
+raise HTTPException(status_code=500, detail=f"Failed to add device: {str(e)}")
+```
+
+In production, consider sanitizing error details returned to clients while preserving full details in logs.
+
+### SQL Injection — Not Applicable
+
+All database operations use SQLAlchemy ORM through the repository pattern. No raw SQL queries exist.
+
+---
+
+## Per-File Analysis
+
+### `client.py` (127 lines) — Connection Testing
+
+**Purpose:** Test CheckMK API connectivity and retrieve version.
+
+**Strengths:**
+- Good error categorization (401, 404, SSL, timeout, connection)
+- Async implementation
+- Clean separation of concerns
+
+**Issues:**
+- 4 f-string logging violations
+- Hardcoded timeout (10 seconds) — not configurable
+- Return type `Tuple[bool, str]` could be a named dataclass for clarity
+
+---
+
+### `config.py` (186 lines) — Configuration Management
+
+**Purpose:** Load and cache YAML configuration files.
+
+**Strengths:**
+- `yaml.safe_load()` prevents code injection
+- Lazy loading with in-memory caching
+- Clean API for configuration retrieval
+
+**Issues:**
+- 13 f-string logging violations
+- Mutable defaults returned from getter methods (e.g., `get_comparison_keys()` returns `[]`). If a caller mutates the returned list, it affects all subsequent callers since the config is cached. Should return copies or use `tuple`.
+- No schema validation after YAML loading — malformed configs fail silently at use time rather than load time
+
+---
+
+### `folder.py` (109 lines) — Folder Creation
+
+**Purpose:** Create CheckMK folder hierarchies.
+
+**Strengths:**
+- Handles "already exists" gracefully
+- Incremental folder creation (parent → child)
+
+**Issues:**
+- 4 f-string logging violations
+- **Imports from router** (`from routers.checkmk import _get_checkmk_client`) — architectural violation
+- Folder path normalization logic (`/` → `~`) duplicated with `sync/base.py`
+
+---
+
+### `host_service.py` (99 lines) — Host Operations
+
+**Purpose:** Delete hosts from CheckMK.
+
+**Strengths:**
+- Credentials retrieved from settings manager
+- URL protocol validation
+
+**Issues:**
+- 4 f-string logging violations (estimated — consistent with pattern)
+- **Incomplete service:** Only implements `delete_host()`. Creation and updates are handled in `sync/base.py` and routers
+- Client creation logic duplicated with `_get_checkmk_client()` in routers — should share the same utility
+- Comment at line 57 suggests fallback behavior but code doesn't implement it
+
+---
+
+### `normalization.py` (627 lines) — Device Normalization
+
+**Purpose:** Transform Nautobot device data into CheckMK-compatible format.
+
+**Strengths:**
+- Comprehensive IP address validation using `ipaddress` module
+- Handles complex nested field extraction
+- Extensive SNMP configuration mapping
+- Good use of type hints throughout
+
+**Issues:**
+- 11 f-string logging violations
+- **God object:** Single class handles IP processing, SNMP config, tag mapping, custom fields, attribute mapping, and field mapping
+- Several errors silently swallowed with logging only (e.g., lines ~305, ~340, ~420, ~460, ~516, ~577) — could mask data quality issues
+- Commented-out code block (lines ~453-457)
+- Magic strings for config keys: `"cf2htg"`, `"tags2htg"`, `"attr2htg"` — should be constants
+
+**Recommended split:**
+
+```
+normalization/
+├── __init__.py          # NormalizationService facade
+├── ip_normalizer.py     # _process_ip_address, _extract_device_ip
+├── snmp_normalizer.py   # _process_snmp_config
+├── tag_normalizer.py    # _process_cf2htg, _process_tags2htg, _process_attr2htg
+└── field_normalizer.py  # _process_field_mappings, _process_additional_attributes
+```
+
+---
+
+### `sync/base.py` (1,031 lines) — Core Sync Service
+
+**Purpose:** Compare, create, and update devices between Nautobot and CheckMK.
+
+**Strengths:**
+- Comprehensive comparison logic with diff generation
+- Proper handling of missing/extra attributes
+- Good error wrapping with HTTPException
+
+**Issues:**
+- 39 f-string logging violations (highest count)
+- **God object:** 1,031 lines handling comparison, sync, folder management, and attribute filtering
+- **3 router imports** — most severe architectural violations
+- **2 inline GraphQL queries** — should use config_service
+- Hardcoded admin permissions (`{"permissions": 15}`)
+- Folder path normalization duplicated with `folder.py`
+- Debug logging statements that should be removed or downgraded (lines ~184-186)
+- Complex methods: `compare_device_config()` ~165 lines, `add_device_to_checkmk()` ~158 lines
+
+**Recommended split:**
+
+```
+sync/
+├── __init__.py
+├── comparison.py     # get_devices_diff, compare_device_config, _compare_configurations
+├── operations.py     # add_device_to_checkmk, update_device_in_checkmk
+├── queries.py        # get_devices_for_sync, get_device_normalized (GraphQL calls)
+├── background.py     # (existing) background job processing
+└── database.py       # (existing) job tracking
+```
+
+---
+
+### `sync/background.py` (407 lines) — Background Jobs
+
+**Purpose:** Async device comparison job processing with progress tracking.
+
+**Strengths:**
+- Proper `asyncio.create_task` and `asyncio.gather` usage
+- Progress tracking with percentage calculation
+- Graceful cancellation and shutdown handling
+- Partial results preserved on failure
+- Task cleanup in `finally` block
+
+**Issues:**
+- 12 f-string logging violations
+- **Inline GraphQL query** (lines 154-170) — duplicated from `base.py`
+- No job ownership validation (any user can view/cancel any user's job)
+- Hardcoded sleep duration (`0.1` seconds)
+
+---
+
+### `sync/database.py` (366 lines) — Job Tracking
+
+**Purpose:** PostgreSQL-backed job tracking via repository pattern.
+
+**Strengths:**
+- Proper repository pattern usage (`NB2CMKRepository`)
+- Clean dataclass DTOs (`NB2CMKJob`, `DeviceJobResult`)
+- Enum for job status
+- Proper JSON serialization
+
+**Issues:**
+- 13 f-string logging violations
+- Unused `db_path` parameter in constructor (line ~66) — vestige of SQLite migration
+- Verbose logging for routine database operations
+- Manual JSON ↔ dict conversion could use Pydantic models
+
+---
+
+## Code Quality Metrics
+
+| Category | Score | Assessment |
+|----------|-------|------------|
+| Type Hints | 95% | Excellent — nearly complete coverage |
+| Async Correctness | 90% | Proper async/await, no blocking calls in async context |
+| Error Handling | 80% | Comprehensive, but some errors silently swallowed |
+| Repository Pattern | 85% | Used in database.py, absent where client factory is needed |
+| Single Responsibility | 35% | Two major god objects, mixed concerns |
+| Layered Architecture | 40% | 4 router→service reverse imports |
+| DRY (No Duplication) | 55% | GraphQL queries, path normalization, client creation duplicated |
+| Logging Compliance | 0% | 96 f-string violations, zero compliant calls |
+| Security Posture | 75% | Good credential handling, needs input validation |
+| Testability | 50% | God objects and router coupling make unit testing difficult |
+
+---
+
+## Recommended Refactoring
+
+### Priority 0 — Blocking (CLAUDE.md compliance)
+
+1. **Fix all 96 f-string logging calls** — Replace with `%s` parameterized logging across all 7 files
+
+2. **Extract `_get_checkmk_client()` to service layer** — Create `services/checkmk/client_factory.py` and update all import sites:
+   - `folder.py:41`
+   - `sync/base.py:363, 718, 877`
+   - `routers/checkmk/main.py:219` (update to import from new location)
+
+### Priority 1 — High (Architectural)
+
+3. **Split `NautobotToCheckMKService`** into focused services:
+   - `DeviceQueryService` — GraphQL queries and device retrieval
+   - `DeviceComparisonService` — diff logic and configuration comparison
+   - `DeviceSyncService` — add/update operations to CheckMK
+
+4. **Split `DeviceNormalizationService`** into normalizer modules:
+   - `IPNormalizer`, `SNMPNormalizer`, `TagNormalizer`, `FieldNormalizer`
+   - Keep a facade class for backward compatibility
+
+5. **Extract GraphQL queries** to YAML config files and use `config_service.get_query()`
+
+### Priority 2 — Medium (Code Quality)
+
+6. **Replace magic values with constants/enums:**
+   - Comparison results: `ComparisonResult.EQUAL`, `.DIFF`, `.HOST_NOT_FOUND`
+   - Admin permissions: `ADMIN_PERMISSIONS = 15`
+   - Config keys: `MAPPING_CF2HTG`, `MAPPING_TAGS2HTG`, `MAPPING_ATTR2HTG`
+
+7. **Add input validation:**
+   - UUID format checking for device IDs
+   - Tag/custom field value sanitization in normalization
+
+8. **Create shared path normalization utility** — deduplicate folder path logic between `folder.py` and `sync/base.py`
+
+9. **Remove dead code:**
+   - Unused `db_path` parameter in `sync/database.py`
+   - Commented-out code blocks in `normalization.py`
+
+### Priority 3 — Low (Polish)
+
+10. **Add job ownership validation** in `sync/background.py` — users should only access their own jobs (or admins can access all)
+
+11. **Return immutable types from `config.py`** — use `tuple` instead of `list` for `get_comparison_keys()` etc.
+
+12. **Make timeouts configurable** — `client.py` hardcoded 10s, `background.py` hardcoded 0.1s sleep
+
+---
+
+## Positive Observations
+
+- **Type hints are excellent** — nearly 95% coverage with proper return types
+- **Async patterns are correct** — proper `async/await`, no accidental blocking
+- **Error handling is comprehensive** — specific exception types, graceful degradation
+- **Repository pattern used correctly** in `sync/database.py`
+- **Safe YAML loading** with `yaml.safe_load()` prevents code injection
+- **Background job management** is well-designed with progress tracking, cancellation, and cleanup
+- **Dataclass DTOs** in `sync/database.py` are clean and well-structured
+- **SNMP credential mapping** avoids plaintext exposure
+- **Folder creation** handles idempotency (already-exists is not an error)

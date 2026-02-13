@@ -39,7 +39,7 @@ export function ClusterSection({ form, dropdownData, isLoading }: ClusterSection
         <span className="text-sm font-medium">Cluster</span>
       </div>
       <div className="p-6 bg-gradient-to-b from-white to-gray-50">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Cluster Group */}
           <div className="space-y-1">
             <Label htmlFor="clusterGroup" className="text-xs font-medium">
