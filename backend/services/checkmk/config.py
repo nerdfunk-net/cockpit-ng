@@ -42,12 +42,12 @@ class ConfigService:
             try:
                 with open(config_path, "r") as f:
                     self._checkmk_config = yaml.safe_load(f) or {}
-                logger.info(f"Loaded CheckMK configuration from {config_path}")
+                logger.info("Loaded CheckMK configuration from %s", config_path)
             except FileNotFoundError:
-                logger.error(f"CheckMK configuration file not found: {config_path}")
+                logger.error("CheckMK configuration file not found: %s", config_path)
                 raise
             except yaml.YAMLError as e:
-                logger.error(f"Error parsing CheckMK configuration YAML: {e}")
+                logger.error("Error parsing CheckMK configuration YAML: %s", e)
                 raise
 
         return self._checkmk_config
@@ -71,14 +71,14 @@ class ConfigService:
             try:
                 with open(config_path, "r") as f:
                     self._snmp_mapping = yaml.safe_load(f) or {}
-                logger.info(f"Loaded SNMP mapping configuration from {config_path}")
+                logger.info("Loaded SNMP mapping configuration from %s", config_path)
             except FileNotFoundError:
                 logger.error(
-                    f"SNMP mapping configuration file not found: {config_path}"
+                    "SNMP mapping configuration file not found: %s", config_path
                 )
                 raise
             except yaml.YAMLError as e:
-                logger.error(f"Error parsing SNMP mapping configuration YAML: {e}")
+                logger.error("Error parsing SNMP mapping configuration YAML: %s", e)
                 raise
 
         return self._snmp_mapping
@@ -102,12 +102,12 @@ class ConfigService:
             try:
                 with open(config_path, "r") as f:
                     self._queries = yaml.safe_load(f) or {}
-                logger.info(f"Loaded queries configuration from {config_path}")
+                logger.info("Loaded queries configuration from %s", config_path)
             except FileNotFoundError:
-                logger.error(f"Queries configuration file not found: {config_path}")
+                logger.error("Queries configuration file not found: %s", config_path)
                 raise
             except yaml.YAMLError as e:
-                logger.error(f"Error parsing queries configuration YAML: {e}")
+                logger.error("Error parsing queries configuration YAML: %s", e)
                 raise
 
         return self._queries
@@ -128,10 +128,10 @@ class ConfigService:
             if query:
                 # Strip extra whitespace and normalize the query
                 return query.strip()
-            logger.warning(f"Query '{query_name}' not found in queries configuration")
+            logger.warning("Query '%s' not found in queries configuration", query_name)
             return None
         except Exception as e:
-            logger.error(f"Error getting query '{query_name}': {e}")
+            logger.error("Error getting query '%s': %s", query_name, e)
             return None
 
     def get_default_site(self) -> str:
@@ -145,7 +145,7 @@ class ConfigService:
             site_config = config.get("monitored_site", {})
             return site_config.get("default", "cmk")
         except Exception as e:
-            logger.error(f"Error getting default site: {e}")
+            logger.error("Error getting default site: %s", e)
             return "cmk"
 
     def get_comparison_keys(self) -> list[str]:
@@ -158,7 +158,7 @@ class ConfigService:
             config = self.load_checkmk_config()
             return config.get("compare", ["attributes", "folder"])
         except Exception as e:
-            logger.error(f"Error getting comparison keys: {e}")
+            logger.error("Error getting comparison keys: %s", e)
             return ["attributes", "folder"]
 
     def get_ignore_attributes(self) -> list[str]:
@@ -171,7 +171,7 @@ class ConfigService:
             config = self.load_checkmk_config()
             return config.get("ignore_attributes", [])
         except Exception as e:
-            logger.error(f"Error getting ignore attributes: {e}")
+            logger.error("Error getting ignore attributes: %s", e)
             return []
 
     def reload_config(self) -> None:

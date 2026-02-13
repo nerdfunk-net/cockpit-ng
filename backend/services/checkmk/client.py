@@ -46,7 +46,7 @@ class CheckMKService:
                 protocol = "https"
                 host = url
 
-            logger.info(f"Testing CheckMK connection to: {protocol}://{host}/{site}")
+            logger.info("Testing CheckMK connection to: %s://%s/%s", protocol, host, site)
 
             # Create CheckMK client
             client = CheckMKClient(
@@ -65,7 +65,7 @@ class CheckMKService:
                     # Get version information
                     version_info = client.get_version()
                     version = version_info.get("versions", {}).get("checkmk", "Unknown")
-                    logger.info(f"CheckMK connection successful, version: {version}")
+                    logger.info("CheckMK connection successful, version: %s", version)
                     return True, f"Connection successful! CheckMK version: {version}"
                 except CheckMKAPIError:
                     # Connection works but couldn't get version info
@@ -81,7 +81,7 @@ class CheckMKService:
                 )
 
         except CheckMKAPIError as e:
-            logger.error(f"CheckMK API error: {e}")
+            logger.error("CheckMK API error: %s", e)
             if e.status_code == 401:
                 return (
                     False,
@@ -101,7 +101,7 @@ class CheckMKService:
                 "CheckMK client module not found. Please ensure the CheckMK client is properly installed.",
             )
         except Exception as e:
-            logger.error(f"CheckMK connection test failed: {e}")
+            logger.error("CheckMK connection test failed: %s", e)
             # Provide more specific error messages based on common issues
             error_str = str(e).lower()
             if "ssl" in error_str:

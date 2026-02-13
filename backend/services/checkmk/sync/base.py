@@ -61,10 +61,10 @@ class NautobotToCheckMKService:
 
             result = await nautobot_service.graphql_query(query, {})
             if "errors" in result:
-                logger.error(f"GraphQL errors: {result['errors']}")
+                logger.error("GraphQL errors: %s", result["errors"])
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"GraphQL errors: {result['errors']}",
+                    detail="GraphQL errors: {}".format(result["errors"]),
                 )
 
             nautobot_devices = result["data"]["devices"]
@@ -97,7 +97,7 @@ class NautobotToCheckMKService:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Error getting devices for CheckMK sync: {e}")
+            logger.error("Error getting devices for CheckMK sync: %s", e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to get devices for CheckMK sync: {e}",
@@ -163,7 +163,7 @@ class NautobotToCheckMKService:
             if "errors" in result:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"GraphQL errors: {result['errors']}",
+                    detail="GraphQL errors: {}".format(result["errors"]),
                 )
 
             device_data = result["data"]["device"]
@@ -181,16 +181,16 @@ class NautobotToCheckMKService:
             normalized_dict = extensions.model_dump()
 
             # DEBUG: Log normalized device config for test fixture creation
-            logger.debug(f"[NORMALIZE] Device {device_id} normalized config:")
-            logger.debug(f"[NORMALIZE] Config keys: {list(normalized_dict.keys())}")
-            logger.debug(f"[NORMALIZE] Full normalized config: {normalized_dict}")
+            logger.debug("[NORMALIZE] Device %s normalized config:", device_id)
+            logger.debug("[NORMALIZE] Config keys: %s", list(normalized_dict.keys()))
+            logger.debug("[NORMALIZE] Full normalized config: %s", normalized_dict)
 
             return normalized_dict
 
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Error getting normalized device config for {device_id}: {e}")
+            logger.error("Error getting normalized device config for %s: %s", device_id, e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to get normalized device config: {e}",
@@ -229,10 +229,10 @@ class NautobotToCheckMKService:
 
             result = await nautobot_service.graphql_query(query, {})
             if "errors" in result:
-                logger.error(f"GraphQL errors: {result['errors']}")
+                logger.error("GraphQL errors: %s", result["errors"])
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"GraphQL errors: {result['errors']}",
+                    detail="GraphQL errors: {}".format(result["errors"]),
                 )
 
             nautobot_devices = result["data"]["devices"]
@@ -306,7 +306,7 @@ class NautobotToCheckMKService:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Error getting devices diff: {e}")
+            logger.error("Error getting devices diff: %s", e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to get devices diff: {e}",
@@ -326,7 +326,7 @@ class NautobotToCheckMKService:
         """
         try:
             # Get normalized config
-            logger.info(f"[COMPARE] Starting comparison for device ID: {device_id}")
+            logger.info("[COMPARE] Starting comparison for device ID: %s", device_id)
             try:
                 normalized_config = await self.get_device_normalized(device_id)
                 logger.debug(
@@ -334,7 +334,7 @@ class NautobotToCheckMKService:
                 )
             except Exception as norm_error:
                 error_msg = f"Failed to normalize device config for device {device_id}: {str(norm_error)}"
-                logger.error(f"[COMPARE ERROR] {error_msg}", exc_info=True)
+                logger.error("[COMPARE ERROR] %s", error_msg, exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=error_msg,
@@ -356,7 +356,7 @@ class NautobotToCheckMKService:
                     detail="Device has no hostname configured",
                 )
 
-            logger.info(f"[COMPARE] Comparing device: {hostname} (ID: {device_id})")
+            logger.info("[COMPARE] Comparing device: %s (ID: %s)", hostname, device_id)
 
             # Get CheckMK host config using internal API
             try:
@@ -393,7 +393,7 @@ class NautobotToCheckMKService:
                         )
                     else:
                         error_msg = f"CheckMK API error for host {hostname}: {e.detail}"
-                        logger.error(f"[COMPARE ERROR] {error_msg}")
+                        logger.error("[COMPARE ERROR] %s", error_msg)
                         raise HTTPException(
                             status_code=e.status_code,
                             detail=error_msg,
@@ -403,7 +403,7 @@ class NautobotToCheckMKService:
                 raise
             except Exception as e:
                 error_msg = f"Unexpected error getting CheckMK host data for {hostname}: {str(e)}"
-                logger.error(f"[COMPARE ERROR] {error_msg}", exc_info=True)
+                logger.error("[COMPARE ERROR] %s", error_msg, exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=error_msg,
@@ -451,7 +451,7 @@ class NautobotToCheckMKService:
 
             except Exception as e:
                 error_msg = f"Error processing configurations for comparison of {hostname}: {str(e)}"
-                logger.error(f"[COMPARE ERROR] {error_msg}", exc_info=True)
+                logger.error("[COMPARE ERROR] %s", error_msg, exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=error_msg,
@@ -482,7 +482,7 @@ class NautobotToCheckMKService:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Error comparing device configs for {device_id}: {e}")
+            logger.error("Error comparing device configs for %s: %s", device_id, e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to compare device configs: {e}",
@@ -505,11 +505,11 @@ class NautobotToCheckMKService:
         try:
             compare_keys = config_service.get_comparison_keys()
             ignore_attributes = config_service.get_ignore_attributes()
-            logger.debug(f"[COMPARE] Comparison keys: {compare_keys}")
-            logger.debug(f"[COMPARE] Ignore attributes: {ignore_attributes}")
+            logger.debug("[COMPARE] Comparison keys: %s", compare_keys)
+            logger.debug("[COMPARE] Ignore attributes: %s", ignore_attributes)
         except Exception as e:
             error_msg = f"Failed to load comparison configuration: {str(e)}"
-            logger.error(f"[COMPARE ERROR] {error_msg}", exc_info=True)
+            logger.error("[COMPARE ERROR] %s", error_msg, exc_info=True)
             raise ValueError(error_msg)
 
         for compare_key in compare_keys:
@@ -529,12 +529,12 @@ class NautobotToCheckMKService:
                     # Validate that attributes are dictionaries
                     if not isinstance(nb_attributes, dict):
                         error_msg = f"Nautobot attributes is not a dictionary: {type(nb_attributes)}"
-                        logger.error(f"[COMPARE ERROR] {error_msg}")
+                        logger.error("[COMPARE ERROR] %s", error_msg)
                         raise ValueError(error_msg)
 
                     if not isinstance(cmk_attributes, dict):
                         error_msg = f"CheckMK attributes is not a dictionary: {type(cmk_attributes)}"
-                        logger.error(f"[COMPARE ERROR] {error_msg}")
+                        logger.error("[COMPARE ERROR] %s", error_msg)
                         raise ValueError(error_msg)
 
                     # Filter out ignored attributes
@@ -557,7 +557,7 @@ class NautobotToCheckMKService:
                         )
                     except Exception as filter_error:
                         error_msg = f"Error filtering attributes: {str(filter_error)}"
-                        logger.error(f"[COMPARE ERROR] {error_msg}", exc_info=True)
+                        logger.error("[COMPARE ERROR] %s", error_msg, exc_info=True)
                         raise ValueError(error_msg)
 
                     # Debug logging for filtered attributes
@@ -612,7 +612,7 @@ class NautobotToCheckMKService:
                         error_msg = (
                             f"Error comparing attributes: {str(attr_compare_error)}"
                         )
-                        logger.error(f"[COMPARE ERROR] {error_msg}", exc_info=True)
+                        logger.error("[COMPARE ERROR] %s", error_msg, exc_info=True)
                         raise ValueError(error_msg)
 
                 else:
@@ -630,12 +630,12 @@ class NautobotToCheckMKService:
                             )
                     except Exception as key_compare_error:
                         error_msg = f"Error comparing key '{compare_key}': {str(key_compare_error)}"
-                        logger.error(f"[COMPARE ERROR] {error_msg}", exc_info=True)
+                        logger.error("[COMPARE ERROR] %s", error_msg, exc_info=True)
                         raise ValueError(error_msg)
 
             except Exception as compare_key_error:
                 error_msg = f"Error processing comparison key '{compare_key}': {str(compare_key_error)}"
-                logger.error(f"[COMPARE ERROR] {error_msg}", exc_info=True)
+                logger.error("[COMPARE ERROR] %s", error_msg, exc_info=True)
                 # Add to differences instead of failing entirely
                 differences.append(
                     f"ERROR comparing '{compare_key}': {str(compare_key_error)}"
@@ -671,7 +671,7 @@ class NautobotToCheckMKService:
             for ignored_attr in ignored_attributes:
                 if f"attributes.'{ignored_attr}':" in diff:
                     is_ignored = True
-                    logger.debug(f"Filtering out ignored attribute: {diff}")
+                    logger.debug("Filtering out ignored attribute: %s", diff)
                     break
 
             if not is_ignored:
@@ -712,7 +712,7 @@ class NautobotToCheckMKService:
 
             # Get the device site for CheckMK client initialization
             device_site = get_device_site_from_normalized_data(normalized_data)
-            logger.info(f"Using site '{device_site}' for device {hostname}")
+            logger.info("Using site '%s' for device %s", device_site, hostname)
 
             # Create host in CheckMK using site-aware client
             from routers.checkmk import _get_checkmk_client
@@ -723,15 +723,15 @@ class NautobotToCheckMKService:
 
                 # Log detailed information for debugging
                 logger.info("Creating host with parameters:")
-                logger.info(f"  hostname: {hostname}")
-                logger.info(f"  folder: {folder}")
-                logger.info(f"  site: {device_site}")
-                logger.info(f"  attributes: {attributes}")
+                logger.info("  hostname: %s", hostname)
+                logger.info("  folder: %s", folder)
+                logger.info("  site: %s", device_site)
+                logger.info("  attributes: %s", attributes)
 
                 # Ensure folder exists before creating host
                 if folder and folder != "/":
                     logger.info(
-                        f"Ensuring folder '{folder}' exists before creating host"
+                        "Ensuring folder '%s' exists before creating host", folder
                     )
                     folder_created = await checkmk_folder_service.create_path(
                         folder, device_site, {}
@@ -741,7 +741,7 @@ class NautobotToCheckMKService:
                             status_code=status.HTTP_400_BAD_REQUEST,
                             detail=f"Cannot create or ensure folder path '{folder}' exists in CheckMK",
                         )
-                    logger.info(f"Folder '{folder}' is ready")
+                    logger.info("Folder '%s' is ready", folder)
 
                 # Convert folder path format: CheckMK uses ~ instead of /
                 # First normalize double slashes, then convert / to ~
@@ -750,7 +750,9 @@ class NautobotToCheckMKService:
                     normalized_folder.replace("/", "~") if normalized_folder else "~"
                 )
                 logger.info(
-                    f"Converted folder path from '{folder}' to '{checkmk_folder}' for CheckMK client"
+                    "Converted folder path from '%s' to '%s' for CheckMK client",
+                    folder,
+                    checkmk_folder
                 )
 
                 # Create host in CheckMK
@@ -770,13 +772,13 @@ class NautobotToCheckMKService:
                 # Start service discovery with tabula_rasa mode to add services
                 try:
                     logger.info(
-                        f"Starting service discovery (tabula_rasa) for host {hostname}"
+                        "Starting service discovery (tabula_rasa) for host %s", hostname
                     )
                     discovery_result = client.start_service_discovery(
                         hostname, mode="tabula_rasa"
                     )
                     logger.info(
-                        f"Service discovery started for host {hostname}: {discovery_result}"
+                        "Service discovery started for host %s: %s", hostname, discovery_result
                     )
                     create_result["discovery"] = {
                         "started": True,
@@ -786,7 +788,7 @@ class NautobotToCheckMKService:
                 except Exception as discovery_error:
                     # Log but don't fail the whole operation if discovery fails
                     logger.warning(
-                        f"Failed to start service discovery for host {hostname}: {discovery_error}"
+                        "Failed to start service discovery for host %s: %s", hostname, discovery_error
                     )
                     create_result["discovery"] = {
                         "started": False,
@@ -794,7 +796,7 @@ class NautobotToCheckMKService:
                     }
 
             except CheckMKAPIError as e:
-                logger.error(f"CheckMK API error creating host {hostname}: {e}")
+                logger.error("CheckMK API error creating host %s: %s", hostname, e)
 
                 # Preserve CheckMK error details for better error reporting
                 error_detail = {
@@ -817,7 +819,7 @@ class NautobotToCheckMKService:
                 )
 
             logger.info(
-                f"Successfully added device {device_id} ({hostname}) to CheckMK"
+                "Successfully added device %s (%s) to CheckMK", device_id, hostname
             )
 
             return DeviceOperationResult(
@@ -833,7 +835,7 @@ class NautobotToCheckMKService:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Error adding device {device_id} to CheckMK: {e}")
+            logger.error("Error adding device %s to CheckMK: %s", device_id, e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to add device {device_id} to CheckMK: {e}",
@@ -871,7 +873,7 @@ class NautobotToCheckMKService:
 
             # Get the device site for CheckMK client initialization
             device_site = get_device_site_from_normalized_data(normalized_data)
-            logger.info(f"Using site '{device_site}' for device {hostname} update")
+            logger.info("Using site '%s' for device %s update", device_site, hostname)
 
             # Get current CheckMK host config to compare folder
             from routers.checkmk import _get_checkmk_client
@@ -895,7 +897,7 @@ class NautobotToCheckMKService:
                         detail=f"Host '{hostname}' not found in CheckMK site '{device_site}' - cannot update non-existent host",
                     )
                 else:
-                    logger.error(f"CheckMK API error getting host {hostname}: {e}")
+                    logger.error("CheckMK API error getting host %s: %s", hostname, e)
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                         detail=f"CheckMK API error: {e}",
@@ -933,14 +935,16 @@ class NautobotToCheckMKService:
                     else "~"
                 )
                 logger.info(
-                    f"Converted new folder path from '{new_folder_normalized}' to '{checkmk_new_folder}' for CheckMK client"
+                    "Converted new folder path from '%s' to '%s' for CheckMK client",
+                    new_folder_normalized,
+                    checkmk_new_folder
                 )
 
                 # Move the host to the new folder
                 try:
                     client.move_host(hostname, checkmk_new_folder)
                     logger.info(
-                        f"Moved host {hostname} from {current_folder_normalized} to {new_folder_normalized}"
+                        "Moved host %s from %s to %s", hostname, current_folder_normalized, new_folder_normalized
                     )
                 except CheckMKAPIError as e:
                     if "428" in str(e) or "precondition" in str(e).lower():
@@ -949,7 +953,7 @@ class NautobotToCheckMKService:
                             detail=f"Cannot move host '{hostname}' - CheckMK changes may need to be activated first. Please activate pending changes in CheckMK and try again.",
                         )
                     else:
-                        logger.error(f"CheckMK API error moving host {hostname}: {e}")
+                        logger.error("CheckMK API error moving host %s: %s", hostname, e)
                         raise HTTPException(
                             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail=f"CheckMK API error moving host: {e}",
@@ -958,9 +962,9 @@ class NautobotToCheckMKService:
             # Update host attributes
             try:
                 update_result = client.update_host(hostname, new_attributes)
-                logger.info(f"Updated host {hostname} attributes")
+                logger.info("Updated host %s attributes", hostname)
             except CheckMKAPIError as e:
-                logger.error(f"CheckMK API error updating host {hostname}: {e}")
+                logger.error("CheckMK API error updating host %s: %s", hostname, e)
 
                 # Preserve CheckMK error details for better error reporting
                 error_detail = {
@@ -983,7 +987,7 @@ class NautobotToCheckMKService:
                 )
 
             logger.info(
-                f"Successfully updated device {device_id} ({hostname}) in CheckMK"
+                "Successfully updated device %s (%s) in CheckMK", device_id, hostname
             )
 
             return DeviceUpdateResult(
@@ -1000,7 +1004,7 @@ class NautobotToCheckMKService:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Error updating device {device_id} in CheckMK: {e}")
+            logger.error("Error updating device %s in CheckMK: %s", device_id, e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to update device {device_id} in CheckMK: {e}",

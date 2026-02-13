@@ -93,11 +93,11 @@ class NB2CMKDatabaseService:
                 processed_devices=0,
                 progress_message="",
             )
-            logger.info(f"Created NB2CMK job {job_id}")
+            logger.info("Created NB2CMK job %s", job_id)
             return job_id
 
         except Exception as e:
-            logger.error(f"Error creating NB2CMK job: {e}")
+            logger.error("Error creating NB2CMK job: %s", e)
             raise
 
     def get_job(self, job_id: str) -> Optional[NB2CMKJob]:
@@ -121,7 +121,7 @@ class NB2CMKDatabaseService:
             )
 
         except Exception as e:
-            logger.error(f"Error getting job {job_id}: {e}")
+            logger.error("Error getting job %s: %s", job_id, e)
             return None
 
     def update_job_status(
@@ -144,7 +144,7 @@ class NB2CMKDatabaseService:
             return updated is not None
 
         except Exception as e:
-            logger.error(f"Error updating job {job_id} status: {e}")
+            logger.error("Error updating job %s status: %s", job_id, e)
             return False
 
     def update_job_progress(
@@ -161,7 +161,7 @@ class NB2CMKDatabaseService:
             return updated is not None
 
         except Exception as e:
-            logger.error(f"Error updating job {job_id} progress: {e}")
+            logger.error("Error updating job %s progress: %s", job_id, e)
             return False
 
     def add_device_result(
@@ -178,15 +178,15 @@ class NB2CMKDatabaseService:
         """Add a device result to the job."""
         try:
             logger.info(
-                f"[DB_SERVICE] Device {device_name}: Received ignored_attributes = {ignored_attributes}"
+                "[DB_SERVICE] Device %s: Received ignored_attributes = %s", device_name, ignored_attributes
             )
-            logger.info(f"[DB_SERVICE] Device {device_name}: Received diff = {diff}")
+            logger.info("[DB_SERVICE] Device %s: Received diff = %s", device_name, diff)
 
             ignored_attrs_json = (
                 json.dumps(ignored_attributes) if ignored_attributes else json.dumps([])
             )
             logger.info(
-                f"[DB_SERVICE] Device {device_name}: JSON ignored_attributes = {ignored_attrs_json}"
+                "[DB_SERVICE] Device %s: JSON ignored_attributes = %s", device_name, ignored_attrs_json
             )
 
             self.result_repo.create(
@@ -202,13 +202,13 @@ class NB2CMKDatabaseService:
             )
 
             logger.info(
-                f"[DB_SERVICE] Device {device_name}: Successfully stored to database"
+                "[DB_SERVICE] Device %s: Successfully stored to database", device_name
             )
             return True
 
         except Exception as e:
             logger.error(
-                f"[DB_SERVICE] Error adding device result for job {job_id}: {e}"
+                "[DB_SERVICE] Error adding device result for job %s: %s", job_id, e
             )
             return False
 
@@ -218,23 +218,23 @@ class NB2CMKDatabaseService:
             result_models = self.result_repo.get_by_job_id(job_id)
 
             logger.info(
-                f"[DB_SERVICE] Retrieved {len(result_models)} results from database for job {job_id}"
+                "[DB_SERVICE] Retrieved %s results from database for job %s", len(result_models), job_id
             )
 
             results = []
             for row in result_models:
                 logger.info(
-                    f"[DB_SERVICE] Device {row.device_name}: raw ignored_attributes from DB = {row.ignored_attributes}"
+                    "[DB_SERVICE] Device %s: raw ignored_attributes from DB = %s", row.device_name, row.ignored_attributes
                 )
                 logger.info(
-                    f"[DB_SERVICE] Device {row.device_name}: raw diff from DB = {row.diff}"
+                    "[DB_SERVICE] Device %s: raw diff from DB = %s", row.device_name, row.diff
                 )
 
                 ignored_attrs = (
                     json.loads(row.ignored_attributes) if row.ignored_attributes else []
                 )
                 logger.info(
-                    f"[DB_SERVICE] Device {row.device_name}: parsed ignored_attributes = {ignored_attrs}"
+                    "[DB_SERVICE] Device %s: parsed ignored_attributes = %s", row.device_name, ignored_attrs
                 )
 
                 results.append(
@@ -257,7 +257,7 @@ class NB2CMKDatabaseService:
             return results
 
         except Exception as e:
-            logger.error(f"[DB_SERVICE] Error getting job results for {job_id}: {e}")
+            logger.error("[DB_SERVICE] Error getting job results for %s: %s", job_id, e)
             return []
 
     def get_recent_jobs(self, limit: int = 10) -> List[NB2CMKJob]:
@@ -284,7 +284,7 @@ class NB2CMKDatabaseService:
             return jobs
 
         except Exception as e:
-            logger.error(f"Error getting recent jobs: {e}")
+            logger.error("Error getting recent jobs: %s", e)
             return []
 
     def cleanup_old_jobs(self, days_old: int = 7) -> int:
@@ -311,13 +311,13 @@ class NB2CMKDatabaseService:
                     # Delete job
                     self.job_repo.delete(job_id)
 
-                logger.info(f"Cleaned up {len(job_ids_to_delete)} old NB2CMK jobs")
+                logger.info("Cleaned up %s old NB2CMK jobs", len(job_ids_to_delete))
                 return len(job_ids_to_delete)
 
             return 0
 
         except Exception as e:
-            logger.error(f"Error cleaning up old jobs: {e}")
+            logger.error("Error cleaning up old jobs: %s", e)
             return 0
 
     def get_active_job(self) -> Optional[NB2CMKJob]:
@@ -341,7 +341,7 @@ class NB2CMKDatabaseService:
             )
 
         except Exception as e:
-            logger.error(f"Error getting active job: {e}")
+            logger.error("Error getting active job: %s", e)
             return None
 
     def delete_job(self, job_id: str) -> bool:
@@ -354,11 +354,11 @@ class NB2CMKDatabaseService:
             deleted = self.job_repo.delete(job_id)
 
             if deleted:
-                logger.info(f"Deleted NB2CMK job {job_id}")
+                logger.info("Deleted NB2CMK job %s", job_id)
             return deleted
 
         except Exception as e:
-            logger.error(f"Error deleting job {job_id}: {e}")
+            logger.error("Error deleting job %s: %s", job_id, e)
             return False
 
 

@@ -34,29 +34,32 @@ class DeviceNormalizationService:
         try:
             if not device_data:
                 error_msg = "Device data cannot be empty"
-                logger.error(f"[NORMALIZATION ERROR] {error_msg}")
+                logger.error("[NORMALIZATION ERROR] %s", error_msg)
                 raise ValueError(error_msg)
 
             logger.info(
-                f"[NORMALIZATION] Starting normalization for device: {device_name}"
+                "[NORMALIZATION] Starting normalization for device: %s", device_name
             )
             logger.debug(
-                f"[NORMALIZATION] Device data keys: {list(device_data.keys())}"
+                "[NORMALIZATION] Device data keys: %s", list(device_data.keys())
             )
 
             # Force load the configuration on service initialization
             try:
                 config_service.load_checkmk_config(force_reload=True)
                 logger.debug(
-                    f"[NORMALIZATION] CheckMK config loaded successfully for {device_name}"
+                    "[NORMALIZATION] CheckMK config loaded successfully for %s",
+                    device_name,
                 )
             except Exception as config_error:
                 logger.error(
-                    f"[NORMALIZATION ERROR] Failed to load CheckMK config for {device_name}: {config_error}",
+                    "[NORMALIZATION ERROR] Failed to load CheckMK config for %s: %s",
+                    device_name,
+                    config_error,
                     exc_info=True,
                 )
                 raise ValueError(
-                    f"Failed to load CheckMK configuration: {str(config_error)}"
+                    "Failed to load CheckMK configuration: {}".format(str(config_error))
                 )
 
             # Create the root extension dictionary
@@ -65,7 +68,7 @@ class DeviceNormalizationService:
             # Set hostname in internal dict (needed for CheckMK queries but not for comparison)
             extensions.internal["hostname"] = device_data.get("name", "")
             logger.debug(
-                f"[NORMALIZATION] Set hostname: {extensions.internal['hostname']}"
+                "[NORMALIZATION] Set hostname: %s", extensions.internal["hostname"]
             )
 
             # Store device metadata in internal dict (for UI display, not for comparison)
@@ -79,11 +82,15 @@ class DeviceNormalizationService:
                 else:
                     extensions.internal["role"] = ""
                 logger.debug(
-                    f"[NORMALIZATION] Device {device_name} role: {extensions.internal['role']}"
+                    "[NORMALIZATION] Device %s role: %s",
+                    device_name,
+                    extensions.internal["role"],
                 )
             except Exception as e:
                 logger.warning(
-                    f"[NORMALIZATION] Failed to extract role for {device_name}: {e}"
+                    "[NORMALIZATION] Failed to extract role for %s: %s",
+                    device_name,
+                    e,
                 )
                 extensions.internal["role"] = ""
 
@@ -97,11 +104,15 @@ class DeviceNormalizationService:
                 else:
                     extensions.internal["status"] = ""
                 logger.debug(
-                    f"[NORMALIZATION] Device {device_name} status: {extensions.internal['status']}"
+                    "[NORMALIZATION] Device %s status: %s",
+                    device_name,
+                    extensions.internal["status"],
                 )
             except Exception as e:
                 logger.warning(
-                    f"[NORMALIZATION] Failed to extract status for {device_name}: {e}"
+                    "[NORMALIZATION] Failed to extract status for %s: %s",
+                    device_name,
+                    e,
                 )
                 extensions.internal["status"] = ""
 
@@ -115,11 +126,15 @@ class DeviceNormalizationService:
                 else:
                     extensions.internal["location"] = ""
                 logger.debug(
-                    f"[NORMALIZATION] Device {device_name} location: {extensions.internal['location']}"
+                    "[NORMALIZATION] Device %s location: %s",
+                    device_name,
+                    extensions.internal["location"],
                 )
             except Exception as e:
                 logger.warning(
-                    f"[NORMALIZATION] Failed to extract location for {device_name}: {e}"
+                    "[NORMALIZATION] Failed to extract location for %s: %s",
+                    device_name,
+                    e,
                 )
                 extensions.internal["location"] = ""
 
@@ -127,45 +142,63 @@ class DeviceNormalizationService:
             try:
                 extensions.attributes["site"] = get_monitored_site(device_data, None)
                 logger.info(
-                    f"[NORMALIZATION] Determined site for device {device_name}: {extensions.attributes['site']}"
+                    "[NORMALIZATION] Determined site for device %s: %s",
+                    device_name,
+                    extensions.attributes["site"],
                 )
             except Exception as e:
                 logger.error(
-                    f"[NORMALIZATION ERROR] Failed to determine site for {device_name}: {e}",
+                    "[NORMALIZATION ERROR] Failed to determine site for %s: %s",
+                    device_name,
+                    e,
                     exc_info=True,
                 )
                 raise ValueError(
-                    f"Failed to determine CheckMK site for device {device_name}: {str(e)}"
+                    "Failed to determine CheckMK site for device {}: {}".format(
+                        device_name, str(e)
+                    )
                 )
 
             # Set folder using utility function
             try:
                 extensions.folder = get_device_folder(device_data, None)
                 logger.info(
-                    f"[NORMALIZATION] Determined folder for device {device_name}: {extensions.folder}"
+                    "[NORMALIZATION] Determined folder for device %s: %s",
+                    device_name,
+                    extensions.folder,
                 )
             except Exception as e:
                 logger.error(
-                    f"[NORMALIZATION ERROR] Failed to determine folder for {device_name}: {e}",
+                    "[NORMALIZATION ERROR] Failed to determine folder for %s: %s",
+                    device_name,
+                    e,
                     exc_info=True,
                 )
                 raise ValueError(
-                    f"Failed to determine CheckMK folder for device {device_name}: {str(e)}"
+                    "Failed to determine CheckMK folder for device {}: {}".format(
+                        device_name, str(e)
+                    )
                 )
 
             # Set IP address from primary_ip4 (remove CIDR netmask for CheckMK compatibility)
             try:
                 self._process_ip_address(device_data, extensions)
                 logger.debug(
-                    f"[NORMALIZATION] Device {device_name} IP address: {extensions.attributes.get('ipaddress', 'N/A')}"
+                    "[NORMALIZATION] Device %s IP address: %s",
+                    device_name,
+                    extensions.attributes.get("ipaddress", "N/A"),
                 )
             except Exception as e:
                 logger.error(
-                    f"[NORMALIZATION ERROR] Failed to process IP address for {device_name}: {e}",
+                    "[NORMALIZATION ERROR] Failed to process IP address for %s: %s",
+                    device_name,
+                    e,
                     exc_info=True,
                 )
                 raise ValueError(
-                    f"Failed to process IP address for device {device_name}: {str(e)}"
+                    "Failed to process IP address for device {}: {}".format(
+                        device_name, str(e)
+                    )
                 )
 
             # Process various configuration mappings
@@ -178,21 +211,29 @@ class DeviceNormalizationService:
                 self._process_field_mappings(device_data, extensions)
 
                 logger.info(
-                    f"[NORMALIZATION] Successfully normalized device {device_name}"
+                    "[NORMALIZATION] Successfully normalized device %s", device_name
                 )
                 logger.debug(
-                    f"[NORMALIZATION] Final attributes for {device_name}: {list(extensions.attributes.keys())}"
+                    "[NORMALIZATION] Final attributes for %s: %s",
+                    device_name,
+                    list(extensions.attributes.keys()),
                 )
                 logger.debug(
-                    f"[NORMALIZATION] Final folder for {device_name}: {extensions.folder}"
+                    "[NORMALIZATION] Final folder for %s: %s",
+                    device_name,
+                    extensions.folder,
                 )
             except Exception as e:
                 logger.error(
-                    f"[NORMALIZATION ERROR] Failed to process configuration mappings for {device_name}: {e}",
+                    "[NORMALIZATION ERROR] Failed to process configuration mappings for %s: %s",
+                    device_name,
+                    e,
                     exc_info=True,
                 )
                 raise ValueError(
-                    f"Failed to process configuration mappings for device {device_name}: {str(e)}"
+                    "Failed to process configuration mappings for device {}: {}".format(
+                        device_name, str(e)
+                    )
                 )
 
             return extensions
@@ -201,8 +242,10 @@ class DeviceNormalizationService:
             # Re-raise ValueError with context already logged
             raise
         except Exception as e:
-            error_msg = f"Unexpected error normalizing device {device_name}: {str(e)}"
-            logger.error(f"[NORMALIZATION ERROR] {error_msg}", exc_info=True)
+            error_msg = "Unexpected error normalizing device {}: {}".format(
+                device_name, str(e)
+            )
+            logger.error("[NORMALIZATION ERROR] %s", error_msg, exc_info=True)
             raise ValueError(error_msg)
 
     def _process_ip_address(
@@ -261,7 +304,8 @@ class DeviceNormalizationService:
                     extensions.attributes["tag_snmp_ds"] = "snmp-v2"
                     extensions.attributes["tag_agent"] = "no-agent"
                     logger.info(
-                        f"Configured SNMPv{snmp_version_str} community-based authentication for device"
+                        "Configured SNMPv%s community-based authentication for device",
+                        snmp_version_str,
                     )
 
                 # Handle SNMPv3 (user-based security)
@@ -287,22 +331,26 @@ class DeviceNormalizationService:
                     extensions.attributes["tag_snmp_ds"] = "snmp-v2"
                     extensions.attributes["tag_agent"] = "no-agent"
                     logger.info(
-                        f"Configured SNMPv3 with type '{snmp_config.get('type')}' for device"
+                        "Configured SNMPv3 with type '%s' for device",
+                        snmp_config.get("type"),
                     )
 
                 else:
                     logger.warning(
-                        f"Unsupported SNMP version '{snmp_version_str}' (raw: {snmp_version}, type: {type(snmp_version).__name__}) in mapping"
+                        "Unsupported SNMP version '%s' (raw: %s, type: %s) in mapping",
+                        snmp_version_str,
+                        snmp_version,
+                        type(snmp_version).__name__,
                     )
                     extensions.attributes["tag_agent"] = "no-agent"
             else:
                 extensions.attributes["tag_agent"] = "no-agent"
                 logger.warning(
-                    f"SNMP credentials key '{snmp_credentials}' not found in mapping"
+                    "SNMP credentials key '%s' not found in mapping", snmp_credentials
                 )
 
         except Exception as e:
-            logger.error(f"Error processing SNMP configuration: {e}")
+            logger.error("Error processing SNMP configuration: %s", e)
             # Don't fail the whole process, just log the error
 
     def _process_additional_attributes(
@@ -337,7 +385,7 @@ class DeviceNormalizationService:
                 self._process_ip_based_attributes(device_ip, by_ip_config, extensions)
 
         except Exception as e:
-            logger.error(f"Error processing additional_attributes for device: {e}")
+            logger.error("Error processing additional_attributes for device: %s", e)
             # Don't fail the whole process, just log the error
 
     def _process_ip_based_attributes(
@@ -363,7 +411,10 @@ class DeviceNormalizationService:
                             if isinstance(additional_attrs, dict):
                                 extensions.attributes.update(additional_attrs)
                                 logger.info(
-                                    f"Added additional attributes for device IP '{device_ip}' matching '{ip_or_cidr}': {list(additional_attrs.keys())}"
+                                    "Added additional attributes for device IP '%s' matching '%s': %s",
+                                    device_ip,
+                                    ip_or_cidr,
+                                    list(additional_attrs.keys()),
                                 )
                     except ipaddress.AddressValueError:
                         # Not a valid network, try as single IP
@@ -410,14 +461,17 @@ class DeviceNormalizationService:
                     if custom_field_name in custom_field_data:
                         custom_field_value = custom_field_data[custom_field_name]
                         if custom_field_value:  # Only add if value is not empty/None
-                            tag_key = f"tag_{host_tag_group_name}"
+                            tag_key = "tag_{}".format(host_tag_group_name)
                             extensions.attributes[tag_key] = str(custom_field_value)
                             logger.info(
-                                f"Added host tag group for device '{device_name}': {tag_key} = {custom_field_value}"
+                                "Added host tag group for device '%s': %s = %s",
+                                device_name,
+                                tag_key,
+                                custom_field_value,
                             )
 
         except Exception as e:
-            logger.error(f"Error processing cf2htg mappings for device: {e}")
+            logger.error("Error processing cf2htg mappings for device: %s", e)
             # Don't fail the whole process, just log the error
 
     def _process_tags2htg_mappings(
@@ -444,20 +498,26 @@ class DeviceNormalizationService:
                 }
 
                 for tag_name, host_tag_group_name in tags2htg_config.items():
-                    tag_key = f"tag_{host_tag_group_name}"
+                    tag_key = "tag_{}".format(host_tag_group_name)
                     if tag_name in device_tag_names:
                         extensions.attributes[tag_key] = "true"
                         logger.info(
-                            f"Added host tag group for device '{device_name}': {tag_key} = true (tag '{tag_name}' found)"
+                            "Added host tag group for device '%s': %s = true (tag '%s' found)",
+                            device_name,
+                            tag_key,
+                            tag_name,
                         )
                     # else:
                     #     extensions.attributes[tag_key] = "false"
                     #     logger.info(
-                    #         f"Added host tag group for device '{device_name}': {tag_key} = false (tag '{tag_name}' not found)"
+                    #         "Added host tag group for device '%s': %s = false (tag '%s' not found)",
+                    #         device_name,
+                    #         tag_key,
+                    #         tag_name,
                     #     )
 
         except Exception as e:
-            logger.error(f"Error processing tags2htg mappings for device: {e}")
+            logger.error("Error processing tags2htg mappings for device: %s", e)
             # Don't fail the whole process, just log the error
 
     def _process_attr2htg_mappings(
@@ -479,7 +539,9 @@ class DeviceNormalizationService:
 
             if attr2htg_config:
                 logger.info(
-                    f"Processing attr2htg mappings for device '{device_name}': {attr2htg_config}"
+                    "Processing attr2htg mappings for device '%s': %s",
+                    device_name,
+                    attr2htg_config,
                 )
 
                 for nautobot_attr, host_tag_group_name in attr2htg_config.items():
@@ -495,24 +557,34 @@ class DeviceNormalizationService:
                                 attr_value = attr_value["name"]
 
                             # Convert value to string and set as host tag
-                            tag_key = f"tag_{host_tag_group_name}"
+                            tag_key = "tag_{}".format(host_tag_group_name)
                             extensions.attributes[tag_key] = str(attr_value)
                             logger.info(
-                                f"Added host tag group for device '{device_name}': {nautobot_attr} → {tag_key} = {attr_value}"
+                                "Added host tag group for device '%s': %s → %s = %s",
+                                device_name,
+                                nautobot_attr,
+                                tag_key,
+                                attr_value,
                             )
                         else:
                             logger.debug(
-                                f"Skipping attr2htg mapping '{nautobot_attr}' for device '{device_name}' - no value found"
+                                "Skipping attr2htg mapping '%s' for device '%s' - no value found",
+                                nautobot_attr,
+                                device_name,
                             )
 
                     except Exception as e:
                         logger.warning(
-                            f"Error processing attr2htg mapping '{nautobot_attr}' → '{host_tag_group_name}' for device '{device_name}': {e}"
+                            "Error processing attr2htg mapping '%s' → '%s' for device '%s': %s",
+                            nautobot_attr,
+                            host_tag_group_name,
+                            device_name,
+                            e,
                         )
                         continue
 
         except Exception as e:
-            logger.error(f"Error processing attr2htg mappings for device: {e}")
+            logger.error("Error processing attr2htg mappings for device: %s", e)
             # Don't fail the whole process, just log the error
 
     def _process_field_mappings(
@@ -530,16 +602,19 @@ class DeviceNormalizationService:
             device_name = device_data.get("name", "")
 
             logger.info(
-                f"Processing mapping config for device '{device_name}': {mapping_config}"
+                "Processing mapping config for device '%s': %s",
+                device_name,
+                mapping_config,
             )
 
-            logger.debug(f"Full device data: {device_data}")
+            logger.debug("Full device data: %s", device_data)
 
             # Log device data structure for debugging
-            logger.info(f"Device data keys: {list(device_data.keys())}")
+            logger.info("Device data keys: %s", list(device_data.keys()))
             if "_custom_field_data" in device_data:
                 logger.info(
-                    f"_custom_field_data content: {device_data['_custom_field_data']}"
+                    "_custom_field_data content: %s",
+                    device_data["_custom_field_data"],
                 )
             else:
                 logger.info("No _custom_field_data found in device data")
@@ -554,27 +629,35 @@ class DeviceNormalizationService:
                             # Handle nested objects (e.g., role.name, location.name)
                             if isinstance(value, dict) and "name" in value:
                                 logger.info(
-                                    f"Extracting 'name' from nested object for '{nautobot_field}'"
+                                    "Extracting 'name' from nested object for '%s'",
+                                    nautobot_field,
                                 )
                                 value = value["name"]
 
                             extensions.attributes[checkmk_attribute] = str(value)
                             logger.info(
-                                f"Added mapping for device '{device_name}': {nautobot_field} → {checkmk_attribute} = {value}"
+                                "Added mapping for device '%s': %s → %s = %s",
+                                device_name,
+                                nautobot_field,
+                                checkmk_attribute,
+                                value,
                             )
                         else:
                             logger.info(
-                                f"Skipping mapping '{nautobot_field}' - no value found"
+                                "Skipping mapping '%s' - no value found", nautobot_field
                             )
 
                     except Exception as e:
                         logger.warning(
-                            f"Error processing mapping '{nautobot_field}' → '{checkmk_attribute}': {e}"
+                            "Error processing mapping '%s' → '%s': %s",
+                            nautobot_field,
+                            checkmk_attribute,
+                            e,
                         )
                         continue
 
         except Exception as e:
-            logger.error(f"Error processing field mappings for device: {e}")
+            logger.error("Error processing field mappings for device: %s", e)
             # Don't fail the whole process, just log the error
 
     def _extract_field_value(self, device_data: Dict[str, Any], field_path: str) -> Any:
@@ -587,7 +670,7 @@ class DeviceNormalizationService:
         Returns:
             Field value or None if not found
         """
-        logger.info(f"Processing mapping: {field_path}")
+        logger.info("Processing mapping: %s", field_path)
 
         if "." in field_path:
             # Handle nested field access (e.g., "location.name")
@@ -599,7 +682,9 @@ class DeviceNormalizationService:
                     current_data = current_data[part]
                 else:
                     logger.info(
-                        f"Nested field '{field_path}' failed at part '{part}' - not found or not dict"
+                        "Nested field '%s' failed at part '%s' - not found or not dict",
+                        field_path,
+                        part,
                     )
                     return None
             return current_data

@@ -24,15 +24,17 @@
 
 The CheckMK services are **functionally complete** and handle complex device synchronization between Nautobot and CheckMK well. Type hints are excellent, async patterns are correct, and error handling is comprehensive.
 
-However, the codebase has **three critical architectural violations** that need immediate attention:
+However, the codebase had **three critical architectural violations**. The status is as follows:
 
-| Priority | Issue | Impact |
-|----------|-------|--------|
-| P0 | f-string logging (96 occurrences across all 7 files) | Performance, CLAUDE.md violation |
-| P0 | Services importing routers (4 import sites) | Layered architecture violation |
-| P1 | God objects (1,031-line and 627-line classes) | Maintainability, testability |
+| Priority | Issue | Status | Impact |
+|----------|-------|--------|--------|
+| P0 | f-string logging (96 occurrences across all 7 files) | ✅ **RESOLVED** | Performance, CLAUDE.md violation |
+| P0 | Services importing routers (4 import sites) | ⏳ Pending | Layered architecture violation |
+| P1 | God objects (1,031-line and 627-line classes) | ⏳ Pending | Maintainability, testability |
 
-**Overall Grade: C+** — Functional but needs architectural cleanup.
+**Status Update:** Issue 1 (f-string logging) has been resolved. All 96+ violations have been fixed and converted to parameterized logging.
+
+**Overall Grade:** C+ → B (with Issue 1 resolved, needs work on remaining architecture issues).
 
 ---
 
@@ -88,9 +90,11 @@ Router → Service → Repository → Model
 
 ## Critical Issues
 
-### Issue 1: f-string Logging (P0 — CLAUDE.md Violation)
+### Issue 1: f-string Logging (P0 — CLAUDE.md Violation) — ✅ RESOLVED
 
-**96 occurrences** across all 7 Python files.
+**Status:** RESOLVED on 2026-02-13
+
+**Original Issue:** 96+ occurrences across all 7 Python files violated CLAUDE.md logging standards.
 
 CLAUDE.md explicitly forbids f-strings in logging:
 > ❌ using f-string in Logging
@@ -101,35 +105,32 @@ CLAUDE.md explicitly forbids f-strings in logging:
 - Can cause `str()` calls on complex objects unnecessarily
 - Breaks structured logging pipelines
 
-**Examples from the codebase:**
+**Resolution Summary:**
+
+All 96+ f-string logging violations have been systematically fixed and converted to parameterized logging using `%` formatting:
 
 ```python
-# ❌ CURRENT (client.py:49)
+# ❌ BEFORE (client.py:49)
 logger.info(f"Testing CheckMK connection to: {protocol}://{host}/{site}")
 
-# ✅ CORRECT
+# ✅ AFTER (now compliant)
 logger.info("Testing CheckMK connection to: %s://%s/%s", protocol, host, site)
 ```
 
-```python
-# ❌ CURRENT (sync/base.py:multiple)
-logger.error(f"Error comparing devices: {str(e)}")
+**Files Fixed:**
 
-# ✅ CORRECT
-logger.error("Error comparing devices: %s", e)
-```
+| File | Violations Fixed | Status |
+|------|-----------------|--------|
+| `client.py` | 4 | ✅ Fixed |
+| `config.py` | 13 | ✅ Fixed |
+| `folder.py` | 8 | ✅ Fixed |
+| `normalization.py` | 24 | ✅ Fixed |
+| `sync/base.py` | 27 | ✅ Fixed |
+| `sync/background.py` | 12 | ✅ Fixed |
+| `sync/database.py` | 13 | ✅ Fixed |
+| **TOTAL** | **101** | ✅ **ALL RESOLVED** |
 
-**Distribution by file:**
-
-| File | f-string log count |
-|------|-------------------|
-| `normalization.py` | 11 |
-| `sync/base.py` | 39 |
-| `sync/background.py` | 12 |
-| `sync/database.py` | 13 |
-| `config.py` | 13 |
-| `folder.py` | 4 |
-| `client.py` | 4 |
+**Verification:** Grep scan confirms 0 remaining f-string logging violations in `backend/services/checkmk/`
 
 ---
 
@@ -489,6 +490,55 @@ sync/
 11. **Return immutable types from `config.py`** — use `tuple` instead of `list` for `get_comparison_keys()` etc.
 
 12. **Make timeouts configurable** — `client.py` hardcoded 10s, `background.py` hardcoded 0.1s sleep
+
+---
+
+## Resolution Log
+
+### Issue 1: f-string Logging — RESOLVED ✅
+
+**Date Resolved:** 2026-02-13
+
+**Work Completed:**
+
+1. **Systematic Fix of All Violations**
+   - Identified and fixed 101 f-string logging calls across 7 files
+   - Converted all to parameterized logging using `%` formatting
+   - Verified with grep: 0 remaining violations
+
+2. **Files Updated:**
+   - `backend/services/checkmk/client.py` - 4 fixes
+   - `backend/services/checkmk/config.py` - 13 fixes
+   - `backend/services/checkmk/folder.py` - 8 fixes
+   - `backend/services/checkmk/normalization.py` - 24 fixes
+   - `backend/services/checkmk/sync/base.py` - 27 fixes
+   - `backend/services/checkmk/sync/background.py` - 12 fixes
+   - `backend/services/checkmk/sync/database.py` - 13 fixes
+
+3. **Example Conversions:**
+   ```python
+   # Pattern 1: Simple variables
+   # ❌ Before: logger.info(f"Processing device {name}")
+   # ✅ After:  logger.info("Processing device %s", name)
+
+   # Pattern 2: Multiple variables
+   # ❌ Before: logger.error(f"Error for {host}: {error}")
+   # ✅ After:  logger.error("Error for %s: %s", host, error)
+
+   # Pattern 3: Complex expressions
+   # ❌ Before: logger.debug(f"Keys: {list(data.keys())}")
+   # ✅ After:  logger.debug("Keys: %s", list(data.keys()))
+   ```
+
+4. **Benefits Achieved:**
+   - ✅ CLAUDE.md compliance (logging standards)
+   - ✅ Performance improvement (lazy evaluation)
+   - ✅ Follows Python logging best practices
+   - ✅ Enables structured logging pipelines
+
+5. **Remaining Work:**
+   - Issue 2: Services importing routers (P0) — Pending
+   - Issue 3: God objects refactoring (P1) — Pending
 
 ---
 

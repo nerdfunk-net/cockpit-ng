@@ -42,8 +42,8 @@ class CheckMKFolderService:
             from checkmk.client import CheckMKAPIError
 
             client = _get_checkmk_client()
-            logger.info(f"Creating folder path '{folder_path}' in site '{site_name}'")
-            logger.info(f"Path parts to create: {path_parts}")
+            logger.info("Creating folder path '%s' in site '%s'", folder_path, site_name)
+            logger.info("Path parts to create: %s", path_parts)
 
             # Build and create each path incrementally
             for i in range(len(path_parts)):
@@ -58,7 +58,9 @@ class CheckMKFolderService:
                 try:
                     # Log folder creation attempt
                     logger.info(
-                        f"Attempting to create folder '{folder_name}' in parent '{parent_folder}'"
+                        "Attempting to create folder '%s' in parent '%s'",
+                        folder_name,
+                        parent_folder,
                     )
 
                     # Try to create the folder using direct client call
@@ -79,29 +81,35 @@ class CheckMKFolderService:
                         attributes={},
                     )
                     logger.info(
-                        f"Successfully created folder '{folder_name}' in parent '{parent_folder}'"
+                        "Successfully created folder '%s' in parent '%s'",
+                        folder_name,
+                        parent_folder,
                     )
 
                 except CheckMKAPIError as e:
                     # Check if this is a "folder already exists" error
                     if "already exists" in str(e).lower() or "400" in str(e):
                         logger.info(
-                            f"Folder '{folder_name}' already exists in parent '{parent_folder}' - continuing"
+                            "Folder '%s' already exists in parent '%s' - continuing",
+                            folder_name,
+                            parent_folder,
                         )
                         continue
                     else:
                         logger.error(
-                            f"CheckMK API error creating folder '{folder_name}': {e}"
+                            "CheckMK API error creating folder '%s': %s",
+                            folder_name,
+                            e,
                         )
                         return False
                 except Exception as e:
-                    logger.error(f"General error creating folder '{folder_name}': {e}")
+                    logger.error("General error creating folder '%s': %s", folder_name, e)
                     return False
 
             return True
 
         except Exception as e:
-            logger.error(f"Error creating CheckMK path '{folder_path}': {e}")
+            logger.error("Error creating CheckMK path '%s': %s", folder_path, e)
             return False
 
 
