@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { ipAddressSchema } from '@/components/shared/device-form/validation'
 
 // VM-specific interface schema (simplified for virtual interfaces)
+// All fields are optional - interfaces can be created without any or all of these properties
 const vmInterfaceSchema = z.object({
   id: z.string(),
   name: z.string().optional(), // Interface name
@@ -35,6 +36,9 @@ const vmInterfaceSchema = z.object({
   tags: z.array(z.string()).optional(),
 })
 
+// VM form schema
+// REQUIRED: name, status, cluster
+// OPTIONAL: everything else (including interfaces and IP addresses)
 export const vmFormSchema = z.object({
   name: z.string().min(1, 'VM name is required'),
   status: z.string().min(1, 'Status is required'),

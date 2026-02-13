@@ -103,19 +103,40 @@ export function AddVMPage() {
       try {
         // Filter out incomplete interfaces (interfaces without name or status)
         // Note: Virtual interfaces don't have a 'type' field like physical interfaces
+        // It's perfectly fine to have NO interfaces at all - VM creation only requires name, status, and cluster
         const validInterfaces = (formData.interfaces || []).filter((iface) => {
           return iface.name && iface.name.trim() !== '' &&
                  iface.status && iface.status.trim() !== ''
         })
 
-        // Include tags and custom fields in submission
-        const submissionData: VMFormValues = {
-          ...formData,
-          interfaces: validInterfaces,
-          tags: tagsManager.selectedTags,
-          customFieldValues: customFieldsManager.customFieldValues,
+        // Clean up the form data: convert empty strings to undefined so they're omitted from the request
+        // This is important because the backend expects Optional fields to be either valid values or None/null
+        const cleanedData: Record<string, unknown> = {
+          name: formData.name,
+          status: formData.status,
+          cluster: formData.cluster,
         }
-        const result = await createVM.mutateAsync(submissionData)
+
+        // Add optional fields only if they have non-empty values
+        if (formData.role && formData.role.trim() !== '') cleanedData.role = formData.role
+        if (formData.clusterGroup && formData.clusterGroup.trim() !== '') cleanedData.clusterGroup = formData.clusterGroup
+        if (formData.platform && formData.platform.trim() !== '') cleanedData.platform = formData.platform
+        if (formData.softwareVersion && formData.softwareVersion.trim() !== '') cleanedData.softwareVersion = formData.softwareVersion
+        if (formData.softwareImageFile && formData.softwareImageFile.trim() !== '') cleanedData.softwareImageFile = formData.softwareImageFile
+        if (formData.vcpus != null && Number(formData.vcpus) > 0) cleanedData.vcpus = formData.vcpus
+        if (formData.memory != null && Number(formData.memory) > 0) cleanedData.memory = formData.memory
+        if (formData.disk != null && Number(formData.disk) > 0) cleanedData.disk = formData.disk
+
+        // Add valid interfaces
+        cleanedData.interfaces = validInterfaces
+
+        // Add tags and custom fields
+        if (tagsManager.selectedTags.length > 0) cleanedData.tags = tagsManager.selectedTags
+        if (Object.keys(customFieldsManager.customFieldValues).length > 0) {
+          cleanedData.customFieldValues = customFieldsManager.customFieldValues
+        }
+
+        const result = await createVM.mutateAsync(cleanedData as VMFormValues)
 
         // Don't reset form - allow user to add similar VMs
         // Show success message
@@ -144,7 +165,7 @@ export function AddVMPage() {
     console.error('Form validation failed:', errors)
     setStatusMessage({
       type: 'error',
-      message: 'Please fill in all required fields (VM name, status, and cluster)',
+      message: 'Please fill in all required fields: VM name, status, and cluster. All other fields (including interfaces and IP addresses) are optional.',
     })
   }, [])
 
@@ -186,7 +207,9 @@ export function AddVMPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Add Virtual Machine</h1>
-            <p className="text-muted-foreground mt-2">Create a new VM in Nautobot</p>
+            <p className="text-muted-foreground mt-2">
+              Create a new VM in Nautobot. Only name, status, and cluster are required.
+            </p>
           </div>
         </div>
       </div>

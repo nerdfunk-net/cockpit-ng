@@ -66,13 +66,17 @@ class IpAddressData(BaseModel):
 
 
 class InterfaceData(BaseModel):
-    """Interface data model for add device/VM request."""
+    """Interface data model for add device/VM request.
+    
+    All fields are optional. For VM creation, interfaces themselves are optional.
+    IP addresses are also optional - an interface can be created without any IPs.
+    """
 
     id: Optional[str] = None  # Frontend interface ID for LAG mapping
     name: Optional[str] = None  # Interface name (required for actual creation)
     type: Optional[str] = None  # Required for physical devices, not used for VMs
     status: Optional[str] = None  # Interface status (required for actual creation)
-    ip_addresses: list[IpAddressData] = []  # Multiple IP addresses per interface
+    ip_addresses: list[IpAddressData] = []  # Multiple IP addresses per interface (optional)
     # Optional properties
     enabled: Optional[bool] = None
     mgmt_only: Optional[bool] = None
@@ -167,6 +171,13 @@ class VirtualMachine(BaseModel):
     name: str
 
 
+class ClusterGroup(BaseModel):
+    """Cluster group model for organizing clusters."""
+
+    id: str
+    name: str
+
+
 class ClusterDevice(BaseModel):
     """Device assigned to a cluster."""
 
@@ -186,14 +197,19 @@ class Cluster(BaseModel):
 
     id: str
     name: str
+    cluster_group: Optional[ClusterGroup] = None
     virtual_machines: list[VirtualMachine] = []
     device_assignments: list[ClusterDeviceAssignment] = []
 
 
 class AddVirtualMachineRequest(BaseModel):
-    """Request model for adding a virtual machine to Nautobot."""
+    """Request model for adding a virtual machine to Nautobot.
+    
+    Only name, status, and cluster are required.
+    All other fields (including interfaces and IP addresses) are optional.
+    """
 
-    # Required fields
+    # Required fields (only these three are mandatory)
     name: str
     status: str  # Status UUID
     cluster: str  # Cluster UUID
@@ -216,7 +232,7 @@ class AddVirtualMachineRequest(BaseModel):
     # Custom fields (key-value pairs)
     customFieldValues: Optional[dict[str, str]] = None
 
-    # Interfaces array (new: supports multiple interfaces with properties)
+    # Interfaces array (optional: can be empty list if no interfaces needed)
     interfaces: list[InterfaceData] = []
 
     # Legacy interface configuration (for backward compatibility)
@@ -226,6 +242,15 @@ class AddVirtualMachineRequest(BaseModel):
     namespace: Optional[str] = (
         None  # Namespace UUID (defaults to "Global" if not provided)
     )
+
+    @field_validator('role', 'clusterGroup', 'platform', 'softwareVersion', 'softwareImageFile', 
+                     'interfaceName', 'primaryIpv4', 'namespace', mode='before')
+    @classmethod
+    def convert_empty_string_to_none(cls, v: Optional[str]) -> Optional[str]:
+        """Convert empty strings to None for optional string fields."""
+        if v is None or (isinstance(v, str) and v.strip() == ''):
+            return None
+        return v
 
 
 class AddVirtualInterfaceRequest(BaseModel):

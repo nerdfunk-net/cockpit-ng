@@ -15,9 +15,45 @@ logger = logging.getLogger(__name__)
 class ClusterResolver(BaseResolver):
     """Resolver for virtualization cluster operations."""
 
-    async def get_all_clusters(self) -> List[Dict[str, Any]]:
+    async def get_all_cluster_groups(self) -> List[Dict[str, Any]]:
         """
-        Get all clusters from Nautobot.
+        Get all cluster groups from Nautobot.
+
+        Returns:
+            List of cluster group dictionaries with id and name
+
+        Raises:
+            Exception: If GraphQL query fails
+        """
+        query = """
+        {
+          cluster_groups {
+            id
+            name
+          }
+        }
+        """
+        try:
+            result = await self.nautobot.graphql_query(query)
+
+            if "errors" in result:
+                logger.error("GraphQL errors fetching cluster groups: %s", result["errors"])
+                raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
+
+            cluster_groups = result.get("data", {}).get("cluster_groups", [])
+            logger.info("Retrieved %s cluster groups from Nautobot", len(cluster_groups))
+            return cluster_groups
+
+        except Exception as e:
+            logger.error("Failed to fetch cluster groups: %s", e, exc_info=True)
+            raise
+
+    async def get_all_clusters(self, group: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+        """
+        Get all clusters from Nautobot, optionally filtered by cluster group.
+
+        Args:
+            group: Optional list of cluster group IDs to filter by
 
         Returns:
             List of cluster dictionaries with virtual machines and device assignments
@@ -26,10 +62,14 @@ class ClusterResolver(BaseResolver):
             Exception: If GraphQL query fails
         """
         query = """
-        {
-          clusters {
+        query ($group: [String]) {
+          clusters(cluster_group: $group) {
             id
             name
+            cluster_group {
+              id
+              name
+            }
             virtual_machines {
               id
               name
@@ -45,14 +85,18 @@ class ClusterResolver(BaseResolver):
         }
         """
         try:
-            result = await self.nautobot.graphql_query(query)
+            variables = {"group": group} if group else {}
+            result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
                 logger.error("GraphQL errors fetching clusters: %s", result["errors"])
                 raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
 
             clusters = result.get("data", {}).get("clusters", [])
-            logger.info("Retrieved %s clusters from Nautobot", len(clusters))
+            if group:
+                logger.info("Retrieved %s clusters from Nautobot (filtered by group: %s)", len(clusters), group)
+            else:
+                logger.info("Retrieved %s clusters from Nautobot", len(clusters))
             return clusters
 
         except Exception as e:

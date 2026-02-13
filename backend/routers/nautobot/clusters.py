@@ -13,6 +13,7 @@ from typing import List
 from core.auth import require_permission
 from models.nautobot import (
     Cluster,
+    ClusterGroup,
     AddVirtualMachineRequest,
     AddVirtualInterfaceRequest,
 )
@@ -33,10 +34,11 @@ router = APIRouter(prefix="/virtualization", tags=["nautobot-virtualization"])
     "/clusters", response_model=List[Cluster], summary="🔷 GraphQL: List Clusters"
 )
 async def get_clusters(
+    group: str = None,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
 ):
     """
-    Get all virtualization clusters from Nautobot.
+    Get all virtualization clusters from Nautobot, optionally filtered by cluster group.
 
     Returns a list of clusters with their associated virtual machines and device assignments.
     Device assignments represent the physical devices that form the cluster infrastructure.
@@ -45,22 +47,59 @@ async def get_clusters(
 
     **Required Permission:** `nautobot.devices:read`
 
+    **Query Parameters:**
+    - `group`: Optional cluster group ID to filter clusters
+
     **Returns:**
     - List of clusters with:
       - `id`: Cluster UUID
       - `name`: Cluster name
+      - `cluster_group`: Cluster group information
       - `virtual_machines`: List of VMs in the cluster
       - `device_assignments`: List of devices assigned to the cluster
     """
     try:
         resolver = ClusterResolver(nautobot_service)
-        clusters = await resolver.get_all_clusters()
+        group_filter = [group] if group else None
+        clusters = await resolver.get_all_clusters(group=group_filter)
         return clusters
     except Exception as e:
         logger.error(f"Failed to fetch clusters: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch clusters: {str(e)}",
+        )
+
+
+@router.get(
+    "/cluster-groups", response_model=List[ClusterGroup], summary="🔷 GraphQL: List Cluster Groups"
+)
+async def get_cluster_groups(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
+    """
+    Get all virtualization cluster groups from Nautobot.
+
+    Returns a list of cluster groups that can be used to filter clusters.
+
+    **🔷 This endpoint uses GraphQL** to fetch cluster group data.
+
+    **Required Permission:** `nautobot.devices:read`
+
+    **Returns:**
+    - List of cluster groups with:
+      - `id`: Cluster group UUID
+      - `name`: Cluster group name
+    """
+    try:
+        resolver = ClusterResolver(nautobot_service)
+        cluster_groups = await resolver.get_all_cluster_groups()
+        return cluster_groups
+    except Exception as e:
+        logger.error(f"Failed to fetch cluster groups: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch cluster groups: {str(e)}",
         )
 
 
@@ -234,6 +273,14 @@ async def create_virtual_machine(
         use_new_format = len(vm_request.interfaces) > 0
         use_legacy_format = vm_request.interfaceName is not None
 
+        # Check if we need to process interfaces at all
+        if not use_new_format and not use_legacy_format:
+            logger.info("")
+            logger.info("=" * 80)
+            logger.info("======= SKIPPING INTERFACE CREATION: No interfaces provided =======")
+            logger.info("=" * 80)
+            logger.info("VM created without interfaces (as requested)")
+
         if use_new_format:
             # NEW FORMAT: Process interfaces array
             logger.info("")
@@ -273,8 +320,8 @@ async def create_virtual_machine(
                         "status": "success",
                     })
 
-                    # Process IP addresses for this interface
-                    if interface_data.ip_addresses:
+                    # Process IP addresses for this interface (skip if none provided)
+                    if interface_data.ip_addresses and len(interface_data.ip_addresses) > 0:
                         logger.info("")
                         logger.info(f"📍 Processing {len(interface_data.ip_addresses)} IP address(es) for interface '{interface_data.name}'")
 

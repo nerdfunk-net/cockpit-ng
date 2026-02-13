@@ -27,7 +27,7 @@ export function ClusterSection({ form, dropdownData, isLoading }: ClusterSection
 
   // Filter clusters by selected cluster group
   const filteredClusters = useMemo(() => {
-    if (!selectedClusterGroup) return dropdownData.clusters
+    if (!selectedClusterGroup || selectedClusterGroup === 'all') return dropdownData.clusters
     return dropdownData.clusters.filter(
       (cluster) => cluster.cluster_group?.id === selectedClusterGroup
     )
@@ -46,9 +46,9 @@ export function ClusterSection({ form, dropdownData, isLoading }: ClusterSection
               Cluster Group
             </Label>
             <Select
-              value={watch('clusterGroup') ?? ''}
+              value={watch('clusterGroup') ?? 'all'}
               onValueChange={(value) => {
-                setValue('clusterGroup', value)
+                setValue('clusterGroup', value === 'all' ? undefined : value)
                 // Reset cluster when group changes
                 setValue('cluster', '')
               }}
@@ -58,6 +58,7 @@ export function ClusterSection({ form, dropdownData, isLoading }: ClusterSection
                 <SelectValue placeholder="All groups..." />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All groups</SelectItem>
                 {dropdownData.clusterGroups.map((group) => (
                   <SelectItem key={group.id} value={group.id}>
                     {group.name}
