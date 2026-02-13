@@ -527,7 +527,7 @@ class IPManager:
 - ✅ Safe guard against using shutdown executor
 - ✅ No resource leaks
 
-### 4.4 `offboarding.py` Is Too Large (903 lines)
+### 4.4 `offboarding.py` Is Too Large (903 lines) ** RESOLVED**
 
 Single class with 20+ methods handling:
 - Device removal
@@ -541,19 +541,41 @@ Single class with 20+ methods handling:
 
 Should be decomposed into smaller, focused units.
 
-### 4.5 Inconsistent Error Return Patterns
+### 4.5 ~~Inconsistent Error Return Patterns~~ **RESOLVED**
 
-Some services return `{"success": False, "message": ...}` on error (swallowing exceptions):
-- `DeviceUpdateService.update_device()` — catches all exceptions, returns dict
-- `DeviceImportService.import_device()` — catches all exceptions, returns dict
+**Status: RESOLVED (2026-02-13)**
 
-Others raise exceptions:
-- `DeviceCreationService._step1_create_device()` — raises on failure
-- `DeviceQueryService.get_device_details()` — raises ValueError
+**Previous Issue:** Services had inconsistent error handling patterns - some returned error dicts while others raised exceptions.
 
-Callers need to handle both patterns.
+**Services that returned dicts on error (anti-pattern):**
+- `DeviceUpdateService.update_device()` — caught all exceptions, returned `{"success": False, ...}`
+- `DeviceImportService.import_device()` — caught all exceptions, returned `{"success": False, ...}`
 
-### 4.6 Verbose Logging in vm_manager.py
+**Services that raised exceptions (correct pattern):**
+- `DeviceCreationService._step1_create_device()` — raises `NautobotAPIError` on failure
+- `DeviceQueryService.get_device_details()` — raises `ValueError` on error
+
+This violated the layered architecture principle: services should raise exceptions, routers should handle HTTP response conversion.
+
+**Resolution:**
+1. ✅ Removed try-except wrappers from `DeviceUpdateService.update_device()` - now raises exceptions
+2. ✅ Removed try-except wrappers from `DeviceImportService.import_device()` - now raises exceptions
+3. ✅ Updated all callers to handle exceptions properly:
+   - `routers/nautobot/devices.py` - already had proper exception handling
+   - `tasks/update_devices_task.py` - updated to expect exceptions
+   - `tasks/update_devices_from_csv_task.py` - updated to expect exceptions
+   - `tasks/import_devices_task.py` - updated to expect exceptions
+   - `services/network/tools/baseline.py` - updated to expect exceptions
+4. ✅ Updated docstrings to document exception behavior
+
+**Impact:**
+- ✅ Consistent error handling across all services (exception-based)
+- ✅ Proper separation of concerns (services raise, routers convert to HTTP)
+- ✅ Better type safety and control flow
+- ✅ Clearer error propagation and debugging
+- ✅ Success responses still return detailed dicts with warnings, counts, etc.
+
+### 4.6 Verbose Logging in vm_manager.py **TEMPORARY**
 
 Every method has excessive step-by-step logging:
 ```python

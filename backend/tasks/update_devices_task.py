@@ -227,6 +227,7 @@ def update_devices_task(
                     if interfaces:
                         logger.debug(f"Interfaces: {len(interfaces)} interface(s)")
 
+                    # Service now raises exceptions on failure instead of returning error dict
                     result = asyncio.run(
                         update_service.update_device(
                             device_identifier=device_identifier,
@@ -236,63 +237,52 @@ def update_devices_task(
                         )
                     )
 
-                    if result["success"]:
-                        successes.append(
-                            {
-                                "device_id": result["device_id"],
-                                "device_name": result["device_name"],
+                    # If we got here, the update succeeded
+                    successes.append(
+                        {
+                            "device_id": result["device_id"],
+                            "device_name": result["device_name"],
+                            "updated_fields": result["updated_fields"],
+                            "warnings": result["warnings"],
+                        }
+                    )
+                    logger.info(
+                        f"Successfully updated device {result['device_name']}: "
+                        f"{len(result['updated_fields'])} fields"
+                    )
+
+                    # Log device update to audit log
+                    if username and not dry_run:
+                        try:
+                            from repositories.audit_log_repository import (
+                                audit_log_repo,
+                            )
+
+                            # Prepare extra data with updated fields
+                            extra_data = {
                                 "updated_fields": result["updated_fields"],
-                                "warnings": result["warnings"],
+                                "fields_count": len(result["updated_fields"]),
                             }
-                        )
-                        logger.info(
-                            f"Successfully updated device {result['device_name']}: "
-                            f"{len(result['updated_fields'])} fields"
-                        )
 
-                        # Log device update to audit log
-                        if username and not dry_run:
-                            try:
-                                from repositories.audit_log_repository import (
-                                    audit_log_repo,
-                                )
+                            # Add warnings if any
+                            if result["warnings"]:
+                                extra_data["warnings"] = result["warnings"]
 
-                                # Prepare extra data with updated fields
-                                extra_data = {
-                                    "updated_fields": result["updated_fields"],
-                                    "fields_count": len(result["updated_fields"]),
-                                }
-
-                                # Add warnings if any
-                                if result["warnings"]:
-                                    extra_data["warnings"] = result["warnings"]
-
-                                audit_log_repo.create_log(
-                                    username=username,
-                                    user_id=user_id,
-                                    event_type="bulk-edit",
-                                    message=f"Device '{result['device_name']}' updated via bulk edit",
-                                    resource_type="device",
-                                    resource_id=result["device_id"],
-                                    resource_name=result["device_name"],
-                                    severity="info",
-                                    extra_data=extra_data,
-                                )
-                            except Exception as audit_error:
-                                logger.warning(
-                                    f"Failed to create audit log: {audit_error}"
-                                )
-                    else:
-                        # Service returned failure
-                        failures.append(
-                            {
-                                "device_identifier": device_identifier,
-                                "error": result["message"],
-                            }
-                        )
-                        logger.error(
-                            f"Service failed to update device: {result['message']}"
-                        )
+                            audit_log_repo.create_log(
+                                username=username,
+                                user_id=user_id,
+                                event_type="bulk-edit",
+                                message=f"Device '{result['device_name']}' updated via bulk edit",
+                                resource_type="device",
+                                resource_id=result["device_id"],
+                                resource_name=result["device_name"],
+                                severity="info",
+                                extra_data=extra_data,
+                            )
+                        except Exception as audit_error:
+                            logger.warning(
+                                f"Failed to create audit log: {audit_error}"
+                            )
 
             except Exception as e:
                 error_msg = str(e)

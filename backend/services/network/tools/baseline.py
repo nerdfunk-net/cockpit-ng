@@ -807,22 +807,19 @@ class TestBaselineService:
                         interface_config.append(iface_data)
 
                 # Use DeviceImportService to create device with interfaces
+                # Service now raises exceptions on failure instead of returning error dict
                 result = await import_service.import_device(
                     device_data=device_data,
                     interface_config=interface_config,
                     skip_if_exists=True,
                 )
 
-                if result["success"]:
-                    created[device_name] = result["device_id"]
-                    if result["created"]:
-                        logger.info(f"Created device: {device_name}")
-                    else:
-                        logger.info(f"Device '{device_name}' already exists, skipped")
+                # If we got here, the import succeeded
+                created[device_name] = result["device_id"]
+                if result["created"]:
+                    logger.info(f"Created device: {device_name}")
                 else:
-                    logger.error(
-                        f"Failed to import device '{device_name}': {result['message']}"
-                    )
+                    logger.info(f"Device '{device_name}' already exists, skipped")
 
             except Exception as e:
                 logger.error(

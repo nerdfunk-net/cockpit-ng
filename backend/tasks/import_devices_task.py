@@ -177,6 +177,7 @@ def import_devices_from_csv_task(
                         f"Interface config: {len(interface_config)} interface(s)"
                     )
 
+                # Service now raises exceptions on failure instead of returning error dict
                 result = asyncio.run(
                     import_service.import_device(
                         device_data=device_data,
@@ -185,45 +186,35 @@ def import_devices_from_csv_task(
                     )
                 )
 
-                if result["success"]:
-                    if result["created"]:
-                        successes.append(
-                            {
-                                "device_id": result["device_id"],
-                                "device_name": result["device_name"],
-                                "created": True,
-                                "warnings": result["warnings"],
-                                "interfaces_created": len(
-                                    result["details"]["interfaces"]
-                                ),
-                            }
-                        )
-                        logger.info(
-                            f"Successfully imported device {result['device_name']}: "
-                            f"{len(result['details']['interfaces'])} interface(s)"
-                        )
-                    else:
-                        # Device already existed and was skipped
-                        skipped.append(
-                            {
-                                "device_id": result["device_id"],
-                                "device_name": result["device_name"],
-                                "reason": "Device already exists",
-                            }
-                        )
-                        logger.info(
-                            f"Device {result['device_name']} already exists, skipped"
-                        )
-                else:
-                    # Service returned failure
-                    failures.append(
+                # If we got here, the import succeeded
+                # Check if device was created or already existed
+                if result["created"]:
+                    successes.append(
                         {
-                            "device_name": device_name,
-                            "error": result["message"],
+                            "device_id": result["device_id"],
+                            "device_name": result["device_name"],
+                            "created": True,
+                            "warnings": result["warnings"],
+                            "interfaces_created": len(
+                                result["details"]["interfaces"]
+                            ),
                         }
                     )
-                    logger.error(
-                        f"Service failed to import device: {result['message']}"
+                    logger.info(
+                        f"Successfully imported device {result['device_name']}: "
+                        f"{len(result['details']['interfaces'])} interface(s)"
+                    )
+                else:
+                    # Device already existed and was skipped
+                    skipped.append(
+                        {
+                            "device_id": result["device_id"],
+                            "device_name": result["device_name"],
+                            "reason": "Device already exists",
+                        }
+                    )
+                    logger.info(
+                        f"Device {result['device_name']} already exists, skipped"
                     )
 
             except Exception as e:

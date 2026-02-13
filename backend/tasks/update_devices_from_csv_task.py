@@ -209,6 +209,7 @@ def update_devices_from_csv_task(
                     if interface_config:
                         logger.debug(f"Interface config: {interface_config}")
 
+                    # Service now raises exceptions on failure instead of returning error dict
                     result = asyncio.run(
                         update_service.update_device(
                             device_identifier=device_identifier,
@@ -217,30 +218,19 @@ def update_devices_from_csv_task(
                         )
                     )
 
-                    if result["success"]:
-                        successes.append(
-                            {
-                                "device_id": result["device_id"],
-                                "device_name": result["device_name"],
-                                "updated_fields": result["updated_fields"],
-                                "warnings": result["warnings"],
-                            }
-                        )
-                        logger.info(
-                            f"Successfully updated device {result['device_name']}: "
-                            f"{len(result['updated_fields'])} fields"
-                        )
-                    else:
-                        # Service returned failure
-                        failures.append(
-                            {
-                                "device_identifier": device_identifier,
-                                "error": result["message"],
-                            }
-                        )
-                        logger.error(
-                            f"Service failed to update device: {result['message']}"
-                        )
+                    # If we got here, the update succeeded
+                    successes.append(
+                        {
+                            "device_id": result["device_id"],
+                            "device_name": result["device_name"],
+                            "updated_fields": result["updated_fields"],
+                            "warnings": result["warnings"],
+                        }
+                    )
+                    logger.info(
+                        f"Successfully updated device {result['device_name']}: "
+                        f"{len(result['updated_fields'])} fields"
+                    )
 
             except Exception as e:
                 error_msg = str(e)

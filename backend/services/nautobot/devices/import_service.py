@@ -96,7 +96,7 @@ class DeviceImportService:
 
         Returns:
             {
-                "success": bool,
+                "success": True,  # Always True (exceptions raised on failure)
                 "device_id": str,
                 "device_name": str,
                 "message": str,
@@ -111,7 +111,9 @@ class DeviceImportService:
 
         Raises:
             ValueError: If validation fails or required resources not found
-            Exception: If creation fails and skip_if_exists=False
+            NautobotDuplicateResourceError: If device exists and skip_if_exists=False
+            NautobotAPIError: If Nautobot API request fails
+            Exception: If creation fails for any other reason
         """
         logger.info(
             "Starting device import for: %s", device_data.get("name", "unknown")
@@ -194,16 +196,8 @@ class DeviceImportService:
         except Exception as e:
             error_msg = f"Failed to import device '{device_data.get('name', 'unknown')}': {str(e)}"
             logger.error(error_msg, exc_info=True)
-
-            return {
-                "success": False,
-                "device_id": None,
-                "device_name": device_data.get("name", "unknown"),
-                "message": error_msg,
-                "created": False,
-                "warnings": warnings,
-                "details": details,
-            }
+            # Re-raise exception - let caller handle error conversion
+            raise
 
     async def validate_import_data(self, device_data: Dict[str, Any]) -> Dict[str, Any]:
         """

@@ -111,7 +111,7 @@ class DeviceUpdateService:
 
         Returns:
             {
-                "success": bool,
+                "success": True,  # Always True (exceptions raised on failure)
                 "device_id": str,
                 "device_name": str,
                 "message": str,
@@ -127,8 +127,9 @@ class DeviceUpdateService:
             }
 
         Raises:
-            ValueError: If device not found and create_if_missing=False
-            Exception: If update fails
+            ValueError: If device not found and create_if_missing=False, or validation fails
+            NautobotAPIError: If Nautobot API request fails
+            Exception: If update fails for any other reason
         """
         logger.info("Starting device update for: %s", device_identifier)
 
@@ -291,16 +292,8 @@ class DeviceUpdateService:
         except Exception as e:
             error_msg = f"Failed to update device {device_identifier}: {str(e)}"
             logger.error(error_msg, exc_info=True)
-
-            return {
-                "success": False,
-                "device_id": None,
-                "device_name": device_identifier.get("name", "unknown"),
-                "message": error_msg,
-                "updated_fields": [],
-                "warnings": warnings,
-                "details": details,
-            }
+            # Re-raise exception - let caller handle HTTP response conversion
+            raise
 
     async def _resolve_device_id(
         self, device_identifier: Dict[str, Any]
