@@ -365,7 +365,6 @@ export function DeployAgentJobTemplate({
         </div>
         <p className="text-xs text-teal-700">
           When enabled, the agent will automatically pull the latest changes from Git and restart after deployment completes.
-          <span className="text-orange-600 font-medium"> (Feature not yet implemented)</span>
         </p>
       </div>
     </>

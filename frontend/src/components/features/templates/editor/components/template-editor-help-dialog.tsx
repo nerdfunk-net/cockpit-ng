@@ -124,22 +124,38 @@ function GeneralTab() {
           <div className="space-y-4">
             <h4 className="font-semibold text-gray-800">Variables System</h4>
             <p className="text-gray-600 text-sm">
-              Define custom variables that can be populated during template rendering. Variables support:
+              Templates can access variables from four different sources during rendering:
             </p>
-            <ul className="space-y-2 text-sm text-gray-600 ml-4">
-              <li className="flex items-start gap-2">
-                <span className="text-blue-500 mt-0.5">•</span>
-                <span>Manual entry for user-defined values</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-500 mt-0.5">•</span>
-                <span>Auto-filled variables from Nautobot device data</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-500 mt-0.5">•</span>
-                <span>System variables like device lists and SNMP mappings (Agent mode)</span>
-              </li>
-            </ul>
+            <div className="grid md:grid-cols-2 gap-3 text-sm mt-3">
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <p className="font-semibold text-green-800 mb-1">Custom Variables</p>
+                <p className="text-green-700 text-xs">
+                  Define your own variables with manual or derived values. Perfect for configuration parameters
+                  that vary between template renderings.
+                </p>
+              </div>
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="font-semibold text-amber-800 mb-1">YAML Files</p>
+                <p className="text-amber-700 text-xs">
+                  Load structured data from YAML configuration files. Useful for complex variable structures,
+                  lookup tables, and dynamic data management.
+                </p>
+              </div>
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="font-semibold text-blue-800 mb-1">Nautobot Variables</p>
+                <p className="text-blue-700 text-xs">
+                  Access device data directly from Nautobot including hostname, IP addresses, interfaces,
+                  custom fields, and other device properties.
+                </p>
+              </div>
+              <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                <p className="font-semibold text-purple-800 mb-1">Inventory Variables</p>
+                <p className="text-purple-700 text-xs">
+                  In Agent mode, access inventory data including device lists, SNMP mappings, and
+                  multi-device management capabilities.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -323,11 +339,92 @@ function NetmikoTab() {
               </p>
             </div>
             <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-              <h4 className="font-semibold text-green-800 mb-2">Custom Variables</h4>
+              <h4 className="font-semibold text-green-800 mb-2">Custom Variables & YAML Files</h4>
               <p className="text-sm text-green-700">
-                Define your own variables that can be filled in when rendering the template.
+                Define custom variables manually or load structured data from YAML files. Combine sources to create
+                flexible, data-driven templates.
               </p>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Variables Sources */}
+      <div className="shadow-lg border-0 p-0 bg-white rounded-lg overflow-hidden">
+        <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 py-2 px-4 border-b">
+          <div className="flex items-center gap-2 text-lg font-semibold">
+            <Database className="h-5 w-5 text-indigo-600" />
+            <span>Variable Sources</span>
+          </div>
+        </div>
+        <div className="p-6 space-y-6">
+          <p className="text-gray-600 text-sm">
+            Your templates can access variables from multiple sources. Each source provides different capabilities:
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <h4 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
+                <span className="text-lg">📝</span>
+                Custom Variables
+              </h4>
+              <p className="text-sm text-green-700 mb-3">
+                Create your own variables that can be filled in during template rendering.
+              </p>
+              <div className="bg-white rounded border border-green-100 p-2 text-xs text-gray-700">
+                <code className="text-green-600">{'{{ my_variable }}'}</code>
+                <p className="text-gray-500 mt-1">User-defined value</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+              <h4 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                <span className="text-lg">📄</span>
+                YAML Files
+              </h4>
+              <p className="text-sm text-amber-700 mb-3">
+                Load structured configuration data from YAML files for complex variable hierarchies.
+              </p>
+              <div className="bg-white rounded border border-amber-100 p-2 text-xs text-gray-700">
+                <code className="text-amber-600">{'{{ yaml_data.key }}'}</code>
+                <p className="text-gray-500 mt-1">Loaded from YAML file</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                <span className="text-lg">🌐</span>
+                Nautobot Variables
+              </h4>
+              <p className="text-sm text-blue-700 mb-3">
+                Access device information directly from your Nautobot instance.
+              </p>
+              <div className="bg-white rounded border border-blue-100 p-2 text-xs text-gray-700">
+                <code className="text-blue-600">{'{{ nautobot.name }}'}</code>
+                <p className="text-gray-500 mt-1">Device data from Nautobot</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <h4 className="font-semibold text-purple-800 mb-2 flex items-center gap-2">
+                <span className="text-lg">📦</span>
+                Inventory Variables
+              </h4>
+              <p className="text-sm text-purple-700 mb-3">
+                In Agent mode, access device lists and SNMP mappings from inventories.
+              </p>
+              <div className="bg-white rounded border border-purple-100 p-2 text-xs text-gray-700">
+                <code className="text-purple-600">{'{{ devices }}, {{ snmp_mapping }}'}</code>
+                <p className="text-gray-500 mt-1">Inventory data (Agent mode)</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-800">
+              <strong>💡 Tip:</strong> You can combine multiple variable sources in the same template. For example,
+              use Nautobot device data alongside custom variables for maximum flexibility.
+            </p>
           </div>
         </div>
       </div>
@@ -537,11 +634,28 @@ function AgentTab() {
         </div>
         <div className="p-6 space-y-6">
           <p className="text-gray-600 text-sm">
-            Agent templates have access to several system-provided variables based on the selected inventory and options.
+            Agent templates have access to multiple variable sources including inventory data, custom variables, and YAML files:
           </p>
 
           <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800">Device Variables</h4>
+            <h4 className="font-semibold text-gray-800">Custom Variables & YAML Files</h4>
+            <p className="text-gray-600 text-sm">
+              Just like Netmiko templates, you can define custom variables and load YAML files:
+            </p>
+            <div className="grid md:grid-cols-2 gap-3 text-sm">
+              <div className="p-3 bg-green-50 rounded-lg border">
+                <code className="text-green-600">{'{{ custom_var }}'}</code>
+                <p className="text-xs text-gray-500 mt-1">Your own custom variables</p>
+              </div>
+              <div className="p-3 bg-amber-50 rounded-lg border">
+                <code className="text-amber-600">{'{{ yaml_data.config }}'}</code>
+                <p className="text-xs text-gray-500 mt-1">Data loaded from YAML files</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-800">Inventory Variables</h4>
             <p className="text-gray-600 text-sm">
               When an inventory is selected, device information becomes available:
             </p>
