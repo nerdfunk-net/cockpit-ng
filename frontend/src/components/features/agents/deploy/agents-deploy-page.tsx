@@ -38,6 +38,7 @@ export function AgentsDeployPage() {
   // Device selection state
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([])
   const [selectedDevices, setSelectedDevices] = useState<DeviceInfo[]>(EMPTY_DEVICES)
+  const [selectedInventoryId, setSelectedInventoryId] = useState<number | null>(null)
   const [deployPath, setDeployPath] = useState<string>('')
 
   // Initialize hooks
@@ -78,13 +79,15 @@ export function AgentsDeployPage() {
     templateId: Number(templateManager.selectedTemplateId),
     variables: variableManager.variableOverrides,
     agentId: agentSelector.selectedAgentId!,
-    path: deployPath || undefined
+    path: deployPath || undefined,
+    inventoryId: selectedInventoryId || undefined
   }), [
     selectedDeviceIds,
     templateManager.selectedTemplateId,
     variableManager.variableOverrides,
     agentSelector.selectedAgentId,
-    deployPath
+    deployPath,
+    selectedInventoryId
   ])
 
   // Action handlers
@@ -160,6 +163,10 @@ export function AgentsDeployPage() {
     deployExecution.resetResults()
   }, [deployExecution])
 
+  const handleInventoryLoaded = useCallback((inventoryId: number) => {
+    setSelectedInventoryId(inventoryId)
+  }, [])
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -188,6 +195,7 @@ export function AgentsDeployPage() {
                 selectedDeviceIds={selectedDeviceIds}
                 selectedDevices={selectedDevices}
                 onDevicesSelected={handleDevicesSelected}
+                onInventoryLoaded={handleInventoryLoaded}
               />
             </TabsContent>
 
@@ -220,6 +228,7 @@ export function AgentsDeployPage() {
                 onDryRun={handleDryRun}
                 onDeployToGit={handleDeployToGit}
                 onActivate={handleActivate}
+                selectedInventoryId={selectedInventoryId}
               />
             </TabsContent>
           </Tabs>

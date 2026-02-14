@@ -297,6 +297,24 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
     )
   }, [])
 
+  const updateInventoryIdForInventoryVariables = useCallback((newInventoryId: number) => {
+    setVariables((prev) =>
+      prev.map((v) => {
+        // Only update inventory-type variables
+        if (v.type === 'inventory' && v.metadata?.inventory_id) {
+          return {
+            ...v,
+            metadata: {
+              ...v.metadata,
+              inventory_id: newInventoryId,
+            },
+          }
+        }
+        return v
+      })
+    )
+  }, [])
+
   const togglePreRunVariables = useCallback((show: boolean) => {
     setVariables((prev) => {
       if (show) {
@@ -366,7 +384,8 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
       updatePreRunVariable,
       setPreRunExecuting,
       togglePreRunVariables,
+      updateInventoryIdForInventoryVariables,
     }),
-    [variables, updateForCategory, updateDeviceData, updateSnmpMapping, toggleSnmpMappingVariable, toggleDeviceDetailsVariable, updatePath, addVariable, addVariableWithData, addVariableWithMetadata, removeVariable, updateVariable, setCustomVariables, updatePreRunVariable, setPreRunExecuting, togglePreRunVariables]
+    [variables, updateForCategory, updateDeviceData, updateSnmpMapping, toggleSnmpMappingVariable, toggleDeviceDetailsVariable, updatePath, addVariable, addVariableWithData, addVariableWithMetadata, removeVariable, updateVariable, setCustomVariables, updatePreRunVariable, setPreRunExecuting, togglePreRunVariables, updateInventoryIdForInventoryVariables]
   )
 }

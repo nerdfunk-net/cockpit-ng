@@ -5,6 +5,7 @@ export interface DeployConfig {
   variables: Record<string, string>
   agentId: string
   path?: string
+  inventoryId?: number
 }
 
 // Result of dry run (template rendering)

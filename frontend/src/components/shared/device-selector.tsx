@@ -43,7 +43,8 @@ export function DeviceSelector({
   initialDevices = EMPTY_DEVICES,
   enableSelection = false,
   selectedDeviceIds = EMPTY_DEVICE_IDS,
-  onSelectionChange
+  onSelectionChange,
+  onInventoryLoaded
 }: DeviceSelectorProps) {
 
   // -- HOOKS --
@@ -188,6 +189,8 @@ export function DeviceSelector({
         setConditionTree(loadedTree)
         setShowPreviewResults(false)
         setShowLoadModal(false)
+        // Notify parent component that an inventory was loaded
+        onInventoryLoaded?.(id)
       }
     } catch (error) {
       alert('Error loading inventory: ' + (error as Error).message)

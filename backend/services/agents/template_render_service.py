@@ -72,11 +72,15 @@ class AgentTemplateRenderService:
         warnings = []
         context = {}
 
+        # Cache for inventory analysis results (to avoid re-analyzing same inventory)
+        inventory_analysis_cache: Dict[int, Any] = {}
+
         # 1. Populate stored variables first (base context)
         # Use the template's inventory_id as override for all inventory-type variables
         if stored_variables:
             populated = await self._populate_stored_variables(
-                stored_variables, username, override_inventory_id=inventory_id
+                stored_variables, username, override_inventory_id=inventory_id,
+                inventory_cache=inventory_analysis_cache
             )
             context.update(populated)
 
@@ -200,6 +204,7 @@ class AgentTemplateRenderService:
         stored_variables: Dict[str, Any],
         username: Optional[str],
         override_inventory_id: Optional[int] = None,
+        inventory_cache: Optional[Dict[int, Any]] = None,
     ) -> Dict[str, Any]:
         """Populate stored template variables by dispatching to type-specific methods.
 
@@ -209,6 +214,7 @@ class AgentTemplateRenderService:
             username: Username for inventory access control
             override_inventory_id: Override inventory ID for all inventory-type variables
                 (when user selects a different inventory in the deploy app)
+            inventory_cache: Optional cache dict for inventory analysis results
 
         Returns:
             Dict of variable name → populated value
@@ -234,7 +240,7 @@ class AgentTemplateRenderService:
                     populated[var_name] = await self._populate_yaml_variable(var_def)
                 elif var_type == "inventory":
                     populated[var_name] = await self._populate_inventory_variable(
-                        var_def, username, override_inventory_id
+                        var_def, username, override_inventory_id, inventory_cache
                     )
                 elif var_type == "auto-filled":
                     # Auto-filled variables are handled separately (devices, snmp_mapping, etc.)
@@ -380,6 +386,7 @@ class AgentTemplateRenderService:
         var_def: Dict[str, Any],
         username: Optional[str],
         override_inventory_id: Optional[int] = None,
+        inventory_cache: Optional[Dict[int, Any]] = None,
     ) -> Any:
         """Populate a variable from inventory analysis.
 
@@ -392,6 +399,7 @@ class AgentTemplateRenderService:
             username: Username for access control
             override_inventory_id: If provided, use this inventory_id instead of
                 the one in metadata (for deploy app where user selects inventory)
+            inventory_cache: Optional cache dict for inventory analysis results
         """
         from services.inventory.inventory import inventory_service
 
@@ -415,19 +423,44 @@ class AgentTemplateRenderService:
                 "username is required to access inventory data"
             )
 
-        logger.info(
-            "Populating inventory variable with inventory_id=%d (override=%s)",
-            inv_id,
-            override_inventory_id is not None,
-        )
-        analysis = await inventory_service.analyze_inventory(inv_id, username)
+        # Check cache first to avoid re-analyzing same inventory
+        if inventory_cache is not None and inv_id in inventory_cache:
+            logger.info(
+                "Using cached inventory analysis for inventory_id=%d (cache size: %d)",
+                inv_id,
+                len(inventory_cache),
+            )
+            analysis = inventory_cache[inv_id]
+        else:
+            logger.info(
+                "Populating inventory variable with inventory_id=%d (override=%s, cache_provided=%s)",
+                inv_id,
+                override_inventory_id is not None,
+                inventory_cache is not None,
+            )
+            analysis = await inventory_service.analyze_inventory(inv_id, username)
+
+            # Cache the result if cache is provided
+            if inventory_cache is not None:
+                inventory_cache[inv_id] = analysis
+                logger.debug(
+                    "Cached inventory analysis for inventory_id=%d (cache size now: %d)",
+                    inv_id,
+                    len(inventory_cache),
+                )
 
         # For custom_fields, optionally extract a specific field
         if data_type == "custom_fields":
             custom_field = metadata.get("inventory_custom_field")
             all_fields = analysis.get("custom_fields", {})
             if custom_field:
-                return all_fields.get(custom_field, [])
+                result = all_fields.get(custom_field, [])
+                logger.debug(
+                    "Extracted custom field '%s': %s",
+                    custom_field,
+                    result,
+                )
+                return result
             return all_fields
 
         result = analysis.get(data_type)
@@ -438,6 +471,11 @@ class AgentTemplateRenderService:
                 % data_type
             )
 
+        logger.debug(
+            "Extracted inventory data_type '%s': %s",
+            data_type,
+            result,
+        )
         return result
 
 

@@ -5,12 +5,14 @@ interface DeviceSelectionTabProps {
   selectedDeviceIds: string[]
   selectedDevices: DeviceInfo[]
   onDevicesSelected: (devices: DeviceInfo[]) => void
+  onInventoryLoaded?: (inventoryId: number) => void
 }
 
 export function DeviceSelectionTab({
   selectedDeviceIds,
   selectedDevices,
-  onDevicesSelected
+  onDevicesSelected,
+  onInventoryLoaded
 }: DeviceSelectionTabProps) {
   const handleDevicesSelected = (devices: DeviceInfo[], _conditions: LogicalCondition[]) => {
     onDevicesSelected(devices)
@@ -26,6 +28,7 @@ export function DeviceSelectionTab({
       selectedDevices={selectedDevices}
       onDevicesSelected={handleDevicesSelected}
       onSelectionChange={handleSelectionChange}
+      onInventoryLoaded={onInventoryLoaded}
       nextStepMessage="Switch to the Variables & Templates tab to configure your deployment."
       alertStyle="success"
     />

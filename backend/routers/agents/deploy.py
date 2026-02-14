@@ -33,6 +33,9 @@ class DryRunRequest(BaseModel):
     template_content: str | None = Field(
         None, description="Optional edited template content (overrides stored content)"
     )
+    inventoryId: int | None = Field(
+        None, alias="inventoryId", description="Inventory ID selected by user (overrides template's inventory_id)"
+    )
 
     class Config:
         populate_by_name = True
@@ -89,10 +92,13 @@ async def agent_deploy_dry_run(
                     detail=f"Template content for ID {request.templateId} not found",
                 )
 
+        # Use user-selected inventory if provided, otherwise fall back to template's inventory
+        inventory_id = request.inventoryId or template.get("inventory_id")
+
         # Use the rendering service with stored variables and username
         render_result = await agent_template_render_service.render_agent_template(
             template_content=template_content,
-            inventory_id=template.get("inventory_id"),
+            inventory_id=inventory_id,
             pass_snmp_mapping=template.get("pass_snmp_mapping", False),
             user_variables=request.variables,
             path=request.path,
@@ -240,10 +246,13 @@ async def agent_deploy_to_git(
             "git_author_email": git_repository.git_author_email,
         }
 
+        # Use user-selected inventory if provided, otherwise fall back to template's inventory
+        inventory_id = request.inventoryId or template.get("inventory_id")
+
         # Render the template with stored variables and username
         render_result = await agent_template_render_service.render_agent_template(
             template_content=template_content,
-            inventory_id=template.get("inventory_id"),
+            inventory_id=inventory_id,
             pass_snmp_mapping=template.get("pass_snmp_mapping", False),
             user_variables=request.variables,
             path=request.path,

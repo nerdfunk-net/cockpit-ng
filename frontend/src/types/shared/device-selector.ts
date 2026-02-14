@@ -78,6 +78,7 @@ export interface DeviceSelectorProps {
   enableSelection?: boolean
   selectedDeviceIds?: string[]
   onSelectionChange?: (selectedIds: string[], selectedDevices: DeviceInfo[]) => void
+  onInventoryLoaded?: (inventoryId: number) => void
 }
 
 // Backend operation types

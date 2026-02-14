@@ -35,6 +35,7 @@ interface DeviceSelectionTabProps {
   nextStepMessage?: string
   showCard?: boolean
   alertStyle?: 'default' | 'success' | 'info'
+  onInventoryLoaded?: (inventoryId: number) => void
 }
 
 const EMPTY_DEVICES: DeviceInfo[] = []
@@ -50,6 +51,7 @@ export function DeviceSelectionTab({
   nextStepMessage,
   showCard = false,
   alertStyle = 'default',
+  onInventoryLoaded,
 }: DeviceSelectionTabProps) {
   // Determine alert CSS classes based on style
   const alertClasses = alertStyle === 'success'
@@ -88,6 +90,7 @@ export function DeviceSelectionTab({
         enableSelection={true}
         selectedDeviceIds={selectedDeviceIds}
         onSelectionChange={onSelectionChange}
+        onInventoryLoaded={onInventoryLoaded}
       />
 
       {selectedDevices.length > 0 && nextStepMessage && (

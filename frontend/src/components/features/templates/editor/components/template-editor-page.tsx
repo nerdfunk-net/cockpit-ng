@@ -98,6 +98,14 @@ function TemplateEditorContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- updateDeviceData is stable from useCallback
   }, [watchedCategory, watchedInventoryId, inventoryDevices.deviceCount, inventoryDevices.devices, inventoryDevices.device_details, editor.variableManager.updateDeviceData])
 
+  // Update inventory-type variables when inventory selection changes
+  useEffect(() => {
+    if (watchedCategory === 'agent' && watchedInventoryId) {
+      // Update all inventory-type variables to use the new inventory ID
+      editor.variableManager.updateInventoryIdForInventoryVariables(watchedInventoryId)
+    }
+  }, [watchedCategory, watchedInventoryId, editor.variableManager])
+
   // Update snmp_mapping variable when SNMP mappings are loaded
   useEffect(() => {
     if (watchedCategory === 'agent' && !snmpMappings.isLoading) {

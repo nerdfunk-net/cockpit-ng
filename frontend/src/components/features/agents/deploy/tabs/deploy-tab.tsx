@@ -20,6 +20,7 @@ interface DeployTabProps {
   onDryRun: () => void
   onDeployToGit: () => void
   onActivate: () => void
+  selectedInventoryId: number | null
 }
 
 export function DeployTab({
@@ -35,10 +36,20 @@ export function DeployTab({
   isActivating,
   onDryRun,
   onDeployToGit,
-  onActivate
+  onActivate,
+  selectedInventoryId
 }: DeployTabProps) {
   return (
     <div className="space-y-6">
+      {/* Inventory Warning */}
+      {!selectedInventoryId && (
+        <Alert className="bg-amber-50 border-amber-200">
+          <AlertDescription className="text-amber-800">
+            <strong>No inventory selected.</strong> Agent deployment requires a saved inventory.
+            Please load a saved inventory from the Devices tab before deploying.
+          </AlertDescription>
+        </Alert>
+      )}
       {/* Agent Selection */}
       <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
         <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">

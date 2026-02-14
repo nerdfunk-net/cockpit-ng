@@ -42,6 +42,7 @@ export function useDeployExecution() {
             agentId: config.agentId,
             path: config.path,
             template_content: templateContent,
+            inventoryId: config.inventoryId,
           })
         }
       )
