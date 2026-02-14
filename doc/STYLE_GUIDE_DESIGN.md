@@ -1,7 +1,7 @@
 # Cockpit-NG Design System Guide
 
 **Version:** 2.0  
-**Last Updated:** 2026-01-21  
+**Last Updated:** 2026-02-12  
 **Purpose:** Visual design patterns and UI component specifications for Cockpit-NG applications.
 
 > **Note:** This is a design-focused extract from the comprehensive [STYLE_GUIDE.md](STYLE_GUIDE.md). For complete implementation guidance including code architecture, hooks, and API patterns, refer to the full style guide.
@@ -933,6 +933,11 @@ When building a new page or aligning an existing page with the design system, ve
 
 ### 14.1 Page-Level Structure
 
+⚠️ **CRITICAL SPACING ISSUE** — This is the #1 source of visual misalignment when switching between pages:
+- **WRONG:** `<div className="flex items-center space-x-3">` (3px gap)
+- **CORRECT:** `<div className="flex items-center gap-4">` (16px gap)
+- **Impact:** Using `space-x-3` causes the icon to appear positioned lower than in apps using `gap-4`, creating a flickering effect when users navigate between pages.
+
 Every page **MUST** follow this exact wrapper pattern:
 
 ```tsx
@@ -964,6 +969,21 @@ export function MyPage() {
 
 **Common mistakes to avoid:**
 
+⚠️ **CRITICAL SPACING ISSUE #1** — Icon-to-Title Spacing:
+- **WRONG:** `<div className="flex items-center space-x-3">` (3px gap)
+- **CORRECT:** `<div className="flex items-center gap-4">` (16px gap)
+- **Impact:** Using `space-x-3` causes visual misalignment when switching pages
+
+⚠️ **CRITICAL SPACING ISSUE #2** — Title-to-Subtitle Spacing:
+- **WRONG:** `<p className="text-gray-600 mt-1">...</p>`
+- **CORRECT:** `<p className="text-muted-foreground mt-2">...</p>`
+- **Impact:** Using `mt-1` creates insufficient spacing; makes pages look cramped
+
+⚠️ **CRITICAL COLOR ISSUE #3** — Use Semantic Colors, NOT Direct Color Utilities:
+- **WRONG:** Title `text-gray-900`, Subtitle `text-gray-600`
+- **CORRECT:** Title `text-slate-900`, Subtitle `text-muted-foreground`
+- **Impact:** Direct colors don't respect theme changes; breaks dark mode/theme consistency
+
 | Mistake | Correct |
 |---------|---------|
 | `<div>` root wrapper (no classes) | `<div className="space-y-6">` |
@@ -971,7 +991,9 @@ export function MyPage() {
 | Fixed-size icon box (`h-12 w-12 flex items-center justify-center`) | Padding-based icon box (`p-2 rounded-lg`) |
 | `gap-3` or `space-x-3` between icon and title | `gap-4` (matches Add VM reference) |
 | `tracking-tight` on title | `text-slate-900` on title |
-| No margin on subtitle `<p>` | `mt-2` on subtitle |
+| **Subtitle margin `mt-1`** | **`mt-2` on subtitle (8px)** - CRITICAL |
+| **Title color `text-gray-900`** | **`text-slate-900`** - CRITICAL (semantic) |
+| **Subtitle color `text-gray-600`** | **`text-muted-foreground`** - CRITICAL (semantic) |
 | Spinner-only loading state | Show header + spinner below (like the loaded state, but with a spinner in place of content) |
 
 ### 14.2 Section Panel Consistency
@@ -995,6 +1017,7 @@ All gradient header sections within a single app **MUST** use identical structur
 ```
 
 **Rules:**
+- **CRITICAL:** Icon-to-title spacing is **always `gap-4`** — never use `space-x-3` or `gap-3` (causes visual misalignment across pages)
 - Content padding is **always `p-6`** — never mix `p-4` and `p-6` within the same app
 - Grid gap is **always `gap-4`** — never mix `gap-3` and `gap-4`
 - Header layout uses `justify-between` when there are action buttons on the right; this is fine

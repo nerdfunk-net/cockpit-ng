@@ -45,18 +45,20 @@ export function AgentsOperatingPage() {
             <Activity className="h-6 w-6 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Agents Operating</h1>
-            <p className="text-gray-600 mt-1">Monitor and manage running Cockpit agents</p>
+            <h1 className="text-3xl font-bold text-slate-900">Agents Operating</h1>
+            <p className="text-muted-foreground mt-2">Monitor and manage running Cockpit agents</p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isFetching}>
-          {isFetching ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4 mr-2" />
-          )}
-          Refresh
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isFetching}>
+            {isFetching ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Summary Bar */}

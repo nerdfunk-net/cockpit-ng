@@ -137,8 +137,8 @@ export function SyncDevicesPage() {
           <RefreshCw className="h-6 w-6 text-blue-600" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Sync Devices</h1>
-          <p className="text-gray-600 mt-1">Synchronize device data with Nautobot</p>
+          <h1 className="text-3xl font-bold text-slate-900">Sync Devices</h1>
+          <p className="text-muted-foreground mt-2">Synchronize device data with Nautobot</p>
         </div>
       </div>
 

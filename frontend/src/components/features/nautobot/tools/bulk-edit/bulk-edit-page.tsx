@@ -330,13 +330,13 @@ export default function BulkEditPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-4">
           <div className="bg-purple-100 p-2 rounded-lg">
             <Edit className="h-6 w-6 text-purple-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Bulk Edit Devices</h1>
-            <p className="text-gray-600 mt-1">Edit multiple device properties efficiently</p>
+            <h1 className="text-3xl font-bold text-slate-900">Bulk Edit Devices</h1>
+            <p className="text-muted-foreground mt-2">Edit multiple device properties efficiently</p>
           </div>
         </div>
       </div>

@@ -358,13 +358,13 @@ export default function CsvUpdatesPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-4">
           <div className="bg-blue-100 p-2 rounded-lg">
             <FileSpreadsheet className="h-6 w-6 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">CSV Updates</h1>
-            <p className="text-gray-600 mt-1">Upload and update Nautobot objects via CSV</p>
+            <h1 className="text-3xl font-bold text-slate-900">CSV Updates</h1>
+            <p className="text-muted-foreground mt-2">Upload and update Nautobot objects via CSV</p>
           </div>
         </div>
       </div>

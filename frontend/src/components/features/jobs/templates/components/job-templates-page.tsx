@@ -55,13 +55,13 @@ export function JobTemplatesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-4">
           <div className="bg-blue-100 p-2 rounded-lg">
             <FileText className="h-6 w-6 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Job Templates</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-3xl font-bold text-slate-900">Job Templates</h1>
+            <p className="text-muted-foreground mt-2">
               Create and manage reusable job templates for the scheduler
             </p>
           </div>
