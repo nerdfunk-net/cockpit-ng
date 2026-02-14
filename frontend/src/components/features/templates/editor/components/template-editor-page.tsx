@@ -425,6 +425,7 @@ function TemplateEditorContent() {
     // Add category-specific fields
     if (formData.category === 'agent') {
       templateData.use_nautobot_context = formData.useNautobotContext
+      templateData.pass_snmp_mapping = formData.passSnmpMapping
       templateData.file_path = formData.path || null
     } else if (formData.category === 'netmiko') {
       templateData.execution_mode = formData.netmikoMode

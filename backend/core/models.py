@@ -780,6 +780,9 @@ class Template(Base):
     use_nautobot_context = Column(
         Boolean, default=False, nullable=False
     )  # Whether to use Nautobot context when rendering
+    pass_snmp_mapping = Column(
+        Boolean, default=False, nullable=False
+    )  # Whether to include SNMP mapping in context (agent templates)
     pre_run_command = Column(
         Text
     )  # Command to execute before rendering (output available as context)

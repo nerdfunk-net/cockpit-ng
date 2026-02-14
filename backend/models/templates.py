@@ -65,6 +65,9 @@ class TemplateRequest(BaseModel):
     use_nautobot_context: Optional[bool] = Field(
         default=False, description="Whether to use Nautobot context when rendering"
     )
+    pass_snmp_mapping: Optional[bool] = Field(
+        default=False, description="Whether to include SNMP mapping in context (agent templates)"
+    )
     pre_run_command: Optional[str] = Field(
         None,
         description="Command to execute on device before rendering. Output is parsed with TextFSM and available as context.",
@@ -104,6 +107,7 @@ class TemplateResponse(BaseModel):
     variables: Dict[str, Any]
     tags: List[str]
     use_nautobot_context: bool
+    pass_snmp_mapping: bool = False
     pre_run_command: Optional[str] = None
     credential_id: Optional[int] = None
     execution_mode: Optional[str] = None
