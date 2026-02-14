@@ -73,9 +73,10 @@ class AgentTemplateRenderService:
         context = {}
 
         # 1. Populate stored variables first (base context)
+        # Use the template's inventory_id as override for all inventory-type variables
         if stored_variables:
             populated = await self._populate_stored_variables(
-                stored_variables, username
+                stored_variables, username, override_inventory_id=inventory_id
             )
             context.update(populated)
 
@@ -198,6 +199,7 @@ class AgentTemplateRenderService:
         self,
         stored_variables: Dict[str, Any],
         username: Optional[str],
+        override_inventory_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Populate stored template variables by dispatching to type-specific methods.
 
@@ -205,6 +207,8 @@ class AgentTemplateRenderService:
             stored_variables: Dict mapping variable name to its definition
                 (either {value, type, metadata} or plain value for legacy format)
             username: Username for inventory access control
+            override_inventory_id: Override inventory ID for all inventory-type variables
+                (when user selects a different inventory in the deploy app)
 
         Returns:
             Dict of variable name → populated value
@@ -230,7 +234,7 @@ class AgentTemplateRenderService:
                     populated[var_name] = await self._populate_yaml_variable(var_def)
                 elif var_type == "inventory":
                     populated[var_name] = await self._populate_inventory_variable(
-                        var_def, username
+                        var_def, username, override_inventory_id
                     )
                 elif var_type == "auto-filled":
                     # Auto-filled variables are handled separately (devices, snmp_mapping, etc.)
@@ -375,21 +379,32 @@ class AgentTemplateRenderService:
         self,
         var_def: Dict[str, Any],
         username: Optional[str],
+        override_inventory_id: Optional[int] = None,
     ) -> Any:
         """Populate a variable from inventory analysis.
 
         Uses inventory_service.analyze_inventory() to get metadata about
         devices matching the inventory's conditions, then extracts the
         requested data type.
+
+        Args:
+            var_def: Variable definition with metadata
+            username: Username for access control
+            override_inventory_id: If provided, use this inventory_id instead of
+                the one in metadata (for deploy app where user selects inventory)
         """
         from services.inventory.inventory import inventory_service
 
         metadata = var_def.get("metadata", {})
-        inv_id = metadata.get("inventory_id")
+        # Use override if provided (from deploy app), otherwise use metadata
+        inv_id = override_inventory_id or metadata.get("inventory_id")
         data_type = metadata.get("inventory_data_type")
 
         if not inv_id:
-            raise ValueError("inventory variable missing 'inventory_id' in metadata")
+            raise ValueError(
+                "inventory variable missing 'inventory_id' in metadata and no "
+                "override_inventory_id provided"
+            )
         if not data_type:
             raise ValueError(
                 "inventory variable missing 'inventory_data_type' in metadata"
@@ -400,6 +415,11 @@ class AgentTemplateRenderService:
                 "username is required to access inventory data"
             )
 
+        logger.info(
+            "Populating inventory variable with inventory_id=%d (override=%s)",
+            inv_id,
+            override_inventory_id is not None,
+        )
         analysis = await inventory_service.analyze_inventory(inv_id, username)
 
         # For custom_fields, optionally extract a specific field
