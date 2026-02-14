@@ -24,8 +24,10 @@ const DATA_TYPE_OPTIONS: { value: NautobotDataType; label: string; endpoint: str
   { value: 'namespaces', label: 'Namespaces', endpoint: 'nautobot/namespaces', suggestedName: 'nautobot_namespaces' },
 ]
 
+import type { VariableDefinition } from '../types'
+
 interface NautobotDataTabProps {
-  onAdd: (name: string, value: string) => void
+  onAdd: (variable: VariableDefinition) => void
   existingVariableNames: string[]
 }
 
@@ -60,7 +62,16 @@ export function NautobotDataTab({ onAdd, existingVariableNames }: NautobotDataTa
     try {
       const response = await apiCall(option.endpoint)
       const jsonValue = JSON.stringify(response, null, 2)
-      onAdd(variableName.trim(), jsonValue)
+
+      // Create variable definition with metadata
+      onAdd({
+        name: variableName.trim(),
+        value: jsonValue,
+        type: 'nautobot',
+        metadata: {
+          nautobot_source: selectedType,
+        },
+      })
     } catch (error) {
       console.error('Failed to fetch Nautobot data:', error)
     } finally {

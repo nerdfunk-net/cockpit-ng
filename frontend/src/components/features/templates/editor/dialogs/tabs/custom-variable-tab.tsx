@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Plus } from 'lucide-react'
+import type { VariableDefinition } from '../types'
 
 interface CustomVariableTabProps {
-  onAdd: (name: string, value: string) => void
+  onAdd: (variable: VariableDefinition) => void
   existingVariableNames: string[]
 }
 
@@ -24,7 +25,12 @@ export function CustomVariableTab({ onAdd, existingVariableNames }: CustomVariab
 
   const handleAdd = useCallback(() => {
     if (!canAdd) return
-    onAdd(name.trim(), value)
+    onAdd({
+      name: name.trim(),
+      value,
+      type: 'custom',
+      metadata: {},
+    })
     setName('')
     setValue('')
   }, [canAdd, name, value, onAdd])

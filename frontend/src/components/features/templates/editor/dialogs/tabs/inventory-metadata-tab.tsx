@@ -15,7 +15,7 @@ import {
 import { RefreshCw, Download } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 import { useSavedInventoriesQuery } from '@/hooks/queries/use-saved-inventories-queries'
-import type { InventoryMetadataType } from '../types'
+import type { InventoryMetadataType, VariableDefinition } from '../types'
 
 interface AnalyzeResponse {
   locations: string[]
@@ -35,7 +35,7 @@ const DATA_TYPE_LABELS: Record<InventoryMetadataType, string> = {
 }
 
 interface InventoryMetadataTabProps {
-  onAdd: (name: string, value: string) => void
+  onAdd: (variable: VariableDefinition) => void
   existingVariableNames: string[]
   category: string
   inventoryId: number | null
@@ -153,7 +153,7 @@ export function InventoryMetadataTab({
     (selectedDataType !== 'custom_fields' || selectedCustomField)
 
   const handleAdd = useCallback(() => {
-    if (!canAdd || !analyzeData || !selectedDataType) return
+    if (!canAdd || !analyzeData || !selectedDataType || !activeInventoryId) return
 
     let values: unknown
     if (selectedDataType === 'custom_fields') {
@@ -162,8 +162,20 @@ export function InventoryMetadataTab({
       values = analyzeData[selectedDataType]
     }
 
-    onAdd(variableName.trim(), JSON.stringify(values, null, 2))
-  }, [canAdd, analyzeData, selectedDataType, selectedCustomField, variableName, onAdd])
+    // Create variable definition with metadata
+    onAdd({
+      name: variableName.trim(),
+      value: JSON.stringify(values, null, 2),
+      type: 'inventory',
+      metadata: {
+        inventory_id: parseInt(activeInventoryId),
+        inventory_data_type: selectedDataType,
+        ...(selectedDataType === 'custom_fields' && selectedCustomField
+          ? { inventory_custom_field: selectedCustomField }
+          : {}),
+      },
+    })
+  }, [canAdd, analyzeData, selectedDataType, selectedCustomField, variableName, activeInventoryId, onAdd])
 
   // Preview values for the current selection
   const previewValues: string[] | null = (() => {

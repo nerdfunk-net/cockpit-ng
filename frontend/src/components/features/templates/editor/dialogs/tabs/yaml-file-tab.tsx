@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select'
 import { RefreshCw, Download } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
+import type { VariableDefinition } from '../types'
 
 interface GitRepository {
   id: number
@@ -43,7 +44,7 @@ interface ParsedFileResponse {
 }
 
 interface YamlFileTabProps {
-  onAdd: (name: string, value: string) => void
+  onAdd: (variable: VariableDefinition) => void
   existingVariableNames: string[]
 }
 
@@ -129,7 +130,17 @@ export function YamlFileTab({ onAdd, existingVariableNames }: YamlFileTabProps) 
         `git/${selectedRepoId}/file-content-parsed?path=${encodeURIComponent(selectedFilePath)}`
       )
       const jsonValue = JSON.stringify(response.parsed, null, 2)
-      onAdd(variableName.trim(), jsonValue)
+
+      // Create variable definition with metadata
+      onAdd({
+        name: variableName.trim(),
+        value: jsonValue,
+        type: 'yaml',
+        metadata: {
+          yaml_file_path: selectedFilePath,
+          yaml_file_id: parseInt(selectedRepoId),  // Store repo ID as file_id
+        },
+      })
     } catch (error) {
       // Error will be caught by apiCall's built-in error handling
       console.error('Failed to fetch and parse YAML file:', error)

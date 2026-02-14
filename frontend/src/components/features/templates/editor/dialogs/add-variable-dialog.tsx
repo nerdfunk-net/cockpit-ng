@@ -13,7 +13,7 @@ import { CustomVariableTab } from './tabs/custom-variable-tab'
 import { YamlFileTab } from './tabs/yaml-file-tab'
 import { NautobotDataTab } from './tabs/nautobot-data-tab'
 import { InventoryMetadataTab } from './tabs/inventory-metadata-tab'
-import type { AddVariableDialogProps } from './types'
+import type { AddVariableDialogProps, VariableDefinition } from './types'
 
 export function AddVariableDialog({
   open,
@@ -24,8 +24,8 @@ export function AddVariableDialog({
   inventoryId,
 }: AddVariableDialogProps) {
   const handleAdd = useCallback(
-    (name: string, value: string) => {
-      onAdd(name, value)
+    (variable: VariableDefinition) => {
+      onAdd(variable)
       onOpenChange(false)
     },
     [onAdd, onOpenChange]

@@ -13,6 +13,7 @@ import { useTemplateEditor } from '../hooks/use-template-editor'
 import { useTemplateRender } from '../hooks/use-template-render'
 import { useInventoryDevices } from '../hooks/use-inventory-devices'
 import { useSnmpMappings } from '../hooks/use-snmp-mappings'
+import type { VariableDefinition } from '../types'
 import { GeneralPanel } from './general-panel'
 import { AgentOptionsPanel } from './agent-options-panel'
 import { NetmikoOptionsPanel } from './netmiko-options-panel'
@@ -202,13 +203,18 @@ function TemplateEditorContent() {
   }, [])
 
   const handleAddVariableFromDialog = useCallback(
-    (name: string, value: string) => {
-      const newId = editor.variableManager.addVariableWithData(name, value)
+    (variable: VariableDefinition) => {
+      const newId = editor.variableManager.addVariableWithMetadata(
+        variable.name,
+        variable.value,
+        variable.type,
+        variable.metadata
+      )
       setSelectedVariableId(newId)
-      toast({ title: 'Variable Added', description: `Variable "${name}" has been added` })
+      toast({ title: 'Variable Added', description: `Variable "${variable.name}" has been added` })
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- addVariableWithData is stable from useCallback
-    [editor.variableManager.addVariableWithData, toast]
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- addVariableWithMetadata is stable from useCallback
+    [editor.variableManager.addVariableWithMetadata, toast]
   )
 
   const handleExecutePreRun = useCallback(async () => {
@@ -402,16 +408,20 @@ function TemplateEditorContent() {
 
     const formData = editor.form.getValues()
 
-    // Build the variables record from user-defined variables
-    const variables: Record<string, string> = {}
+    // Build the variables record from user-defined variables with metadata
+    const variables: Record<string, { value: string; type: string; metadata?: unknown }> = {}
     for (const v of editor.variableManager.variables) {
       if (v.name && !v.isAutoFilled) {
-        variables[v.name] = v.value
+        variables[v.name] = {
+          value: v.value,
+          type: v.type || 'custom',
+          ...(v.metadata ? { metadata: v.metadata } : {}),
+        }
       }
     }
 
     // Build template data with category-specific fields
-    const templateData: Record<string, string | number | boolean | null | Record<string, string>> = {
+    const templateData: Record<string, string | number | boolean | null | Record<string, unknown>> = {
       name: formData.name,
       source: 'webeditor' as const,
       template_type: formData.template_type,

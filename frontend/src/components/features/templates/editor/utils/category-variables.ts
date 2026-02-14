@@ -36,6 +36,7 @@ export function getDefaultVariables(category: string): TemplateVariable[] {
     id: `default-${name}`,
     name,
     value: '',
+    type: 'auto-filled' as const,
     isDefault: true,
     isAutoFilled: true,
     description: config.descriptions[name] || '',

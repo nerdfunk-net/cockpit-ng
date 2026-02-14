@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
-import type { TemplateVariable, NautobotDeviceDetails } from '../types'
+import type { TemplateVariable, NautobotDeviceDetails, VariableMetadata } from '../types'
 import { getDefaultVariables } from '../utils/category-variables'
 
 interface DeviceData {
@@ -106,6 +106,7 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
           id: 'default-snmp_mapping',
           name: 'snmp_mapping',
           value: snmpMappingCacheRef.current,
+          type: 'auto-filled',
           isDefault: true,
           isAutoFilled: true,
           description: 'SNMP credential mapping (if enabled)',
@@ -141,6 +142,7 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
           id: 'default-device_details',
           name: 'device_details',
           value: deviceDetailsCacheRef.current,
+          type: 'auto-filled',
           isDefault: true,
           isAutoFilled: true,
           description: 'Detailed device data from Nautobot (per device)',
@@ -187,6 +189,7 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
         id: crypto.randomUUID(),
         name: '',
         value: '',
+        type: 'custom',
         isDefault: false,
         isAutoFilled: false,
       },
@@ -197,10 +200,27 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
     const newId = crypto.randomUUID()
     setVariables((prev) => [
       ...prev,
-      { id: newId, name, value, isDefault: false, isAutoFilled: false },
+      { id: newId, name, value, type: 'custom', isDefault: false, isAutoFilled: false },
     ])
     return newId
   }, [])
+
+  const addVariableWithMetadata = useCallback(
+    (
+      name: string,
+      value: string,
+      type: 'custom' | 'nautobot' | 'yaml' | 'inventory',
+      metadata?: VariableMetadata
+    ) => {
+      const newId = crypto.randomUUID()
+      setVariables((prev) => [
+        ...prev,
+        { id: newId, name, value, type, metadata, isDefault: false, isAutoFilled: false },
+      ])
+      return newId
+    },
+    []
+  )
 
   const removeVariable = useCallback((id: string) => {
     setVariables((prev) => prev.filter((v) => v.id !== id || v.isDefault))
@@ -223,6 +243,7 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
         id: crypto.randomUUID(),
         name,
         value,
+        type: 'custom',
         isDefault: false,
         isAutoFilled: false,
       }))
@@ -275,6 +296,7 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
               id: 'default-pre_run.raw',
               name: 'pre_run.raw',
               value: '',
+              type: 'auto-filled',
               isDefault: true,
               isAutoFilled: true,
               requiresExecution: true,
@@ -283,12 +305,13 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
             }
             defaultVars.push(preRunRaw)
           }
-          
+
           if (!hasPreRunParsed) {
             const preRunParsed: TemplateVariable = {
               id: 'default-pre_run.parsed',
               name: 'pre_run.parsed',
               value: '',
+              type: 'auto-filled',
               isDefault: true,
               isAutoFilled: true,
               requiresExecution: true,
@@ -319,6 +342,7 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
       updatePath,
       addVariable,
       addVariableWithData,
+      addVariableWithMetadata,
       removeVariable,
       updateVariable,
       setCustomVariables,
@@ -326,6 +350,6 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
       setPreRunExecuting,
       togglePreRunVariables,
     }),
-    [variables, updateForCategory, updateDeviceData, updateSnmpMapping, toggleSnmpMappingVariable, toggleDeviceDetailsVariable, updatePath, addVariable, addVariableWithData, removeVariable, updateVariable, setCustomVariables, updatePreRunVariable, setPreRunExecuting, togglePreRunVariables]
+    [variables, updateForCategory, updateDeviceData, updateSnmpMapping, toggleSnmpMappingVariable, toggleDeviceDetailsVariable, updatePath, addVariable, addVariableWithData, addVariableWithMetadata, removeVariable, updateVariable, setCustomVariables, updatePreRunVariable, setPreRunExecuting, togglePreRunVariables]
   )
 }

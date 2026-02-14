@@ -1,7 +1,32 @@
+export type VariableType = 'custom' | 'nautobot' | 'yaml' | 'inventory' | 'auto-filled'
+
+export interface VariableMetadata {
+  // Nautobot-specific
+  nautobot_source?: 'locations' | 'tags' | 'custom-fields' | 'statuses' | 'roles' | 'namespaces'
+
+  // YAML-specific
+  yaml_file_path?: string
+  yaml_file_id?: number
+
+  // Inventory-specific
+  inventory_id?: number
+  inventory_data_type?: 'locations' | 'tags' | 'custom_fields' | 'statuses' | 'roles'
+  inventory_custom_field?: string  // Only for custom_fields
+}
+
+export interface VariableDefinition {
+  name: string
+  value: string
+  type: 'custom' | 'nautobot' | 'yaml' | 'inventory'
+  metadata?: VariableMetadata
+}
+
 export interface TemplateVariable {
   id: string
   name: string
   value: string
+  type: VariableType  // NEW: How to populate this variable
+  metadata?: VariableMetadata  // NEW: Type-specific configuration
   isDefault: boolean
   isAutoFilled: boolean
   description?: string
