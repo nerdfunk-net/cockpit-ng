@@ -124,8 +124,7 @@ export function AgentsDeployPage() {
       const response = await deployExecution.executeDeployToGit(config)
       toast({
         title: 'Success',
-        description: response?.message || 'Configuration deployed to git repository',
-        duration: 5000
+        description: response?.message || 'Configuration deployed to git repository'
       })
     } catch (error) {
       setErrorDetails({

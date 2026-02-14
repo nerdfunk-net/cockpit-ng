@@ -30,6 +30,9 @@ class DryRunRequest(BaseModel):
         ..., alias="agentId", description="Agent ID for deployment configuration"
     )
     path: str | None = Field(None, description="Optional deployment path")
+    template_content: str | None = Field(
+        None, description="Optional edited template content (overrides stored content)"
+    )
 
     class Config:
         populate_by_name = True
@@ -75,27 +78,33 @@ async def agent_deploy_dry_run(
                 detail=f"Template with ID {request.templateId} not found",
             )
 
-        template_content = template_manager.get_template_content(request.templateId)
-        if not template_content:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Template content for ID {request.templateId} not found",
-            )
+        # Use edited content from request if provided, otherwise load from DB
+        if request.template_content:
+            template_content = request.template_content
+        else:
+            template_content = template_manager.get_template_content(request.templateId)
+            if not template_content:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Template content for ID {request.templateId} not found",
+                )
 
-        # Use the rendering service
+        # Use the rendering service with stored variables and username
         render_result = await agent_template_render_service.render_agent_template(
             template_content=template_content,
             inventory_id=template.get("inventory_id"),
             pass_snmp_mapping=template.get("pass_snmp_mapping", False),
             user_variables=request.variables,
             path=request.path,
+            stored_variables=template.get("variables"),
+            username=current_user.get("username"),
         )
 
         # Return a single result with the rendered content
         results = [
             DryRunResultItem(
                 deviceId="all",
-                deviceName=f"Agent Config",
+                deviceName="Agent Config",
                 renderedConfig=render_result.rendered_content,
                 success=True,
                 error=None,
@@ -231,13 +240,15 @@ async def agent_deploy_to_git(
             "git_author_email": git_repository.git_author_email,
         }
 
-        # Render the template
+        # Render the template with stored variables and username
         render_result = await agent_template_render_service.render_agent_template(
             template_content=template_content,
             inventory_id=template.get("inventory_id"),
             pass_snmp_mapping=template.get("pass_snmp_mapping", False),
             user_variables=request.variables,
             path=request.path,
+            stored_variables=template.get("variables"),
+            username=current_user.get("username"),
         )
 
         # Determine file path

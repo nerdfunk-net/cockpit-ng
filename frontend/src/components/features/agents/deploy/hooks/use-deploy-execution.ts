@@ -5,22 +5,8 @@ import type { DryRunResult, DeployResult, DeployExecutionSummary, DeployConfig }
 const EMPTY_DRY_RUN_RESULTS: DryRunResult[] = []
 const EMPTY_DEPLOY_RESULTS: DeployResult[] = []
 
-interface AdvancedRenderRequest {
-  template_content: string
-  category: string
-  user_variables?: Record<string, unknown>
-  inventory_id?: number
-  pass_snmp_mapping: boolean
-  path?: string
-}
-
-interface AdvancedRenderResponse {
-  rendered_content: string
-  variables_used: string[]
-  context_data?: Record<string, unknown>
-  warnings?: string[]
-  pre_run_output?: string
-  pre_run_parsed?: unknown[]
+interface DryRunResponse {
+  results: DryRunResult[]
 }
 
 export function useDeployExecution() {
@@ -38,41 +24,29 @@ export function useDeployExecution() {
   const executeDryRun = useCallback(async (
     config: DeployConfig,
     templateContent: string,
-    inventoryId: number | null,
-    passSnmpMapping: boolean
+    _inventoryId: number | null,
+    _passSnmpMapping: boolean
   ) => {
     setIsDryRunning(true)
     try {
-      // Build request for advanced-render endpoint
-      const renderRequest: AdvancedRenderRequest = {
-        template_content: templateContent,
-        category: 'agent',
-        user_variables: config.variables,
-        inventory_id: inventoryId || undefined,
-        pass_snmp_mapping: passSnmpMapping,
-        path: config.path,
-      }
-
-      // API call: POST /templates/advanced-render
-      const response = await apiCall<AdvancedRenderResponse>(
-        'templates/advanced-render',
+      // Call the deploy dry-run endpoint which handles stored variable population,
+      // inventory fetching, and SNMP mapping internally based on the template config
+      const response = await apiCall<DryRunResponse>(
+        'agents/deploy/dry-run',
         {
           method: 'POST',
-          body: JSON.stringify(renderRequest)
+          body: JSON.stringify({
+            templateId: config.templateId,
+            deviceIds: config.deviceIds,
+            variables: config.variables,
+            agentId: config.agentId,
+            path: config.path,
+            template_content: templateContent,
+          })
         }
       )
 
-      // Convert to DryRunResult format
-      const results: DryRunResult[] = [
-        {
-          deviceId: 'all',
-          deviceName: 'Agent Config',
-          renderedConfig: response.rendered_content,
-          success: true,
-        }
-      ]
-
-      setDryRunResults(results)
+      setDryRunResults(response.results)
       setShowDryRunDialog(true)
     } catch (error) {
       console.error('Dry run failed:', error)
