@@ -54,7 +54,6 @@ class DockerRestartRequest(BaseModel):
     """Convenience model for docker restart command"""
 
     agent_id: str
-    container_name: str
 
 
 class CommandHistoryItem(BaseModel):

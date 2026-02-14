@@ -273,12 +273,12 @@ class CockpitAgentService:
     def send_docker_restart(
         self,
         agent_id: str,
-        container_name: str,
         sent_by: str,
         timeout: int = 60,
     ) -> dict:
         """
         Convenience method: Send docker restart command and wait for response
+        Container name is configured in agent's .env file
         """
         # Check agent is online
         if not self.check_agent_online(agent_id):
@@ -287,11 +287,11 @@ class CockpitAgentService:
                 "error": "Agent is offline or not responding",
             }
 
-        # Send command
+        # Send command (container_name from agent's .env)
         command_id = self.send_command(
             agent_id=agent_id,
             command="docker_restart",
-            params={"container_name": container_name},
+            params={},
             sent_by=sent_by,
         )
 

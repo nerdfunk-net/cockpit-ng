@@ -39,7 +39,6 @@ export interface GitPullInput {
 
 export interface DockerRestartInput {
   agent_id: string
-  container_name: string
 }
 
 export interface CommandResult {

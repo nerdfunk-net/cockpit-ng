@@ -34,12 +34,8 @@ export function useAgentMutations() {
 
   const dockerRestart = useMutation({
     mutationFn: async (input: DockerRestartInput): Promise<CommandResult> => {
-      return apiCall<CommandResult>('cockpit-agent/docker-restart', {
+      return apiCall<CommandResult>(`cockpit-agent/${input.agent_id}/docker-restart`, {
         method: 'POST',
-        body: JSON.stringify({
-          agent_id: input.agent_id,
-          container_name: input.container_name,
-        }),
       })
     },
     onSuccess: (data, variables) => {

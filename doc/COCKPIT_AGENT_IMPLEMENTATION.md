@@ -68,8 +68,8 @@ CREATE TABLE cockpit_agent_commands (
 
 **API Endpoints:**
 - ✅ `POST /api/cockpit-agent/command` - Send command (no wait)
-- ✅ `POST /api/cockpit-agent/git-pull` - Git pull with 30s timeout
-- ✅ `POST /api/cockpit-agent/docker-restart` - Docker restart with 60s timeout
+- ✅ `POST /api/cockpit-agent/{agent_id}/git-pull` - Git pull with 30s timeout
+- ✅ `POST /api/cockpit-agent/{agent_id}/docker-restart` - Docker restart with 60s timeout (container from agent's .env)
 - ✅ `GET /api/cockpit-agent/{agent_id}/status` - Get agent health
 - ✅ `GET /api/cockpit-agent/list` - List all agents
 - ✅ `GET /api/cockpit-agent/{agent_id}/history` - Command history for agent
@@ -309,13 +309,10 @@ curl -X POST http://localhost:8000/api/cockpit-agent/git-pull \
 
 ### Docker Restart
 ```bash
-curl -X POST http://localhost:8000/api/cockpit-agent/docker-restart \
+curl -X POST http://localhost:8000/api/cockpit-agent/grafana-prod-01/docker-restart \
   -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agent_id": "grafana-prod-01",
-    "container_name": "grafana"
-  }'
+  -H "Content-Type: application/json"
+# Note: Container name is configured in the agent's .env file
 ```
 
 ### Get Agent Status

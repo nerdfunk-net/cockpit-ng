@@ -192,32 +192,22 @@ class CommandExecutor:
     async def _execute_docker_restart(self, params: dict) -> dict:
         """
         Execute docker restart command
-        Validates container name against configured allowed name
+        Uses container name configured in .env file (DOCKER_CONTAINER_NAME)
         """
-        container_name = params.get("container_name")
         logger.info(f"Docker restart request - params: {params}")
 
-        # Validate container name
-        if not container_name:
-            error_msg = "container_name parameter is required"
+        # Use configured container name from .env file
+        if not config.docker_container_names:
+            error_msg = "No docker containers configured (DOCKER_CONTAINER_NAME not set)"
             logger.error(error_msg)
             return {
                 "status": "error",
                 "error": error_msg,
                 "output": None,
             }
-
-        allowed_names = config.docker_container_names
-        logger.debug(f"Allowed container names: {allowed_names}")
-        if container_name not in allowed_names:
-            error_msg = f"Container name not allowed. Configured names: {', '.join(allowed_names)}"
-            logger.error(error_msg)
-            return {
-                "status": "error",
-                "error": error_msg,
-                "output": None,
-            }
-        logger.info(f"Container name validated: {container_name}")
+        
+        container_name = config.docker_container_names[0]
+        logger.info(f"Using configured container name from .env: {container_name}")
 
         try:
             logger.info(f"Executing: docker restart {container_name} (timeout: {config.docker_timeout}s)")

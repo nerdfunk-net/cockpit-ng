@@ -117,25 +117,24 @@ async def git_pull(
 
 
 @router.post(
-    "/docker-restart",
+    "/{agent_id}/docker-restart",
     response_model=CommandResponse,
     dependencies=[Depends(require_permission("cockpit_agents", "execute"))],
 )
 async def docker_restart(
-    request: DockerRestartRequest,
+    agent_id: str,
     user: dict = Depends(verify_token),
     db: Session = Depends(get_db),
 ):
     """
     Send docker restart command and wait for response (60s timeout)
-    Convenience endpoint for docker operations
+    Container name is configured in agent's .env file
     """
     try:
         service = CockpitAgentService(db)
 
         response = service.send_docker_restart(
-            agent_id=request.agent_id,
-            container_name=request.container_name,
+            agent_id=agent_id,
             sent_by=user.get("sub", "system"),
             timeout=60,
         )

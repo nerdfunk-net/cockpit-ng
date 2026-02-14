@@ -20,7 +20,7 @@ from heartbeat import HeartbeatThread
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=config.loglevel,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.StreamHandler(sys.stdout)],
 )

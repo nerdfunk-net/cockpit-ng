@@ -1,6 +1,7 @@
 """
 Configuration management for Cockpit Agent
 """
+import logging
 import os
 import socket
 from typing import Optional
@@ -38,6 +39,10 @@ class AgentConfig:
         self.heartbeat_interval = int(os.getenv("HEARTBEAT_INTERVAL", "30"))
         self.command_timeout = int(os.getenv("COMMAND_TIMEOUT", "30"))
         self.docker_timeout = int(os.getenv("DOCKER_TIMEOUT", "60"))
+
+        # Logging configuration
+        loglevel_str = os.getenv("LOGLEVEL", "INFO").upper()
+        self.loglevel = getattr(logging, loglevel_str, logging.INFO)
 
         # Agent metadata
         self.agent_version = "1.0.0"
