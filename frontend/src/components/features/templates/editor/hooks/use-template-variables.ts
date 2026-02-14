@@ -52,48 +52,49 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
     if (deviceData?.device_details) {
       deviceDetailsCacheRef.current = JSON.stringify(deviceData.device_details, null, 2)
     }
-    
-    setVariables((prev) =>
-      prev.map((v) => {
+
+    setVariables((prev) => {
+      let hasChanges = false
+      const updated = prev.map((v) => {
         if (!v.isDefault || !v.isAutoFilled) return v
 
         if (v.name === 'devices' && deviceData) {
           const newValue = JSON.stringify(deviceData.devices, null, 2)
-          return {
-            ...v,
-            value: newValue,
-          }
+          if (v.value === newValue) return v
+          hasChanges = true
+          return { ...v, value: newValue }
         }
 
         if (v.name === 'device_details' && deviceData) {
           const newValue = JSON.stringify(deviceData.device_details, null, 2)
-          return {
-            ...v,
-            value: newValue,
-          }
+          if (v.value === newValue) return v
+          hasChanges = true
+          return { ...v, value: newValue }
         }
 
         return v
       })
-    )
+      return hasChanges ? updated : prev
+    })
   }, [])
 
   const updateSnmpMapping = useCallback((snmpMappings: SnmpMapping[] | null) => {
     const newValue = snmpMappings ? JSON.stringify(snmpMappings, null, 2) : ''
     // Always update cache
     snmpMappingCacheRef.current = newValue
-    
-    setVariables((prev) =>
-      prev.map((v) => {
+
+    setVariables((prev) => {
+      let hasChanges = false
+      const updated = prev.map((v) => {
         if (v.name === 'snmp_mapping' && v.isDefault && v.isAutoFilled) {
-          return {
-            ...v,
-            value: newValue,
-          }
+          if (v.value === newValue) return v
+          hasChanges = true
+          return { ...v, value: newValue }
         }
         return v
       })
-    )
+      return hasChanges ? updated : prev
+    })
   }, [])
 
   const toggleSnmpMappingVariable = useCallback((show: boolean) => {
@@ -169,17 +170,18 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
   }, [])
 
   const updatePath = useCallback((path: string) => {
-    setVariables((prev) =>
-      prev.map((v) => {
+    setVariables((prev) => {
+      let hasChanges = false
+      const updated = prev.map((v) => {
         if (v.name === 'path' && v.isDefault && v.isAutoFilled) {
-          return {
-            ...v,
-            value: path,
-          }
+          if (v.value === path) return v
+          hasChanges = true
+          return { ...v, value: path }
         }
         return v
       })
-    )
+      return hasChanges ? updated : prev
+    })
   }, [])
 
   const addVariable = useCallback(() => {
@@ -298,10 +300,12 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
   }, [])
 
   const updateInventoryIdForInventoryVariables = useCallback((newInventoryId: number) => {
-    setVariables((prev) =>
-      prev.map((v) => {
+    setVariables((prev) => {
+      let hasChanges = false
+      const updated = prev.map((v) => {
         // Only update inventory-type variables
-        if (v.type === 'inventory' && v.metadata?.inventory_id) {
+        if (v.type === 'inventory' && v.metadata?.inventory_id && v.metadata.inventory_id !== newInventoryId) {
+          hasChanges = true
           return {
             ...v,
             metadata: {
@@ -312,7 +316,8 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
         }
         return v
       })
-    )
+      return hasChanges ? updated : prev
+    })
   }, [])
 
   const togglePreRunVariables = useCallback((show: boolean) => {

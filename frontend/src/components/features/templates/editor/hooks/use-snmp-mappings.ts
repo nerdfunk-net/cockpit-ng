@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
+import { useMemo } from 'react'
 
 interface SnmpMapping {
   id: number
@@ -22,6 +23,8 @@ interface SnmpMappingsResponse {
   data: SnmpMapping[]
 }
 
+const EMPTY_ARRAY: SnmpMapping[] = []
+
 export function useSnmpMappings(enabled: boolean = true) {
   const { apiCall } = useApi()
 
@@ -42,9 +45,12 @@ export function useSnmpMappings(enabled: boolean = true) {
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
 
-  return {
-    snmpMappings: snmpData?.data || [],
-    isLoading,
-    error,
-  }
+  return useMemo(
+    () => ({
+      snmpMappings: snmpData?.data || EMPTY_ARRAY,
+      isLoading,
+      error,
+    }),
+    [snmpData?.data, isLoading, error]
+  )
 }

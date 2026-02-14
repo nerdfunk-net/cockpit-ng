@@ -70,7 +70,8 @@ export function NetmikoOptionsPanel({ form }: NetmikoOptionsPanelProps) {
       }
     }
     loadCredentials()
-  }, [apiCall])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- apiCall is stable, only load on mount
+  }, [])
 
   // Close dropdown when clicking outside
   useEffect(() => {

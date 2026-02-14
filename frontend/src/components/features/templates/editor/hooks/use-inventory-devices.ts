@@ -139,10 +139,13 @@ export function useInventoryDevices(inventoryId: number | null, enabled: boolean
     }
   }, [inventoryData])
 
-  return {
-    ...formattedData,
-    isLoading,
-    error,
-    inventoryName: inventoryData?.inventory_name || '',
-  }
+  return useMemo(
+    () => ({
+      ...formattedData,
+      isLoading,
+      error,
+      inventoryName: inventoryData?.inventory_name || '',
+    }),
+    [formattedData, isLoading, error, inventoryData?.inventory_name]
+  )
 }

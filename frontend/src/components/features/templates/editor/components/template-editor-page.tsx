@@ -104,7 +104,8 @@ function TemplateEditorContent() {
       // Update all inventory-type variables to use the new inventory ID
       editor.variableManager.updateInventoryIdForInventoryVariables(watchedInventoryId)
     }
-  }, [watchedCategory, watchedInventoryId, editor.variableManager])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateInventoryIdForInventoryVariables is stable from useCallback
+  }, [watchedCategory, watchedInventoryId, editor.variableManager.updateInventoryIdForInventoryVariables])
 
   // Update snmp_mapping variable when SNMP mappings are loaded
   useEffect(() => {
@@ -156,7 +157,7 @@ function TemplateEditorContent() {
     const fetchDeviceDetails = async () => {
       try {
         const deviceDetails = await apiCall<NautobotDeviceDetails>(`nautobot/devices/${watchedTestDeviceId}/details`)
-        
+
         // Build the devices array with simplified data
         const devices = [
           {
@@ -171,7 +172,7 @@ function TemplateEditorContent() {
           devices,
           device_details: deviceDetails,
         })
-        
+
         // Update ref after successful fetch
         lastTestDeviceIdRef.current = watchedTestDeviceId
       } catch (error) {
