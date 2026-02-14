@@ -51,6 +51,9 @@ from .periodic_tasks import (
 # Import backup tasks
 from .backup_tasks import backup_single_device_task, finalize_backup_task
 
+# Import agent deploy tasks
+from .agent_deploy_tasks import deploy_agent_task
+
 # Import background job tasks (outside tasks package)
 from services.background_jobs import (  # noqa: F401
     cache_all_devices_task,
@@ -68,6 +71,8 @@ __all__ = [
     # Backup tasks
     "backup_single_device_task",
     "finalize_backup_task",
+    # Agent deploy tasks
+    "deploy_agent_task",
     # Test tasks
     "test_task",
     "test_progress_task",

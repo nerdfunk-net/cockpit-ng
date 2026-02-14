@@ -22,6 +22,7 @@ import {
   isUpdateDevicesJobResult,
   isCheckIPJobResult,
   isScanPrefixJobResult,
+  isDeployAgentJobResult,
   GenericJobResult,
 } from "../types/job-results"
 import { BackupJobResultView } from "../components/results/backup-job-result"
@@ -32,6 +33,7 @@ import { BulkOnboardResultView } from "../components/results/bulk-onboard-result
 import { UpdateDevicesResultView } from "../components/results/update-devices-result"
 import { CheckIPResultView } from "../components/results/check-ip-result"
 import { ScanPrefixResultView } from "../components/results/scan-prefix-result"
+import { DeployAgentResultView } from "../components/results/deploy-agent-result"
 import { GenericJobResultView } from "../components/results/generic-job-result"
 
 interface JobResultDialogProps {
@@ -49,6 +51,11 @@ function renderJobResult(result: Record<string, any>, taskId?: string): React.Re
   // Export devices must be checked first to avoid conflicts
   if (isExportDevicesJobResult(result)) {
     return <ExportDevicesResultView result={result} taskId={taskId} />
+  }
+
+  // Deploy agent has unique agent_name + commit_sha + repository_name
+  if (isDeployAgentJobResult(result)) {
+    return <DeployAgentResultView result={result} />
   }
 
   // Check IP result has unique statistics structure

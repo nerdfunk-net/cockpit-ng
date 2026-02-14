@@ -3,6 +3,7 @@ Job Template Manager
 Handles business logic for job templates using PostgreSQL and repository pattern.
 """
 
+import json
 import logging
 from typing import Optional, List, Dict, Any
 
@@ -41,6 +42,11 @@ def create_job_template(
     scan_set_reachable_ip_active: bool = True,
     scan_max_ips: Optional[int] = None,
     parallel_tasks: int = 1,
+    deploy_template_id: Optional[int] = None,
+    deploy_agent_id: Optional[str] = None,
+    deploy_path: Optional[str] = None,
+    deploy_custom_variables: Optional[Dict[str, Any]] = None,
+    activate_after_deploy: bool = True,
     is_global: bool = False,
 ) -> Dict[str, Any]:
     """Create a new job template"""
@@ -48,6 +54,11 @@ def create_job_template(
     # Check for duplicate name
     if repo.check_name_exists(name, user_id if not is_global else None):
         raise ValueError(f"A job template with name '{name}' already exists")
+
+    # Serialize deploy_custom_variables to JSON string for storage
+    deploy_custom_variables_json = (
+        json.dumps(deploy_custom_variables) if deploy_custom_variables else None
+    )
 
     template = repo.create(
         name=name,
@@ -74,6 +85,11 @@ def create_job_template(
         scan_set_reachable_ip_active=scan_set_reachable_ip_active,
         scan_max_ips=scan_max_ips,
         parallel_tasks=parallel_tasks,
+        deploy_template_id=deploy_template_id,
+        deploy_agent_id=deploy_agent_id,
+        deploy_path=deploy_path,
+        deploy_custom_variables=deploy_custom_variables_json,
+        activate_after_deploy=activate_after_deploy,
         is_global=is_global,
         user_id=user_id if not is_global else None,
         created_by=created_by,
@@ -146,6 +162,11 @@ def update_job_template(
     scan_set_reachable_ip_active: Optional[bool] = None,
     scan_max_ips: Optional[int] = None,
     parallel_tasks: Optional[int] = None,
+    deploy_template_id: Optional[int] = None,
+    deploy_agent_id: Optional[str] = None,
+    deploy_path: Optional[str] = None,
+    deploy_custom_variables: Optional[Dict[str, Any]] = None,
+    activate_after_deploy: Optional[bool] = None,
     is_global: Optional[bool] = None,
     user_id: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
@@ -205,6 +226,16 @@ def update_job_template(
         update_data["scan_max_ips"] = scan_max_ips
     if parallel_tasks is not None:
         update_data["parallel_tasks"] = parallel_tasks
+    if deploy_template_id is not None:
+        update_data["deploy_template_id"] = deploy_template_id
+    if deploy_agent_id is not None:
+        update_data["deploy_agent_id"] = deploy_agent_id
+    if deploy_path is not None:
+        update_data["deploy_path"] = deploy_path
+    if deploy_custom_variables is not None:
+        update_data["deploy_custom_variables"] = json.dumps(deploy_custom_variables)
+    if activate_after_deploy is not None:
+        update_data["activate_after_deploy"] = activate_after_deploy
     if is_global is not None:
         update_data["is_global"] = is_global
         if is_global:
@@ -261,6 +292,11 @@ def get_job_types() -> List[Dict[str, str]]:
             "label": "Scan Prefixes",
             "description": "Scan network prefixes for devices",
         },
+        {
+            "value": "deploy_agent",
+            "label": "Deploy Agent",
+            "description": "Deploy agent configurations to Git repository",
+        },
     ]
 
 
@@ -292,6 +328,15 @@ def _model_to_dict(template) -> Dict[str, Any]:
         "scan_set_reachable_ip_active": template.scan_set_reachable_ip_active,
         "scan_max_ips": template.scan_max_ips,
         "parallel_tasks": template.parallel_tasks,
+        "deploy_template_id": template.deploy_template_id,
+        "deploy_agent_id": template.deploy_agent_id,
+        "deploy_path": template.deploy_path,
+        "deploy_custom_variables": (
+            json.loads(template.deploy_custom_variables)
+            if template.deploy_custom_variables
+            else None
+        ),
+        "activate_after_deploy": template.activate_after_deploy,
         "is_global": template.is_global,
         "user_id": template.user_id,
         "created_by": template.created_by,

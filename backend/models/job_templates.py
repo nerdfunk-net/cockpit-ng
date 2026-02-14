@@ -3,13 +3,14 @@ Pydantic models for job templates management
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional, Literal
+from typing import Optional, Literal, Dict, Any
 from datetime import datetime
 
 
 # Valid job template types (cache_devices removed - now handled by system tasks)
 JobTemplateType = Literal[
-    "backup", "compare_devices", "run_commands", "sync_devices", "scan_prefixes"
+    "backup", "compare_devices", "run_commands", "sync_devices", "scan_prefixes",
+    "deploy_agent"
 ]
 
 # Inventory source options
@@ -126,6 +127,28 @@ class JobTemplateBase(BaseModel):
         le=50,
         description="Number of parallel tasks for backup execution (only applies to backup type, default=1 for sequential)",
     )
+    deploy_template_id: Optional[int] = Field(
+        None,
+        description="ID of the agent template to deploy (only applies to deploy_agent type)",
+    )
+    deploy_agent_id: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="ID of the agent to deploy to (only applies to deploy_agent type)",
+    )
+    deploy_path: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="File path for the deployment (only applies to deploy_agent type)",
+    )
+    deploy_custom_variables: Optional[Dict[str, Any]] = Field(
+        None,
+        description="User variable overrides for template rendering (only applies to deploy_agent type, stored as JSON)",
+    )
+    activate_after_deploy: bool = Field(
+        True,
+        description="Whether to activate (pull and restart) the agent after deployment (only applies to deploy_agent type)",
+    )
     is_global: bool = Field(
         False,
         description="Whether this template is global (available to all users) or private",
@@ -164,6 +187,11 @@ class JobTemplateUpdate(BaseModel):
     scan_set_reachable_ip_active: Optional[bool] = None
     scan_max_ips: Optional[int] = Field(None, ge=1)
     parallel_tasks: Optional[int] = Field(None, ge=1, le=50)
+    deploy_template_id: Optional[int] = None
+    deploy_agent_id: Optional[str] = Field(None, max_length=255)
+    deploy_path: Optional[str] = Field(None, max_length=500)
+    deploy_custom_variables: Optional[Dict[str, Any]] = None
+    activate_after_deploy: Optional[bool] = None
     is_global: Optional[bool] = None
 
 

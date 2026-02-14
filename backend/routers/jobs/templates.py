@@ -71,6 +71,11 @@ async def create_job_template(
             scan_set_reachable_ip_active=template_data.scan_set_reachable_ip_active,
             scan_max_ips=template_data.scan_max_ips,
             parallel_tasks=template_data.parallel_tasks,
+            deploy_template_id=template_data.deploy_template_id,
+            deploy_agent_id=template_data.deploy_agent_id,
+            deploy_path=template_data.deploy_path,
+            deploy_custom_variables=template_data.deploy_custom_variables,
+            activate_after_deploy=template_data.activate_after_deploy,
             is_global=template_data.is_global,
         )
 
@@ -214,6 +219,11 @@ async def update_job_template(
             scan_set_reachable_ip_active=update_data.scan_set_reachable_ip_active,
             scan_max_ips=update_data.scan_max_ips,
             parallel_tasks=update_data.parallel_tasks,
+            deploy_template_id=update_data.deploy_template_id,
+            deploy_agent_id=update_data.deploy_agent_id,
+            deploy_path=update_data.deploy_path,
+            deploy_custom_variables=update_data.deploy_custom_variables,
+            activate_after_deploy=update_data.activate_after_deploy,
             is_global=update_data.is_global,
             user_id=current_user["user_id"],
         )

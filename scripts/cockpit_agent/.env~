@@ -1,0 +1,19 @@
+# Redis Configuration (Cockpit Redis server)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=changeme
+REDIS_DB=0
+
+# Agent Identity (auto-detected if not set)
+AGENT_HOSTNAME=app-prod-01
+
+# Git Configuration
+GIT_REPO_PATH=/tmp/gitea/configs
+
+# Docker Configuration
+DOCKER_CONTAINER_NAME=app
+
+# Operational Settings
+HEARTBEAT_INTERVAL=30
+COMMAND_TIMEOUT=30
+DOCKER_TIMEOUT=60

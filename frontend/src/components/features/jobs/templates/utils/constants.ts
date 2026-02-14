@@ -15,6 +15,7 @@ export const JOB_TYPE_LABELS: Record<string, string> = {
   cache_devices: 'Cache Devices',
   sync_devices: 'Sync Devices',
   scan_prefixes: 'Scan Prefixes',
+  deploy_agent: 'Deploy Agent',
 } as const
 
 export const JOB_TYPE_COLORS: Record<string, string> = {
@@ -24,6 +25,7 @@ export const JOB_TYPE_COLORS: Record<string, string> = {
   cache_devices: 'bg-cyan-500',
   sync_devices: 'bg-orange-500',
   scan_prefixes: 'bg-purple-500',
+  deploy_agent: 'bg-teal-500',
 } as const
 
 export const DEFAULT_TEMPLATE: Partial<JobTemplate> = {

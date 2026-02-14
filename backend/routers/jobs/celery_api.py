@@ -1033,6 +1033,16 @@ class BackupDevicesRequest(BaseModel):
     parallel_tasks: int = 1
 
 
+class DeployAgentRequest(BaseModel):
+    """Request model for agent deployment to git."""
+    
+    template_id: int
+    custom_variables: Optional[Dict[str, Any]] = None
+    agent_id: str
+    path: Optional[str] = None
+    inventory_id: Optional[int] = None
+
+
 @router.post("/tasks/backup-devices", response_model=TaskResponse)
 @handle_celery_errors("backup devices")
 async def trigger_backup_devices(
@@ -1086,6 +1096,62 @@ async def trigger_backup_devices(
         task_id=task.id,
         status="queued",
         message=f"Backup task queued for {len(request.inventory)} devices: {task.id}",
+    )
+
+
+@router.post("/tasks/deploy-agent", response_model=TaskResponse)
+@handle_celery_errors("deploy agent")
+async def trigger_deploy_agent(
+    request: DeployAgentRequest,
+    current_user: dict = Depends(require_permission("network.templates", "write")),
+):
+    """
+    Deploy agent configuration to Git repository.
+
+    This task:
+    1. Loads template and agent configuration
+    2. Renders the template with variables and inventory context
+    3. Opens/clones the Git repository
+    4. Writes rendered configuration to file
+    5. Commits and pushes changes to Git
+
+    Request Body:
+        template_id: ID of template to render
+        custom_variables: User-provided custom variables (optional)
+        agent_id: Agent ID for deployment configuration  
+        path: Deployment file path (optional, uses template default)
+        inventory_id: Inventory ID for rendering (optional, uses template default)
+
+    Returns:
+        TaskResponse with task_id for tracking progress
+    """
+    from tasks.agent_deploy_tasks import deploy_agent_task
+
+    if not request.template_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="template_id is required",
+        )
+
+    if not request.agent_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="agent_id is required",
+        )
+
+    # Trigger the task asynchronously
+    task = deploy_agent_task.delay(
+        template_id=request.template_id,
+        custom_variables=request.custom_variables or {},
+        agent_id=request.agent_id,
+        path=request.path,
+        inventory_id=request.inventory_id,
+    )
+
+    return TaskResponse(
+        task_id=task.id,
+        status="queued",
+        message=f"Agent deployment task queued for template {request.template_id}: {task.id}",
     )
 
 

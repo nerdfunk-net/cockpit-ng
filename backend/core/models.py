@@ -437,6 +437,21 @@ class JobTemplate(Base):
     parallel_tasks = Column(
         Integer, nullable=False, default=1
     )  # Number of parallel tasks for backup execution (backup type)
+    deploy_template_id = Column(
+        Integer, nullable=True
+    )  # ID of the agent template to deploy (deploy_agent type)
+    deploy_agent_id = Column(
+        String(255), nullable=True
+    )  # ID of the agent to deploy to (deploy_agent type)
+    deploy_path = Column(
+        String(500), nullable=True
+    )  # File path for deployment (deploy_agent type)
+    deploy_custom_variables = Column(
+        Text, nullable=True
+    )  # JSON string of user variable overrides (deploy_agent type)
+    activate_after_deploy = Column(
+        Boolean, nullable=False, default=True
+    )  # Whether to activate (pull and restart) the agent after deployment (deploy_agent type)
     is_global = Column(Boolean, nullable=False, default=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     created_by = Column(String(255))  # Username of creator

@@ -14,6 +14,7 @@ import { RunCommandsJobTemplate } from '../../components/template-types/RunComma
 import { SyncDevicesJobTemplate } from '../../components/template-types/SyncDevicesJobTemplate'
 import { CompareDevicesJobTemplate } from '../../components/template-types/CompareDevicesJobTemplate'
 import { ScanPrefixesJobTemplate } from '../../components/template-types/ScanPrefixesJobTemplate'
+import { DeployAgentJobTemplate } from '../../components/template-types/DeployAgentJobTemplate'
 import type { JobTemplate, JobType, GitRepository, SavedInventory, CommandTemplate, CustomField } from '../types'
 import { JOB_TYPE_COLORS } from '../utils/constants'
 
@@ -69,6 +70,11 @@ export function TemplateFormDialog({
   const [formScanResponseCustomFieldName, setFormScanResponseCustomFieldName] = useState("")
   const [formScanSetReachableIpActive, setFormScanSetReachableIpActive] = useState(true)
   const [formScanMaxIps, setFormScanMaxIps] = useState("")
+  const [formDeployTemplateId, setFormDeployTemplateId] = useState<number | null>(null)
+  const [formDeployAgentId, setFormDeployAgentId] = useState("")
+  const [formDeployPath, setFormDeployPath] = useState("")
+  const [formDeployCustomVariables, setFormDeployCustomVariables] = useState<Record<string, string>>({})
+  const [formActivateAfterDeploy, setFormActivateAfterDeploy] = useState(true)
   const [formIsGlobal, setFormIsGlobal] = useState(false)
 
   const resetForm = useCallback(() => {
@@ -95,6 +101,11 @@ export function TemplateFormDialog({
     setFormScanResponseCustomFieldName("")
     setFormScanSetReachableIpActive(true)
     setFormScanMaxIps("")
+    setFormDeployTemplateId(null)
+    setFormDeployAgentId("")
+    setFormDeployPath("")
+    setFormDeployCustomVariables({})
+    setFormActivateAfterDeploy(true)
     setFormIsGlobal(false)
   }, [])
 
@@ -124,6 +135,11 @@ export function TemplateFormDialog({
       setFormScanResponseCustomFieldName(editingTemplate.scan_response_custom_field_name || "")
       setFormScanSetReachableIpActive(editingTemplate.scan_set_reachable_ip_active ?? true)
       setFormScanMaxIps(editingTemplate.scan_max_ips?.toString() || "")
+      setFormDeployTemplateId(editingTemplate.deploy_template_id || null)
+      setFormDeployAgentId(editingTemplate.deploy_agent_id || "")
+      setFormDeployPath(editingTemplate.deploy_path || "")
+      setFormDeployCustomVariables(editingTemplate.deploy_custom_variables || {})
+      setFormActivateAfterDeploy(editingTemplate.activate_after_deploy ?? true)
       setFormIsGlobal(editingTemplate.is_global)
     } else if (open && !editingTemplate) {
       resetForm()
@@ -136,8 +152,9 @@ export function TemplateFormDialog({
     if (formJobType === "backup" && formBackupStartupConfigPath && !formBackupRunningConfigPath) return false
     if (formInventorySource === "inventory" && !formInventoryName) return false
     if (formJobType === "run_commands" && !formCommandTemplate) return false
+    if (formJobType === "deploy_agent" && (!formDeployTemplateId || !formDeployAgentId)) return false
     return true
-  }, [formName, formJobType, formWriteTimestampToCustomField, formTimestampCustomFieldName, formBackupStartupConfigPath, formBackupRunningConfigPath, formInventorySource, formInventoryName, formCommandTemplate])
+  }, [formName, formJobType, formWriteTimestampToCustomField, formTimestampCustomFieldName, formBackupStartupConfigPath, formBackupRunningConfigPath, formInventorySource, formInventoryName, formCommandTemplate, formDeployTemplateId, formDeployAgentId])
 
   const handleSubmit = async () => {
     const payload = {
@@ -164,6 +181,11 @@ export function TemplateFormDialog({
       scan_response_custom_field_name: formJobType === "scan_prefixes" ? formScanResponseCustomFieldName : undefined,
       scan_set_reachable_ip_active: formJobType === "scan_prefixes" ? formScanSetReachableIpActive : undefined,
       scan_max_ips: formJobType === "scan_prefixes" && formScanMaxIps ? parseInt(formScanMaxIps) : undefined,
+      deploy_template_id: formJobType === "deploy_agent" && formDeployTemplateId ? formDeployTemplateId : undefined,
+      deploy_agent_id: formJobType === "deploy_agent" ? formDeployAgentId : undefined,
+      deploy_path: formJobType === "deploy_agent" ? formDeployPath : undefined,
+      deploy_custom_variables: formJobType === "deploy_agent" && Object.keys(formDeployCustomVariables).length > 0 ? formDeployCustomVariables : undefined,
+      activate_after_deploy: formJobType === "deploy_agent" ? formActivateAfterDeploy : undefined,
       is_global: formIsGlobal
     }
 
@@ -224,8 +246,8 @@ export function TemplateFormDialog({
             />
           )}
 
-          {/* Inventory - Not for scan_prefixes */}
-          {formJobType !== "scan_prefixes" && (
+          {/* Inventory - Not for scan_prefixes or deploy_agent */}
+          {formJobType !== "scan_prefixes" && formJobType !== "deploy_agent" && (
             <JobTemplateInventorySection
               formInventorySource={formInventorySource}
               setFormInventorySource={setFormInventorySource}
@@ -294,6 +316,21 @@ export function TemplateFormDialog({
               setFormScanSetReachableIpActive={setFormScanSetReachableIpActive}
               formScanMaxIps={formScanMaxIps}
               setFormScanMaxIps={setFormScanMaxIps}
+            />
+          )}
+
+          {formJobType === "deploy_agent" && (
+            <DeployAgentJobTemplate
+              formDeployTemplateId={formDeployTemplateId}
+              setFormDeployTemplateId={setFormDeployTemplateId}
+              formDeployAgentId={formDeployAgentId}
+              setFormDeployAgentId={setFormDeployAgentId}
+              formDeployPath={formDeployPath}
+              setFormDeployPath={setFormDeployPath}
+              formDeployCustomVariables={formDeployCustomVariables}
+              setFormDeployCustomVariables={setFormDeployCustomVariables}
+              formActivateAfterDeploy={formActivateAfterDeploy}
+              setFormActivateAfterDeploy={setFormActivateAfterDeploy}
             />
           )}
         </div>

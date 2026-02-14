@@ -297,6 +297,31 @@ export interface CheckIPJobResult {
 }
 
 // ============================================================================
+// Deploy Agent Job Result Types
+// ============================================================================
+
+export interface DeployAgentJobResult {
+  success: boolean
+  message?: string
+  error?: string
+  template_id: number
+  template_name: string
+  agent_id: string
+  agent_name: string
+  commit_sha: string
+  commit_sha_short: string
+  file_path: string
+  repository_name: string
+  repository_url: string
+  branch: string
+  files_changed: number
+  pushed: boolean
+  timestamp: string
+  // Index signature for compatibility with Record<string, unknown>
+  [key: string]: unknown
+}
+
+// ============================================================================
 // Scan Prefix Job Result Types
 // ============================================================================
 
@@ -424,6 +449,18 @@ export function isCheckIPJobResult(result: Record<string, unknown>): result is C
     'errors' in result.statistics &&
     'results' in result &&
     Array.isArray(result.results)
+  )
+}
+
+/**
+ * Check if result is a deploy_agent job result.
+ * Has agent_name, commit_sha, and repository_name fields.
+ */
+export function isDeployAgentJobResult(result: Record<string, unknown>): result is DeployAgentJobResult {
+  return (
+    'agent_name' in result &&
+    'commit_sha' in result &&
+    'repository_name' in result
   )
 }
 

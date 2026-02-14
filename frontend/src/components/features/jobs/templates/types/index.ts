@@ -24,6 +24,11 @@ export interface JobTemplate {
   scan_set_reachable_ip_active?: boolean
   scan_max_ips?: number
   parallel_tasks?: number
+  deploy_template_id?: number
+  deploy_agent_id?: string
+  deploy_path?: string
+  deploy_custom_variables?: Record<string, string>
+  activate_after_deploy?: boolean
   is_global: boolean
   user_id?: number
   created_by?: string
