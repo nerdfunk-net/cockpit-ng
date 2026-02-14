@@ -88,6 +88,7 @@ class Agent(BaseModel):
     """Individual agent configuration."""
 
     id: str
+    agent_id: Optional[str] = None
     name: str
     description: str
     git_repository_id: Optional[int] = None

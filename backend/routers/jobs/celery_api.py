@@ -1041,6 +1041,7 @@ class DeployAgentRequest(BaseModel):
     agent_id: str
     path: Optional[str] = None
     inventory_id: Optional[int] = None
+    activate_after_deploy: Optional[bool] = None  # If None, read from template
 
 
 @router.post("/tasks/backup-devices", response_model=TaskResponse)
@@ -1114,13 +1115,15 @@ async def trigger_deploy_agent(
     3. Opens/clones the Git repository
     4. Writes rendered configuration to file
     5. Commits and pushes changes to Git
+    6. Optionally activates agent (docker restart via cockpit agent)
 
     Request Body:
         template_id: ID of template to render
         custom_variables: User-provided custom variables (optional)
-        agent_id: Agent ID for deployment configuration  
+        agent_id: Agent ID for deployment configuration
         path: Deployment file path (optional, uses template default)
         inventory_id: Inventory ID for rendering (optional, uses template default)
+        activate_after_deploy: Whether to activate agent after deployment (optional, reads from template if not provided)
 
     Returns:
         TaskResponse with task_id for tracking progress
@@ -1139,6 +1142,17 @@ async def trigger_deploy_agent(
             detail="agent_id is required",
         )
 
+    # Determine activate_after_deploy setting
+    # If not explicitly provided in request, read from template configuration
+    activate_after_deploy = request.activate_after_deploy
+    if activate_after_deploy is None:
+        import job_template_manager
+        template = job_template_manager.get_template(request.template_id)
+        if template:
+            activate_after_deploy = template.get("activate_after_deploy", True)
+        else:
+            activate_after_deploy = True  # Default to True if template not found
+
     # Trigger the task asynchronously
     task = deploy_agent_task.delay(
         template_id=request.template_id,
@@ -1146,6 +1160,7 @@ async def trigger_deploy_agent(
         agent_id=request.agent_id,
         path=request.path,
         inventory_id=request.inventory_id,
+        activate_after_deploy=activate_after_deploy,
     )
 
     return TaskResponse(

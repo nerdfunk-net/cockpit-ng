@@ -48,27 +48,38 @@ export function AgentCard({ agent, gitRepositories, onEdit, onRemove }: AgentCar
           <p className="text-sm text-gray-600 mb-4">{agent.description}</p>
         )}
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm">
-            <GitBranch className="h-4 w-4 text-gray-400" />
-            <span className="text-gray-700 font-medium">Git Repository:</span>
+        <div className="space-y-3">
+          {/* Agent ID */}
+          <div className="flex items-start gap-2 text-sm">
+            <span className="text-gray-500 font-medium min-w-[80px]">Agent ID:</span>
+            <code className="bg-gray-100 px-2 py-0.5 rounded text-xs font-mono">
+              {agent.agent_id || '(not set)'}
+            </code>
           </div>
-          {gitRepo ? (
-            <div className="ml-6 p-3 bg-white rounded-md border border-gray-200">
-              <p className="text-sm font-medium text-gray-900">{gitRepo.name}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                {gitRepo.url} • branch: {gitRepo.branch}
-              </p>
+
+          {/* Git Repository */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm">
+              <GitBranch className="h-4 w-4 text-gray-400" />
+              <span className="text-gray-700 font-medium">Git Repository:</span>
             </div>
-          ) : (
-            <div className="ml-6 p-3 bg-amber-50 rounded-md border border-amber-200">
-              <p className="text-sm text-amber-800">
-                <Badge variant="outline" className="border-amber-400 text-amber-700">
-                  Not configured
-                </Badge>
-              </p>
-            </div>
-          )}
+            {gitRepo ? (
+              <div className="ml-6 p-3 bg-white rounded-md border border-gray-200">
+                <p className="text-sm font-medium text-gray-900">{gitRepo.name}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {gitRepo.url} • branch: {gitRepo.branch}
+                </p>
+              </div>
+            ) : (
+              <div className="ml-6 p-3 bg-amber-50 rounded-md border border-amber-200">
+                <p className="text-sm text-amber-800">
+                  <Badge variant="outline" className="border-amber-400 text-amber-700">
+                    Not configured
+                  </Badge>
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

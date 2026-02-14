@@ -142,15 +142,15 @@ export function AgentsDeployPage() {
   const handleActivate = useCallback(async () => {
     try {
       const config = buildDeployConfig()
-      await deployExecution.executeActivate(config)
+      const response = await deployExecution.executeActivate(config)
       toast({
         title: 'Success',
-        description: 'Configs activated via Cockpit Agent'
+        description: response?.message || 'Container restarted successfully'
       })
     } catch (error) {
       setErrorDetails({
         title: 'Activation Failed',
-        message: 'Failed to activate configs',
+        message: 'Failed to restart docker container',
         details: [(error as Error).message]
       })
       setShowErrorDialog(true)

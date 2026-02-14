@@ -168,6 +168,13 @@ def execute_deploy_agent(
         agent_name = agent.get("name", deploy_agent_id)
         logger.info("Agent found: %s", agent_name)
 
+        # Extract the cockpit agent_id for activation (different from UUID)
+        cockpit_agent_id = agent.get("agent_id")
+        if cockpit_agent_id:
+            logger.info("  - Cockpit Agent ID: %s", cockpit_agent_id)
+        else:
+            logger.warning("  ⚠ No agent_id configured for agent '%s' - activation will fail if requested", agent_name)
+
         agent_git_repo_id = agent.get("git_repository_id")
         if not agent_git_repo_id:
             return {
@@ -345,15 +352,7 @@ def execute_deploy_agent(
             logger.info("DEPLOY AGENT EXECUTOR COMPLETED SUCCESSFULLY")
             logger.info("=" * 80)
 
-            # TODO: Implement activate_after_deploy functionality
-            # When activate_after_deploy is True:
-            # 1. SSH into the agent
-            # 2. Pull latest changes from git repository
-            # 3. Restart the agent service
-            if activate_after_deploy:
-                logger.info("Activate after deploy is enabled (not yet implemented)")
-
-            return {
+            deployment_result = {
                 "success": True,
                 "message": "Successfully deployed configuration to git repository '%s'" % git_repository.name,
                 "template_id": deploy_template_id,
@@ -369,7 +368,73 @@ def execute_deploy_agent(
                 "files_changed": result.files_changed,
                 "pushed": result.pushed,
                 "timestamp": current_date,
+                "activated": False,
             }
+
+            # Step 8: Activate agent (if requested)
+            if activate_after_deploy:
+                logger.info("-" * 80)
+                logger.info("STEP 8: ACTIVATING AGENT")
+                logger.info("-" * 80)
+
+                # Check if agent has cockpit agent_id configured
+                if not cockpit_agent_id:
+                    logger.warning("⚠ Cannot activate agent - no agent_id configured in agent settings")
+                    deployment_result["activation_warning"] = "Agent has no agent_id configured for remote activation"
+                    deployment_result["message"] += " (activation skipped: no agent_id configured)"
+                else:
+                    task_context.update_state(
+                        state="PROGRESS",
+                        meta={"current": 95, "total": 100, "status": "Activating agent..."},
+                    )
+
+                    try:
+                        # Import service and get DB session
+                        from core.database import SessionLocal
+                        from services.cockpit_agent_service import CockpitAgentService
+
+                        db = SessionLocal()
+                        try:
+                            cockpit_service = CockpitAgentService(db)
+
+                            logger.info("Sending docker restart command to cockpit agent '%s'...", cockpit_agent_id)
+
+                            # Send docker restart command (60s timeout)
+                            # Use cockpit_agent_id (e.g., "grafana-01") NOT the UUID!
+                            activation_result = cockpit_service.send_docker_restart(
+                                agent_id=cockpit_agent_id,
+                                sent_by="celery_scheduler",
+                                timeout=60,
+                            )
+
+                            if activation_result.get("status") == "success":
+                                logger.info("✓ Agent activated successfully")
+                                logger.info("  Output: %s", activation_result.get("output", "none"))
+                                deployment_result["activated"] = True
+                                deployment_result["activation_output"] = activation_result.get("output")
+                                deployment_result["message"] += " and agent activated successfully"
+                            elif activation_result.get("status") == "timeout":
+                                logger.warning("⚠ Agent activation timed out")
+                                deployment_result["activation_warning"] = "Agent activation timed out after 60s"
+                                deployment_result["message"] += " (activation timed out)"
+                            else:
+                                logger.warning("⚠ Agent activation failed: %s", activation_result.get("error"))
+                                deployment_result["activation_warning"] = activation_result.get("error")
+                                deployment_result["message"] += " (activation failed: %s)" % activation_result.get("error")
+
+                        finally:
+                            db.close()
+
+                    except Exception as e:
+                        logger.error("⚠ Agent activation failed with exception: %s", e, exc_info=True)
+                        deployment_result["activation_warning"] = str(e)
+                        deployment_result["message"] += " (activation failed: %s)" % str(e)
+
+            logger.info("=" * 80)
+            logger.info("DEPLOY AGENT EXECUTOR COMPLETED")
+            logger.info("=" * 80)
+
+            return deployment_result
         else:
             return {
                 "success": False,

@@ -39,6 +39,7 @@ export function AgentModal({
 }: AgentModalProps) {
   const [formData, setFormData] = useState<Agent>({
     id: '',
+    agent_id: '',
     name: '',
     description: '',
     git_repository_id: null,
@@ -48,10 +49,14 @@ export function AgentModal({
 
   useEffect(() => {
     if (agent) {
-      setFormData(agent)
+      setFormData({
+        ...agent,
+        agent_id: agent.agent_id || '', // Ensure agent_id is always a string
+      })
     } else {
       setFormData({
         id: crypto.randomUUID(),
+        agent_id: '',
         name: '',
         description: '',
         git_repository_id: null,
@@ -62,6 +67,10 @@ export function AgentModal({
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
+
+    if (!formData.agent_id.trim()) {
+      newErrors.agent_id = 'Agent ID is required'
+    }
 
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required'
@@ -94,6 +103,26 @@ export function AgentModal({
         </div>
 
         <div className="space-y-4 py-4">
+          {/* Agent ID */}
+          <div className="space-y-2">
+            <Label htmlFor="agent-id">
+              Agent ID <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="agent-id"
+              placeholder="e.g., grafana-01, telegraf-prod, smokeping-main"
+              value={formData.agent_id}
+              onChange={(e) => setFormData({ ...formData, agent_id: e.target.value })}
+              className={errors.agent_id ? 'border-red-500' : ''}
+            />
+            {errors.agent_id && (
+              <p className="text-xs text-red-500">{errors.agent_id}</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Unique identifier used by the cockpit agent to register with Redis
+            </p>
+          </div>
+
           {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="agent-name">

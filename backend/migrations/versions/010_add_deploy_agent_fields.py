@@ -7,6 +7,13 @@ Adds columns needed for the deploy_agent job template type:
 - deploy_path: File path for the deployment
 - deploy_custom_variables: JSON string of user variable overrides
 - activate_after_deploy: Whether to activate (pull and restart) agent after deployment
+
+Note: Agent configuration stored in agents_settings.agents JSON includes:
+- id: Unique UUID for the agent record
+- agent_id: Unique identifier used by cockpit agent to register with Redis
+- name: Display name for the agent
+- description: Agent description
+- git_repository_id: Reference to git repository for agent configuration
 """
 
 from migrations.base import BaseMigration

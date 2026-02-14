@@ -3,6 +3,7 @@ import { useApi } from '@/hooks/use-api'
 
 export interface Agent {
   id: string
+  agent_id?: string
   name: string
   description: string
   git_repository_id: number | null
@@ -34,9 +35,12 @@ export function useAgentSelector() {
           const configuredAgents = response.data.agents
           setAgents(configuredAgents)
 
-          // Auto-select first agent if available
+          // Auto-select first agent if available and has agent_id configured
           if (configuredAgents.length > 0 && configuredAgents[0]) {
-            setSelectedAgentId(configuredAgents[0].id)
+            const firstAgent = configuredAgents[0]
+            if (firstAgent.agent_id) {
+              setSelectedAgentId(firstAgent.agent_id)
+            }
           }
         }
       } catch (error) {
@@ -50,7 +54,7 @@ export function useAgentSelector() {
   }, [apiCall])
 
   const selectedAgent = useMemo(
-    () => agents.find(a => a.id === selectedAgentId) || null,
+    () => agents.find(a => a.agent_id === selectedAgentId) || null,
     [agents, selectedAgentId]
   )
 

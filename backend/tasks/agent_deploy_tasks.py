@@ -24,6 +24,7 @@ def deploy_agent_task(
     agent_id: Optional[str] = None,
     path: Optional[str] = None,
     inventory_id: Optional[int] = None,
+    activate_after_deploy: bool = True,
 ) -> Dict[str, Any]:
     """
     Deploy agent configuration to Git repository.
@@ -34,6 +35,7 @@ def deploy_agent_task(
     3. Clone/open Git repository
     4. Write rendered configuration to file
     5. Commit and push changes to Git
+    6. Optionally activate agent (git pull + docker restart)
 
     Args:
         self: Task instance (for updating state)
@@ -42,6 +44,7 @@ def deploy_agent_task(
         agent_id: Agent ID for deployment configuration
         path: Deployment file path (optional, uses template default if not provided)
         inventory_id: Inventory ID for template rendering (optional, uses template default)
+        activate_after_deploy: Whether to activate agent after deployment (default: True)
 
     Returns:
         dict: Deployment results with success status, message, commit info
@@ -54,6 +57,7 @@ def deploy_agent_task(
         logger.info(f"Agent ID: {agent_id}")
         logger.info(f"Path: {path}")
         logger.info(f"Inventory ID: {inventory_id}")
+        logger.info(f"Activate after deploy: {activate_after_deploy}")
         logger.info(f"Custom variables: {list(custom_variables.keys()) if custom_variables else 'none'}")
 
         self.update_state(
@@ -140,6 +144,13 @@ def deploy_agent_task(
 
         agent_name = agent.get("name", agent_id)
         logger.info(f"✓ Agent found: {agent_name}")
+
+        # Extract the cockpit agent_id for activation (different from UUID)
+        cockpit_agent_id = agent.get("agent_id")
+        if cockpit_agent_id:
+            logger.info(f"  - Cockpit Agent ID: {cockpit_agent_id}")
+        else:
+            logger.warning(f"  ⚠ No agent_id configured for agent '{agent_name}' - activation will fail if requested")
 
         # Get the git repository ID from the agent configuration
         agent_git_repo_id = agent.get("git_repository_id")
@@ -324,13 +335,13 @@ def deploy_agent_task(
 
         if result.success:
             logger.info("=" * 80)
-            logger.info("AGENT DEPLOYMENT TASK COMPLETED SUCCESSFULLY")
+            logger.info("GIT DEPLOYMENT COMPLETED SUCCESSFULLY")
             logger.info("=" * 80)
             logger.info(f"✓ Commit SHA: {result.commit_sha[:8] if result.commit_sha else 'none'}")
             logger.info(f"✓ Files changed: {result.files_changed}")
             logger.info(f"✓ Pushed: {result.pushed}")
 
-            return {
+            deployment_result = {
                 "success": True,
                 "message": f"Successfully deployed configuration to git repository '{git_repository.name}'",
                 "template_id": template_id,
@@ -346,7 +357,73 @@ def deploy_agent_task(
                 "files_changed": result.files_changed,
                 "pushed": result.pushed,
                 "timestamp": current_date,
+                "activated": False,
             }
+
+            # Step 8: Activate agent (if requested)
+            if activate_after_deploy:
+                logger.info("-" * 80)
+                logger.info("STEP 8: ACTIVATING AGENT")
+                logger.info("-" * 80)
+
+                # Check if agent has cockpit agent_id configured
+                if not cockpit_agent_id:
+                    logger.warning("⚠ Cannot activate agent - no agent_id configured in agent settings")
+                    deployment_result["activation_warning"] = "Agent has no agent_id configured for remote activation"
+                    deployment_result["message"] += " (activation skipped: no agent_id configured)"
+                else:
+                    self.update_state(
+                        state="PROGRESS",
+                        meta={"current": 95, "total": 100, "status": "Activating agent..."},
+                    )
+
+                    try:
+                        # Import service and get DB session
+                        from core.database import SessionLocal
+                        from services.cockpit_agent_service import CockpitAgentService
+
+                        db = SessionLocal()
+                        try:
+                            cockpit_service = CockpitAgentService(db)
+
+                            logger.info(f"Sending docker restart command to cockpit agent '{cockpit_agent_id}'...")
+
+                            # Send docker restart command (60s timeout)
+                            # Use cockpit_agent_id (e.g., "grafana-01") NOT the UUID!
+                            activation_result = cockpit_service.send_docker_restart(
+                                agent_id=cockpit_agent_id,
+                                sent_by="celery_task",
+                                timeout=60,
+                            )
+
+                            if activation_result.get("status") == "success":
+                                logger.info("✓ Agent activated successfully")
+                                logger.info(f"  Output: {activation_result.get('output', 'none')}")
+                                deployment_result["activated"] = True
+                                deployment_result["activation_output"] = activation_result.get("output")
+                                deployment_result["message"] += " and agent activated successfully"
+                            elif activation_result.get("status") == "timeout":
+                                logger.warning("⚠ Agent activation timed out")
+                                deployment_result["activation_warning"] = "Agent activation timed out after 60s"
+                                deployment_result["message"] += " (activation timed out)"
+                            else:
+                                logger.warning(f"⚠ Agent activation failed: {activation_result.get('error')}")
+                                deployment_result["activation_warning"] = activation_result.get("error")
+                                deployment_result["message"] += f" (activation failed: {activation_result.get('error')})"
+
+                        finally:
+                            db.close()
+
+                    except Exception as e:
+                        logger.error(f"⚠ Agent activation failed with exception: {e}", exc_info=True)
+                        deployment_result["activation_warning"] = str(e)
+                        deployment_result["message"] += f" (activation failed: {str(e)})"
+
+            logger.info("=" * 80)
+            logger.info("AGENT DEPLOYMENT TASK COMPLETED")
+            logger.info("=" * 80)
+
+            return deployment_result
         else:
             error_msg = f"Failed to commit/push to git: {result.message}"
             logger.error(f"ERROR: {error_msg}")

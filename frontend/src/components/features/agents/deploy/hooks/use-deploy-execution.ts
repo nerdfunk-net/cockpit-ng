@@ -91,16 +91,24 @@ export function useDeployExecution() {
   const executeActivate = useCallback(async (config: DeployConfig) => {
     setIsActivating(true)
     try {
-      // API call: POST /agents/deploy/activate
-      const response = await apiCall<{ results: DeployResult[] }>(
-        'agents/deploy/activate',
+      // API call: POST /api/cockpit-agent/{agent_id}/docker-restart
+      const agentId = config.agentId
+      const response = await apiCall<{ status: string; output: string; error: string | null }>(
+        `cockpit-agent/${agentId}/docker-restart`,
         {
           method: 'POST',
-          body: JSON.stringify(config)
         }
       )
-      setDeployResults(response.results)
-      setShowDeployResults(true)
+      
+      if (response.status === 'error') {
+        throw new Error(response.error || 'Docker restart failed')
+      }
+
+      // Success - show the output
+      return {
+        success: true,
+        message: response.output || 'Container restarted successfully'
+      }
     } catch (error) {
       console.error('Activation failed:', error)
       throw error

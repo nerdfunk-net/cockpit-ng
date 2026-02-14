@@ -1,5 +1,6 @@
 export interface Agent {
   id: string
+  agent_id?: string
   name: string
   description: string
   git_repository_id: number | null

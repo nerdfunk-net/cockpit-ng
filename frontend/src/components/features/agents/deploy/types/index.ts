@@ -3,7 +3,7 @@ export interface DeployConfig {
   deviceIds: string[]
   templateId: number
   variables: Record<string, string>
-  agentId: string
+  agentId: string  // The agent_id field from agent configuration (not UUID)
   path?: string
   inventoryId?: number
 }
