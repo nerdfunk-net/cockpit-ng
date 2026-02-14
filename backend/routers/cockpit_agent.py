@@ -33,7 +33,7 @@ router = APIRouter(
 @router.post(
     "/command",
     response_model=CommandResponse,
-    dependencies=[Depends(require_permission("cockpit_agents", "write"))],
+    dependencies=[Depends(require_permission("cockpit_agents", "execute"))],
 )
 async def send_command(
     request: CommandRequest,
@@ -80,7 +80,7 @@ async def send_command(
 @router.post(
     "/git-pull",
     response_model=CommandResponse,
-    dependencies=[Depends(require_permission("cockpit_agents", "write"))],
+    dependencies=[Depends(require_permission("cockpit_agents", "execute"))],
 )
 async def git_pull(
     request: GitPullRequest,
@@ -120,7 +120,7 @@ async def git_pull(
 @router.post(
     "/docker-restart",
     response_model=CommandResponse,
-    dependencies=[Depends(require_permission("cockpit_agents", "write"))],
+    dependencies=[Depends(require_permission("cockpit_agents", "execute"))],
 )
 async def docker_restart(
     request: DockerRestartRequest,

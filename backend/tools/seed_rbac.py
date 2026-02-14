@@ -364,6 +364,9 @@ def seed_permissions(verbose: bool = True):
         ("jobs", "write", "Create/modify scheduled jobs"),
         ("jobs", "delete", "Delete scheduled jobs"),
         ("jobs", "execute", "Execute jobs manually"),
+        # Cockpit Agent permissions
+        ("cockpit_agents", "read", "View Cockpit agents and their status"),
+        ("cockpit_agents", "execute", "Execute commands on Cockpit agents"),
     ]
 
     created_count = 0
