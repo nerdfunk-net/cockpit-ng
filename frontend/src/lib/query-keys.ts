@@ -257,6 +257,13 @@ export const queryKeys = {
     permissions: () => [...queryKeys.rbac.all, 'permissions'] as const,
   },
 
+  // Cockpit Agents
+  cockpitAgents: {
+    all: ['cockpitAgents'] as const,
+    list: () => [...queryKeys.cockpitAgents.all, 'list'] as const,
+    history: (agentId: string) => [...queryKeys.cockpitAgents.all, 'history', agentId] as const,
+  },
+
   // Common Settings
   commonSettings: {
     all: ['commonSettings'] as const,

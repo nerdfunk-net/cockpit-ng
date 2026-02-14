@@ -45,6 +45,7 @@ import {
   GitCommit,
   ArrowLeftRight,
   Monitor,
+  Activity,
 } from 'lucide-react'
 
 interface NavItem {
@@ -100,6 +101,7 @@ const navigationSections: NavSection[] = [
   {
     title: 'Agents',
     items: [
+      { label: 'Operating', href: '/agents/operating', icon: Activity },
       { label: 'Deploy', href: '/agents/deploy', icon: GitCommit },
       { label: 'Templates', href: '/agents/templates', icon: FileText },
     ],
