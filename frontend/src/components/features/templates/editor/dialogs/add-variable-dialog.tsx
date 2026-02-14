@@ -20,6 +20,8 @@ export function AddVariableDialog({
   onOpenChange,
   onAdd,
   existingVariableNames,
+  category,
+  inventoryId,
 }: AddVariableDialogProps) {
   const handleAdd = useCallback(
     (name: string, value: string) => {
@@ -83,7 +85,10 @@ export function AddVariableDialog({
 
             <TabsContent value="inventory" className="mt-4">
               <InventoryMetadataTab
+                onAdd={handleAdd}
                 existingVariableNames={existingVariableNames}
+                category={category}
+                inventoryId={inventoryId}
               />
             </TabsContent>
           </Tabs>

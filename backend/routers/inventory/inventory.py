@@ -407,3 +407,95 @@ async def resolve_inventory_to_devices_detailed(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to resolve detailed inventory: {str(e)}",
         )
+
+
+@router.get("/{inventory_id}/analyze")
+async def analyze_inventory(
+    inventory_id: int,
+    current_user: dict = Depends(require_permission("general.inventory", "read")),
+) -> dict:
+    """
+    Analyze inventory to extract distinct values from all devices.
+
+    This endpoint loads a saved inventory, retrieves all matching devices,
+    fetches detailed information for each device, and extracts distinct
+    values for:
+    - Locations
+    - Tags
+    - Custom Fields (returns a dict with field names as keys)
+    - Statuses
+    - Roles
+
+    Args:
+        inventory_id: ID of the saved inventory to analyze
+        current_user: Authenticated user (injected)
+
+    Returns:
+        Dict containing distinct lists of values for each category:
+        {
+            "locations": ["Berlin", "Munich"],
+            "tags": ["production", "core"],
+            "custom_fields": {
+                "net": ["net1", "net2"],
+                "environment": ["prod", "dev"]
+            },
+            "statuses": ["active", "planned"],
+            "roles": ["router", "switch"],
+            "device_count": 10
+        }
+
+    Example:
+        GET /api/inventory/42/analyze
+
+        Response:
+        {
+            "locations": ["Berlin", "Munich"],
+            "tags": ["production"],
+            "custom_fields": {"net": ["net1", "net2"]},
+            "statuses": ["active"],
+            "roles": ["router"],
+            "device_count": 5
+        }
+    """
+    try:
+        username = current_user.get("username")
+        if not username:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Username not found in token",
+            )
+
+        logger.info(f"Analyzing inventory ID {inventory_id} for user '{username}'")
+
+        # Call the inventory service to perform analysis
+        result = await inventory_service.analyze_inventory(inventory_id, username)
+
+        return result
+
+    except ValueError as e:
+        # Handle specific errors from the service
+        error_msg = str(e)
+        if "not found" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=error_msg,
+            )
+        elif "Access denied" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=error_msg,
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_msg,
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error analyzing inventory {inventory_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to analyze inventory: {str(e)}",
+        )
+

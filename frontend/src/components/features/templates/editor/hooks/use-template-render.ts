@@ -51,7 +51,8 @@ export function useTemplateRender() {
       try {
         // Build user variables, filtering out pre_run.raw and pre_run.parsed
         // as the backend will execute and populate these dynamically
-        const userVariables: Record<string, string> = {}
+        // Parse JSON strings into objects so Jinja2 can use them directly
+        const userVariables: Record<string, unknown> = {}
         for (const v of variables) {
           // Skip auto-filled variables and pre_run variables
           if (v.name && v.value && !v.isAutoFilled) {
@@ -59,7 +60,18 @@ export function useTemplateRender() {
             if (v.name === 'pre_run.raw' || v.name === 'pre_run.parsed') {
               continue
             }
-            userVariables[v.name] = v.value
+
+            // Try to parse JSON strings into objects for proper template usage
+            // If parsing fails, keep the original string value
+            let parsedValue: unknown = v.value
+            try {
+              parsedValue = JSON.parse(v.value)
+            } catch {
+              // Not JSON or invalid JSON - keep as string
+              parsedValue = v.value
+            }
+
+            userVariables[v.name] = parsedValue
           }
         }
 

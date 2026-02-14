@@ -1839,6 +1839,167 @@ class InventoryService:
             logger.error(f"Error loading inventory: {e}")
             raise
 
+    async def analyze_inventory(self, inventory_id: int, username: str) -> dict:
+        """
+        Analyze inventory to extract distinct values for locations, tags, custom fields,
+        statuses, and roles from all devices.
+
+        Args:
+            inventory_id: ID of the saved inventory to analyze
+            username: Username of the requesting user (for access control)
+
+        Returns:
+            Dictionary containing distinct lists of values for each category
+
+        Raises:
+            ValueError: If inventory not found or access denied
+        """
+        try:
+            logger.info(f"Analyzing inventory ID {inventory_id} for user '{username}'")
+
+            # Load inventory by ID
+            from inventory_manager import inventory_manager
+            from utils.inventory_converter import convert_saved_inventory_to_operations
+            from services.nautobot.devices.query import device_query_service
+
+            inventory = inventory_manager.get_inventory(inventory_id)
+
+            if not inventory:
+                raise ValueError(f"Inventory with ID {inventory_id} not found")
+
+            # Check access control
+            if (
+                inventory.get("scope") == "private"
+                and inventory.get("created_by") != username
+            ):
+                raise ValueError(f"Access denied to private inventory {inventory_id}")
+
+            # Convert stored conditions to LogicalOperations
+            conditions = inventory.get("conditions", [])
+            if not conditions:
+                logger.warning(f"Inventory {inventory_id} has no conditions")
+                return {
+                    "locations": [],
+                    "tags": [],
+                    "custom_fields": {},
+                    "statuses": [],
+                    "roles": [],
+                    "namespaces": [],
+                    "device_count": 0,
+                }
+
+            operations = convert_saved_inventory_to_operations(conditions)
+
+            # Get list of devices
+            devices, _ = await self.preview_inventory(operations)
+            logger.info(f"Found {len(devices)} devices to analyze")
+
+            if not devices:
+                return {
+                    "locations": [],
+                    "tags": [],
+                    "custom_fields": {},
+                    "statuses": [],
+                    "roles": [],
+                    "namespaces": [],
+                    "device_count": 0,
+                }
+
+            # Initialize sets for distinct values
+            locations_set: Set[str] = set()
+            tags_set: Set[str] = set()
+            custom_fields_dict: Dict[str, Set[str]] = {}
+            statuses_set: Set[str] = set()
+            roles_set: Set[str] = set()
+
+            # Analyze each device
+            for i, device in enumerate(devices):
+                try:
+                    logger.debug(
+                        f"Analyzing device {i + 1}/{len(devices)}: {device.name} ({device.id})"
+                    )
+
+                    # Get detailed device information
+                    device_details = await device_query_service.get_device_details(
+                        device.id, use_cache=True
+                    )
+
+                    # Extract location
+                    if device_details.get("location"):
+                        location_name = device_details["location"].get("name")
+                        if location_name:
+                            locations_set.add(location_name)
+
+                    # Extract tags
+                    if device_details.get("tags"):
+                        for tag in device_details["tags"]:
+                            tag_name = tag.get("name")
+                            if tag_name:
+                                tags_set.add(tag_name)
+
+                    # Extract custom fields
+                    custom_field_data = device_details.get("_custom_field_data", {})
+                    if custom_field_data:
+                        for field_key, field_value in custom_field_data.items():
+                            if field_value is not None:  # Skip None values
+                                # Initialize set for this custom field if not exists
+                                if field_key not in custom_fields_dict:
+                                    custom_fields_dict[field_key] = set()
+
+                                # Handle different value types
+                                if isinstance(field_value, list):
+                                    # For multi-select fields, add each value
+                                    for val in field_value:
+                                        if val:
+                                            custom_fields_dict[field_key].add(str(val))
+                                else:
+                                    # For single values, add directly
+                                    custom_fields_dict[field_key].add(str(field_value))
+
+                    # Extract status
+                    if device_details.get("status"):
+                        status_name = device_details["status"].get("name")
+                        if status_name:
+                            statuses_set.add(status_name)
+
+                    # Extract role
+                    if device_details.get("role"):
+                        role_name = device_details["role"].get("name")
+                        if role_name:
+                            roles_set.add(role_name)
+
+                except Exception as e:
+                    logger.error(
+                        f"Error analyzing device {device.name} ({device.id}): {e}"
+                    )
+                    # Continue with next device
+
+            # Convert sets to sorted lists for response
+            response = {
+                "locations": sorted(list(locations_set)),
+                "tags": sorted(list(tags_set)),
+                "custom_fields": {
+                    key: sorted(list(values))
+                    for key, values in custom_fields_dict.items()
+                },
+                "statuses": sorted(list(statuses_set)),
+                "roles": sorted(list(roles_set)),
+                "device_count": len(devices),
+            }
+
+            logger.info(
+                f"Analysis complete: {len(locations_set)} locations, "
+                f"{len(tags_set)} tags, {len(custom_fields_dict)} custom field types, "
+                f"{len(statuses_set)} statuses, {len(roles_set)} roles"
+            )
+
+            return response
+
+        except Exception as e:
+            logger.error(f"Error analyzing inventory: {e}", exc_info=True)
+            raise
+
 
 # Global service instance
 inventory_service = InventoryService()
+

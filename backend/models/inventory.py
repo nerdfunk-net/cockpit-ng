@@ -130,3 +130,27 @@ class ListInventoriesResponse(BaseModel):
         ..., description="List of saved inventories"
     )
     total: int = Field(..., description="Total number of inventories")
+
+
+class InventoryAnalysisResponse(BaseModel):
+    """Response for inventory analysis with distinct values."""
+
+    locations: List[str] = Field(
+        default_factory=list, description="Distinct list of location names"
+    )
+    tags: List[str] = Field(
+        default_factory=list, description="Distinct list of tag names"
+    )
+    custom_fields: dict[str, List[str]] = Field(
+        default_factory=dict,
+        description="Dictionary of custom field names to distinct value lists",
+    )
+    statuses: List[str] = Field(
+        default_factory=list, description="Distinct list of status names"
+    )
+    roles: List[str] = Field(
+        default_factory=list, description="Distinct list of role names"
+    )
+    device_count: int = Field(
+        ..., description="Total number of devices analyzed"
+    )

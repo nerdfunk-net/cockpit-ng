@@ -1,10 +1,33 @@
 'use client'
 
+import { useMemo } from 'react'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Play, RefreshCw } from 'lucide-react'
 import type { TemplateVariable } from '../types'
+
+/**
+ * Check if a string is valid JSON and return formatted version
+ */
+function tryFormatJSON(value: string): { isJSON: boolean; formatted: string } {
+  if (!value || typeof value !== 'string') {
+    return { isJSON: false, formatted: value }
+  }
+
+  try {
+    const parsed = JSON.parse(value)
+    // Successfully parsed - format it nicely
+    return {
+      isJSON: true,
+      formatted: JSON.stringify(parsed, null, 2),
+    }
+  } catch {
+    // Not JSON - return as is
+    return { isJSON: false, formatted: value }
+  }
+}
 
 interface VariableValuesPanelProps {
   variables: TemplateVariable[]
@@ -23,11 +46,19 @@ export function VariableValuesPanel({
     ? variables.find((v) => v.id === selectedVariableId)
     : null
 
+  // Format the selected variable's value if it's JSON
+  const formattedValue = useMemo(() => {
+    if (!selectedVariable?.value) {
+      return { isJSON: false, formatted: '' }
+    }
+    return tryFormatJSON(selectedVariable.value)
+  }, [selectedVariable])
+
   const handleExecuteCommand = async () => {
     if (!selectedVariable || !selectedVariable.requiresExecution || !onExecutePreRun) {
       return
     }
-    
+
     await onExecutePreRun()
   }
 
@@ -63,11 +94,16 @@ export function VariableValuesPanel({
 
             {/* Variable value */}
             <div className="space-y-1">
-              <Label className="text-xs text-gray-500">Value</Label>
+              <Label className="text-xs text-gray-500">
+                Value
+                {formattedValue.isJSON && (
+                  <span className="ml-2 text-blue-600 font-normal">(JSON Object)</span>
+                )}
+              </Label>
               {selectedVariable.isAutoFilled ? (
                 selectedVariable.value ? (
-                  <pre className="text-xs bg-gray-50 px-2 py-1.5 rounded border border-gray-200 overflow-auto max-h-[400px] font-mono">
-                    {selectedVariable.value}
+                  <pre className="text-xs bg-gray-50 px-2 py-1.5 rounded border border-gray-200 overflow-auto max-h-[400px] font-mono whitespace-pre">
+                    {formattedValue.formatted}
                   </pre>
                 ) : selectedVariable.requiresExecution ? (
                   <div className="space-y-2">
@@ -102,6 +138,16 @@ export function VariableValuesPanel({
                     Auto-filled at render time from backend context
                   </p>
                 )
+              ) : formattedValue.isJSON ? (
+                <Textarea
+                  value={formattedValue.formatted}
+                  onChange={(e) =>
+                    onUpdateVariable(selectedVariable.id, 'value', e.target.value)
+                  }
+                  placeholder="Enter value..."
+                  className="text-sm font-mono min-h-[200px] resize-y"
+                  spellCheck={false}
+                />
               ) : (
                 <Input
                   value={selectedVariable.value}

@@ -583,6 +583,8 @@ function TemplateEditorContent() {
         onOpenChange={setAddVariableDialogOpen}
         onAdd={handleAddVariableFromDialog}
         existingVariableNames={existingVariableNames}
+        category={watchedCategory}
+        inventoryId={watchedInventoryId}
       />
     </div>
   )
