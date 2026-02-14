@@ -36,7 +36,7 @@ const DEFAULT_OPTIONS: UseGitRepositoriesQueryOptions = {}
  * Hook for fetching Git repositories using TanStack Query
  *
  * Provides automatic caching, refetching, and loading states for Git repositories.
- * Repositories are used for device configs, templates, Ansible, etc.
+ * Repositories are used for device configs, templates, Agents, etc.
  *
  * @param options.enabled - Whether to enable the query (default: true)
  *

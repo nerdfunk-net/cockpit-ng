@@ -4,7 +4,6 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -85,14 +84,14 @@ export function AgentModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>{agent ? 'Edit Agent' : 'Add New Agent'}</DialogTitle>
-          <DialogDescription>
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 px-6 -mt-6 -mx-6 mb-4 rounded-t-lg">
+          <DialogTitle className="text-white">{agent ? 'Edit Agent' : 'Add New Agent'}</DialogTitle>
+          <DialogDescription className="text-blue-100">
             {agent
               ? 'Update the agent configuration details below.'
               : 'Configure a new agent for monitoring and observability.'}
           </DialogDescription>
-        </DialogHeader>
+        </div>
 
         <div className="space-y-4 py-4">
           {/* Name */}
@@ -172,13 +171,13 @@ export function AgentModal({
                   <p className="text-xs text-red-500">{errors.git_repository_id}</p>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Only repositories with category &quot;Cockpit Configs&quot; are shown
+                  Only repositories with category &quot;Agent&quot; are shown
                 </p>
               </>
             ) : (
               <div className="p-4 border border-amber-200 rounded-md bg-amber-50">
                 <p className="text-sm text-amber-800">
-                  <strong>No repositories found.</strong> Please add a Cockpit Configs repository in
+                  <strong>No repositories found.</strong> Please add an Agent repository in
                   Settings → Git Management.
                 </p>
               </div>

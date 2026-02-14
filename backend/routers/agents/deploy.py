@@ -174,26 +174,47 @@ async def agent_deploy_to_git(
                 detail=f"Template content for ID {request.templateId} not found",
             )
 
-        # Fetch agent settings to get git repository ID
+        # Fetch agent settings and find the specific agent
         from repositories.settings.settings_repository import AgentsSettingRepository
 
         agents_repo = AgentsSettingRepository()
         agents_settings = agents_repo.get_settings()
 
-        if not agents_settings or not agents_settings.git_repository_id:
+        if not agents_settings or not agents_settings.agents:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No git repository configured for agents. Please configure git repository in agent settings.",
+                detail="No agents configured. Please configure agents in agent settings.",
+            )
+
+        # Find the specific agent by ID
+        agent = None
+        for a in agents_settings.agents:
+            if a.get("id") == request.agentId:
+                agent = a
+                break
+
+        if not agent:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Agent with ID {request.agentId} not found in agent settings.",
+            )
+
+        # Get the git repository ID from the agent configuration
+        agent_git_repo_id = agent.get("git_repository_id")
+        if not agent_git_repo_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"No git repository configured for agent '{agent.get('name', request.agentId)}'. Please configure a git repository for this agent.",
             )
 
         # Fetch the git repository configuration
         git_repo_repo = GitRepositoryRepository()
-        git_repository = git_repo_repo.get_by_id(agents_settings.git_repository_id)
+        git_repository = git_repo_repo.get_by_id(agent_git_repo_id)
 
         if not git_repository:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Git repository with ID {agents_settings.git_repository_id} not found",
+                detail=f"Git repository with ID {agent_git_repo_id} not found",
             )
 
         # Convert SQLAlchemy model to dict for git_service
@@ -204,6 +225,7 @@ async def agent_deploy_to_git(
             "branch": git_repository.branch,
             "auth_type": git_repository.auth_type,
             "credential_name": git_repository.credential_name,
+            "path": git_repository.path,
             "verify_ssl": git_repository.verify_ssl,
             "git_author_name": git_repository.git_author_name,
             "git_author_email": git_repository.git_author_email,
@@ -239,13 +261,8 @@ async def agent_deploy_to_git(
 
         logger.info(f"Wrote rendered template to {full_file_path}")
 
-        # Find agent name
-        agent_name = "Unknown"
-        if agents_settings.agents:
-            for agent in agents_settings.agents:
-                if agent.get("id") == request.agentId:
-                    agent_name = agent.get("name", request.agentId)
-                    break
+        # Get agent name (agent was already found earlier)
+        agent_name = agent.get("name", request.agentId)
 
         # Prepare commit message
         current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

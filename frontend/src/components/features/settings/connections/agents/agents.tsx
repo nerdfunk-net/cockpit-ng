@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
@@ -62,11 +61,11 @@ export default function AgentsSettingsForm() {
       const response = await apiCall('git-repositories') as GitRepositoriesResponse
 
       if (response.repositories) {
-        // Filter for Cockpit Configs category (case-insensitive)
-        const cockpitRepos = response.repositories.filter(repo =>
-          repo.category.toLowerCase() === 'cockpit_configs'
+        // Filter for Agent category (case-insensitive)
+        const agentRepos = response.repositories.filter(repo =>
+          repo.category.toLowerCase() === 'agent'
         )
-        setGitRepositories(cockpitRepos)
+        setGitRepositories(agentRepos)
       }
     } catch (error) {
       console.error('Error loading git repositories:', error)
@@ -184,12 +183,12 @@ export default function AgentsSettingsForm() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-3 rounded-lg">
-            <BarChart3 className="h-8 w-8 text-blue-600" />
+          <div className="bg-blue-100 p-2 rounded-lg">
+            <BarChart3 className="h-6 w-6 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">Agents Configuration</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl font-bold text-gray-900">Agents Configuration</h1>
+            <p className="text-gray-600 mt-1">
               Configure external monitoring and observability agents
             </p>
           </div>
@@ -222,38 +221,49 @@ export default function AgentsSettingsForm() {
       )}
 
       {/* Agents List */}
-      {agents.length === 0 ? (
-        <Card className="border-gray-200">
-          <div className="p-12 text-center">
-            <div className="flex justify-center mb-4">
-              <div className="bg-gray-100 p-4 rounded-full">
-                <BarChart3 className="h-8 w-8 text-gray-400" />
-              </div>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Agents Configured</h3>
-            <p className="text-sm text-gray-600 mb-6 max-w-md mx-auto">
-              Get started by adding your first agent. Configure monitoring tools like Grafana, Telegraf,
-              or Smokeping to keep your infrastructure observable.
-            </p>
-            <Button onClick={handleAddAgent} className="flex items-center gap-2 mx-auto">
-              <Plus className="h-4 w-4" />
-              Add Your First Agent
-            </Button>
+      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+          <div className="flex items-center space-x-2">
+            <BarChart3 className="h-4 w-4" />
+            <span className="text-sm font-medium">Configured Agents</span>
           </div>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {agents.map((agent) => (
-            <AgentCard
-              key={agent.id}
-              agent={agent}
-              gitRepositories={gitRepositories}
-              onEdit={handleEditAgent}
-              onRemove={handleRemoveAgent}
-            />
-          ))}
+          <div className="text-xs text-blue-100">
+            {agents.length} agent{agents.length !== 1 ? 's' : ''} configured
+          </div>
         </div>
-      )}
+        <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+          {agents.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <div className="flex justify-center mb-4">
+                <div className="bg-gray-100 p-4 rounded-full">
+                  <BarChart3 className="h-8 w-8 text-gray-400" />
+                </div>
+              </div>
+              <p className="text-lg font-medium">No Agents Configured</p>
+              <p className="text-sm mt-1 max-w-md mx-auto">
+                Get started by adding your first agent. Configure monitoring tools like Grafana, Telegraf,
+                or Smokeping to keep your infrastructure observable.
+              </p>
+              <Button onClick={handleAddAgent} className="flex items-center gap-2 mx-auto mt-6">
+                <Plus className="h-4 w-4" />
+                Add Your First Agent
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {agents.map((agent) => (
+                <AgentCard
+                  key={agent.id}
+                  agent={agent}
+                  gitRepositories={gitRepositories}
+                  onEdit={handleEditAgent}
+                  onRemove={handleRemoveAgent}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Agent Modal */}
       <AgentModal

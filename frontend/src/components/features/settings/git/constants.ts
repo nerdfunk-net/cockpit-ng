@@ -28,7 +28,7 @@ export const REPOSITORY_CATEGORIES = [
   { value: 'device_configs', label: 'Device Configs' },
   { value: 'cockpit_configs', label: 'Cockpit Configs' },
   { value: 'templates', label: 'Templates' },
-  { value: 'ansible', label: 'Ansible' },
+  { value: 'agent', label: 'Agents' },
 ] as const
 
 // Authentication types

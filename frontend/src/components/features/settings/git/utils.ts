@@ -90,7 +90,7 @@ export function getCategoryBadgeColor(category: string): string {
     case 'device_configs': return 'bg-blue-100 text-blue-800 hover:bg-blue-200'
     case 'cockpit_configs': return 'bg-cyan-100 text-cyan-800 hover:bg-cyan-200'
     case 'templates': return 'bg-purple-100 text-purple-800 hover:bg-purple-200'
-    case 'ansible': return 'bg-orange-100 text-orange-800 hover:bg-orange-200'
+    case 'agent': return 'bg-orange-100 text-orange-800 hover:bg-orange-200'
     default: return 'bg-gray-100 text-gray-800 hover:bg-gray-200'
   }
 }
