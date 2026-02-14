@@ -37,7 +37,7 @@ export function RenderedOutputDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col p-0">
+      <DialogContent className="!max-w-[90vw] max-h-[80vh] flex flex-col p-0">
         <DialogHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 px-6 rounded-t-lg">
           <DialogTitle className="flex items-center gap-2 text-white">
             {result?.success ? (
