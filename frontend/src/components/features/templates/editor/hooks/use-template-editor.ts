@@ -63,6 +63,8 @@ export function useTemplateEditor() {
         description: string
         scope: string
         use_nautobot_context: boolean
+        pass_snmp_mapping: boolean
+        inventory_id: number | null
         variables: Record<string, string>
         pre_run_command: string | null
         credential_id: number | null
@@ -115,8 +117,8 @@ export function useTemplateEditor() {
         scope: (templateData.scope as 'global' | 'private') || 'global',
         content: templateContent || '',
         // Agent-specific fields
-        inventoryId: null,
-        passSnmpMapping: true,
+        inventoryId: templateData.inventory_id ?? null,
+        passSnmpMapping: templateData.pass_snmp_mapping ?? true,
         useNautobotContext: templateData.use_nautobot_context ?? false,
         path: templateData.file_path || '',
         // Netmiko-specific fields

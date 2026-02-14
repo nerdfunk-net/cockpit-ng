@@ -68,6 +68,9 @@ class TemplateRequest(BaseModel):
     pass_snmp_mapping: Optional[bool] = Field(
         default=False, description="Whether to include SNMP mapping in context (agent templates)"
     )
+    inventory_id: Optional[int] = Field(
+        None, description="ID of saved inventory to use for agent templates"
+    )
     pre_run_command: Optional[str] = Field(
         None,
         description="Command to execute on device before rendering. Output is parsed with TextFSM and available as context.",
@@ -108,6 +111,7 @@ class TemplateResponse(BaseModel):
     tags: List[str]
     use_nautobot_context: bool
     pass_snmp_mapping: bool = False
+    inventory_id: Optional[int] = None
     pre_run_command: Optional[str] = None
     credential_id: Optional[int] = None
     execution_mode: Optional[str] = None
@@ -254,6 +258,12 @@ class TemplateUpdateRequest(BaseModel):
     tags: Optional[List[str]] = Field(None, description="Template tags")
     use_nautobot_context: Optional[bool] = Field(
         None, description="Whether to use Nautobot context when rendering"
+    )
+    pass_snmp_mapping: Optional[bool] = Field(
+        None, description="Whether to include SNMP mapping in context (agent templates)"
+    )
+    inventory_id: Optional[int] = Field(
+        None, description="ID of saved inventory to use for agent templates"
     )
     pre_run_command: Optional[str] = Field(
         None,

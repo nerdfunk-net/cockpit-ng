@@ -956,7 +956,8 @@ async def advanced_render_template(
                                         use_cache=True,
                                     )
                                 )
-                                device_details[device.id] = device_data
+                                # Use device name (hostname) as key for user-friendly Jinja2 templates
+                                device_details[device.name] = device_data
                             except Exception as e:
                                 warning_msg = f"Failed to fetch details for device {device.id}: {str(e)}"
                                 logger.warning(warning_msg)

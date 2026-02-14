@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { GitCommit } from 'lucide-react'
@@ -50,6 +50,20 @@ export function AgentsDeployPage() {
   const [showErrorDialog, setShowErrorDialog] = useState(false)
   const [errorDetails, setErrorDetails] = useState<ErrorDetails | null>(null)
 
+  // Clear variable overrides when template changes
+  useEffect(() => {
+    variableManager.clearOverrides()
+  }, [templateManager.selectedTemplateId, variableManager])
+
+  // Update deployPath when template changes (use template's file_path as default)
+  useEffect(() => {
+    if (templateManager.selectedTemplate?.file_path) {
+      setDeployPath(templateManager.selectedTemplate.file_path)
+    } else {
+      setDeployPath('')
+    }
+  }, [templateManager.selectedTemplate])
+
   // Check if execution is allowed
   const canExecute = useMemo(() =>
     selectedDeviceIds.length > 0 &&
@@ -62,18 +76,13 @@ export function AgentsDeployPage() {
   const buildDeployConfig = useCallback((): DeployConfig => ({
     deviceIds: selectedDeviceIds,
     templateId: Number(templateManager.selectedTemplateId),
-    variables: variableManager.variables.reduce((acc, v) => {
-      if (v.name && v.value) acc[v.name] = v.value
-      return acc
-    }, {} as Record<string, string>),
+    variables: variableManager.variableOverrides,
     agentId: agentSelector.selectedAgentId!,
-    passSnmpMapping: variableManager.passSnmpMapping,
     path: deployPath || undefined
   }), [
     selectedDeviceIds,
     templateManager.selectedTemplateId,
-    variableManager.variables,
-    variableManager.passSnmpMapping,
+    variableManager.variableOverrides,
     agentSelector.selectedAgentId,
     deployPath
   ])
@@ -81,30 +90,47 @@ export function AgentsDeployPage() {
   // Action handlers
   const handleDryRun = useCallback(async () => {
     try {
+      // Validate that we have a selected template
+      if (!templateManager.selectedTemplate) {
+        setErrorDetails({
+          title: 'Dry Run Failed',
+          message: 'No template selected',
+          details: ['Please select a template before running dry run']
+        })
+        setShowErrorDialog(true)
+        return
+      }
+
       const config = buildDeployConfig()
-      await deployExecution.executeDryRun(config)
+      await deployExecution.executeDryRun(
+        config,
+        templateManager.editedTemplateContent,
+        templateManager.selectedTemplate.inventory_id,
+        templateManager.selectedTemplate.pass_snmp_mapping
+      )
     } catch (error) {
       setErrorDetails({
         title: 'Dry Run Failed',
-        message: 'Failed to render templates',
+        message: 'Failed to render template',
         details: [(error as Error).message]
       })
       setShowErrorDialog(true)
     }
-  }, [buildDeployConfig, deployExecution])
+  }, [buildDeployConfig, deployExecution, templateManager])
 
   const handleDeployToGit = useCallback(async () => {
     try {
       const config = buildDeployConfig()
-      await deployExecution.executeDeployToGit(config)
+      const response = await deployExecution.executeDeployToGit(config)
       toast({
         title: 'Success',
-        description: 'Configs deployed to git repository'
+        description: response?.message || 'Configuration deployed to git repository',
+        duration: 5000
       })
     } catch (error) {
       setErrorDetails({
         title: 'Deploy Failed',
-        message: 'Failed to deploy configs to git',
+        message: 'Failed to deploy configuration to git',
         details: [(error as Error).message]
       })
       setShowErrorDialog(true)
@@ -168,17 +194,15 @@ export function AgentsDeployPage() {
 
             <TabsContent value="variables">
               <VariablesAndTemplatesTab
-                variables={variableManager.variables}
-                passSnmpMapping={variableManager.passSnmpMapping}
-                onVariablesChange={variableManager.addVariable}
-                onVariableUpdate={variableManager.updateVariable}
-                onVariableRemove={variableManager.removeVariable}
-                onPassSnmpMappingChange={variableManager.setPassSnmpMapping}
                 templates={templateManager.templates}
                 selectedTemplateId={templateManager.selectedTemplateId}
+                selectedTemplate={templateManager.selectedTemplate}
+                isLoadingTemplate={templateManager.isLoadingTemplate}
                 onTemplateChange={templateManager.handleTemplateChange}
                 editedTemplateContent={templateManager.editedTemplateContent}
                 onTemplateContentChange={templateManager.setEditedTemplateContent}
+                variableOverrides={variableManager.variableOverrides}
+                onVariableOverrideChange={variableManager.updateVariableOverride}
               />
             </TabsContent>
 

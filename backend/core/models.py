@@ -783,6 +783,9 @@ class Template(Base):
     pass_snmp_mapping = Column(
         Boolean, default=False, nullable=False
     )  # Whether to include SNMP mapping in context (agent templates)
+    inventory_id = Column(
+        Integer, ForeignKey("inventories.id", ondelete="SET NULL"), nullable=True
+    )  # ID of saved inventory to use for agent templates
     pre_run_command = Column(
         Text
     )  # Command to execute before rendering (output available as context)

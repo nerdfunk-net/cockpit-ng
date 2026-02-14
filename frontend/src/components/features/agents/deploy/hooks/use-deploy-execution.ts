@@ -5,6 +5,24 @@ import type { DryRunResult, DeployResult, DeployExecutionSummary, DeployConfig }
 const EMPTY_DRY_RUN_RESULTS: DryRunResult[] = []
 const EMPTY_DEPLOY_RESULTS: DeployResult[] = []
 
+interface AdvancedRenderRequest {
+  template_content: string
+  category: string
+  user_variables?: Record<string, unknown>
+  inventory_id?: number
+  pass_snmp_mapping: boolean
+  path?: string
+}
+
+interface AdvancedRenderResponse {
+  rendered_content: string
+  variables_used: string[]
+  context_data?: Record<string, unknown>
+  warnings?: string[]
+  pre_run_output?: string
+  pre_run_parsed?: unknown[]
+}
+
 export function useDeployExecution() {
   const [isDryRunning, setIsDryRunning] = useState(false)
   const [isDeploying, setIsDeploying] = useState(false)
@@ -17,18 +35,44 @@ export function useDeployExecution() {
 
   const { apiCall } = useApi()
 
-  const executeDryRun = useCallback(async (config: DeployConfig) => {
+  const executeDryRun = useCallback(async (
+    config: DeployConfig,
+    templateContent: string,
+    inventoryId: number | null,
+    passSnmpMapping: boolean
+  ) => {
     setIsDryRunning(true)
     try {
-      // API call: POST /agents/deploy/dry-run
-      const response = await apiCall<{ results: DryRunResult[] }>(
-        'agents/deploy/dry-run',
+      // Build request for advanced-render endpoint
+      const renderRequest: AdvancedRenderRequest = {
+        template_content: templateContent,
+        category: 'agent',
+        user_variables: config.variables,
+        inventory_id: inventoryId || undefined,
+        pass_snmp_mapping: passSnmpMapping,
+        path: config.path,
+      }
+
+      // API call: POST /templates/advanced-render
+      const response = await apiCall<AdvancedRenderResponse>(
+        'templates/advanced-render',
         {
           method: 'POST',
-          body: JSON.stringify(config)
+          body: JSON.stringify(renderRequest)
         }
       )
-      setDryRunResults(response.results)
+
+      // Convert to DryRunResult format
+      const results: DryRunResult[] = [
+        {
+          deviceId: 'all',
+          deviceName: 'Agent Config',
+          renderedConfig: response.rendered_content,
+          success: true,
+        }
+      ]
+
+      setDryRunResults(results)
       setShowDryRunDialog(true)
     } catch (error) {
       console.error('Dry run failed:', error)
@@ -42,15 +86,25 @@ export function useDeployExecution() {
     setIsDeploying(true)
     try {
       // API call: POST /agents/deploy/to-git
-      const response = await apiCall<{ results: DeployResult[] }>(
+      const response = await apiCall<{
+        success: boolean
+        message: string
+        commit_sha: string | null
+        file_path: string | null
+      }>(
         'agents/deploy/to-git',
         {
           method: 'POST',
           body: JSON.stringify(config)
         }
       )
-      setDeployResults(response.results)
-      setShowDeployResults(true)
+
+      if (!response.success) {
+        throw new Error(response.message)
+      }
+
+      // Return response so caller can show success message
+      return response
     } catch (error) {
       console.error('Deploy to git failed:', error)
       throw error

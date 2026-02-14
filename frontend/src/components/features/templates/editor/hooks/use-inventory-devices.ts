@@ -126,9 +126,10 @@ export function useInventoryDevices(inventoryId: number | null, enabled: boolean
     const devices = inventoryData.devices
 
     // Convert device_details array to keyed object for easy access
+    // Use device name (hostname) as key for user-friendly Jinja2 templates
     const device_details: Record<string, DeviceDetail> = {}
     inventoryData.device_details.forEach((device) => {
-      device_details[device.id] = device
+      device_details[device.name] = device
     })
 
     return {

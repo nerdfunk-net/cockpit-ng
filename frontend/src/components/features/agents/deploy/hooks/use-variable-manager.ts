@@ -1,51 +1,31 @@
 import { useState, useCallback, useMemo } from 'react'
 
-interface TemplateVariable {
-  id: string
-  name: string
-  value: string
-}
+// Store variable overrides as a simple key-value map
+export type VariableOverrides = Record<string, string>
 
-const INITIAL_VARIABLES: TemplateVariable[] = [
-  { id: crypto.randomUUID(), name: '', value: '' }
-]
+const EMPTY_OVERRIDES: VariableOverrides = {}
 
 export function useVariableManager() {
-  const [variables, setVariables] = useState<TemplateVariable[]>(INITIAL_VARIABLES)
-  const [passSnmpMapping, setPassSnmpMapping] = useState(true)
+  const [variableOverrides, setVariableOverrides] = useState<VariableOverrides>(EMPTY_OVERRIDES)
 
-  const addVariable = useCallback(() => {
-    setVariables(prev => [...prev, { id: crypto.randomUUID(), name: '', value: '' }])
+  const updateVariableOverride = useCallback((name: string, value: string) => {
+    setVariableOverrides(prev => ({
+      ...prev,
+      [name]: value
+    }))
   }, [])
 
-  const removeVariable = useCallback((id: string) => {
-    setVariables(prev => {
-      if (prev.length > 1) {
-        return prev.filter(v => v.id !== id)
-      }
-      return prev
-    })
-  }, [])
-
-  const updateVariable = useCallback((id: string, field: 'name' | 'value', value: string) => {
-    setVariables(prev => prev.map(v =>
-      v.id === id ? { ...v, [field]: value } : v
-    ))
+  const clearOverrides = useCallback(() => {
+    setVariableOverrides(EMPTY_OVERRIDES)
   }, [])
 
   return useMemo(() => ({
-    variables,
-    setVariables,
-    passSnmpMapping,
-    setPassSnmpMapping,
-    addVariable,
-    removeVariable,
-    updateVariable,
+    variableOverrides,
+    updateVariableOverride,
+    clearOverrides,
   }), [
-    variables,
-    passSnmpMapping,
-    addVariable,
-    removeVariable,
-    updateVariable
+    variableOverrides,
+    updateVariableOverride,
+    clearOverrides
   ])
 }

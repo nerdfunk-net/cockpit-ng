@@ -1,15 +1,13 @@
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus, Trash2 } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Loader2 } from 'lucide-react'
 
 interface TemplateVariable {
-  id: string
-  name: string
   value: string
+  type: 'custom' | 'inventory'
+  metadata: Record<string, unknown>
 }
 
 interface Template {
@@ -19,113 +17,53 @@ interface Template {
   category: string
   scope: 'global' | 'private'
   use_nautobot_context: boolean
+  pass_snmp_mapping: boolean
+  variables?: Record<string, TemplateVariable>
+}
+
+interface TemplateListItem {
+  id: number
+  name: string
+  scope: 'global' | 'private'
 }
 
 interface VariablesAndTemplatesTabProps {
-  variables: TemplateVariable[]
-  passSnmpMapping: boolean
-  onVariablesChange: () => void
-  onVariableUpdate: (id: string, field: 'name' | 'value', value: string) => void
-  onVariableRemove: (id: string) => void
-  onPassSnmpMappingChange: (checked: boolean) => void
-  templates: Template[]
+  templates: TemplateListItem[]
   selectedTemplateId: string
+  selectedTemplate: Template | null
+  isLoadingTemplate: boolean
   onTemplateChange: (templateId: string) => void
   editedTemplateContent: string
   onTemplateContentChange: (content: string) => void
+  variableOverrides: Record<string, string>
+  onVariableOverrideChange: (name: string, value: string) => void
 }
 
 export function VariablesAndTemplatesTab({
-  variables,
-  passSnmpMapping,
-  onVariablesChange,
-  onVariableUpdate,
-  onVariableRemove,
-  onPassSnmpMappingChange,
   templates,
   selectedTemplateId,
+  selectedTemplate,
+  isLoadingTemplate,
   onTemplateChange,
   editedTemplateContent,
-  onTemplateContentChange
+  onTemplateContentChange,
+  variableOverrides,
+  onVariableOverrideChange
 }: VariablesAndTemplatesTabProps) {
-  const selectedTemplate = templates.find(t => t.id.toString() === selectedTemplateId)
+  // Extract custom variables from the selected template
+  const customVariables = selectedTemplate?.variables
+    ? Object.entries(selectedTemplate.variables)
+        .filter(([, variable]) => variable.type === 'custom')
+        .map(([name, variable]) => ({
+          name,
+          defaultValue: variable.value,
+          currentValue: variableOverrides[name] ?? variable.value
+        }))
+    : []
 
   return (
     <div className="space-y-6">
-      {/* Variables Section */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium">Template Variables</span>
-          </div>
-          <div className="text-xs text-blue-100">
-            Define variables to use in your templates
-          </div>
-        </div>
-        <div className="p-6 space-y-4">
-          <div className="flex items-center space-x-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
-            <Checkbox
-              id="snmp-mapping"
-              checked={passSnmpMapping}
-              onCheckedChange={onPassSnmpMappingChange}
-            />
-            <div className="flex-1">
-              <Label htmlFor="snmp-mapping" className="font-medium cursor-pointer">
-                Pass SNMP Mapping to template
-              </Label>
-              <p className="text-xs text-gray-600 mt-1">
-                When enabled, SNMP mapping data will be available in the template rendering context
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Custom Variables</Label>
-              <Button
-                onClick={onVariablesChange}
-                size="sm"
-                variant="outline"
-                className="flex items-center gap-1"
-              >
-                <Plus className="h-4 w-4" />
-                Add Variable
-              </Button>
-            </div>
-
-            {variables.map((variable) => (
-              <div key={variable.id} className="flex items-start gap-2">
-                <div className="flex-1 grid grid-cols-2 gap-2">
-                  <Input
-                    placeholder="Variable name"
-                    value={variable.name}
-                    onChange={(e) => onVariableUpdate(variable.id, 'name', e.target.value)}
-                    className="border-2"
-                  />
-                  <Input
-                    placeholder="Value"
-                    value={variable.value}
-                    onChange={(e) => onVariableUpdate(variable.id, 'value', e.target.value)}
-                    className="border-2"
-                  />
-                </div>
-                {variables.length > 1 && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onVariableRemove(variable.id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Template Selection */}
+      {/* Template Selection - Now at the top */}
       <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
         <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center space-x-2">
@@ -156,9 +94,16 @@ export function VariablesAndTemplatesTab({
             </Select>
           </div>
 
-          {selectedTemplate && (
+          {isLoadingTemplate && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+              <span className="ml-2 text-sm text-gray-600">Loading template details...</span>
+            </div>
+          )}
+
+          {!isLoadingTemplate && selectedTemplate && (
             <>
-              <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+              <div className="p-3 bg-gray-50 border border-gray-200 rounded-md space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <span className="text-sm font-medium text-gray-700">Template Configuration:</span>
@@ -170,27 +115,92 @@ export function VariablesAndTemplatesTab({
                     </span>
                   </div>
                 </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-gray-700">SNMP Mapping:</span>
+                  <span className="text-sm text-gray-600">
+                    Pass SNMP mapping is{' '}
+                    <span className={selectedTemplate.pass_snmp_mapping ? "font-semibold text-green-600" : "font-semibold text-gray-500"}>
+                      {selectedTemplate.pass_snmp_mapping ? 'enabled' : 'disabled'}
+                    </span>
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-2">
-              <Label htmlFor="template-preview">Template Preview</Label>
-              <Textarea
-                id="template-preview"
-                value={editedTemplateContent}
-                onChange={(e) => onTemplateContentChange(e.target.value)}
-                className="font-mono text-sm min-h-[300px] border-2"
-                readOnly={selectedTemplate.scope === 'global'}
-              />
-              {selectedTemplate.scope === 'global' && (
-                <p className="text-sm text-gray-500">
-                  Global templates are read-only
-                </p>
-              )}
+                <Label htmlFor="template-preview">Template Preview</Label>
+                <Textarea
+                  id="template-preview"
+                  value={editedTemplateContent}
+                  onChange={(e) => onTemplateContentChange(e.target.value)}
+                  className="font-mono text-sm min-h-[300px] border-2"
+                  readOnly={selectedTemplate.scope === 'global'}
+                />
+                {selectedTemplate.scope === 'global' && (
+                  <p className="text-sm text-gray-500">
+                    Global templates are read-only
+                  </p>
+                )}
               </div>
             </>
           )}
         </div>
       </div>
+
+      {/* Custom Variables Section - Only shown when template has custom variables */}
+      {!isLoadingTemplate && selectedTemplate && customVariables.length > 0 && (
+        <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+          <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium">Template Variables</span>
+            </div>
+            <div className="text-xs text-blue-100">
+              Override custom variable values
+            </div>
+          </div>
+          <div className="p-6 space-y-4">
+            <p className="text-sm text-gray-600 mb-4">
+              The selected template contains custom variables. You can override their default values below:
+            </p>
+            <div className="space-y-3">
+              {customVariables.map(({ name, defaultValue, currentValue }) => (
+                <div key={name} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor={`var-${name}`} className="text-sm font-medium">
+                      {name}
+                    </Label>
+                    <span className="text-xs text-gray-500">
+                      Default: {defaultValue}
+                    </span>
+                  </div>
+                  <Input
+                    id={`var-${name}`}
+                    placeholder={`Override value for ${name}`}
+                    value={currentValue}
+                    onChange={(e) => onVariableOverrideChange(name, e.target.value)}
+                    className="border-2"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Info message when no custom variables */}
+      {!isLoadingTemplate && selectedTemplate && customVariables.length === 0 && (
+        <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+          <div className="bg-gradient-to-r from-gray-400/80 to-gray-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium">Template Variables</span>
+            </div>
+          </div>
+          <div className="p-6">
+            <p className="text-sm text-gray-600">
+              This template does not have any custom variables that can be overridden.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

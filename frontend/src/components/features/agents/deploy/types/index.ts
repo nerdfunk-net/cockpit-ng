@@ -4,7 +4,6 @@ export interface DeployConfig {
   templateId: number
   variables: Record<string, string>
   agentId: string
-  passSnmpMapping: boolean
   path?: string
 }
 

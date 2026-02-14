@@ -26,9 +26,6 @@ class DryRunRequest(BaseModel):
     variables: dict = Field(
         default_factory=dict, description="User-provided custom variables"
     )
-    passSnmpMapping: bool = Field(
-        False, alias="passSnmpMapping", description="Whether to include SNMP mapping"
-    )
     agentId: str = Field(
         ..., alias="agentId", description="Agent ID for deployment configuration"
     )
@@ -67,9 +64,8 @@ async def agent_deploy_dry_run(
     Telegraf/InfluxDB/Grafana agent deployment.
     """
     try:
-        from services.checkmk.config import config_service
         from template_manager import template_manager
-        from jinja2 import Template, TemplateError, UndefinedError
+        from services.agents.template_render_service import agent_template_render_service
 
         # Fetch the template
         template = template_manager.get_template(request.templateId)
@@ -86,107 +82,41 @@ async def agent_deploy_dry_run(
                 detail=f"Template content for ID {request.templateId} not found",
             )
 
-        # Build devices list
-        devices = []
-        device_name_map = {}
-        for device_id in request.deviceIds:
-            devices.append({"id": device_id})
+        # Use the rendering service
+        render_result = await agent_template_render_service.render_agent_template(
+            template_content=template_content,
+            inventory_id=template.get("inventory_id"),
+            pass_snmp_mapping=template.get("pass_snmp_mapping", False),
+            user_variables=request.variables,
+            path=request.path,
+        )
 
-        # Fetch Nautobot data for each device
-        device_details = {}
-        warnings = []
+        # Return a single result with the rendered content
+        results = [
+            DryRunResultItem(
+                deviceId="all",
+                deviceName=f"Agent Config",
+                renderedConfig=render_result.rendered_content,
+                success=True,
+                error=None,
+            )
+        ]
 
-        from services.nautobot.devices import device_query_service
+        return DryRunResponse(results=results)
 
-        for device_id in request.deviceIds:
-            try:
-                # Use shared device details service
-                device_data = await device_query_service.get_device_details(
-                    device_id=device_id,
-                    use_cache=True,
-                )
-                device_details[device_id] = device_data
-                device_name_map[device_id] = device_data.get("name", device_id)
-            except Exception as e:
-                error_msg = (
-                    f"Failed to fetch Nautobot data for device {device_id}: {str(e)}"
-                )
-                logger.error(error_msg)
-                warnings.append(error_msg)
-
-        # Load SNMP mapping if requested
-        snmp_mapping = {}
-        if request.passSnmpMapping:
-            try:
-                snmp_mapping = config_service.load_snmp_mapping()
-                logger.info(f"Loaded SNMP mapping with {len(snmp_mapping)} entries")
-            except Exception as e:
-                error_msg = f"Failed to load SNMP mapping: {str(e)}"
-                logger.error(error_msg)
-                warnings.append(error_msg)
-
-        # Build template context
-        context = {
-            "devices": devices,
-            "device_details": device_details,
-            "snmp_mapping": snmp_mapping,
-            "agent_id": request.agentId,
-            "path": request.path,
-        }
-
-        # Add user variables to context
-        if request.variables:
-            context.update(request.variables)
-
-        # Render the template
-        try:
-            jinja_template = Template(template_content)
-            rendered_content = jinja_template.render(**context)
-
-            # Return a single result with the rendered content
-            # Since this is for agent deployment, we return one configuration
-            # that references all devices
-            results = [
+    except ValueError as e:
+        # Rendering errors (undefined variables, syntax errors)
+        return DryRunResponse(
+            results=[
                 DryRunResultItem(
                     deviceId="all",
-                    deviceName=f"Agent Config ({len(request.deviceIds)} devices)",
-                    renderedConfig=rendered_content,
-                    success=True,
-                    error=None,
+                    deviceName="Error",
+                    renderedConfig="",
+                    success=False,
+                    error=str(e),
                 )
             ]
-
-            return DryRunResponse(results=results)
-
-        except UndefinedError as e:
-            # Provide detailed error with available variables
-            available_vars = list(context.keys())
-            error_msg = f"Undefined variable in template: {str(e)}. Available variables: {', '.join(available_vars)}"
-            return DryRunResponse(
-                results=[
-                    DryRunResultItem(
-                        deviceId="all",
-                        deviceName="Error",
-                        renderedConfig="",
-                        success=False,
-                        error=error_msg,
-                    )
-                ]
-            )
-        except TemplateError as e:
-            error_msg = f"Template syntax error: {str(e)}"
-            return DryRunResponse(
-                results=[
-                    DryRunResultItem(
-                        deviceId="all",
-                        deviceName="Error",
-                        renderedConfig="",
-                        success=False,
-                        error=error_msg,
-                    )
-                ]
-            )
-
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -197,22 +127,161 @@ async def agent_deploy_dry_run(
         )
 
 
-@router.post("/to-git")
+class DeployToGitResponse(BaseModel):
+    """Response model for deploy to git operation."""
+
+    success: bool
+    message: str
+    commit_sha: str | None = None
+    file_path: str | None = None
+
+
+@router.post("/to-git", response_model=DeployToGitResponse)
 async def agent_deploy_to_git(
     request: DryRunRequest,
     current_user: dict = Depends(require_permission("network.templates", "write")),
-):
+) -> DeployToGitResponse:
     """
     Deploy agent configuration to git repository.
 
-    This endpoint renders the template and commits the result to the
-    configured git repository.
+    This endpoint:
+    1. Renders the template using the advanced rendering logic
+    2. Writes the rendered content to the git repository
+    3. Commits with message: agent name + template name + date
+    4. Pushes to remote git repository
+    5. Returns success message with commit SHA
     """
-    # TODO: Implement git deployment logic
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Git deployment for agents is not yet implemented",
-    )
+    try:
+        from template_manager import template_manager
+        from services.agents.template_render_service import agent_template_render_service
+        from services.settings.git.service import git_service
+        from repositories.settings.git_repository_repository import GitRepositoryRepository
+        from datetime import datetime
+        import os
+
+        # Fetch the template
+        template = template_manager.get_template(request.templateId)
+        if not template:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Template with ID {request.templateId} not found",
+            )
+
+        template_content = template_manager.get_template_content(request.templateId)
+        if not template_content:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Template content for ID {request.templateId} not found",
+            )
+
+        # Fetch agent settings to get git repository ID
+        from repositories.settings.settings_repository import AgentsSettingRepository
+
+        agents_repo = AgentsSettingRepository()
+        agents_settings = agents_repo.get_settings()
+
+        if not agents_settings or not agents_settings.git_repository_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No git repository configured for agents. Please configure git repository in agent settings.",
+            )
+
+        # Fetch the git repository configuration
+        git_repo_repo = GitRepositoryRepository()
+        git_repository = git_repo_repo.get_by_id(agents_settings.git_repository_id)
+
+        if not git_repository:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Git repository with ID {agents_settings.git_repository_id} not found",
+            )
+
+        # Convert SQLAlchemy model to dict for git_service
+        repo_dict = {
+            "id": git_repository.id,
+            "name": git_repository.name,
+            "url": git_repository.url,
+            "branch": git_repository.branch,
+            "auth_type": git_repository.auth_type,
+            "credential_name": git_repository.credential_name,
+            "verify_ssl": git_repository.verify_ssl,
+            "git_author_name": git_repository.git_author_name,
+            "git_author_email": git_repository.git_author_email,
+        }
+
+        # Render the template
+        render_result = await agent_template_render_service.render_agent_template(
+            template_content=template_content,
+            inventory_id=template.get("inventory_id"),
+            pass_snmp_mapping=template.get("pass_snmp_mapping", False),
+            user_variables=request.variables,
+            path=request.path,
+        )
+
+        # Determine file path
+        file_path = request.path or template.get("file_path")
+        if not file_path:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No file path provided. Please specify a deployment path or configure file_path in the template.",
+            )
+
+        # Open or clone the repository
+        repo = git_service.open_or_clone(repo_dict)
+        repo_path = git_service.get_repo_path(repo_dict)
+
+        # Write the rendered content to the file
+        full_file_path = os.path.join(repo_path, file_path.lstrip("/"))
+        os.makedirs(os.path.dirname(full_file_path), exist_ok=True)
+
+        with open(full_file_path, "w", encoding="utf-8") as f:
+            f.write(render_result.rendered_content)
+
+        logger.info(f"Wrote rendered template to {full_file_path}")
+
+        # Find agent name
+        agent_name = "Unknown"
+        if agents_settings.agents:
+            for agent in agents_settings.agents:
+                if agent.get("id") == request.agentId:
+                    agent_name = agent.get("name", request.agentId)
+                    break
+
+        # Prepare commit message
+        current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        commit_message = f"Deploy {agent_name} - {template['name']} - {current_date}"
+
+        # Commit and push
+        result = git_service.commit_and_push(
+            repository=repo_dict,
+            message=commit_message,
+            files=[file_path.lstrip("/")],
+            repo=repo,
+        )
+
+        if result.success:
+            return DeployToGitResponse(
+                success=True,
+                message=f"Successfully deployed configuration to git repository '{git_repository.name}'",
+                commit_sha=result.commit_sha,
+                file_path=file_path,
+            )
+        else:
+            return DeployToGitResponse(
+                success=False,
+                message=f"Failed to commit/push to git: {result.message}",
+                commit_sha=None,
+                file_path=file_path,
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in agent git deployment: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to deploy to git: {str(e)}",
+        )
 
 
 @router.post("/activate")

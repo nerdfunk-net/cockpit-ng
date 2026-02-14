@@ -235,18 +235,35 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
     []
   )
 
-  const setCustomVariables = useCallback((savedVars: Record<string, string>) => {
+  const setCustomVariables = useCallback((savedVars: Record<string, string | { value: string; type?: string; metadata?: unknown }>) => {
     setVariables((prev) => {
       // Keep only default variables, replace all custom ones with saved data
       const defaults = prev.filter((v) => v.isDefault)
-      const custom: TemplateVariable[] = Object.entries(savedVars).map(([name, value]) => ({
-        id: crypto.randomUUID(),
-        name,
-        value,
-        type: 'custom',
-        isDefault: false,
-        isAutoFilled: false,
-      }))
+      const custom: TemplateVariable[] = Object.entries(savedVars).map(([name, varData]) => {
+        // Handle both old format (string) and new format (object)
+        if (typeof varData === 'string') {
+          // Old format: just a string value
+          return {
+            id: crypto.randomUUID(),
+            name,
+            value: varData,
+            type: 'custom' as const,
+            isDefault: false,
+            isAutoFilled: false,
+          }
+        } else {
+          // New format: object with value, type, metadata
+          return {
+            id: crypto.randomUUID(),
+            name,
+            value: varData.value,
+            type: (varData.type as 'custom' | 'nautobot' | 'yaml' | 'inventory') || 'custom',
+            metadata: varData.metadata as VariableMetadata | undefined,
+            isDefault: false,
+            isAutoFilled: false,
+          }
+        }
+      })
       return [...defaults, ...custom]
     })
   }, [])

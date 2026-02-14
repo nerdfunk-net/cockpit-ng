@@ -436,6 +436,7 @@ function TemplateEditorContent() {
     if (formData.category === 'agent') {
       templateData.use_nautobot_context = formData.useNautobotContext
       templateData.pass_snmp_mapping = formData.passSnmpMapping
+      templateData.inventory_id = formData.inventoryId
       templateData.file_path = formData.path || null
     } else if (formData.category === 'netmiko') {
       templateData.execution_mode = formData.netmikoMode
