@@ -14,7 +14,6 @@ from models.cockpit_agent import (
     AgentStatusResponse,
     CommandRequest,
     CommandResponse,
-    GitPullRequest,
     DockerRestartRequest,
     CommandHistoryResponse,
     CommandHistoryItem,
@@ -59,7 +58,7 @@ async def send_command(
             agent_id=request.agent_id,
             command=request.command,
             params=request.params,
-            sent_by=user["sub"],
+            sent_by=user.get("sub", "system"),
         )
 
         return {
@@ -78,27 +77,27 @@ async def send_command(
 
 
 @router.post(
-    "/git-pull",
+    "/{agent_id}/git-pull",
     response_model=CommandResponse,
     dependencies=[Depends(require_permission("cockpit_agents", "execute"))],
 )
 async def git_pull(
-    request: GitPullRequest,
+    agent_id: str,
     user: dict = Depends(verify_token),
     db: Session = Depends(get_db),
 ):
     """
     Send git pull command and wait for response (30s timeout)
-    Convenience endpoint for git operations
+    Uses repository path and branch configured locally on agent via .env
     """
     try:
         service = CockpitAgentService(db)
 
         response = service.send_git_pull(
-            agent_id=request.agent_id,
-            repository_path=request.repository_path,
-            branch=request.branch,
-            sent_by=user["sub"],
+            agent_id=agent_id,
+            repository_path="",
+            branch="",
+            sent_by=user.get("sub", "system"),
             timeout=30,
         )
 
@@ -137,7 +136,7 @@ async def docker_restart(
         response = service.send_docker_restart(
             agent_id=request.agent_id,
             container_name=request.container_name,
-            sent_by=user["sub"],
+            sent_by=user.get("sub", "system"),
             timeout=60,
         )
 

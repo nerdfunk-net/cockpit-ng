@@ -11,13 +11,8 @@ export function useAgentMutations() {
 
   const gitPull = useMutation({
     mutationFn: async (input: GitPullInput): Promise<CommandResult> => {
-      return apiCall<CommandResult>('cockpit-agent/git-pull', {
+      return apiCall<CommandResult>(`cockpit-agent/${input.agent_id}/git-pull`, {
         method: 'POST',
-        body: JSON.stringify({
-          agent_id: input.agent_id,
-          repository_path: input.repository_path,
-          branch: input.branch || 'main',
-        }),
       })
     },
     onSuccess: (data, variables) => {

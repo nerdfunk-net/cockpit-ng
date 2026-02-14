@@ -35,8 +35,6 @@ export interface CommandHistoryResponse {
 
 export interface GitPullInput {
   agent_id: string
-  repository_path: string
-  branch?: string
 }
 
 export interface DockerRestartInput {
