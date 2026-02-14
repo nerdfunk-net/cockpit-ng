@@ -201,17 +201,17 @@ async def agent_deploy_to_git(
                 detail="No agents configured. Please configure agents in agent settings.",
             )
 
-        # Find the specific agent by ID
+        # Find the specific agent by agent_id (string identifier)
         agent = None
         for a in agents_settings.agents:
-            if a.get("id") == request.agentId:
+            if a.get("agent_id") == request.agentId:
                 agent = a
                 break
 
         if not agent:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Agent with ID {request.agentId} not found in agent settings.",
+                detail=f"Agent with agent_id '{request.agentId}' not found in agent settings. Please configure the agent_id field for this agent in Settings → Connections → Agents.",
             )
 
         # Get the git repository ID from the agent configuration

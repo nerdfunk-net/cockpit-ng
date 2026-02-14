@@ -32,6 +32,7 @@ interface Agent {
   name: string
   description: string
   git_repository_id: number | null
+  agent_id?: string
 }
 
 interface AgentsSettings {
@@ -253,10 +254,15 @@ export function DeployAgentJobTemplate({
               <SelectContent>
                 <SelectItem value="none">No agent selected</SelectItem>
                 {agents.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
+                  <SelectItem 
+                    key={a.id} 
+                    value={a.agent_id || ''} 
+                    disabled={!a.agent_id}
+                  >
                     <div className="flex items-center gap-2">
                       <Bot className="h-3 w-3" />
                       {a.name}
+                      {!a.agent_id && <span className="text-xs text-red-500">(no agent_id)</span>}
                     </div>
                   </SelectItem>
                 ))}

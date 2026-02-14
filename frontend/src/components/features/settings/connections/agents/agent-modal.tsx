@@ -68,7 +68,7 @@ export function AgentModal({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
 
-    if (!formData.agent_id.trim()) {
+    if (!formData.agent_id?.trim()) {
       newErrors.agent_id = 'Agent ID is required'
     }
 

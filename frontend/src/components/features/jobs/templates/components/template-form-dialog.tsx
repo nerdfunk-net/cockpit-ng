@@ -246,8 +246,8 @@ export function TemplateFormDialog({
             />
           )}
 
-          {/* Inventory - Not for scan_prefixes or deploy_agent */}
-          {formJobType !== "scan_prefixes" && formJobType !== "deploy_agent" && (
+          {/* Inventory - Not for scan_prefixes */}
+          {formJobType !== "scan_prefixes" && (
             <JobTemplateInventorySection
               formInventorySource={formInventorySource}
               setFormInventorySource={setFormInventorySource}

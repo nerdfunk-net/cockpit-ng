@@ -23,6 +23,7 @@ export const JOB_TYPE_OPTIONS: readonly FilterOption[] = [
   { value: "run_commands", label: "Run Commands" },
   { value: "compare_devices", label: "Compare Devices" },
   { value: "scan_prefixes", label: "Scan Prefixes" },
+  { value: "deploy_agent", label: "Deploy Agent" },
 ] as const
 
 export const TRIGGER_OPTIONS: readonly FilterOption[] = [

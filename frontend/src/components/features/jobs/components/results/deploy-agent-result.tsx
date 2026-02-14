@@ -9,6 +9,7 @@ import {
   Bot,
   FileCode,
   Clock,
+  RefreshCw,
 } from "lucide-react"
 import { DeployAgentJobResult } from "../../types/job-results"
 
@@ -129,6 +130,58 @@ export function DeployAgentResultView({ result }: DeployAgentResultViewProps) {
               </span>
               <span className="text-gray-900">{result.timestamp}</span>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Activation Information */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <RefreshCw className="h-4 w-4 text-purple-500" />
+            Agent Activation
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between py-2 border-b">
+              <span className="font-medium text-gray-600">Activation Enabled</span>
+              <Badge variant={result.activated !== false ? "default" : "secondary"}>
+                {result.activated !== false ? 'Yes' : 'No'}
+              </Badge>
+            </div>
+            {result.activated && (
+              <>
+                <div className="flex justify-between py-2 border-b">
+                  <span className="font-medium text-gray-600">Status</span>
+                  <Badge variant="default" className="bg-green-500">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Success
+                  </Badge>
+                </div>
+                {result.activation_output && (
+                  <div className="py-2">
+                    <span className="font-medium text-gray-600 block mb-1">Output</span>
+                    <div className="bg-gray-50 rounded p-2 font-mono text-xs text-gray-700 whitespace-pre-wrap">
+                      {result.activation_output}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            {result.activation_warning && (
+              <div className="py-2">
+                <span className="font-medium text-gray-600 block mb-1">Warning</span>
+                <div className="bg-orange-50 border border-orange-200 rounded p-2 text-xs text-orange-700">
+                  ⚠️ {result.activation_warning}
+                </div>
+              </div>
+            )}
+            {!result.activated && !result.activation_warning && (
+              <div className="py-2 text-gray-500 text-xs">
+                Agent activation was not enabled for this deployment.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

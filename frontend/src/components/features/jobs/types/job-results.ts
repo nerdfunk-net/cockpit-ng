@@ -317,6 +317,10 @@ export interface DeployAgentJobResult {
   files_changed: number
   pushed: boolean
   timestamp: string
+  // Activation fields
+  activated?: boolean
+  activation_output?: string
+  activation_warning?: string
   // Index signature for compatibility with Record<string, unknown>
   [key: string]: unknown
 }
