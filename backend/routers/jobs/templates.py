@@ -76,6 +76,7 @@ async def create_job_template(
             deploy_path=template_data.deploy_path,
             deploy_custom_variables=template_data.deploy_custom_variables,
             activate_after_deploy=template_data.activate_after_deploy,
+            deploy_templates=[e.model_dump() for e in template_data.deploy_templates] if template_data.deploy_templates else None,
             is_global=template_data.is_global,
         )
 
@@ -224,6 +225,7 @@ async def update_job_template(
             deploy_path=update_data.deploy_path,
             deploy_custom_variables=update_data.deploy_custom_variables,
             activate_after_deploy=update_data.activate_after_deploy,
+            deploy_templates=[e.model_dump() for e in update_data.deploy_templates] if update_data.deploy_templates else None,
             is_global=update_data.is_global,
             user_id=current_user["user_id"],
         )

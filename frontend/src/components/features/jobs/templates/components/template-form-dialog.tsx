@@ -14,7 +14,8 @@ import { RunCommandsJobTemplate } from '../../components/template-types/RunComma
 import { SyncDevicesJobTemplate } from '../../components/template-types/SyncDevicesJobTemplate'
 import { CompareDevicesJobTemplate } from '../../components/template-types/CompareDevicesJobTemplate'
 import { ScanPrefixesJobTemplate } from '../../components/template-types/ScanPrefixesJobTemplate'
-import { DeployAgentJobTemplate } from '../../components/template-types/DeployAgentJobTemplate'
+import { DeployAgentJobTemplate, generateEntryKey } from '../../components/template-types/DeployAgentJobTemplate'
+import type { DeployTemplateEntryData } from '../../components/template-types/DeployTemplateEntry'
 import type { JobTemplate, JobType, GitRepository, SavedInventory, CommandTemplate, CustomField } from '../types'
 import { JOB_TYPE_COLORS } from '../utils/constants'
 
@@ -70,10 +71,10 @@ export function TemplateFormDialog({
   const [formScanResponseCustomFieldName, setFormScanResponseCustomFieldName] = useState("")
   const [formScanSetReachableIpActive, setFormScanSetReachableIpActive] = useState(true)
   const [formScanMaxIps, setFormScanMaxIps] = useState("")
-  const [formDeployTemplateId, setFormDeployTemplateId] = useState<number | null>(null)
   const [formDeployAgentId, setFormDeployAgentId] = useState("")
-  const [formDeployPath, setFormDeployPath] = useState("")
-  const [formDeployCustomVariables, setFormDeployCustomVariables] = useState<Record<string, string>>({})
+  const [formDeployTemplateEntries, setFormDeployTemplateEntries] = useState<DeployTemplateEntryData[]>([
+    { _key: generateEntryKey(), templateId: null, inventoryId: null, path: '', customVariables: {} }
+  ])
   const [formActivateAfterDeploy, setFormActivateAfterDeploy] = useState(true)
   const [formIsGlobal, setFormIsGlobal] = useState(false)
 
@@ -101,10 +102,10 @@ export function TemplateFormDialog({
     setFormScanResponseCustomFieldName("")
     setFormScanSetReachableIpActive(true)
     setFormScanMaxIps("")
-    setFormDeployTemplateId(null)
     setFormDeployAgentId("")
-    setFormDeployPath("")
-    setFormDeployCustomVariables({})
+    setFormDeployTemplateEntries([
+      { _key: generateEntryKey(), templateId: null, inventoryId: null, path: '', customVariables: {} }
+    ])
     setFormActivateAfterDeploy(true)
     setFormIsGlobal(false)
   }, [])
@@ -135,10 +136,30 @@ export function TemplateFormDialog({
       setFormScanResponseCustomFieldName(editingTemplate.scan_response_custom_field_name || "")
       setFormScanSetReachableIpActive(editingTemplate.scan_set_reachable_ip_active ?? true)
       setFormScanMaxIps(editingTemplate.scan_max_ips?.toString() || "")
-      setFormDeployTemplateId(editingTemplate.deploy_template_id || null)
       setFormDeployAgentId(editingTemplate.deploy_agent_id || "")
-      setFormDeployPath(editingTemplate.deploy_path || "")
-      setFormDeployCustomVariables(editingTemplate.deploy_custom_variables || {})
+      // Load multi-template entries: prefer deploy_templates, fall back to single legacy fields
+      if (editingTemplate.deploy_templates && editingTemplate.deploy_templates.length > 0) {
+        setFormDeployTemplateEntries(editingTemplate.deploy_templates.map(t => ({
+          _key: generateEntryKey(),
+          templateId: t.template_id,
+          inventoryId: t.inventory_id,
+          path: t.path || '',
+          customVariables: t.custom_variables || {},
+        })))
+      } else if (editingTemplate.deploy_template_id) {
+        // Backward compat: convert legacy single fields to single-entry array
+        setFormDeployTemplateEntries([{
+          _key: generateEntryKey(),
+          templateId: editingTemplate.deploy_template_id,
+          inventoryId: null,
+          path: editingTemplate.deploy_path || '',
+          customVariables: editingTemplate.deploy_custom_variables || {},
+        }])
+      } else {
+        setFormDeployTemplateEntries([
+          { _key: generateEntryKey(), templateId: null, inventoryId: null, path: '', customVariables: {} }
+        ])
+      }
       setFormActivateAfterDeploy(editingTemplate.activate_after_deploy ?? true)
       setFormIsGlobal(editingTemplate.is_global)
     } else if (open && !editingTemplate) {
@@ -152,9 +173,13 @@ export function TemplateFormDialog({
     if (formJobType === "backup" && formBackupStartupConfigPath && !formBackupRunningConfigPath) return false
     if (formInventorySource === "inventory" && !formInventoryName) return false
     if (formJobType === "run_commands" && !formCommandTemplate) return false
-    if (formJobType === "deploy_agent" && (!formDeployTemplateId || !formDeployAgentId)) return false
+    if (formJobType === "deploy_agent") {
+      if (!formDeployAgentId) return false
+      const hasValidEntry = formDeployTemplateEntries.some(e => e.templateId !== null)
+      if (!hasValidEntry) return false
+    }
     return true
-  }, [formName, formJobType, formWriteTimestampToCustomField, formTimestampCustomFieldName, formBackupStartupConfigPath, formBackupRunningConfigPath, formInventorySource, formInventoryName, formCommandTemplate, formDeployTemplateId, formDeployAgentId])
+  }, [formName, formJobType, formWriteTimestampToCustomField, formTimestampCustomFieldName, formBackupStartupConfigPath, formBackupRunningConfigPath, formInventorySource, formInventoryName, formCommandTemplate, formDeployAgentId, formDeployTemplateEntries])
 
   const handleSubmit = async () => {
     const payload = {
@@ -181,11 +206,21 @@ export function TemplateFormDialog({
       scan_response_custom_field_name: formJobType === "scan_prefixes" ? formScanResponseCustomFieldName : undefined,
       scan_set_reachable_ip_active: formJobType === "scan_prefixes" ? formScanSetReachableIpActive : undefined,
       scan_max_ips: formJobType === "scan_prefixes" && formScanMaxIps ? parseInt(formScanMaxIps) : undefined,
-      deploy_template_id: formJobType === "deploy_agent" && formDeployTemplateId ? formDeployTemplateId : undefined,
+      // Legacy single-template fields (populated from first entry for backward compat)
+      deploy_template_id: formJobType === "deploy_agent" && formDeployTemplateEntries[0]?.templateId ? formDeployTemplateEntries[0].templateId : undefined,
       deploy_agent_id: formJobType === "deploy_agent" ? formDeployAgentId : undefined,
-      deploy_path: formJobType === "deploy_agent" ? formDeployPath : undefined,
-      deploy_custom_variables: formJobType === "deploy_agent" && Object.keys(formDeployCustomVariables).length > 0 ? formDeployCustomVariables : undefined,
+      deploy_path: formJobType === "deploy_agent" && formDeployTemplateEntries[0]?.path ? formDeployTemplateEntries[0].path : undefined,
+      deploy_custom_variables: formJobType === "deploy_agent" && formDeployTemplateEntries[0]?.customVariables && Object.keys(formDeployTemplateEntries[0].customVariables).length > 0 ? formDeployTemplateEntries[0].customVariables : undefined,
       activate_after_deploy: formJobType === "deploy_agent" ? formActivateAfterDeploy : undefined,
+      // Multi-template entries
+      deploy_templates: formJobType === "deploy_agent" ? formDeployTemplateEntries
+        .filter(e => e.templateId !== null)
+        .map(e => ({
+          template_id: e.templateId!,
+          inventory_id: e.inventoryId,
+          path: e.path || '',
+          custom_variables: e.customVariables,
+        })) : undefined,
       is_global: formIsGlobal
     }
 
@@ -246,8 +281,8 @@ export function TemplateFormDialog({
             />
           )}
 
-          {/* Inventory - Not for scan_prefixes */}
-          {formJobType !== "scan_prefixes" && (
+          {/* Inventory - Not for scan_prefixes or deploy_agent (deploy_agent has per-entry inventory) */}
+          {formJobType !== "scan_prefixes" && formJobType !== "deploy_agent" && (
             <JobTemplateInventorySection
               formInventorySource={formInventorySource}
               setFormInventorySource={setFormInventorySource}
@@ -321,16 +356,14 @@ export function TemplateFormDialog({
 
           {formJobType === "deploy_agent" && (
             <DeployAgentJobTemplate
-              formDeployTemplateId={formDeployTemplateId}
-              setFormDeployTemplateId={setFormDeployTemplateId}
               formDeployAgentId={formDeployAgentId}
               setFormDeployAgentId={setFormDeployAgentId}
-              formDeployPath={formDeployPath}
-              setFormDeployPath={setFormDeployPath}
-              formDeployCustomVariables={formDeployCustomVariables}
-              setFormDeployCustomVariables={setFormDeployCustomVariables}
+              formDeployTemplateEntries={formDeployTemplateEntries}
+              setFormDeployTemplateEntries={setFormDeployTemplateEntries}
               formActivateAfterDeploy={formActivateAfterDeploy}
               setFormActivateAfterDeploy={setFormActivateAfterDeploy}
+              savedInventories={savedInventories}
+              loadingInventories={loadingInventories}
             />
           )}
         </div>

@@ -10,6 +10,7 @@ import {
   FileCode,
   Clock,
   RefreshCw,
+  Layers,
 } from "lucide-react"
 import { DeployAgentJobResult } from "../../types/job-results"
 
@@ -18,6 +19,8 @@ interface DeployAgentResultViewProps {
 }
 
 export function DeployAgentResultView({ result }: DeployAgentResultViewProps) {
+  const hasMultiTemplateResults = result.template_results && result.template_results.length > 0
+
   return (
     <div className="space-y-4">
       {/* Summary Stats */}
@@ -98,41 +101,135 @@ export function DeployAgentResultView({ result }: DeployAgentResultViewProps) {
         </CardContent>
       </Card>
 
-      {/* Agent & Template Information */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Bot className="h-4 w-4 text-teal-500" />
-            Deployment Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between py-2 border-b">
-              <span className="font-medium text-gray-600">Agent</span>
-              <span className="text-gray-900">{result.agent_name}</span>
+      {/* Multi-Template Results */}
+      {hasMultiTemplateResults && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Layers className="h-4 w-4 text-teal-500" />
+              Deployed Templates ({result.template_results!.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {result.template_results!.map((tr, idx) => (
+                <div
+                  key={`${tr.template_id}-${idx}`}
+                  className={`rounded-lg border p-3 ${
+                    tr.success
+                      ? 'bg-green-50/50 border-green-200'
+                      : 'bg-red-50/50 border-red-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {tr.success ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-red-500" />
+                      )}
+                      <span className="font-medium text-sm text-gray-900">
+                        {tr.template_name || `Template ${tr.template_id}`}
+                      </span>
+                    </div>
+                    <Badge variant={tr.success ? "default" : "destructive"} className="text-xs">
+                      {tr.success ? 'Success' : 'Failed'}
+                    </Badge>
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-gray-600">
+                    {tr.file_path && (
+                      <div className="flex items-center gap-1">
+                        <FileCode className="h-3 w-3" />
+                        <span className="font-mono">{tr.file_path}</span>
+                      </div>
+                    )}
+                    {tr.success && tr.rendered_size > 0 && (
+                      <div>
+                        <span className="text-gray-500">Size: </span>
+                        <span>{tr.rendered_size.toLocaleString()} chars</span>
+                      </div>
+                    )}
+                    {tr.error && (
+                      <div className="col-span-2 text-red-600 mt-1">
+                        {tr.error}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="flex justify-between py-2 border-b">
-              <span className="font-medium text-gray-600">Template</span>
-              <span className="text-gray-900">{result.template_name}</span>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Single-Template Deployment Details (legacy/single mode) */}
+      {!hasMultiTemplateResults && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Bot className="h-4 w-4 text-teal-500" />
+              Deployment Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between py-2 border-b">
+                <span className="font-medium text-gray-600">Agent</span>
+                <span className="text-gray-900">{result.agent_name}</span>
+              </div>
+              {result.template_name && (
+                <div className="flex justify-between py-2 border-b">
+                  <span className="font-medium text-gray-600">Template</span>
+                  <span className="text-gray-900">{result.template_name}</span>
+                </div>
+              )}
+              {result.file_path && (
+                <div className="flex justify-between py-2 border-b items-center">
+                  <span className="font-medium text-gray-600 flex items-center gap-1">
+                    <FileCode className="h-3.5 w-3.5" />
+                    File Path
+                  </span>
+                  <span className="text-gray-900 font-mono text-xs">{result.file_path}</span>
+                </div>
+              )}
+              <div className="flex justify-between py-2">
+                <span className="font-medium text-gray-600 flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  Timestamp
+                </span>
+                <span className="text-gray-900">{result.timestamp}</span>
+              </div>
             </div>
-            <div className="flex justify-between py-2 border-b items-center">
-              <span className="font-medium text-gray-600 flex items-center gap-1">
-                <FileCode className="h-3.5 w-3.5" />
-                File Path
-              </span>
-              <span className="text-gray-900 font-mono text-xs">{result.file_path}</span>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Agent info for multi-template mode */}
+      {hasMultiTemplateResults && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Bot className="h-4 w-4 text-teal-500" />
+              Agent Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between py-2 border-b">
+                <span className="font-medium text-gray-600">Agent</span>
+                <span className="text-gray-900">{result.agent_name}</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="font-medium text-gray-600 flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  Timestamp
+                </span>
+                <span className="text-gray-900">{result.timestamp}</span>
+              </div>
             </div>
-            <div className="flex justify-between py-2">
-              <span className="font-medium text-gray-600 flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5" />
-                Timestamp
-              </span>
-              <span className="text-gray-900">{result.timestamp}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Activation Information */}
       <Card>
@@ -173,7 +270,7 @@ export function DeployAgentResultView({ result }: DeployAgentResultViewProps) {
               <div className="py-2">
                 <span className="font-medium text-gray-600 block mb-1">Warning</span>
                 <div className="bg-orange-50 border border-orange-200 rounded p-2 text-xs text-orange-700">
-                  ⚠️ {result.activation_warning}
+                  {result.activation_warning}
                 </div>
               </div>
             )}

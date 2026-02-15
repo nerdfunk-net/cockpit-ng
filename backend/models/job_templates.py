@@ -3,7 +3,7 @@ Pydantic models for job templates management
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional, Literal, Dict, Any
+from typing import Optional, Literal, Dict, Any, List
 from datetime import datetime
 
 
@@ -15,6 +15,21 @@ JobTemplateType = Literal[
 
 # Inventory source options
 InventorySource = Literal["all", "inventory"]
+
+
+class DeployTemplateEntry(BaseModel):
+    """A single template entry in a multi-template deployment."""
+
+    template_id: int = Field(..., description="ID of the agent template to deploy")
+    inventory_id: Optional[int] = Field(
+        None, description="Inventory ID for this template's rendering context"
+    )
+    path: Optional[str] = Field(
+        None, max_length=500, description="Deployment file path (overrides template default)"
+    )
+    custom_variables: Optional[Dict[str, Any]] = Field(
+        None, description="User variable overrides for this template"
+    )
 
 
 class JobTemplateBase(BaseModel):
@@ -149,6 +164,10 @@ class JobTemplateBase(BaseModel):
         True,
         description="Whether to activate (pull and restart) the agent after deployment (only applies to deploy_agent type)",
     )
+    deploy_templates: Optional[List[DeployTemplateEntry]] = Field(
+        None,
+        description="Array of template entries for multi-template deployment (only applies to deploy_agent type)",
+    )
     is_global: bool = Field(
         False,
         description="Whether this template is global (available to all users) or private",
@@ -192,6 +211,7 @@ class JobTemplateUpdate(BaseModel):
     deploy_path: Optional[str] = Field(None, max_length=500)
     deploy_custom_variables: Optional[Dict[str, Any]] = None
     activate_after_deploy: Optional[bool] = None
+    deploy_templates: Optional[List[DeployTemplateEntry]] = None
     is_global: Optional[bool] = None
 
 

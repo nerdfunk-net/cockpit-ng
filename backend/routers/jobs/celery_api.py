@@ -1033,15 +1033,25 @@ class BackupDevicesRequest(BaseModel):
     parallel_tasks: int = 1
 
 
+class DeployTemplateEntryRequest(BaseModel):
+    """A single template entry in a multi-template deployment request."""
+
+    template_id: int
+    inventory_id: Optional[int] = None
+    path: Optional[str] = None
+    custom_variables: Optional[Dict[str, Any]] = None
+
+
 class DeployAgentRequest(BaseModel):
     """Request model for agent deployment to git."""
-    
-    template_id: int
+
+    template_id: Optional[int] = None  # Legacy single-template field
     custom_variables: Optional[Dict[str, Any]] = None
     agent_id: str
     path: Optional[str] = None
     inventory_id: Optional[int] = None
     activate_after_deploy: Optional[bool] = None  # If None, read from template
+    template_entries: Optional[list[DeployTemplateEntryRequest]] = None  # Multi-template entries
 
 
 @router.post("/tasks/backup-devices", response_model=TaskResponse)
@@ -1130,10 +1140,11 @@ async def trigger_deploy_agent(
     """
     from tasks.agent_deploy_tasks import deploy_agent_task
 
-    if not request.template_id:
+    # Validate: either template_id or template_entries must be provided
+    if not request.template_id and not request.template_entries:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="template_id is required",
+            detail="Either template_id or template_entries is required",
         )
 
     if not request.agent_id:
@@ -1143,30 +1154,38 @@ async def trigger_deploy_agent(
         )
 
     # Determine activate_after_deploy setting
-    # If not explicitly provided in request, read from template configuration
+    # If not explicitly provided in request, default to True
     activate_after_deploy = request.activate_after_deploy
     if activate_after_deploy is None:
-        import job_template_manager
-        template = job_template_manager.get_template(request.template_id)
-        if template:
-            activate_after_deploy = template.get("activate_after_deploy", True)
-        else:
-            activate_after_deploy = True  # Default to True if template not found
+        activate_after_deploy = True
+
+    # Build task kwargs
+    task_kwargs = {
+        "agent_id": request.agent_id,
+        "activate_after_deploy": activate_after_deploy,
+    }
+
+    if request.template_entries:
+        # Multi-template deployment
+        task_kwargs["template_entries"] = [
+            e.model_dump() for e in request.template_entries
+        ]
+        task_description = f"{len(request.template_entries)} templates"
+    else:
+        # Legacy single-template deployment
+        task_kwargs["template_id"] = request.template_id
+        task_kwargs["custom_variables"] = request.custom_variables or {}
+        task_kwargs["path"] = request.path
+        task_kwargs["inventory_id"] = request.inventory_id
+        task_description = f"template {request.template_id}"
 
     # Trigger the task asynchronously
-    task = deploy_agent_task.delay(
-        template_id=request.template_id,
-        custom_variables=request.custom_variables or {},
-        agent_id=request.agent_id,
-        path=request.path,
-        inventory_id=request.inventory_id,
-        activate_after_deploy=activate_after_deploy,
-    )
+    task = deploy_agent_task.delay(**task_kwargs)
 
     return TaskResponse(
         task_id=task.id,
         status="queued",
-        message=f"Agent deployment task queued for template {request.template_id}: {task.id}",
+        message=f"Agent deployment task queued for {task_description}: {task.id}",
     )
 
 

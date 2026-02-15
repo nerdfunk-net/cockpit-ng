@@ -300,23 +300,35 @@ export interface CheckIPJobResult {
 // Deploy Agent Job Result Types
 // ============================================================================
 
+export interface DeployAgentTemplateResult {
+  template_id: number
+  template_name: string
+  file_path: string | null
+  inventory_id: number | null
+  success: boolean
+  rendered_size: number
+  error?: string
+}
+
 export interface DeployAgentJobResult {
   success: boolean
   message?: string
   error?: string
-  template_id: number
-  template_name: string
+  template_id?: number
+  template_name?: string
   agent_id: string
   agent_name: string
   commit_sha: string
   commit_sha_short: string
-  file_path: string
+  file_path?: string
   repository_name: string
   repository_url: string
   branch: string
   files_changed: number
   pushed: boolean
   timestamp: string
+  // Multi-template results
+  template_results?: DeployAgentTemplateResult[]
   // Activation fields
   activated?: boolean
   activation_output?: string

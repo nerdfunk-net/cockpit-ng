@@ -1,3 +1,10 @@
+export interface DeployTemplateEntry {
+  template_id: number
+  inventory_id: number | null
+  path: string
+  custom_variables: Record<string, string>
+}
+
 export interface JobTemplate {
   id: number
   name: string
@@ -29,6 +36,7 @@ export interface JobTemplate {
   deploy_path?: string
   deploy_custom_variables?: Record<string, string>
   activate_after_deploy?: boolean
+  deploy_templates?: DeployTemplateEntry[]
   is_global: boolean
   user_id?: number
   created_by?: string

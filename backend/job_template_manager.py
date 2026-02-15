@@ -47,6 +47,7 @@ def create_job_template(
     deploy_path: Optional[str] = None,
     deploy_custom_variables: Optional[Dict[str, Any]] = None,
     activate_after_deploy: bool = True,
+    deploy_templates: Optional[List[Dict[str, Any]]] = None,
     is_global: bool = False,
 ) -> Dict[str, Any]:
     """Create a new job template"""
@@ -58,6 +59,11 @@ def create_job_template(
     # Serialize deploy_custom_variables to JSON string for storage
     deploy_custom_variables_json = (
         json.dumps(deploy_custom_variables) if deploy_custom_variables else None
+    )
+
+    # Serialize deploy_templates to JSON string for storage
+    deploy_templates_json = (
+        json.dumps(deploy_templates) if deploy_templates else None
     )
 
     template = repo.create(
@@ -90,6 +96,7 @@ def create_job_template(
         deploy_path=deploy_path,
         deploy_custom_variables=deploy_custom_variables_json,
         activate_after_deploy=activate_after_deploy,
+        deploy_templates=deploy_templates_json,
         is_global=is_global,
         user_id=user_id if not is_global else None,
         created_by=created_by,
@@ -167,6 +174,7 @@ def update_job_template(
     deploy_path: Optional[str] = None,
     deploy_custom_variables: Optional[Dict[str, Any]] = None,
     activate_after_deploy: Optional[bool] = None,
+    deploy_templates: Optional[List[Dict[str, Any]]] = None,
     is_global: Optional[bool] = None,
     user_id: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
@@ -236,6 +244,8 @@ def update_job_template(
         update_data["deploy_custom_variables"] = json.dumps(deploy_custom_variables)
     if activate_after_deploy is not None:
         update_data["activate_after_deploy"] = activate_after_deploy
+    if deploy_templates is not None:
+        update_data["deploy_templates"] = json.dumps(deploy_templates)
     if is_global is not None:
         update_data["is_global"] = is_global
         if is_global:
@@ -337,6 +347,11 @@ def _model_to_dict(template) -> Dict[str, Any]:
             else None
         ),
         "activate_after_deploy": template.activate_after_deploy,
+        "deploy_templates": (
+            json.loads(template.deploy_templates)
+            if template.deploy_templates
+            else None
+        ),
         "is_global": template.is_global,
         "user_id": template.user_id,
         "created_by": template.created_by,

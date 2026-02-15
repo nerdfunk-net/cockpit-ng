@@ -449,6 +449,9 @@ class JobTemplate(Base):
     deploy_custom_variables = Column(
         Text, nullable=True
     )  # JSON string of user variable overrides (deploy_agent type)
+    deploy_templates = Column(
+        Text, nullable=True
+    )  # JSON array of template entries [{template_id, inventory_id, path, custom_variables}] (deploy_agent type)
     activate_after_deploy = Column(
         Boolean, nullable=False, default=True
     )  # Whether to activate (pull and restart) the agent after deployment (deploy_agent type)
