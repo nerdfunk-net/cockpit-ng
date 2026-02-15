@@ -1,17 +1,17 @@
 {% for net_name in inventory_cf_net %}
 + {{ net_name }}
-  menu = {{ net_name }}
-  title = {{ net_name }}
-  {% for location_name in inventory_locations %}
-  ++ {{ location_name }}
-    menu = {{ location_name }}
-    title = {{ location_name }}
-    {% for host in device_details %}
-    +++ {{ host|replace(".","-") }}
-      menu = {{ device_details[host]["name"] }}
-      title = {{ device_details[host]["name"] }}
-      {%- set ipaddress = device_details[host]["primary_ip4"]["address"].split('/') %}
-      host = {{ ipaddress [0]}}
-    {% endfor %}
-  {% endfor %}
+menu = {{ net_name }}
+title = {{ net_name }}
+{% for location_name in inventory_locations %}
+++ {{ location_name }}
+menu = {{ location_name }}
+title = {{ location_name }}
+{% for host in device_details %}
++++ {{ host|replace(".","-") }}
+menu = {{ device_details[host]["name"] }}
+title = {{ device_details[host]["name"] }}
+{%- set ipaddress = device_details[host]["primary_ip4"]["address"].split('/') %}
+host = {{ ipaddress [0]}}
+{% endfor %}
+{% endfor %}
 {% endfor %}

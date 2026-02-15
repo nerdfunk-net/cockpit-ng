@@ -738,6 +738,12 @@ class AgentDeploymentService:
         """
         Activate agent via cockpit agent service.
 
+        Performs two-step activation:
+        1. Git pull - pulls latest configuration from repository
+        2. Docker restart - restarts the agent container with new config
+
+        If git pull fails, the activation is aborted and Docker restart is not performed.
+
         Args:
             cockpit_agent_id: Cockpit agent ID string (e.g., "grafana-01")
             agent_name: Human-readable agent name
@@ -760,7 +766,7 @@ class AgentDeploymentService:
             result["message"] = " (activation skipped: no agent_id configured)"
             return result
 
-        self._update_progress(task_context, 95, "Activating agent...")
+        self._update_progress(task_context, 90, "Pulling latest configuration from git...")
 
         try:
             # Import service and get DB session
@@ -771,36 +777,69 @@ class AgentDeploymentService:
             try:
                 cockpit_service = CockpitAgentService(db)
 
-                logger.info("Sending docker restart command to cockpit agent '%s'...", cockpit_agent_id)
+                # Step 8.1: Git pull to fetch latest configuration
+                logger.info("Step 8.1: Sending git pull command to cockpit agent '%s'...", cockpit_agent_id)
 
-                # Send docker restart command (60s timeout)
-                # Use cockpit_agent_id (e.g., "grafana-01") NOT the UUID!
-                activation_result = cockpit_service.send_docker_restart(
+                git_pull_result = cockpit_service.send_git_pull(
+                    agent_id=cockpit_agent_id,
+                    repository_path="",  # Agent uses .env configured path
+                    branch="",  # Agent uses .env configured branch
+                    sent_by=username,
+                    timeout=30,
+                )
+
+                # Check git pull status
+                if git_pull_result.get("status") == "success":
+                    logger.info("✓ Git pull successful")
+                    logger.info("  Output: %s", git_pull_result.get("output", "none"))
+                elif git_pull_result.get("status") == "timeout":
+                    error_msg = "Git pull timed out after 30s"
+                    logger.error("✗ %s", error_msg)
+                    result["activated"] = False
+                    result["activation_warning"] = error_msg
+                    result["message"] = f" (activation failed: {error_msg})"
+                    return result
+                else:
+                    error_msg = f"Git pull failed: {git_pull_result.get('error', 'unknown error')}"
+                    logger.error("✗ %s", error_msg)
+                    result["activated"] = False
+                    result["activation_warning"] = error_msg
+                    result["message"] = f" (activation failed: {error_msg})"
+                    return result
+
+                # Step 8.2: Docker restart to apply new configuration
+                self._update_progress(task_context, 95, "Restarting agent container...")
+                logger.info("Step 8.2: Sending docker restart command to cockpit agent '%s'...", cockpit_agent_id)
+
+                restart_result = cockpit_service.send_docker_restart(
                     agent_id=cockpit_agent_id,
                     sent_by=username,
                     timeout=60,
                 )
 
-                if activation_result.get("status") == "success":
+                if restart_result.get("status") == "success":
                     logger.info("✓ Agent activated successfully")
-                    logger.info("  Output: %s", activation_result.get("output", "none"))
+                    logger.info("  Output: %s", restart_result.get("output", "none"))
                     result["activated"] = True
-                    result["activation_output"] = activation_result.get("output")
-                    result["message"] = " and agent activated successfully"
-                elif activation_result.get("status") == "timeout":
-                    logger.warning("⚠ Agent activation timed out")
-                    result["activation_warning"] = "Agent activation timed out after 60s"
-                    result["message"] = " (activation timed out)"
+                    result["activation_output"] = f"Git pull: {git_pull_result.get('output', 'success')}\nDocker restart: {restart_result.get('output', 'success')}"
+                    result["message"] = " and agent activated successfully (git pull + docker restart)"
+                elif restart_result.get("status") == "timeout":
+                    logger.warning("⚠ Docker restart timed out (config was pulled successfully)")
+                    result["activated"] = False
+                    result["activation_warning"] = "Docker restart timed out after 60s (git pull succeeded)"
+                    result["message"] = " (docker restart timed out, but git pull succeeded)"
                 else:
-                    logger.warning("⚠ Agent activation failed: %s", activation_result.get("error"))
-                    result["activation_warning"] = activation_result.get("error")
-                    result["message"] = f" (activation failed: {activation_result.get('error')})"
+                    logger.warning("⚠ Docker restart failed: %s (config was pulled successfully)", restart_result.get("error"))
+                    result["activated"] = False
+                    result["activation_warning"] = f"Docker restart failed: {restart_result.get('error')} (git pull succeeded)"
+                    result["message"] = f" (docker restart failed: {restart_result.get('error')}, but git pull succeeded)"
 
             finally:
                 db.close()
 
         except Exception as e:
             logger.error("⚠ Agent activation failed with exception: %s", e, exc_info=True)
+            result["activated"] = False
             result["activation_warning"] = str(e)
             result["message"] = f" (activation failed: {str(e)})"
 

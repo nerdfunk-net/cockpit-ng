@@ -112,9 +112,9 @@ export function DeployAgentResultView({ result }: DeployAgentResultViewProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {result.template_results!.map((tr, idx) => (
+              {result.template_results!.map((tr) => (
                 <div
-                  key={`${tr.template_id}-${idx}`}
+                  key={tr.template_id}
                   className={`rounded-lg border p-3 ${
                     tr.success
                       ? 'bg-green-50/50 border-green-200'
