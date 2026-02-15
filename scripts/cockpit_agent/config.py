@@ -1,6 +1,7 @@
 """
 Configuration management for Cockpit Agent
 """
+
 import logging
 import os
 import socket
@@ -25,15 +26,17 @@ class AgentConfig:
         self.redis_password = os.getenv("REDIS_PASSWORD")
         self.redis_db = int(os.getenv("REDIS_DB", "0"))
 
-        # Agent identity
-        self.agent_hostname = os.getenv("AGENT_HOSTNAME") or socket.gethostname()
+        # Agent identity - used to connect to Redis and must match Cockpit configuration
+        self.agent_id = os.getenv("AGENT_ID") or socket.gethostname()
 
         # Command configuration (support comma-separated lists)
         git_paths = os.getenv("GIT_REPO_PATH", "/opt/app/config")
         self.git_repo_paths = [p.strip() for p in git_paths.split(",") if p.strip()]
-        
+
         docker_names = os.getenv("DOCKER_CONTAINER_NAME", "app")
-        self.docker_container_names = [n.strip() for n in docker_names.split(",") if n.strip()]
+        self.docker_container_names = [
+            n.strip() for n in docker_names.split(",") if n.strip()
+        ]
 
         # Operational settings
         self.heartbeat_interval = int(os.getenv("HEARTBEAT_INTERVAL", "30"))
@@ -49,15 +52,15 @@ class AgentConfig:
 
     def get_command_channel(self) -> str:
         """Get the Redis channel name for receiving commands"""
-        return f"cockpit-agent:{self.agent_hostname}"
+        return f"cockpit-agent:{self.agent_id}"
 
     def get_response_channel(self) -> str:
         """Get the Redis channel name for sending responses"""
-        return f"cockpit-agent-response:{self.agent_hostname}"
+        return f"cockpit-agent-response:{self.agent_id}"
 
     def get_agent_key(self) -> str:
         """Get the Redis key for agent registry"""
-        return f"agents:{self.agent_hostname}"
+        return f"agents:{self.agent_id}"
 
     def validate(self) -> tuple[bool, Optional[str]]:
         """Validate configuration"""

@@ -3,6 +3,7 @@
 Cockpit Agent - Remote command executor for Cockpit
 Listens for commands via Redis Pub/Sub and executes them locally
 """
+
 import asyncio
 import json
 import logging
@@ -90,8 +91,8 @@ class CockpitAgent:
                 "status": "online",
                 "last_heartbeat": now,
                 "version": config.agent_version,
-                "hostname": config.agent_hostname,
-                "capabilities": "git_pull,docker_restart,echo",
+                "agent_id": config.agent_id,
+                "capabilities": "echo,git_pull,git_status,docker_restart",
                 "started_at": now,
                 "commands_executed": 0,
             }
@@ -226,7 +227,7 @@ class CockpitAgent:
     async def run(self):
         """Main agent run loop with reconnection logic"""
         logger.info(f"Starting Cockpit Agent v{config.agent_version}")
-        logger.info(f"Agent hostname: {config.agent_hostname}")
+        logger.info(f"Agent ID: {config.agent_id}")
 
         # Validate configuration
         valid, error = config.validate()

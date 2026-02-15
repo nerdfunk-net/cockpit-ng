@@ -1,10 +1,10 @@
 """
 Heartbeat thread for agent health monitoring
 """
+
 import logging
 import threading
 import time
-from typing import Optional
 
 import redis
 
