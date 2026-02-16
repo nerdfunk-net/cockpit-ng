@@ -49,7 +49,7 @@ class HeartbeatThread(threading.Thread):
             "status": "online",
             "last_heartbeat": now,
             "version": config.agent_version,
-            "hostname": config.agent_hostname,
+            "agent_id": config.agent_id,
             "capabilities": "git_pull,docker_restart,echo",
             "started_at": self.started_at,
             "commands_executed": self.commands_executed,

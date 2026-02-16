@@ -14,7 +14,7 @@ class AgentStatusResponse(BaseModel):
     status: str  # online, offline
     last_heartbeat: int
     version: str
-    hostname: str
+    hostname: str  # Agent ID (for display/compatibility)
     capabilities: str
     started_at: int
     commands_executed: int
