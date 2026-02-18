@@ -14,6 +14,7 @@ const EMPTY_FILTER_OPTIONS: FilterOptions = {
 }
 
 const EMPTY_ROLE_FILTERS: Record<string, boolean> = {}
+const EMPTY_DIFF_STATUS_FILTERS: Record<string, boolean> = {}
 
 export function useDiffFilters(devices: DiffDevice[]) {
   const [deviceNameFilter, setDeviceNameFilter] = useState('')
@@ -21,6 +22,7 @@ export function useDiffFilters(devices: DiffDevice[]) {
   const [selectedLocation, setSelectedLocation] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [systemFilter, setSystemFilter] = useState<SystemFilter>('all')
+  const [diffStatusFilters, setDiffStatusFilters] = useState<Record<string, boolean>>(EMPTY_DIFF_STATUS_FILTERS)
 
   // Build filter options from device data
   const filterOptions = useMemo((): FilterOptions => {
@@ -38,6 +40,29 @@ export function useDiffFilters(devices: DiffDevice[]) {
 
     return { roles, locations, statuses }
   }, [devices])
+
+  // Compute effective diff status filters - if empty, treat all statuses as selected
+  const effectiveDiffStatusFilters = useMemo(() => {
+    const hasAnyFilter = Object.keys(diffStatusFilters).length > 0
+    if (!hasAnyFilter) {
+      // Initialize with all statuses selected
+      return {
+        match: true,
+        differ: true,
+        not_found: true,
+        empty: true,
+      }
+    }
+    // IMPORTANT: Merge with defaults to ensure all keys exist
+    const defaults = {
+      match: true,
+      differ: true,
+      not_found: true,
+      empty: true,
+    }
+    const merged = { ...defaults, ...diffStatusFilters }
+    return merged
+  }, [diffStatusFilters])
 
   // Filter devices
   const filteredDevices = useMemo(() => {
@@ -71,8 +96,33 @@ export function useDiffFilters(devices: DiffDevice[]) {
       result = result.filter(d => d.status === statusFilter)
     }
 
+    // CheckMK Diff Status filter
+    // Always apply - effectiveDiffStatusFilters defaults to all selected if empty
+    if (Object.keys(effectiveDiffStatusFilters).length > 0) {
+      result = result.filter(d => {
+        const status = d.checkmk_diff_status
+        
+        // Map backend status to filter key
+        let filterKey: string
+        if (!status) {
+          filterKey = 'empty'
+        } else if (status === 'equal') {
+          filterKey = 'match'
+        } else if (status === 'host_not_found' || status === 'missing') {
+          filterKey = 'not_found'
+        } else {
+          // 'diff', 'error', 'unknown', or any other value
+          filterKey = 'differ'
+        }
+        
+        // Show device only if its filter key is selected (true)
+        const isSelected = effectiveDiffStatusFilters[filterKey as keyof typeof effectiveDiffStatusFilters] === true
+        return isSelected
+      })
+    }
+    
     return result
-  }, [devices, systemFilter, deviceNameFilter, roleFilters, selectedLocation, statusFilter])
+  }, [devices, systemFilter, deviceNameFilter, roleFilters, selectedLocation, statusFilter, effectiveDiffStatusFilters])
 
   // Count active filters
   const activeFiltersCount = useMemo(() => {
@@ -82,8 +132,12 @@ export function useDiffFilters(devices: DiffDevice[]) {
     if (selectedLocation !== 'all') count++
     if (statusFilter !== 'all') count++
     if (systemFilter !== 'all') count++
+    // Add count for diff status filters (if any are deselected from the default "all selected")
+    const allDiffStatusSelected = Object.keys(effectiveDiffStatusFilters).length === 4 &&
+      Object.values(effectiveDiffStatusFilters).every(v => v === true)
+    if (!allDiffStatusSelected) count++
     return count
-  }, [deviceNameFilter, roleFilters, selectedLocation, statusFilter, systemFilter])
+  }, [deviceNameFilter, roleFilters, selectedLocation, statusFilter, systemFilter, effectiveDiffStatusFilters])
 
   const resetFilters = useCallback(() => {
     setDeviceNameFilter('')
@@ -91,6 +145,13 @@ export function useDiffFilters(devices: DiffDevice[]) {
     setSelectedLocation('all')
     setStatusFilter('all')
     setSystemFilter('all')
+    // Reset to all selected
+    setDiffStatusFilters({
+      match: true,
+      differ: true,
+      not_found: true,
+      empty: true,
+    })
   }, [])
 
   return useMemo(() => ({
@@ -104,6 +165,8 @@ export function useDiffFilters(devices: DiffDevice[]) {
     setStatusFilter,
     systemFilter,
     setSystemFilter,
+    diffStatusFilters,
+    setDiffStatusFilters,
     filterOptions,
     filteredDevices,
     activeFiltersCount,
@@ -114,6 +177,7 @@ export function useDiffFilters(devices: DiffDevice[]) {
     selectedLocation,
     statusFilter,
     systemFilter,
+    diffStatusFilters,
     filterOptions,
     filteredDevices,
     activeFiltersCount,

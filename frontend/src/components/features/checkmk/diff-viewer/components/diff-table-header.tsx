@@ -26,6 +26,7 @@ interface DiffTableHeaderProps {
   selectedLocation: string
   statusFilter: string
   systemFilter: SystemFilter
+  diffStatusFilters: Record<string, boolean>
   filterOptions: {
     roles: Set<string>
     locations: Set<string>
@@ -36,6 +37,7 @@ interface DiffTableHeaderProps {
   onLocationChange: (value: string) => void
   onStatusFilterChange: (value: string) => void
   onSystemFilterChange: (value: SystemFilter) => void
+  onDiffStatusFiltersChange: (value: Record<string, boolean>) => void
 }
 
 export function DiffTableHeader({
@@ -44,12 +46,14 @@ export function DiffTableHeader({
   selectedLocation,
   statusFilter,
   systemFilter,
+  diffStatusFilters,
   filterOptions,
   onDeviceNameFilterChange,
   onRoleFiltersChange,
   onLocationChange,
   onStatusFilterChange,
   onSystemFilterChange,
+  onDiffStatusFiltersChange,
 }: DiffTableHeaderProps) {
   return (
     <thead>
@@ -171,8 +175,137 @@ export function DiffTableHeader({
         </th>
         <th className="px-4 py-3 w-36 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
-            <div>CheckMK Diff</div>
-            <div className="h-8" />
+            <div className="flex items-center gap-1">
+              CheckMK Diff
+              {(() => {
+                const selectedCount = Object.values(diffStatusFilters).filter(Boolean).length
+                const totalCount = 4 // match, differ, not_found, empty
+                const hasFilters = Object.keys(diffStatusFilters).length > 0
+                const isFiltered = hasFilters && selectedCount < totalCount
+                return isFiltered && (
+                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                    {selectedCount}
+                  </Badge>
+                )
+              })()}
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 w-full text-xs justify-between">
+                  Status
+                  <ChevronDown className="h-4 w-4 ml-auto" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel className="text-xs">
+                  Filter by Status
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer text-blue-600 hover:bg-blue-50"
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    const allSelected: Record<string, boolean> = {
+                      match: true,
+                      differ: true,
+                      not_found: true,
+                      empty: true,
+                    }
+                    onDiffStatusFiltersChange(allSelected)
+                  }}
+                >
+                  Select all
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer text-red-600 hover:bg-red-50"
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    const allDeselected: Record<string, boolean> = {
+                      match: false,
+                      differ: false,
+                      not_found: false,
+                      empty: false,
+                    }
+                    onDiffStatusFiltersChange(allDeselected)
+                  }}
+                >
+                  Deselect all
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  checked={diffStatusFilters['match'] !== false}
+                  onCheckedChange={(checked) => {
+                    // Ensure all keys exist by merging with defaults
+                    const updated = {
+                      match: diffStatusFilters['match'] !== false,
+                      differ: diffStatusFilters['differ'] !== false,
+                      not_found: diffStatusFilters['not_found'] !== false,
+                      empty: diffStatusFilters['empty'] !== false,
+                    }
+                    updated.match = !!checked
+                    console.log('[CHECKBOX UPDATE] Match checked:', checked, 'New state:', updated)
+                    onDiffStatusFiltersChange(updated)
+                  }}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  Match
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={diffStatusFilters['differ'] !== false}
+                  onCheckedChange={(checked) => {
+                    // Ensure all keys exist by merging with defaults
+                    const updated = {
+                      match: diffStatusFilters['match'] !== false,
+                      differ: diffStatusFilters['differ'] !== false,
+                      not_found: diffStatusFilters['not_found'] !== false,
+                      empty: diffStatusFilters['empty'] !== false,
+                    }
+                    updated.differ = !!checked
+                    console.log('[CHECKBOX UPDATE] Differ checked:', checked, 'New state:', updated)
+                    onDiffStatusFiltersChange(updated)
+                  }}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  Differ
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={diffStatusFilters['not_found'] !== false}
+                  onCheckedChange={(checked) => {
+                    // Ensure all keys exist by merging with defaults
+                    const updated = {
+                      match: diffStatusFilters['match'] !== false,
+                      differ: diffStatusFilters['differ'] !== false,
+                      not_found: diffStatusFilters['not_found'] !== false,
+                      empty: diffStatusFilters['empty'] !== false,
+                    }
+                    updated.not_found = !!checked
+                    console.log('[CHECKBOX UPDATE] Not Found checked:', checked, 'New state:', updated)
+                    onDiffStatusFiltersChange(updated)
+                  }}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  Not Found
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={diffStatusFilters['empty'] !== false}
+                  onCheckedChange={(checked) => {
+                    // Ensure all keys exist by merging with defaults
+                    const updated = {
+                      match: diffStatusFilters['match'] !== false,
+                      differ: diffStatusFilters['differ'] !== false,
+                      not_found: diffStatusFilters['not_found'] !== false,
+                      empty: diffStatusFilters['empty'] !== false,
+                    }
+                    updated.empty = !!checked
+                    console.log('[CHECKBOX UPDATE] Empty checked:', checked, 'New state:', updated)
+                    onDiffStatusFiltersChange(updated)
+                  }}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  Empty
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </th>
         <th className="px-4 py-3 w-28 text-left text-xs font-medium text-gray-600 uppercase">

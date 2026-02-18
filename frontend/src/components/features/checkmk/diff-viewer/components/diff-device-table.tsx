@@ -21,6 +21,7 @@ interface DiffDeviceTableProps {
   selectedLocation: string
   statusFilter: string
   systemFilter: SystemFilter
+  diffStatusFilters: Record<string, boolean>
   filterOptions: {
     roles: Set<string>
     locations: Set<string>
@@ -33,6 +34,7 @@ interface DiffDeviceTableProps {
   onLocationChange: (value: string) => void
   onStatusFilterChange: (value: string) => void
   onSystemFilterChange: (value: SystemFilter) => void
+  onDiffStatusFiltersChange: (value: Record<string, boolean>) => void
   onResetFilters: () => void
   onGetDiff: (device: DiffDevice) => void
   onRunDiff: () => void
@@ -46,6 +48,7 @@ export function DiffDeviceTable({
   selectedLocation,
   statusFilter,
   systemFilter,
+  diffStatusFilters,
   filterOptions,
   activeFiltersCount,
   loading,
@@ -54,6 +57,7 @@ export function DiffDeviceTable({
   onLocationChange,
   onStatusFilterChange,
   onSystemFilterChange,
+  onDiffStatusFiltersChange,
   onResetFilters,
   onGetDiff,
   onRunDiff,
@@ -145,12 +149,14 @@ export function DiffDeviceTable({
             selectedLocation={selectedLocation}
             statusFilter={statusFilter}
             systemFilter={systemFilter}
+            diffStatusFilters={diffStatusFilters}
             filterOptions={filterOptions}
             onDeviceNameFilterChange={(v) => { onDeviceNameFilterChange(v); setCurrentPage(0) }}
             onRoleFiltersChange={(v) => { onRoleFiltersChange(v); setCurrentPage(0) }}
             onLocationChange={(v) => { onLocationChange(v); setCurrentPage(0) }}
             onStatusFilterChange={(v) => { onStatusFilterChange(v); setCurrentPage(0) }}
             onSystemFilterChange={(v) => { onSystemFilterChange(v); setCurrentPage(0) }}
+            onDiffStatusFiltersChange={(v) => { onDiffStatusFiltersChange(v); setCurrentPage(0) }}
           />
           <tbody>
             {paginatedDevices.length === 0 ? (

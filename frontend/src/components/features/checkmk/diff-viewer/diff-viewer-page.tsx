@@ -33,38 +33,7 @@ export default function DiffViewerPage() {
     runDiff,
   } = useDiffDeviceLoader()
 
-  // Filters
-  const {
-    deviceNameFilter,
-    setDeviceNameFilter,
-    roleFilters,
-    setRoleFilters,
-    selectedLocation,
-    setSelectedLocation,
-    statusFilter,
-    setStatusFilter,
-    systemFilter,
-    setSystemFilter,
-    filterOptions,
-    filteredDevices,
-    activeFiltersCount,
-    resetFilters,
-  } = useDiffFilters(devices)
-
-  // Diff comparison for individual devices
-  const {
-    diffResult,
-    loadingDiff,
-    parseConfigComparison,
-    getDiff,
-    setDiffResult,
-  } = useDiffComparison({ showMessage })
-
-  // State for diff modal
-  const [isDiffModalOpen, setIsDiffModalOpen] = useState(false)
-  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null)
-
-  // Track overlaid comparison statuses
+  // Track overlaid comparison statuses (must be before callbacks that use it)
   const [comparisonOverlay, setComparisonOverlay] = useState<Map<string, string>>(new Map())
 
   // Overlay comparison job results onto devices
@@ -91,17 +60,50 @@ export default function DiffViewerPage() {
     (message) => showMessage(message, 'success')
   )
 
-  // Enrich devices with comparison overlay
+  // Diff comparison for individual devices
+  const {
+    diffResult,
+    loadingDiff,
+    parseConfigComparison,
+    getDiff,
+    setDiffResult,
+  } = useDiffComparison({ showMessage })
+
+  // State for diff modal
+  const [isDiffModalOpen, setIsDiffModalOpen] = useState(false)
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null)
+
+  // Enrich devices with comparison overlay BEFORE filtering
   const enrichedDevices = useMemo((): DiffDevice[] => {
-    if (comparisonOverlay.size === 0) return filteredDevices
-    return filteredDevices.map(device => {
+    if (comparisonOverlay.size === 0) return devices
+    return devices.map(device => {
       const status = comparisonOverlay.get(device.name.toLowerCase())
       if (status) {
         return { ...device, checkmk_diff_status: status }
       }
       return device
     })
-  }, [filteredDevices, comparisonOverlay])
+  }, [devices, comparisonOverlay])
+
+  // Filters - applied to enriched devices
+  const {
+    deviceNameFilter,
+    setDeviceNameFilter,
+    roleFilters,
+    setRoleFilters,
+    selectedLocation,
+    setSelectedLocation,
+    statusFilter,
+    setStatusFilter,
+    systemFilter,
+    setSystemFilter,
+    diffStatusFilters,
+    setDiffStatusFilters,
+    filterOptions,
+    filteredDevices,
+    activeFiltersCount,
+    resetFilters,
+  } = useDiffFilters(enrichedDevices)
 
   // Handle get diff for a device
   const handleGetDiff = useCallback(async (diffDevice: DiffDevice) => {
@@ -181,13 +183,14 @@ export default function DiffViewerPage() {
 
       {/* Device Table */}
       <DiffDeviceTable
-        devices={enrichedDevices}
+        devices={filteredDevices}
         totalDeviceCount={devices.length}
         deviceNameFilter={deviceNameFilter}
         roleFilters={roleFilters}
         selectedLocation={selectedLocation}
         statusFilter={statusFilter}
         systemFilter={systemFilter}
+        diffStatusFilters={diffStatusFilters}
         filterOptions={filterOptions}
         activeFiltersCount={activeFiltersCount}
         loading={loading}
@@ -196,6 +199,7 @@ export default function DiffViewerPage() {
         onLocationChange={setSelectedLocation}
         onStatusFilterChange={setStatusFilter}
         onSystemFilterChange={setSystemFilter}
+        onDiffStatusFiltersChange={setDiffStatusFilters}
         onResetFilters={resetFilters}
         onGetDiff={handleGetDiff}
         onRunDiff={runDiff}
