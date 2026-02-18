@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo } from 'react'
 import { X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { useAuthStore } from '@/lib/auth-store'
+import { useApi } from '@/hooks/use-api'
 import { DiffViewerHeader } from './components/diff-viewer-header'
 import { DiffStatsCards } from './components/diff-stats-cards'
 import { DiffDeviceTable } from './components/diff-device-table'
@@ -16,10 +17,11 @@ import { StatusMessageCard } from '../sync-devices/components/status-message-car
 import { JobControlsPanel } from '../sync-devices/components/job-controls-panel'
 import { DiffModal } from '../sync-devices/components/diff-modal'
 import type { DiffDevice } from '@/types/features/checkmk/diff-viewer'
-import type { Device } from '@/types/features/checkmk/sync-devices'
+import type { Device, CeleryTaskResponse } from '@/types/features/checkmk/sync-devices'
 
 export default function DiffViewerPage() {
   const token = useAuthStore(state => state.token)
+  const { apiCall } = useApi()
   const { statusMessage, showMessage, clearMessage } = useStatusMessages()
 
   // Diff loader
@@ -122,6 +124,38 @@ export default function DiffViewerPage() {
     await getDiff(device)
   }, [getDiff])
 
+  // Handle sync device to CheckMK
+  const handleSync = useCallback(async (diffDevice: DiffDevice) => {
+    if (!diffDevice.nautobot_id) {
+      showMessage('Device ID is required for sync', 'error')
+      return
+    }
+
+    try {
+      showMessage(`Starting sync for ${diffDevice.name}...`, 'info')
+      
+      const response = await apiCall<CeleryTaskResponse>(`celery/tasks/sync-devices-to-checkmk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          device_ids: [diffDevice.nautobot_id],
+          activate_changes_after_sync: true
+        })
+      })
+
+      if (response?.task_id) {
+        showMessage(`Sync task started for ${diffDevice.name}. Task ID: ${response.task_id}`, 'success')
+      } else {
+        showMessage(`Failed to queue sync task for ${diffDevice.name}`, 'error')
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to sync device'
+      showMessage(`Failed to sync ${diffDevice.name}: ${message}`, 'error')
+    }
+  }, [apiCall, showMessage])
+
   // Handle start new comparison job
   const handleStartNewJob = useCallback(async () => {
     const result = await jobManagement.startNewJob()
@@ -202,6 +236,7 @@ export default function DiffViewerPage() {
         onDiffStatusFiltersChange={setDiffStatusFilters}
         onResetFilters={resetFilters}
         onGetDiff={handleGetDiff}
+        onSync={handleSync}
         onRunDiff={runDiff}
       />
 

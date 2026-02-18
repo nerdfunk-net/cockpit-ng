@@ -1,4 +1,4 @@
-import { GitCompare } from 'lucide-react'
+import { GitCompare, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { SystemBadge } from './system-badge'
@@ -8,12 +8,19 @@ interface DiffTableRowProps {
   device: DiffDevice
   index: number
   onGetDiff: (device: DiffDevice) => void
+  onSync: (device: DiffDevice) => void
 }
 
-export function DiffTableRow({ device, index, onGetDiff }: DiffTableRowProps) {
+export function DiffTableRow({ device, index, onGetDiff, onSync }: DiffTableRowProps) {
   const alternatingRowClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
   const displayIp = device.ip_address || device.checkmk_ip || 'N/A'
   const canViewDiff = device.source === 'both' && !!device.nautobot_id
+  
+  // Enable sync when: 1) Nautobot Only OR 2) Both Systems with Differ status
+  const canSync = device.nautobot_id && (
+    device.source === 'nautobot' ||
+    (device.source === 'both' && device.checkmk_diff_status && device.checkmk_diff_status !== 'equal' && device.checkmk_diff_status !== 'host_not_found')
+  )
 
   return (
     <tr className={alternatingRowClass}>
@@ -62,16 +69,29 @@ export function DiffTableRow({ device, index, onGetDiff }: DiffTableRowProps) {
         )}
       </td>
       <td className="px-4 py-3 w-28">
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => onGetDiff(device)}
-          disabled={!canViewDiff}
-          title={canViewDiff ? 'View Diff' : 'Only available for devices in both systems'}
-          className="h-8 w-8 p-0"
-        >
-          <GitCompare className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onGetDiff(device)}
+            disabled={!canViewDiff}
+            title={canViewDiff ? 'View Diff' : 'Only available for devices in both systems'}
+            className="h-8 w-8 p-0"
+          >
+            <GitCompare className="h-4 w-4" />
+          </Button>
+
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onSync(device)}
+            disabled={!canSync}
+            title={canSync ? 'Sync Device' : 'Sync not available for this device'}
+            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 disabled:text-gray-400"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
       </td>
     </tr>
   )

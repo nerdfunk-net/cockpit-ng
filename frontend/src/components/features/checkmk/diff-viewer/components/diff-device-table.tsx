@@ -37,6 +37,7 @@ interface DiffDeviceTableProps {
   onDiffStatusFiltersChange: (value: Record<string, boolean>) => void
   onResetFilters: () => void
   onGetDiff: (device: DiffDevice) => void
+  onSync: (device: DiffDevice) => void
   onRunDiff: () => void
 }
 
@@ -60,6 +61,7 @@ export function DiffDeviceTable({
   onDiffStatusFiltersChange,
   onResetFilters,
   onGetDiff,
+  onSync,
   onRunDiff,
 }: DiffDeviceTableProps) {
   const [currentPage, setCurrentPage] = useState(0)
@@ -174,6 +176,7 @@ export function DiffDeviceTable({
                   device={device}
                   index={index}
                   onGetDiff={onGetDiff}
+                  onSync={onSync}
                 />
               ))
             )}
