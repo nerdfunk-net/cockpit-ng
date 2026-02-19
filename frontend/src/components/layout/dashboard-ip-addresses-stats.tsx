@@ -82,7 +82,7 @@ export default function DashboardIPAddressesStats({ refreshTrigger = 0 }: Dashbo
                 <Network className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
-                <CardTitle className="text-sm font-semibold text-slate-700">Old IP Addresses</CardTitle>
+                <CardTitle className="text-sm font-semibold text-slate-700">Stale IP Addresses</CardTitle>
                 <p className="text-xs text-slate-500">Latest list result</p>
               </div>
             </div>
