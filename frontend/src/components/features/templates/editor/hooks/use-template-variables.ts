@@ -320,6 +320,25 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
     })
   }, [])
 
+  // Updates inventory-type variable values by name (used to refresh stale saved values on load)
+  const updateInventoryVariableValues = useCallback((updates: Record<string, string>) => {
+    setVariables((prev) => {
+      let hasChanges = false
+      const updated = prev.map((v) => {
+        if (v.type === 'inventory' && v.name in updates) {
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          const freshValue: string = updates[v.name]!
+          if (v.value !== freshValue) {
+            hasChanges = true
+            return { ...v, value: freshValue }
+          }
+        }
+        return v
+      })
+      return hasChanges ? updated : prev
+    })
+  }, [])
+
   const togglePreRunVariables = useCallback((show: boolean) => {
     setVariables((prev) => {
       if (show) {
@@ -390,7 +409,8 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
       setPreRunExecuting,
       togglePreRunVariables,
       updateInventoryIdForInventoryVariables,
+      updateInventoryVariableValues,
     }),
-    [variables, updateForCategory, updateDeviceData, updateSnmpMapping, toggleSnmpMappingVariable, toggleDeviceDetailsVariable, updatePath, addVariable, addVariableWithData, addVariableWithMetadata, removeVariable, updateVariable, setCustomVariables, updatePreRunVariable, setPreRunExecuting, togglePreRunVariables, updateInventoryIdForInventoryVariables]
+    [variables, updateForCategory, updateDeviceData, updateSnmpMapping, toggleSnmpMappingVariable, toggleDeviceDetailsVariable, updatePath, addVariable, addVariableWithData, addVariableWithMetadata, removeVariable, updateVariable, setCustomVariables, updatePreRunVariable, setPreRunExecuting, togglePreRunVariables, updateInventoryIdForInventoryVariables, updateInventoryVariableValues]
   )
 }

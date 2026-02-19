@@ -162,10 +162,12 @@ export function InventoryMetadataTab({
       values = analyzeData[selectedDataType]
     }
 
+    const serializedValue = JSON.stringify(values, null, 2)
+
     // Create variable definition with metadata
     onAdd({
       name: variableName.trim(),
-      value: JSON.stringify(values, null, 2),
+      value: serializedValue,
       type: 'inventory',
       metadata: {
         inventory_id: parseInt(activeInventoryId),

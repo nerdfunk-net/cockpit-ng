@@ -39,6 +39,7 @@ function TemplateEditorContent() {
   const hasUpdatedDataRef = useRef<boolean>(false)
   const lastCategoryRef = useRef<string>('__none__')
   const lastTestDeviceIdRef = useRef<string | null>(null)
+  const hasRefreshedInventoryVarsRef = useRef<boolean>(false)
 
   const watchedContent = useWatch({ control: editor.form.control, name: 'content' })
   const watchedTemplateType = useWatch({
@@ -184,6 +185,54 @@ function TemplateEditorContent() {
     fetchDeviceDetails()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- updateDeviceData is stable from useCallback
   }, [watchedCategory, watchedTestDeviceId, apiCall, editor.variableManager.updateDeviceData])
+
+  // After loading a saved template, refresh inventory-type variable values from live inventory
+  // (stored values may be stale if the inventory changed since the template was last saved)
+  useEffect(() => {
+    if (!editor.isEditMode) return
+    if (hasRefreshedInventoryVarsRef.current) return
+
+    const inventoryVars = editor.variableManager.variables.filter(
+      (v) => v.type === 'inventory' && v.metadata?.inventory_id && v.metadata?.inventory_data_type
+    )
+    if (inventoryVars.length === 0) return // not loaded yet — wait for next render
+
+    hasRefreshedInventoryVarsRef.current = true
+
+    // Group variables by inventory_id to minimize analyze calls
+    const byInventoryId = new Map<number, typeof inventoryVars>()
+    for (const v of inventoryVars) {
+      const invId = v.metadata!.inventory_id!
+      if (!byInventoryId.has(invId)) byInventoryId.set(invId, [])
+      byInventoryId.get(invId)!.push(v)
+    }
+
+    // Fetch fresh data for each unique inventory and update variable values
+    byInventoryId.forEach((vars, invId) => {
+      apiCall<{ locations: string[]; tags: string[]; custom_fields: Record<string, string[]>; statuses: string[]; roles: string[] }>(
+        `inventory/${invId}/analyze`
+      )
+        .then((data) => {
+          const updates: Record<string, string> = {}
+          for (const v of vars) {
+            const dataType = v.metadata!.inventory_data_type!
+            let freshValues: unknown
+            if (dataType === 'custom_fields') {
+              const cfKey = v.metadata!.inventory_custom_field
+              freshValues = cfKey ? (data.custom_fields[cfKey] ?? []) : data.custom_fields
+            } else {
+              freshValues = (data as Record<string, unknown>)[dataType] ?? []
+            }
+            updates[v.name] = JSON.stringify(freshValues, null, 2)
+          }
+          editor.variableManager.updateInventoryVariableValues(updates)
+        })
+        .catch((err) => {
+          console.warn('[WARN] [template-editor-page] Failed to refresh inventory variables for inventory', invId, err)
+        })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run once when inventory vars first appear after template load
+  }, [editor.isEditMode, editor.variableManager.variables])
 
   // Toggle pre_run variables when command is entered/cleared
   useEffect(() => {

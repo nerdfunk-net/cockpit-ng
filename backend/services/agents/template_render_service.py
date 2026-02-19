@@ -14,9 +14,12 @@ from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
 import yaml
-from jinja2 import Template, TemplateError, UndefinedError
+from jinja2 import Environment, TemplateError, UndefinedError
 
 logger = logging.getLogger(__name__)
+
+# Shared Jinja2 environment with extensions enabled for all agent template rendering
+_jinja2_env = Environment(extensions=["jinja2.ext.do", "jinja2.ext.loopcontrols"])
 
 
 @dataclass
@@ -181,7 +184,7 @@ class AgentTemplateRenderService:
 
         # Render the template
         try:
-            jinja_template = Template(template_content)
+            jinja_template = _jinja2_env.from_string(template_content)
             rendered_content = jinja_template.render(**context)
         except UndefinedError as e:
             available_vars = list(context.keys())

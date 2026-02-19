@@ -4,10 +4,13 @@ Template rendering service with category-specific implementations.
 
 import logging
 from typing import Dict, Any, List, Optional
-from jinja2 import Template, TemplateError, UndefinedError
+from jinja2 import Environment, TemplateError, UndefinedError
 import re
 
 logger = logging.getLogger(__name__)
+
+# Shared Jinja2 environment with extensions enabled for all template rendering
+_jinja2_env = Environment(extensions=["jinja2.ext.do", "jinja2.ext.loopcontrols"])
 
 
 class RenderService:
@@ -154,7 +157,7 @@ class RenderService:
 
         # Render the template
         try:
-            jinja_template = Template(template_content)
+            jinja_template = _jinja2_env.from_string(template_content)
             rendered_content = jinja_template.render(**context)
         except UndefinedError as e:
             # Provide detailed error with available variables
@@ -221,7 +224,7 @@ class RenderService:
         variables_used = self._extract_template_variables(template_content)
 
         try:
-            jinja_template = Template(template_content)
+            jinja_template = _jinja2_env.from_string(template_content)
             rendered_content = jinja_template.render(**context)
         except UndefinedError as e:
             # Provide detailed error with available variables
