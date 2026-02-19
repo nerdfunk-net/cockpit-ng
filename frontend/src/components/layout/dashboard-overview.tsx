@@ -9,6 +9,7 @@ import DashboardJobStats from '@/components/layout/dashboard-job-stats'
 import DashboardDeviceBackupStatus from '@/components/layout/dashboard-device-backup-status'
 import DashboardCheckmkSyncStatus from '@/components/layout/dashboard-checkmk-sync-status'
 import DashboardScanPrefixStats from '@/components/layout/dashboard-scan-prefix-stats'
+import DashboardIPAddressesStats from '@/components/layout/dashboard-ip-addresses-stats'
 import {
   Server,
   MapPin,
@@ -344,6 +345,7 @@ export default function DashboardOverview() {
           <DashboardDeviceBackupStatus refreshTrigger={refreshTrigger} />
           <DashboardCheckmkSyncStatus refreshTrigger={refreshTrigger} />
           <DashboardScanPrefixStats refreshTrigger={refreshTrigger} />
+          <DashboardIPAddressesStats refreshTrigger={refreshTrigger} />
         </div>
       </div>
 

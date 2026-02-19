@@ -372,6 +372,37 @@ export interface ScanPrefixJobResult {
 }
 
 // ============================================================================
+// IP Addresses Job Result Types
+// ============================================================================
+
+export interface IPAddressEntry {
+  id: string
+  address: string
+  mask_length: number
+  ip_version: number
+  description: string
+  dns_name: string
+  [key: string]: unknown  // custom fields like cf_last_scan
+}
+
+export interface IPAddressesJobResult {
+  success: boolean
+  action: 'list' | 'delete'
+  filter_field: string
+  filter_type: string | null
+  filter_value: string
+  include_null: boolean
+  // list action
+  ip_addresses?: IPAddressEntry[]
+  total: number
+  // delete action
+  deleted?: number
+  failed?: number
+  // Index signature for compatibility with Record<string, unknown>
+  [key: string]: unknown
+}
+
+// ============================================================================
 // Type Guards
 // ============================================================================
 
@@ -491,6 +522,20 @@ export function isScanPrefixJobResult(result: Record<string, unknown>): result i
     'total_ips_scanned' in result &&
     'total_reachable' in result &&
     'total_unreachable' in result
+  )
+}
+
+/**
+ * Check if result is an ip_addresses job result.
+ * Has action ('list' or 'delete'), filter_field, and filter_value fields.
+ */
+export function isIPAddressesJobResult(result: Record<string, unknown>): result is IPAddressesJobResult {
+  return (
+    'action' in result &&
+    (result.action === 'list' || result.action === 'delete') &&
+    'filter_field' in result &&
+    'filter_value' in result &&
+    'total' in result
   )
 }
 

@@ -48,6 +48,11 @@ def create_job_template(
     deploy_custom_variables: Optional[Dict[str, Any]] = None,
     activate_after_deploy: bool = True,
     deploy_templates: Optional[List[Dict[str, Any]]] = None,
+    ip_action: Optional[str] = None,
+    ip_filter_field: Optional[str] = None,
+    ip_filter_type: Optional[str] = None,
+    ip_filter_value: Optional[str] = None,
+    ip_include_null: bool = False,
     is_global: bool = False,
 ) -> Dict[str, Any]:
     """Create a new job template"""
@@ -97,6 +102,11 @@ def create_job_template(
         deploy_custom_variables=deploy_custom_variables_json,
         activate_after_deploy=activate_after_deploy,
         deploy_templates=deploy_templates_json,
+        ip_action=ip_action,
+        ip_filter_field=ip_filter_field,
+        ip_filter_type=ip_filter_type,
+        ip_filter_value=ip_filter_value,
+        ip_include_null=ip_include_null,
         is_global=is_global,
         user_id=user_id if not is_global else None,
         created_by=created_by,
@@ -175,6 +185,11 @@ def update_job_template(
     deploy_custom_variables: Optional[Dict[str, Any]] = None,
     activate_after_deploy: Optional[bool] = None,
     deploy_templates: Optional[List[Dict[str, Any]]] = None,
+    ip_action: Optional[str] = None,
+    ip_filter_field: Optional[str] = None,
+    ip_filter_type: Optional[str] = None,
+    ip_filter_value: Optional[str] = None,
+    ip_include_null: Optional[bool] = None,
     is_global: Optional[bool] = None,
     user_id: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
@@ -246,6 +261,16 @@ def update_job_template(
         update_data["activate_after_deploy"] = activate_after_deploy
     if deploy_templates is not None:
         update_data["deploy_templates"] = json.dumps(deploy_templates)
+    if ip_action is not None:
+        update_data["ip_action"] = ip_action
+    if ip_filter_field is not None:
+        update_data["ip_filter_field"] = ip_filter_field
+    if ip_filter_type is not None:
+        update_data["ip_filter_type"] = ip_filter_type
+    if ip_filter_value is not None:
+        update_data["ip_filter_value"] = ip_filter_value
+    if ip_include_null is not None:
+        update_data["ip_include_null"] = ip_include_null
     if is_global is not None:
         update_data["is_global"] = is_global
         if is_global:
@@ -307,6 +332,11 @@ def get_job_types() -> List[Dict[str, str]]:
             "label": "Deploy Agent",
             "description": "Deploy agent configurations to Git repository",
         },
+        {
+            "value": "ip_addresses",
+            "label": "Maintain IP-Addresses",
+            "description": "List, mark, or remove Nautobot IP addresses filtered by a field",
+        },
     ]
 
 
@@ -352,6 +382,11 @@ def _model_to_dict(template) -> Dict[str, Any]:
             if template.deploy_templates
             else None
         ),
+        "ip_action": template.ip_action,
+        "ip_filter_field": template.ip_filter_field,
+        "ip_filter_type": template.ip_filter_type,
+        "ip_filter_value": template.ip_filter_value,
+        "ip_include_null": template.ip_include_null,
         "is_global": template.is_global,
         "user_id": template.user_id,
         "created_by": template.created_by,

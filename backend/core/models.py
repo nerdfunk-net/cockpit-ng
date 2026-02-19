@@ -455,6 +455,12 @@ class JobTemplate(Base):
     activate_after_deploy = Column(
         Boolean, nullable=False, default=True
     )  # Whether to activate (pull and restart) the agent after deployment (deploy_agent type)
+    # Maintain IP-Addresses (ip_addresses type)
+    ip_action = Column(String(50), nullable=True)       # "list", "mark", "remove"
+    ip_filter_field = Column(String(255), nullable=True)  # e.g. "cf_last_scan"
+    ip_filter_type = Column(String(50), nullable=True)    # e.g. "lte", None for equality
+    ip_filter_value = Column(String(255), nullable=True)  # e.g. "2026-02-19"
+    ip_include_null = Column(Boolean, nullable=False, default=False)
     is_global = Column(Boolean, nullable=False, default=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     created_by = Column(String(255))  # Username of creator

@@ -10,7 +10,7 @@ from datetime import datetime
 # Valid job template types (cache_devices removed - now handled by system tasks)
 JobTemplateType = Literal[
     "backup", "compare_devices", "run_commands", "sync_devices", "scan_prefixes",
-    "deploy_agent"
+    "deploy_agent", "ip_addresses"
 ]
 
 # Inventory source options
@@ -168,6 +168,28 @@ class JobTemplateBase(BaseModel):
         None,
         description="Array of template entries for multi-template deployment (only applies to deploy_agent type)",
     )
+    # Maintain IP-Addresses (ip_addresses type)
+    ip_action: Optional[str] = Field(
+        None, max_length=50,
+        description="Action to perform: 'list', 'mark', or 'remove' (only applies to ip_addresses type)",
+    )
+    ip_filter_field: Optional[str] = Field(
+        None, max_length=255,
+        description="Nautobot field name to filter on (e.g. 'cf_last_scan') (only applies to ip_addresses type)",
+    )
+    ip_filter_type: Optional[str] = Field(
+        None, max_length=50,
+        description="Filter operator suffix (e.g. 'lte', 'lt', 'gte', 'gt', 'contains'). "
+                    "Omit or null for equality. (only applies to ip_addresses type)",
+    )
+    ip_filter_value: Optional[str] = Field(
+        None, max_length=255,
+        description="Value to compare against (e.g. '2026-02-19') (only applies to ip_addresses type)",
+    )
+    ip_include_null: bool = Field(
+        False,
+        description="When True, also include IPs where filter_field is null (only applies to ip_addresses type)",
+    )
     is_global: bool = Field(
         False,
         description="Whether this template is global (available to all users) or private",
@@ -212,6 +234,11 @@ class JobTemplateUpdate(BaseModel):
     deploy_custom_variables: Optional[Dict[str, Any]] = None
     activate_after_deploy: Optional[bool] = None
     deploy_templates: Optional[List[DeployTemplateEntry]] = None
+    ip_action: Optional[str] = Field(None, max_length=50)
+    ip_filter_field: Optional[str] = Field(None, max_length=255)
+    ip_filter_type: Optional[str] = Field(None, max_length=50)
+    ip_filter_value: Optional[str] = Field(None, max_length=255)
+    ip_include_null: Optional[bool] = None
     is_global: Optional[bool] = None
 
 

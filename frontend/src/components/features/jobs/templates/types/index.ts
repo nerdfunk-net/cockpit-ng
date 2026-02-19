@@ -37,6 +37,12 @@ export interface JobTemplate {
   deploy_custom_variables?: Record<string, string>
   activate_after_deploy?: boolean
   deploy_templates?: DeployTemplateEntry[]
+  // Maintain IP-Addresses (ip_addresses type)
+  ip_action?: string
+  ip_filter_field?: string
+  ip_filter_type?: string | null
+  ip_filter_value?: string
+  ip_include_null?: boolean
   is_global: boolean
   user_id?: number
   created_by?: string

@@ -194,6 +194,57 @@ async def get_latest_compare_devices_result(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/dashboard/ip-addresses")
+async def get_latest_ip_addresses_result(
+    current_user: dict = Depends(require_permission("jobs", "read")),
+):
+    """
+    Get the latest ip_addresses job result for dashboard.
+
+    Only considers jobs where action == 'list' so the count is meaningful.
+
+    Returns:
+    - total: number of IP addresses found
+    - filter_field, filter_type, filter_value: the filter that was used
+    - completed_at: when the job completed
+    """
+    try:
+        runs = job_run_manager.get_recent_runs(
+            limit=10, status="completed", job_type="ip_addresses"
+        )
+
+        # Find the most recent list job
+        latest_run = None
+        for run in runs:
+            result = run.get("result", {}) or {}
+            if result.get("action") == "list":
+                latest_run = run
+                break
+
+        if not latest_run:
+            return {
+                "has_data": False,
+                "message": "No IP addresses list job has been run yet",
+            }
+
+        result = latest_run.get("result", {}) or {}
+        return {
+            "has_data": True,
+            "job_id": latest_run.get("id"),
+            "job_name": latest_run.get("job_name"),
+            "completed_at": latest_run.get("completed_at"),
+            "total": result.get("total", 0),
+            "filter_field": result.get("filter_field", ""),
+            "filter_type": result.get("filter_type"),
+            "filter_value": result.get("filter_value", ""),
+            "include_null": result.get("include_null", False),
+            "success": result.get("success", False),
+        }
+    except Exception as e:
+        logger.error("Error getting ip-addresses dashboard stats: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/dashboard/scan-prefix")
 async def get_latest_scan_prefix_result(
     current_user: dict = Depends(require_permission("jobs", "read")),

@@ -15,6 +15,7 @@ import { SyncDevicesJobTemplate } from '../../components/template-types/SyncDevi
 import { CompareDevicesJobTemplate } from '../../components/template-types/CompareDevicesJobTemplate'
 import { ScanPrefixesJobTemplate } from '../../components/template-types/ScanPrefixesJobTemplate'
 import { DeployAgentJobTemplate, generateEntryKey } from '../../components/template-types/DeployAgentJobTemplate'
+import { MaintainIPAddressesJobTemplate } from '../../components/template-types/MaintainIPAddressesJobTemplate'
 import type { DeployTemplateEntryData } from '../../components/template-types/DeployTemplateEntry'
 import type { JobTemplate, JobType, GitRepository, SavedInventory, CommandTemplate, CustomField } from '../types'
 import { JOB_TYPE_COLORS } from '../utils/constants'
@@ -76,6 +77,12 @@ export function TemplateFormDialog({
     { _key: generateEntryKey(), templateId: null, inventoryId: null, path: '', customVariables: {} }
   ])
   const [formActivateAfterDeploy, setFormActivateAfterDeploy] = useState(true)
+  // Maintain IP-Addresses
+  const [formIpAction, setFormIpAction] = useState("list")
+  const [formIpFilterField, setFormIpFilterField] = useState("")
+  const [formIpFilterType, setFormIpFilterType] = useState("__eq__")
+  const [formIpFilterValue, setFormIpFilterValue] = useState("")
+  const [formIpIncludeNull, setFormIpIncludeNull] = useState(false)
   const [formIsGlobal, setFormIsGlobal] = useState(false)
 
   const resetForm = useCallback(() => {
@@ -107,6 +114,11 @@ export function TemplateFormDialog({
       { _key: generateEntryKey(), templateId: null, inventoryId: null, path: '', customVariables: {} }
     ])
     setFormActivateAfterDeploy(true)
+    setFormIpAction("list")
+    setFormIpFilterField("")
+    setFormIpFilterType("__eq__")
+    setFormIpFilterValue("")
+    setFormIpIncludeNull(false)
     setFormIsGlobal(false)
   }, [])
 
@@ -161,6 +173,11 @@ export function TemplateFormDialog({
         ])
       }
       setFormActivateAfterDeploy(editingTemplate.activate_after_deploy ?? true)
+      setFormIpAction(editingTemplate.ip_action || "list")
+      setFormIpFilterField(editingTemplate.ip_filter_field || "")
+      setFormIpFilterType(editingTemplate.ip_filter_type || "__eq__")
+      setFormIpFilterValue(editingTemplate.ip_filter_value || "")
+      setFormIpIncludeNull(editingTemplate.ip_include_null ?? false)
       setFormIsGlobal(editingTemplate.is_global)
     } else if (open && !editingTemplate) {
       resetForm()
@@ -178,8 +195,11 @@ export function TemplateFormDialog({
       const hasValidEntry = formDeployTemplateEntries.some(e => e.templateId !== null)
       if (!hasValidEntry) return false
     }
+    if (formJobType === "ip_addresses") {
+      if (!formIpFilterField.trim() || !formIpFilterValue.trim()) return false
+    }
     return true
-  }, [formName, formJobType, formWriteTimestampToCustomField, formTimestampCustomFieldName, formBackupStartupConfigPath, formBackupRunningConfigPath, formInventorySource, formInventoryName, formCommandTemplate, formDeployAgentId, formDeployTemplateEntries])
+  }, [formName, formJobType, formWriteTimestampToCustomField, formTimestampCustomFieldName, formBackupStartupConfigPath, formBackupRunningConfigPath, formInventorySource, formInventoryName, formCommandTemplate, formDeployAgentId, formDeployTemplateEntries, formIpFilterField, formIpFilterValue])
 
   const handleSubmit = async () => {
     const payload = {
@@ -221,6 +241,13 @@ export function TemplateFormDialog({
           path: e.path || '',
           custom_variables: e.customVariables,
         })) : undefined,
+      ip_action: formJobType === "ip_addresses" ? formIpAction : undefined,
+      ip_filter_field: formJobType === "ip_addresses" ? formIpFilterField : undefined,
+      ip_filter_type: formJobType === "ip_addresses"
+        ? (formIpFilterType && formIpFilterType !== "__eq__" ? formIpFilterType : null)
+        : undefined,
+      ip_filter_value: formJobType === "ip_addresses" ? formIpFilterValue : undefined,
+      ip_include_null: formJobType === "ip_addresses" ? formIpIncludeNull : undefined,
       is_global: formIsGlobal
     }
 
@@ -281,8 +308,8 @@ export function TemplateFormDialog({
             />
           )}
 
-          {/* Inventory - Not for scan_prefixes or deploy_agent (deploy_agent has per-entry inventory) */}
-          {formJobType !== "scan_prefixes" && formJobType !== "deploy_agent" && (
+          {/* Inventory - Not for scan_prefixes, deploy_agent, or ip_addresses */}
+          {formJobType !== "scan_prefixes" && formJobType !== "deploy_agent" && formJobType !== "ip_addresses" && (
             <JobTemplateInventorySection
               formInventorySource={formInventorySource}
               setFormInventorySource={setFormInventorySource}
@@ -351,6 +378,21 @@ export function TemplateFormDialog({
               setFormScanSetReachableIpActive={setFormScanSetReachableIpActive}
               formScanMaxIps={formScanMaxIps}
               setFormScanMaxIps={setFormScanMaxIps}
+            />
+          )}
+
+          {formJobType === "ip_addresses" && (
+            <MaintainIPAddressesJobTemplate
+              formIpAction={formIpAction}
+              setFormIpAction={setFormIpAction}
+              formIpFilterField={formIpFilterField}
+              setFormIpFilterField={setFormIpFilterField}
+              formIpFilterType={formIpFilterType}
+              setFormIpFilterType={setFormIpFilterType}
+              formIpFilterValue={formIpFilterValue}
+              setFormIpFilterValue={setFormIpFilterValue}
+              formIpIncludeNull={formIpIncludeNull}
+              setFormIpIncludeNull={setFormIpIncludeNull}
             />
           )}
 

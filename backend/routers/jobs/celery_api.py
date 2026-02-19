@@ -2394,6 +2394,60 @@ async def trigger_scan_prefixes(
     )
 
 
+class IPAddressesTaskRequest(BaseModel):
+    action: str  # "list" or "delete"
+    filter_field: str  # e.g. "cf_last_scan", "address", "status"
+    filter_value: str  # e.g. "2026-02-19"
+    filter_type: Optional[str] = None  # e.g. "lte", "lt", "gte", "gt", "contains", or None for equality
+    include_null: bool = False  # When True, also include IPs where filter_field is null (never set)
+
+
+@router.post("/tasks/ip-addresses", response_model=TaskResponse)
+@handle_celery_errors("ip addresses task")
+async def trigger_ip_addresses_task(
+    request: IPAddressesTaskRequest,
+    current_user: dict = Depends(require_permission("nautobot.locations", "write")),
+):
+    """
+    Trigger an IP address query or deletion task via Celery.
+
+    Supports listing or deleting Nautobot IP addresses filtered by any field,
+    including custom fields (prefix with cf_) and built-in fields.
+
+    Request Body:
+        action: 'list' to return matching IPs, 'delete' to delete them
+        filter_field: Nautobot field name (e.g. 'cf_last_scan', 'address', 'status')
+        filter_value: Value to compare against (e.g. '2026-02-19')
+        filter_type: Optional operator suffix ('lte', 'lt', 'gte', 'gt', 'contains').
+                     Omit for equality comparison.
+
+    Returns:
+        TaskResponse with task_id to poll for results
+    """
+    from tasks import ip_addresses_task
+
+    if request.action not in ("list", "delete"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="action must be 'list' or 'delete'",
+        )
+
+    task = ip_addresses_task.delay(
+        action=request.action,
+        filter_field=request.filter_field,
+        filter_value=request.filter_value,
+        filter_type=request.filter_type,
+        include_null=request.include_null,
+        executed_by=current_user.get("sub", "unknown"),
+    )
+
+    return TaskResponse(
+        task_id=task.id,
+        status="queued",
+        message=f"IP addresses task ({request.action}) submitted: {task.id}",
+    )
+
+
 @router.get("/device-backup-status", response_model=BackupCheckResponse)
 async def check_device_backups(
     force_refresh: bool = False,

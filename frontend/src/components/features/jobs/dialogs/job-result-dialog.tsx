@@ -23,6 +23,7 @@ import {
   isCheckIPJobResult,
   isScanPrefixJobResult,
   isDeployAgentJobResult,
+  isIPAddressesJobResult,
   GenericJobResult,
 } from "../types/job-results"
 import { BackupJobResultView } from "../components/results/backup-job-result"
@@ -34,6 +35,7 @@ import { UpdateDevicesResultView } from "../components/results/update-devices-re
 import { CheckIPResultView } from "../components/results/check-ip-result"
 import { ScanPrefixResultView } from "../components/results/scan-prefix-result"
 import { DeployAgentResultView } from "../components/results/deploy-agent-result"
+import { IPAddressesResultView } from "../components/results/ip-addresses-result"
 import { GenericJobResultView } from "../components/results/generic-job-result"
 
 interface JobResultDialogProps {
@@ -66,6 +68,11 @@ function renderJobResult(result: Record<string, any>, taskId?: string): React.Re
   // Scan prefix result has unique prefixes array structure
   if (isScanPrefixJobResult(result)) {
     return <ScanPrefixResultView result={result} />
+  }
+
+  // IP addresses task result (list or delete) with filter_field + filter_value
+  if (isIPAddressesJobResult(result)) {
+    return <IPAddressesResultView result={result} />
   }
 
   // Run commands must be checked before others as it has similar fields

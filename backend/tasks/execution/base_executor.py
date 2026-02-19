@@ -46,6 +46,7 @@ def execute_job_type(
     from .compare_executor import execute_compare_devices
     from .scan_prefixes_executor import execute_scan_prefixes
     from .deploy_agent_executor import execute_deploy_agent
+    from .ip_addresses_executor import execute_ip_addresses
 
     # Map job_type to execution function
     job_executors = {
@@ -56,6 +57,7 @@ def execute_job_type(
         "compare_devices": execute_compare_devices,
         "scan_prefixes": execute_scan_prefixes,
         "deploy_agent": execute_deploy_agent,
+        "ip_addresses": execute_ip_addresses,
     }
 
     executor = job_executors.get(job_type)

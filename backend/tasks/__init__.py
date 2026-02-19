@@ -40,6 +40,9 @@ from .scan_prefixes_task import scan_prefixes_task
 # Import check IP task
 from .check_ip_task import check_ip_task
 
+# Import IP addresses task
+from .ip_addresses_task import ip_addresses_task
+
 # Import periodic tasks
 from .periodic_tasks import (
     worker_health_check,
@@ -91,6 +94,7 @@ __all__ = [
     "ping_network_task",
     "scan_prefixes_task",
     "check_ip_task",
+    "ip_addresses_task",
     # Periodic tasks
     "worker_health_check",
     "load_cache_schedules_task",
