@@ -356,7 +356,7 @@ export function IPAddressesResultView({ result }: IPAddressesResultViewProps) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Address</TableHead>
-                    <TableHead>Assigned Interface(s)</TableHead>
+                    <TableHead>Assigned To</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -374,7 +374,7 @@ export function IPAddressesResultView({ result }: IPAddressesResultViewProps) {
                               className="text-xs border-amber-300 text-amber-800 flex items-center gap-1"
                             >
                               <Plug className="h-3 w-3" />
-                              {a.interface ?? "(unknown)"}
+                              {a.device ? `${a.device} → ${a.interface ?? "(unknown)"}` : (a.interface ?? "(unknown)")}
                             </Badge>
                           ))}
                         </div>

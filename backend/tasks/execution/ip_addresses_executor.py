@@ -144,6 +144,7 @@ def execute_ip_addresses(
                             {
                                 "id": a.get("id"),
                                 "interface": a.get("interface", {}).get("name"),
+                                "device": a.get("interface", {}).get("device", {}).get("name"),
                             }
                             for a in assignments
                         ],

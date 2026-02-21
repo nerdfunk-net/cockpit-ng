@@ -393,7 +393,7 @@ export interface IPRemovedEntry {
 export interface IPSkippedEntry {
   address: string
   id: string
-  interface_assignments: Array<{ id: string | null; interface: string | null }>
+  interface_assignments: Array<{ id: string | null; interface: string | null; device: string | null }>
 }
 
 export interface IPFailedEntry {

@@ -111,6 +111,10 @@ class IPAddressQueryService:
               interface {{
                 id
                 name
+                device {{
+                  id
+                  name
+                }}
               }}
             }}
           }}
@@ -155,6 +159,10 @@ class IPAddressQueryService:
                   interface {{
                     id
                     name
+                    device {{
+                      id
+                      name
+                    }}
                   }}
                 }}
               }}
