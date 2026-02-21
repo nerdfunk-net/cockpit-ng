@@ -89,6 +89,8 @@ export function TemplateFormDialog({
   const [formIpMarkStatus, setFormIpMarkStatus] = useState("")
   const [formIpMarkTag, setFormIpMarkTag] = useState("")
   const [formIpMarkDescription, setFormIpMarkDescription] = useState("")
+  // Remove action options
+  const [formIpRemoveSkipAssigned, setFormIpRemoveSkipAssigned] = useState(true)
   const [formIsGlobal, setFormIsGlobal] = useState(false)
 
   // IP-specific Nautobot data (only fetched when job type is ip_addresses)
@@ -136,6 +138,7 @@ export function TemplateFormDialog({
     setFormIpMarkStatus("")
     setFormIpMarkTag("")
     setFormIpMarkDescription("")
+    setFormIpRemoveSkipAssigned(true)
     setFormIsGlobal(false)
   }, [])
 
@@ -198,6 +201,7 @@ export function TemplateFormDialog({
       setFormIpMarkStatus(editingTemplate.ip_mark_status || "")
       setFormIpMarkTag(editingTemplate.ip_mark_tag || "")
       setFormIpMarkDescription(editingTemplate.ip_mark_description || "")
+      setFormIpRemoveSkipAssigned(editingTemplate.ip_remove_skip_assigned ?? true)
       setFormIsGlobal(editingTemplate.is_global)
     } else if (open && !editingTemplate) {
       resetForm()
@@ -271,6 +275,7 @@ export function TemplateFormDialog({
       ip_mark_status: formJobType === "ip_addresses" && formIpAction === "mark" ? formIpMarkStatus || undefined : undefined,
       ip_mark_tag: formJobType === "ip_addresses" && formIpAction === "mark" ? formIpMarkTag || undefined : undefined,
       ip_mark_description: formJobType === "ip_addresses" && formIpAction === "mark" ? formIpMarkDescription || undefined : undefined,
+      ip_remove_skip_assigned: formJobType === "ip_addresses" && formIpAction === "remove" ? formIpRemoveSkipAssigned : undefined,
       is_global: formIsGlobal
     }
 
@@ -422,6 +427,8 @@ export function TemplateFormDialog({
               setFormIpMarkTag={setFormIpMarkTag}
               formIpMarkDescription={formIpMarkDescription}
               setFormIpMarkDescription={setFormIpMarkDescription}
+              formIpRemoveSkipAssigned={formIpRemoveSkipAssigned}
+              setFormIpRemoveSkipAssigned={setFormIpRemoveSkipAssigned}
               ipStatuses={ipStatuses}
               ipTags={ipTags}
               loadingMarkOptions={loadingIpStatuses || loadingIpTags}

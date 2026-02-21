@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Network, AlertTriangle, List, Trash2, Tag, Loader2 } from "lucide-react"
+import { Network, AlertTriangle, List, Trash2, Tag, Loader2, ShieldCheck } from "lucide-react"
 import type { IpAddressStatus, IpAddressTag } from "../../templates/types"
 
 interface MaintainIPAddressesJobTemplateProps {
@@ -29,6 +29,9 @@ interface MaintainIPAddressesJobTemplateProps {
   setFormIpMarkTag: (value: string) => void
   formIpMarkDescription: string
   setFormIpMarkDescription: (value: string) => void
+  // Remove action options
+  formIpRemoveSkipAssigned: boolean
+  setFormIpRemoveSkipAssigned: (value: boolean) => void
   ipStatuses: IpAddressStatus[]
   ipTags: IpAddressTag[]
   loadingMarkOptions: boolean
@@ -87,6 +90,8 @@ export function MaintainIPAddressesJobTemplate({
   setFormIpMarkTag,
   formIpMarkDescription,
   setFormIpMarkDescription,
+  formIpRemoveSkipAssigned,
+  setFormIpRemoveSkipAssigned,
   ipStatuses,
   ipTags,
   loadingMarkOptions,
@@ -139,6 +144,32 @@ export function MaintainIPAddressesJobTemplate({
           </div>
         )}
       </div>
+
+      {/* Removal Options – shown only when action is "remove" */}
+      {formIpAction === "remove" && (
+        <div className="rounded-lg border border-red-200 bg-red-50/30 p-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-red-600" />
+            <Label className="text-sm font-semibold text-red-900">Removal Options</Label>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <Switch
+              id="ip-remove-skip-assigned"
+              checked={formIpRemoveSkipAssigned}
+              onCheckedChange={setFormIpRemoveSkipAssigned}
+            />
+            <div>
+              <Label htmlFor="ip-remove-skip-assigned" className="text-sm text-red-900 cursor-pointer">
+                Skip Assigned IP-Addresses
+              </Label>
+              <p className="text-xs text-red-700 mt-0.5">
+                When enabled, IP addresses that are currently assigned to an interface will be skipped and not deleted.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mark Options – shown only when action is "mark" */}
       {formIpAction === "mark" && (

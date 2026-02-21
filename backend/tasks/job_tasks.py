@@ -1592,6 +1592,8 @@ def _execute_ip_addresses(
     mark_tag = None
     mark_description = None
 
+    remove_skip_assigned = True
+
     if template:
         action = template.get("ip_action") or "list"
         filter_field = template.get("ip_filter_field") or ""
@@ -1601,6 +1603,7 @@ def _execute_ip_addresses(
         mark_status = template.get("ip_mark_status") or None
         mark_tag = template.get("ip_mark_tag") or None
         mark_description = template.get("ip_mark_description") or None
+        remove_skip_assigned = template.get("ip_remove_skip_assigned", True)
 
     if not filter_field or not filter_value:
         return {
@@ -1610,8 +1613,8 @@ def _execute_ip_addresses(
 
     filter_key = f"{filter_field}__{filter_type}" if filter_type else filter_field
     logger.info(
-        "Executing ip_addresses job: action=%s, filter=%s=%s, include_null=%s",
-        action, filter_key, filter_value, include_null,
+        "Executing ip_addresses job: action=%s, filter=%s=%s, include_null=%s, remove_skip_assigned=%s",
+        action, filter_key, filter_value, include_null, remove_skip_assigned,
     )
 
     try:
@@ -1653,19 +1656,50 @@ def _execute_ip_addresses(
             total = len(ip_addresses)
             deleted = 0
             failed = 0
+            skipped = 0
+            deleted_ips: list = []
+            skipped_ips: list = []
+            failed_ips: list = []
             for idx, ip in enumerate(ip_addresses):
                 task_context.update_state(
                     state="PROGRESS",
                     meta={"status": f"Deleting IP {idx + 1}/{total}...", "current": idx + 1, "total": total},
                 )
                 ip_id = ip.get("id")
+                ip_address = ip.get("address", ip_id)
                 if not ip_id:
                     failed += 1
+                    failed_ips.append({"address": ip_address, "reason": "missing id"})
                     continue
+
+                # Skip IPs that are assigned to an interface when option is enabled
+                if remove_skip_assigned and ip.get("interface_assignments"):
+                    assignments = ip["interface_assignments"]
+                    logger.info(
+                        "Skipping assigned IP %s (interface_assignments=%s)",
+                        ip_address,
+                        assignments,
+                    )
+                    skipped += 1
+                    skipped_ips.append({
+                        "address": ip_address,
+                        "id": ip_id,
+                        "interface_assignments": [
+                            {
+                                "id": a.get("id"),
+                                "interface": a.get("interface", {}).get("name"),
+                            }
+                            for a in assignments
+                        ],
+                    })
+                    continue
+
                 if service.delete_ip_address(ip_id):
                     deleted += 1
+                    deleted_ips.append({"address": ip_address, "id": ip_id})
                 else:
                     failed += 1
+                    failed_ips.append({"address": ip_address, "id": ip_id, "reason": "delete failed"})
             return {
                 "success": True,
                 "action": action,
@@ -1673,9 +1707,14 @@ def _execute_ip_addresses(
                 "filter_type": filter_type,
                 "filter_value": filter_value,
                 "include_null": include_null,
+                "remove_skip_assigned": remove_skip_assigned,
                 "total": total,
+                "skipped": skipped,
                 "deleted": deleted,
                 "failed": failed,
+                "deleted_ips": deleted_ips,
+                "skipped_ips": skipped_ips,
+                "failed_ips": failed_ips,
             }
 
         else:

@@ -385,9 +385,26 @@ export interface IPAddressEntry {
   [key: string]: unknown  // custom fields like cf_last_scan
 }
 
+export interface IPRemovedEntry {
+  address: string
+  id: string
+}
+
+export interface IPSkippedEntry {
+  address: string
+  id: string
+  interface_assignments: Array<{ id: string | null; interface: string | null }>
+}
+
+export interface IPFailedEntry {
+  address: string
+  id?: string
+  reason: string
+}
+
 export interface IPAddressesJobResult {
   success: boolean
-  action: 'list' | 'delete'
+  action: 'list' | 'delete' | 'remove' | 'mark'
   filter_field: string
   filter_type: string | null
   filter_value: string
@@ -395,9 +412,17 @@ export interface IPAddressesJobResult {
   // list action
   ip_addresses?: IPAddressEntry[]
   total: number
-  // delete action
+  // remove/delete action
   deleted?: number
+  skipped?: number
   failed?: number
+  remove_skip_assigned?: boolean
+  deleted_ips?: IPRemovedEntry[]
+  skipped_ips?: IPSkippedEntry[]
+  failed_ips?: IPFailedEntry[]
+  // mark action
+  updated?: number
+  changes?: Record<string, string>
   // Index signature for compatibility with Record<string, unknown>
   [key: string]: unknown
 }
@@ -532,7 +557,7 @@ export function isScanPrefixJobResult(result: Record<string, unknown>): result i
 export function isIPAddressesJobResult(result: Record<string, unknown>): result is IPAddressesJobResult {
   return (
     'action' in result &&
-    (result.action === 'list' || result.action === 'delete') &&
+    (result.action === 'list' || result.action === 'delete' || result.action === 'remove' || result.action === 'mark') &&
     'filter_field' in result &&
     'filter_value' in result &&
     'total' in result

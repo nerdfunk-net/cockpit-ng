@@ -106,6 +106,13 @@ class IPAddressQueryService:
             description
             dns_name
             {extra_field}
+            interface_assignments {{
+              id
+              interface {{
+                id
+                name
+              }}
+            }}
           }}
         }}
         """
@@ -143,6 +150,13 @@ class IPAddressQueryService:
                 description
                 dns_name
                 {extra_field}
+                interface_assignments {{
+                  id
+                  interface {{
+                    id
+                    name
+                  }}
+                }}
               }}
             }}
             """

@@ -47,6 +47,8 @@ export interface JobTemplate {
   ip_mark_status?: string
   ip_mark_tag?: string
   ip_mark_description?: string
+  // Remove action options
+  ip_remove_skip_assigned?: boolean
   is_global: boolean
   user_id?: number
   created_by?: string
