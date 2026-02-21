@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Plus, Edit } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useTemplateMutations } from '../hooks/use-template-mutations'
+import { useIpAddressStatuses, useIpAddressTags } from '../hooks/use-template-queries'
+import { EMPTY_IP_STATUSES, EMPTY_IP_TAGS } from '../utils/constants'
 import { JobTemplateCommonFields } from '../../components/JobTemplateCommonFields'
 import { JobTemplateConfigRepoSection } from '../../components/JobTemplateConfigRepoSection'
 import { JobTemplateInventorySection } from '../../components/JobTemplateInventorySection'
@@ -83,7 +85,19 @@ export function TemplateFormDialog({
   const [formIpFilterType, setFormIpFilterType] = useState("__eq__")
   const [formIpFilterValue, setFormIpFilterValue] = useState("")
   const [formIpIncludeNull, setFormIpIncludeNull] = useState(false)
+  // Mark action options
+  const [formIpMarkStatus, setFormIpMarkStatus] = useState("")
+  const [formIpMarkTag, setFormIpMarkTag] = useState("")
+  const [formIpMarkDescription, setFormIpMarkDescription] = useState("")
   const [formIsGlobal, setFormIsGlobal] = useState(false)
+
+  // IP-specific Nautobot data (only fetched when job type is ip_addresses)
+  const { data: ipStatuses = EMPTY_IP_STATUSES, isLoading: loadingIpStatuses } = useIpAddressStatuses({
+    enabled: formJobType === "ip_addresses",
+  })
+  const { data: ipTags = EMPTY_IP_TAGS, isLoading: loadingIpTags } = useIpAddressTags({
+    enabled: formJobType === "ip_addresses",
+  })
 
   const resetForm = useCallback(() => {
     setFormName("")
@@ -119,6 +133,9 @@ export function TemplateFormDialog({
     setFormIpFilterType("__eq__")
     setFormIpFilterValue("")
     setFormIpIncludeNull(false)
+    setFormIpMarkStatus("")
+    setFormIpMarkTag("")
+    setFormIpMarkDescription("")
     setFormIsGlobal(false)
   }, [])
 
@@ -178,6 +195,9 @@ export function TemplateFormDialog({
       setFormIpFilterType(editingTemplate.ip_filter_type || "__eq__")
       setFormIpFilterValue(editingTemplate.ip_filter_value || "")
       setFormIpIncludeNull(editingTemplate.ip_include_null ?? false)
+      setFormIpMarkStatus(editingTemplate.ip_mark_status || "")
+      setFormIpMarkTag(editingTemplate.ip_mark_tag || "")
+      setFormIpMarkDescription(editingTemplate.ip_mark_description || "")
       setFormIsGlobal(editingTemplate.is_global)
     } else if (open && !editingTemplate) {
       resetForm()
@@ -248,6 +268,9 @@ export function TemplateFormDialog({
         : undefined,
       ip_filter_value: formJobType === "ip_addresses" ? formIpFilterValue : undefined,
       ip_include_null: formJobType === "ip_addresses" ? formIpIncludeNull : undefined,
+      ip_mark_status: formJobType === "ip_addresses" && formIpAction === "mark" ? formIpMarkStatus || undefined : undefined,
+      ip_mark_tag: formJobType === "ip_addresses" && formIpAction === "mark" ? formIpMarkTag || undefined : undefined,
+      ip_mark_description: formJobType === "ip_addresses" && formIpAction === "mark" ? formIpMarkDescription || undefined : undefined,
       is_global: formIsGlobal
     }
 
@@ -393,6 +416,15 @@ export function TemplateFormDialog({
               setFormIpFilterValue={setFormIpFilterValue}
               formIpIncludeNull={formIpIncludeNull}
               setFormIpIncludeNull={setFormIpIncludeNull}
+              formIpMarkStatus={formIpMarkStatus}
+              setFormIpMarkStatus={setFormIpMarkStatus}
+              formIpMarkTag={formIpMarkTag}
+              setFormIpMarkTag={setFormIpMarkTag}
+              formIpMarkDescription={formIpMarkDescription}
+              setFormIpMarkDescription={setFormIpMarkDescription}
+              ipStatuses={ipStatuses}
+              ipTags={ipTags}
+              loadingMarkOptions={loadingIpStatuses || loadingIpTags}
             />
           )}
 

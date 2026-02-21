@@ -1588,6 +1588,9 @@ def _execute_ip_addresses(
     filter_type = None
     filter_value = ""
     include_null = False
+    mark_status = None
+    mark_tag = None
+    mark_description = None
 
     if template:
         action = template.get("ip_action") or "list"
@@ -1595,6 +1598,9 @@ def _execute_ip_addresses(
         filter_type = template.get("ip_filter_type") or None
         filter_value = template.get("ip_filter_value") or ""
         include_null = template.get("ip_include_null", False)
+        mark_status = template.get("ip_mark_status") or None
+        mark_tag = template.get("ip_mark_tag") or None
+        mark_description = template.get("ip_mark_description") or None
 
     if not filter_field or not filter_value:
         return {
@@ -1673,11 +1679,59 @@ def _execute_ip_addresses(
             }
 
         else:
-            # "mark" and future actions
+            # mark action
+            if not any([mark_status, mark_tag, mark_description is not None]):
+                return {
+                    "success": False,
+                    "action": action,
+                    "error": "At least one of ip_mark_status, ip_mark_tag, or ip_mark_description must be set for the 'mark' action",
+                }
+            task_context.update_state(
+                state="PROGRESS",
+                meta={"status": f"Fetching IPs where {filter_key}={filter_value}...", "current": 0, "total": 1},
+            )
+            ip_addresses = service.list_ip_addresses(
+                filter_field=filter_field,
+                filter_value=filter_value,
+                filter_type=filter_type,
+                include_null=include_null,
+            )
+            total = len(ip_addresses)
+            updated = 0
+            failed = 0
+            changes = {k: v for k, v in {
+                "status": mark_status, "tag": mark_tag, "description": mark_description
+            }.items() if v is not None}
+            logger.info("Marking %d IP addresses with: %s", total, list(changes.keys()))
+            for idx, ip in enumerate(ip_addresses):
+                task_context.update_state(
+                    state="PROGRESS",
+                    meta={"status": f"Marking IP {idx + 1}/{total}...", "current": idx + 1, "total": total},
+                )
+                ip_id = ip.get("id")
+                if not ip_id:
+                    failed += 1
+                    continue
+                if service.update_ip_address(
+                    ip_id,
+                    status_id=mark_status,
+                    tag_id=mark_tag,
+                    description=mark_description,
+                ):
+                    updated += 1
+                else:
+                    failed += 1
             return {
-                "success": False,
+                "success": True,
                 "action": action,
-                "error": f"Action '{action}' is not yet implemented",
+                "filter_field": filter_field,
+                "filter_type": filter_type,
+                "filter_value": filter_value,
+                "include_null": include_null,
+                "changes": changes,
+                "total": total,
+                "updated": updated,
+                "failed": failed,
             }
 
     except Exception as e:

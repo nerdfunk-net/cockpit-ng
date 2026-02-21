@@ -190,6 +190,19 @@ class JobTemplateBase(BaseModel):
         False,
         description="When True, also include IPs where filter_field is null (only applies to ip_addresses type)",
     )
+    # Mark action options
+    ip_mark_status: Optional[str] = Field(
+        None, max_length=255,
+        description="Nautobot status UUID to apply to matching IPs (only applies when ip_action='mark')",
+    )
+    ip_mark_tag: Optional[str] = Field(
+        None, max_length=255,
+        description="Nautobot tag UUID to add to matching IPs (only applies when ip_action='mark')",
+    )
+    ip_mark_description: Optional[str] = Field(
+        None,
+        description="Description text to write to matching IPs (only applies when ip_action='mark')",
+    )
     is_global: bool = Field(
         False,
         description="Whether this template is global (available to all users) or private",
@@ -239,6 +252,9 @@ class JobTemplateUpdate(BaseModel):
     ip_filter_type: Optional[str] = Field(None, max_length=50)
     ip_filter_value: Optional[str] = Field(None, max_length=255)
     ip_include_null: Optional[bool] = None
+    ip_mark_status: Optional[str] = Field(None, max_length=255)
+    ip_mark_tag: Optional[str] = Field(None, max_length=255)
+    ip_mark_description: Optional[str] = None
     is_global: Optional[bool] = None
 
 

@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
-import type { JobTemplate, JobType, GitRepository, SavedInventory, CommandTemplate, CustomField } from '../types'
-import { STALE_TIME, EMPTY_TEMPLATES, EMPTY_TYPES, EMPTY_REPOS, EMPTY_INVENTORIES, EMPTY_CMD_TEMPLATES, EMPTY_CUSTOM_FIELDS } from '../utils/constants'
+import type { JobTemplate, JobType, GitRepository, SavedInventory, CommandTemplate, CustomField, IpAddressStatus, IpAddressTag } from '../types'
+import { STALE_TIME, EMPTY_TEMPLATES, EMPTY_TYPES, EMPTY_REPOS, EMPTY_INVENTORIES, EMPTY_CMD_TEMPLATES, EMPTY_CUSTOM_FIELDS, EMPTY_IP_STATUSES, EMPTY_IP_TAGS } from '../utils/constants'
 
 interface UseQueryOptions {
   enabled?: boolean
@@ -132,5 +132,43 @@ export function useCustomFields(options: UseQueryOptions = DEFAULT_OPTIONS) {
     },
     enabled,
     staleTime: STALE_TIME.CUSTOM_FIELDS,
+  })
+}
+
+/**
+ * Fetch IP address statuses from Nautobot
+ * Used in Maintain IP-Addresses job template (mark action)
+ */
+export function useIpAddressStatuses(options: UseQueryOptions = DEFAULT_OPTIONS) {
+  const { apiCall } = useApi()
+  const { enabled = true } = options
+
+  return useQuery({
+    queryKey: queryKeys.nautobot.statuses('ipaddress'),
+    queryFn: async () => {
+      const data = await apiCall<IpAddressStatus[]>('nautobot/statuses/ipaddress', { method: 'GET' })
+      return Array.isArray(data) ? data : EMPTY_IP_STATUSES
+    },
+    enabled,
+    staleTime: STALE_TIME.IP_OPTIONS,
+  })
+}
+
+/**
+ * Fetch IP address tags from Nautobot
+ * Used in Maintain IP-Addresses job template (mark action)
+ */
+export function useIpAddressTags(options: UseQueryOptions = DEFAULT_OPTIONS) {
+  const { apiCall } = useApi()
+  const { enabled = true } = options
+
+  return useQuery({
+    queryKey: queryKeys.nautobot.tags('ip-addresses'),
+    queryFn: async () => {
+      const data = await apiCall<IpAddressTag[]>('nautobot/tags/ip-addresses', { method: 'GET' })
+      return Array.isArray(data) ? data : EMPTY_IP_TAGS
+    },
+    enabled,
+    staleTime: STALE_TIME.IP_OPTIONS,
   })
 }

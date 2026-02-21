@@ -53,6 +53,9 @@ def create_job_template(
     ip_filter_type: Optional[str] = None,
     ip_filter_value: Optional[str] = None,
     ip_include_null: bool = False,
+    ip_mark_status: Optional[str] = None,
+    ip_mark_tag: Optional[str] = None,
+    ip_mark_description: Optional[str] = None,
     is_global: bool = False,
 ) -> Dict[str, Any]:
     """Create a new job template"""
@@ -107,6 +110,9 @@ def create_job_template(
         ip_filter_type=ip_filter_type,
         ip_filter_value=ip_filter_value,
         ip_include_null=ip_include_null,
+        ip_mark_status=ip_mark_status,
+        ip_mark_tag=ip_mark_tag,
+        ip_mark_description=ip_mark_description,
         is_global=is_global,
         user_id=user_id if not is_global else None,
         created_by=created_by,
@@ -190,6 +196,9 @@ def update_job_template(
     ip_filter_type: Optional[str] = None,
     ip_filter_value: Optional[str] = None,
     ip_include_null: Optional[bool] = None,
+    ip_mark_status: Optional[str] = None,
+    ip_mark_tag: Optional[str] = None,
+    ip_mark_description: Optional[str] = None,
     is_global: Optional[bool] = None,
     user_id: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
@@ -271,6 +280,13 @@ def update_job_template(
         update_data["ip_filter_value"] = ip_filter_value
     if ip_include_null is not None:
         update_data["ip_include_null"] = ip_include_null
+    # Mark action options — allow explicit None to clear the values
+    if ip_mark_status is not None:
+        update_data["ip_mark_status"] = ip_mark_status
+    if ip_mark_tag is not None:
+        update_data["ip_mark_tag"] = ip_mark_tag
+    if ip_mark_description is not None:
+        update_data["ip_mark_description"] = ip_mark_description
     if is_global is not None:
         update_data["is_global"] = is_global
         if is_global:
@@ -387,6 +403,9 @@ def _model_to_dict(template) -> Dict[str, Any]:
         "ip_filter_type": template.ip_filter_type,
         "ip_filter_value": template.ip_filter_value,
         "ip_include_null": template.ip_include_null,
+        "ip_mark_status": template.ip_mark_status,
+        "ip_mark_tag": template.ip_mark_tag,
+        "ip_mark_description": template.ip_mark_description,
         "is_global": template.is_global,
         "user_id": template.user_id,
         "created_by": template.created_by,

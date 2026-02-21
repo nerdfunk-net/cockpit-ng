@@ -82,6 +82,9 @@ async def create_job_template(
             ip_filter_type=template_data.ip_filter_type,
             ip_filter_value=template_data.ip_filter_value,
             ip_include_null=template_data.ip_include_null,
+            ip_mark_status=template_data.ip_mark_status,
+            ip_mark_tag=template_data.ip_mark_tag,
+            ip_mark_description=template_data.ip_mark_description,
             is_global=template_data.is_global,
         )
 
@@ -236,6 +239,9 @@ async def update_job_template(
             ip_filter_type=update_data.ip_filter_type,
             ip_filter_value=update_data.ip_filter_value,
             ip_include_null=update_data.ip_include_null,
+            ip_mark_status=update_data.ip_mark_status,
+            ip_mark_tag=update_data.ip_mark_tag,
+            ip_mark_description=update_data.ip_mark_description,
             is_global=update_data.is_global,
             user_id=current_user["user_id"],
         )

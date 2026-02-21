@@ -8,7 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Network, AlertTriangle, List, Trash2, Tag } from "lucide-react"
+import { Network, AlertTriangle, List, Trash2, Tag, Loader2 } from "lucide-react"
+import type { IpAddressStatus, IpAddressTag } from "../../templates/types"
 
 interface MaintainIPAddressesJobTemplateProps {
   formIpAction: string
@@ -21,6 +22,16 @@ interface MaintainIPAddressesJobTemplateProps {
   setFormIpFilterValue: (value: string) => void
   formIpIncludeNull: boolean
   setFormIpIncludeNull: (value: boolean) => void
+  // Mark action options
+  formIpMarkStatus: string
+  setFormIpMarkStatus: (value: string) => void
+  formIpMarkTag: string
+  setFormIpMarkTag: (value: string) => void
+  formIpMarkDescription: string
+  setFormIpMarkDescription: (value: string) => void
+  ipStatuses: IpAddressStatus[]
+  ipTags: IpAddressTag[]
+  loadingMarkOptions: boolean
 }
 
 const ACTION_OPTIONS = [
@@ -33,11 +44,10 @@ const ACTION_OPTIONS = [
   },
   {
     value: "mark",
-    label: "Mark (coming soon)",
+    label: "Mark",
     icon: Tag,
-    description: "Mark matching IP addresses with a custom field",
-    color: "text-yellow-600",
-    disabled: true,
+    description: "Mark matching IP addresses by updating status, tag or description",
+    color: "text-amber-600",
   },
   {
     value: "remove",
@@ -71,6 +81,15 @@ export function MaintainIPAddressesJobTemplate({
   setFormIpFilterValue,
   formIpIncludeNull,
   setFormIpIncludeNull,
+  formIpMarkStatus,
+  setFormIpMarkStatus,
+  formIpMarkTag,
+  setFormIpMarkTag,
+  formIpMarkDescription,
+  setFormIpMarkDescription,
+  ipStatuses,
+  ipTags,
+  loadingMarkOptions,
 }: MaintainIPAddressesJobTemplateProps) {
   const filterLabel =
     formIpFilterField
@@ -89,19 +108,16 @@ export function MaintainIPAddressesJobTemplate({
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          {ACTION_OPTIONS.map(({ value, label, icon: Icon, description, color, disabled }) => (
+          {ACTION_OPTIONS.map(({ value, label, icon: Icon, description, color }) => (
             <button
               key={value}
               type="button"
-              disabled={disabled}
-              onClick={() => !disabled && setFormIpAction(value)}
+              onClick={() => setFormIpAction(value)}
               className={[
                 "flex flex-col items-center gap-2 rounded-lg border-2 p-3 text-sm transition-all",
-                disabled
-                  ? "cursor-not-allowed opacity-40 border-gray-200 bg-white"
-                  : formIpAction === value
-                    ? "border-emerald-500 bg-emerald-50 shadow-sm"
-                    : "border-gray-200 bg-white hover:border-emerald-300 cursor-pointer",
+                formIpAction === value
+                  ? "border-emerald-500 bg-emerald-50 shadow-sm"
+                  : "border-gray-200 bg-white hover:border-emerald-300 cursor-pointer",
               ].join(" ")}
             >
               <Icon className={`h-5 w-5 ${color}`} />
@@ -123,6 +139,104 @@ export function MaintainIPAddressesJobTemplate({
           </div>
         )}
       </div>
+
+      {/* Mark Options – shown only when action is "mark" */}
+      {formIpAction === "mark" && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50/30 p-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <Tag className="h-4 w-4 text-amber-600" />
+            <Label className="text-sm font-semibold text-amber-900">Mark Options</Label>
+            {loadingMarkOptions && (
+              <Loader2 className="h-3 w-3 animate-spin text-amber-600 ml-1" />
+            )}
+            <span className="text-xs text-amber-600 ml-auto">
+              Select one or more options to apply to matching IP addresses
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Status */}
+            <div className="space-y-2">
+              <Label htmlFor="ip-mark-status" className="text-sm text-amber-900">
+                New Status{" "}
+                <span className="text-muted-foreground text-xs">(optional)</span>
+              </Label>
+              <Select
+                value={formIpMarkStatus || "__none__"}
+                onValueChange={(v) => setFormIpMarkStatus(v === "__none__" ? "" : v)}
+                disabled={loadingMarkOptions}
+              >
+                <SelectTrigger
+                  id="ip-mark-status"
+                  className="bg-white border-amber-200 focus:border-amber-400 focus:ring-amber-400"
+                >
+                  <SelectValue placeholder="Keep existing status…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">— Keep existing status —</SelectItem>
+                  {ipStatuses.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-amber-700">
+                Set a new status on all matching IP addresses.
+              </p>
+            </div>
+
+            {/* Tag */}
+            <div className="space-y-2">
+              <Label htmlFor="ip-mark-tag" className="text-sm text-amber-900">
+                Add Tag{" "}
+                <span className="text-muted-foreground text-xs">(optional)</span>
+              </Label>
+              <Select
+                value={formIpMarkTag || "__none__"}
+                onValueChange={(v) => setFormIpMarkTag(v === "__none__" ? "" : v)}
+                disabled={loadingMarkOptions}
+              >
+                <SelectTrigger
+                  id="ip-mark-tag"
+                  className="bg-white border-amber-200 focus:border-amber-400 focus:ring-amber-400"
+                >
+                  <SelectValue placeholder="No tag…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">— No tag —</SelectItem>
+                  {ipTags.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-amber-700">
+                Assign a tag to all matching IP addresses.
+              </p>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="ip-mark-description" className="text-sm text-amber-900">
+              Update Description{" "}
+              <span className="text-muted-foreground text-xs">(optional)</span>
+            </Label>
+            <Input
+              id="ip-mark-description"
+              value={formIpMarkDescription}
+              onChange={(e) => setFormIpMarkDescription(e.target.value)}
+              placeholder="Leave empty to keep existing description…"
+              className="bg-white border-amber-200 focus:border-amber-400 focus:ring-amber-400"
+            />
+            <p className="text-xs text-amber-700">
+              Overwrite the description on all matching IP addresses.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Filter Configuration */}
       <div className="rounded-lg border border-emerald-200 bg-emerald-50/30 p-4 space-y-4">

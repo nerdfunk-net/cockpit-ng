@@ -159,6 +159,53 @@ class IPAddressQueryService:
 
         return ip_addresses
 
+    def update_ip_address(
+        self,
+        ip_id: str,
+        status_id: Optional[str] = None,
+        tag_id: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> bool:
+        """Update status, tag and/or description of a single IP address via REST PATCH.
+
+        Args:
+            ip_id:       UUID of the IP address to update.
+            status_id:   Nautobot status UUID to apply.  None means no change.
+            tag_id:      Nautobot tag UUID to add.        None means no change.
+            description: New description text.            None means no change.
+
+        Returns:
+            True if update was successful, False otherwise.
+        """
+        patch: Dict[str, Any] = {}
+
+        if status_id:
+            # Nautobot REST API accepts the status UUID as a plain string
+            patch["status"] = status_id
+
+        if tag_id:
+            # Nautobot REST API accepts tags as a list of {"id": uuid} objects
+            patch["tags"] = [{"id": tag_id}]
+
+        if description is not None:
+            patch["description"] = description
+
+        if not patch:
+            logger.warning("update_ip_address called with nothing to update for %s", ip_id)
+            return True  # nothing to do, not an error
+
+        try:
+            self.nautobot._sync_rest_request(
+                endpoint=f"ipam/ip-addresses/{ip_id}/",
+                method="PATCH",
+                data=patch,
+            )
+            logger.info("Updated IP address %s: %s", ip_id, list(patch.keys()))
+            return True
+        except Exception as e:
+            logger.error("Failed to update IP address %s: %s", ip_id, e)
+            return False
+
     def delete_ip_address(self, ip_id: str) -> bool:
         """Delete a single IP address by UUID via REST API.
 

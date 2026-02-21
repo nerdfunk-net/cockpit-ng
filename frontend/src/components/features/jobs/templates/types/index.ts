@@ -43,6 +43,10 @@ export interface JobTemplate {
   ip_filter_type?: string | null
   ip_filter_value?: string
   ip_include_null?: boolean
+  // Mark action options
+  ip_mark_status?: string
+  ip_mark_tag?: string
+  ip_mark_description?: string
   is_global: boolean
   user_id?: number
   created_by?: string
@@ -76,6 +80,17 @@ export interface CommandTemplate {
   id: number
   name: string
   category: string
+}
+
+export interface IpAddressStatus {
+  id: string
+  name: string
+}
+
+export interface IpAddressTag {
+  id: string
+  name: string
+  slug: string
 }
 
 export interface CustomField {

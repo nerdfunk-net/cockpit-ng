@@ -815,6 +815,23 @@ async def get_nautobot_vm_tags(
         )
 
 
+@router.get("/tags/ip-addresses", summary="🔶 REST: List IP Address Tags")
+async def get_nautobot_ip_address_tags(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
+    """Get Nautobot tags specifically for ipam.ipaddress content type."""
+    try:
+        result = await nautobot_service.rest_request(
+            "extras/tags/?content_types=ipam.ipaddress"
+        )
+        return result.get("results", [])
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch IP address tags: {str(e)}",
+        )
+
+
 @router.get("/custom-fields/devices", summary="🔶 REST: List Device Custom Fields")
 async def get_nautobot_device_custom_fields(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),

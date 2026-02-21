@@ -1,4 +1,4 @@
-import type { JobTemplate, JobType, GitRepository, SavedInventory, CommandTemplate, CustomField } from '../types'
+import type { JobTemplate, JobType, GitRepository, SavedInventory, CommandTemplate, CustomField, IpAddressStatus, IpAddressTag } from '../types'
 
 // React best practice: Extract default objects to prevent re-render loops
 export const EMPTY_TEMPLATES: JobTemplate[] = []
@@ -7,6 +7,8 @@ export const EMPTY_REPOS: GitRepository[] = []
 export const EMPTY_INVENTORIES: SavedInventory[] = []
 export const EMPTY_CMD_TEMPLATES: CommandTemplate[] = []
 export const EMPTY_CUSTOM_FIELDS: CustomField[] = []
+export const EMPTY_IP_STATUSES: IpAddressStatus[] = []
+export const EMPTY_IP_TAGS: IpAddressTag[] = []
 
 export const JOB_TYPE_LABELS: Record<string, string> = {
   backup: 'Backup',
@@ -45,4 +47,5 @@ export const STALE_TIME = {
   INVENTORIES: 30 * 1000,        // 30 seconds - moderately dynamic
   CMD_TEMPLATES: 2 * 60 * 1000,  // 2 minutes - occasionally changes
   CUSTOM_FIELDS: 5 * 60 * 1000,  // 5 minutes - rarely changes
+  IP_OPTIONS: 5 * 60 * 1000,     // 5 minutes - IP statuses and tags rarely change
 } as const
