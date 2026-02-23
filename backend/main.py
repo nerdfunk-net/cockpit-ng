@@ -243,6 +243,25 @@ async def startup_services():
     """Initialize all services on startup."""
     logger.info("=== Application startup - initializing services ===")
 
+    # ------------------------------------------------------------------
+    # Security pre-flight checks
+    # ------------------------------------------------------------------
+    from config import settings as _settings
+
+    _DEFAULT_SECRET = "your-secret-key-change-in-production"
+    if _settings.secret_key == _DEFAULT_SECRET:
+        raise RuntimeError(
+            "FATAL: SECRET_KEY is set to the insecure default value. "
+            "Set the SECRET_KEY environment variable to a strong random string "
+            "(e.g. `openssl rand -hex 32`) before starting the application."
+        )
+
+    if _settings.initial_password == "admin":
+        logger.warning(
+            "SECURITY WARNING: Default admin password 'admin' is in use. "
+            "Change INITIAL_PASSWORD or update the admin account password immediately."
+        )
+
     # Initialize database tables first
     try:
         from core.database import init_db

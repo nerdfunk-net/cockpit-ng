@@ -11,9 +11,6 @@ from dotenv import load_dotenv
 backend_env_path = os.path.join(os.path.dirname(__file__), ".env")
 if os.path.exists(backend_env_path):
     load_dotenv(backend_env_path, override=False)
-    print(f"Loaded .env from: {backend_env_path} (Docker env vars take precedence)")
-else:
-    print("No .env file found - using environment variables from system/Docker")
 
 
 def get_env_bool(key: str, default: bool = False) -> bool:

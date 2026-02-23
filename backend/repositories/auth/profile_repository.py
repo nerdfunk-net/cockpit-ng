@@ -47,6 +47,28 @@ class ProfileRepository(BaseRepository[UserProfile]):
         finally:
             db.close()
 
+    def get_by_api_key(self, api_key: str) -> Optional[UserProfile]:
+        """Get profile by API key.
+
+        Args:
+            api_key: API key to search for
+
+        Returns:
+            UserProfile if found, None otherwise
+        """
+        db = get_db_session()
+        try:
+            return (
+                db.query(UserProfile)
+                .filter(
+                    UserProfile.api_key == api_key,
+                    UserProfile.api_key.isnot(None),
+                )
+                .first()
+            )
+        finally:
+            db.close()
+
     def delete_by_username(self, username: str) -> bool:
         """Delete profile by username.
 
