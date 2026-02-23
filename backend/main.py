@@ -74,7 +74,10 @@ from routers.jobs import (
     templates_router as job_templates_router,
     schedules_router as job_schedules_router,
     runs_router as job_runs_router,
-    celery_router,
+    celery_admin_router,
+    device_tasks_router,
+    sync_tasks_router,
+    network_tasks_router,
 )
 
 # certificates_router now imported from inventory package above
@@ -163,7 +166,10 @@ app.include_router(credentials_router)
 app.include_router(scan_and_add_router)
 app.include_router(cache_router)
 app.include_router(profile_router)
-app.include_router(celery_router)
+app.include_router(celery_admin_router)
+app.include_router(device_tasks_router)
+app.include_router(sync_tasks_router)
+app.include_router(network_tasks_router)
 # git_repositories_router removed - already included via git_router
 app.include_router(job_schedules_router)
 app.include_router(job_templates_router)

@@ -2,7 +2,6 @@
 Authentication router for login and token management.
 """
 
-from __future__ import annotations
 import logging
 from datetime import timedelta
 from fastapi import APIRouter, HTTPException, status, Depends, Request
