@@ -266,7 +266,9 @@ class DeployAgentRequest(BaseModel):
     path: Optional[str] = None
     inventory_id: Optional[int] = None
     activate_after_deploy: Optional[bool] = None  # If None, read from template
-    template_entries: Optional[List[DeployTemplateEntryRequest]] = None  # Multi-template entries
+    template_entries: Optional[List[DeployTemplateEntryRequest]] = (
+        None  # Multi-template entries
+    )
 
 
 # ============================================================================
@@ -308,5 +310,9 @@ class IPAddressesTaskRequest(BaseModel):
     action: str  # "list" or "delete"
     filter_field: str  # e.g. "cf_last_scan", "address", "status"
     filter_value: str  # e.g. "2026-02-19"
-    filter_type: Optional[str] = None  # e.g. "lte", "lt", "gte", "gt", "contains", or None for equality
-    include_null: bool = False  # When True, also include IPs where filter_field is null (never set)
+    filter_type: Optional[str] = (
+        None  # e.g. "lte", "lt", "gte", "gt", "contains", or None for equality
+    )
+    include_null: bool = (
+        False  # When True, also include IPs where filter_field is null (never set)
+    )

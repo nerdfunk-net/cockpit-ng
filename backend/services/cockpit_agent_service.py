@@ -184,7 +184,9 @@ class CockpitAgentService:
                 "status": status_data.get("status"),
                 "last_heartbeat": int(status_data.get("last_heartbeat", 0)),
                 "version": status_data.get("version"),
-                "hostname": status_data.get("agent_id", status_data.get("hostname", agent_id)),
+                "hostname": status_data.get(
+                    "agent_id", status_data.get("hostname", agent_id)
+                ),
                 "capabilities": status_data.get("capabilities", ""),
                 "started_at": int(status_data.get("started_at", 0)),
                 "commands_executed": int(status_data.get("commands_executed", 0)),

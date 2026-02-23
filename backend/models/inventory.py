@@ -151,6 +151,4 @@ class InventoryAnalysisResponse(BaseModel):
     roles: List[str] = Field(
         default_factory=list, description="Distinct list of role names"
     )
-    device_count: int = Field(
-        ..., description="Total number of devices analyzed"
-    )
+    device_count: int = Field(..., description="Total number of devices analyzed")

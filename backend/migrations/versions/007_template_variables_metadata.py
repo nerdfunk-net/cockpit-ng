@@ -122,7 +122,9 @@ class Migration(BaseMigration):
 
                         # Update database
                         conn.execute(
-                            text("UPDATE templates SET variables = :vars WHERE id = :id"),
+                            text(
+                                "UPDATE templates SET variables = :vars WHERE id = :id"
+                            ),
                             {"vars": new_variables_json, "id": template_id},
                         )
 
@@ -147,7 +149,9 @@ class Migration(BaseMigration):
         self.log_info("Migration completed:")
         self.log_info(f"  - Columns added: {stats['columns_added']}")
         self.log_info(f"  - Templates migrated: {stats['templates_migrated']}")
-        self.log_info(f"  - Templates skipped (already migrated): {stats['templates_skipped']}")
+        self.log_info(
+            f"  - Templates skipped (already migrated): {stats['templates_skipped']}"
+        )
         if stats["errors"] > 0:
             self.log_warning(f"  - Errors encountered: {stats['errors']}")
 

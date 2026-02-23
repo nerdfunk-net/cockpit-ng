@@ -57,7 +57,10 @@ def execute_ip_addresses(
     filter_key = f"{filter_field}__{filter_type}" if filter_type else filter_field
     logger.info(
         "Executing ip_addresses job: action=%s, filter=%s=%s, include_null=%s",
-        action, filter_key, filter_value, include_null,
+        action,
+        filter_key,
+        filter_value,
+        include_null,
     )
 
     try:
@@ -137,18 +140,22 @@ def execute_ip_addresses(
                         assignments,
                     )
                     skipped += 1
-                    skipped_ips.append({
-                        "address": ip_address,
-                        "id": ip_id,
-                        "interface_assignments": [
-                            {
-                                "id": a.get("id"),
-                                "interface": a.get("interface", {}).get("name"),
-                                "device": a.get("interface", {}).get("device", {}).get("name"),
-                            }
-                            for a in assignments
-                        ],
-                    })
+                    skipped_ips.append(
+                        {
+                            "address": ip_address,
+                            "id": ip_id,
+                            "interface_assignments": [
+                                {
+                                    "id": a.get("id"),
+                                    "interface": a.get("interface", {}).get("name"),
+                                    "device": a.get("interface", {})
+                                    .get("device", {})
+                                    .get("name"),
+                                }
+                                for a in assignments
+                            ],
+                        }
+                    )
                     continue
 
                 if service.delete_ip_address(ip_id):
@@ -156,7 +163,9 @@ def execute_ip_addresses(
                     deleted_ips.append({"address": ip_address, "id": ip_id})
                 else:
                     failed += 1
-                    failed_ips.append({"address": ip_address, "id": ip_id, "reason": "delete failed"})
+                    failed_ips.append(
+                        {"address": ip_address, "id": ip_id, "reason": "delete failed"}
+                    )
 
             return {
                 "success": True,
@@ -211,7 +220,8 @@ def execute_ip_addresses(
 
             logger.info(
                 "Marking %d IP addresses with changes: %s",
-                total, list(changes.keys()),
+                total,
+                list(changes.keys()),
             )
 
             for idx, ip in enumerate(ip_addresses):

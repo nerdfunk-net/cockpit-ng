@@ -2002,4 +2002,3 @@ class InventoryService:
 
 # Global service instance
 inventory_service = InventoryService()
-

@@ -12,8 +12,8 @@ from migrations.base import BaseMigration
 from sqlalchemy import text
 
 COLUMNS = [
-    ("ip_mark_status",      "VARCHAR(255)"),
-    ("ip_mark_tag",         "VARCHAR(255)"),
+    ("ip_mark_status", "VARCHAR(255)"),
+    ("ip_mark_tag", "VARCHAR(255)"),
     ("ip_mark_description", "TEXT"),
 ]
 

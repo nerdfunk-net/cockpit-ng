@@ -64,14 +64,20 @@ def execute_deploy_agent(
                     template = job_template_manager.get_job_template(template_id)
 
         if not template:
-            return {"success": False, "error": "No job template found for deploy_agent execution"}
+            return {
+                "success": False,
+                "error": "No job template found for deploy_agent execution",
+            }
 
         # Extract common fields
         deploy_agent_id = template.get("deploy_agent_id")
         activate_after_deploy = template.get("activate_after_deploy", False)
 
         if not deploy_agent_id:
-            return {"success": False, "error": "No deploy_agent_id configured in job template"}
+            return {
+                "success": False,
+                "error": "No deploy_agent_id configured in job template",
+            }
 
         # Check for multi-template deployment
         deploy_templates = template.get("deploy_templates")
@@ -84,9 +90,14 @@ def execute_deploy_agent(
                 deploy_templates = None
 
         from services.agents.deployment_service import AgentDeploymentService
+
         deployment_service = AgentDeploymentService()
 
-        if deploy_templates and isinstance(deploy_templates, list) and len(deploy_templates) > 0:
+        if (
+            deploy_templates
+            and isinstance(deploy_templates, list)
+            and len(deploy_templates) > 0
+        ):
             # Multi-template deployment
             logger.info("Multi-template deployment: %s entries", len(deploy_templates))
 
@@ -96,12 +107,15 @@ def execute_deploy_agent(
             inventory_id = None
             if inventory_name and template.get("inventory_source") == "inventory":
                 import inventory_manager as inv_mgr
+
                 inv = inv_mgr.inventory_manager.get_inventory_by_name(
                     inventory_name, "celery_scheduler"
                 )
                 if inv:
                     inventory_id = inv.get("id")
-                    logger.info("Resolved inventory '%s' to ID %s", inventory_name, inventory_id)
+                    logger.info(
+                        "Resolved inventory '%s' to ID %s", inventory_name, inventory_id
+                    )
 
             # For entries without their own inventory_id, use the resolved one
             for entry in deploy_templates:
@@ -134,11 +148,16 @@ def execute_deploy_agent(
             logger.info("Activate after deploy: %s", activate_after_deploy)
             logger.info(
                 "Deploy custom variables: %s",
-                list(deploy_custom_variables.keys()) if deploy_custom_variables else "none",
+                list(deploy_custom_variables.keys())
+                if deploy_custom_variables
+                else "none",
             )
 
             if not deploy_template_id:
-                return {"success": False, "error": "No deploy_template_id configured in job template"}
+                return {
+                    "success": False,
+                    "error": "No deploy_template_id configured in job template",
+                }
 
             # Resolve inventory_id from the job template's inventory_name
             inventory_id = None
@@ -151,7 +170,9 @@ def execute_deploy_agent(
                 )
                 if inv:
                     inventory_id = inv.get("id")
-                    logger.info("Resolved inventory '%s' to ID %s", inventory_name, inventory_id)
+                    logger.info(
+                        "Resolved inventory '%s' to ID %s", inventory_name, inventory_id
+                    )
 
             return deployment_service.deploy(
                 template_id=deploy_template_id,

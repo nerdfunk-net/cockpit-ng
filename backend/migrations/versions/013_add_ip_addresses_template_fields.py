@@ -9,9 +9,9 @@ from migrations.base import BaseMigration
 from sqlalchemy import text
 
 COLUMNS = [
-    ("ip_action",       "VARCHAR(50)"),
+    ("ip_action", "VARCHAR(50)"),
     ("ip_filter_field", "VARCHAR(255)"),
-    ("ip_filter_type",  "VARCHAR(50)"),
+    ("ip_filter_type", "VARCHAR(50)"),
     ("ip_filter_value", "VARCHAR(255)"),
     ("ip_include_null", "BOOLEAN NOT NULL DEFAULT FALSE"),
 ]

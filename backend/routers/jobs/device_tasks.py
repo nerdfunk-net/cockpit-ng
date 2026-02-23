@@ -26,7 +26,6 @@ from models.celery import (
     BackupDevicesRequest,
     BulkOnboardDevicesRequest,
     DeployAgentRequest,
-    DeviceBackupStatus,
     ExportDevicesRequest,
     ImportDevicesRequest,
     OnboardDeviceRequest,
@@ -170,7 +169,9 @@ async def trigger_bulk_onboard_devices(
             job_run_id = job_run.get("id")
             if job_run_id:
                 job_run_manager.mark_started(job_run_id, task.id)
-                logger.info("Created job run %s for bulk onboard task %s", job_run_id, task.id)
+                logger.info(
+                    "Created job run %s for bulk onboard task %s", job_run_id, task.id
+                )
         except Exception as exc:
             logger.warning("Failed to create job run entry: %s", exc)
 
@@ -214,10 +215,14 @@ async def trigger_bulk_onboard_devices(
                 job_run_manager.mark_started(job_run_id, task.id)
                 logger.info(
                     "Created job run %s for batch %s task %s",
-                    job_run_id, batch_num + 1, task.id,
+                    job_run_id,
+                    batch_num + 1,
+                    task.id,
                 )
         except Exception as exc:
-            logger.warning("Failed to create job run entry for batch %s: %s", batch_num + 1, exc)
+            logger.warning(
+                "Failed to create job run entry for batch %s: %s", batch_num + 1, exc
+            )
 
     return TaskResponse(
         task_id=",".join(task_ids),
@@ -343,7 +348,9 @@ async def trigger_deploy_agent(
     }
 
     if request.template_entries:
-        task_kwargs["template_entries"] = [e.model_dump() for e in request.template_entries]
+        task_kwargs["template_entries"] = [
+            e.model_dump() for e in request.template_entries
+        ]
         task_description = f"{len(request.template_entries)} templates"
     else:
         task_kwargs["template_id"] = request.template_id
@@ -443,7 +450,9 @@ async def preview_export_devices(
         if export_format == "yaml":
             preview_content = _export_to_yaml(filtered_devices)
         elif export_format == "csv":
-            preview_content = _export_to_csv(filtered_devices, request.csv_options or {})
+            preview_content = _export_to_csv(
+                filtered_devices, request.csv_options or {}
+            )
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -518,7 +527,8 @@ async def trigger_export_devices(
         csv_options = {
             "delimiter": request.csv_options.get("delimiter", ","),
             "quoteChar": request.csv_options.get("quoteChar", '"'),
-            "includeHeaders": request.csv_options.get("includeHeaders", "true").lower() == "true",
+            "includeHeaders": request.csv_options.get("includeHeaders", "true").lower()
+            == "true",
         }
 
     task = export_devices_task.delay(
@@ -577,7 +587,9 @@ async def download_export_file(
     task_result = result.result
     if not task_result or not task_result.get("success"):
         error_msg = (
-            task_result.get("error", "Unknown error") if task_result else "No result available"
+            task_result.get("error", "Unknown error")
+            if task_result
+            else "No result available"
         )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -794,7 +806,9 @@ async def trigger_update_ip_addresses_from_csv(
     Returns:
         TaskWithJobResponse with task_id (for Celery) and job_id (for Jobs/Views tracking)
     """
-    from tasks.update_ip_addresses_from_csv_task import update_ip_addresses_from_csv_task
+    from tasks.update_ip_addresses_from_csv_task import (
+        update_ip_addresses_from_csv_task,
+    )
 
     logger.info("=" * 80)
     logger.info("RECEIVED UPDATE IP ADDRESSES REQUEST")
@@ -948,7 +962,9 @@ async def trigger_import_devices_from_csv(
     skip_duplicates = (
         import_options.get("skip_duplicates", False) if import_options else False
     )
-    job_name = f"Import devices from CSV{' (skip duplicates)' if skip_duplicates else ''}"
+    job_name = (
+        f"Import devices from CSV{' (skip duplicates)' if skip_duplicates else ''}"
+    )
     job_run = job_run_manager.create_job_run(
         job_name=job_name,
         job_type="import_devices_from_csv",
@@ -1045,7 +1061,9 @@ async def check_device_backups(
                             "device_id": device_id,
                             "device_name": device_name,
                             "last_backup_success": True,
-                            "last_backup_time": completed_at.isoformat() if completed_at else None,
+                            "last_backup_time": completed_at.isoformat()
+                            if completed_at
+                            else None,
                             "total_successful_backups": 1,
                             "total_failed_backups": 0,
                             "last_error": None,
@@ -1069,7 +1087,9 @@ async def check_device_backups(
                             "device_id": device_id,
                             "device_name": device_name,
                             "last_backup_success": False,
-                            "last_backup_time": completed_at.isoformat() if completed_at else None,
+                            "last_backup_time": completed_at.isoformat()
+                            if completed_at
+                            else None,
                             "total_successful_backups": 0,
                             "total_failed_backups": 1,
                             "last_error": error,
@@ -1089,7 +1109,9 @@ async def check_device_backups(
 
         devices_list = list(device_status.values())
         devices_with_success = sum(1 for d in devices_list if d["last_backup_success"])
-        devices_with_failure = sum(1 for d in devices_list if not d["last_backup_success"])
+        devices_with_failure = sum(
+            1 for d in devices_list if not d["last_backup_success"]
+        )
 
         response = BackupCheckResponse(
             total_devices=len(devices_list),
@@ -1102,7 +1124,9 @@ async def check_device_backups(
         try:
             r = redis.Redis.from_url(settings.redis_url, decode_responses=True)
             r.setex(CACHE_KEY, CACHE_DURATION_SECONDS, response.model_dump_json())
-            logger.info("Cached device backup status for %s seconds", CACHE_DURATION_SECONDS)
+            logger.info(
+                "Cached device backup status for %s seconds", CACHE_DURATION_SECONDS
+            )
         except Exception as exc:
             logger.warning("Failed to cache device backup status: %s", exc)
 

@@ -61,8 +61,10 @@ class Migration(BaseMigration):
                     count = count_row[0] if count_row else 0
 
                     if count > 0:
-                        self.log_info(f"Found {count} repositories with 'ansible' category")
-                        
+                        self.log_info(
+                            f"Found {count} repositories with 'ansible' category"
+                        )
+
                         # Update category from 'ansible' to 'agent'
                         result = conn.execute(
                             text(
@@ -74,7 +76,7 @@ class Migration(BaseMigration):
                             )
                         )
                         stats["repositories_updated"] = result.rowcount
-                        
+
                         self.log_info(
                             f"✓ Updated {stats['repositories_updated']} repositories "
                             "from 'ansible' to 'agent' category"
@@ -100,7 +102,9 @@ class Migration(BaseMigration):
             "errors": 0,
         }
 
-        self.log_info("Reverting git repository categories from 'agent' to 'ansible'...")
+        self.log_info(
+            "Reverting git repository categories from 'agent' to 'ansible'..."
+        )
 
         try:
             with self.engine.begin() as conn:
@@ -129,7 +133,7 @@ class Migration(BaseMigration):
                         )
                     )
                     stats["repositories_reverted"] = result.rowcount
-                    
+
                     self.log_info(
                         f"✓ Reverted {stats['repositories_reverted']} repositories "
                         "from 'agent' to 'ansible' category"

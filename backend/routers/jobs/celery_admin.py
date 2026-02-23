@@ -202,13 +202,9 @@ async def purge_queue_endpoint(
         queue_name: Name of the queue to purge (e.g., 'default', 'backup', 'network', 'heavy')
     """
     try:
-        return purge_queue(
-            queue_name, username=current_user.get("username", "unknown")
-        )
+        return purge_queue(queue_name, username=current_user.get("username", "unknown"))
     except KeyError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
     except RuntimeError as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)

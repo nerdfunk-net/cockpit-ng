@@ -66,7 +66,8 @@ class TemplateRequest(BaseModel):
         default=False, description="Whether to use Nautobot context when rendering"
     )
     pass_snmp_mapping: Optional[bool] = Field(
-        default=False, description="Whether to include SNMP mapping in context (agent templates)"
+        default=False,
+        description="Whether to include SNMP mapping in context (agent templates)",
     )
     inventory_id: Optional[int] = Field(
         None, description="ID of saved inventory to use for agent templates"

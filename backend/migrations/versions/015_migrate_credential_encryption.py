@@ -150,9 +150,7 @@ class Migration(BaseMigration):
                     set_clauses = ", ".join(f"{col} = :{col}" for col in updates)
                     params = {"id": cred_id, **updates}
                     conn.execute(
-                        text(
-                            f"UPDATE credentials SET {set_clauses} WHERE id = :id"
-                        ),
+                        text(f"UPDATE credentials SET {set_clauses} WHERE id = :id"),
                         params,
                     )
                     rows_updated += 1

@@ -70,9 +70,7 @@ def create_job_template(
     )
 
     # Serialize deploy_templates to JSON string for storage
-    deploy_templates_json = (
-        json.dumps(deploy_templates) if deploy_templates else None
-    )
+    deploy_templates_json = json.dumps(deploy_templates) if deploy_templates else None
 
     template = repo.create(
         name=name,
@@ -394,9 +392,7 @@ def _model_to_dict(template) -> Dict[str, Any]:
         ),
         "activate_after_deploy": template.activate_after_deploy,
         "deploy_templates": (
-            json.loads(template.deploy_templates)
-            if template.deploy_templates
-            else None
+            json.loads(template.deploy_templates) if template.deploy_templates else None
         ),
         "ip_action": template.ip_action,
         "ip_filter_field": template.ip_filter_field,

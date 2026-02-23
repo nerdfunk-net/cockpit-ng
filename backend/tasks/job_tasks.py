@@ -1614,7 +1614,11 @@ def _execute_ip_addresses(
     filter_key = f"{filter_field}__{filter_type}" if filter_type else filter_field
     logger.info(
         "Executing ip_addresses job: action=%s, filter=%s=%s, include_null=%s, remove_skip_assigned=%s",
-        action, filter_key, filter_value, include_null, remove_skip_assigned,
+        action,
+        filter_key,
+        filter_value,
+        include_null,
+        remove_skip_assigned,
     )
 
     try:
@@ -1623,7 +1627,11 @@ def _execute_ip_addresses(
         if action == "list":
             task_context.update_state(
                 state="PROGRESS",
-                meta={"status": f"Fetching IPs where {filter_key}={filter_value}...", "current": 0, "total": 1},
+                meta={
+                    "status": f"Fetching IPs where {filter_key}={filter_value}...",
+                    "current": 0,
+                    "total": 1,
+                },
             )
             ip_addresses = service.list_ip_addresses(
                 filter_field=filter_field,
@@ -1645,7 +1653,11 @@ def _execute_ip_addresses(
         elif action == "remove":
             task_context.update_state(
                 state="PROGRESS",
-                meta={"status": f"Fetching IPs where {filter_key}={filter_value}...", "current": 0, "total": 1},
+                meta={
+                    "status": f"Fetching IPs where {filter_key}={filter_value}...",
+                    "current": 0,
+                    "total": 1,
+                },
             )
             ip_addresses = service.list_ip_addresses(
                 filter_field=filter_field,
@@ -1663,7 +1675,11 @@ def _execute_ip_addresses(
             for idx, ip in enumerate(ip_addresses):
                 task_context.update_state(
                     state="PROGRESS",
-                    meta={"status": f"Deleting IP {idx + 1}/{total}...", "current": idx + 1, "total": total},
+                    meta={
+                        "status": f"Deleting IP {idx + 1}/{total}...",
+                        "current": idx + 1,
+                        "total": total,
+                    },
                 )
                 ip_id = ip.get("id")
                 ip_address = ip.get("address", ip_id)
@@ -1681,18 +1697,22 @@ def _execute_ip_addresses(
                         assignments,
                     )
                     skipped += 1
-                    skipped_ips.append({
-                        "address": ip_address,
-                        "id": ip_id,
-                        "interface_assignments": [
-                            {
-                                "id": a.get("id"),
-                                "interface": a.get("interface", {}).get("name"),
-                                "device": a.get("interface", {}).get("device", {}).get("name"),
-                            }
-                            for a in assignments
-                        ],
-                    })
+                    skipped_ips.append(
+                        {
+                            "address": ip_address,
+                            "id": ip_id,
+                            "interface_assignments": [
+                                {
+                                    "id": a.get("id"),
+                                    "interface": a.get("interface", {}).get("name"),
+                                    "device": a.get("interface", {})
+                                    .get("device", {})
+                                    .get("name"),
+                                }
+                                for a in assignments
+                            ],
+                        }
+                    )
                     continue
 
                 if service.delete_ip_address(ip_id):
@@ -1700,7 +1720,9 @@ def _execute_ip_addresses(
                     deleted_ips.append({"address": ip_address, "id": ip_id})
                 else:
                     failed += 1
-                    failed_ips.append({"address": ip_address, "id": ip_id, "reason": "delete failed"})
+                    failed_ips.append(
+                        {"address": ip_address, "id": ip_id, "reason": "delete failed"}
+                    )
             return {
                 "success": True,
                 "action": action,
@@ -1728,7 +1750,11 @@ def _execute_ip_addresses(
                 }
             task_context.update_state(
                 state="PROGRESS",
-                meta={"status": f"Fetching IPs where {filter_key}={filter_value}...", "current": 0, "total": 1},
+                meta={
+                    "status": f"Fetching IPs where {filter_key}={filter_value}...",
+                    "current": 0,
+                    "total": 1,
+                },
             )
             ip_addresses = service.list_ip_addresses(
                 filter_field=filter_field,
@@ -1739,14 +1765,24 @@ def _execute_ip_addresses(
             total = len(ip_addresses)
             updated = 0
             failed = 0
-            changes = {k: v for k, v in {
-                "status": mark_status, "tag": mark_tag, "description": mark_description
-            }.items() if v is not None}
+            changes = {
+                k: v
+                for k, v in {
+                    "status": mark_status,
+                    "tag": mark_tag,
+                    "description": mark_description,
+                }.items()
+                if v is not None
+            }
             logger.info("Marking %d IP addresses with: %s", total, list(changes.keys()))
             for idx, ip in enumerate(ip_addresses):
                 task_context.update_state(
                     state="PROGRESS",
-                    meta={"status": f"Marking IP {idx + 1}/{total}...", "current": idx + 1, "total": total},
+                    meta={
+                        "status": f"Marking IP {idx + 1}/{total}...",
+                        "current": idx + 1,
+                        "total": total,
+                    },
                 )
                 ip_id = ip.get("id")
                 if not ip_id:

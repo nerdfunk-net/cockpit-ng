@@ -272,6 +272,7 @@ if __name__ == "__main__":
 # Startup / shutdown logic (called by the lifespan context manager above)
 # ---------------------------------------------------------------------------
 
+
 async def _startup_services():
     """Initialize all services on startup."""
     logger.info("=== Application startup - initializing services ===")

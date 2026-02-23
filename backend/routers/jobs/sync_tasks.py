@@ -106,7 +106,9 @@ async def trigger_update_device_in_checkmk(
     Query Parameters:
         device_id: Nautobot device ID to update in CheckMK
     """
-    from services.background_jobs.checkmk_device_jobs import update_device_in_checkmk_task
+    from services.background_jobs.checkmk_device_jobs import (
+        update_device_in_checkmk_task,
+    )
 
     task = update_device_in_checkmk_task.delay(device_id)
     return TaskResponse(
@@ -135,7 +137,9 @@ async def trigger_sync_devices_to_checkmk(
     Returns:
         TaskWithJobResponse with task_id (for Celery) and job_id (for Jobs/Views tracking)
     """
-    from services.background_jobs.checkmk_device_jobs import sync_devices_to_checkmk_task
+    from services.background_jobs.checkmk_device_jobs import (
+        sync_devices_to_checkmk_task,
+    )
 
     if not request.device_ids:
         raise HTTPException(

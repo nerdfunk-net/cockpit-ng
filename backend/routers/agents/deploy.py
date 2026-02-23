@@ -34,7 +34,9 @@ class DryRunRequest(BaseModel):
         None, description="Optional edited template content (overrides stored content)"
     )
     inventoryId: int | None = Field(
-        None, alias="inventoryId", description="Inventory ID selected by user (overrides template's inventory_id)"
+        None,
+        alias="inventoryId",
+        description="Inventory ID selected by user (overrides template's inventory_id)",
     )
 
     class Config:
@@ -71,7 +73,9 @@ async def agent_deploy_dry_run(
     """
     try:
         from template_manager import template_manager
-        from services.agents.template_render_service import agent_template_render_service
+        from services.agents.template_render_service import (
+            agent_template_render_service,
+        )
 
         # Fetch the template
         template = template_manager.get_template(request.templateId)
@@ -168,9 +172,13 @@ async def agent_deploy_to_git(
     """
     try:
         from template_manager import template_manager
-        from services.agents.template_render_service import agent_template_render_service
+        from services.agents.template_render_service import (
+            agent_template_render_service,
+        )
         from services.settings.git.service import git_service
-        from repositories.settings.git_repository_repository import GitRepositoryRepository
+        from repositories.settings.git_repository_repository import (
+            GitRepositoryRepository,
+        )
         from datetime import datetime
         import os
 

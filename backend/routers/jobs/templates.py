@@ -76,7 +76,9 @@ async def create_job_template(
             deploy_path=template_data.deploy_path,
             deploy_custom_variables=template_data.deploy_custom_variables,
             activate_after_deploy=template_data.activate_after_deploy,
-            deploy_templates=[e.model_dump() for e in template_data.deploy_templates] if template_data.deploy_templates else None,
+            deploy_templates=[e.model_dump() for e in template_data.deploy_templates]
+            if template_data.deploy_templates
+            else None,
             ip_action=template_data.ip_action,
             ip_filter_field=template_data.ip_filter_field,
             ip_filter_type=template_data.ip_filter_type,
@@ -233,7 +235,9 @@ async def update_job_template(
             deploy_path=update_data.deploy_path,
             deploy_custom_variables=update_data.deploy_custom_variables,
             activate_after_deploy=update_data.activate_after_deploy,
-            deploy_templates=[e.model_dump() for e in update_data.deploy_templates] if update_data.deploy_templates else None,
+            deploy_templates=[e.model_dump() for e in update_data.deploy_templates]
+            if update_data.deploy_templates
+            else None,
             ip_action=update_data.ip_action,
             ip_filter_field=update_data.ip_filter_field,
             ip_filter_type=update_data.ip_filter_type,

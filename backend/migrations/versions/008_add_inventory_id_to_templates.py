@@ -56,7 +56,9 @@ class Migration(BaseMigration):
                     stats["columns_added"] += 1
 
                     # Add foreign key constraint
-                    self.log_info("Adding foreign key constraint to inventories table...")
+                    self.log_info(
+                        "Adding foreign key constraint to inventories table..."
+                    )
                     try:
                         conn.execute(
                             text(
@@ -72,7 +74,9 @@ class Migration(BaseMigration):
                         self.log_info("✓ Added foreign key constraint")
                         stats["constraints_added"] += 1
                     except Exception as e:
-                        self.log_warning(f"Foreign key constraint may already exist: {e}")
+                        self.log_warning(
+                            f"Foreign key constraint may already exist: {e}"
+                        )
                 else:
                     self.log_info("✓ inventory_id column already exists")
             except Exception as e:

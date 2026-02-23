@@ -9,8 +9,13 @@ from datetime import datetime
 
 # Valid job template types (cache_devices removed - now handled by system tasks)
 JobTemplateType = Literal[
-    "backup", "compare_devices", "run_commands", "sync_devices", "scan_prefixes",
-    "deploy_agent", "ip_addresses"
+    "backup",
+    "compare_devices",
+    "run_commands",
+    "sync_devices",
+    "scan_prefixes",
+    "deploy_agent",
+    "ip_addresses",
 ]
 
 # Inventory source options
@@ -25,7 +30,9 @@ class DeployTemplateEntry(BaseModel):
         None, description="Inventory ID for this template's rendering context"
     )
     path: Optional[str] = Field(
-        None, max_length=500, description="Deployment file path (overrides template default)"
+        None,
+        max_length=500,
+        description="Deployment file path (overrides template default)",
     )
     custom_variables: Optional[Dict[str, Any]] = Field(
         None, description="User variable overrides for this template"
@@ -170,20 +177,24 @@ class JobTemplateBase(BaseModel):
     )
     # Maintain IP-Addresses (ip_addresses type)
     ip_action: Optional[str] = Field(
-        None, max_length=50,
+        None,
+        max_length=50,
         description="Action to perform: 'list', 'mark', or 'remove' (only applies to ip_addresses type)",
     )
     ip_filter_field: Optional[str] = Field(
-        None, max_length=255,
+        None,
+        max_length=255,
         description="Nautobot field name to filter on (e.g. 'cf_last_scan') (only applies to ip_addresses type)",
     )
     ip_filter_type: Optional[str] = Field(
-        None, max_length=50,
+        None,
+        max_length=50,
         description="Filter operator suffix (e.g. 'lte', 'lt', 'gte', 'gt', 'contains'). "
-                    "Omit or null for equality. (only applies to ip_addresses type)",
+        "Omit or null for equality. (only applies to ip_addresses type)",
     )
     ip_filter_value: Optional[str] = Field(
-        None, max_length=255,
+        None,
+        max_length=255,
         description="Value to compare against (e.g. '2026-02-19') (only applies to ip_addresses type)",
     )
     ip_include_null: bool = Field(
@@ -192,11 +203,13 @@ class JobTemplateBase(BaseModel):
     )
     # Mark action options
     ip_mark_status: Optional[str] = Field(
-        None, max_length=255,
+        None,
+        max_length=255,
         description="Nautobot status UUID to apply to matching IPs (only applies when ip_action='mark')",
     )
     ip_mark_tag: Optional[str] = Field(
-        None, max_length=255,
+        None,
+        max_length=255,
         description="Nautobot tag UUID to add to matching IPs (only applies when ip_action='mark')",
     )
     ip_mark_description: Optional[str] = Field(

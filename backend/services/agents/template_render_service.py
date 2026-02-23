@@ -82,8 +82,10 @@ class AgentTemplateRenderService:
         # Use the template's inventory_id as override for all inventory-type variables
         if stored_variables:
             populated = await self._populate_stored_variables(
-                stored_variables, username, override_inventory_id=inventory_id,
-                inventory_cache=inventory_analysis_cache
+                stored_variables,
+                username,
+                override_inventory_id=inventory_id,
+                inventory_cache=inventory_analysis_cache,
             )
             context.update(populated)
 
@@ -104,25 +106,19 @@ class AgentTemplateRenderService:
                 # Get inventory by ID
                 inventory = inventory_manager.get_inventory(inventory_id)
                 if not inventory:
-                    raise ValueError(
-                        f"Inventory with ID {inventory_id} not found"
-                    )
+                    raise ValueError(f"Inventory with ID {inventory_id} not found")
 
                 # Convert stored conditions to operations
                 conditions = inventory.get("conditions", [])
                 if not conditions:
-                    logger.warning(
-                        "Inventory %d has no conditions", inventory_id
-                    )
+                    logger.warning("Inventory %d has no conditions", inventory_id)
                     context["devices"] = []
                     context["device_details"] = {}
                 else:
                     operations = convert_saved_inventory_to_operations(conditions)
 
                     # Execute operations to get matching devices
-                    devices, _ = await inventory_service.preview_inventory(
-                        operations
-                    )
+                    devices, _ = await inventory_service.preview_inventory(operations)
 
                     # Convert devices to simple dict format for context
                     device_list = [
@@ -139,16 +135,17 @@ class AgentTemplateRenderService:
                     device_details = {}
                     for device in devices:
                         try:
-                            device_data = (
-                                await device_query_service.get_device_details(
-                                    device_id=device.id,
-                                    use_cache=True,
-                                )
+                            device_data = await device_query_service.get_device_details(
+                                device_id=device.id,
+                                use_cache=True,
                             )
                             # Use device name (hostname) as key for user-friendly Jinja2 templates
                             device_details[device.name] = device_data
                         except Exception as e:
-                            warning_msg = "Failed to fetch details for device %s: %s" % (device.id, str(e))
+                            warning_msg = (
+                                "Failed to fetch details for device %s: %s"
+                                % (device.id, str(e))
+                            )
                             logger.warning(warning_msg)
                             warnings.append(warning_msg)
 
@@ -238,7 +235,9 @@ class AgentTemplateRenderService:
                 if var_type == "custom":
                     populated[var_name] = self._populate_custom_variable(var_def)
                 elif var_type == "nautobot":
-                    populated[var_name] = await self._populate_nautobot_variable(var_def)
+                    populated[var_name] = await self._populate_nautobot_variable(
+                        var_def
+                    )
                 elif var_type == "yaml":
                     populated[var_name] = await self._populate_yaml_variable(var_def)
                 elif var_type == "inventory":
@@ -366,12 +365,12 @@ class AgentTemplateRenderService:
 
         repo_path = git_repo_path(repository)
         if not os.path.exists(repo_path):
-            raise ValueError(
-                "Git repository directory not found: %s" % str(repo_path)
-            )
+            raise ValueError("Git repository directory not found: %s" % str(repo_path))
 
         # Construct and validate file path (prevent path traversal)
-        full_path = os.path.realpath(os.path.join(str(repo_path), file_path.lstrip("/")))
+        full_path = os.path.realpath(
+            os.path.join(str(repo_path), file_path.lstrip("/"))
+        )
         repo_real = os.path.realpath(str(repo_path))
         if not full_path.startswith(repo_real):
             raise ValueError("Invalid file path: path traversal detected")
@@ -422,9 +421,7 @@ class AgentTemplateRenderService:
             )
 
         if not username:
-            raise ValueError(
-                "username is required to access inventory data"
-            )
+            raise ValueError("username is required to access inventory data")
 
         # Check cache first to avoid re-analyzing same inventory
         if inventory_cache is not None and inv_id in inventory_cache:

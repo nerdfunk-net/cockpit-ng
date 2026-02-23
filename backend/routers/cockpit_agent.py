@@ -14,7 +14,6 @@ from models.cockpit_agent import (
     AgentStatusResponse,
     CommandRequest,
     CommandResponse,
-    DockerRestartRequest,
     CommandHistoryResponse,
     CommandHistoryItem,
 )
